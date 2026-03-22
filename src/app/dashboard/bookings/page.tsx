@@ -1,0 +1,34 @@
+export const dynamic = "force-dynamic";
+
+import { createClient } from "@/lib/supabase/server";
+import { BookingsManager } from "./bookings-manager";
+
+export default async function BookingsPage() {
+  const supabase = await createClient();
+
+  const { data: bookings } = await supabase
+    .from("bookings")
+    .select(`
+      *,
+      slots (
+        start_time,
+        end_time,
+        courses (
+          title
+        )
+      )
+    `)
+    .order("created_at", { ascending: false });
+
+  const { data: courses } = await supabase
+    .from("courses")
+    .select("id, title")
+    .order("title");
+
+  return (
+    <BookingsManager
+      initialBookings={bookings || []}
+      courses={courses || []}
+    />
+  );
+}
