@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-
 import { createClient } from "@/lib/supabase/client";
 import { Course, Slot } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -24,9 +23,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
-import { Plus, Trash2, Edit } from "lucide-react";
+import { Plus, Trash2, Edit, Copy } from "lucide-react";
 
 interface Props {
   initialCourses: Course[];
@@ -36,35 +35,47 @@ interface Props {
 export function CoursesManager({ initialCourses, initialSlots }: Props) {
   const [courses, setCourses] = useState(initialCourses);
   const [slots, setSlots] = useState(initialSlots);
-  const [courseDialogOpen, setCourseDialogOpen] = useState(false);
-  const [slotDialogOpen, setSlotDialogOpen] = useState(false);
-  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
-  // Course form
+  // Course dialog
+  const [courseDialogOpen, setCourseDialogOpen] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [courseTitle, setCourseTitle] = useState("");
   const [courseDescription, setCourseDescription] = useState("");
+  const [courseDate, setCourseDate] = useState("");
 
-  // Slot form
-  const [slotStartTime, setSlotStartTime] = useState("");
-  const [slotEndTime, setSlotEndTime] = useState("");
+  // Slot dialog
+  const [slotDialogOpen, setSlotDialogOpen] = useState(false);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [slotTime, setSlotTime] = useState("");
   const [slotCapacity, setSlotCapacity] = useState("1");
+
+  // Duplicate dialog
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [duplicatingCourse, setDuplicatingCourse] = useState<Course | null>(null);
+  const [duplicateDate, setDuplicateDate] = useState("");
 
   const supabase = createClient();
 
   const resetCourseForm = () => {
     setCourseTitle("");
     setCourseDescription("");
+    setCourseDate("");
     setEditingCourse(null);
   };
 
   const handleSaveCourse = async () => {
     if (!courseTitle.trim()) return;
 
+    const payload = {
+      title: courseTitle,
+      description: courseDescription || null,
+      course_date: courseDate || null,
+    };
+
     if (editingCourse) {
       const { data, error } = await supabase
         .from("courses")
-        .update({ title: courseTitle, description: courseDescription || null })
+        .update(payload)
         .eq("id", editingCourse.id)
         .select()
         .single();
@@ -75,7 +86,7 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
     } else {
       const { data, error } = await supabase
         .from("courses")
-        .insert({ title: courseTitle, description: courseDescription || null })
+        .insert(payload)
         .select()
         .single();
 
@@ -98,15 +109,27 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
     }
   };
 
+  const buildStartTime = (date: string, time: string): string => {
+    return new Date(`${date}T${time}:00`).toISOString();
+  };
+
   const handleSaveSlot = async () => {
-    if (!selectedCourseId || !slotStartTime || !slotEndTime) return;
+    if (!selectedCourseId || !slotTime) return;
+
+    const course = courses.find((c) => c.id === selectedCourseId);
+    if (!course?.course_date) {
+      alert("Bitte zuerst ein Datum für den Kurs festlegen.");
+      return;
+    }
+
+    const startTime = buildStartTime(course.course_date, slotTime);
 
     const { data, error } = await supabase
       .from("slots")
       .insert({
         course_id: selectedCourseId,
-        start_time: new Date(slotStartTime).toISOString(),
-        end_time: new Date(slotEndTime).toISOString(),
+        start_time: startTime,
+        end_time: null,
         capacity: parseInt(slotCapacity) || 1,
       })
       .select()
@@ -117,8 +140,7 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
     }
 
     setSlotDialogOpen(false);
-    setSlotStartTime("");
-    setSlotEndTime("");
+    setSlotTime("");
     setSlotCapacity("1");
   };
 
@@ -131,10 +153,54 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
     }
   };
 
+  const handleDuplicate = async () => {
+    if (!duplicatingCourse || !duplicateDate) return;
+
+    const { data: newCourse, error: courseError } = await supabase
+      .from("courses")
+      .insert({
+        title: duplicatingCourse.title,
+        description: duplicatingCourse.description,
+        course_date: duplicateDate,
+      })
+      .select()
+      .single();
+
+    if (courseError || !newCourse) {
+      alert("Fehler beim Duplizieren des Kurses.");
+      return;
+    }
+
+    const originalSlots = slots.filter((s) => s.course_id === duplicatingCourse.id);
+    const newSlots = originalSlots.map((s) => ({
+      course_id: newCourse.id,
+      start_time: buildStartTime(duplicateDate, format(new Date(s.start_time), "HH:mm")),
+      end_time: null,
+      capacity: s.capacity,
+    }));
+
+    if (newSlots.length > 0) {
+      const { data: insertedSlots, error: slotsError } = await supabase
+        .from("slots")
+        .insert(newSlots)
+        .select();
+
+      if (!slotsError && insertedSlots) {
+        setSlots([...slots, ...insertedSlots]);
+      }
+    }
+
+    setCourses([newCourse, ...courses]);
+    setDuplicateDialogOpen(false);
+    setDuplicatingCourse(null);
+    setDuplicateDate("");
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Kurse & Slots</h1>
+
         <Dialog open={courseDialogOpen} onOpenChange={(open) => {
           setCourseDialogOpen(open);
           if (!open) resetCourseForm();
@@ -158,6 +224,15 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
                 />
               </div>
               <div>
+                <Label htmlFor="course_date">Datum des Kurses</Label>
+                <Input
+                  id="course_date"
+                  type="date"
+                  value={courseDate}
+                  onChange={(e) => setCourseDate(e.target.value)}
+                />
+              </div>
+              <div>
                 <Label htmlFor="description">Beschreibung</Label>
                 <Textarea
                   id="description"
@@ -174,6 +249,35 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
         </Dialog>
       </div>
 
+      {/* Duplicate Dialog */}
+      <Dialog open={duplicateDialogOpen} onOpenChange={(open) => {
+        setDuplicateDialogOpen(open);
+        if (!open) { setDuplicatingCourse(null); setDuplicateDate(""); }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Kurs duplizieren</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <p className="text-sm text-muted-foreground">
+              Kopiert <strong>{duplicatingCourse?.title}</strong> mit allen Slots auf ein neues Datum.
+            </p>
+            <div>
+              <Label htmlFor="dup_date">Neues Datum</Label>
+              <Input
+                id="dup_date"
+                type="date"
+                value={duplicateDate}
+                onChange={(e) => setDuplicateDate(e.target.value)}
+              />
+            </div>
+            <Button onClick={handleDuplicate} className="w-full" disabled={!duplicateDate}>
+              Duplizieren
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {courses.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
@@ -182,12 +286,20 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
         </Card>
       ) : (
         courses.map((course) => {
-          const courseSlots = slots.filter((s) => s.course_id === course.id);
+          const courseSlots = slots
+            .filter((s) => s.course_id === course.id)
+            .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+
           return (
             <Card key={course.id}>
               <CardHeader className="flex flex-row items-start justify-between">
                 <div>
                   <CardTitle>{course.title}</CardTitle>
+                  {course.course_date && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {format(parseISO(course.course_date), "dd. MMMM yyyy", { locale: de })}
+                    </p>
+                  )}
                   {course.description && (
                     <p className="text-sm text-muted-foreground mt-1">{course.description}</p>
                   )}
@@ -196,10 +308,22 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
                   <Button
                     variant="outline"
                     size="sm"
+                    title="Kurs duplizieren"
+                    onClick={() => {
+                      setDuplicatingCourse(course);
+                      setDuplicateDialogOpen(true);
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => {
                       setEditingCourse(course);
                       setCourseTitle(course.title);
                       setCourseDescription(course.description || "");
+                      setCourseDate(course.course_date || "");
                       setCourseDialogOpen(true);
                     }}
                   >
@@ -217,10 +341,13 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
               <CardContent>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-medium">Slots</h3>
-                  <Dialog open={slotDialogOpen && selectedCourseId === course.id} onOpenChange={(open) => {
-                    setSlotDialogOpen(open);
-                    if (open) setSelectedCourseId(course.id);
-                  }}>
+                  <Dialog
+                    open={slotDialogOpen && selectedCourseId === course.id}
+                    onOpenChange={(open) => {
+                      setSlotDialogOpen(open);
+                      if (open) setSelectedCourseId(course.id);
+                    }}
+                  >
                     <DialogTrigger render={<Button variant="outline" size="sm" onClick={() => setSelectedCourseId(course.id)} />}>
                       <Plus className="h-4 w-4 mr-1" />
                       Slot
@@ -230,23 +357,25 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
                         <DialogTitle>Neuer Slot</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-4 pt-4">
+                        {!course.course_date && (
+                          <p className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
+                            Bitte zuerst ein Datum für diesen Kurs festlegen.
+                          </p>
+                        )}
                         <div>
-                          <Label htmlFor="start">Beginn</Label>
+                          <Label htmlFor="slot_time">Startzeit</Label>
                           <Input
-                            id="start"
-                            type="datetime-local"
-                            value={slotStartTime}
-                            onChange={(e) => setSlotStartTime(e.target.value)}
+                            id="slot_time"
+                            type="time"
+                            value={slotTime}
+                            onChange={(e) => setSlotTime(e.target.value)}
+                            disabled={!course.course_date}
                           />
-                        </div>
-                        <div>
-                          <Label htmlFor="end">Ende</Label>
-                          <Input
-                            id="end"
-                            type="datetime-local"
-                            value={slotEndTime}
-                            onChange={(e) => setSlotEndTime(e.target.value)}
-                          />
+                          {course.course_date && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              am {format(parseISO(course.course_date), "dd.MM.yyyy", { locale: de })}
+                            </p>
+                          )}
                         </div>
                         <div>
                           <Label htmlFor="capacity">Kapazität</Label>
@@ -258,7 +387,11 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
                             onChange={(e) => setSlotCapacity(e.target.value)}
                           />
                         </div>
-                        <Button onClick={handleSaveSlot} className="w-full">
+                        <Button
+                          onClick={handleSaveSlot}
+                          className="w-full"
+                          disabled={!course.course_date || !slotTime}
+                        >
                           Slot anlegen
                         </Button>
                       </div>
@@ -272,8 +405,7 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Datum</TableHead>
-                        <TableHead>Zeit</TableHead>
+                        <TableHead>Startzeit</TableHead>
                         <TableHead>Kapazität</TableHead>
                         <TableHead className="w-[50px]"></TableHead>
                       </TableRow>
@@ -282,11 +414,7 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
                       {courseSlots.map((slot) => (
                         <TableRow key={slot.id}>
                           <TableCell>
-                            {format(new Date(slot.start_time), "dd.MM.yyyy", { locale: de })}
-                          </TableCell>
-                          <TableCell>
-                            {format(new Date(slot.start_time), "HH:mm")} &ndash;{" "}
-                            {format(new Date(slot.end_time), "HH:mm")}
+                            {format(new Date(slot.start_time), "HH:mm")} Uhr
                           </TableCell>
                           <TableCell>{slot.capacity}</TableCell>
                           <TableCell>

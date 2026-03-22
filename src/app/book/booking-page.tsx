@@ -75,8 +75,7 @@ export function BookingPage({ courses, slots }: BookingPageProps) {
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
-                    {format(new Date(selectedSlot.start_time), "HH:mm")} &ndash;{" "}
-                    {format(new Date(selectedSlot.end_time), "HH:mm")}
+                    {format(new Date(selectedSlot.start_time), "HH:mm")} Uhr
                   </span>
                 </CardDescription>
               </CardHeader>
@@ -123,8 +122,7 @@ export function BookingPage({ courses, slots }: BookingPageProps) {
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-muted-foreground" />
                             <span>
-                              {format(new Date(slot.start_time), "HH:mm")} &ndash;{" "}
-                              {format(new Date(slot.end_time), "HH:mm")}
+                              {format(new Date(slot.start_time), "HH:mm")} Uhr
                             </span>
                           </div>
                           <div className="flex items-center gap-2">

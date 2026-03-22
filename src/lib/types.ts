@@ -4,6 +4,7 @@ export interface Course {
   id: string;
   title: string;
   description: string | null;
+  course_date: string | null; // ISO date string yyyy-MM-dd
   created_at: string;
 }
 
@@ -11,7 +12,7 @@ export interface Slot {
   id: string;
   course_id: string;
   start_time: string;
-  end_time: string;
+  end_time: string | null;
   capacity: number;
   created_at: string;
 }
