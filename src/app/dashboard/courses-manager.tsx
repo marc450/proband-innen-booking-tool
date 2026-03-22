@@ -70,21 +70,22 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
   const handleSaveCourse = async () => {
     if (!courseTitle.trim()) return;
 
+    const isEditing = !!editingCourse;
+    const editId = editingCourse?.id;
     const payload = {
       title: courseTitle,
       description: courseDescription || null,
       course_date: courseDate || null,
     };
 
-    // Close and reset first so the dialog doesn't interfere with state updates
     setCourseDialogOpen(false);
     resetCourseForm();
 
-    if (editingCourse) {
+    if (isEditing && editId) {
       const { data, error } = await supabase
         .from("courses")
         .update(payload)
-        .eq("id", editingCourse.id)
+        .eq("id", editId)
         .select()
         .single();
 
@@ -98,6 +99,9 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
         .select()
         .single();
 
+      if (error) {
+        console.error("Insert error:", error);
+      }
       if (!error && data) {
         setCourses((prev) => [data, ...prev]);
       }
@@ -125,6 +129,8 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
     if (!course?.course_date) return;
 
     const startTime = buildStartTime(course.course_date, slotTime);
+    const cap = parseInt(slotCapacity) || 1;
+    const courseId = selectedCourseId;
 
     setSlotDialogOpen(false);
     setSlotTime("");
@@ -133,14 +139,17 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
     const { data, error } = await supabase
       .from("slots")
       .insert({
-        course_id: selectedCourseId,
+        course_id: courseId,
         start_time: startTime,
         end_time: null,
-        capacity: parseInt(slotCapacity) || 1,
+        capacity: cap,
       })
       .select()
       .single();
 
+    if (error) {
+      console.error("Slot insert error:", error);
+    }
     if (!error && data) {
       setSlots((prev) => [...prev, data]);
     }
