@@ -23,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { Plus, Trash2, Edit, Copy } from "lucide-react";
@@ -54,6 +55,10 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
   const [duplicatingCourse, setDuplicatingCourse] = useState<Course | null>(null);
   const [duplicateDate, setDuplicateDate] = useState("");
 
+  // Confirm delete dialogs
+  const [deleteCourseConfirm, setDeleteCourseConfirm] = useState<string | null>(null);
+  const [deleteSlotConfirm, setDeleteSlotConfirm] = useState<string | null>(null);
+
   const supabase = createClient();
 
   const resetCourseForm = () => {
@@ -72,6 +77,10 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
       course_date: courseDate || null,
     };
 
+    // Close and reset first so the dialog doesn't interfere with state updates
+    setCourseDialogOpen(false);
+    resetCourseForm();
+
     if (editingCourse) {
       const { data, error } = await supabase
         .from("courses")
@@ -81,7 +90,7 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
         .single();
 
       if (!error && data) {
-        setCourses(courses.map((c) => (c.id === data.id ? data : c)));
+        setCourses((prev) => prev.map((c) => (c.id === data.id ? data : c)));
       }
     } else {
       const { data, error } = await supabase
@@ -91,22 +100,19 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
         .single();
 
       if (!error && data) {
-        setCourses([data, ...courses]);
+        setCourses((prev) => [data, ...prev]);
       }
     }
-
-    setCourseDialogOpen(false);
-    resetCourseForm();
   };
 
-  const handleDeleteCourse = async (id: string) => {
-    if (!confirm("Kurs wirklich löschen? Alle zugehörigen Slots und Buchungen werden ebenfalls gelöscht.")) return;
-
-    const { error } = await supabase.from("courses").delete().eq("id", id);
+  const handleDeleteCourse = async () => {
+    if (!deleteCourseConfirm) return;
+    const { error } = await supabase.from("courses").delete().eq("id", deleteCourseConfirm);
     if (!error) {
-      setCourses(courses.filter((c) => c.id !== id));
-      setSlots(slots.filter((s) => s.course_id !== id));
+      setCourses(courses.filter((c) => c.id !== deleteCourseConfirm));
+      setSlots(slots.filter((s) => s.course_id !== deleteCourseConfirm));
     }
+    setDeleteCourseConfirm(null);
   };
 
   const buildStartTime = (date: string, time: string): string => {
@@ -117,12 +123,13 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
     if (!selectedCourseId || !slotTime) return;
 
     const course = courses.find((c) => c.id === selectedCourseId);
-    if (!course?.course_date) {
-      alert("Bitte zuerst ein Datum für den Kurs festlegen.");
-      return;
-    }
+    if (!course?.course_date) return;
 
     const startTime = buildStartTime(course.course_date, slotTime);
+
+    setSlotDialogOpen(false);
+    setSlotTime("");
+    setSlotCapacity("1");
 
     const { data, error } = await supabase
       .from("slots")
@@ -136,21 +143,17 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
       .single();
 
     if (!error && data) {
-      setSlots([...slots, data]);
+      setSlots((prev) => [...prev, data]);
     }
-
-    setSlotDialogOpen(false);
-    setSlotTime("");
-    setSlotCapacity("1");
   };
 
-  const handleDeleteSlot = async (id: string) => {
-    if (!confirm("Slot wirklich löschen?")) return;
-
-    const { error } = await supabase.from("slots").delete().eq("id", id);
+  const handleDeleteSlot = async () => {
+    if (!deleteSlotConfirm) return;
+    const { error } = await supabase.from("slots").delete().eq("id", deleteSlotConfirm);
     if (!error) {
-      setSlots(slots.filter((s) => s.id !== id));
+      setSlots(slots.filter((s) => s.id !== deleteSlotConfirm));
     }
+    setDeleteSlotConfirm(null);
   };
 
   const handleDuplicate = async () => {
@@ -166,10 +169,12 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
       .select()
       .single();
 
-    if (courseError || !newCourse) {
-      alert("Fehler beim Duplizieren des Kurses.");
-      return;
-    }
+    if (courseError || !newCourse) return;
+
+    setDuplicateDialogOpen(false);
+    setDuplicatingCourse(null);
+    setDuplicateDate("");
+    setCourses((prev) => [newCourse, ...prev]);
 
     const originalSlots = slots.filter((s) => s.course_id === duplicatingCourse.id);
     const newSlots = originalSlots.map((s) => ({
@@ -186,18 +191,35 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
         .select();
 
       if (!slotsError && insertedSlots) {
-        setSlots([...slots, ...insertedSlots]);
+        setSlots((prev) => [...prev, ...insertedSlots]);
       }
     }
-
-    setCourses([newCourse, ...courses]);
-    setDuplicateDialogOpen(false);
-    setDuplicatingCourse(null);
-    setDuplicateDate("");
   };
 
   return (
     <div className="space-y-8">
+      {/* Delete course confirm */}
+      <ConfirmDialog
+        open={!!deleteCourseConfirm}
+        title="Kurs löschen"
+        description="Kurs wirklich löschen? Alle zugehörigen Slots und Buchungen werden ebenfalls gelöscht."
+        confirmLabel="Löschen"
+        variant="destructive"
+        onConfirm={handleDeleteCourse}
+        onCancel={() => setDeleteCourseConfirm(null)}
+      />
+
+      {/* Delete slot confirm */}
+      <ConfirmDialog
+        open={!!deleteSlotConfirm}
+        title="Slot löschen"
+        description="Slot wirklich löschen?"
+        confirmLabel="Löschen"
+        variant="destructive"
+        onConfirm={handleDeleteSlot}
+        onCancel={() => setDeleteSlotConfirm(null)}
+      />
+
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Kurse & Slots</h1>
 
@@ -332,7 +354,7 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDeleteCourse(course.id)}
+                    onClick={() => setDeleteCourseConfirm(course.id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -421,7 +443,7 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDeleteSlot(slot.id)}
+                              onClick={() => setDeleteSlotConfirm(slot.id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

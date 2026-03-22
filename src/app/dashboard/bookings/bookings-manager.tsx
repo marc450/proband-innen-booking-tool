@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ConfirmDialog, AlertDialog } from "@/components/confirm-dialog";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { CreditCard, Search } from "lucide-react";
@@ -51,6 +52,11 @@ export function BookingsManager({ initialBookings, courses }: Props) {
   const [filterDate, setFilterDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [chargingId, setChargingId] = useState<string | null>(null);
+
+  // Confirm & alert state
+  const [chargeConfirmBooking, setChargeConfirmBooking] = useState<BookingWithDetails | null>(null);
+  const [alertState, setAlertState] = useState<{ title: string; description: string } | null>(null);
+
   const supabase = createClient();
 
   const filteredBookings = bookings.filter((b) => {
@@ -77,19 +83,14 @@ export function BookingsManager({ initialBookings, courses }: Props) {
       .eq("id", bookingId);
 
     if (!error) {
-      setBookings(
-        bookings.map((b) =>
-          b.id === bookingId ? { ...b, status: newStatus } : b
-        )
-      );
+      setBookings(bookings.map((b) => b.id === bookingId ? { ...b, status: newStatus } : b));
     }
   };
 
-  const handleChargeNoShow = async (booking: BookingWithDetails) => {
-    if (!confirm(`No-Show-Gebühr von 50 EUR für ${booking.name} (${booking.email}) wirklich erheben?`)) {
-      return;
-    }
-
+  const handleChargeNoShow = async () => {
+    if (!chargeConfirmBooking) return;
+    const booking = chargeConfirmBooking;
+    setChargeConfirmBooking(null);
     setChargingId(booking.id);
 
     try {
@@ -98,19 +99,15 @@ export function BookingsManager({ initialBookings, courses }: Props) {
       });
 
       if (error) {
-        alert(`Fehler: ${error.message}`);
+        setAlertState({ title: "Fehler", description: error.message });
       } else if (data?.error) {
-        alert(`Fehler: ${data.error}`);
+        setAlertState({ title: "Fehler", description: data.error });
       } else {
-        alert(`Zahlung erfolgreich! Charge ID: ${data.chargeId}`);
-        setBookings(
-          bookings.map((b) =>
-            b.id === booking.id ? { ...b, charge_id: data.chargeId } : b
-          )
-        );
+        setAlertState({ title: "Zahlung erfolgreich", description: `50 EUR wurden erhoben. Charge ID: ${data.chargeId}` });
+        setBookings(bookings.map((b) => b.id === booking.id ? { ...b, charge_id: data.chargeId } : b));
       }
     } catch {
-      alert("Ein unerwarteter Fehler ist aufgetreten.");
+      setAlertState({ title: "Fehler", description: "Ein unerwarteter Fehler ist aufgetreten." });
     } finally {
       setChargingId(null);
     }
@@ -118,6 +115,25 @@ export function BookingsManager({ initialBookings, courses }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* Charge confirm */}
+      <ConfirmDialog
+        open={!!chargeConfirmBooking}
+        title="No-Show-Gebühr erheben"
+        description={`50 EUR für ${chargeConfirmBooking?.name} (${chargeConfirmBooking?.email}) wirklich belasten?`}
+        confirmLabel="Jetzt belasten"
+        variant="destructive"
+        onConfirm={handleChargeNoShow}
+        onCancel={() => setChargeConfirmBooking(null)}
+      />
+
+      {/* Alert */}
+      <AlertDialog
+        open={!!alertState}
+        title={alertState?.title ?? ""}
+        description={alertState?.description ?? ""}
+        onClose={() => setAlertState(null)}
+      />
+
       <h1 className="text-2xl font-bold">Buchungen</h1>
 
       <Card>
@@ -203,9 +219,7 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                     <TableCell>
                       <Select
                         value={booking.status}
-                        onValueChange={(val) =>
-                          handleStatusChange(booking.id, val as BookingStatus)
-                        }
+                        onValueChange={(val) => handleStatusChange(booking.id, val as BookingStatus)}
                       >
                         <SelectTrigger className="w-[130px] h-8">
                           <Badge variant={statusVariants[booking.status]}>
@@ -225,7 +239,7 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleChargeNoShow(booking)}
+                          onClick={() => setChargeConfirmBooking(booking)}
                           disabled={chargingId === booking.id}
                         >
                           <CreditCard className="h-4 w-4 mr-1" />
