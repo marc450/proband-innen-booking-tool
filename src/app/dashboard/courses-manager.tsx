@@ -13,7 +13,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -222,15 +221,16 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
 
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Kurse & Slots</h1>
+        <Button onClick={() => setCourseDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Neuer Kurs
+        </Button>
+      </div>
 
-        <Dialog open={courseDialogOpen} onOpenChange={(open) => {
-          setCourseDialogOpen(open);
-          if (!open) resetCourseForm();
-        }}>
-          <DialogTrigger render={<Button />}>
-            <Plus className="h-4 w-4 mr-2" />
-            Neuer Kurs
-          </DialogTrigger>
+      <Dialog open={courseDialogOpen} onOpenChange={(open) => {
+        setCourseDialogOpen(open);
+        if (!open) resetCourseForm();
+      }}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{editingCourse ? "Kurs bearbeiten" : "Neuer Kurs"}</DialogTitle>
@@ -269,7 +269,6 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
 
       {/* Duplicate Dialog */}
       <Dialog open={duplicateDialogOpen} onOpenChange={(open) => {
@@ -363,17 +362,21 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
               <CardContent>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-medium">Slots</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setSelectedCourseId(course.id); setSlotDialogOpen(true); }}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Slot
+                  </Button>
+
                   <Dialog
                     open={slotDialogOpen && selectedCourseId === course.id}
                     onOpenChange={(open) => {
                       setSlotDialogOpen(open);
-                      if (open) setSelectedCourseId(course.id);
                     }}
                   >
-                    <DialogTrigger render={<Button variant="outline" size="sm" onClick={() => setSelectedCourseId(course.id)} />}>
-                      <Plus className="h-4 w-4 mr-1" />
-                      Slot
-                    </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Neuer Slot</DialogTitle>
