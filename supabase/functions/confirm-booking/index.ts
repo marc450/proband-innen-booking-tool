@@ -23,19 +23,29 @@ serve(async (req) => {
   }
 
   try {
-    const { slotId, name, email, setupIntentId } = await req.json();
+    const { sessionId } = await req.json();
 
-    if (!slotId || !name || !email || !setupIntentId) {
+    if (!sessionId) {
       return new Response(
-        JSON.stringify({ error: "slotId, name, email, and setupIntentId are required" }),
+        JSON.stringify({ error: "sessionId is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Retrieve the SetupIntent to get customer + payment method
-    const setupIntent = await stripe.setupIntents.retrieve(setupIntentId);
+    // Retrieve the Checkout Session
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ["setup_intent"],
+    });
 
-    if (setupIntent.status !== "succeeded") {
+    if (session.status !== "complete") {
+      return new Response(
+        JSON.stringify({ error: "Checkout session is not complete" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const setupIntent = session.setup_intent as Stripe.SetupIntent;
+    if (!setupIntent || setupIntent.status !== "succeeded") {
       return new Response(
         JSON.stringify({ error: "Payment method not confirmed" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -44,6 +54,25 @@ serve(async (req) => {
 
     const customerId = setupIntent.customer as string;
     const paymentMethodId = setupIntent.payment_method as string;
+
+    // Extract booking data from session metadata
+    const {
+      slotId,
+      firstName,
+      lastName,
+      email,
+      phone,
+      addressStreet,
+      addressZip,
+      addressCity,
+    } = session.metadata || {};
+
+    if (!slotId || !firstName || !lastName || !email) {
+      return new Response(
+        JSON.stringify({ error: "Missing booking data in session metadata" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Check remaining capacity
     const { data: slot, error: slotError } = await supabase
@@ -61,12 +90,12 @@ serve(async (req) => {
 
     if (slot.remaining_capacity <= 0) {
       return new Response(
-        JSON.stringify({ error: "This slot is fully booked" }),
+        JSON.stringify({ error: "Dieser Termin ist leider bereits ausgebucht." }),
         { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check for duplicate booking
+    // Check for duplicate booking (same email + slot)
     const { data: existing } = await supabase
       .from("bookings")
       .select("id")
@@ -77,8 +106,22 @@ serve(async (req) => {
 
     if (existing) {
       return new Response(
-        JSON.stringify({ error: "You already have a booking for this slot" }),
+        JSON.stringify({ error: "Du hast bereits eine Buchung fuer diesen Termin." }),
         { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check if this session was already used to create a booking
+    const { data: existingSession } = await supabase
+      .from("bookings")
+      .select("id")
+      .eq("stripe_checkout_session_id", sessionId)
+      .maybeSingle();
+
+    if (existingSession) {
+      return new Response(
+        JSON.stringify({ booking: existingSession, alreadyExists: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -87,10 +130,17 @@ serve(async (req) => {
       .from("bookings")
       .insert({
         slot_id: slotId,
-        name,
+        name: `${firstName} ${lastName}`,
+        first_name: firstName,
+        last_name: lastName,
         email,
+        phone: phone || null,
+        address_street: addressStreet || null,
+        address_zip: addressZip || null,
+        address_city: addressCity || null,
         stripe_customer_id: customerId,
         stripe_payment_method_id: paymentMethodId,
+        stripe_checkout_session_id: sessionId,
         status: "booked",
       })
       .select()
@@ -99,7 +149,7 @@ serve(async (req) => {
     if (bookingError) {
       console.error("Booking insert error:", bookingError);
       return new Response(
-        JSON.stringify({ error: "Failed to create booking" }),
+        JSON.stringify({ error: "Buchung konnte nicht erstellt werden." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

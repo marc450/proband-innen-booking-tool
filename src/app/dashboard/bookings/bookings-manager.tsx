@@ -69,7 +69,8 @@ export function BookingsManager({ initialBookings, courses }: Props) {
     }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      if (!b.name.toLowerCase().includes(q) && !b.email.toLowerCase().includes(q)) {
+      const fullName = `${b.first_name || ""} ${b.last_name || ""} ${b.name || ""}`.toLowerCase();
+      if (!fullName.includes(q) && !b.email.toLowerCase().includes(q) && !(b.phone || "").toLowerCase().includes(q)) {
         return false;
       }
     }
@@ -199,6 +200,7 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>E-Mail</TableHead>
+                  <TableHead>Telefon</TableHead>
                   <TableHead>Kurs</TableHead>
                   <TableHead>Termin</TableHead>
                   <TableHead>Status</TableHead>
@@ -208,8 +210,13 @@ export function BookingsManager({ initialBookings, courses }: Props) {
               <TableBody>
                 {filteredBookings.map((booking) => (
                   <TableRow key={booking.id}>
-                    <TableCell className="font-medium">{booking.name}</TableCell>
+                    <TableCell className="font-medium">
+                      {booking.first_name && booking.last_name
+                        ? `${booking.first_name} ${booking.last_name}`
+                        : booking.name}
+                    </TableCell>
                     <TableCell>{booking.email}</TableCell>
+                    <TableCell className="text-sm">{booking.phone || ""}</TableCell>
                     <TableCell>{booking.slots?.courses?.title || "—"}</TableCell>
                     <TableCell>
                       {booking.slots?.start_time

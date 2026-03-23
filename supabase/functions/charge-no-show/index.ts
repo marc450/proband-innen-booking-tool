@@ -76,21 +76,35 @@ serve(async (req) => {
       );
     }
 
-    // Charge €50 off-session
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: 5000,
-      currency: "eur",
-      customer: booking.stripe_customer_id,
-      payment_method: booking.stripe_payment_method_id,
-      off_session: true,
-      confirm: true,
-      description: `No-show fee for booking ${bookingId}`,
+    // Set default payment method on customer for invoice auto-payment
+    await stripe.customers.update(booking.stripe_customer_id, {
+      invoice_settings: {
+        default_payment_method: booking.stripe_payment_method_id,
+      },
     });
 
-    // Update booking with charge ID
+    // Create invoice item
+    await stripe.invoiceItems.create({
+      customer: booking.stripe_customer_id,
+      amount: 5000,
+      currency: "eur",
+      description: `No-Show-Gebühr / No-show fee (Booking ${bookingId})`,
+    });
+
+    // Create, finalize, and pay the invoice
+    const invoice = await stripe.invoices.create({
+      customer: booking.stripe_customer_id,
+      auto_advance: true,
+      collection_method: "charge_automatically",
+    });
+
+    const finalizedInvoice = await stripe.invoices.finalizeInvoice(invoice.id);
+    const paidInvoice = await stripe.invoices.pay(finalizedInvoice.id);
+
+    // Update booking with invoice ID
     const { error: updateError } = await supabase
       .from("bookings")
-      .update({ charge_id: paymentIntent.id })
+      .update({ charge_id: paidInvoice.id })
       .eq("id", bookingId);
 
     if (updateError) {
@@ -100,8 +114,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        chargeId: paymentIntent.id,
-        status: paymentIntent.status,
+        chargeId: paidInvoice.id,
+        invoiceUrl: paidInvoice.hosted_invoice_url,
+        status: paidInvoice.status,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

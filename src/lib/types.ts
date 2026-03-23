@@ -20,6 +20,7 @@ export interface Slot {
 export interface AvailableSlot extends Slot {
   course_title: string;
   course_description: string | null;
+  course_date: string | null;
   remaining_capacity: number;
 }
 
@@ -27,9 +28,16 @@ export interface Booking {
   id: string;
   slot_id: string;
   name: string;
+  first_name: string | null;
+  last_name: string | null;
   email: string;
+  phone: string | null;
+  address_street: string | null;
+  address_zip: string | null;
+  address_city: string | null;
   stripe_customer_id: string | null;
   stripe_payment_method_id: string | null;
+  stripe_checkout_session_id: string | null;
   status: BookingStatus;
   charge_id: string | null;
   created_at: string;

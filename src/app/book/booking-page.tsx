@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Elements } from "@stripe/react-stripe-js";
-import { stripePromise } from "@/lib/stripe";
 import { AvailableSlot, Course } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +16,6 @@ interface BookingPageProps {
 
 export function BookingPage({ courses, slots }: BookingPageProps) {
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
-  const [bookingComplete, setBookingComplete] = useState(false);
 
   // Group slots by course
   const slotsByCourse = courses
@@ -28,30 +25,13 @@ export function BookingPage({ courses, slots }: BookingPageProps) {
     }))
     .filter((group) => group.slots.length > 0);
 
-  if (bookingComplete) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
-            <CardTitle className="text-green-600 text-2xl">Buchung bestätigt!</CardTitle>
-            <CardDescription className="text-base mt-2">
-              Vielen Dank für Ihre Buchung. Sie erhalten eine Bestätigung per E-Mail.
-              Bitte beachten Sie: Bei Nichterscheinen oder Absage weniger als 24 Stunden
-              vor dem Termin wird eine Gebühr von 50 EUR erhoben.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <h1 className="text-2xl font-bold">EPHIA Proband:innen-Buchung</h1>
           <p className="text-muted-foreground mt-1">
-            Buchen Sie Ihren Behandlungstermin für unsere ästhetischen Schulungskurse
+            Buche Deinen Behandlungstermin fuer unsere aesthetischen Schulungskurse
           </p>
         </div>
       </header>
@@ -63,7 +43,7 @@ export function BookingPage({ courses, slots }: BookingPageProps) {
               onClick={() => setSelectedSlot(null)}
               className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-1"
             >
-              &larr; Zurück zur Übersicht
+              &larr; Zurueck zur Uebersicht
             </button>
             <Card className="mb-6">
               <CardHeader>
@@ -81,19 +61,14 @@ export function BookingPage({ courses, slots }: BookingPageProps) {
               </CardHeader>
             </Card>
 
-            <Elements stripe={stripePromise}>
-              <BookingForm
-                slot={selectedSlot}
-                onComplete={() => setBookingComplete(true)}
-              />
-            </Elements>
+            <BookingForm slot={selectedSlot} />
           </div>
         ) : (
           <div className="space-y-8">
             {slotsByCourse.length === 0 && (
               <Card>
                 <CardContent className="py-12 text-center text-muted-foreground">
-                  Derzeit sind keine Termine verfügbar.
+                  Derzeit sind keine Termine verfuegbar.
                 </CardContent>
               </Card>
             )}
@@ -128,7 +103,7 @@ export function BookingPage({ courses, slots }: BookingPageProps) {
                           <div className="flex items-center gap-2">
                             <Users className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm text-muted-foreground">
-                              {slot.remaining_capacity} Plätze frei
+                              {slot.remaining_capacity} {slot.remaining_capacity === 1 ? "Platz" : "Plaetze"} frei
                             </span>
                           </div>
                         </div>
