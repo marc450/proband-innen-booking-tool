@@ -80,7 +80,7 @@ serve(async (req) => {
     // Get customer details from Stripe
     const customer = session.customer as Stripe.Customer;
     const email = customer.email || session.customer_details?.email || "";
-    const phone = customer.phone || session.customer_details?.phone || "";
+    const phone = session.metadata?.phone || customer.phone || session.customer_details?.phone || "";
     const fullName = customer.name || session.customer_details?.name || "";
     const nameParts = fullName.split(" ");
     const firstName = nameParts[0] || "";

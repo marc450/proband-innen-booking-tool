@@ -17,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    const { slotId, successUrl, cancelUrl } = await req.json();
+    const { slotId, phone, successUrl, cancelUrl } = await req.json();
 
     if (!slotId) {
       return new Response(
@@ -32,7 +32,6 @@ serve(async (req) => {
       mode: "setup",
       payment_method_types: ["card", "klarna"],
       billing_address_collection: "required",
-      phone_number_collection: { enabled: true },
       custom_text: {
         submit: {
           message:
@@ -41,6 +40,7 @@ serve(async (req) => {
       },
       metadata: {
         slotId,
+        phone: phone || "",
       },
       success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl,

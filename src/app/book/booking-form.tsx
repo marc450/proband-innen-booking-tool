@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AvailableSlot } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -14,6 +15,7 @@ interface BookingFormProps {
 export function BookingForm({ slot }: BookingFormProps) {
   const supabase = createClient();
 
+  const [phone, setPhone] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +33,7 @@ export function BookingForm({ slot }: BookingFormProps) {
         {
           body: {
             slotId: slot.id,
+            phone,
             successUrl: `${origin}/book/success`,
             cancelUrl: `${origin}/book`,
           },
@@ -63,6 +66,18 @@ export function BookingForm({ slot }: BookingFormProps) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <Label htmlFor="phone">Telefon</Label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="+49 123 456789"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+            />
+          </div>
+
           <div className="flex items-start gap-2">
             <input
               type="checkbox"
