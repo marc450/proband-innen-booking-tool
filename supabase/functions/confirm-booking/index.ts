@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY")!;
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -134,6 +135,99 @@ serve(async (req) => {
         JSON.stringify({ error: "Buchung konnte nicht erstellt werden." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Fetch slot + course details for the email
+    const { data: slotInfo } = await supabase
+      .from("slots")
+      .select("start_time, courses(title, course_date)")
+      .eq("id", slotId)
+      .single();
+
+    const courseTitle = slotInfo?.courses?.title || "Kurs";
+    const courseDate = slotInfo?.courses?.course_date || "";
+    const startTime = slotInfo?.start_time || "";
+
+    // Format date and time for email
+    let formattedDate = courseDate;
+    let formattedTime = "";
+    try {
+      if (courseDate) {
+        formattedDate = new Date(courseDate).toLocaleDateString("de-DE", {
+          weekday: "long", day: "numeric", month: "long", year: "numeric"
+        });
+      }
+      if (startTime) {
+        formattedTime = new Date(startTime).toLocaleTimeString("de-DE", {
+          hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin"
+        }) + " Uhr";
+      }
+    } catch (_) { /* keep raw values */ }
+
+    // Send confirmation email via Resend
+    if (email && RESEND_API_KEY) {
+      try {
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: "EPHIA <customerlove@ephia.de>",
+            to: [email],
+            subject: `Buchungsbestaetigung: ${courseTitle}`,
+            html: `
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+                <div style="text-align: center; margin-bottom: 32px;">
+                  <h1 style="font-size: 24px; font-weight: 700; color: #1a1a1a; margin: 0;">EPHIA</h1>
+                </div>
+                <div style="background: #ffffff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 32px;">
+                  <h2 style="font-size: 20px; color: #1a1a1a; margin: 0 0 8px 0;">Hallo ${firstName}!</h2>
+                  <p style="color: #525252; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
+                    Deine Buchung wurde erfolgreich bestaetigt. Hier sind Deine Details:
+                  </p>
+                  <div style="background: #fafafa; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                      <tr>
+                        <td style="padding: 8px 0; color: #737373; font-size: 14px;">Kurs</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600; text-align: right;">${courseTitle}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; color: #737373; font-size: 14px;">Datum</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600; text-align: right;">${formattedDate}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; color: #737373; font-size: 14px;">Uhrzeit</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600; text-align: right;">${formattedTime}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; color: #737373; font-size: 14px;">Name</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600; text-align: right;">${fullName}</td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+                    <p style="color: #9a3412; font-size: 14px; line-height: 1.5; margin: 0;">
+                      <strong>Wichtiger Hinweis:</strong> Bei Nichterscheinen oder Absage weniger als 24 Stunden vor dem Termin wird eine Gebuehr von 50 EUR erhoben.
+                    </p>
+                  </div>
+                  <p style="color: #525252; font-size: 14px; line-height: 1.6; margin: 0;">
+                    Wir freuen uns auf Dich!<br>
+                    Dein EPHIA Team
+                  </p>
+                </div>
+                <div style="text-align: center; margin-top: 24px;">
+                  <p style="color: #a3a3a3; font-size: 12px; margin: 0;">EPHIA Medical GmbH</p>
+                </div>
+              </div>
+            `,
+          }),
+        });
+      } catch (emailErr) {
+        // Don't fail the booking if email fails
+        console.error("Failed to send confirmation email:", emailErr);
+      }
     }
 
     return new Response(

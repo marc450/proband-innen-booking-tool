@@ -36,7 +36,7 @@ serve(async (req) => {
       custom_text: {
         submit: {
           message:
-            "Du wirst jetzt NICHT belastet. Wir speichern Deine Zahlungsdaten nur fuer den Fall einer No-Show-Gebuehr (50 EUR) bei Nichterscheinen oder Absage weniger als 24h vor dem Termin.",
+            "Du wirst jetzt NICHT belastet. Wir speichern Deine Zahlungsdaten nur fuer den Fall einer No-Show-Gebuehr (50 EUR) bei Nichterscheinen oder Absage weniger als 24h vor dem Termin. Debit- und Kreditkarten werden akzeptiert.",
         },
       },
       metadata: {
