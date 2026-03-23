@@ -17,64 +17,22 @@ serve(async (req) => {
   }
 
   try {
-    const {
-      firstName,
-      lastName,
-      email,
-      phone,
-      addressStreet,
-      addressZip,
-      addressCity,
-      slotId,
-      successUrl,
-      cancelUrl,
-    } = await req.json();
+    const { slotId, successUrl, cancelUrl } = await req.json();
 
-    if (!firstName || !lastName || !email || !phone || !slotId) {
+    if (!slotId) {
       return new Response(
-        JSON.stringify({ error: "Alle Pflichtfelder muessen ausgefuellt sein" }),
+        JSON.stringify({ error: "slotId is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check if customer already exists by email
-    const existingCustomers = await stripe.customers.list({
-      email,
-      limit: 1,
-    });
-
-    let customer;
-    if (existingCustomers.data.length > 0) {
-      customer = await stripe.customers.update(existingCustomers.data[0].id, {
-        name: `${firstName} ${lastName}`,
-        email,
-        phone,
-        address: {
-          line1: addressStreet || "",
-          postal_code: addressZip || "",
-          city: addressCity || "",
-          country: "DE",
-        },
-      });
-    } else {
-      customer = await stripe.customers.create({
-        name: `${firstName} ${lastName}`,
-        email,
-        phone,
-        address: {
-          line1: addressStreet || "",
-          postal_code: addressZip || "",
-          city: addressCity || "",
-          country: "DE",
-        },
-      });
-    }
-
     // Create Checkout Session in setup mode
+    // Stripe collects name, email, phone, and billing address
     const session = await stripe.checkout.sessions.create({
       mode: "setup",
-      customer: customer.id,
       payment_method_types: ["card", "klarna"],
+      billing_address_collection: "required",
+      phone_number_collection: { enabled: true },
       custom_text: {
         submit: {
           message:
@@ -83,13 +41,6 @@ serve(async (req) => {
       },
       metadata: {
         slotId,
-        firstName,
-        lastName,
-        email,
-        phone,
-        addressStreet: addressStreet || "",
-        addressZip: addressZip || "",
-        addressCity: addressCity || "",
       },
       success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl,

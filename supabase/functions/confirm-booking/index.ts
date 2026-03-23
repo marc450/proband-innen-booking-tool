@@ -32,9 +32,23 @@ serve(async (req) => {
       );
     }
 
-    // Retrieve the Checkout Session
+    // Check if this session was already used to create a booking
+    const { data: existingSession } = await supabase
+      .from("bookings")
+      .select("id")
+      .eq("stripe_checkout_session_id", sessionId)
+      .maybeSingle();
+
+    if (existingSession) {
+      return new Response(
+        JSON.stringify({ booking: existingSession, alreadyExists: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Retrieve the Checkout Session with customer data
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ["setup_intent"],
+      expand: ["setup_intent", "customer"],
     });
 
     if (session.status !== "complete") {
@@ -54,25 +68,24 @@ serve(async (req) => {
 
     const customerId = setupIntent.customer as string;
     const paymentMethodId = setupIntent.payment_method as string;
+    const slotId = session.metadata?.slotId;
 
-    // Extract booking data from session metadata
-    const {
-      slotId,
-      firstName,
-      lastName,
-      email,
-      phone,
-      addressStreet,
-      addressZip,
-      addressCity,
-    } = session.metadata || {};
-
-    if (!slotId || !firstName || !lastName || !email) {
+    if (!slotId) {
       return new Response(
-        JSON.stringify({ error: "Missing booking data in session metadata" }),
+        JSON.stringify({ error: "Missing slotId in session metadata" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Get customer details from Stripe
+    const customer = session.customer as Stripe.Customer;
+    const email = customer.email || session.customer_details?.email || "";
+    const phone = customer.phone || session.customer_details?.phone || "";
+    const fullName = customer.name || session.customer_details?.name || "";
+    const nameParts = fullName.split(" ");
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ") || "";
+    const address = customer.address || session.customer_details?.address;
 
     // Check remaining capacity
     const { data: slot, error: slotError } = await supabase
@@ -96,33 +109,21 @@ serve(async (req) => {
     }
 
     // Check for duplicate booking (same email + slot)
-    const { data: existing } = await supabase
-      .from("bookings")
-      .select("id")
-      .eq("slot_id", slotId)
-      .eq("email", email)
-      .in("status", ["booked", "attended"])
-      .maybeSingle();
+    if (email) {
+      const { data: existing } = await supabase
+        .from("bookings")
+        .select("id")
+        .eq("slot_id", slotId)
+        .eq("email", email)
+        .in("status", ["booked", "attended"])
+        .maybeSingle();
 
-    if (existing) {
-      return new Response(
-        JSON.stringify({ error: "Du hast bereits eine Buchung fuer diesen Termin." }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Check if this session was already used to create a booking
-    const { data: existingSession } = await supabase
-      .from("bookings")
-      .select("id")
-      .eq("stripe_checkout_session_id", sessionId)
-      .maybeSingle();
-
-    if (existingSession) {
-      return new Response(
-        JSON.stringify({ booking: existingSession, alreadyExists: true }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      if (existing) {
+        return new Response(
+          JSON.stringify({ error: "Du hast bereits eine Buchung fuer diesen Termin." }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Create booking
@@ -130,14 +131,14 @@ serve(async (req) => {
       .from("bookings")
       .insert({
         slot_id: slotId,
-        name: `${firstName} ${lastName}`,
+        name: fullName,
         first_name: firstName,
         last_name: lastName,
         email,
         phone: phone || null,
-        address_street: addressStreet || null,
-        address_zip: addressZip || null,
-        address_city: addressCity || null,
+        address_street: address?.line1 || null,
+        address_zip: address?.postal_code || null,
+        address_city: address?.city || null,
         stripe_customer_id: customerId,
         stripe_payment_method_id: paymentMethodId,
         stripe_checkout_session_id: sessionId,
