@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/dashboard", label: "Kurse" },
   { href: "/dashboard/bookings", label: "Buchungen" },
+  { href: "/dashboard/patients", label: "Proband:innen" },
 ];
 
 export function DashboardNav({ userEmail }: { userEmail: string }) {
@@ -35,7 +36,7 @@ export function DashboardNav({ userEmail }: { userEmail: string }) {
                 href={item.href}
                 className={cn(
                   "text-sm transition-colors",
-                  pathname === item.href
+                  (item.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(item.href))
                     ? "text-foreground font-medium"
                     : "text-muted-foreground hover:text-foreground"
                 )}

@@ -43,6 +43,24 @@ export interface Booking {
   created_at: string;
 }
 
+export interface Patient {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  address_street: string | null;
+  address_zip: string | null;
+  address_city: string | null;
+  stripe_customer_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PatientWithBookings extends Patient {
+  bookings: BookingWithDetails[];
+}
+
 export interface BookingWithDetails extends Booking {
   slots: {
     start_time: string;

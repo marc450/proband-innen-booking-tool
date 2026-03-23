@@ -100,6 +100,26 @@ serve(async (req) => {
     const lastName = nameParts.slice(1).join(" ") || "";
     const address = cd.address || {};
 
+    // Upsert patient profile (create or update by email)
+    let patientId: string | null = null;
+    if (email) {
+      const { data: pid, error: patientErr } = await supabase.rpc("upsert_patient", {
+        p_email: email,
+        p_first_name: firstName || null,
+        p_last_name: lastName || null,
+        p_phone: phone || null,
+        p_address_street: address.line1 || null,
+        p_address_zip: address.postal_code || null,
+        p_address_city: address.city || null,
+        p_stripe_customer_id: customerId || null,
+      });
+      if (!patientErr && pid) {
+        patientId = pid;
+      } else {
+        console.error("Patient upsert error:", patientErr);
+      }
+    }
+
     // Atomically create booking (locks slot row, checks capacity + duplicates)
     const { data: bookingId, error: rpcError } = await supabase.rpc("create_booking", {
       p_slot_id: slotId,
@@ -135,6 +155,14 @@ serve(async (req) => {
         JSON.stringify({ error: "Buchung konnte nicht erstellt werden." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Link booking to patient
+    if (patientId && bookingId) {
+      await supabase
+        .from("bookings")
+        .update({ patient_id: patientId })
+        .eq("id", bookingId);
     }
 
     // Fetch slot + course details for the email
