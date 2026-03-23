@@ -1,10 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Patient, BookingWithDetails, BookingStatus } from "@/lib/types";
+import { Patient, BookingWithDetails, BookingStatus, PatientStatus } from "@/lib/types";
+import { createClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -15,20 +24,26 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { ArrowLeft, Mail, Phone, MapPin } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, AlertTriangle, Ban } from "lucide-react";
 
-const statusLabels: Record<BookingStatus, string> = {
+const bookingStatusLabels: Record<BookingStatus, string> = {
   booked: "Gebucht",
   attended: "Erschienen",
   no_show: "No-Show",
   cancelled: "Storniert",
 };
 
-const statusVariants: Record<BookingStatus, "default" | "secondary" | "destructive" | "outline"> = {
+const bookingStatusVariants: Record<BookingStatus, "default" | "secondary" | "destructive" | "outline"> = {
   booked: "default",
   attended: "secondary",
   no_show: "destructive",
   cancelled: "outline",
+};
+
+const patientStatusLabels: Record<PatientStatus, string> = {
+  active: "Aktiv",
+  warning: "Warnung",
+  blacklist: "Blacklist",
 };
 
 interface Props {
@@ -37,12 +52,23 @@ interface Props {
 }
 
 export function PatientDetail({ patient, bookings }: Props) {
+  const [status, setStatus] = useState<PatientStatus>(patient.patient_status);
+  const supabase = createClient();
+
   const fullName = [patient.first_name, patient.last_name].filter(Boolean).join(" ") || patient.email;
   const address = [patient.address_street, [patient.address_zip, patient.address_city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
 
   const totalBookings = bookings.length;
   const attended = bookings.filter((b) => b.status === "attended").length;
   const noShows = bookings.filter((b) => b.status === "no_show").length;
+
+  const handleStatusChange = async (newStatus: PatientStatus) => {
+    setStatus(newStatus);
+    await supabase
+      .from("patients")
+      .update({ patient_status: newStatus })
+      .eq("id", patient.id);
+  };
 
   return (
     <div className="space-y-6">
@@ -55,11 +81,45 @@ export function PatientDetail({ patient, bookings }: Props) {
         </Link>
       </div>
 
+      {/* Warning/Blacklist banner */}
+      {status === "warning" && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <AlertTriangle className="h-4 w-4" />
+          Diese:r Proband:in wurde mit einer Warnung markiert.
+        </div>
+      )}
+      {status === "blacklist" && (
+        <div className="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <Ban className="h-4 w-4" />
+          Diese:r Proband:in befindet sich auf der Blacklist.
+        </div>
+      )}
+
       <div className="grid gap-6 md:grid-cols-3">
         {/* Patient info */}
         <Card className="md:col-span-2">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-xl">{fullName}</CardTitle>
+            <Select value={status} onValueChange={(val) => handleStatusChange(val as PatientStatus)}>
+              <SelectTrigger className="w-[140px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Aktiv</SelectItem>
+                <SelectItem value="warning">
+                  <span className="flex items-center gap-1.5">
+                    <AlertTriangle className="h-3 w-3 text-amber-600" />
+                    Warnung
+                  </span>
+                </SelectItem>
+                <SelectItem value="blacklist">
+                  <span className="flex items-center gap-1.5">
+                    <Ban className="h-3 w-3 text-red-600" />
+                    Blacklist
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-2 text-sm">
@@ -142,8 +202,8 @@ export function PatientDetail({ patient, bookings }: Props) {
                         : ""}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={statusVariants[booking.status]}>
-                        {statusLabels[booking.status]}
+                      <Badge variant={bookingStatusVariants[booking.status]}>
+                        {bookingStatusLabels[booking.status]}
                       </Badge>
                     </TableCell>
                     <TableCell>

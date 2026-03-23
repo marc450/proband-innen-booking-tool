@@ -43,6 +43,8 @@ export interface Booking {
   created_at: string;
 }
 
+export type PatientStatus = "active" | "warning" | "blacklist";
+
 export interface Patient {
   id: string;
   email: string;
@@ -53,6 +55,7 @@ export interface Patient {
   address_zip: string | null;
   address_city: string | null;
   stripe_customer_id: string | null;
+  patient_status: PatientStatus;
   created_at: string;
   updated_at: string;
 }

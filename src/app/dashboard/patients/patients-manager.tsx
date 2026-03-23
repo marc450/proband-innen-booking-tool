@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Patient } from "@/lib/types";
+import { useRouter } from "next/navigation";
+import { Patient, PatientStatus } from "@/lib/types";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -21,8 +22,21 @@ interface Props {
   initialPatients: Patient[];
 }
 
+const statusLabels: Record<PatientStatus, string> = {
+  active: "Aktiv",
+  warning: "Warnung",
+  blacklist: "Blacklist",
+};
+
+const statusBadgeVariants: Record<PatientStatus, "default" | "secondary" | "destructive" | "outline"> = {
+  active: "outline",
+  warning: "secondary",
+  blacklist: "destructive",
+};
+
 export function PatientsManager({ initialPatients }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
 
   const filteredPatients = initialPatients.filter((p) => {
     if (!searchQuery) return true;
@@ -67,19 +81,22 @@ export function PatientsManager({ initialPatients }: Props) {
                   <TableHead>E-Mail</TableHead>
                   <TableHead>Telefon</TableHead>
                   <TableHead>Ort</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Erstellt am</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredPatients.map((patient) => (
-                  <TableRow key={patient.id} className="cursor-pointer hover:bg-muted/50">
+                  <TableRow
+                    key={patient.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => router.push(`/dashboard/patients/${patient.id}`)}
+                  >
                     <TableCell className="font-medium">
-                      <Link href={`/dashboard/patients/${patient.id}`} className="hover:underline">
-                        {patient.first_name || patient.last_name
-                          ? `${patient.first_name || ""} ${patient.last_name || ""}`.trim()
-                          : patient.email}
-                      </Link>
+                      {patient.first_name || patient.last_name
+                        ? `${patient.first_name || ""} ${patient.last_name || ""}`.trim()
+                        : patient.email}
                     </TableCell>
                     <TableCell>{patient.email}</TableCell>
                     <TableCell>{patient.phone || ""}</TableCell>
@@ -89,12 +106,17 @@ export function PatientsManager({ initialPatients }: Props) {
                         : ""}
                     </TableCell>
                     <TableCell>
+                      {patient.patient_status !== "active" && (
+                        <Badge variant={statusBadgeVariants[patient.patient_status]}>
+                          {statusLabels[patient.patient_status]}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       {format(new Date(patient.created_at), "dd.MM.yyyy", { locale: de })}
                     </TableCell>
                     <TableCell>
-                      <Link href={`/dashboard/patients/${patient.id}`}>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      </Link>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </TableCell>
                   </TableRow>
                 ))}
