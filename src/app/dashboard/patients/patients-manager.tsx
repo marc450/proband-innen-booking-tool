@@ -2,10 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { Patient, PatientStatus } from "@/lib/types";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -16,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Search, ChevronRight } from "lucide-react";
+import { Search, ChevronRight, AlertTriangle, Ban } from "lucide-react";
 
 interface Props {
   initialPatients: Patient[];
@@ -35,10 +42,20 @@ const statusBadgeVariants: Record<PatientStatus, "default" | "secondary" | "dest
 };
 
 export function PatientsManager({ initialPatients }: Props) {
+  const [patients, setPatients] = useState(initialPatients);
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
+  const supabase = createClient();
 
-  const filteredPatients = initialPatients.filter((p) => {
+  const handleStatusChange = async (patientId: string, newStatus: PatientStatus) => {
+    setPatients((prev) => prev.map((p) => p.id === patientId ? { ...p, patient_status: newStatus } : p));
+    await supabase
+      .from("patients")
+      .update({ patient_status: newStatus })
+      .eq("id", patientId);
+  };
+
+  const filteredPatients = patients.filter((p) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     const fullName = `${p.first_name || ""} ${p.last_name || ""}`.toLowerCase();
@@ -105,12 +122,30 @@ export function PatientsManager({ initialPatients }: Props) {
                         ? `${patient.address_zip || ""} ${patient.address_city}`.trim()
                         : ""}
                     </TableCell>
-                    <TableCell>
-                      {patient.patient_status !== "active" && (
-                        <Badge variant={statusBadgeVariants[patient.patient_status]}>
-                          {statusLabels[patient.patient_status]}
-                        </Badge>
-                      )}
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Select
+                        value={patient.patient_status}
+                        onValueChange={(val) => handleStatusChange(patient.id, val as PatientStatus)}
+                      >
+                        <SelectTrigger className="w-[120px] h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Aktiv</SelectItem>
+                          <SelectItem value="warning">
+                            <span className="flex items-center gap-1.5">
+                              <AlertTriangle className="h-3 w-3 text-amber-600" />
+                              Warnung
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="blacklist">
+                            <span className="flex items-center gap-1.5">
+                              <Ban className="h-3 w-3 text-red-600" />
+                              Blacklist
+                            </span>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell>
                       {format(new Date(patient.created_at), "dd.MM.yyyy", { locale: de })}
