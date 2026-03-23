@@ -2,26 +2,38 @@ export const dynamic = "force-dynamic";
 
 import { createClient } from "@/lib/supabase/server";
 import { AvailableSlot, Course } from "@/lib/types";
-import { CoursesOverview } from "./courses-overview";
+import { SlotSelection } from "./slot-selection";
+import { notFound } from "next/navigation";
 
-export default async function BookPage() {
+export default async function CourseBookingPage({
+  params,
+}: {
+  params: Promise<{ courseId: string }>;
+}) {
+  const { courseId } = await params;
   const supabase = await createClient();
 
-  const { data: courses } = await supabase
+  const { data: course } = await supabase
     .from("courses")
     .select("*")
-    .order("course_date", { ascending: true });
+    .eq("id", courseId)
+    .single();
+
+  if (!course) {
+    notFound();
+  }
 
   const { data: slots } = await supabase
     .from("available_slots")
     .select("*")
+    .eq("course_id", courseId)
     .gt("remaining_capacity", 0)
     .gt("start_time", new Date().toISOString())
     .order("start_time", { ascending: true });
 
   return (
-    <CoursesOverview
-      courses={(courses as Course[]) || []}
+    <SlotSelection
+      course={course as Course}
       slots={(slots as AvailableSlot[]) || []}
     />
   );

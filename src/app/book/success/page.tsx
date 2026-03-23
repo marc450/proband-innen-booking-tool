@@ -7,7 +7,7 @@ export default function BookingSuccessPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
           <Card className="max-w-md w-full">
             <CardHeader className="text-center">
               <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mx-auto mb-4" />

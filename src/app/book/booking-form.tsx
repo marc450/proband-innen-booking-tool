@@ -60,9 +60,9 @@ export function BookingForm({ slot }: BookingFormProps) {
   };
 
   return (
-    <Card>
+    <Card className="shadow-sm">
       <CardHeader>
-        <CardTitle>Termin buchen</CardTitle>
+        <CardTitle className="text-base">Termin buchen</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">

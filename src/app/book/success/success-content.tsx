@@ -46,7 +46,7 @@ export function SuccessContent() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardHeader className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mx-auto mb-4" />
@@ -62,7 +62,7 @@ export function SuccessContent() {
 
   if (status === "error") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardHeader className="text-center">
             <XCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
@@ -77,11 +77,11 @@ export function SuccessContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
-          <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
-          <CardTitle className="text-green-600 text-2xl">Buchung bestaetigt!</CardTitle>
+          <CheckCircle className="h-12 w-12 text-primary mx-auto mb-4" />
+          <CardTitle className="text-primary text-2xl">Buchung bestaetigt!</CardTitle>
           <CardDescription className="text-base mt-2">
             Vielen Dank fuer Deine Buchung. Du erhaeltst eine Bestaetigung per E-Mail.
             Bitte beachte: Bei Nichterscheinen oder Absage weniger als 24 Stunden

@@ -26,17 +26,17 @@ export function BookingPage({ courses, slots }: BookingPageProps) {
     .filter((group) => group.slots.length > 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <h1 className="text-2xl font-bold">EPHIA Proband:innen-Buchung</h1>
-          <p className="text-muted-foreground mt-1">
-            Buche Deinen Behandlungstermin fuer unsere aesthetischen Schulungskurse
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
+        <div className="max-w-lg mx-auto px-4 py-5">
+          <h1 className="text-lg font-semibold tracking-tight">EPHIA Proband:innen-Buchung</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Buche Deinen Behandlungstermin
           </p>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-lg mx-auto px-4 py-8">
         {selectedSlot ? (
           <div>
             <button
@@ -45,16 +45,16 @@ export function BookingPage({ courses, slots }: BookingPageProps) {
             >
               &larr; Zurueck zur Uebersicht
             </button>
-            <Card className="mb-6">
+            <Card className="mb-6 shadow-sm">
               <CardHeader>
-                <CardTitle>{selectedSlot.course_title}</CardTitle>
-                <CardDescription className="flex items-center gap-4 mt-2">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
+                <CardTitle className="text-base">{selectedSlot.course_title}</CardTitle>
+                <CardDescription className="flex items-center gap-4 mt-1">
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5" />
                     {format(new Date(selectedSlot.start_time), "dd. MMMM yyyy", { locale: de })}
                   </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" />
                     {format(new Date(selectedSlot.start_time), "HH:mm")} Uhr
                   </span>
                 </CardDescription>
@@ -64,9 +64,9 @@ export function BookingPage({ courses, slots }: BookingPageProps) {
             <BookingForm slot={selectedSlot} />
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {slotsByCourse.length === 0 && (
-              <Card>
+              <Card className="shadow-sm">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   Derzeit sind keine Termine verfuegbar.
                 </CardContent>
@@ -75,39 +75,39 @@ export function BookingPage({ courses, slots }: BookingPageProps) {
 
             {slotsByCourse.map(({ course, slots: courseSlots }) => (
               <div key={course.id}>
-                <h2 className="text-xl font-semibold mb-3">{course.title}</h2>
+                <h2 className="text-base font-semibold mb-2">{course.title}</h2>
                 {course.description && (
-                  <p className="text-muted-foreground mb-4">{course.description}</p>
+                  <p className="text-sm text-muted-foreground mb-3">{course.description}</p>
                 )}
-                <div className="grid gap-3">
+                <div className="grid gap-2">
                   {courseSlots.map((slot) => (
                     <Card
                       key={slot.id}
-                      className="cursor-pointer hover:border-primary transition-colors"
+                      className="cursor-pointer shadow-sm hover:shadow-md hover:border-primary/50 transition-all"
                       onClick={() => setSelectedSlot(slot)}
                     >
-                      <CardContent className="flex items-center justify-between py-4">
-                        <div className="flex items-center gap-6">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">
+                      <CardContent className="flex items-center justify-between py-3.5 px-4">
+                        <div className="flex items-center gap-5">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-sm font-medium">
                               {format(new Date(slot.start_time), "dd.MM.yyyy")}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span>
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-sm">
                               {format(new Date(slot.start_time), "HH:mm")} Uhr
                             </span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">
                               {slot.remaining_capacity} {slot.remaining_capacity === 1 ? "Platz" : "Plaetze"} frei
                             </span>
                           </div>
                         </div>
-                        <Badge variant="outline">Buchen</Badge>
+                        <Badge variant="outline" className="text-xs border-primary/30 text-primary">Buchen</Badge>
                       </CardContent>
                     </Card>
                   ))}

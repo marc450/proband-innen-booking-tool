@@ -1,10 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import Stripe from "https://esm.sh/stripe@14.14.0?target=deno";
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
-  apiVersion: "2023-10-16",
-});
+const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY")!;
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -16,6 +13,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+async function stripeGet(path: string) {
+  const res = await fetch(`https://api.stripe.com/v1${path}`, {
+    headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}` },
+  });
+  return res.json();
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -46,10 +50,8 @@ serve(async (req) => {
       );
     }
 
-    // Retrieve the Checkout Session with customer data
-    const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ["setup_intent", "customer"],
-    });
+    // Retrieve Checkout Session via REST API
+    const session = await stripeGet(`/checkout/sessions/${sessionId}`);
 
     if (session.status !== "complete") {
       return new Response(
@@ -58,16 +60,26 @@ serve(async (req) => {
       );
     }
 
-    const setupIntent = session.setup_intent as Stripe.SetupIntent;
-    if (!setupIntent || setupIntent.status !== "succeeded") {
+    // Retrieve SetupIntent separately
+    const setupIntentId = session.setup_intent;
+    if (!setupIntentId) {
+      return new Response(
+        JSON.stringify({ error: "No setup intent found" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const setupIntent = await stripeGet(`/setup_intents/${setupIntentId}`);
+
+    if (setupIntent.status !== "succeeded") {
       return new Response(
         JSON.stringify({ error: "Payment method not confirmed" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const customerId = setupIntent.customer as string;
-    const paymentMethodId = setupIntent.payment_method as string;
+    const customerId = setupIntent.customer;
+    const paymentMethodId = setupIntent.payment_method;
     const slotId = session.metadata?.slotId;
 
     if (!slotId) {
@@ -77,78 +89,47 @@ serve(async (req) => {
       );
     }
 
-    // Get customer details from Stripe
-    const customer = session.customer as Stripe.Customer;
-    const email = customer.email || session.customer_details?.email || "";
-    const phone = session.metadata?.phone || customer.phone || session.customer_details?.phone || "";
-    const fullName = customer.name || session.customer_details?.name || "";
+    // Get customer details from session (in setup mode, data is in customer_details)
+    const cd = session.customer_details || {};
+    const email = cd.email || "";
+    const phone = session.metadata?.phone || cd.phone || "";
+    const fullName = cd.name || "";
     const nameParts = fullName.split(" ");
     const firstName = nameParts[0] || "";
     const lastName = nameParts.slice(1).join(" ") || "";
-    const address = customer.address || session.customer_details?.address;
+    const address = cd.address || {};
 
-    // Check remaining capacity
-    const { data: slot, error: slotError } = await supabase
-      .from("available_slots")
-      .select("remaining_capacity")
-      .eq("id", slotId)
-      .single();
+    // Atomically create booking (locks slot row, checks capacity + duplicates)
+    const { data: bookingId, error: rpcError } = await supabase.rpc("create_booking", {
+      p_slot_id: slotId,
+      p_name: fullName,
+      p_first_name: firstName,
+      p_last_name: lastName,
+      p_email: email,
+      p_phone: phone || null,
+      p_address_street: address.line1 || null,
+      p_address_zip: address.postal_code || null,
+      p_address_city: address.city || null,
+      p_stripe_customer_id: customerId,
+      p_stripe_payment_method_id: paymentMethodId,
+      p_stripe_checkout_session_id: sessionId,
+    });
 
-    if (slotError || !slot) {
-      return new Response(
-        JSON.stringify({ error: "Slot not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (slot.remaining_capacity <= 0) {
-      return new Response(
-        JSON.stringify({ error: "Dieser Termin ist leider bereits ausgebucht." }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Check for duplicate booking (same email + slot)
-    if (email) {
-      const { data: existing } = await supabase
-        .from("bookings")
-        .select("id")
-        .eq("slot_id", slotId)
-        .eq("email", email)
-        .in("status", ["booked", "attended"])
-        .maybeSingle();
-
-      if (existing) {
+    if (rpcError) {
+      console.error("Booking RPC error:", rpcError);
+      const msg = rpcError.message || "";
+      if (msg.includes("SLOT_FULL")) {
+        return new Response(
+          JSON.stringify({ error: "Dieser Termin ist leider bereits ausgebucht." }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (msg.includes("DUPLICATE_BOOKING")) {
         return new Response(
           JSON.stringify({ error: "Du hast bereits eine Buchung fuer diesen Termin." }),
           { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-    }
-
-    // Create booking
-    const { data: booking, error: bookingError } = await supabase
-      .from("bookings")
-      .insert({
-        slot_id: slotId,
-        name: fullName,
-        first_name: firstName,
-        last_name: lastName,
-        email,
-        phone: phone || null,
-        address_street: address?.line1 || null,
-        address_zip: address?.postal_code || null,
-        address_city: address?.city || null,
-        stripe_customer_id: customerId,
-        stripe_payment_method_id: paymentMethodId,
-        stripe_checkout_session_id: sessionId,
-        status: "booked",
-      })
-      .select()
-      .single();
-
-    if (bookingError) {
-      console.error("Booking insert error:", bookingError);
       return new Response(
         JSON.stringify({ error: "Buchung konnte nicht erstellt werden." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -156,7 +137,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ booking }),
+      JSON.stringify({ booking: { id: bookingId } }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
