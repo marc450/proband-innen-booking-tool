@@ -427,26 +427,29 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                       ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
                       : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                     }
-                    <div className="flex items-baseline gap-3 min-w-0 flex-wrap">
-                      <span className="font-semibold text-base">{course.title}</span>
-                      {course.course_date && (
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">
-                          {format(parseISO(course.course_date), "dd. MMMM yyyy", { locale: de })}
-                        </span>
-                      )}
-                      {courseSlots.length > 0 && (
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">
-                          {courseSlots.length} {courseSlots.length === 1 ? "Slot" : "Slots"}
-                          {" · "}
-                          <span className={remainingCapacity === 0 ? "text-red-600 font-medium" : "text-green-600 font-medium"}>
-                            {remainingCapacity}/{totalCapacity}
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span className="font-semibold text-base leading-tight">{course.title}</span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {course.course_date && (
+                          <span className="text-sm text-muted-foreground whitespace-nowrap">
+                            {format(parseISO(course.course_date), "dd. MMMM yyyy", { locale: de })}
                           </span>
-                          {" "}frei
-                        </span>
-                      )}
-                      {courseSlots.length === 0 && (
-                        <span className="text-sm text-muted-foreground">Keine Slots</span>
-                      )}
+                        )}
+                        {courseSlots.length > 0 && (
+                          <span className="text-sm text-muted-foreground whitespace-nowrap">
+                            {course.course_date && "· "}
+                            {courseSlots.length} {courseSlots.length === 1 ? "Slot" : "Slots"}
+                            {" · "}
+                            <span className={remainingCapacity === 0 ? "text-red-600 font-medium" : "text-green-600 font-medium"}>
+                              {remainingCapacity}/{totalCapacity}
+                            </span>
+                            {" "}frei
+                          </span>
+                        )}
+                        {courseSlots.length === 0 && (
+                          <span className="text-sm text-muted-foreground">Keine Slots</span>
+                        )}
+                      </div>
                     </div>
                   </button>
 
