@@ -30,6 +30,7 @@ serve(async (req) => {
     // Stripe collects name, email, phone, and billing address
     const session = await stripe.checkout.sessions.create({
       mode: "setup",
+      locale: "de",
       payment_method_types: ["card", "klarna"],
       billing_address_collection: "required",
       custom_text: {
