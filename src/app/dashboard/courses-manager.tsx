@@ -1,40 +1,49 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Course, Slot } from "@/lib/types";
+import { Course, Slot, BookingStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
-import { Plus, Trash2, Edit, Copy } from "lucide-react";
+import { Plus, Trash2, Edit, Copy, ChevronDown, ChevronRight } from "lucide-react";
+
+export interface SlotBooking {
+  id: string;
+  slot_id: string;
+  name: string;
+  first_name: string | null;
+  last_name: string | null;
+  status: BookingStatus;
+  patient_id: string | null;
+}
 
 interface Props {
   initialCourses: Course[];
   initialSlots: Slot[];
+  initialBookings: SlotBooking[];
 }
 
-export function CoursesManager({ initialCourses, initialSlots }: Props) {
+export function CoursesManager({ initialCourses, initialSlots, initialBookings }: Props) {
   const [courses, setCourses] = useState(initialCourses);
   const [slots, setSlots] = useState(initialSlots);
+  const [bookings] = useState(initialBookings);
+
+  // Expanded courses (all collapsed by default)
+  const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
 
   // Course dialog
   const [courseDialogOpen, setCourseDialogOpen] = useState(false);
@@ -59,6 +68,15 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
   const [deleteSlotConfirm, setDeleteSlotConfirm] = useState<string | null>(null);
 
   const supabase = createClient();
+
+  const toggleCourse = (courseId: string) => {
+    setExpandedCourses((prev) => {
+      const next = new Set(prev);
+      if (next.has(courseId)) next.delete(courseId);
+      else next.add(courseId);
+      return next;
+    });
+  };
 
   const resetCourseForm = () => {
     setCourseTitle("");
@@ -204,8 +222,15 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
     }
   };
 
+  const getPatientName = (b: SlotBooking) => {
+    if (b.first_name || b.last_name) {
+      return `${b.first_name || ""} ${b.last_name || ""}`.trim();
+    }
+    return b.name || "Unbekannt";
+  };
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {/* Delete course confirm */}
       <ConfirmDialog
         open={!!deleteCourseConfirm}
@@ -228,58 +253,51 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
         onCancel={() => setDeleteSlotConfirm(null)}
       />
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Kurse & Slots</h1>
-        <Button onClick={() => setCourseDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Neuer Kurs
-        </Button>
-      </div>
-
+      {/* Course dialog */}
       <Dialog open={courseDialogOpen} onOpenChange={(open) => {
         setCourseDialogOpen(open);
         if (!open) resetCourseForm();
       }}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingCourse ? "Kurs bearbeiten" : "Neuer Kurs"}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div>
-                <Label htmlFor="title">Titel</Label>
-                <Input
-                  id="title"
-                  value={courseTitle}
-                  onChange={(e) => setCourseTitle(e.target.value)}
-                  placeholder="z.B. Botulinum Grundkurs"
-                />
-              </div>
-              <div>
-                <Label htmlFor="course_date">Datum des Kurses</Label>
-                <Input
-                  id="course_date"
-                  type="date"
-                  value={courseDate}
-                  onChange={(e) => setCourseDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Beschreibung</Label>
-                <Textarea
-                  id="description"
-                  value={courseDescription}
-                  onChange={(e) => setCourseDescription(e.target.value)}
-                  placeholder="Kursbeschreibung (optional)"
-                />
-              </div>
-              <Button onClick={handleSaveCourse} className="w-full">
-                Speichern
-              </Button>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingCourse ? "Kurs bearbeiten" : "Neuer Kurs"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <Label htmlFor="title">Titel</Label>
+              <Input
+                id="title"
+                value={courseTitle}
+                onChange={(e) => setCourseTitle(e.target.value)}
+                placeholder="z.B. Botulinum Grundkurs"
+              />
             </div>
-          </DialogContent>
-        </Dialog>
+            <div>
+              <Label htmlFor="course_date">Datum des Kurses</Label>
+              <Input
+                id="course_date"
+                type="date"
+                value={courseDate}
+                onChange={(e) => setCourseDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="description">Beschreibung</Label>
+              <Textarea
+                id="description"
+                value={courseDescription}
+                onChange={(e) => setCourseDescription(e.target.value)}
+                placeholder="Kursbeschreibung (optional)"
+              />
+            </div>
+            <Button onClick={handleSaveCourse} className="w-full">
+              Speichern
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-      {/* Duplicate Dialog */}
+      {/* Duplicate dialog */}
       <Dialog open={duplicateDialogOpen} onOpenChange={(open) => {
         setDuplicateDialogOpen(open);
         if (!open) { setDuplicatingCourse(null); setDuplicateDate(""); }
@@ -308,6 +326,72 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
         </DialogContent>
       </Dialog>
 
+      {/* Slot dialog */}
+      <Dialog
+        open={slotDialogOpen}
+        onOpenChange={(open) => setSlotDialogOpen(open)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Neuer Slot</DialogTitle>
+          </DialogHeader>
+          {(() => {
+            const course = courses.find((c) => c.id === selectedCourseId);
+            return (
+              <div className="space-y-4 pt-4">
+                {!course?.course_date && (
+                  <p className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
+                    Bitte zuerst ein Datum für diesen Kurs festlegen.
+                  </p>
+                )}
+                <div>
+                  <Label htmlFor="slot_time">Startzeit</Label>
+                  <Input
+                    id="slot_time"
+                    type="time"
+                    value={slotTime}
+                    onChange={(e) => setSlotTime(e.target.value)}
+                    disabled={!course?.course_date}
+                  />
+                  {course?.course_date && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      am {format(parseISO(course.course_date), "dd.MM.yyyy", { locale: de })}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="capacity">Kapazität</Label>
+                  <Input
+                    id="capacity"
+                    type="number"
+                    min="1"
+                    value={slotCapacity}
+                    onChange={(e) => setSlotCapacity(e.target.value)}
+                  />
+                </div>
+                <Button
+                  onClick={handleSaveSlot}
+                  className="w-full"
+                  disabled={!course?.course_date || !slotTime}
+                >
+                  Slot anlegen
+                </Button>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Kurse & Slots</h1>
+        <Button onClick={() => setCourseDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Neuer Kurs
+        </Button>
+      </div>
+
+      {/* Course list */}
       {courses.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
@@ -320,152 +404,186 @@ export function CoursesManager({ initialCourses, initialSlots }: Props) {
             .filter((s) => s.course_id === course.id)
             .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
+          const totalCapacity = courseSlots.reduce((sum, s) => sum + s.capacity, 0);
+          const bookedCount = courseSlots.reduce((sum, s) => {
+            return sum + bookings.filter((b) => b.slot_id === s.id).length;
+          }, 0);
+          const remainingCapacity = totalCapacity - bookedCount;
+
+          const isExpanded = expandedCourses.has(course.id);
+
           return (
-            <Card key={course.id}>
-              <CardHeader className="flex flex-row items-start justify-between">
-                <div>
-                  <CardTitle>{course.title}</CardTitle>
-                  {course.course_date && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {format(parseISO(course.course_date), "dd. MMMM yyyy", { locale: de })}
-                    </p>
-                  )}
-                  {course.description && (
-                    <p className="text-sm text-muted-foreground mt-1">{course.description}</p>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    title="Kurs duplizieren"
-                    onClick={() => {
-                      setDuplicatingCourse(course);
-                      setDuplicateDialogOpen(true);
-                    }}
+            <Card key={course.id} className="overflow-hidden">
+              {/* Collapsed header — always visible */}
+              <CardHeader className="py-3 px-4">
+                <div className="flex items-center gap-3">
+                  {/* Toggle button */}
+                  <button
+                    onClick={() => toggleCourse(course.id)}
+                    className="flex items-center gap-2 flex-1 text-left min-w-0"
+                    aria-expanded={isExpanded}
                   >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditingCourse(course);
-                      setCourseTitle(course.title);
-                      setCourseDescription(course.description || "");
-                      setCourseDate(course.course_date || "");
-                      setCourseDialogOpen(true);
-                    }}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setDeleteCourseConfirm(course.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                    {isExpanded
+                      ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    }
+                    <div className="flex items-baseline gap-3 min-w-0 flex-wrap">
+                      <span className="font-semibold text-base">{course.title}</span>
+                      {course.course_date && (
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">
+                          {format(parseISO(course.course_date), "dd. MMMM yyyy", { locale: de })}
+                        </span>
+                      )}
+                      {courseSlots.length > 0 && (
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">
+                          {courseSlots.length} {courseSlots.length === 1 ? "Slot" : "Slots"}
+                          {" · "}
+                          <span className={remainingCapacity === 0 ? "text-red-600 font-medium" : "text-green-600 font-medium"}>
+                            {remainingCapacity}/{totalCapacity}
+                          </span>
+                          {" "}frei
+                        </span>
+                      )}
+                      {courseSlots.length === 0 && (
+                        <span className="text-sm text-muted-foreground">Keine Slots</span>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Action buttons */}
+                  <div className="flex gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Kurs duplizieren"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDuplicatingCourse(course);
+                        setDuplicateDialogOpen(true);
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingCourse(course);
+                        setCourseTitle(course.title);
+                        setCourseDescription(course.description || "");
+                        setCourseDate(course.course_date || "");
+                        setCourseDialogOpen(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteCourseConfirm(course.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium">Slots</h3>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => { setSelectedCourseId(course.id); setSlotDialogOpen(true); }}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Slot
-                  </Button>
 
-                  <Dialog
-                    open={slotDialogOpen && selectedCourseId === course.id}
-                    onOpenChange={(open) => {
-                      setSlotDialogOpen(open);
-                    }}
-                  >
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Neuer Slot</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4 pt-4">
-                        {!course.course_date && (
-                          <p className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
-                            Bitte zuerst ein Datum für diesen Kurs festlegen.
-                          </p>
-                        )}
-                        <div>
-                          <Label htmlFor="slot_time">Startzeit</Label>
-                          <Input
-                            id="slot_time"
-                            type="time"
-                            value={slotTime}
-                            onChange={(e) => setSlotTime(e.target.value)}
-                            disabled={!course.course_date}
-                          />
-                          {course.course_date && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              am {format(parseISO(course.course_date), "dd.MM.yyyy", { locale: de })}
-                            </p>
-                          )}
-                        </div>
-                        <div>
-                          <Label htmlFor="capacity">Kapazität</Label>
-                          <Input
-                            id="capacity"
-                            type="number"
-                            min="1"
-                            value={slotCapacity}
-                            onChange={(e) => setSlotCapacity(e.target.value)}
-                          />
-                        </div>
-                        <Button
-                          onClick={handleSaveSlot}
-                          className="w-full"
-                          disabled={!course.course_date || !slotTime}
-                        >
-                          Slot anlegen
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
+              {/* Expanded content */}
+              {isExpanded && (
+                <CardContent className="pt-0 pb-4 px-4 border-t">
+                  {course.description && (
+                    <p className="text-sm text-muted-foreground mt-3 mb-4">{course.description}</p>
+                  )}
 
-                {courseSlots.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Keine Slots vorhanden</p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Startzeit</TableHead>
-                        <TableHead>Kapazität</TableHead>
-                        <TableHead className="w-[50px]"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {courseSlots.map((slot) => (
-                        <TableRow key={slot.id}>
-                          <TableCell>
-                            {format(new Date(slot.start_time), "HH:mm")} Uhr
-                          </TableCell>
-                          <TableCell>{slot.capacity}</TableCell>
-                          <TableCell>
+                  <div className="flex items-center justify-between mb-3 mt-3">
+                    <span className="text-sm font-medium text-muted-foreground">Slots</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedCourseId(course.id);
+                        setSlotTime("");
+                        setSlotCapacity("1");
+                        setSlotDialogOpen(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Slot
+                    </Button>
+                  </div>
+
+                  {courseSlots.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-2">Keine Slots vorhanden</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {courseSlots.map((slot) => {
+                        const slotBookings = bookings.filter((b) => b.slot_id === slot.id);
+                        const slotBooked = slotBookings.length;
+                        const slotFree = slot.capacity - slotBooked;
+
+                        return (
+                          <div
+                            key={slot.id}
+                            className="flex items-start justify-between gap-3 py-2 px-3 rounded-md bg-muted/40"
+                          >
+                            <div className="flex items-start gap-3 flex-1 min-w-0">
+                              <span className="text-sm font-medium whitespace-nowrap pt-0.5">
+                                {format(new Date(slot.start_time), "HH:mm")} Uhr
+                              </span>
+                              <div className="flex flex-col gap-1 min-w-0">
+                                {slotBookings.length > 0 ? (
+                                  slotBookings.map((b) => (
+                                    <div key={b.id} className="flex items-center gap-2">
+                                      <Badge variant="default" className="text-xs shrink-0">
+                                        Gebucht
+                                      </Badge>
+                                      {b.patient_id ? (
+                                        <Link
+                                          href={`/dashboard/patients/${b.patient_id}`}
+                                          className="text-sm hover:underline text-foreground truncate"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          {getPatientName(b)}
+                                        </Link>
+                                      ) : (
+                                        <span className="text-sm truncate">{getPatientName(b)}</span>
+                                      )}
+                                    </div>
+                                  ))
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">Frei</span>
+                                )}
+                                {slotFree > 0 && slotBooked > 0 && (
+                                  <span className="text-xs text-muted-foreground">
+                                    + {slotFree} {slotFree === 1 ? "Platz" : "Plätze"} frei
+                                  </span>
+                                )}
+                                {slotFree > 0 && slotBooked === 0 && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {slot.capacity} {slot.capacity === 1 ? "Platz" : "Plätze"}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                             <Button
                               variant="ghost"
                               size="sm"
+                              className="shrink-0"
                               onClick={() => setDeleteSlotConfirm(slot.id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              )}
             </Card>
           );
         })
