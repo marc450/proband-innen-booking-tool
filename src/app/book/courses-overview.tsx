@@ -78,6 +78,30 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
                       {group.description}
                     </CardDescription>
                   )}
+                  {/* Show service description + guide price from first date entry */}
+                  {(() => {
+                    const firstCourse = group.dates[0]?.course;
+                    if (!firstCourse?.service_description && !firstCourse?.guide_price) return null;
+                    return (
+                      <div className="mt-3 space-y-2">
+                        {firstCourse.service_description && (
+                          <div>
+                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leistung</span>
+                            <p className="text-sm mt-0.5">{firstCourse.service_description}</p>
+                          </div>
+                        )}
+                        {firstCourse.guide_price && (
+                          <div>
+                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Richtpreis</span>
+                            <p className="text-base font-semibold mt-0.5">{firstCourse.guide_price}</p>
+                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                              Die Bezahlung erfolgt nach der Behandlung vor Ort. Die Abrechnung erfolgt nach GOÄ. Der Richtpreis dient als Orientierung. Der genaue Behandlungsumfang und die endgültigen Kosten werden im persönlichen Aufklärungsgespräch mit der behandelnden Ärzt:in festgelegt.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </CardHeader>
                 <CardContent>
                   <h3 className="text-sm font-medium text-muted-foreground mb-3">

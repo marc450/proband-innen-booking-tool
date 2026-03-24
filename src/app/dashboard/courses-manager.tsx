@@ -53,6 +53,8 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
   const [courseDate, setCourseDate] = useState("");
   const [courseLocation, setCourseLocation] = useState("");
   const [courseInstructor, setCourseInstructor] = useState("");
+  const [courseGuidePrice, setCourseGuidePrice] = useState("");
+  const [courseServiceDescription, setCourseServiceDescription] = useState("");
 
   // Slot dialog
   const [slotDialogOpen, setSlotDialogOpen] = useState(false);
@@ -86,6 +88,8 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
     setCourseDate("");
     setCourseLocation("");
     setCourseInstructor("");
+    setCourseGuidePrice("");
+    setCourseServiceDescription("");
     setEditingCourse(null);
   };
 
@@ -100,6 +104,8 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
       course_date: courseDate || null,
       location: courseLocation || null,
       instructor: courseInstructor || null,
+      guide_price: courseGuidePrice || null,
+      service_description: courseServiceDescription || null,
     };
 
     setCourseDialogOpen(false);
@@ -306,6 +312,24 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
               />
             </div>
             <div>
+              <Label htmlFor="guide_price">Richtpreis (z.B. &quot;ab 150 €&quot;)</Label>
+              <Input
+                id="guide_price"
+                value={courseGuidePrice}
+                onChange={(e) => setCourseGuidePrice(e.target.value)}
+                placeholder="z.B. ab 150 €"
+              />
+            </div>
+            <div>
+              <Label htmlFor="service_description">Leistungsbeschreibung</Label>
+              <Textarea
+                id="service_description"
+                value={courseServiceDescription}
+                onChange={(e) => setCourseServiceDescription(e.target.value)}
+                placeholder="z.B. Behandlung mimischer Falten mit Botulinum"
+              />
+            </div>
+            <div>
               <Label htmlFor="description">Beschreibung</Label>
               <Textarea
                 id="description"
@@ -479,7 +503,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                     <Copy className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" size="sm"
-                    onClick={(e) => { e.stopPropagation(); setEditingCourse(course); setCourseTitle(course.title); setCourseDescription(course.description || ""); setCourseDate(course.course_date || ""); setCourseLocation(course.location || ""); setCourseInstructor(course.instructor || ""); setCourseDialogOpen(true); }}>
+                    onClick={(e) => { e.stopPropagation(); setEditingCourse(course); setCourseTitle(course.title); setCourseDescription(course.description || ""); setCourseDate(course.course_date || ""); setCourseLocation(course.location || ""); setCourseInstructor(course.instructor || ""); setCourseGuidePrice(course.guide_price || ""); setCourseServiceDescription(course.service_description || ""); setCourseDialogOpen(true); }}>
                     <Edit className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" size="sm"

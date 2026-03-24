@@ -236,7 +236,14 @@ export function BookingForm({ slot }: BookingFormProps) {
                 </div>
 
                 <div>
-                  <h4 className="font-semibold">§7 Gesundheitlicher Zustand und Mitwirkungspflichten</h4>
+                  <h4 className="font-semibold">§7 Behandlungskosten und Abrechnung</h4>
+                  <p className="mt-1">Die auf der Buchungsseite angegebenen Richtpreise dienen ausschließlich der Orientierung und stellen kein verbindliches Angebot dar.</p>
+                  <p className="mt-1">Der genaue Behandlungsumfang und die endgültigen Kosten werden im persönlichen Aufklärungsgespräch mit der behandelnden Ärzt:in vor der Behandlung festgelegt. Die Abrechnung erfolgt nach der Gebührenordnung für Ärzte (GOÄ).</p>
+                  <p className="mt-1">Die Bezahlung der Behandlung erfolgt nach der Behandlung vor Ort. Eine Vorauszahlung findet nicht statt. Die im Rahmen der Buchung hinterlegte Bezahlmethode dient ausschließlich zur Absicherung der Ausfallgebühr gemäß §5 dieser Teilnahmebedingungen.</p>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold">§8 Gesundheitlicher Zustand und Mitwirkungspflichten</h4>
                   <p className="mt-1">Proband:innen sind verpflichtet, die behandelnde Ärzt:in vor der Behandlung vollständig und wahrheitsgemäß über ihren Gesundheitszustand zu informieren.</p>
                   <p className="mt-1">Dies umfasst insbesondere:</p>
                   <ul className="list-disc list-inside mt-1 space-y-0.5">
