@@ -25,7 +25,7 @@ import {
 import { ConfirmDialog, AlertDialog } from "@/components/confirm-dialog";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { CreditCard, Download, Search } from "lucide-react";
+import { Download, Search } from "lucide-react";
 import * as XLSX from "xlsx";
 
 interface Props {
@@ -54,8 +54,12 @@ export function BookingsManager({ initialBookings, courses }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [chargingId, setChargingId] = useState<string | null>(null);
 
-  // Confirm & alert state
-  const [chargeConfirmBooking, setChargeConfirmBooking] = useState<BookingWithDetails | null>(null);
+  // No-show confirmation: holds booking + previous status so we can revert on cancel
+  const [noShowPending, setNoShowPending] = useState<{
+    booking: BookingWithDetails;
+    previousStatus: BookingStatus;
+  } | null>(null);
+
   const [alertState, setAlertState] = useState<{ title: string; description: string } | null>(null);
 
   const supabase = createClient();
@@ -79,34 +83,46 @@ export function BookingsManager({ initialBookings, courses }: Props) {
   });
 
   const handleStatusChange = async (bookingId: string, newStatus: BookingStatus) => {
+    // No-show requires explicit confirmation + automatic charge — show modal instead
+    if (newStatus === "no_show") {
+      const booking = bookings.find((b) => b.id === bookingId);
+      if (booking) {
+        setNoShowPending({ booking, previousStatus: booking.status });
+      }
+      return;
+    }
+
     const { error } = await supabase
       .from("bookings")
       .update({ status: newStatus })
       .eq("id", bookingId);
 
     if (!error) {
-      setBookings(bookings.map((b) => b.id === bookingId ? { ...b, status: newStatus } : b));
+      setBookings((prev) => prev.map((b) => b.id === bookingId ? { ...b, status: newStatus } : b));
     }
   };
 
-  const handleChargeNoShow = async () => {
-    if (!chargeConfirmBooking) return;
-    const booking = chargeConfirmBooking;
-    setChargeConfirmBooking(null);
+  const handleConfirmNoShow = async () => {
+    if (!noShowPending) return;
+    const { booking } = noShowPending;
+    setNoShowPending(null);
     setChargingId(booking.id);
 
     try {
+      // 1. Update status to no_show
+      await supabase.from("bookings").update({ status: "no_show" }).eq("id", booking.id);
+      setBookings((prev) => prev.map((b) => b.id === booking.id ? { ...b, status: "no_show" } : b));
+
+      // 2. Charge the no-show fee
       const { data, error } = await supabase.functions.invoke("charge-no-show", {
         body: { bookingId: booking.id },
       });
 
-      if (error) {
-        setAlertState({ title: "Fehler", description: error.message });
-      } else if (data?.error) {
-        setAlertState({ title: "Fehler", description: data.error });
+      if (error || data?.error) {
+        setAlertState({ title: "Status gesetzt, Zahlung fehlgeschlagen", description: error?.message || data?.error });
       } else {
-        setAlertState({ title: "Zahlung erfolgreich", description: `50 EUR wurden erhoben. Charge ID: ${data.chargeId}` });
-        setBookings(bookings.map((b) => b.id === booking.id ? { ...b, charge_id: data.chargeId } : b));
+        setBookings((prev) => prev.map((b) => b.id === booking.id ? { ...b, charge_id: data.chargeId } : b));
+        setAlertState({ title: "No-Show bestätigt", description: `50 EUR wurden erfolgreich von ${booking.first_name || booking.name} erhoben.` });
       }
     } catch {
       setAlertState({ title: "Fehler", description: "Ein unerwarteter Fehler ist aufgetreten." });
@@ -153,15 +169,15 @@ export function BookingsManager({ initialBookings, courses }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Charge confirm */}
+      {/* No-show confirmation modal */}
       <ConfirmDialog
-        open={!!chargeConfirmBooking}
-        title="No-Show-Gebühr erheben"
-        description={`50 EUR für ${chargeConfirmBooking?.name} (${chargeConfirmBooking?.email}) wirklich belasten?`}
-        confirmLabel="Jetzt belasten"
+        open={!!noShowPending}
+        title="No-Show bestätigen"
+        description={`${noShowPending?.booking.first_name || noShowPending?.booking.name} wird als No-Show markiert. Es wird automatisch eine Gebühr von 50 EUR erhoben. Diese Aktion kann nicht rückgängig gemacht werden.`}
+        confirmLabel="Bestätigen & 50 EUR berechnen"
         variant="destructive"
-        onConfirm={handleChargeNoShow}
-        onCancel={() => setChargeConfirmBooking(null)}
+        onConfirm={handleConfirmNoShow}
+        onCancel={() => setNoShowPending(null)}
       />
 
       {/* Alert */}
@@ -247,7 +263,7 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                   <TableHead>Kurs</TableHead>
                   <TableHead>Termin</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Aktionen</TableHead>
+                  <TableHead>Buchungsdatum</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -267,40 +283,35 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                         : "—"}
                     </TableCell>
                     <TableCell>
-                      <Select
-                        value={booking.status}
-                        onValueChange={(val) => handleStatusChange(booking.id, val as BookingStatus)}
-                      >
-                        <SelectTrigger className="w-[130px] h-8">
-                          <Badge variant={statusVariants[booking.status]}>
-                            {statusLabels[booking.status]}
-                          </Badge>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="booked">Gebucht</SelectItem>
-                          <SelectItem value="attended">Erschienen</SelectItem>
-                          <SelectItem value="no_show">No-Show</SelectItem>
-                          <SelectItem value="cancelled">Storniert</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      {booking.status === "no_show" && !booking.charge_id && (
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => setChargeConfirmBooking(booking)}
+                      <div className="flex flex-col gap-1">
+                        <Select
+                          value={booking.status}
+                          onValueChange={(val) => handleStatusChange(booking.id, val as BookingStatus)}
                           disabled={chargingId === booking.id}
                         >
-                          <CreditCard className="h-4 w-4 mr-1" />
-                          {chargingId === booking.id ? "..." : "50 EUR"}
-                        </Button>
-                      )}
-                      {booking.charge_id && (
-                        <Badge variant="outline" className="text-green-600">
-                          Belastet
-                        </Badge>
-                      )}
+                          <SelectTrigger className="w-[130px] h-8">
+                            <Badge variant={statusVariants[booking.status]}>
+                              {chargingId === booking.id ? "..." : statusLabels[booking.status]}
+                            </Badge>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="booked">Gebucht</SelectItem>
+                            <SelectItem value="attended">Erschienen</SelectItem>
+                            <SelectItem value="no_show">No-Show</SelectItem>
+                            <SelectItem value="cancelled">Storniert</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {booking.charge_id && (
+                          <Badge variant="outline" className="text-green-600 text-xs w-fit">
+                            Belastet
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {booking.created_at
+                        ? format(new Date(booking.created_at), "dd.MM.yyyy HH:mm", { locale: de })
+                        : "—"}
                     </TableCell>
                   </TableRow>
                 ))}
