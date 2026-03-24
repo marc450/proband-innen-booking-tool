@@ -439,9 +439,9 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                       ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
                       : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                     }
-                    {/* Table-like row: title | date | slots | booked */}
-                    <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-6 w-full min-w-0">
-                      <span className="font-semibold text-base truncate">{course.title}</span>
+                    {/* Table-like row: title | date | slots | booked/total */}
+                    <div className="grid items-center w-full min-w-0" style={{gridTemplateColumns: "1fr 180px 80px 56px"}}>
+                      <span className="font-semibold text-base truncate pr-4">{course.title}</span>
                       <span className="text-sm text-muted-foreground whitespace-nowrap">
                         {course.course_date
                           ? format(parseISO(course.course_date), "dd. MMMM yyyy", { locale: de })
@@ -535,55 +535,53 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                         return (
                           <div
                             key={slot.id}
-                            className="flex items-start justify-between gap-3 py-2 px-3 rounded-md bg-muted/40"
+                            className="grid items-center py-2 px-3 rounded-md bg-muted/40"
+                            style={{gridTemplateColumns: "1fr 180px 80px 56px"}}
                           >
-                            <div className="flex items-start gap-3 flex-1 min-w-0">
-                              <span className="text-sm font-medium whitespace-nowrap pt-0.5">
-                                {format(new Date(slot.start_time), "HH:mm")} Uhr
-                              </span>
-                              <div className="flex flex-col gap-1 min-w-0">
-                                {slotBookings.length > 0 ? (
-                                  slotBookings.map((b) => (
-                                    <div key={b.id} className="flex items-center gap-2">
-                                      <Badge variant="default" className="text-xs shrink-0">
-                                        Gebucht
-                                      </Badge>
-                                      {b.patient_id ? (
-                                        <Link
-                                          href={`/dashboard/patients/${b.patient_id}`}
-                                          className="text-sm hover:underline text-foreground truncate"
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          {getPatientName(b)}
-                                        </Link>
-                                      ) : (
-                                        <span className="text-sm truncate">{getPatientName(b)}</span>
-                                      )}
-                                    </div>
-                                  ))
-                                ) : (
-                                  <span className="text-sm text-muted-foreground">Frei</span>
-                                )}
-                                {slotFree > 0 && slotBooked > 0 && (
-                                  <span className="text-xs text-muted-foreground">
-                                    + {slotFree} {slotFree === 1 ? "Platz" : "Plätze"} frei
-                                  </span>
-                                )}
-                                {slotFree > 0 && slotBooked === 0 && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {slot.capacity} {slot.capacity === 1 ? "Platz" : "Plätze"}
-                                  </span>
-                                )}
-                              </div>
+                            {/* Time */}
+                            <span className="text-sm font-medium whitespace-nowrap pr-4">
+                              {format(new Date(slot.start_time), "HH:mm")} Uhr
+                            </span>
+
+                            {/* Booking status + name */}
+                            <div className="flex items-center gap-2 min-w-0">
+                              {slotBookings.length > 0 ? (
+                                slotBookings.map((b) => (
+                                  <div key={b.id} className="flex items-center gap-2 min-w-0">
+                                    <Badge variant="default" className="text-xs shrink-0">Gebucht</Badge>
+                                    {b.patient_id ? (
+                                      <Link
+                                        href={`/dashboard/patients/${b.patient_id}`}
+                                        className="text-sm font-medium hover:underline truncate"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        {getPatientName(b)}
+                                      </Link>
+                                    ) : (
+                                      <span className="text-sm truncate">{getPatientName(b)}</span>
+                                    )}
+                                  </div>
+                                ))
+                              ) : (
+                                <span className="text-sm text-muted-foreground">Frei</span>
+                              )}
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="shrink-0"
-                              onClick={() => setDeleteSlotConfirm(slot.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+
+                            {/* Capacity */}
+                            <span className="text-sm text-muted-foreground whitespace-nowrap">
+                              {slotBooked}/{slot.capacity}
+                            </span>
+
+                            {/* Delete */}
+                            <div className="flex justify-end">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeleteSlotConfirm(slot.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         );
                       })}
