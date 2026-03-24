@@ -33,7 +33,7 @@ import { Label } from "@/components/ui/label";
 import { ConfirmDialog, AlertDialog } from "@/components/confirm-dialog";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Download, Search, ArrowLeftRight } from "lucide-react";
+import { Download, Search, ArrowLeftRight, Trash2 } from "lucide-react";
 import * as XLSX from "xlsx";
 
 type BookingWithHash = BookingWithDetails & { email_hash?: string };
@@ -70,6 +70,8 @@ export function BookingsManager({ initialBookings, courses }: Props) {
   const [filterDate, setFilterDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [chargingId, setChargingId] = useState<string | null>(null);
+  const [deleteBookingPending, setDeleteBookingPending] = useState<BookingWithDetails | null>(null);
+  const [deletingBooking, setDeletingBooking] = useState(false);
 
   // No-show confirmation
   const [noShowPending, setNoShowPending] = useState<{
@@ -191,6 +193,20 @@ export function BookingsManager({ initialBookings, courses }: Props) {
     const filtered = (slotData || []).filter((s) => !alreadyBookedSlotIds.has(s.id));
     setSlotsForCourse(filtered as AvailableSlotOption[]);
     setLoadingSlots(false);
+  };
+
+  const handleDeleteBooking = async () => {
+    if (!deleteBookingPending) return;
+    setDeletingBooking(true);
+    const { error } = await supabase
+      .from("bookings")
+      .delete()
+      .eq("id", deleteBookingPending.id);
+    if (!error) {
+      setBookings((prev) => prev.filter((b) => b.id !== deleteBookingPending.id));
+    }
+    setDeletingBooking(false);
+    setDeleteBookingPending(null);
   };
 
   const handleOpenSlotChange = (booking: BookingWithHash) => {
@@ -344,6 +360,17 @@ export function BookingsManager({ initialBookings, courses }: Props) {
         title={alertState?.title ?? ""}
         description={alertState?.description ?? ""}
         onClose={() => setAlertState(null)}
+      />
+
+      {/* Delete booking confirmation */}
+      <ConfirmDialog
+        open={!!deleteBookingPending}
+        title="Buchung löschen"
+        description={`Möchtest Du die Buchung von ${deleteBookingPending?.first_name || deleteBookingPending?.name || "diesem/dieser Proband:in"} (${deleteBookingPending?.slots?.courses?.title || ""}) wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`}
+        confirmLabel={deletingBooking ? "Wird gelöscht..." : "Endgültig löschen"}
+        variant="destructive"
+        onConfirm={handleDeleteBooking}
+        onCancel={() => setDeleteBookingPending(null)}
       />
 
       {/* Slot change modal */}
@@ -586,14 +613,24 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                             : "—"}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenSlotChange(booking)}
-                            title="Slot ändern"
-                          >
-                            <ArrowLeftRight className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenSlotChange(booking)}
+                              title="Slot ändern"
+                            >
+                              <ArrowLeftRight className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteBookingPending(booking)}
+                              title="Buchung löschen"
+                            >
+                              <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
