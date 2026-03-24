@@ -28,7 +28,7 @@ export default async function CourseBookingPage({
     .select("*")
     .eq("course_id", courseId)
     .gt("remaining_capacity", 0)
-    .gte("start_time", new Date(new Date().toDateString()).toISOString())
+    .gt("start_time", new Date().toISOString())
     .order("start_time", { ascending: true });
 
   return (
