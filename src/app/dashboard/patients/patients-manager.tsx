@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Search, ChevronRight, AlertTriangle, Ban, ArrowUpDown, ArrowUp, ArrowDown, Upload } from "lucide-react";
+import { Search, ChevronRight, AlertTriangle, Ban, ArrowUpDown, ArrowUp, ArrowDown, Upload, Trash2 } from "lucide-react";
 
 interface ImportRow {
   first_name: string | null;
@@ -69,6 +69,8 @@ export function PatientsManager({ initialPatients }: Props) {
   const [importRows, setImportRows] = useState<ImportRow[] | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ inserted: number; skipped: number } | null>(null);
+  const [deletePatient, setDeletePatient] = useState<Patient | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const supabase = createClient();
@@ -91,6 +93,24 @@ export function PatientsManager({ initialPatients }: Props) {
       .from("patients")
       .update({ patient_status: newStatus })
       .eq("id", patientId);
+  };
+
+  const handleDeletePatient = async () => {
+    if (!deletePatient) return;
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/delete-patient", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patientId: deletePatient.id }),
+      });
+      if (res.ok) {
+        setPatients((prev) => prev.filter((p) => p.id !== deletePatient.id));
+      }
+    } finally {
+      setDeleting(false);
+      setDeletePatient(null);
+    }
   };
 
   function parseStatusValue(raw: string | null | undefined): PatientStatus {
@@ -259,6 +279,24 @@ export function PatientsManager({ initialPatients }: Props) {
         </DialogContent>
       </Dialog>
 
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deletePatient} onOpenChange={(open) => { if (!open) setDeletePatient(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Proband:in löschen</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Möchtest Du <strong>{deletePatient?.first_name} {deletePatient?.last_name}</strong> ({deletePatient?.email}) wirklich löschen? Alle zugehörigen Buchungen werden ebenfalls entfernt. Diese Aktion kann nicht rückgängig gemacht werden.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletePatient(null)}>Abbrechen</Button>
+            <Button variant="destructive" onClick={handleDeletePatient} disabled={deleting}>
+              {deleting ? "Wird gelöscht..." : "Endgültig löschen"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Card>
         <CardContent className="p-0">
           {filteredPatients.length === 0 ? (
@@ -325,7 +363,15 @@ export function PatientsManager({ initialPatients }: Props) {
                     <TableCell>
                       {format(new Date(patient.created_at), "dd.MM.yyyy", { locale: de })}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeletePatient(patient)}
+                        title="Löschen"
+                      >
+                        <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500" />
+                      </Button>
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </TableCell>
                   </TableRow>
