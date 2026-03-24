@@ -271,6 +271,7 @@ export function BookingsManager({ initialBookings, courses }: Props) {
             date,
             time,
             location: newCourseForEmail?.location || "",
+            bookingType: slotChangePending.booking_type,
           }),
         });
       }
@@ -301,6 +302,8 @@ export function BookingsManager({ initialBookings, courses }: Props) {
         ? format(new Date(b.slots.start_time), "HH:mm", { locale: de })
         : "",
       Status: statusLabels[b.status],
+      Typ: b.booking_type === "private" ? "Privat" : "Standard",
+      "Zuweisende:r Ärzt:in": b.referring_doctor || "",
     }));
 
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -524,9 +527,23 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                 {filteredBookings.map((booking) => (
                   <TableRow key={booking.id}>
                     <TableCell className="font-medium">
-                      {booking.first_name && booking.last_name
-                        ? `${booking.first_name} ${booking.last_name}`
-                        : booking.name}
+                      <div className="flex items-center gap-2">
+                        <span>
+                          {booking.first_name && booking.last_name
+                            ? `${booking.first_name} ${booking.last_name}`
+                            : booking.name}
+                        </span>
+                        {booking.booking_type === "private" && (
+                          <Badge variant="outline" className="text-blue-600 border-blue-300 text-[10px] px-1.5 py-0">
+                            Privat
+                          </Badge>
+                        )}
+                      </div>
+                      {booking.booking_type === "private" && booking.referring_doctor && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Ärzt:in: {booking.referring_doctor}
+                        </p>
+                      )}
                     </TableCell>
                     <TableCell>{booking.email}</TableCell>
                     <TableCell className="text-sm">{booking.phone || ""}</TableCell>
