@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronDown, ChevronRight, CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { de } from "date-fns/locale";
 
 interface Props {
   slot: AvailableSlot;
@@ -373,6 +375,12 @@ export function PrivatBookingForm({ slot }: Props) {
               <h3 className="font-semibold text-base">Zusammenfassung</h3>
 
               <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-center py-2 border-b">
+                  <span className="text-muted-foreground">Termin</span>
+                  <span className="font-medium">
+                    {format(new Date(slot.start_time), "dd. MMMM yyyy", { locale: de })}, {format(new Date(slot.start_time), "HH:mm")} Uhr
+                  </span>
+                </div>
                 <div className="flex justify-between items-center py-2 border-b">
                   <span className="text-muted-foreground">E-Mail</span>
                   <span className="font-medium">{email}</span>
