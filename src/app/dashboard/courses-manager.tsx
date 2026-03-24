@@ -51,6 +51,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
   const [courseTitle, setCourseTitle] = useState("");
   const [courseDescription, setCourseDescription] = useState("");
   const [courseDate, setCourseDate] = useState("");
+  const [courseLocation, setCourseLocation] = useState("");
 
   // Slot dialog
   const [slotDialogOpen, setSlotDialogOpen] = useState(false);
@@ -82,6 +83,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
     setCourseTitle("");
     setCourseDescription("");
     setCourseDate("");
+    setCourseLocation("");
     setEditingCourse(null);
   };
 
@@ -94,6 +96,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
       title: courseTitle,
       description: courseDescription || null,
       course_date: courseDate || null,
+      location: courseLocation || null,
     };
 
     setCourseDialogOpen(false);
@@ -279,6 +282,15 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                 type="date"
                 value={courseDate}
                 onChange={(e) => setCourseDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="location">Adresse / Ort</Label>
+              <Input
+                id="location"
+                value={courseLocation}
+                onChange={(e) => setCourseLocation(e.target.value)}
+                placeholder="z.B. Musterstrasse 1, 8001 Zürich"
               />
             </div>
             <div>
@@ -476,6 +488,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                         setCourseTitle(course.title);
                         setCourseDescription(course.description || "");
                         setCourseDate(course.course_date || "");
+                        setCourseLocation(course.location || "");
                         setCourseDialogOpen(true);
                       }}
                     >

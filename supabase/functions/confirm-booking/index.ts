@@ -312,12 +312,13 @@ serve(async (req) => {
     // Fetch slot + course details for the email
     const { data: slotInfo } = await supabase
       .from("slots")
-      .select("start_time, courses(title, course_date)")
+      .select("start_time, courses(title, course_date, location)")
       .eq("id", slotId)
       .single();
 
     const courseTitle = slotInfo?.courses?.title || "Kurs";
     const courseDate = slotInfo?.courses?.course_date || "";
+    const courseLocation = slotInfo?.courses?.location || "";
     const startTime = slotInfo?.start_time || "";
 
     // Format date and time for email
@@ -377,6 +378,11 @@ serve(async (req) => {
                         <td style="padding: 8px 0; color: #737373; font-size: 14px;">Name</td>
                         <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600; text-align: right;">${fullName}</td>
                       </tr>
+                      ${courseLocation ? `
+                      <tr>
+                        <td style="padding: 8px 0; color: #737373; font-size: 14px;">Adresse</td>
+                        <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600; text-align: right;">${courseLocation}</td>
+                      </tr>` : ""}
                     </table>
                   </div>
                   <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
