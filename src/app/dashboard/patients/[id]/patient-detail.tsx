@@ -137,7 +137,7 @@ export function PatientDetail({ patient, bookings }: Props) {
             <CardTitle className="text-xl">{fullName}</CardTitle>
             <Select value={status} onValueChange={(val) => handleStatusChange(val as PatientStatus)}>
               <SelectTrigger className="w-[140px] h-8">
-                <SelectValue />
+                <span>{patientStatusLabels[status]}</span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Aktiv</SelectItem>

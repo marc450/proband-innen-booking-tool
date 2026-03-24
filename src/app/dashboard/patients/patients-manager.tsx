@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Search, ChevronRight, AlertTriangle, Ban } from "lucide-react";
+import { Search, ChevronRight, AlertTriangle, Ban, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 interface Props {
   initialPatients: Patient[];
@@ -41,11 +41,28 @@ const statusBadgeVariants: Record<PatientStatus, "default" | "secondary" | "dest
   blacklist: "destructive",
 };
 
+type SortKey = "name" | "email" | "city" | "status" | "created_at";
+type SortDir = "asc" | "desc";
+
 export function PatientsManager({ initialPatients }: Props) {
   const [patients, setPatients] = useState(initialPatients);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("created_at");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const router = useRouter();
   const supabase = createClient();
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("asc"); }
+  }
+
+  function SortIcon({ col }: { col: SortKey }) {
+    if (sortKey !== col) return <ArrowUpDown className="ml-1 h-3 w-3 opacity-40 inline" />;
+    return sortDir === "asc"
+      ? <ArrowUp className="ml-1 h-3 w-3 inline" />
+      : <ArrowDown className="ml-1 h-3 w-3 inline" />;
+  }
 
   const handleStatusChange = async (patientId: string, newStatus: PatientStatus) => {
     setPatients((prev) => prev.map((p) => p.id === patientId ? { ...p, patient_status: newStatus } : p));
@@ -55,17 +72,38 @@ export function PatientsManager({ initialPatients }: Props) {
       .eq("id", patientId);
   };
 
-  const filteredPatients = patients.filter((p) => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    const fullName = `${p.first_name || ""} ${p.last_name || ""}`.toLowerCase();
-    return (
-      fullName.includes(q) ||
-      p.email.toLowerCase().includes(q) ||
-      (p.phone || "").toLowerCase().includes(q) ||
-      (p.address_city || "").toLowerCase().includes(q)
-    );
-  });
+  const filteredPatients = patients
+    .filter((p) => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      const fullName = `${p.first_name || ""} ${p.last_name || ""}`.toLowerCase();
+      return (
+        fullName.includes(q) ||
+        p.email.toLowerCase().includes(q) ||
+        (p.phone || "").toLowerCase().includes(q) ||
+        (p.address_city || "").toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) => {
+      let aVal: string, bVal: string;
+      if (sortKey === "name") {
+        aVal = `${a.first_name || ""} ${a.last_name || ""}`.trim().toLowerCase();
+        bVal = `${b.first_name || ""} ${b.last_name || ""}`.trim().toLowerCase();
+      } else if (sortKey === "email") {
+        aVal = a.email.toLowerCase();
+        bVal = b.email.toLowerCase();
+      } else if (sortKey === "city") {
+        aVal = (a.address_city || "").toLowerCase();
+        bVal = (b.address_city || "").toLowerCase();
+      } else if (sortKey === "status") {
+        aVal = a.patient_status;
+        bVal = b.patient_status;
+      } else {
+        aVal = a.created_at;
+        bVal = b.created_at;
+      }
+      return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
 
   return (
     <div className="space-y-6">
@@ -94,12 +132,12 @@ export function PatientsManager({ initialPatients }: Props) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>E-Mail</TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("name")}>Name<SortIcon col="name" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("email")}>E-Mail<SortIcon col="email" /></TableHead>
                   <TableHead>Telefon</TableHead>
-                  <TableHead>Ort</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Erstellt am</TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("city")}>Ort<SortIcon col="city" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("status")}>Status<SortIcon col="status" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("created_at")}>Erstellt am<SortIcon col="created_at" /></TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
@@ -128,7 +166,7 @@ export function PatientsManager({ initialPatients }: Props) {
                         onValueChange={(val) => handleStatusChange(patient.id, val as PatientStatus)}
                       >
                         <SelectTrigger className="w-[120px] h-8">
-                          <SelectValue />
+                          <span>{statusLabels[patient.patient_status]}</span>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="active">Aktiv</SelectItem>
