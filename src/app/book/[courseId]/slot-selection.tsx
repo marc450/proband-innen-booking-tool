@@ -76,18 +76,22 @@ export function SlotSelection({ course, slots }: SlotSelectionProps) {
                     {course.description}
                   </CardDescription>
                 )}
-                {courseDate && (
-                  <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {courseDate}
-                  </div>
-                )}
-                {course.instructor && (
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Kursleitende:r Ärzt:in: {course.instructor}
-                  </p>
-                )}
               </CardHeader>
+              {(courseDate || course.instructor) && (
+                <div className="border-t px-6 py-3 space-y-1">
+                  {courseDate && (
+                    <div className="flex items-center gap-1.5 text-sm font-semibold">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {courseDate}
+                    </div>
+                  )}
+                  {course.instructor && (
+                    <p className="text-sm font-semibold">
+                      Kursleitende:r Ärzt:in: {course.instructor}
+                    </p>
+                  )}
+                </div>
+              )}
             </Card>
 
             <h2 className="text-sm font-medium text-muted-foreground mb-3">
