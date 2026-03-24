@@ -57,6 +57,7 @@ export interface Patient {
   address_city: string | null;
   stripe_customer_id: string | null;
   patient_status: PatientStatus;
+  notes: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -24,7 +24,8 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { ArrowLeft, Mail, Phone, MapPin, AlertTriangle, Ban, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, AlertTriangle, Ban, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Check, X } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 const bookingStatusLabels: Record<BookingStatus, string> = {
   booked: "Gebucht",
@@ -58,6 +59,10 @@ export function PatientDetail({ patient, bookings }: Props) {
   const [status, setStatus] = useState<PatientStatus>(patient.patient_status);
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [notes, setNotes] = useState(patient.notes || "");
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState(patient.notes || "");
+  const [savingNotes, setSavingNotes] = useState(false);
   const supabase = createClient();
 
   function handleSort(key: SortKey) {
@@ -103,6 +108,22 @@ export function PatientDetail({ patient, bookings }: Props) {
       .from("patients")
       .update({ patient_status: newStatus })
       .eq("id", patient.id);
+  };
+
+  const handleSaveNotes = async () => {
+    setSavingNotes(true);
+    await supabase
+      .from("patients")
+      .update({ notes: notesDraft || null })
+      .eq("id", patient.id);
+    setNotes(notesDraft);
+    setEditingNotes(false);
+    setSavingNotes(false);
+  };
+
+  const handleCancelNotes = () => {
+    setNotesDraft(notes);
+    setEditingNotes(false);
   };
 
   return (
@@ -261,6 +282,50 @@ export function PatientDetail({ patient, bookings }: Props) {
                 ))}
               </TableBody>
             </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Notes */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardTitle className="text-base">Notizen</CardTitle>
+          {!editingNotes && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setNotesDraft(notes); setEditingNotes(true); }}
+            >
+              <Pencil className="h-4 w-4 mr-1" />
+              {notes ? "Bearbeiten" : "Notiz hinzufügen"}
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent>
+          {editingNotes ? (
+            <div className="space-y-2">
+              <Textarea
+                value={notesDraft}
+                onChange={(e) => setNotesDraft(e.target.value)}
+                placeholder="Notizen zu diesem:r Proband:in..."
+                className="min-h-[120px] resize-y"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleSaveNotes} disabled={savingNotes}>
+                  <Check className="h-4 w-4 mr-1" />
+                  {savingNotes ? "Speichern..." : "Speichern"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={handleCancelNotes} disabled={savingNotes}>
+                  <X className="h-4 w-4 mr-1" />
+                  Abbrechen
+                </Button>
+              </div>
+            </div>
+          ) : notes ? (
+            <p className="text-sm whitespace-pre-wrap">{notes}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">Noch keine Notizen vorhanden.</p>
           )}
         </CardContent>
       </Card>
