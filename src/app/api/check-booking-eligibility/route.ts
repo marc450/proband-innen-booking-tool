@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, "");
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ eligible: true });
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Check blacklist by email
     if (email) {
