@@ -427,77 +427,55 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
           return (
             <Card key={course.id} className="overflow-hidden">
               {/* Collapsed header — always visible */}
-              <CardHeader className="py-3 px-4">
-                <div className="flex items-center gap-3">
-                  {/* Toggle button */}
-                  <button
-                    onClick={() => toggleCourse(course.id)}
-                    className="flex items-center gap-2 flex-1 text-left min-w-0"
-                    aria-expanded={isExpanded}
-                  >
-                    {isExpanded
-                      ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    }
-                    {/* Table-like row: title | date | slots | booked/total */}
-                    <div className="flex items-center w-full min-w-0">
-                      <span className="font-semibold text-base truncate flex-1 min-w-0">{course.title}</span>
-                      <span className="text-sm text-muted-foreground whitespace-nowrap w-44">
-                        {course.course_date
-                          ? format(parseISO(course.course_date), "dd. MMMM yyyy", { locale: de })
-                          : <span className="italic">Kein Datum</span>}
-                      </span>
-                      <span className="text-sm text-muted-foreground whitespace-nowrap w-20 text-center">
-                        {courseSlots.length} {courseSlots.length === 1 ? "Slot" : "Slots"}
-                      </span>
-                      <span className={`text-sm font-semibold whitespace-nowrap w-12 text-right ${bookedCount === totalCapacity && totalCapacity > 0 ? "text-green-600" : "text-red-500"}`}>
-                        {bookedCount}/{totalCapacity}
-                      </span>
-                    </div>
-                  </button>
+              {/* Course header row — same skeleton as slot rows below */}
+              <div className="flex items-center gap-2 px-4 py-3">
+                {/* Chevron toggle */}
+                <button
+                  onClick={() => toggleCourse(course.id)}
+                  className="shrink-0 text-muted-foreground hover:text-foreground"
+                  aria-expanded={isExpanded}
+                >
+                  {isExpanded
+                    ? <ChevronDown className="h-4 w-4" />
+                    : <ChevronRight className="h-4 w-4" />
+                  }
+                </button>
 
-                  {/* Action buttons */}
-                  <div className="flex gap-1 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      title="Kurs duplizieren"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDuplicatingCourse(course);
-                        setDuplicateDialogOpen(true);
-                      }}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingCourse(course);
-                        setCourseTitle(course.title);
-                        setCourseDescription(course.description || "");
-                        setCourseDate(course.course_date || "");
-                        setCourseLocation(course.location || "");
-                        setCourseDialogOpen(true);
-                      }}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteCourseConfirm(course.id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                {/* Shared 4-column content area */}
+                <button
+                  onClick={() => toggleCourse(course.id)}
+                  className="flex items-center gap-4 flex-1 min-w-0 text-left"
+                >
+                  <span className="[flex:3_1_0%] font-semibold text-base truncate min-w-0">{course.title}</span>
+                  <span className="[flex:2_1_0%] text-sm text-muted-foreground truncate">
+                    {course.course_date
+                      ? format(parseISO(course.course_date), "dd. MMMM yyyy", { locale: de })
+                      : <span className="italic">Kein Datum</span>}
+                  </span>
+                  <span className="[flex:1_1_0%] text-sm text-muted-foreground text-center whitespace-nowrap">
+                    {courseSlots.length} {courseSlots.length === 1 ? "Slot" : "Slots"}
+                  </span>
+                  <span className={`[flex:1_1_0%] text-sm font-semibold text-right whitespace-nowrap ${bookedCount === totalCapacity && totalCapacity > 0 ? "text-green-600" : "text-red-500"}`}>
+                    {bookedCount}/{totalCapacity}
+                  </span>
+                </button>
+
+                {/* Action buttons — fixed width, slots rows will mirror this */}
+                <div className="flex gap-1 shrink-0">
+                  <Button variant="ghost" size="sm" title="Kurs duplizieren"
+                    onClick={(e) => { e.stopPropagation(); setDuplicatingCourse(course); setDuplicateDialogOpen(true); }}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm"
+                    onClick={(e) => { e.stopPropagation(); setEditingCourse(course); setCourseTitle(course.title); setCourseDescription(course.description || ""); setCourseDate(course.course_date || ""); setCourseLocation(course.location || ""); setCourseDialogOpen(true); }}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm"
+                    onClick={(e) => { e.stopPropagation(); setDeleteCourseConfirm(course.id); }}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-              </CardHeader>
+              </div>
 
               {/* Expanded content */}
               {isExpanded && (
@@ -535,49 +513,49 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                         return (
                           <div
                             key={slot.id}
-                            className="flex items-center py-2 px-3 rounded-md bg-muted/40"
+                            className="flex items-center gap-2 py-2 px-2 rounded-md bg-muted/40"
                           >
-                            {/* Time — matches title column */}
-                            <span className="text-sm font-medium whitespace-nowrap flex-1 min-w-0">
-                              {format(new Date(slot.start_time), "HH:mm")} Uhr
-                            </span>
+                            {/* Chevron-width spacer — aligns with course chevron */}
+                            <span className="w-4 shrink-0" />
 
-                            {/* Booking status + name — matches date column */}
-                            <div className="flex items-center gap-2 w-44 min-w-0">
-                              {slotBookings.length > 0 ? (
-                                slotBookings.map((b) => (
-                                  <div key={b.id} className="flex items-center gap-2 min-w-0">
-                                    <Badge variant="default" className="text-xs shrink-0">Gebucht</Badge>
-                                    {b.patient_id ? (
-                                      <Link
-                                        href={`/dashboard/patients/${b.patient_id}`}
-                                        className="text-sm font-medium hover:underline truncate"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        {getPatientName(b)}
-                                      </Link>
-                                    ) : (
-                                      <span className="text-sm truncate">{getPatientName(b)}</span>
-                                    )}
-                                  </div>
-                                ))
-                              ) : (
-                                <span className="text-sm text-muted-foreground">Frei</span>
-                              )}
+                            {/* Shared 4-column content — same proportions as course header */}
+                            <div className="flex items-center gap-4 flex-1 min-w-0">
+                              <span className="[flex:3_1_0%] text-sm font-medium min-w-0 truncate">
+                                {format(new Date(slot.start_time), "HH:mm")} Uhr
+                              </span>
+                              <div className="[flex:2_1_0%] flex items-center gap-2 min-w-0">
+                                {slotBookings.length > 0 ? (
+                                  slotBookings.map((b) => (
+                                    <div key={b.id} className="flex items-center gap-2 min-w-0">
+                                      <Badge variant="default" className="text-xs shrink-0">Gebucht</Badge>
+                                      {b.patient_id ? (
+                                        <Link
+                                          href={`/dashboard/patients/${b.patient_id}`}
+                                          className="text-sm font-medium hover:underline truncate"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          {getPatientName(b)}
+                                        </Link>
+                                      ) : (
+                                        <span className="text-sm truncate">{getPatientName(b)}</span>
+                                      )}
+                                    </div>
+                                  ))
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">Frei</span>
+                                )}
+                              </div>
+                              <span className="[flex:1_1_0%] text-sm text-muted-foreground text-center whitespace-nowrap">
+                                {slotBooked}/{slot.capacity}
+                              </span>
+                              <span className="[flex:1_1_0%]" />
                             </div>
 
-                            {/* Capacity — matches slots column */}
-                            <span className="text-sm text-muted-foreground whitespace-nowrap w-20 text-center">
-                              {slotBooked}/{slot.capacity}
-                            </span>
-
-                            {/* Delete — matches booked/total + action column */}
-                            <div className="w-12 flex justify-end">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setDeleteSlotConfirm(slot.id)}
-                              >
+                            {/* Action area — same width as course action buttons (3 × size-sm = 104px) */}
+                            <div className="flex gap-1 shrink-0">
+                              <span className="w-8 h-8" />
+                              <span className="w-8 h-8" />
+                              <Button variant="ghost" size="sm" onClick={() => setDeleteSlotConfirm(slot.id)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
