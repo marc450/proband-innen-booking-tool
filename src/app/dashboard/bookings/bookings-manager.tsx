@@ -22,15 +22,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { ConfirmDialog, AlertDialog } from "@/components/confirm-dialog";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Download, Search } from "lucide-react";
+import { Download, Search, ArrowLeftRight } from "lucide-react";
 import * as XLSX from "xlsx";
 
 interface Props {
   initialBookings: BookingWithDetails[];
   courses: { id: string; title: string }[];
+}
+
+interface AvailableSlotOption {
+  id: string;
+  start_time: string;
+  end_time: string;
+  remaining_capacity: number;
 }
 
 const statusLabels: Record<BookingStatus, string> = {
@@ -54,13 +69,22 @@ export function BookingsManager({ initialBookings, courses }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [chargingId, setChargingId] = useState<string | null>(null);
 
-  // No-show confirmation: holds booking + previous status so we can revert on cancel
+  // No-show confirmation
   const [noShowPending, setNoShowPending] = useState<{
     booking: BookingWithDetails;
     previousStatus: BookingStatus;
   } | null>(null);
 
   const [alertState, setAlertState] = useState<{ title: string; description: string } | null>(null);
+
+  // Slot change modal
+  const [slotChangePending, setSlotChangePending] = useState<BookingWithDetails | null>(null);
+  const [slotChangeTargetCourseId, setSlotChangeTargetCourseId] = useState<string>("");
+  const [slotChangeTargetSlotId, setSlotChangeTargetSlotId] = useState<string>("");
+  const [slotsForCourse, setSlotsForCourse] = useState<AvailableSlotOption[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotChangeError, setSlotChangeError] = useState<string | null>(null);
+  const [savingSlotChange, setSavingSlotChange] = useState(false);
 
   const supabase = createClient();
 
@@ -83,7 +107,6 @@ export function BookingsManager({ initialBookings, courses }: Props) {
   });
 
   const handleStatusChange = async (bookingId: string, newStatus: BookingStatus) => {
-    // No-show requires explicit confirmation + automatic charge — show modal instead
     if (newStatus === "no_show") {
       const booking = bookings.find((b) => b.id === bookingId);
       if (booking) {
@@ -109,11 +132,9 @@ export function BookingsManager({ initialBookings, courses }: Props) {
     setChargingId(booking.id);
 
     try {
-      // 1. Update status to no_show
       await supabase.from("bookings").update({ status: "no_show" }).eq("id", booking.id);
       setBookings((prev) => prev.map((b) => b.id === booking.id ? { ...b, status: "no_show" } : b));
 
-      // 2. Charge the no-show fee
       const { data, error } = await supabase.functions.invoke("charge-no-show", {
         body: { bookingId: booking.id },
       });
@@ -130,6 +151,110 @@ export function BookingsManager({ initialBookings, courses }: Props) {
       setChargingId(null);
     }
   };
+
+  // --- Slot change handlers ---
+
+  const fetchSlotsForCourse = async (courseId: string, excludeSlotId: string, email: string) => {
+    setLoadingSlots(true);
+    setSlotsForCourse([]);
+    setSlotChangeTargetSlotId("");
+
+    // Fetch slots with remaining capacity, excluding the current slot
+    const { data: slotData } = await supabase
+      .from("available_slots")
+      .select("id, start_time, end_time, remaining_capacity")
+      .eq("course_id", courseId)
+      .gt("remaining_capacity", 0)
+      .neq("id", excludeSlotId)
+      .order("start_time");
+
+    // Fetch any slots this person is already booked into (for this course)
+    const slotIds = (slotData || []).map((s) => s.id);
+    let alreadyBookedSlotIds = new Set<string>();
+    if (slotIds.length > 0) {
+      const { data: existingBookings } = await supabase
+        .from("bookings")
+        .select("slot_id")
+        .eq("email", email)
+        .in("slot_id", slotIds)
+        .in("status", ["booked", "attended"]);
+      alreadyBookedSlotIds = new Set((existingBookings || []).map((b) => b.slot_id));
+    }
+
+    const filtered = (slotData || []).filter((s) => !alreadyBookedSlotIds.has(s.id));
+    setSlotsForCourse(filtered as AvailableSlotOption[]);
+    setLoadingSlots(false);
+  };
+
+  const handleOpenSlotChange = (booking: BookingWithDetails) => {
+    setSlotChangePending(booking);
+    setSlotChangeError(null);
+    setSlotChangeTargetSlotId("");
+    const courseId = booking.slots?.course_id || "";
+    setSlotChangeTargetCourseId(courseId);
+    if (courseId) {
+      fetchSlotsForCourse(courseId, booking.slot_id, booking.email);
+    }
+  };
+
+  const handleSlotChangeCourseSelect = (courseId: string) => {
+    setSlotChangeTargetCourseId(courseId);
+    setSlotChangeError(null);
+    if (slotChangePending) {
+      fetchSlotsForCourse(courseId, slotChangePending.slot_id, slotChangePending.email);
+    }
+  };
+
+  const handleConfirmSlotChange = async () => {
+    if (!slotChangePending || !slotChangeTargetSlotId) return;
+    setSavingSlotChange(true);
+    setSlotChangeError(null);
+
+    try {
+      const { error } = await supabase
+        .from("bookings")
+        .update({ slot_id: slotChangeTargetSlotId })
+        .eq("id", slotChangePending.id);
+
+      if (error) {
+        setSlotChangeError(error.message);
+        return;
+      }
+
+      // Update local state
+      const newSlot = slotsForCourse.find((s) => s.id === slotChangeTargetSlotId);
+      const newCourse = courses.find((c) => c.id === slotChangeTargetCourseId);
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === slotChangePending.id
+            ? {
+                ...b,
+                slot_id: slotChangeTargetSlotId,
+                slots: {
+                  ...b.slots,
+                  course_id: slotChangeTargetCourseId,
+                  start_time: newSlot?.start_time || b.slots.start_time,
+                  end_time: newSlot?.end_time || b.slots.end_time,
+                  courses: {
+                    title: newCourse?.title || b.slots.courses.title,
+                  },
+                },
+              }
+            : b
+        )
+      );
+
+      setSlotChangePending(null);
+      setAlertState({
+        title: "Slot geändert",
+        description: `Die Buchung wurde erfolgreich auf den neuen Termin umgebucht.`,
+      });
+    } finally {
+      setSavingSlotChange(false);
+    }
+  };
+
+  // --- Export ---
 
   const handleExport = () => {
     const rows = filteredBookings.map((b) => ({
@@ -149,7 +274,6 @@ export function BookingsManager({ initialBookings, courses }: Props) {
 
     const ws = XLSX.utils.json_to_sheet(rows);
 
-    // Auto-size columns
     const colWidths = Object.keys(rows[0] || {}).map((key) => ({
       wch: Math.max(key.length, ...rows.map((r) => String((r as Record<string, string>)[key] || "").length)) + 2,
     }));
@@ -187,6 +311,91 @@ export function BookingsManager({ initialBookings, courses }: Props) {
         description={alertState?.description ?? ""}
         onClose={() => setAlertState(null)}
       />
+
+      {/* Slot change modal */}
+      <Dialog open={!!slotChangePending} onOpenChange={(open) => { if (!open) setSlotChangePending(null); }}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Slot ändern</DialogTitle>
+          </DialogHeader>
+
+          {slotChangePending && (
+            <div className="space-y-4 py-2">
+              <div className="rounded-md bg-muted px-4 py-3 text-sm space-y-1">
+                <div className="font-medium">
+                  {slotChangePending.first_name && slotChangePending.last_name
+                    ? `${slotChangePending.first_name} ${slotChangePending.last_name}`
+                    : slotChangePending.name}
+                </div>
+                <div className="text-muted-foreground">
+                  Aktuell: {slotChangePending.slots?.courses?.title} —{" "}
+                  {format(new Date(slotChangePending.slots.start_time), "dd.MM.yyyy HH:mm", { locale: de })}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Kurs</Label>
+                <Select value={slotChangeTargetCourseId} onValueChange={(val) => { if (val) handleSlotChangeCourseSelect(val); }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Kurs wählen..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courses.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Neuer Termin</Label>
+                {loadingSlots ? (
+                  <div className="text-sm text-muted-foreground py-2">Lade Termine...</div>
+                ) : slotsForCourse.length === 0 ? (
+                  <div className="text-sm text-muted-foreground py-2">
+                    {slotChangeTargetCourseId ? "Keine anderen Termine verfügbar." : "Bitte erst einen Kurs wählen."}
+                  </div>
+                ) : (
+                  <Select value={slotChangeTargetSlotId} onValueChange={(val) => { if (val) { setSlotChangeTargetSlotId(val); setSlotChangeError(null); } }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Termin wählen..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {slotsForCourse.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {format(new Date(s.start_time), "dd.MM.yyyy HH:mm", { locale: de })}
+                          {" — "}
+                          {s.remaining_capacity > 0
+                            ? `${s.remaining_capacity} Platz${s.remaining_capacity !== 1 ? "ätze" : ""} frei`
+                            : "ausgebucht"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              {slotChangeError && (
+                <p className="text-sm text-destructive">{slotChangeError}</p>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSlotChangePending(null)} disabled={savingSlotChange}>
+              Abbrechen
+            </Button>
+            <Button
+              onClick={handleConfirmSlotChange}
+              disabled={!slotChangeTargetSlotId || savingSlotChange}
+            >
+              {savingSlotChange ? "Speichern..." : "Slot ändern"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <h1 className="text-2xl font-bold">Buchungen</h1>
 
@@ -268,6 +477,7 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                   <TableHead>Termin</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Buchungsdatum</TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -316,6 +526,16 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                       {booking.created_at
                         ? format(new Date(booking.created_at), "dd.MM.yyyy HH:mm", { locale: de })
                         : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleOpenSlotChange(booking)}
+                        title="Slot ändern"
+                      >
+                        <ArrowLeftRight className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

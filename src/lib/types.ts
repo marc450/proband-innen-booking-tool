@@ -67,6 +67,7 @@ export interface PatientWithBookings extends Patient {
 
 export interface BookingWithDetails extends Booking {
   slots: {
+    course_id: string;
     start_time: string;
     end_time: string;
     courses: {

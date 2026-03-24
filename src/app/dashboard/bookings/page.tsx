@@ -11,6 +11,7 @@ export default async function BookingsPage() {
     .select(`
       *,
       slots (
+        course_id,
         start_time,
         end_time,
         courses (
