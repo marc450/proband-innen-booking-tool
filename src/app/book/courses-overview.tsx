@@ -1,11 +1,11 @@
 "use client";
 
 import { AvailableSlot, Course } from "@/lib/types";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Calendar, ChevronRight } from "lucide-react";
+import { Calendar, ChevronRight, ImageIcon, Euro, Stethoscope } from "lucide-react";
 import Link from "next/link";
 
 interface CoursesOverviewProps {
@@ -24,7 +24,6 @@ interface CourseGroup {
 }
 
 export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
-  // Group courses by title
   const groupedMap = new Map<string, CourseGroup>();
 
   for (const course of courses) {
@@ -55,7 +54,7 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
         <div className="max-w-2xl mx-auto px-4 py-5">
           <h1 className="text-lg font-semibold tracking-tight">EPHIA Proband:innen-Buchung</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Buche Deinen Behandlungstermin fuer unsere aesthetischen Schulungskurse
+            Buche Deinen Behandlungstermin für unsere ästhetischen Schulungskurse
           </p>
         </div>
       </header>
@@ -64,83 +63,114 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
         {groups.length === 0 ? (
           <Card className="shadow-sm">
             <CardContent className="py-12 text-center text-muted-foreground">
-              Derzeit sind keine Kurse mit verfuegbaren Terminen vorhanden.
+              Derzeit sind keine Kurse mit verfügbaren Terminen vorhanden.
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-8">
-            {groups.map((group) => (
-              <Card key={group.title} className="shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-lg">{group.title}</CardTitle>
-                  {group.description && (
-                    <CardDescription className="mt-1 leading-relaxed">
-                      {group.description}
-                    </CardDescription>
-                  )}
-                  {/* Show service description + guide price from first date entry */}
-                  {(() => {
-                    const firstCourse = group.dates[0]?.course;
-                    if (!firstCourse?.service_description && !firstCourse?.guide_price) return null;
-                    return (
-                      <div className="mt-3 space-y-2">
+            {groups.map((group) => {
+              const firstCourse = group.dates[0]?.course;
+
+              return (
+                <Card key={group.title} className="shadow-sm overflow-hidden">
+                  {/* Image placeholder */}
+                  <div className="w-full h-48 bg-muted flex items-center justify-center">
+                    <div className="text-center text-muted-foreground">
+                      <ImageIcon className="h-10 w-10 mx-auto mb-1 opacity-40" />
+                      <span className="text-xs opacity-40">Kursbild</span>
+                    </div>
+                  </div>
+
+                  <CardContent className="p-0">
+                    {/* Title + description */}
+                    <div className="px-5 pt-5 pb-4">
+                      <h2 className="text-xl font-bold">{group.title}</h2>
+                      {group.description && (
+                        <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                          {group.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Info grid: Leistung + Richtpreis */}
+                    {(firstCourse?.service_description || firstCourse?.guide_price) && (
+                      <div className="border-t mx-5" />
+                    )}
+                    {(firstCourse?.service_description || firstCourse?.guide_price) && (
+                      <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {firstCourse.service_description && (
-                          <div>
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leistung</span>
-                            <p className="text-sm mt-0.5">{firstCourse.service_description}</p>
+                          <div className="flex gap-3">
+                            <Stethoscope className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                            <div>
+                              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leistung</span>
+                              <p className="text-sm mt-0.5">{firstCourse.service_description}</p>
+                            </div>
                           </div>
                         )}
                         {firstCourse.guide_price && (
-                          <div>
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Richtpreis</span>
-                            <p className="text-base font-semibold mt-0.5">{firstCourse.guide_price}</p>
-                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                              Die Bezahlung erfolgt nach der Behandlung vor Ort. Die Abrechnung erfolgt nach GOÄ. Der Richtpreis dient als Orientierung. Der genaue Behandlungsumfang und die endgültigen Kosten werden im persönlichen Aufklärungsgespräch mit der behandelnden Ärzt:in festgelegt.
-                            </p>
+                          <div className="flex gap-3">
+                            <Euro className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                            <div>
+                              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Richtpreis</span>
+                              <p className="text-lg font-bold mt-0.5">{firstCourse.guide_price}</p>
+                            </div>
                           </div>
                         )}
                       </div>
-                    );
-                  })()}
-                </CardHeader>
-                <CardContent>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                    Verfuegbare Termine
-                  </h3>
-                  <div className="grid gap-2">
-                    {group.dates.map(({ course, slotCount, totalCapacity }) => (
-                      <Link
-                        key={course.id}
-                        href={`/book/${course.id}`}
-                        className="block"
-                      >
-                        <div className="flex items-center justify-between p-3 rounded-lg border hover:border-primary/50 hover:bg-accent/50 transition-all group">
-                          <div className="flex items-center gap-3">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <span className="text-sm font-medium">
-                                {course.course_date
-                                  ? format(new Date(course.course_date + "T00:00:00"), "EEEE, dd. MMMM yyyy", { locale: de })
-                                  : "Datum wird bekannt gegeben"}
-                              </span>
-                              <span className="text-xs text-muted-foreground ml-3">
-                                {slotCount} {slotCount === 1 ? "Zeitfenster" : "Zeitfenster"} · {totalCapacity} {totalCapacity === 1 ? "Platz" : "Plaetze"} frei
-                              </span>
+                    )}
+
+                    {/* Pricing disclaimer */}
+                    {firstCourse?.guide_price && (
+                      <div className="mx-5 mb-4 bg-muted/50 rounded-md px-3 py-2">
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                          Die Bezahlung erfolgt nach der Behandlung vor Ort. Die Abrechnung erfolgt nach GOÄ. Der Richtpreis dient als Orientierung. Der genaue Behandlungsumfang und die endgültigen Kosten werden im persönlichen Aufklärungsgespräch mit der behandelnden Ärzt:in festgelegt.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Available dates */}
+                    <div className="border-t">
+                      <div className="px-5 pt-4 pb-2">
+                        <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Verfügbare Termine
+                        </h3>
+                      </div>
+                      <div className="px-5 pb-5 space-y-2">
+                        {group.dates.map(({ course, slotCount, totalCapacity }) => (
+                          <Link
+                            key={course.id}
+                            href={`/book/${course.id}`}
+                            className="block"
+                          >
+                            <div className="flex items-center justify-between p-3 rounded-lg border hover:border-primary/50 hover:bg-accent/50 transition-all group">
+                              <div className="flex items-center gap-3">
+                                <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium">
+                                    {course.course_date
+                                      ? format(new Date(course.course_date + "T00:00:00"), "EEEE, dd. MMMM yyyy", { locale: de })
+                                      : "Datum wird bekannt gegeben"}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {slotCount} Zeitfenster · {totalCapacity} {totalCapacity === 1 ? "Platz" : "Plätze"} frei
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <Badge variant="outline" className="text-xs border-primary/30 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                                  Buchen
+                                </Badge>
+                                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs border-primary/30 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                              Zu den Terminen
-                            </Badge>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </main>
