@@ -31,7 +31,7 @@ export function BookingForm({ slot }: BookingFormProps) {
       const eligibilityRes = await fetch("/api/check-booking-eligibility", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ email: email.trim(), phone: phone.trim() }),
       });
       const eligibility = await eligibilityRes.json();
 

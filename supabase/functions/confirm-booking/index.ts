@@ -160,19 +160,43 @@ serve(async (req) => {
       });
     }
 
-    // Hard block: reject booking if patient is blacklisted
+    // Hard block: reject booking if patient is blacklisted (check by email and phone)
+    const normalizePhone = (p: string) => p.replace(/\D/g, "");
+
     if (email) {
-      const { data: existingPatient } = await supabase
+      const { data: byEmail } = await supabase
         .from("patients")
         .select("patient_status")
         .eq("email", email.toLowerCase().trim())
         .maybeSingle();
 
-      if (existingPatient?.patient_status === "blacklist") {
+      if (byEmail?.patient_status === "blacklist") {
         return new Response(
-          JSON.stringify({ error: "Eine Buchung ist mit dieser E-Mail-Adresse nicht möglich." }),
+          JSON.stringify({ error: "Eine Buchung ist mit diesen Daten nicht möglich." }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      }
+    }
+
+    if (phone) {
+      const normalizedPhone = normalizePhone(phone);
+      if (normalizedPhone.length >= 7) {
+        const { data: blacklisted } = await supabase
+          .from("patients")
+          .select("phone")
+          .eq("patient_status", "blacklist")
+          .not("phone", "is", null);
+
+        const phoneMatch = blacklisted?.find(
+          (p) => p.phone && normalizePhone(p.phone) === normalizedPhone
+        );
+
+        if (phoneMatch) {
+          return new Response(
+            JSON.stringify({ error: "Eine Buchung ist mit diesen Daten nicht möglich." }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
     }
 
