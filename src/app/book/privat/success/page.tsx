@@ -1,6 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle2 } from "lucide-react";
-import Link from "next/link";
 
 export default function PrivatSuccessPage() {
   return (
@@ -16,15 +15,9 @@ export default function PrivatSuccessPage() {
           <CardContent className="py-10 text-center">
             <CheckCircle2 className="h-12 w-12 text-green-600 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Buchung erfolgreich!</h2>
-            <p className="text-muted-foreground mb-6">
+            <p className="text-muted-foreground">
               Dein Termin wurde erfolgreich gebucht. Du erhältst in Kürze eine Bestätigung per E-Mail.
             </p>
-            <Link
-              href="/book/privat"
-              className="text-sm text-primary hover:underline"
-            >
-              Weitere Buchung vornehmen
-            </Link>
           </CardContent>
         </Card>
       </main>
