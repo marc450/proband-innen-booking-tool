@@ -23,7 +23,7 @@ export default async function BookingsPage() {
 
   const { data: courses } = await supabase
     .from("courses")
-    .select("id, title")
+    .select("id, title, location")
     .order("title");
 
   return (

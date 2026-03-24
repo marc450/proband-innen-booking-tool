@@ -38,7 +38,7 @@ import * as XLSX from "xlsx";
 
 interface Props {
   initialBookings: BookingWithDetails[];
-  courses: { id: string; title: string }[];
+  courses: { id: string; title: string; location: string | null }[];
 }
 
 interface AvailableSlotOption {
@@ -244,10 +244,34 @@ export function BookingsManager({ initialBookings, courses }: Props) {
         )
       );
 
+      // Send slot-change notification email (best effort)
+      const newSlotForEmail = slotsForCourse.find((s) => s.id === slotChangeTargetSlotId);
+      const newCourseForEmail = courses.find((c) => c.id === slotChangeTargetCourseId);
+      if (slotChangePending.email && newSlotForEmail) {
+        const date = new Date(newSlotForEmail.start_time).toLocaleDateString("de-DE", {
+          weekday: "long", day: "numeric", month: "long", year: "numeric",
+        });
+        const time = new Date(newSlotForEmail.start_time).toLocaleTimeString("de-DE", {
+          hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin",
+        });
+        fetch("/api/send-slot-change-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: slotChangePending.email,
+            firstName: slotChangePending.first_name || slotChangePending.name?.split(" ")[0] || "",
+            courseTitle: newCourseForEmail?.title || slotChangePending.slots?.courses?.title || "",
+            date,
+            time,
+            location: newCourseForEmail?.location || "",
+          }),
+        });
+      }
+
       setSlotChangePending(null);
       setAlertState({
         title: "Slot geändert",
-        description: `Die Buchung wurde erfolgreich auf den neuen Termin umgebucht.`,
+        description: `Die Buchung wurde erfolgreich auf den neuen Termin umgebucht. Eine E-Mail wurde an ${slotChangePending.email} gesendet.`,
       });
     } finally {
       setSavingSlotChange(false);

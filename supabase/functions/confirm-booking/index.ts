@@ -340,6 +340,55 @@ serve(async (req) => {
     // Send confirmation email via Resend
     if (email && RESEND_API_KEY) {
       try {
+        const logoUrl = "https://lwfiles.mycourse.app/6638baeec5c56514e03ec360-public/f64a1ea1eb5346a171fe9ea36e8615ca.png";
+        const footer = `
+          <div style="margin-top:24px; padding-top:16px; border-top:1px solid #f0f0f0; text-align:left;">
+            <img src="${logoUrl}" alt="EPHIA" style="width:160px; height:auto; display:block; margin:0 0 8px;">
+            <div style="color:#9e9e9e; font-size:12px; line-height:1.5;">
+              EPHIA Medical GmbH<br>
+              Dorfstraße 30, 15913 Märkische Heide, Deutschland<br>
+              Geschäftsführerin: Dr. Sophia Wilk-Vollmann
+            </div>
+          </div>`;
+
+        const infoRows = [
+          { label: "Kurs", value: courseTitle },
+          { label: "Datum", value: formattedDate },
+          { label: "Uhrzeit", value: formattedTime },
+          ...(courseLocation ? [{ label: "Ort", value: courseLocation }] : []),
+        ].map(r => `<p style="margin:0 0 6px;"><span style="font-weight:bold;">${r.label}:</span> ${r.value}</p>`).join("");
+
+        const html = `<div style="background-color:#fff; padding:0; font-family:Arial, sans-serif;">
+  <div style="background-color:#fff; max-width:600px; margin:0 auto; padding:8px; text-align:left; line-height:1.5;">
+
+    <p style="margin-top:0; margin-bottom:20px;">
+      Hi ${firstName},<br><br>
+      toll, dass Du Dich für den <strong>${courseTitle}</strong> bei EPHIA angemeldet hast!<br>
+      Wir freuen uns sehr darauf, Dich bald bei uns zu sehen. Hier sind alle wichtigen Informationen zu Deinem Termin auf einen Blick:
+    </p>
+
+    <div style="border-radius:8px; padding:14px 16px; background-color:#FAEBE1; border:1px solid #F0D0B8; font-size:14px; margin:0 0 20px; text-align:left;">
+      ${infoRows}
+    </div>
+
+    <div style="background-color:#FAEBE1; border:1px solid #F0D0B8; border-radius:8px; padding:14px 16px; margin:0 0 20px; font-size:14px; line-height:1.5;">
+      <strong>Wichtiger Hinweis:</strong> Bei Nichterscheinen oder Absage weniger als 24 Stunden vor dem Termin wird eine Gebühr von 50 EUR erhoben.
+    </div>
+
+    <p style="margin:0 0 20px;">
+      Wenn Du vor dem Termin noch Fragen hast, melde Dich jederzeit bei uns:
+      <a href="mailto:customerlove@ephia.de" style="color:#0066FF; text-decoration:none;">customerlove@ephia.de</a>
+    </p>
+
+    <p style="margin:0 0 20px;">
+      Herzliche Grüße,<br>
+      Dein EPHIA-Team
+    </p>
+
+    ${footer}
+  </div>
+</div>`;
+
         await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
@@ -349,57 +398,8 @@ serve(async (req) => {
           body: JSON.stringify({
             from: "EPHIA <customerlove@ephia.de>",
             to: [email],
-            subject: `Buchungsbestaetigung: ${courseTitle}`,
-            html: `
-              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-                <div style="text-align: center; margin-bottom: 32px;">
-                  <h1 style="font-size: 24px; font-weight: 700; color: #1a1a1a; margin: 0;">EPHIA</h1>
-                </div>
-                <div style="background: #ffffff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 32px;">
-                  <h2 style="font-size: 20px; color: #1a1a1a; margin: 0 0 8px 0;">Hallo ${firstName}!</h2>
-                  <p style="color: #525252; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
-                    Deine Buchung wurde erfolgreich bestaetigt. Hier sind Deine Details:
-                  </p>
-                  <div style="background: #fafafa; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-                    <table style="width: 100%; border-collapse: collapse;">
-                      <tr>
-                        <td style="padding: 8px 0; color: #737373; font-size: 14px;">Kurs</td>
-                        <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600; text-align: right;">${courseTitle}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 8px 0; color: #737373; font-size: 14px;">Datum</td>
-                        <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600; text-align: right;">${formattedDate}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 8px 0; color: #737373; font-size: 14px;">Uhrzeit</td>
-                        <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600; text-align: right;">${formattedTime}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 8px 0; color: #737373; font-size: 14px;">Name</td>
-                        <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600; text-align: right;">${fullName}</td>
-                      </tr>
-                      ${courseLocation ? `
-                      <tr>
-                        <td style="padding: 8px 0; color: #737373; font-size: 14px;">Adresse</td>
-                        <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600; text-align: right;">${courseLocation}</td>
-                      </tr>` : ""}
-                    </table>
-                  </div>
-                  <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
-                    <p style="color: #9a3412; font-size: 14px; line-height: 1.5; margin: 0;">
-                      <strong>Wichtiger Hinweis:</strong> Bei Nichterscheinen oder Absage weniger als 24 Stunden vor dem Termin wird eine Gebuehr von 50 EUR erhoben.
-                    </p>
-                  </div>
-                  <p style="color: #525252; font-size: 14px; line-height: 1.6; margin: 0;">
-                    Wir freuen uns auf Dich!<br>
-                    Dein EPHIA Team
-                  </p>
-                </div>
-                <div style="text-align: center; margin-top: 24px;">
-                  <p style="color: #a3a3a3; font-size: 12px; margin: 0;">EPHIA Medical GmbH</p>
-                </div>
-              </div>
-            `,
+            subject: `Buchungsbestätigung: ${courseTitle}`,
+            html,
           }),
         });
       } catch (emailErr) {
