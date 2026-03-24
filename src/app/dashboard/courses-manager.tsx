@@ -297,7 +297,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
               />
             </div>
             <div>
-              <Label htmlFor="instructor">Kursleitende:r Ärztin/Arzt</Label>
+              <Label htmlFor="instructor">Kursleitende:r Ärzt:in</Label>
               <Input
                 id="instructor"
                 value={courseInstructor}

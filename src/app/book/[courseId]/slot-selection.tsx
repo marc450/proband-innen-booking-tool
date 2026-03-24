@@ -84,7 +84,7 @@ export function SlotSelection({ course, slots }: SlotSelectionProps) {
                 )}
                 {course.instructor && (
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Kursleitende:r Ärztin/Arzt: {course.instructor}
+                    Kursleitende:r Ärzt:in: {course.instructor}
                   </p>
                 )}
               </CardHeader>
