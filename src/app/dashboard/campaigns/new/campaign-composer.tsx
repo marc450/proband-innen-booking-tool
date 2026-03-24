@@ -211,7 +211,7 @@ export function CampaignComposer({ courses, patients }: Props) {
                       : "Kurs wählen..."}
                   </span>
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="w-[--radix-select-trigger-width]">
                   {courses.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.title}
