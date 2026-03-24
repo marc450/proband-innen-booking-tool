@@ -16,7 +16,7 @@ export default async function BookPage() {
     .from("available_slots")
     .select("*")
     .gt("remaining_capacity", 0)
-    .gt("start_time", new Date().toISOString())
+    .gte("start_time", new Date(new Date().toDateString()).toISOString())
     .order("start_time", { ascending: true });
 
   return (
