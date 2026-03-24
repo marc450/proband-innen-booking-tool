@@ -77,10 +77,10 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
                     <img
                       src={firstCourse.image_url}
                       alt={group.title}
-                      className="w-full h-48 object-cover"
+                      className="w-full aspect-video object-cover"
                     />
                   ) : (
-                    <div className="w-full h-48 bg-muted flex items-center justify-center">
+                    <div className="w-full aspect-video bg-muted flex items-center justify-center">
                       <div className="text-center text-muted-foreground">
                         <ImageIcon className="h-10 w-10 mx-auto mb-1 opacity-40" />
                         <span className="text-xs opacity-40">Kursbild</span>

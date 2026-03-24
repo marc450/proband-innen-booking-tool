@@ -392,7 +392,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                     <img
                       src={courseImageUrl}
                       alt="Kursbild"
-                      className="w-full h-40 object-cover rounded-md border"
+                      className="w-full aspect-video object-cover rounded-md border"
                     />
                     <Button
                       variant="destructive"
