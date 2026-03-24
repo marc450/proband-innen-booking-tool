@@ -439,29 +439,20 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                       ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
                       : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                     }
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <span className="font-semibold text-base leading-tight">{course.title}</span>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {course.course_date && (
-                          <span className="text-sm text-muted-foreground whitespace-nowrap">
-                            {format(parseISO(course.course_date), "dd. MMMM yyyy", { locale: de })}
-                          </span>
-                        )}
-                        {courseSlots.length > 0 && (
-                          <span className="text-sm text-muted-foreground whitespace-nowrap">
-                            {course.course_date && "· "}
-                            {courseSlots.length} {courseSlots.length === 1 ? "Slot" : "Slots"}
-                            {" · "}
-                            <span className={remainingCapacity === 0 ? "text-red-600 font-medium" : "text-green-600 font-medium"}>
-                              {remainingCapacity}/{totalCapacity}
-                            </span>
-                            {" "}frei
-                          </span>
-                        )}
-                        {courseSlots.length === 0 && (
-                          <span className="text-sm text-muted-foreground">Keine Slots</span>
-                        )}
-                      </div>
+                    {/* Table-like row: title | date | slots | booked */}
+                    <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-6 w-full min-w-0">
+                      <span className="font-semibold text-base truncate">{course.title}</span>
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">
+                        {course.course_date
+                          ? format(parseISO(course.course_date), "dd. MMMM yyyy", { locale: de })
+                          : <span className="italic">Kein Datum</span>}
+                      </span>
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">
+                        {courseSlots.length} {courseSlots.length === 1 ? "Slot" : "Slots"}
+                      </span>
+                      <span className={`text-sm font-semibold whitespace-nowrap ${bookedCount === totalCapacity && totalCapacity > 0 ? "text-green-600" : "text-red-500"}`}>
+                        {bookedCount}/{totalCapacity}
+                      </span>
                     </div>
                   </button>
 
