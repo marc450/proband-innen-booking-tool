@@ -25,7 +25,7 @@ export function DashboardNav({ userEmail }: { userEmail: string }) {
 
   return (
     <header className="bg-white border-b">
-      <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
+      <div className="mx-auto px-6 flex items-center justify-between h-14">
         <div className="flex items-center gap-8">
           <Link href="/dashboard" className="font-bold text-lg">
             EPHIA Admin
