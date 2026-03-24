@@ -17,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    const { slotId, phone, successUrl, cancelUrl } = await req.json();
+    const { slotId, email, phone, successUrl, cancelUrl } = await req.json();
 
     if (!slotId) {
       return new Response(
@@ -31,6 +31,7 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       mode: "setup",
       locale: "de",
+      ...(email ? { customer_email: email } : {}),
       payment_method_types: ["card", "klarna"],
       billing_address_collection: "required",
       custom_text: {

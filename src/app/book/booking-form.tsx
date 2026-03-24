@@ -50,6 +50,7 @@ export function BookingForm({ slot }: BookingFormProps) {
         {
           body: {
             slotId: slot.id,
+            email: email.trim(),
             phone,
             successUrl: `${origin}/book/success`,
             cancelUrl: `${origin}/book`,
