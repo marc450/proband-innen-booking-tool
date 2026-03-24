@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface BookingFormProps {
   slot: AvailableSlot;
@@ -18,6 +19,8 @@ export function BookingForm({ slot }: BookingFormProps) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
+  const [privacyExpanded, setPrivacyExpanded] = useState(false);
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -268,6 +271,123 @@ export function BookingForm({ slot }: BookingFormProps) {
             </div>
           </div>
 
+          {/* Privacy Statement Section */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">Datenschutzerklärung</Label>
+            <button
+              type="button"
+              onClick={() => setPrivacyExpanded(!privacyExpanded)}
+              className="flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              {privacyExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+              Datenschutzerklärung {privacyExpanded ? "ausblenden" : "lesen"}
+            </button>
+
+            {privacyExpanded && (
+              <div className="h-64 overflow-y-auto border rounded-md p-4 text-xs leading-relaxed bg-muted/30 space-y-4">
+                <h3 className="font-bold text-sm">Datenschutzerklärung (EPHIA)</h3>
+                <p>
+                  Diese Datenschutzerklärung erläutert, wie wir, die Betreiber der Webseite https://ephia.de Deine persönlichen Daten als Nutzer der Webseite gemäß der Datenschutz-Grundverordnung (DSGVO) verwalten.
+                </p>
+                <p>
+                  Deine Privatsphäre und der Schutz Deiner privaten Daten liegen uns am Herzen. Wir sammeln, verarbeiten und nutzen Deine personenbezogenen Informationen in Übereinstimmung mit den Bestimmungen dieser Datenschutzerklärung sowie den relevanten Datenschutzgesetzen, insbesondere dem Datenschutzgesetz (DSG) und der DSGVO.
+                </p>
+
+                <div>
+                  <h4 className="font-semibold">1. Das Sammeln von personenbezogenen Daten</h4>
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    <li>Unter personenbezogenen Daten versteht man sämtliche Informationen, die sich auf eine bestimmte oder bestimmbare natürliche Person beziehen. Dies umfasst in erster Linie Daten wie Deinen Namen, Deine E-Mail-Adresse, Wohnadresse und Telefonnummer.</li>
+                    <li>Zudem fallen Informationen über die Nutzung unserer Webseite unter die Kategorie personenbezogener Daten. Wir sammeln und verarbeiten solche Daten ausschließlich, wenn Du uns diese aktiv zur Verfügung stellst.</li>
+                    <li>Deine personenbezogenen Daten bewahren wir nur so lange auf, wie es zur Erreichung der genannten Zwecke notwendig ist.</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold">2. Zweck und Rechtsgrundlagen der Datenverwendung</h4>
+                  <p className="mt-1 font-medium">2.1 Zwecke der Datenverwendung</p>
+                  <ul className="list-disc list-inside mt-1 space-y-0.5">
+                    <li>Zur Bereitstellung der Dienste, die Du von uns anforderst.</li>
+                    <li>Um sicherzustellen, dass unsere Webseite Dir gegenüber auf möglichst effiziente und ansprechende Weise dargestellt wird.</li>
+                    <li>Zur Erfüllung unserer vertraglichen Pflichten.</li>
+                    <li>Um Dir die Möglichkeit zu geben, an unseren interaktiven Angeboten teilzunehmen.</li>
+                    <li>Um Dich über Veränderungen unserer Dienstleistungen zu informieren.</li>
+                  </ul>
+                  <p className="mt-2 font-medium">2.2 Rechtsgrundlagen</p>
+                  <ul className="list-disc list-inside mt-1 space-y-0.5">
+                    <li>Deine Einwilligung (Art. 6 Abs. 1 lit. a DSGVO)</li>
+                    <li>Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO)</li>
+                    <li>Berechtigtes Interesse (Art. 6 Abs. 1 lit. f DSGVO)</li>
+                    <li>Rechtliche Verpflichtungen (Art. 6 Abs. 1 lit. c DSGVO)</li>
+                  </ul>
+                  <p className="mt-1">Falls die Verarbeitung Deiner Daten auf Deine Einwilligung basiert, hast Du das Recht, diese Einwilligung jederzeit zu widerrufen.</p>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold">3. Informationen über Deinen Computer, Cookies und Tracking</h4>
+                  <p className="mt-1">Bei jedem Besuch unserer Webseite sammeln wir bestimmte Informationen über Deinen Computer, einschließlich Deiner IP-Adresse, der Anfrage Deines Browsers sowie des Zeitpunkts dieser Anfrage. Deine IP-Adresse wird nur während Deiner Nutzung der Webseite gespeichert und danach sofort gelöscht oder durch Kürzung anonymisiert.</p>
+                  <p className="mt-1">Es kann sein, dass wir Informationen über Deine Nutzung unserer Webseite auch mittels Browser-Cookies erfassen. Du kannst die Speicherung der Cookies verhindern, indem Du eine entsprechende Einstellung Deiner Browser-Software vornimmst.</p>
+                  <p className="mt-1">Unsere Webseite kann Meta Pixel (Facebook-/Instagram-Tracking) verwenden. Das Meta Pixel wird nur aktiviert, wenn Du dem explizit zustimmst (Art. 6 Abs. 1 lit. a DSGVO). Du kannst Deine Einwilligung jederzeit über die Cookie-Einstellungen widerrufen.</p>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold">4. Datensicherheit</h4>
+                  <p className="mt-1">Alle Daten, die Du uns übermittelst, werden auf Servern innerhalb der Europäischen Union gespeichert. Um Deine Daten bestmöglich zu schützen, setzen wir umfangreiche technische und organisatorische Sicherheitsmaßnahmen ein, darunter die Verschlüsselungstechnologie SSL (Secure Socket Layer).</p>
+                </div>
+
+                {/* E2EE Section - highlighted */}
+                <div className="bg-green-50 border border-green-200 rounded-md p-3 -mx-1">
+                  <h4 className="font-bold text-green-900">5. Ende-zu-Ende-Verschlüsselung medizinischer Daten</h4>
+                  <p className="mt-1 text-green-900">
+                    Zum Schutz Deiner sensiblen medizinischen und personenbezogenen Daten setzen wir eine Ende-zu-Ende-Verschlüsselung (E2EE) ein. Das bedeutet: Deine persönlichen Daten (Name, E-Mail, Telefonnummer, Adresse) werden bereits in Deinem Browser verschlüsselt, bevor sie an unsere Server übertragen werden.
+                  </p>
+                  <p className="mt-1 text-green-900">
+                    Die verschlüsselten Daten werden in unserer Datenbank ausschließlich als nicht lesbarer Chiffretext gespeichert. Eine Entschlüsselung ist nur durch autorisierte EPHIA-Mitarbeitende mit dem entsprechenden privaten Schlüssel möglich. Weder der Datenbankanbieter noch unbefugte Dritte können auf Deine Klartextdaten zugreifen.
+                  </p>
+                  <p className="mt-1 text-green-900">
+                    Dieses Verfahren stellt sicher, dass Deine Daten selbst im Falle eines Datenbankzugriffs durch Unbefugte vollständig geschützt bleiben. Wir verwenden hierfür asymmetrische RSA-Verschlüsselung in Kombination mit AES-256-GCM, dem gleichen Verschlüsselungsstandard, der auch von Banken und Behörden eingesetzt wird.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold">6. Keine Weitergabe Deiner personenbezogenen Daten</h4>
+                  <p className="mt-1">Wir übermitteln Deine personenbezogenen Daten nicht an Dritte, außer Du hast uns Deine explizite Zustimmung dazu erteilt oder wir sind durch gesetzliche Vorgaben zur Weitergabe berechtigt oder verpflichtet.</p>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold">7. Datenschutz und Websites Dritter</h4>
+                  <p className="mt-1">Unsere Website kann Hyperlinks zu Websites Dritter enthalten. Wenn Du diesen Links folgst, beachte bitte, dass wir keine Verantwortung für externe Inhalte oder Datenschutzpraktiken übernehmen können.</p>
+                  <p className="mt-1">Diese Webseite nutzt Google Analytics mit aktivierter IP-Anonymisierung. Du kannst die Erfassung durch Google Analytics verhindern, indem Du das unter https://tools.google.com/dlpage/gaoptout?hl=de verfügbare Browser-Plugin installierst.</p>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold">8. Änderungen dieser Datenschutzerklärung</h4>
+                  <p className="mt-1">Wir behalten uns das Recht vor, diese Datenschutzerklärung jederzeit für die Zukunft zu ändern. Die aktuellste Version ist stets auf unserer Webseite abrufbar.</p>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold">9. Deine Rechte und Kontaktmöglichkeiten</h4>
+                  <p className="mt-1">In Bezug auf die Verarbeitung Deiner personenbezogenen Daten stehen Dir umfassende Rechte zur Verfügung: Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Widerspruch sowie Datenübertragbarkeit.</p>
+                  <p className="mt-1">Um eines Deiner Rechte in Anspruch zu nehmen oder weitere Informationen zu erhalten, kontaktiere uns bitte unter customerlove@ephia.de.</p>
+                  <p className="mt-1">Zudem hast Du das Recht, bei der Datenschutzbehörde Beschwerde einzulegen.</p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-start gap-2 pt-1">
+              <input
+                type="checkbox"
+                id="privacy"
+                checked={agreedToPrivacy}
+                onChange={(e) => setAgreedToPrivacy(e.target.checked)}
+                className="mt-1"
+                required
+              />
+              <Label htmlFor="privacy" className="text-sm font-normal leading-snug">
+                Ich habe die Datenschutzerklärung gelesen und verstanden. Ich stimme der Verarbeitung meiner personenbezogenen Daten gemäß den beschriebenen Zwecken zu.
+              </Label>
+            </div>
+          </div>
+
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
               {error}
@@ -277,7 +397,7 @@ export function BookingForm({ slot }: BookingFormProps) {
           <Button
             type="submit"
             className="w-full"
-            disabled={!agreedToTerms || !phone.trim() || !email.trim() || loading}
+            disabled={!agreedToTerms || !agreedToPrivacy || !phone.trim() || !email.trim() || loading}
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
