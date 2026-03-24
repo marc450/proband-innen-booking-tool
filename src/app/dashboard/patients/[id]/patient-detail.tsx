@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { ArrowLeft, Mail, Phone, MapPin, AlertTriangle, Ban } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, AlertTriangle, Ban, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 const bookingStatusLabels: Record<BookingStatus, string> = {
   booked: "Gebucht",
@@ -51,9 +51,44 @@ interface Props {
   bookings: BookingWithDetails[];
 }
 
+type SortKey = "course" | "date" | "status" | "booked_at";
+type SortDir = "asc" | "desc";
+
 export function PatientDetail({ patient, bookings }: Props) {
   const [status, setStatus] = useState<PatientStatus>(patient.patient_status);
+  const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const supabase = createClient();
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("asc"); }
+  }
+
+  function SortIcon({ col }: { col: SortKey }) {
+    if (sortKey !== col) return <ArrowUpDown className="ml-1 h-3 w-3 opacity-40 inline" />;
+    return sortDir === "asc"
+      ? <ArrowUp className="ml-1 h-3 w-3 inline" />
+      : <ArrowDown className="ml-1 h-3 w-3 inline" />;
+  }
+
+  const sortedBookings = [...bookings].sort((a, b) => {
+    let aVal: string, bVal: string;
+    if (sortKey === "course") {
+      aVal = a.slots?.courses?.title || "";
+      bVal = b.slots?.courses?.title || "";
+    } else if (sortKey === "date") {
+      aVal = a.slots?.start_time || "";
+      bVal = b.slots?.start_time || "";
+    } else if (sortKey === "status") {
+      aVal = a.status;
+      bVal = b.status;
+    } else {
+      aVal = a.created_at;
+      bVal = b.created_at;
+    }
+    return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+  });
 
   const fullName = [patient.first_name, patient.last_name].filter(Boolean).join(" ") || patient.email;
   const address = [patient.address_street, [patient.address_zip, patient.address_city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
@@ -191,15 +226,15 @@ export function PatientDetail({ patient, bookings }: Props) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Kurs</TableHead>
-                  <TableHead>Datum</TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("course")}>Kurs<SortIcon col="course" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("date")}>Datum<SortIcon col="date" /></TableHead>
                   <TableHead>Uhrzeit</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Gebucht am</TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("status")}>Status<SortIcon col="status" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("booked_at")}>Gebucht am<SortIcon col="booked_at" /></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {bookings.map((booking) => (
+                {sortedBookings.map((booking) => (
                   <TableRow key={booking.id}>
                     <TableCell className="font-medium">
                       {booking.slots?.courses?.title || ""}
