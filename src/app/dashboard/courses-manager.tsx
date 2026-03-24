@@ -440,17 +440,17 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                       : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                     }
                     {/* Table-like row: title | date | slots | booked/total */}
-                    <div className="grid items-center w-full min-w-0" style={{gridTemplateColumns: "1fr 180px 80px 56px"}}>
-                      <span className="font-semibold text-base truncate pr-4">{course.title}</span>
-                      <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    <div className="flex items-center w-full min-w-0">
+                      <span className="font-semibold text-base truncate flex-1 min-w-0">{course.title}</span>
+                      <span className="text-sm text-muted-foreground whitespace-nowrap w-44">
                         {course.course_date
                           ? format(parseISO(course.course_date), "dd. MMMM yyyy", { locale: de })
                           : <span className="italic">Kein Datum</span>}
                       </span>
-                      <span className="text-sm text-muted-foreground whitespace-nowrap">
+                      <span className="text-sm text-muted-foreground whitespace-nowrap w-20 text-center">
                         {courseSlots.length} {courseSlots.length === 1 ? "Slot" : "Slots"}
                       </span>
-                      <span className={`text-sm font-semibold whitespace-nowrap ${bookedCount === totalCapacity && totalCapacity > 0 ? "text-green-600" : "text-red-500"}`}>
+                      <span className={`text-sm font-semibold whitespace-nowrap w-12 text-right ${bookedCount === totalCapacity && totalCapacity > 0 ? "text-green-600" : "text-red-500"}`}>
                         {bookedCount}/{totalCapacity}
                       </span>
                     </div>
@@ -535,16 +535,15 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                         return (
                           <div
                             key={slot.id}
-                            className="grid items-center py-2 px-3 rounded-md bg-muted/40"
-                            style={{gridTemplateColumns: "1fr 180px 80px 56px"}}
+                            className="flex items-center py-2 px-3 rounded-md bg-muted/40"
                           >
-                            {/* Time */}
-                            <span className="text-sm font-medium whitespace-nowrap pr-4">
+                            {/* Time — matches title column */}
+                            <span className="text-sm font-medium whitespace-nowrap flex-1 min-w-0">
                               {format(new Date(slot.start_time), "HH:mm")} Uhr
                             </span>
 
-                            {/* Booking status + name */}
-                            <div className="flex items-center gap-2 min-w-0">
+                            {/* Booking status + name — matches date column */}
+                            <div className="flex items-center gap-2 w-44 min-w-0">
                               {slotBookings.length > 0 ? (
                                 slotBookings.map((b) => (
                                   <div key={b.id} className="flex items-center gap-2 min-w-0">
@@ -567,13 +566,13 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                               )}
                             </div>
 
-                            {/* Capacity */}
-                            <span className="text-sm text-muted-foreground whitespace-nowrap">
+                            {/* Capacity — matches slots column */}
+                            <span className="text-sm text-muted-foreground whitespace-nowrap w-20 text-center">
                               {slotBooked}/{slot.capacity}
                             </span>
 
-                            {/* Delete */}
-                            <div className="flex justify-end">
+                            {/* Delete — matches booked/total + action column */}
+                            <div className="w-12 flex justify-end">
                               <Button
                                 variant="ghost"
                                 size="sm"
