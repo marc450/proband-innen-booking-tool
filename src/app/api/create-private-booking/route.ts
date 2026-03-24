@@ -9,9 +9,9 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 
 export async function POST(req: NextRequest) {
   try {
-    const { slotId, email, phone, referringDoctor } = await req.json();
+    const { slotId, firstName, lastName, email, phone, referringDoctor } = await req.json();
 
-    if (!slotId || !email || !phone || !referringDoctor) {
+    if (!slotId || !firstName || !lastName || !email || !phone || !referringDoctor) {
       return NextResponse.json({ error: "Alle Felder sind erforderlich." }, { status: 400 });
     }
 
@@ -71,8 +71,8 @@ export async function POST(req: NextRequest) {
     // Encrypt patient data
     const patientEncrypted = encryptPatientFields({
       email,
-      first_name: null,
-      last_name: null,
+      first_name: firstName,
+      last_name: lastName,
       phone,
     });
 
@@ -114,7 +114,9 @@ export async function POST(req: NextRequest) {
 
     // Encrypt booking data
     const bookingEncrypted = encryptBookingFields({
-      name: email.split("@")[0],
+      name: `${firstName} ${lastName}`,
+      first_name: firstName,
+      last_name: lastName,
       email,
       phone,
     });
@@ -160,7 +162,7 @@ export async function POST(req: NextRequest) {
         : "";
 
       const html = buildEmailHtml({
-        firstName: "Proband:in",
+        firstName: firstName,
         intro: `Du wurdest von <strong>${referringDoctor}</strong> als Privatpatient:in für den folgenden Kurs angemeldet:`,
         infoRows: [
           { label: "Kurs", value: slot.course_title || "" },

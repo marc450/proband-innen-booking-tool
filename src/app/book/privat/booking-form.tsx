@@ -20,6 +20,8 @@ type Step = "details" | "agb" | "privacy" | "confirm";
 export function PrivatBookingForm({ slot }: Props) {
   const router = useRouter();
 
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [referringDoctor, setReferringDoctor] = useState("");
@@ -50,6 +52,8 @@ export function PrivatBookingForm({ slot }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           slotId: slot.id,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
           email: email.trim(),
           phone: phone.trim(),
           referringDoctor: referringDoctor.trim(),
@@ -79,7 +83,7 @@ export function PrivatBookingForm({ slot }: Props) {
 
   const stepIndex = steps.findIndex((s) => s.key === currentStep);
 
-  const canProceedFromDetails = email.trim() !== "" && phone.trim() !== "" && referringDoctor.trim() !== "";
+  const canProceedFromDetails = firstName.trim() !== "" && lastName.trim() !== "" && email.trim() !== "" && phone.trim() !== "" && referringDoctor.trim() !== "";
 
   return (
     <div className="space-y-4">
@@ -108,6 +112,31 @@ export function PrivatBookingForm({ slot }: Props) {
           {currentStep === "details" && (
             <div className="space-y-5">
               <h3 className="font-semibold text-base">Deine Kontaktdaten</h3>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="firstName">Vorname</Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    placeholder="Vorname"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="lastName">Nachname</Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    placeholder="Nachname"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
 
               <div>
                 <Label htmlFor="email">E-Mail</Label>
@@ -375,6 +404,10 @@ export function PrivatBookingForm({ slot }: Props) {
               <h3 className="font-semibold text-base">Zusammenfassung</h3>
 
               <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-center py-2 border-b">
+                  <span className="text-muted-foreground">Name</span>
+                  <span className="font-medium">{firstName} {lastName}</span>
+                </div>
                 <div className="flex justify-between items-center py-2 border-b">
                   <span className="text-muted-foreground">Termin</span>
                   <span className="font-medium">
