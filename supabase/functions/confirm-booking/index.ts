@@ -109,7 +109,26 @@ serve(async (req) => {
     const nameParts = fullName.split(" ");
     const firstName = nameParts[0] || "";
     const lastName = nameParts.slice(1).join(" ") || "";
-    const address = cd.address || {};
+
+    // Fetch the payment method to get billing_details — cards store the billing
+    // address there, which is more reliable than customer_details.address in setup mode
+    let pmBillingAddress: Record<string, string> = {};
+    if (paymentMethodId) {
+      const pm = await stripeGet(`/payment_methods/${paymentMethodId}`);
+      console.log("payment_method billing_details:", JSON.stringify(pm.billing_details));
+      pmBillingAddress = pm.billing_details?.address || {};
+    }
+
+    // Prefer payment method billing address; fall back to session customer_details.address
+    console.log("session.customer_details:", JSON.stringify(cd));
+    const sessionAddress = cd.address || {};
+    const address: Record<string, string> = {
+      line1: pmBillingAddress.line1 || sessionAddress.line1 || "",
+      postal_code: pmBillingAddress.postal_code || sessionAddress.postal_code || "",
+      city: pmBillingAddress.city || sessionAddress.city || "",
+      country: pmBillingAddress.country || sessionAddress.country || "",
+    };
+    console.log("resolved address:", JSON.stringify(address));
 
     // Create a Stripe customer from the collected checkout data so we can:
     // (a) attach the payment method for future off-session charges (no-show fee)
@@ -125,6 +144,7 @@ serve(async (req) => {
       if (address.country) customerParams["address[country]"] = address.country;
 
       const customer = await stripePost("/customers", customerParams);
+      console.log("created customer:", customer.id, "error:", customer.error);
       if (customer.id) {
         customerId = customer.id;
       }
