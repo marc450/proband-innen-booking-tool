@@ -22,6 +22,18 @@ async function stripeGet(path: string) {
   return res.json();
 }
 
+async function stripePost(path: string, body: Record<string, string>) {
+  const res = await fetch(`https://api.stripe.com/v1${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams(body).toString(),
+  });
+  return res.json();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -79,7 +91,6 @@ serve(async (req) => {
       );
     }
 
-    const customerId = setupIntent.customer;
     const paymentMethodId = setupIntent.payment_method;
     const slotId = session.metadata?.slotId;
 
@@ -99,6 +110,35 @@ serve(async (req) => {
     const firstName = nameParts[0] || "";
     const lastName = nameParts.slice(1).join(" ") || "";
     const address = cd.address || {};
+
+    // Create a Stripe customer from the collected checkout data so we can:
+    // (a) attach the payment method for future off-session charges (no-show fee)
+    // (b) save a real customer ID to the patient record
+    let customerId: string | null = setupIntent.customer || null;
+    if (!customerId && email) {
+      const customerParams: Record<string, string> = { email };
+      if (fullName) customerParams["name"] = fullName;
+      if (phone) customerParams["phone"] = phone;
+      if (address.line1) customerParams["address[line1]"] = address.line1;
+      if (address.postal_code) customerParams["address[postal_code]"] = address.postal_code;
+      if (address.city) customerParams["address[city]"] = address.city;
+      if (address.country) customerParams["address[country]"] = address.country;
+
+      const customer = await stripePost("/customers", customerParams);
+      if (customer.id) {
+        customerId = customer.id;
+      }
+    }
+
+    // Attach payment method to customer and set as default for invoices
+    if (customerId && paymentMethodId) {
+      await stripePost(`/payment_methods/${paymentMethodId}/attach`, {
+        customer: customerId,
+      });
+      await stripePost(`/customers/${customerId}`, {
+        "invoice_settings[default_payment_method]": paymentMethodId,
+      });
+    }
 
     // Upsert patient profile (create or update by email)
     let patientId: string | null = null;
