@@ -19,7 +19,7 @@ import {
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
-import { Plus, Trash2, Edit, Copy, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Edit, Copy, ChevronDown, ChevronRight, ImageIcon, Upload } from "lucide-react";
 
 export interface SlotBooking {
   id: string;
@@ -55,6 +55,8 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
   const [courseInstructor, setCourseInstructor] = useState("");
   const [courseGuidePrice, setCourseGuidePrice] = useState("");
   const [courseServiceDescription, setCourseServiceDescription] = useState("");
+  const [courseImageUrl, setCourseImageUrl] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Slot dialog
   const [slotDialogOpen, setSlotDialogOpen] = useState(false);
@@ -90,7 +92,30 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
     setCourseInstructor("");
     setCourseGuidePrice("");
     setCourseServiceDescription("");
+    setCourseImageUrl("");
     setEditingCourse(null);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const fileName = `course-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("course-images")
+        .upload(fileName, file, { upsert: true });
+      if (!error) {
+        const { data: urlData } = supabase.storage
+          .from("course-images")
+          .getPublicUrl(fileName);
+        setCourseImageUrl(urlData.publicUrl);
+      }
+    } finally {
+      setUploadingImage(false);
+      e.target.value = "";
+    }
   };
 
   const handleSaveCourse = async () => {
@@ -106,6 +131,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
       instructor: courseInstructor || null,
       guide_price: courseGuidePrice || null,
       service_description: courseServiceDescription || null,
+      image_url: courseImageUrl || null,
     };
 
     setCourseDialogOpen(false);
@@ -270,75 +296,138 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
         setCourseDialogOpen(open);
         if (!open) resetCourseForm();
       }}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingCourse ? "Kurs bearbeiten" : "Neuer Kurs"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div>
-              <Label htmlFor="title">Titel</Label>
-              <Input
-                id="title"
-                value={courseTitle}
-                onChange={(e) => setCourseTitle(e.target.value)}
-                placeholder="z.B. Botulinum Grundkurs"
-              />
+          <div className="space-y-6 pt-2">
+
+            {/* Section: Grunddaten */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Grunddaten</h3>
+              <div>
+                <Label htmlFor="title">Titel *</Label>
+                <Input
+                  id="title"
+                  value={courseTitle}
+                  onChange={(e) => setCourseTitle(e.target.value)}
+                  placeholder="z.B. Botulinum Grundkurs"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="course_date">Datum</Label>
+                  <Input
+                    id="course_date"
+                    type="date"
+                    value={courseDate}
+                    onChange={(e) => setCourseDate(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="instructor">Kursleitende:r Ärzt:in</Label>
+                  <Input
+                    id="instructor"
+                    value={courseInstructor}
+                    onChange={(e) => setCourseInstructor(e.target.value)}
+                    placeholder="z.B. Dr. med. Anna Müller"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="location">Adresse / Ort</Label>
+                <Input
+                  id="location"
+                  value={courseLocation}
+                  onChange={(e) => setCourseLocation(e.target.value)}
+                  placeholder="z.B. Rosa-Luxemburg-Straße 20, 10178 Berlin"
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="course_date">Datum des Kurses</Label>
-              <Input
-                id="course_date"
-                type="date"
-                value={courseDate}
-                onChange={(e) => setCourseDate(e.target.value)}
-              />
+
+            <div className="border-t" />
+
+            {/* Section: Leistung & Preis */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Leistung &amp; Preis</h3>
+              <div>
+                <Label htmlFor="service_description">Leistungsbeschreibung</Label>
+                <Textarea
+                  id="service_description"
+                  value={courseServiceDescription}
+                  onChange={(e) => setCourseServiceDescription(e.target.value)}
+                  placeholder="z.B. Behandlung mimischer Falten in bis zu 3 Zonen des Gesichts."
+                />
+              </div>
+              <div>
+                <Label htmlFor="guide_price">Richtpreis</Label>
+                <Input
+                  id="guide_price"
+                  value={courseGuidePrice}
+                  onChange={(e) => setCourseGuidePrice(e.target.value)}
+                  placeholder="z.B. 99€"
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="location">Adresse / Ort</Label>
-              <Input
-                id="location"
-                value={courseLocation}
-                onChange={(e) => setCourseLocation(e.target.value)}
-                placeholder="z.B. Musterstrasse 1, 8001 Zürich"
-              />
+
+            <div className="border-t" />
+
+            {/* Section: Beschreibung & Bild */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Beschreibung &amp; Bild</h3>
+              <div>
+                <Label htmlFor="description">Kursbeschreibung</Label>
+                <Textarea
+                  id="description"
+                  value={courseDescription}
+                  onChange={(e) => setCourseDescription(e.target.value)}
+                  placeholder="Beschreibung, die Proband:innen auf der Buchungsseite sehen"
+                  rows={4}
+                />
+              </div>
+              <div>
+                <Label>Kursbild</Label>
+                {courseImageUrl ? (
+                  <div className="mt-1 relative">
+                    <img
+                      src={courseImageUrl}
+                      alt="Kursbild"
+                      className="w-full h-40 object-cover rounded-md border"
+                    />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={() => setCourseImageUrl("")}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Entfernen
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="mt-1 flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-md cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage}
+                    />
+                    {uploadingImage ? (
+                      <span className="text-sm text-muted-foreground">Wird hochgeladen...</span>
+                    ) : (
+                      <>
+                        <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                        <span className="text-sm text-muted-foreground">Bild hochladen</span>
+                        <span className="text-xs text-muted-foreground">JPG, PNG, WebP</span>
+                      </>
+                    )}
+                  </label>
+                )}
+              </div>
             </div>
-            <div>
-              <Label htmlFor="instructor">Kursleitende:r Ärzt:in</Label>
-              <Input
-                id="instructor"
-                value={courseInstructor}
-                onChange={(e) => setCourseInstructor(e.target.value)}
-                placeholder="z.B. Dr. med. Anna Müller"
-              />
-            </div>
-            <div>
-              <Label htmlFor="guide_price">Richtpreis (z.B. &quot;ab 150 €&quot;)</Label>
-              <Input
-                id="guide_price"
-                value={courseGuidePrice}
-                onChange={(e) => setCourseGuidePrice(e.target.value)}
-                placeholder="z.B. ab 150 €"
-              />
-            </div>
-            <div>
-              <Label htmlFor="service_description">Leistungsbeschreibung</Label>
-              <Textarea
-                id="service_description"
-                value={courseServiceDescription}
-                onChange={(e) => setCourseServiceDescription(e.target.value)}
-                placeholder="z.B. Behandlung mimischer Falten mit Botulinum"
-              />
-            </div>
-            <div>
-              <Label htmlFor="description">Beschreibung</Label>
-              <Textarea
-                id="description"
-                value={courseDescription}
-                onChange={(e) => setCourseDescription(e.target.value)}
-                placeholder="Kursbeschreibung (optional)"
-              />
-            </div>
-            <Button onClick={handleSaveCourse} className="w-full">
+
+            <Button onClick={handleSaveCourse} className="w-full" disabled={!courseTitle.trim()}>
               Speichern
             </Button>
           </div>
@@ -503,7 +592,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                     <Copy className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" size="sm"
-                    onClick={(e) => { e.stopPropagation(); setEditingCourse(course); setCourseTitle(course.title); setCourseDescription(course.description || ""); setCourseDate(course.course_date || ""); setCourseLocation(course.location || ""); setCourseInstructor(course.instructor || ""); setCourseGuidePrice(course.guide_price || ""); setCourseServiceDescription(course.service_description || ""); setCourseDialogOpen(true); }}>
+                    onClick={(e) => { e.stopPropagation(); setEditingCourse(course); setCourseTitle(course.title); setCourseDescription(course.description || ""); setCourseDate(course.course_date || ""); setCourseLocation(course.location || ""); setCourseInstructor(course.instructor || ""); setCourseGuidePrice(course.guide_price || ""); setCourseServiceDescription(course.service_description || ""); setCourseImageUrl(course.image_url || ""); setCourseDialogOpen(true); }}>
                     <Edit className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" size="sm"

@@ -9,6 +9,7 @@ export interface Course {
   instructor: string | null;
   guide_price: string | null;
   service_description: string | null;
+  image_url: string | null;
   created_at: string;
 }
 
