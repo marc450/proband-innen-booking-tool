@@ -504,64 +504,78 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                   {courseSlots.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-2">Keine Slots vorhanden</p>
                   ) : (
-                    <div className="space-y-2">
-                      {courseSlots.map((slot) => {
-                        const slotBookings = bookings.filter((b) => b.slot_id === slot.id);
-                        const slotBooked = slotBookings.length;
-                        const slotFree = slot.capacity - slotBooked;
+                    <div>
+                      {/* Column header */}
+                      <div className="flex items-center gap-4 px-2 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        <span className="w-28 shrink-0">Zeit</span>
+                        <span className="w-24 shrink-0">Status</span>
+                        <span className="flex-1 min-w-0">Proband:in</span>
+                        <span className="w-24 text-center shrink-0">Kapazität</span>
+                        <span className="w-24 text-center shrink-0">Besetzung</span>
+                        <span className="w-8 shrink-0" />
+                      </div>
 
-                        return (
-                          <div
-                            key={slot.id}
-                            className="flex items-center gap-2 py-2 px-2 rounded-md bg-muted/40"
-                          >
-                            {/* Chevron-width spacer — aligns with course chevron */}
-                            <span className="w-4 shrink-0" />
+                      <div className="space-y-1">
+                        {courseSlots.map((slot) => {
+                          const slotBookings = bookings.filter((b) => b.slot_id === slot.id);
+                          const slotBooked = slotBookings.length;
 
-                            {/* Shared 4-column content — same proportions as course header */}
-                            <div className="flex items-center gap-4 flex-1 min-w-0">
-                              <span className="[flex:3_1_0%] text-sm font-medium min-w-0 truncate">
+                          return (
+                            <div
+                              key={slot.id}
+                              className="flex items-center gap-4 py-2 px-2 rounded-md bg-muted/40"
+                            >
+                              {/* Zeit */}
+                              <span className="w-28 shrink-0 text-sm font-medium">
                                 {format(new Date(slot.start_time), "HH:mm")} Uhr
                               </span>
-                              <div className="[flex:2_1_0%] flex items-center gap-2 min-w-0">
-                                {slotBookings.length > 0 ? (
-                                  slotBookings.map((b) => (
-                                    <div key={b.id} className="flex items-center gap-2 min-w-0">
-                                      <Badge variant="default" className="text-xs shrink-0">Gebucht</Badge>
-                                      {b.patient_id ? (
-                                        <Link
-                                          href={`/dashboard/patients/${b.patient_id}`}
-                                          className="text-sm font-medium hover:underline truncate"
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          {getPatientName(b)}
-                                        </Link>
-                                      ) : (
-                                        <span className="text-sm truncate">{getPatientName(b)}</span>
-                                      )}
-                                    </div>
-                                  ))
-                                ) : (
-                                  <span className="text-sm text-muted-foreground">Frei</span>
+
+                              {/* Status */}
+                              <div className="w-24 shrink-0">
+                                {slotBooked > 0
+                                  ? <Badge variant="default" className="text-xs">Gebucht</Badge>
+                                  : <span className="text-sm text-muted-foreground">Frei</span>
+                                }
+                              </div>
+
+                              {/* Proband:in */}
+                              <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                                {slotBookings.length > 0 ? slotBookings.map((b) => (
+                                  b.patient_id ? (
+                                    <Link
+                                      key={b.id}
+                                      href={`/dashboard/patients/${b.patient_id}`}
+                                      className="text-sm font-medium hover:underline truncate"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {getPatientName(b)}
+                                    </Link>
+                                  ) : (
+                                    <span key={b.id} className="text-sm truncate">{getPatientName(b)}</span>
+                                  )
+                                )) : (
+                                  <span className="text-sm text-muted-foreground">—</span>
                                 )}
                               </div>
-                              <span className="[flex:1_1_0%] text-sm text-muted-foreground text-center whitespace-nowrap">
+
+                              {/* Kapazität */}
+                              <span className="w-24 shrink-0 text-sm text-muted-foreground text-center">
+                                {slot.capacity}
+                              </span>
+
+                              {/* Besetzung */}
+                              <span className={`w-24 shrink-0 text-sm font-semibold text-center ${slotBooked === slot.capacity ? "text-green-600" : "text-red-500"}`}>
                                 {slotBooked}/{slot.capacity}
                               </span>
-                              <span className="[flex:1_1_0%]" />
-                            </div>
 
-                            {/* Action area — same width as course action buttons (3 × size-sm = 104px) */}
-                            <div className="flex gap-1 shrink-0">
-                              <span className="w-8 h-8" />
-                              <span className="w-8 h-8" />
-                              <Button variant="ghost" size="sm" onClick={() => setDeleteSlotConfirm(slot.id)}>
+                              {/* Delete */}
+                              <Button variant="ghost" size="sm" className="w-8 shrink-0 p-0" onClick={() => setDeleteSlotConfirm(slot.id)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </CardContent>
