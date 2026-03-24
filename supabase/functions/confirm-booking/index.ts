@@ -140,6 +140,22 @@ serve(async (req) => {
       });
     }
 
+    // Hard block: reject booking if patient is blacklisted
+    if (email) {
+      const { data: existingPatient } = await supabase
+        .from("patients")
+        .select("patient_status")
+        .eq("email", email.toLowerCase().trim())
+        .maybeSingle();
+
+      if (existingPatient?.patient_status === "blacklist") {
+        return new Response(
+          JSON.stringify({ error: "Eine Buchung ist mit dieser E-Mail-Adresse nicht möglich." }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Upsert patient profile (create or update by email)
     let patientId: string | null = null;
     if (email) {

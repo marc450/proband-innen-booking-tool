@@ -25,7 +25,8 @@ import {
 import { ConfirmDialog, AlertDialog } from "@/components/confirm-dialog";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { CreditCard, Search } from "lucide-react";
+import { CreditCard, Download, Search } from "lucide-react";
+import * as XLSX from "xlsx";
 
 interface Props {
   initialBookings: BookingWithDetails[];
@@ -114,6 +115,42 @@ export function BookingsManager({ initialBookings, courses }: Props) {
     }
   };
 
+  const handleExport = () => {
+    const rows = filteredBookings.map((b) => ({
+      Vorname: b.first_name || "",
+      Nachname: b.last_name || "",
+      "E-Mail": b.email,
+      Telefon: b.phone || "",
+      Kurs: b.slots?.courses?.title || "",
+      Datum: b.slots?.start_time
+        ? format(new Date(b.slots.start_time), "dd.MM.yyyy", { locale: de })
+        : "",
+      Uhrzeit: b.slots?.start_time
+        ? format(new Date(b.slots.start_time), "HH:mm", { locale: de })
+        : "",
+      Status: statusLabels[b.status],
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+
+    // Auto-size columns
+    const colWidths = Object.keys(rows[0] || {}).map((key) => ({
+      wch: Math.max(key.length, ...rows.map((r) => String((r as Record<string, string>)[key] || "").length)) + 2,
+    }));
+    ws["!cols"] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Buchungen");
+
+    const courseName = filterCourse !== "all"
+      ? courses.find((c) => c.id === filterCourse)?.title || "Buchungen"
+      : "Buchungen";
+    const dateSuffix = filterDate || format(new Date(), "yyyy-MM-dd");
+    const filename = `${courseName}_${dateSuffix}.xlsx`;
+
+    XLSX.writeFile(wb, filename);
+  };
+
   return (
     <div className="space-y-6">
       {/* Charge confirm */}
@@ -182,6 +219,12 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                 }}
               >
                 Filter zurücksetzen
+              </Button>
+            )}
+            {filteredBookings.length > 0 && (
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-1" />
+                Excel Export
               </Button>
             )}
           </div>

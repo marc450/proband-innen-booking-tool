@@ -15,6 +15,7 @@ interface BookingFormProps {
 export function BookingForm({ slot }: BookingFormProps) {
   const supabase = createClient();
 
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -26,6 +27,22 @@ export function BookingForm({ slot }: BookingFormProps) {
     setError(null);
 
     try {
+      // Check blacklist status before sending to Stripe
+      const eligibilityRes = await fetch("/api/check-booking-eligibility", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const eligibility = await eligibilityRes.json();
+
+      if (!eligibility.eligible) {
+        setError(
+          "Eine Buchung ist mit dieser E-Mail-Adresse leider nicht möglich. Bitte wende Dich direkt an uns."
+        );
+        setLoading(false);
+        return;
+      }
+
       const origin = window.location.origin;
 
       const { data, error: fnError } = await supabase.functions.invoke(
@@ -67,6 +84,21 @@ export function BookingForm({ slot }: BookingFormProps) {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
+            <Label htmlFor="email">E-Mail</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="deine@email.de"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Damit können wir Deine Buchung zuordnen.
+            </p>
+          </div>
+
+          <div>
             <Label htmlFor="phone">Telefon</Label>
             <Input
               id="phone"
@@ -102,7 +134,7 @@ export function BookingForm({ slot }: BookingFormProps) {
           <Button
             type="submit"
             className="w-full"
-            disabled={!agreedToTerms || loading}
+            disabled={!agreedToTerms || !phone.trim() || !email.trim() || loading}
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">

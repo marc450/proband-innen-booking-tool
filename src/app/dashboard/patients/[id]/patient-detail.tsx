@@ -136,12 +136,19 @@ export function PatientDetail({ patient, bookings }: Props) {
                 </a>
               </div>
             )}
-            {address && (
-              <div className="flex items-center gap-2 text-sm">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span>{address}</span>
+            <div className="flex items-start gap-2 text-sm">
+              <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+              <div>
+                {patient.address_street ? (
+                  <>
+                    <div>{patient.address_street}</div>
+                    <div>{[patient.address_zip, patient.address_city].filter(Boolean).join(" ")}</div>
+                  </>
+                ) : (
+                  <span className="text-muted-foreground">Keine Adresse hinterlegt</span>
+                )}
               </div>
-            )}
+            </div>
             <div className="text-xs text-muted-foreground pt-2">
               Erstellt am {format(new Date(patient.created_at), "dd.MM.yyyy HH:mm", { locale: de })}
             </div>
@@ -185,7 +192,8 @@ export function PatientDetail({ patient, bookings }: Props) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Kurs</TableHead>
-                  <TableHead>Termin</TableHead>
+                  <TableHead>Datum</TableHead>
+                  <TableHead>Uhrzeit</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Gebucht am</TableHead>
                 </TableRow>
@@ -198,7 +206,12 @@ export function PatientDetail({ patient, bookings }: Props) {
                     </TableCell>
                     <TableCell>
                       {booking.slots?.start_time
-                        ? format(new Date(booking.slots.start_time), "dd.MM.yyyy HH:mm", { locale: de })
+                        ? format(new Date(booking.slots.start_time), "dd.MM.yyyy", { locale: de })
+                        : ""}
+                    </TableCell>
+                    <TableCell>
+                      {booking.slots?.start_time
+                        ? format(new Date(booking.slots.start_time), "HH:mm", { locale: de }) + " Uhr"
                         : ""}
                     </TableCell>
                     <TableCell>
