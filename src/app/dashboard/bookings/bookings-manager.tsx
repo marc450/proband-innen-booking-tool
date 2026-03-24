@@ -337,9 +337,13 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                 <Label>Kurs</Label>
                 <Select value={slotChangeTargetCourseId} onValueChange={(val) => { if (val) handleSlotChangeCourseSelect(val); }}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Kurs wählen..." />
+                    <span className="truncate">
+                      {slotChangeTargetCourseId
+                        ? courses.find((c) => c.id === slotChangeTargetCourseId)?.title ?? slotChangeTargetCourseId
+                        : "Kurs wählen..."}
+                    </span>
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="w-[--radix-select-trigger-width]">
                     {courses.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.title}
@@ -360,16 +364,21 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                 ) : (
                   <Select value={slotChangeTargetSlotId} onValueChange={(val) => { if (val) { setSlotChangeTargetSlotId(val); setSlotChangeError(null); } }}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Termin wählen..." />
+                      <span className="truncate">
+                        {slotChangeTargetSlotId
+                          ? (() => {
+                              const s = slotsForCourse.find((s) => s.id === slotChangeTargetSlotId);
+                              return s ? `${format(new Date(s.start_time), "dd.MM.yyyy HH:mm", { locale: de })} — ${s.remaining_capacity} Platz${s.remaining_capacity !== 1 ? "ätze" : ""} frei` : "Termin wählen...";
+                            })()
+                          : "Termin wählen..."}
+                      </span>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="w-[--radix-select-trigger-width]">
                       {slotsForCourse.map((s) => (
                         <SelectItem key={s.id} value={s.id}>
                           {format(new Date(s.start_time), "dd.MM.yyyy HH:mm", { locale: de })}
                           {" — "}
-                          {s.remaining_capacity > 0
-                            ? `${s.remaining_capacity} Platz${s.remaining_capacity !== 1 ? "ätze" : ""} frei`
-                            : "ausgebucht"}
+                          {`${s.remaining_capacity} Platz${s.remaining_capacity !== 1 ? "ätze" : ""} frei`}
                         </SelectItem>
                       ))}
                     </SelectContent>
