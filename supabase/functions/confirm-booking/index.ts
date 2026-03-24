@@ -151,24 +151,29 @@ serve(async (req) => {
     }
 
     // Attach payment method to customer and set as default for invoices
+    console.log("step: attaching payment method");
     if (customerId && paymentMethodId) {
-      await stripePost(`/payment_methods/${paymentMethodId}/attach`, {
+      const attachRes = await stripePost(`/payment_methods/${paymentMethodId}/attach`, {
         customer: customerId,
       });
-      await stripePost(`/customers/${customerId}`, {
+      console.log("attach result:", attachRes.id ?? attachRes.error?.message);
+      const updateRes = await stripePost(`/customers/${customerId}`, {
         "invoice_settings[default_payment_method]": paymentMethodId,
       });
+      console.log("customer update result:", updateRes.id ?? updateRes.error?.message);
     }
 
     // Hard block: reject booking if patient is blacklisted (check by email and phone)
+    console.log("step: blacklist check");
     const normalizePhone = (p: string) => p.replace(/\D/g, "");
 
     if (email) {
-      const { data: byEmail } = await supabase
+      const { data: byEmail, error: byEmailErr } = await supabase
         .from("patients")
         .select("patient_status")
         .eq("email", email.toLowerCase().trim())
         .maybeSingle();
+      console.log("blacklist email check:", byEmail?.patient_status ?? "not found", byEmailErr?.message);
 
       if (byEmail?.patient_status === "blacklist") {
         return new Response(
@@ -181,11 +186,12 @@ serve(async (req) => {
     if (phone) {
       const normalizedPhone = normalizePhone(phone);
       if (normalizedPhone.length >= 7) {
-        const { data: blacklisted } = await supabase
+        const { data: blacklisted, error: blacklistErr } = await supabase
           .from("patients")
           .select("phone")
           .eq("patient_status", "blacklist")
           .not("phone", "is", null);
+        console.log("blacklist phone check: rows=", blacklisted?.length ?? 0, blacklistErr?.message);
 
         const phoneMatch = blacklisted?.find(
           (p) => p.phone && normalizePhone(p.phone) === normalizedPhone
@@ -200,7 +206,44 @@ serve(async (req) => {
       }
     }
 
+    // Hard block: one booking per course per person (by email)
+    console.log("step: same-course check");
+    if (email) {
+      const { data: slotRow } = await supabase
+        .from("slots")
+        .select("course_id")
+        .eq("id", slotId)
+        .single();
+
+      const { data: courseSlots } = await supabase
+        .from("slots")
+        .select("id")
+        .eq("course_id", slotRow?.course_id ?? "");
+
+      const slotIds = (courseSlots ?? []).map((s: { id: string }) => s.id);
+
+      if (slotIds.length > 0) {
+        const { data: existingCourseBooking } = await supabase
+          .from("bookings")
+          .select("id")
+          .eq("email", email.toLowerCase().trim())
+          .in("slot_id", slotIds)
+          .in("status", ["booked", "attended"])
+          .maybeSingle();
+
+        console.log("same-course booking exists:", !!existingCourseBooking);
+
+        if (existingCourseBooking) {
+          return new Response(
+            JSON.stringify({ error: "Du hast fuer diesen Kurs bereits einen Termin gebucht." }),
+            { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
+
     // Upsert patient profile (create or update by email)
+    console.log("step: upsert_patient");
     let patientId: string | null = null;
     if (email) {
       const { data: pid, error: patientErr } = await supabase.rpc("upsert_patient", {
@@ -213,14 +256,14 @@ serve(async (req) => {
         p_address_city: address.city || null,
         p_stripe_customer_id: customerId || null,
       });
+      console.log("upsert_patient result:", pid, patientErr?.message);
       if (!patientErr && pid) {
         patientId = pid;
-      } else {
-        console.error("Patient upsert error:", patientErr);
       }
     }
 
     // Atomically create booking (locks slot row, checks capacity + duplicates)
+    console.log("step: create_booking");
     const { data: bookingId, error: rpcError } = await supabase.rpc("create_booking", {
       p_slot_id: slotId,
       p_name: fullName,
@@ -235,6 +278,7 @@ serve(async (req) => {
       p_stripe_payment_method_id: paymentMethodId,
       p_stripe_checkout_session_id: sessionId,
     });
+    console.log("create_booking result:", bookingId, rpcError?.message);
 
     if (rpcError) {
       console.error("Booking RPC error:", rpcError);

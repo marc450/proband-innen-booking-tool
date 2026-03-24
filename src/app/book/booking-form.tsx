@@ -31,13 +31,15 @@ export function BookingForm({ slot }: BookingFormProps) {
       const eligibilityRes = await fetch("/api/check-booking-eligibility", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), phone: phone.trim() }),
+        body: JSON.stringify({ email: email.trim(), phone: phone.trim(), courseId: slot.course_id }),
       });
       const eligibility = await eligibilityRes.json();
 
       if (!eligibility.eligible) {
         setError(
-          "Eine Buchung ist mit dieser E-Mail-Adresse leider nicht möglich. Bitte wende Dich direkt an uns."
+          eligibility.reason === "already_booked"
+            ? "Du hast für diesen Kurs bereits einen Termin gebucht."
+            : "Eine Buchung ist mit diesen Daten leider nicht möglich. Bitte wende Dich direkt an uns."
         );
         setLoading(false);
         return;
