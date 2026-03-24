@@ -10,6 +10,7 @@ const navItems = [
   { href: "/dashboard", label: "Kurse" },
   { href: "/dashboard/bookings", label: "Buchungen" },
   { href: "/dashboard/patients", label: "Proband:innen" },
+  { href: "/dashboard/campaigns", label: "Kampagnen" },
 ];
 
 export function DashboardNav({ userEmail }: { userEmail: string }) {

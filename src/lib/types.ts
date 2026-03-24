@@ -66,6 +66,22 @@ export interface PatientWithBookings extends Patient {
   bookings: BookingWithDetails[];
 }
 
+export type CampaignStatus = "draft" | "scheduled" | "sending" | "sent" | "failed";
+
+export interface EmailCampaign {
+  id: string;
+  course_id: string | null;
+  subject: string;
+  body_text: string;
+  recipient_count: number;
+  excluded_patient_ids: string[];
+  status: CampaignStatus;
+  scheduled_at: string | null;
+  sent_at: string | null;
+  error_message: string | null;
+  created_at: string;
+}
+
 export interface BookingWithDetails extends Booking {
   slots: {
     course_id: string;
