@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-function normalizePhone(phone: string): string {
-  return phone.replace(/\D/g, "");
-}
+import { hashEmail, hashPhone } from "@/lib/encryption";
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,12 +12,13 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Check blacklist by email
+    // Check blacklist by email hash
     if (email) {
+      const emailH = hashEmail(email);
       const { data: byEmail } = await supabase
         .from("patients")
         .select("patient_status")
-        .eq("email", email.toLowerCase().trim())
+        .eq("email_hash", emailH)
         .maybeSingle();
 
       if (byEmail?.patient_status === "blacklist") {
@@ -28,29 +26,27 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Check blacklist by phone
+    // Check blacklist by phone hash
     if (phone) {
-      const normalized = normalizePhone(phone.trim());
+      const normalized = phone.replace(/\D/g, "");
       if (normalized.length >= 7) {
-        const { data: blacklisted } = await supabase
+        const phoneH = hashPhone(phone);
+        const { data: byPhone } = await supabase
           .from("patients")
-          .select("phone")
+          .select("patient_status")
+          .eq("phone_hash", phoneH)
           .eq("patient_status", "blacklist")
-          .not("phone", "is", null);
+          .maybeSingle();
 
-        const match = blacklisted?.find(
-          (p) => p.phone && normalizePhone(p.phone) === normalized
-        );
-
-        if (match) {
+        if (byPhone) {
           return NextResponse.json({ eligible: false, reason: "blacklist" });
         }
       }
     }
 
-    // Check if already booked in the same course
+    // Check if already booked in the same course by email hash
     if (email && courseId) {
-      // Get all slot IDs for this course
+      const emailH = hashEmail(email);
       const { data: courseSlots } = await supabase
         .from("slots")
         .select("id")
@@ -62,7 +58,7 @@ export async function POST(req: NextRequest) {
         const { data: existing } = await supabase
           .from("bookings")
           .select("id")
-          .eq("email", email.toLowerCase().trim())
+          .eq("email_hash", emailH)
           .in("slot_id", slotIds)
           .in("status", ["booked", "attended"])
           .maybeSingle();

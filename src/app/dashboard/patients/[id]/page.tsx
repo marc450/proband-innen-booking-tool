@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { decryptPatient, decryptBookingWithDetails } from "@/lib/encryption";
 import { notFound } from "next/navigation";
 import { PatientDetail } from "./patient-detail";
 
@@ -26,5 +27,10 @@ export default async function PatientDetailPage({
     .eq("patient_id", id)
     .order("created_at", { ascending: false });
 
-  return <PatientDetail patient={patient} bookings={bookings || []} />;
+  return (
+    <PatientDetail
+      patient={decryptPatient(patient)}
+      bookings={(bookings || []).map(decryptBookingWithDetails)}
+    />
+  );
 }

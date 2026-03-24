@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { decryptPatient } from "@/lib/encryption";
 import { PatientsManager } from "./patients-manager";
 
 export default async function PatientsPage() {
@@ -9,5 +10,7 @@ export default async function PatientsPage() {
     .select("*")
     .order("created_at", { ascending: false });
 
-  return <PatientsManager initialPatients={patients || []} />;
+  const decrypted = (patients || []).map(decryptPatient);
+
+  return <PatientsManager initialPatients={decrypted} />;
 }

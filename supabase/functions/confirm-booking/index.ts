@@ -1,8 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
+const ENCRYPTION_PUBLIC_KEY_PEM = Deno.env.get("ENCRYPTION_PUBLIC_KEY")!.replace(/\\n/g, "\n");
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -14,6 +16,77 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+// --- Deno-native encryption helpers ---
+
+async function importRsaPublicKey(pem: string): Promise<CryptoKey> {
+  const pemContents = pem
+    .replace("-----BEGIN PUBLIC KEY-----", "")
+    .replace("-----END PUBLIC KEY-----", "")
+    .replace(/\s/g, "");
+  const binaryDer = Uint8Array.from(atob(pemContents), (c) => c.charCodeAt(0));
+  return crypto.subtle.importKey(
+    "spki",
+    binaryDer,
+    { name: "RSA-OAEP", hash: "SHA-256" },
+    false,
+    ["encrypt"]
+  );
+}
+
+async function encryptFields(
+  fields: Record<string, unknown>
+): Promise<{ encrypted_data: string; encrypted_key: string; encryption_iv: string }> {
+  const plaintext = new TextEncoder().encode(JSON.stringify(fields));
+
+  // Generate AES-256-GCM key (DEK) and IV
+  const dek = crypto.getRandomValues(new Uint8Array(32));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+
+  // Import AES key
+  const aesKey = await crypto.subtle.importKey("raw", dek, "AES-GCM", false, [
+    "encrypt",
+  ]);
+
+  // Encrypt data with AES-GCM (returns ciphertext + auth tag combined)
+  const cipherBuffer = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    aesKey,
+    plaintext
+  );
+
+  // Encrypt DEK with RSA-OAEP
+  const rsaKey = await importRsaPublicKey(ENCRYPTION_PUBLIC_KEY_PEM);
+  const encryptedDek = await crypto.subtle.encrypt(
+    { name: "RSA-OAEP" },
+    rsaKey,
+    dek
+  );
+
+  return {
+    encrypted_data: base64Encode(new Uint8Array(cipherBuffer)),
+    encrypted_key: base64Encode(new Uint8Array(encryptedDek)),
+    encryption_iv: base64Encode(iv),
+  };
+}
+
+async function hashSha256(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function hashEmail(email: string): Promise<string> {
+  return hashSha256(email.toLowerCase().trim());
+}
+
+async function hashPhone(phone: string): Promise<string> {
+  return hashSha256(phone.replace(/\D/g, ""));
+}
+
+// --- Stripe helpers ---
 
 async function stripeGet(path: string) {
   const res = await fetch(`https://api.stripe.com/v1${path}`, {
@@ -33,6 +106,8 @@ async function stripePost(path: string, body: Record<string, string>) {
   });
   return res.json();
 }
+
+// --- Main handler ---
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -73,7 +148,6 @@ serve(async (req) => {
       );
     }
 
-    // Retrieve SetupIntent separately
     const setupIntentId = session.setup_intent;
     if (!setupIntentId) {
       return new Response(
@@ -101,7 +175,7 @@ serve(async (req) => {
       );
     }
 
-    // Get customer details from session (in setup mode, data is in customer_details)
+    // Get customer details from session
     const cd = session.customer_details || {};
     const email = cd.email || "";
     const phone = session.metadata?.phone || cd.phone || "";
@@ -110,17 +184,13 @@ serve(async (req) => {
     const firstName = nameParts[0] || "";
     const lastName = nameParts.slice(1).join(" ") || "";
 
-    // Fetch the payment method to get billing_details — cards store the billing
-    // address there, which is more reliable than customer_details.address in setup mode
+    // Fetch billing address from payment method
     let pmBillingAddress: Record<string, string> = {};
     if (paymentMethodId) {
       const pm = await stripeGet(`/payment_methods/${paymentMethodId}`);
-      console.log("payment_method billing_details:", JSON.stringify(pm.billing_details));
       pmBillingAddress = pm.billing_details?.address || {};
     }
 
-    // Prefer payment method billing address; fall back to session customer_details.address
-    console.log("session.customer_details:", JSON.stringify(cd));
     const sessionAddress = cd.address || {};
     const address: Record<string, string> = {
       line1: pmBillingAddress.line1 || sessionAddress.line1 || "",
@@ -128,11 +198,8 @@ serve(async (req) => {
       city: pmBillingAddress.city || sessionAddress.city || "",
       country: pmBillingAddress.country || sessionAddress.country || "",
     };
-    console.log("resolved address:", JSON.stringify(address));
 
-    // Create a Stripe customer from the collected checkout data so we can:
-    // (a) attach the payment method for future off-session charges (no-show fee)
-    // (b) save a real customer ID to the patient record
+    // Create Stripe customer
     let customerId: string | null = setupIntent.customer || null;
     if (!customerId && email) {
       const customerParams: Record<string, string> = { email };
@@ -144,36 +211,29 @@ serve(async (req) => {
       if (address.country) customerParams["address[country]"] = address.country;
 
       const customer = await stripePost("/customers", customerParams);
-      console.log("created customer:", customer.id, "error:", customer.error);
-      if (customer.id) {
-        customerId = customer.id;
-      }
+      if (customer.id) customerId = customer.id;
     }
 
-    // Attach payment method to customer and set as default for invoices
-    console.log("step: attaching payment method");
+    // Attach payment method to customer
     if (customerId && paymentMethodId) {
-      const attachRes = await stripePost(`/payment_methods/${paymentMethodId}/attach`, {
-        customer: customerId,
-      });
-      console.log("attach result:", attachRes.id ?? attachRes.error?.message);
-      const updateRes = await stripePost(`/customers/${customerId}`, {
+      await stripePost(`/payment_methods/${paymentMethodId}/attach`, { customer: customerId });
+      await stripePost(`/customers/${customerId}`, {
         "invoice_settings[default_payment_method]": paymentMethodId,
       });
-      console.log("customer update result:", updateRes.id ?? updateRes.error?.message);
     }
 
-    // Hard block: reject booking if patient is blacklisted (check by email and phone)
-    console.log("step: blacklist check");
-    const normalizePhone = (p: string) => p.replace(/\D/g, "");
+    // Compute hashes for lookups
+    const emailHash = email ? await hashEmail(email) : null;
+    const phoneHash = phone ? await hashPhone(phone) : null;
 
-    if (email) {
-      const { data: byEmail, error: byEmailErr } = await supabase
+    // Blacklist check by email hash
+    console.log("step: blacklist check");
+    if (emailHash) {
+      const { data: byEmail } = await supabase
         .from("patients")
         .select("patient_status")
-        .eq("email", email.toLowerCase().trim())
+        .eq("email_hash", emailHash)
         .maybeSingle();
-      console.log("blacklist email check:", byEmail?.patient_status ?? "not found", byEmailErr?.message);
 
       if (byEmail?.patient_status === "blacklist") {
         return new Response(
@@ -183,32 +243,26 @@ serve(async (req) => {
       }
     }
 
-    if (phone) {
-      const normalizedPhone = normalizePhone(phone);
-      if (normalizedPhone.length >= 7) {
-        const { data: blacklisted, error: blacklistErr } = await supabase
-          .from("patients")
-          .select("phone")
-          .eq("patient_status", "blacklist")
-          .not("phone", "is", null);
-        console.log("blacklist phone check: rows=", blacklisted?.length ?? 0, blacklistErr?.message);
+    // Blacklist check by phone hash
+    if (phoneHash) {
+      const { data: byPhone } = await supabase
+        .from("patients")
+        .select("patient_status")
+        .eq("phone_hash", phoneHash)
+        .eq("patient_status", "blacklist")
+        .maybeSingle();
 
-        const phoneMatch = blacklisted?.find(
-          (p) => p.phone && normalizePhone(p.phone) === normalizedPhone
+      if (byPhone) {
+        return new Response(
+          JSON.stringify({ error: "Eine Buchung ist mit diesen Daten nicht möglich." }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
-
-        if (phoneMatch) {
-          return new Response(
-            JSON.stringify({ error: "Eine Buchung ist mit diesen Daten nicht möglich." }),
-            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
       }
     }
 
-    // Hard block: one booking per course per person (by email)
+    // Same-course duplicate check by email hash
     console.log("step: same-course check");
-    if (email) {
+    if (emailHash) {
       const { data: slotRow } = await supabase
         .from("slots")
         .select("course_id")
@@ -226,12 +280,10 @@ serve(async (req) => {
         const { data: existingCourseBooking } = await supabase
           .from("bookings")
           .select("id")
-          .eq("email", email.toLowerCase().trim())
+          .eq("email_hash", emailHash)
           .in("slot_id", slotIds)
           .in("status", ["booked", "attended"])
           .maybeSingle();
-
-        console.log("same-course booking exists:", !!existingCourseBooking);
 
         if (existingCourseBooking) {
           return new Response(
@@ -242,43 +294,83 @@ serve(async (req) => {
       }
     }
 
-    // Upsert patient profile (create or update by email)
-    console.log("step: upsert_patient");
+    // Encrypt patient data
+    console.log("step: encrypt + upsert patient");
+    const patientEncrypted = await encryptFields({
+      email,
+      first_name: firstName || null,
+      last_name: lastName || null,
+      phone: phone || null,
+      address_street: address.line1 || null,
+      address_zip: address.postal_code || null,
+      address_city: address.city || null,
+      stripe_customer_id: customerId || null,
+      notes: null,
+    });
+
+    // Upsert patient by email_hash
     let patientId: string | null = null;
-    if (email) {
-      const { data: pid, error: patientErr } = await supabase.rpc("upsert_patient", {
-        p_email: email,
-        p_first_name: firstName || null,
-        p_last_name: lastName || null,
-        p_phone: phone || null,
-        p_address_street: address.line1 || null,
-        p_address_zip: address.postal_code || null,
-        p_address_city: address.city || null,
-        p_stripe_customer_id: customerId || null,
-      });
-      console.log("upsert_patient result:", pid, patientErr?.message);
-      if (!patientErr && pid) {
-        patientId = pid;
+    if (emailHash) {
+      const { data: existingPatient } = await supabase
+        .from("patients")
+        .select("id")
+        .eq("email_hash", emailHash)
+        .maybeSingle();
+
+      if (existingPatient) {
+        patientId = existingPatient.id;
+        await supabase
+          .from("patients")
+          .update({
+            encrypted_data: patientEncrypted.encrypted_data,
+            encrypted_key: patientEncrypted.encrypted_key,
+            encryption_iv: patientEncrypted.encryption_iv,
+            phone_hash: phoneHash,
+          })
+          .eq("id", patientId);
+      } else {
+        const { data: newPatient } = await supabase
+          .from("patients")
+          .insert({
+            email_hash: emailHash,
+            phone_hash: phoneHash,
+            patient_status: "active",
+            encrypted_data: patientEncrypted.encrypted_data,
+            encrypted_key: patientEncrypted.encrypted_key,
+            encryption_iv: patientEncrypted.encryption_iv,
+          })
+          .select("id")
+          .single();
+        patientId = newPatient?.id ?? null;
       }
+      console.log("patient upsert result:", patientId);
     }
 
-    // Atomically create booking (locks slot row, checks capacity + duplicates)
-    console.log("step: create_booking");
-    const { data: bookingId, error: rpcError } = await supabase.rpc("create_booking", {
+    // Encrypt booking data
+    console.log("step: encrypt + create booking");
+    const bookingEncrypted = await encryptFields({
+      name: fullName,
+      first_name: firstName,
+      last_name: lastName,
+      email,
+      phone: phone || null,
+      address_street: address.line1 || null,
+      address_zip: address.postal_code || null,
+      address_city: address.city || null,
+      stripe_customer_id: customerId,
+      stripe_payment_method_id: paymentMethodId,
+    });
+
+    // Create booking using RPC for atomic slot locking, passing encrypted data
+    const { data: bookingId, error: rpcError } = await supabase.rpc("create_encrypted_booking", {
       p_slot_id: slotId,
-      p_name: fullName,
-      p_first_name: firstName,
-      p_last_name: lastName,
-      p_email: email,
-      p_phone: phone || null,
-      p_address_street: address.line1 || null,
-      p_address_zip: address.postal_code || null,
-      p_address_city: address.city || null,
-      p_stripe_customer_id: customerId,
-      p_stripe_payment_method_id: paymentMethodId,
+      p_email_hash: emailHash,
+      p_encrypted_data: bookingEncrypted.encrypted_data,
+      p_encrypted_key: bookingEncrypted.encrypted_key,
+      p_encryption_iv: bookingEncrypted.encryption_iv,
       p_stripe_checkout_session_id: sessionId,
     });
-    console.log("create_booking result:", bookingId, rpcError?.message);
+    console.log("create_encrypted_booking result:", bookingId, rpcError?.message);
 
     if (rpcError) {
       console.error("Booking RPC error:", rpcError);
@@ -321,7 +413,6 @@ serve(async (req) => {
     const courseLocation = slotInfo?.courses?.location || "";
     const startTime = slotInfo?.start_time || "";
 
-    // Format date and time for email
     let formattedDate = courseDate;
     let formattedTime = "";
     try {
@@ -403,7 +494,6 @@ serve(async (req) => {
           }),
         });
       } catch (emailErr) {
-        // Don't fail the booking if email fails
         console.error("Failed to send confirmation email:", emailErr);
       }
     }

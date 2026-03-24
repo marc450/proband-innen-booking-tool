@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { createClient } from "@/lib/supabase/server";
+import { decryptBookingWithDetails } from "@/lib/encryption";
 import { BookingsManager } from "./bookings-manager";
 
 export default async function BookingsPage() {
@@ -28,7 +29,7 @@ export default async function BookingsPage() {
 
   return (
     <BookingsManager
-      initialBookings={bookings || []}
+      initialBookings={(bookings || []).map(decryptBookingWithDetails)}
       courses={courses || []}
     />
   );

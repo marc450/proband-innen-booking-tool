@@ -36,8 +36,10 @@ import { de } from "date-fns/locale";
 import { Download, Search, ArrowLeftRight } from "lucide-react";
 import * as XLSX from "xlsx";
 
+type BookingWithHash = BookingWithDetails & { email_hash?: string };
+
 interface Props {
-  initialBookings: BookingWithDetails[];
+  initialBookings: BookingWithHash[];
   courses: { id: string; title: string; location: string | null }[];
 }
 
@@ -78,7 +80,7 @@ export function BookingsManager({ initialBookings, courses }: Props) {
   const [alertState, setAlertState] = useState<{ title: string; description: string } | null>(null);
 
   // Slot change modal
-  const [slotChangePending, setSlotChangePending] = useState<BookingWithDetails | null>(null);
+  const [slotChangePending, setSlotChangePending] = useState<BookingWithHash | null>(null);
   const [slotChangeTargetCourseId, setSlotChangeTargetCourseId] = useState<string>("");
   const [slotChangeTargetSlotId, setSlotChangeTargetSlotId] = useState<string>("");
   const [slotsForCourse, setSlotsForCourse] = useState<AvailableSlotOption[]>([]);
@@ -135,14 +137,17 @@ export function BookingsManager({ initialBookings, courses }: Props) {
       await supabase.from("bookings").update({ status: "no_show" }).eq("id", booking.id);
       setBookings((prev) => prev.map((b) => b.id === booking.id ? { ...b, status: "no_show" } : b));
 
-      const { data, error } = await supabase.functions.invoke("charge-no-show", {
-        body: { bookingId: booking.id },
+      const chargeRes = await fetch("/api/charge-no-show", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId: booking.id }),
       });
+      const chargeData = await chargeRes.json();
 
-      if (error || data?.error) {
-        setAlertState({ title: "Status gesetzt, Zahlung fehlgeschlagen", description: error?.message || data?.error });
+      if (!chargeRes.ok || chargeData.error) {
+        setAlertState({ title: "Status gesetzt, Zahlung fehlgeschlagen", description: chargeData.error || "Unbekannter Fehler" });
       } else {
-        setBookings((prev) => prev.map((b) => b.id === booking.id ? { ...b, charge_id: data.chargeId } : b));
+        setBookings((prev) => prev.map((b) => b.id === booking.id ? { ...b, charge_id: chargeData.chargeId } : b));
         setAlertState({ title: "No-Show bestätigt", description: `50 EUR wurden erfolgreich von ${booking.first_name || booking.name} erhoben.` });
       }
     } catch {
@@ -154,7 +159,7 @@ export function BookingsManager({ initialBookings, courses }: Props) {
 
   // --- Slot change handlers ---
 
-  const fetchSlotsForCourse = async (courseId: string, excludeSlotId: string, email: string) => {
+  const fetchSlotsForCourse = async (courseId: string, excludeSlotId: string, email: string, emailHash?: string) => {
     setLoadingSlots(true);
     setSlotsForCourse([]);
     setSlotChangeTargetSlotId("");
@@ -172,10 +177,12 @@ export function BookingsManager({ initialBookings, courses }: Props) {
     const slotIds = (slotData || []).map((s) => s.id);
     let alreadyBookedSlotIds = new Set<string>();
     if (slotIds.length > 0) {
+      const lookupField = emailHash ? "email_hash" : "email";
+      const lookupValue = emailHash || email;
       const { data: existingBookings } = await supabase
         .from("bookings")
         .select("slot_id")
-        .eq("email", email)
+        .eq(lookupField, lookupValue)
         .in("slot_id", slotIds)
         .in("status", ["booked", "attended"]);
       alreadyBookedSlotIds = new Set((existingBookings || []).map((b) => b.slot_id));
@@ -186,14 +193,14 @@ export function BookingsManager({ initialBookings, courses }: Props) {
     setLoadingSlots(false);
   };
 
-  const handleOpenSlotChange = (booking: BookingWithDetails) => {
+  const handleOpenSlotChange = (booking: BookingWithHash) => {
     setSlotChangePending(booking);
     setSlotChangeError(null);
     setSlotChangeTargetSlotId("");
     const courseId = booking.slots?.course_id || "";
     setSlotChangeTargetCourseId(courseId);
     if (courseId) {
-      fetchSlotsForCourse(courseId, booking.slot_id, booking.email);
+      fetchSlotsForCourse(courseId, booking.slot_id, booking.email, booking.email_hash);
     }
   };
 
@@ -201,7 +208,7 @@ export function BookingsManager({ initialBookings, courses }: Props) {
     setSlotChangeTargetCourseId(courseId);
     setSlotChangeError(null);
     if (slotChangePending) {
-      fetchSlotsForCourse(courseId, slotChangePending.slot_id, slotChangePending.email);
+      fetchSlotsForCourse(courseId, slotChangePending.slot_id, slotChangePending.email, slotChangePending.email_hash);
     }
   };
 

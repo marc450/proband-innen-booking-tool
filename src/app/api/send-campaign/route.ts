@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildEmailHtml } from "@/lib/email-template";
+import { decryptPatient } from "@/lib/encryption";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
@@ -31,12 +32,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Kurs nicht gefunden." }, { status: 404 });
   }
 
-  // Fetch all patients
-  const { data: allPatients } = await supabase
+  // Fetch all patients and decrypt
+  const { data: rawPatients } = await supabase
     .from("patients")
-    .select("id, email, first_name, last_name, patient_status");
+    .select("*");
+  const allPatients = (rawPatients || []).map(decryptPatient);
 
-  if (!allPatients || allPatients.length === 0) {
+  if (allPatients.length === 0) {
     return NextResponse.json({ error: "Keine Proband:innen vorhanden." }, { status: 400 });
   }
 

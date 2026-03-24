@@ -112,10 +112,11 @@ export function PatientDetail({ patient, bookings }: Props) {
 
   const handleSaveNotes = async () => {
     setSavingNotes(true);
-    await supabase
-      .from("patients")
-      .update({ notes: notesDraft || null })
-      .eq("id", patient.id);
+    await fetch("/api/update-patient-notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ patientId: patient.id, notes: notesDraft }),
+    });
     setNotes(notesDraft);
     setEditingNotes(false);
     setSavingNotes(false);
