@@ -408,13 +408,12 @@ export function BookingForm({ slot }: BookingFormProps) {
                 Weiterleitung zu Stripe...
               </span>
             ) : (
-              "Weiter zur Zahlungsmethode"
+              "Bezahlmethode hinterlegen"
             )}
           </Button>
 
           <p className="text-xs text-muted-foreground text-center">
-            Du wirst zu Stripe weitergeleitet, um Deine Daten und Zahlungsmethode zu hinterlegen.
-            Es wird jetzt keine Zahlung vorgenommen.
+            Im nächsten Schritt wirst Du gebeten, eine Bezahlmethode zu hinterlegen. Diese dient ausschließlich zur Absicherung im Falle eines No-Shows. Es wird jetzt keine Zahlung vorgenommen. Die Bezahlung der Behandlung erfolgt vor Ort.
           </p>
         </form>
       </CardContent>
