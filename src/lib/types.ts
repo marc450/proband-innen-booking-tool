@@ -44,6 +44,7 @@ export interface Booking {
   stripe_checkout_session_id: string | null;
   status: BookingStatus;
   charge_id: string | null;
+  patient_id?: string | null;
   booking_type?: string;
   referring_doctor?: string;
   created_at: string;

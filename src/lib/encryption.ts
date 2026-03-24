@@ -175,6 +175,7 @@ export function decryptBooking(row: any): Booking & { email_hash?: string } {
       stripe_checkout_session_id: row.stripe_checkout_session_id,
       status: row.status,
       charge_id: row.charge_id,
+      patient_id: row.patient_id ?? null,
       booking_type: row.booking_type ?? undefined,
       referring_doctor: row.referring_doctor ?? undefined,
       created_at: row.created_at,

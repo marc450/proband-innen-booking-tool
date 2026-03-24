@@ -33,8 +33,8 @@ import { Label } from "@/components/ui/label";
 import { ConfirmDialog, AlertDialog } from "@/components/confirm-dialog";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Download, Search, ArrowLeftRight, Trash2 } from "lucide-react";
-import * as XLSX from "xlsx";
+import { Search, ArrowLeftRight, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 type BookingWithHash = BookingWithDetails & { email_hash?: string };
 
@@ -91,6 +91,7 @@ export function BookingsManager({ initialBookings, courses }: Props) {
   const [savingSlotChange, setSavingSlotChange] = useState(false);
 
   const supabase = createClient();
+  const router = useRouter();
 
   const filteredBookings = bookings.filter((b) => {
     if (filterCourse !== "all" && b.slots?.courses?.title !== courses.find(c => c.id === filterCourse)?.title) {
@@ -302,45 +303,6 @@ export function BookingsManager({ initialBookings, courses }: Props) {
     }
   };
 
-  // --- Export ---
-
-  const handleExport = () => {
-    const rows = filteredBookings.map((b) => ({
-      Vorname: b.first_name || "",
-      Nachname: b.last_name || "",
-      "E-Mail": b.email,
-      Telefon: b.phone || "",
-      Kurs: b.slots?.courses?.title || "",
-      Datum: b.slots?.start_time
-        ? format(new Date(b.slots.start_time), "dd.MM.yyyy", { locale: de })
-        : "",
-      Uhrzeit: b.slots?.start_time
-        ? format(new Date(b.slots.start_time), "HH:mm", { locale: de })
-        : "",
-      Status: statusLabels[b.status],
-      Typ: b.booking_type === "private" ? "Privat" : "Standard",
-      "Zuweisende:r Ärzt:in": b.referring_doctor || "",
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(rows);
-
-    const colWidths = Object.keys(rows[0] || {}).map((key) => ({
-      wch: Math.max(key.length, ...rows.map((r) => String((r as Record<string, string>)[key] || "").length)) + 2,
-    }));
-    ws["!cols"] = colWidths;
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Buchungen");
-
-    const courseName = filterCourse !== "all"
-      ? courses.find((c) => c.id === filterCourse)?.title || "Buchungen"
-      : "Buchungen";
-    const dateSuffix = filterDate || format(new Date(), "yyyy-MM-dd");
-    const filename = `${courseName}_${dateSuffix}.xlsx`;
-
-    XLSX.writeFile(wb, filename);
-  };
-
   return (
     <div className="space-y-6">
       {/* No-show confirmation modal */}
@@ -520,12 +482,6 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                 Filter zurücksetzen
               </Button>
             )}
-            {filteredBookings.length > 0 && (
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-1" />
-                Excel Export
-              </Button>
-            )}
           </div>
         </CardContent>
       </Card>
@@ -542,14 +498,11 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
-                      <TableHead>E-Mail</TableHead>
-                      <TableHead>Telefon</TableHead>
                       <TableHead>Kurs</TableHead>
                       <TableHead>Termin</TableHead>
                       <TableHead>Typ</TableHead>
                       <TableHead>Ärzt:in</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Buchungsdatum</TableHead>
                       <TableHead />
                     </TableRow>
                   </TableHeader>
@@ -557,12 +510,23 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                     {filteredBookings.map((booking) => (
                       <TableRow key={booking.id}>
                         <TableCell className="font-medium whitespace-nowrap">
-                          {booking.first_name && booking.last_name
-                            ? `${booking.first_name} ${booking.last_name}`
-                            : booking.name}
+                          {booking.patient_id ? (
+                            <button
+                              className="text-primary hover:underline text-left"
+                              onClick={() => router.push(`/dashboard/patients/${booking.patient_id}`)}
+                            >
+                              {booking.first_name && booking.last_name
+                                ? `${booking.first_name} ${booking.last_name}`
+                                : booking.name}
+                            </button>
+                          ) : (
+                            <span>
+                              {booking.first_name && booking.last_name
+                                ? `${booking.first_name} ${booking.last_name}`
+                                : booking.name}
+                            </span>
+                          )}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap">{booking.email}</TableCell>
-                        <TableCell className="text-sm whitespace-nowrap">{booking.phone || ""}</TableCell>
                         <TableCell className="whitespace-nowrap">{booking.slots?.courses?.title || "—"}</TableCell>
                         <TableCell className="whitespace-nowrap">
                           {booking.slots?.start_time
@@ -606,11 +570,6 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                               </Badge>
                             )}
                           </div>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                          {booking.created_at
-                            ? format(new Date(booking.created_at), "dd.MM.yyyy HH:mm", { locale: de })
-                            : "—"}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
