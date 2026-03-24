@@ -510,95 +510,97 @@ export function BookingsManager({ initialBookings, courses }: Props) {
               Keine Buchungen gefunden
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>E-Mail</TableHead>
-                  <TableHead>Telefon</TableHead>
-                  <TableHead>Kurs</TableHead>
-                  <TableHead>Termin</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Buchungsdatum</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredBookings.map((booking) => (
-                  <TableRow key={booking.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <span>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>E-Mail</TableHead>
+                      <TableHead>Telefon</TableHead>
+                      <TableHead>Kurs</TableHead>
+                      <TableHead>Termin</TableHead>
+                      <TableHead>Typ</TableHead>
+                      <TableHead>Ärzt:in</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Buchungsdatum</TableHead>
+                      <TableHead />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredBookings.map((booking) => (
+                      <TableRow key={booking.id}>
+                        <TableCell className="font-medium whitespace-nowrap">
                           {booking.first_name && booking.last_name
                             ? `${booking.first_name} ${booking.last_name}`
                             : booking.name}
-                        </span>
-                        {booking.booking_type === "private" && (
-                          <Badge variant="outline" className="text-blue-600 border-blue-300 text-[10px] px-1.5 py-0">
-                            Privat
-                          </Badge>
-                        )}
-                      </div>
-                      {booking.booking_type === "private" && booking.referring_doctor && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Ärzt:in: {booking.referring_doctor}
-                        </p>
-                      )}
-                    </TableCell>
-                    <TableCell>{booking.email}</TableCell>
-                    <TableCell className="text-sm">{booking.phone || ""}</TableCell>
-                    <TableCell>{booking.slots?.courses?.title || "—"}</TableCell>
-                    <TableCell>
-                      {booking.slots?.start_time
-                        ? format(new Date(booking.slots.start_time), "dd.MM.yyyy HH:mm", { locale: de })
-                        : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <Select
-                          value={booking.status}
-                          onValueChange={(val) => handleStatusChange(booking.id, val as BookingStatus)}
-                          disabled={chargingId === booking.id}
-                        >
-                          <SelectTrigger className="w-[130px] h-8">
-                            <Badge variant={statusVariants[booking.status]}>
-                              {chargingId === booking.id ? "..." : statusLabels[booking.status]}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">{booking.email}</TableCell>
+                        <TableCell className="text-sm whitespace-nowrap">{booking.phone || ""}</TableCell>
+                        <TableCell className="whitespace-nowrap">{booking.slots?.courses?.title || "—"}</TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {booking.slots?.start_time
+                            ? format(new Date(booking.slots.start_time), "dd.MM.yyyy HH:mm", { locale: de })
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          {booking.booking_type === "private" ? (
+                            <Badge variant="outline" className="text-blue-600 border-blue-300 whitespace-nowrap">
+                              Privat
                             </Badge>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="booked">Gebucht</SelectItem>
-                            <SelectItem value="attended">Erschienen</SelectItem>
-                            <SelectItem value="no_show">No-Show</SelectItem>
-                            <SelectItem value="cancelled">Storniert</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {booking.charge_id && (
-                          <Badge variant="outline" className="text-green-600 text-xs w-fit">
-                            Belastet
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {booking.created_at
-                        ? format(new Date(booking.created_at), "dd.MM.yyyy HH:mm", { locale: de })
-                        : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleOpenSlotChange(booking)}
-                        title="Slot ändern"
-                      >
-                        <ArrowLeftRight className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                          ) : (
+                            <span className="text-sm text-muted-foreground">Standard</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm whitespace-nowrap">
+                          {booking.referring_doctor || "—"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <Select
+                              value={booking.status}
+                              onValueChange={(val) => handleStatusChange(booking.id, val as BookingStatus)}
+                              disabled={chargingId === booking.id}
+                            >
+                              <SelectTrigger className="w-[130px] h-8">
+                                <Badge variant={statusVariants[booking.status]}>
+                                  {chargingId === booking.id ? "..." : statusLabels[booking.status]}
+                                </Badge>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="booked">Gebucht</SelectItem>
+                                <SelectItem value="attended">Erschienen</SelectItem>
+                                <SelectItem value="no_show">No-Show</SelectItem>
+                                <SelectItem value="cancelled">Storniert</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {booking.charge_id && (
+                              <Badge variant="outline" className="text-green-600 text-xs w-fit">
+                                Belastet
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                          {booking.created_at
+                            ? format(new Date(booking.created_at), "dd.MM.yyyy HH:mm", { locale: de })
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenSlotChange(booking)}
+                            title="Slot ändern"
+                          >
+                            <ArrowLeftRight className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
         </CardContent>
       </Card>
     </div>
