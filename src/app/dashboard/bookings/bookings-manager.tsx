@@ -207,7 +207,11 @@ export function BookingsManager({ initialBookings, courses }: Props) {
             </div>
             <Select value={filterCourse} onValueChange={(val) => { if (val) setFilterCourse(val); }}>
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Alle Kurse" />
+                <span className="truncate">
+                  {filterCourse === "all"
+                    ? "Alle Kurse"
+                    : courses.find((c) => c.id === filterCourse)?.title ?? "Alle Kurse"}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle Kurse</SelectItem>
