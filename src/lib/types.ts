@@ -6,6 +6,7 @@ export interface Course {
   description: string | null;
   course_date: string | null; // ISO date string yyyy-MM-dd
   location: string | null;
+  instructor: string | null;
   created_at: string;
 }
 

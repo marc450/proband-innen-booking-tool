@@ -52,6 +52,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
   const [courseDescription, setCourseDescription] = useState("");
   const [courseDate, setCourseDate] = useState("");
   const [courseLocation, setCourseLocation] = useState("");
+  const [courseInstructor, setCourseInstructor] = useState("");
 
   // Slot dialog
   const [slotDialogOpen, setSlotDialogOpen] = useState(false);
@@ -84,6 +85,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
     setCourseDescription("");
     setCourseDate("");
     setCourseLocation("");
+    setCourseInstructor("");
     setEditingCourse(null);
   };
 
@@ -97,6 +99,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
       description: courseDescription || null,
       course_date: courseDate || null,
       location: courseLocation || null,
+      instructor: courseInstructor || null,
     };
 
     setCourseDialogOpen(false);
@@ -294,6 +297,15 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
               />
             </div>
             <div>
+              <Label htmlFor="instructor">Kursleitende:r Ärztin/Arzt</Label>
+              <Input
+                id="instructor"
+                value={courseInstructor}
+                onChange={(e) => setCourseInstructor(e.target.value)}
+                placeholder="z.B. Dr. med. Anna Müller"
+              />
+            </div>
+            <div>
               <Label htmlFor="description">Beschreibung</Label>
               <Textarea
                 id="description"
@@ -467,7 +479,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                     <Copy className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" size="sm"
-                    onClick={(e) => { e.stopPropagation(); setEditingCourse(course); setCourseTitle(course.title); setCourseDescription(course.description || ""); setCourseDate(course.course_date || ""); setCourseLocation(course.location || ""); setCourseDialogOpen(true); }}>
+                    onClick={(e) => { e.stopPropagation(); setEditingCourse(course); setCourseTitle(course.title); setCourseDescription(course.description || ""); setCourseDate(course.course_date || ""); setCourseLocation(course.location || ""); setCourseInstructor(course.instructor || ""); setCourseDialogOpen(true); }}>
                     <Edit className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" size="sm"
