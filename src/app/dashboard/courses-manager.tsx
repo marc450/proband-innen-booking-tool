@@ -93,23 +93,33 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
     setCourseGuidePrice("");
     setCourseServiceDescription("");
     setCourseImageUrl("");
+    setImageUploadError(null);
     setEditingCourse(null);
   };
 
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+
   const uploadImage = async (file: File) => {
     setUploadingImage(true);
+    setImageUploadError(null);
     try {
       const ext = file.name.split(".").pop() || "jpg";
       const fileName = `course-${Date.now()}.${ext}`;
       const { error } = await supabase.storage
         .from("course-images")
         .upload(fileName, file, { upsert: true });
-      if (!error) {
-        const { data: urlData } = supabase.storage
-          .from("course-images")
-          .getPublicUrl(fileName);
-        setCourseImageUrl(urlData.publicUrl);
+      if (error) {
+        console.error("Image upload error:", error);
+        setImageUploadError(error.message || "Upload fehlgeschlagen");
+        return;
       }
+      const { data: urlData } = supabase.storage
+        .from("course-images")
+        .getPublicUrl(fileName);
+      setCourseImageUrl(urlData.publicUrl);
+    } catch (err) {
+      console.error("Image upload exception:", err);
+      setImageUploadError("Upload fehlgeschlagen");
     } finally {
       setUploadingImage(false);
     }
@@ -432,15 +442,24 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                       disabled={uploadingImage}
                     />
                     {uploadingImage ? (
-                      <span className="text-sm text-muted-foreground">Wird hochgeladen...</span>
+                      <div className="flex flex-col items-center gap-2">
+                        <svg className="animate-spin h-6 w-6 text-primary" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                        <span className="text-sm text-muted-foreground">Wird hochgeladen...</span>
+                      </div>
                     ) : (
                       <>
                         <Upload className="h-6 w-6 text-muted-foreground mb-1" />
-                        <span className="text-sm text-muted-foreground">Bild hochladen</span>
+                        <span className="text-sm text-muted-foreground">Bild hochladen oder hierher ziehen</span>
                         <span className="text-xs text-muted-foreground">JPG, PNG, WebP</span>
                       </>
                     )}
                   </label>
+                )}
+                {imageUploadError && (
+                  <p className="text-sm text-red-600 mt-1">{imageUploadError}</p>
                 )}
               </div>
             </div>
