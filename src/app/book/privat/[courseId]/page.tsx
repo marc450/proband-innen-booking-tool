@@ -7,13 +7,10 @@ import { notFound } from "next/navigation";
 
 export default async function PrivatCourseBookingPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ courseId: string }>;
-  searchParams: Promise<{ slot?: string }>;
 }) {
   const { courseId } = await params;
-  const { slot: initialSlotId } = await searchParams;
   const supabase = await createClient();
 
   const { data: course } = await supabase
@@ -26,10 +23,21 @@ export default async function PrivatCourseBookingPage({
     notFound();
   }
 
+  // Fetch all sibling courses with the same title
+  const { data: siblingCourses } = await supabase
+    .from("courses")
+    .select("*")
+    .eq("title", course.title)
+    .order("course_date", { ascending: true });
+
+  const allCourses = (siblingCourses as Course[]) || [course as Course];
+
+  // Fetch available slots for all sibling courses
+  const courseIds = allCourses.map((c) => c.id);
   const { data: slots } = await supabase
     .from("available_slots")
     .select("*")
-    .eq("course_id", courseId)
+    .in("course_id", courseIds)
     .gt("remaining_capacity", 0)
     .gt("start_time", new Date().toISOString())
     .order("start_time", { ascending: true });
@@ -37,8 +45,8 @@ export default async function PrivatCourseBookingPage({
   return (
     <PrivatSlotSelection
       course={course as Course}
+      allCourses={allCourses}
       slots={(slots as AvailableSlot[]) || []}
-      initialSlotId={initialSlotId}
     />
   );
 }
