@@ -57,6 +57,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
   const [courseServiceDescription, setCourseServiceDescription] = useState("");
   const [courseImageUrl, setCourseImageUrl] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   // Slot dialog
   const [slotDialogOpen, setSlotDialogOpen] = useState(false);
@@ -135,6 +136,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
   const handleImageDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    setIsDraggingOver(false);
     const file = e.dataTransfer.files?.[0];
     if (file && file.type.startsWith("image/")) {
       await uploadImage(file);
@@ -429,9 +431,14 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                   </div>
                 ) : (
                   <label
-                    className="mt-1 flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-md cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
-                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                    onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    className={`mt-1 flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-md cursor-pointer transition-colors ${
+                      isDraggingOver
+                        ? "border-primary bg-primary/10"
+                        : "hover:border-primary/50 hover:bg-muted/50"
+                    }`}
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDraggingOver(true); }}
+                    onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDraggingOver(true); }}
+                    onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDraggingOver(false); }}
                     onDrop={handleImageDrop}
                   >
                     <input
