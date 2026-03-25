@@ -60,7 +60,7 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {groups.map((group) => (
-              <Card key={group.title} className="shadow-sm overflow-hidden">
+              <Card key={group.title} className="shadow-sm overflow-hidden pt-0 gap-0">
                 {/* Course image */}
                 {group.firstCourse.image_url ? (
                   <img
