@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { AvailableSlot, Course } from "@/lib/types";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Calendar, ChevronDown, ChevronUp, ChevronRight, Clock, ImageIcon, Euro, Stethoscope, Users } from "lucide-react";
+import { Calendar, ChevronDown, Clock, ImageIcon, Users } from "lucide-react";
 import Link from "next/link";
 
 interface CoursesOverviewProps {
@@ -29,14 +29,9 @@ function CourseCard({ group }: { group: CourseGroup }) {
   const [open, setOpen] = useState(false);
   const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
 
-  const totalCapacity = group.dates.reduce(
-    (sum, d) => sum + d.slots.reduce((s, sl) => s + sl.remaining_capacity, 0),
-    0
-  );
-
   return (
-    <Card className="shadow-sm overflow-hidden flex flex-col">
-      {/* Course image */}
+    <Card className="overflow-hidden flex flex-col shadow-md rounded-2xl border-0">
+      {/* Full-bleed image */}
       {group.firstCourse.image_url ? (
         <img
           src={group.firstCourse.image_url}
@@ -46,144 +41,113 @@ function CourseCard({ group }: { group: CourseGroup }) {
       ) : (
         <div className="w-full aspect-video bg-muted flex items-center justify-center">
           <div className="text-center text-muted-foreground">
-            <ImageIcon className="h-10 w-10 mx-auto mb-1 opacity-40" />
-            <span className="text-xs opacity-40">Kursbild</span>
+            <ImageIcon className="h-10 w-10 mx-auto mb-1 opacity-30" />
+            <span className="text-xs opacity-30">Kursbild</span>
           </div>
         </div>
       )}
 
-      <CardContent className="p-0 flex flex-col flex-1">
-        {/* Title + description */}
-        <div className="px-5 pt-5 pb-4 flex-1">
-          <h2 className="text-xl font-bold">{group.title}</h2>
-          {group.firstCourse.description && (
-            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-              {group.firstCourse.description}
-            </p>
-          )}
-        </div>
+      {/* Card body */}
+      <div className="flex flex-col flex-1 px-6 pt-5 pb-6 bg-card">
+        <h2 className="text-2xl font-bold tracking-tight leading-tight">{group.title}</h2>
 
-        {/* Leistung + Richtpreis */}
-        {(group.firstCourse.service_description || group.firstCourse.guide_price) && (
-          <>
-            <div className="border-t mx-5" />
-            <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {group.firstCourse.service_description && (
-                <div className="flex gap-3">
-                  <Stethoscope className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leistung</span>
-                    <p className="text-sm mt-0.5">{group.firstCourse.service_description}</p>
-                  </div>
-                </div>
-              )}
-              {group.firstCourse.guide_price && (
-                <div className="flex gap-3">
-                  <Euro className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Richtpreis</span>
-                    <p className="text-lg font-bold mt-0.5">{group.firstCourse.guide_price}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </>
+        {group.firstCourse.service_description && (
+          <p className="text-sm font-medium text-primary mt-1">{group.firstCourse.service_description}</p>
         )}
 
-        {/* Pricing disclaimer */}
+        {group.firstCourse.description && (
+          <p className="text-sm text-muted-foreground mt-3 leading-relaxed line-clamp-3">
+            {group.firstCourse.description}
+          </p>
+        )}
+
         {group.firstCourse.guide_price && (
-          <div className="mx-5 mb-4 bg-muted/50 rounded-md px-3 py-2">
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Die Bezahlung erfolgt nach der Behandlung vor Ort. Die Abrechnung erfolgt nach GOÄ. Der Richtpreis dient als Orientierung. Der genaue Behandlungsumfang und die endgültigen Kosten werden im persönlichen Aufklärungsgespräch mit der behandelnden Ärzt:in festgelegt.
-            </p>
-          </div>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Richtpreis: <span className="font-semibold text-foreground">{group.firstCourse.guide_price}</span>
+          </p>
         )}
+
+        {/* Spacer */}
+        <div className="flex-1 min-h-4" />
 
         {/* CTA */}
-        <div className="border-t p-4">
-          {!open ? (
-            <Button
-              className="w-full"
-              onClick={() => setOpen(true)}
-            >
-              Zu den Terminen
-              <ChevronDown className="h-4 w-4 ml-2" />
-            </Button>
-          ) : (
-            <>
-              <button
-                onClick={() => { setOpen(false); setExpandedCourseId(null); }}
-                className="w-full flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-3"
-              >
-                <ChevronUp className="h-4 w-4" />
-                Termine ausblenden
-              </button>
-              <div className="space-y-2">
-                {group.dates.map(({ course, slots }) => {
-                  const isExpanded = expandedCourseId === course.id;
-                  const dateLabel = course.course_date
-                    ? format(new Date(course.course_date + "T00:00:00"), "EEEE, dd. MMMM yyyy", { locale: de })
-                    : "Datum wird bekannt gegeben";
-                  const totalSlotCapacity = slots.reduce((s, sl) => s + sl.remaining_capacity, 0);
+        {!open ? (
+          <Button
+            size="lg"
+            className="w-full mt-4 rounded-xl"
+            onClick={() => setOpen(true)}
+          >
+            Zu den Terminen
+          </Button>
+        ) : (
+          <div className="mt-4 space-y-2">
+            {group.dates.map(({ course, slots }) => {
+              const isExpanded = expandedCourseId === course.id;
+              const dateLabel = course.course_date
+                ? format(new Date(course.course_date + "T00:00:00"), "EEEE, dd. MMMM yyyy", { locale: de })
+                : "Datum wird bekannt gegeben";
+              const totalCapacity = slots.reduce((s, sl) => s + sl.remaining_capacity, 0);
 
-                  return (
-                    <div key={course.id} className="rounded-lg border overflow-hidden">
-                      <button
-                        onClick={() => setExpandedCourseId(isExpanded ? null : course.id)}
-                        className="w-full flex items-center justify-between p-3 hover:bg-accent/50 transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <div>
-                            <p className="text-sm font-medium">{dateLabel}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {slots.length} Zeitfenster · {totalSlotCapacity} {totalSlotCapacity === 1 ? "Platz" : "Plätze"} frei
-                            </p>
-                          </div>
-                        </div>
-                        <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                      </button>
-
-                      {isExpanded && (
-                        <div className="border-t bg-muted/20 divide-y">
-                          {slots.map((slot) => (
-                            <Link
-                              key={slot.id}
-                              href={`/book/${course.id}?slot=${slot.id}`}
-                              className="flex items-center justify-between px-4 py-2.5 hover:bg-accent/50 transition-colors group"
-                            >
-                              <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-1.5">
-                                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                                  <span className="text-sm font-medium">
-                                    {format(new Date(slot.start_time), "HH:mm")} Uhr
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                                  <span className="text-xs text-muted-foreground">
-                                    {slot.remaining_capacity} {slot.remaining_capacity === 1 ? "Platz" : "Plätze"} frei
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0">
-                                <Badge variant="outline" className="text-xs border-primary/30 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                                  Buchen
-                                </Badge>
-                                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
-                              </div>
-                            </Link>
-                          ))}
-                        </div>
-                      )}
+              return (
+                <div key={course.id} className="rounded-xl border overflow-hidden">
+                  <button
+                    onClick={() => setExpandedCourseId(isExpanded ? null : course.id)}
+                    className="w-full flex items-center justify-between p-3.5 hover:bg-accent/50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium">{dateLabel}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {slots.length} Zeitfenster · {totalCapacity} {totalCapacity === 1 ? "Platz" : "Plätze"} frei
+                        </p>
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-      </CardContent>
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {isExpanded && (
+                    <div className="border-t bg-muted/30 divide-y">
+                      {slots.map((slot) => (
+                        <Link
+                          key={slot.id}
+                          href={`/book/${course.id}?slot=${slot.id}`}
+                          className="flex items-center justify-between px-4 py-3 hover:bg-accent/50 transition-colors group"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="text-sm font-medium">
+                                {format(new Date(slot.start_time), "HH:mm")} Uhr
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">
+                                {slot.remaining_capacity} {slot.remaining_capacity === 1 ? "Platz" : "Plätze"} frei
+                              </span>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-xs border-primary/30 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors shrink-0">
+                            Buchen
+                          </Badge>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            <button
+              onClick={() => { setOpen(false); setExpandedCourseId(null); }}
+              className="w-full text-xs text-muted-foreground hover:text-foreground pt-1"
+            >
+              Termine ausblenden
+            </button>
+          </div>
+        )}
+      </div>
     </Card>
   );
 }
@@ -223,13 +187,11 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
 
       <main className="max-w-5xl mx-auto px-4 py-8">
         {groups.length === 0 ? (
-          <Card className="shadow-sm">
-            <CardContent className="py-12 text-center text-muted-foreground">
-              Derzeit sind keine Kurse mit verfügbaren Terminen vorhanden.
-            </CardContent>
-          </Card>
+          <div className="py-12 text-center text-muted-foreground">
+            Derzeit sind keine Kurse mit verfügbaren Terminen vorhanden.
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
             {groups.map((group) => (
               <CourseCard key={group.title} group={group} />
             ))}
