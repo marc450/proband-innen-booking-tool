@@ -7,10 +7,13 @@ import { notFound } from "next/navigation";
 
 export default async function PrivatCourseBookingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ courseId: string }>;
+  searchParams: Promise<{ slot?: string }>;
 }) {
   const { courseId } = await params;
+  const { slot: initialSlotId } = await searchParams;
   const supabase = await createClient();
 
   const { data: course } = await supabase
@@ -35,6 +38,7 @@ export default async function PrivatCourseBookingPage({
     <PrivatSlotSelection
       course={course as Course}
       slots={(slots as AvailableSlot[]) || []}
+      initialSlotId={initialSlotId}
     />
   );
 }

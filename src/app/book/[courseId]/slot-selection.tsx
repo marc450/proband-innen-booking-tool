@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AvailableSlot, Course } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,10 +13,18 @@ import { BookingForm } from "../booking-form";
 interface SlotSelectionProps {
   course: Course;
   slots: AvailableSlot[];
+  initialSlotId?: string;
 }
 
-export function SlotSelection({ course, slots }: SlotSelectionProps) {
+export function SlotSelection({ course, slots, initialSlotId }: SlotSelectionProps) {
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
+
+  useEffect(() => {
+    if (initialSlotId) {
+      const found = slots.find((s) => s.id === initialSlotId);
+      if (found) setSelectedSlot(found);
+    }
+  }, [initialSlotId, slots]);
 
   const courseDate = course.course_date
     ? format(new Date(course.course_date + "T00:00:00"), "EEEE, dd. MMMM yyyy", { locale: de })
@@ -40,7 +48,7 @@ export function SlotSelection({ course, slots }: SlotSelectionProps) {
               onClick={() => setSelectedSlot(null)}
               className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-1"
             >
-              &larr; Zurueck zur Zeitfensterauswahl
+              &larr; Zurück zur Zeitfensterauswahl
             </button>
             <Card className="mb-6 shadow-sm">
               <CardHeader>
@@ -65,7 +73,7 @@ export function SlotSelection({ course, slots }: SlotSelectionProps) {
               href="/book"
               className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-1"
             >
-              &larr; Zurueck zur Kursuebersicht
+              &larr; Zurück zur Kursübersicht
             </Link>
 
             <Card className="mt-4 mb-6 shadow-sm">
@@ -95,13 +103,13 @@ export function SlotSelection({ course, slots }: SlotSelectionProps) {
             </Card>
 
             <h2 className="text-sm font-medium text-muted-foreground mb-3">
-              Verfuegbare Zeitfenster
+              Verfügbare Zeitfenster
             </h2>
 
             {slots.length === 0 ? (
               <Card className="shadow-sm">
                 <CardContent className="py-8 text-center text-muted-foreground">
-                  Fuer diesen Kurs sind leider keine Termine mehr verfuegbar.
+                  Für diesen Kurs sind leider keine Termine mehr verfügbar.
                 </CardContent>
               </Card>
             ) : (
@@ -123,7 +131,7 @@ export function SlotSelection({ course, slots }: SlotSelectionProps) {
                         <div className="flex items-center gap-1.5">
                           <Users className="h-3.5 w-3.5 text-muted-foreground" />
                           <span className="text-xs text-muted-foreground">
-                            {slot.remaining_capacity} {slot.remaining_capacity === 1 ? "Platz" : "Plaetze"} frei
+                            {slot.remaining_capacity} {slot.remaining_capacity === 1 ? "Platz" : "Plätze"} frei
                           </span>
                         </div>
                       </div>

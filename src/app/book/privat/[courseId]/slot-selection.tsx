@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AvailableSlot, Course } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,10 +13,18 @@ import { PrivatBookingForm } from "../booking-form";
 interface Props {
   course: Course;
   slots: AvailableSlot[];
+  initialSlotId?: string;
 }
 
-export function PrivatSlotSelection({ course, slots }: Props) {
+export function PrivatSlotSelection({ course, slots, initialSlotId }: Props) {
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
+
+  useEffect(() => {
+    if (initialSlotId) {
+      const found = slots.find((s) => s.id === initialSlotId);
+      if (found) setSelectedSlot(found);
+    }
+  }, [initialSlotId, slots]);
 
   const courseDate = course.course_date
     ? format(new Date(course.course_date + "T00:00:00"), "EEEE, dd. MMMM yyyy", { locale: de })
