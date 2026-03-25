@@ -63,7 +63,7 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                 </CardDescription>
               </CardHeader>
             </Card>
-            <BookingForm slot={selectedSlot} />
+            <BookingForm slot={selectedSlot} guidePrice={course.guide_price} />
           </div>
         ) : (
           <div>
@@ -75,9 +75,17 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
             </Link>
 
             <h2 className="text-lg font-semibold mt-4 mb-1">{course.title}</h2>
-            <p className="text-sm text-muted-foreground mb-5">
+            <p className="text-sm text-muted-foreground mb-4">
               Wähle einen Termin und ein Zeitfenster
             </p>
+
+            {course.guide_price && (
+              <div className="bg-muted/50 border rounded-md px-4 py-3 mb-5">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Die Bezahlung erfolgt nach der Behandlung vor Ort. Die Abrechnung erfolgt nach GOÄ. Der Richtpreis von <span className="font-semibold text-foreground">{course.guide_price}</span> dient als Orientierung. Der genaue Behandlungsumfang und die endgültigen Kosten werden im persönlichen Aufklärungsgespräch mit der behandelnden Ärzt:in festgelegt.
+                </p>
+              </div>
+            )}
 
             {dateEntries.length === 0 ? (
               <Card className="shadow-sm">
