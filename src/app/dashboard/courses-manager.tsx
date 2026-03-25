@@ -96,9 +96,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
     setEditingCourse(null);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const uploadImage = async (file: File) => {
     setUploadingImage(true);
     try {
       const ext = file.name.split(".").pop() || "jpg";
@@ -114,7 +112,22 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
       }
     } finally {
       setUploadingImage(false);
-      e.target.value = "";
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadImage(file);
+    e.target.value = "";
+  };
+
+  const handleImageDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      await uploadImage(file);
     }
   };
 
@@ -405,7 +418,12 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                     </Button>
                   </div>
                 ) : (
-                  <label className="mt-1 flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-md cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors">
+                  <label
+                    className="mt-1 flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-md cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    onDrop={handleImageDrop}
+                  >
                     <input
                       type="file"
                       accept="image/*"
