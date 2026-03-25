@@ -67,12 +67,12 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
             </CardContent>
           </Card>
         ) : (
-          <div className="flex flex-wrap justify-center gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {groups.map((group) => {
               const firstCourse = group.dates[0]?.course;
 
               return (
-                <Card key={group.title} className="shadow-sm overflow-hidden w-full sm:w-[calc(50%-0.75rem)] xl:w-[calc(33.333%-1rem)] max-w-md">
+                <Card key={group.title} className="shadow-sm overflow-hidden">
                   {firstCourse?.image_url ? (
                     <img
                       src={firstCourse.image_url}
