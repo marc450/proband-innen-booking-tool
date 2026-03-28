@@ -445,18 +445,6 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                   </Select>
                 </div>
 
-                {selectedTemplateId && (() => {
-                  const tpl = templates.find((t) => t.id === selectedTemplateId);
-                  if (!tpl) return null;
-                  return (
-                    <div className="bg-muted/50 rounded-md p-3 text-sm space-y-1">
-                      <p className="font-medium">{tpl.title}</p>
-                      {tpl.instructor && <p className="text-muted-foreground">Ärzt:in: {tpl.instructor}</p>}
-                      {tpl.guide_price && <p className="text-muted-foreground">Richtpreis: {tpl.guide_price}</p>}
-                      {tpl.service_description && <p className="text-muted-foreground">{tpl.service_description}</p>}
-                    </div>
-                  );
-                })()}
 
                 <div className="border-t" />
 
