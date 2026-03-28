@@ -60,7 +60,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
   const [courseDialogOpen, setCourseDialogOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [courseDate, setCourseDate] = useState("");
-  const [courseLocation, setCourseLocation] = useState("");
+  const [courseLocation, setCourseLocation] = useState("HY STUDIO, Rosa-Luxemburg-Straße 20, 10178 Berlin");
   const [slotStartTime, setSlotStartTime] = useState("10:00");
   const [slotInterval, setSlotInterval] = useState("30");
   const [slotCount, setSlotCount] = useState("5");
@@ -96,7 +96,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
   const resetCourseForm = () => {
     setSelectedTemplateId("");
     setCourseDate("");
-    setCourseLocation("");
+    setCourseLocation("HY STUDIO, Rosa-Luxemburg-Straße 20, 10178 Berlin");
     setSlotStartTime("10:00");
     setSlotInterval("30");
     setSlotCount("5");
@@ -399,7 +399,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                       id="new_course_location"
                       value={courseLocation}
                       onChange={(e) => setCourseLocation(e.target.value)}
-                      placeholder="z.B. Berlin"
+                      placeholder="z.B. HY STUDIO, Rosa-Luxemburg-Straße 20, 10178 Berlin"
                     />
                   </div>
                 </div>
