@@ -4,9 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 import { Course, Slot, CourseTemplate, DozentUser } from "@/lib/types";
 import { decryptBooking } from "@/lib/encryption";
 import { CoursesManager, SlotBooking } from "./courses-manager";
+import { cookies } from "next/headers";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
+  const cookieStore = await cookies();
+  const isAdmin = (cookieStore.get("x-user-role")?.value ?? "admin") === "admin";
 
   const [
     { data: courses },
@@ -49,6 +52,7 @@ export default async function DashboardPage() {
       initialBookings={bookings}
       templates={(templates as CourseTemplate[]) || []}
       dozentUsers={(dozentUsers as DozentUser[]) || []}
+      isAdmin={isAdmin}
     />
   );
 }

@@ -42,13 +42,14 @@ interface Props {
   initialBookings: SlotBooking[];
   templates: CourseTemplate[];
   dozentUsers: DozentUser[];
+  isAdmin?: boolean;
 }
 
 function formatDozentName(d: DozentUser): string {
   return [d.title, d.first_name, d.last_name].filter(Boolean).join(" ");
 }
 
-export function CoursesManager({ initialCourses, initialSlots, initialBookings, templates, dozentUsers }: Props) {
+export function CoursesManager({ initialCourses, initialSlots, initialBookings, templates, dozentUsers, isAdmin = true }: Props) {
   const [courses, setCourses] = useState(initialCourses);
   const [slots, setSlots] = useState(initialSlots);
   const [bookings] = useState(initialBookings);
@@ -665,10 +666,12 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Kurse & Slots</h1>
-        <Button onClick={() => setCourseDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Neuer Kurs
-        </Button>
+        {isAdmin && (
+          <Button onClick={() => setCourseDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Neuer Kurs
+          </Button>
+        )}
       </div>
 
       {/* Filters */}
@@ -780,20 +783,22 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                   </span>
                 </button>
 
-                <div className="flex gap-1 shrink-0">
-                  <Button variant="ghost" size="sm" title="Kurs bearbeiten"
-                    onClick={(e) => { e.stopPropagation(); openEditCourse(course); }}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" title="Kurs duplizieren"
-                    onClick={(e) => { e.stopPropagation(); setDuplicatingCourse(course); setDuplicateDialogOpen(true); }}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm"
-                    onClick={(e) => { e.stopPropagation(); setDeleteCourseConfirm(course.id); }}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                {isAdmin && (
+                  <div className="flex gap-1 shrink-0">
+                    <Button variant="ghost" size="sm" title="Kurs bearbeiten"
+                      onClick={(e) => { e.stopPropagation(); openEditCourse(course); }}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" title="Kurs duplizieren"
+                      onClick={(e) => { e.stopPropagation(); setDuplicatingCourse(course); setDuplicateDialogOpen(true); }}>
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm"
+                      onClick={(e) => { e.stopPropagation(); setDeleteCourseConfirm(course.id); }}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* Expanded content */}
@@ -878,9 +883,11 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                                 {slotBooked}/{slot.capacity}
                               </span>
 
-                              <Button variant="ghost" size="sm" className="w-8 shrink-0 p-0" onClick={() => setDeleteSlotConfirm(slot.id)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {isAdmin && (
+                                <Button variant="ghost" size="sm" className="w-8 shrink-0 p-0" onClick={() => setDeleteSlotConfirm(slot.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           );
                         })}

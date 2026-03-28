@@ -41,6 +41,7 @@ type BookingWithHash = BookingWithDetails & { email_hash?: string };
 interface Props {
   initialBookings: BookingWithHash[];
   courses: { id: string; title: string; location: string | null }[];
+  isAdmin?: boolean;
 }
 
 interface AvailableSlotOption {
@@ -64,7 +65,7 @@ const statusVariants: Record<BookingStatus, "default" | "secondary" | "destructi
   cancelled: "outline",
 };
 
-export function BookingsManager({ initialBookings, courses }: Props) {
+export function BookingsManager({ initialBookings, courses, isAdmin = true }: Props) {
   const [bookings, setBookings] = useState(initialBookings);
   const [filterCourse, setFilterCourse] = useState<string>("all");
   const [filterDate, setFilterDate] = useState("");
@@ -548,6 +549,7 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">
+                            {isAdmin ? (
                             <Select
                               value={booking.status}
                               onValueChange={(val) => handleStatusChange(booking.id, val as BookingStatus)}
@@ -565,6 +567,11 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                                 <SelectItem value="cancelled">Storniert</SelectItem>
                               </SelectContent>
                             </Select>
+                            ) : (
+                              <Badge variant={statusVariants[booking.status]}>
+                                {statusLabels[booking.status]}
+                              </Badge>
+                            )}
                             {booking.charge_id && (
                               <Badge variant="outline" className="text-green-600 text-xs w-fit">
                                 Belastet

@@ -3,9 +3,12 @@ export const dynamic = "force-dynamic";
 import { createClient } from "@/lib/supabase/server";
 import { decryptBookingWithDetails } from "@/lib/encryption";
 import { BookingsManager } from "./bookings-manager";
+import { cookies } from "next/headers";
 
 export default async function BookingsPage() {
   const supabase = await createClient();
+  const cookieStore = await cookies();
+  const isAdmin = (cookieStore.get("x-user-role")?.value ?? "admin") === "admin";
 
   const [{ data: bookings }, { data: courses }] = await Promise.all([
     supabase
@@ -30,6 +33,7 @@ export default async function BookingsPage() {
     <BookingsManager
       initialBookings={(bookings || []).map(decryptBookingWithDetails)}
       courses={courses || []}
+      isAdmin={isAdmin}
     />
   );
 }
