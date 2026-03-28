@@ -29,8 +29,7 @@ export async function PATCH(
   const adminClient = createAdminClient();
   const { error } = await adminClient
     .from("profiles")
-    .update({ title, first_name, last_name, role, is_dozent })
-    .eq("id", id);
+    .upsert({ id, title, first_name, last_name, role, is_dozent });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
