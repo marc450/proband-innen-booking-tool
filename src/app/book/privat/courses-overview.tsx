@@ -103,12 +103,6 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
                   <hr className="border-border/40" />
 
                   <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                    {group.firstCourse.guide_price && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Richtpreis</p>
-                        <p className="text-lg font-bold">EUR {group.firstCourse.guide_price.replace(/[€\s]/g, "")}</p>
-                      </div>
-                    )}
                     {group.firstCourse.instructor && (
                       <div>
                         <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Dozent:in</p>
@@ -116,7 +110,7 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
                       </div>
                     )}
                     {group.firstCourse.location && (
-                      <div className="col-span-2">
+                      <div>
                         <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Ort</p>
                         <p className="text-sm">{group.firstCourse.location}</p>
                       </div>
@@ -129,11 +123,6 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
                     </Link>
                   </div>
 
-                  {group.firstCourse.guide_price && (
-                    <p className="text-[11px] text-muted-foreground/60 text-center">
-                      *Bezahlung nach der Behandlung vor Ort. Abrechnung nach GOÄ.
-                    </p>
-                  )}
                 </CardContent>
               </Card>
             ))}
