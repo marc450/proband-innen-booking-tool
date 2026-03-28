@@ -109,35 +109,41 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
 
                   <hr className="border-border/40" />
 
-                  {/* Details */}
-                  <div className="space-y-2">
+                  {/* Details grid */}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                     {group.firstCourse.guide_price && (
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-2xl font-bold">{group.firstCourse.guide_price}</span>
-                        <span className="text-xs text-muted-foreground">Richtpreis*</span>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Richtpreis</p>
+                        <p className="text-lg font-bold">{group.firstCourse.guide_price}*</p>
                       </div>
                     )}
                     {group.firstCourse.instructor && (
-                      <p className="text-sm font-medium">{group.firstCourse.instructor}</p>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Dozent:in</p>
+                        <p className="text-sm font-medium">{group.firstCourse.instructor}</p>
+                      </div>
                     )}
                     {group.firstCourse.location && (
-                      <p className="text-sm text-muted-foreground flex items-start gap-1.5">
-                        <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                        <span>{group.firstCourse.location}</span>
-                      </p>
+                      <div className="col-span-2">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Ort</p>
+                        <p className="text-sm flex items-start gap-1.5">
+                          <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+                          <span>{group.firstCourse.location}</span>
+                        </p>
+                      </div>
                     )}
                   </div>
-
-                  {group.firstCourse.guide_price && (
-                    <p className="text-[11px] text-muted-foreground/60">
-                      *Bezahlung nach der Behandlung vor Ort. Abrechnung nach GOÄ.
-                    </p>
-                  )}
 
                   {/* CTA */}
                   <Link href={`/book/${group.firstCourse.id}`}>
                     <Button className="w-full">Termine anschauen</Button>
                   </Link>
+
+                  {group.firstCourse.guide_price && (
+                    <p className="text-[11px] text-muted-foreground/60 text-center">
+                      *Bezahlung nach der Behandlung vor Ort. Abrechnung nach GOÄ.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             ))}
