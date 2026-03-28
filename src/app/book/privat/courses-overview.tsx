@@ -102,20 +102,12 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
 
                   <hr className="border-border/40" />
 
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                    {group.firstCourse.instructor && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Dozent:in</p>
-                        <p className="text-sm font-medium">{group.firstCourse.instructor}</p>
-                      </div>
-                    )}
-                    {group.firstCourse.location && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Ort</p>
-                        <p className="text-sm">{group.firstCourse.location}</p>
-                      </div>
-                    )}
-                  </div>
+                  {group.firstCourse.location && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Ort</p>
+                      <p className="text-sm">{group.firstCourse.location}</p>
+                    </div>
+                  )}
 
                   <div className="pt-3 pb-1">
                     <Link href={`/book/privat/${group.firstCourse.id}`}>

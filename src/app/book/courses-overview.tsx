@@ -110,21 +110,15 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
                   <hr className="border-border/40" />
 
                   {/* Details grid */}
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  <div className="space-y-3">
                     {group.firstCourse.guide_price && (
                       <div>
                         <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Richtpreis</p>
                         <p className="text-lg font-bold">EUR {group.firstCourse.guide_price.replace(/[€\s]/g, "")}</p>
                       </div>
                     )}
-                    {group.firstCourse.instructor && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Dozent:in</p>
-                        <p className="text-sm font-medium">{group.firstCourse.instructor}</p>
-                      </div>
-                    )}
                     {group.firstCourse.location && (
-                      <div className="col-span-2">
+                      <div>
                         <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Ort</p>
                         <p className="text-sm">{group.firstCourse.location}</p>
                       </div>
