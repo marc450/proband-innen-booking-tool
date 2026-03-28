@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Calendar, ChevronDown, Clock, Users } from "lucide-react";
+import { Calendar, ChevronDown, Clock, Info, Users } from "lucide-react";
 import Link from "next/link";
 import { BookingForm } from "../booking-form";
 
@@ -124,7 +124,13 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
 
                       {/* Expanded time slots */}
                       {isExpanded && (
-                        <div className="border-t divide-y">
+                        <div className="divide-y">
+                          <div className="flex items-start gap-2 px-4 py-3 bg-blue-50/50">
+                            <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+                            <p className="text-xs text-blue-900">
+                              Bitte wähle das <strong>früheste verfügbare Zeitfenster</strong>, damit möglichst viele Proband:innen behandelt werden können.
+                            </p>
+                          </div>
                           {dateSlots.map((slot) => (
                             <button
                               key={slot.id}

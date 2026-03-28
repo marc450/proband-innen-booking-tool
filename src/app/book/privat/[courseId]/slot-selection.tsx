@@ -78,13 +78,6 @@ export function PrivatSlotSelection({ course, allCourses, slots }: Props) {
               Wähle einen Termin und ein Zeitfenster
             </p>
 
-            <div className="flex items-start gap-2 mb-5 p-3 bg-blue-50 border border-blue-200 rounded-md">
-              <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-              <p className="text-sm text-blue-900">
-                Bitte wähle das <strong>früheste verfügbare Zeitfenster</strong>, damit möglichst viele Proband:innen behandelt werden können.
-              </p>
-            </div>
-
             {dateEntries.length === 0 ? (
               <Card className="shadow-sm">
                 <CardContent className="py-8 text-center text-muted-foreground">
@@ -120,7 +113,13 @@ export function PrivatSlotSelection({ course, allCourses, slots }: Props) {
                       </button>
 
                       {isExpanded && (
-                        <div className="border-t divide-y">
+                        <div className="divide-y">
+                          <div className="flex items-start gap-2 px-4 py-3 bg-blue-50/50">
+                            <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+                            <p className="text-xs text-blue-900">
+                              Bitte wähle das <strong>früheste verfügbare Zeitfenster</strong>, damit möglichst viele Proband:innen behandelt werden können.
+                            </p>
+                          </div>
                           {dateSlots.map((slot) => (
                             <button
                               key={slot.id}
