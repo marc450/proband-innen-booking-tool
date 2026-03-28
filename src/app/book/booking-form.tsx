@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { AvailableSlot } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,8 +18,6 @@ interface BookingFormProps {
 type Step = "details" | "agb" | "privacy" | "confirm";
 
 export function BookingForm({ slot, guidePrice }: BookingFormProps) {
-  const supabase = createClient();
-
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -63,23 +60,22 @@ export function BookingForm({ slot, guidePrice }: BookingFormProps) {
       }
 
       const origin = window.location.origin;
-      const { data, error: fnError } = await supabase.functions.invoke(
-        "create-checkout-session",
-        {
-          body: {
-            slotId: slot.id,
-            email: email.trim(),
-            phone,
-            successUrl: `${origin}/book/success`,
-            cancelUrl: `${origin}/book`,
-          },
-        }
-      );
+      const checkoutRes = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slotId: slot.id,
+          email: email.trim(),
+          phone,
+          successUrl: `${origin}/book/success`,
+          cancelUrl: `${origin}/book`,
+        }),
+      });
+      const checkoutData = await checkoutRes.json();
 
-      if (fnError) throw new Error(fnError.message || "Fehler beim Erstellen der Checkout-Session");
-      if (data?.error) throw new Error(data.error);
-      if (data?.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
+      if (!checkoutRes.ok) throw new Error(checkoutData?.error || "Fehler beim Erstellen der Checkout-Session");
+      if (checkoutData?.checkoutUrl) {
+        window.location.href = checkoutData.checkoutUrl;
       } else {
         throw new Error("Keine Checkout-URL erhalten");
       }
