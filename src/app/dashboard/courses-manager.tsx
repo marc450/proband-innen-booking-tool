@@ -57,6 +57,10 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [courseDate, setCourseDate] = useState("");
   const [courseLocation, setCourseLocation] = useState("");
+  const [slotStartTime, setSlotStartTime] = useState("10:00");
+  const [slotInterval, setSlotInterval] = useState("30");
+  const [slotCount, setSlotCount] = useState("5");
+  const [slotCapacityNew, setSlotCapacityNew] = useState("1");
 
   // Slot dialog
   const [slotDialogOpen, setSlotDialogOpen] = useState(false);
@@ -88,6 +92,24 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
     setSelectedTemplateId("");
     setCourseDate("");
     setCourseLocation("");
+    setSlotStartTime("10:00");
+    setSlotInterval("30");
+    setSlotCount("5");
+    setSlotCapacityNew("1");
+  };
+
+  const generateSlotTimes = (): string[] => {
+    const count = parseInt(slotCount) || 0;
+    const interval = parseInt(slotInterval) || 30;
+    const [h, m] = slotStartTime.split(":").map(Number);
+    const times: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const totalMinutes = h * 60 + m + i * interval;
+      const hh = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
+      const mm = String(totalMinutes % 60).padStart(2, "0");
+      times.push(`${hh}:${mm}`);
+    }
+    return times;
   };
 
   const handleCreateCourse = async () => {
@@ -106,6 +128,9 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
       location: courseLocation || null,
     };
 
+    const slotTimes = generateSlotTimes();
+    const cap = parseInt(slotCapacityNew) || 1;
+
     setCourseDialogOpen(false);
     resetCourseForm();
 
@@ -117,9 +142,32 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
 
     if (error) {
       console.error("Insert error:", error);
+      return;
     }
-    if (!error && data) {
+    if (data) {
       setCourses((prev) => [data, ...prev]);
+
+      // Auto-create slots
+      if (slotTimes.length > 0) {
+        const newSlots = slotTimes.map((time) => ({
+          course_id: data.id,
+          start_time: buildStartTime(courseDate, time),
+          end_time: null,
+          capacity: cap,
+        }));
+
+        const { data: insertedSlots, error: slotsError } = await supabase
+          .from("slots")
+          .insert(newSlots)
+          .select();
+
+        if (slotsError) {
+          console.error("Slots insert error:", slotsError);
+        }
+        if (insertedSlots) {
+          setSlots((prev) => [...prev, ...insertedSlots]);
+        }
+      }
     }
   };
 
@@ -275,13 +323,13 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                 <div>
                   <Label>Kursvorlage *</Label>
                   <Select value={selectedTemplateId} onValueChange={(v) => setSelectedTemplateId(v || "")}>
-                    <SelectTrigger className="mt-1">
+                    <SelectTrigger className="mt-1 w-full">
                       <SelectValue placeholder="Vorlage auswählen..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="min-w-[var(--radix-select-trigger-width)]">
                       {templates.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
-                          {t.title}{t.guide_price ? ` (${t.guide_price})` : ""}
+                          {t.title}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -300,6 +348,8 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                     </div>
                   );
                 })()}
+
+                <div className="border-t" />
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -322,10 +372,73 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                   </div>
                 </div>
 
+                <div className="border-t" />
+
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Zeitfenster</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="slot_start">Startzeit *</Label>
+                    <Input
+                      id="slot_start"
+                      type="time"
+                      value={slotStartTime}
+                      onChange={(e) => setSlotStartTime(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="slot_interval">Intervall (Min.)</Label>
+                    <Input
+                      id="slot_interval"
+                      type="number"
+                      min="5"
+                      value={slotInterval}
+                      onChange={(e) => setSlotInterval(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="slot_count">Anzahl Slots</Label>
+                    <Input
+                      id="slot_count"
+                      type="number"
+                      min="1"
+                      value={slotCount}
+                      onChange={(e) => setSlotCount(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="slot_cap">Kapazität pro Slot</Label>
+                    <Input
+                      id="slot_cap"
+                      type="number"
+                      min="1"
+                      value={slotCapacityNew}
+                      onChange={(e) => setSlotCapacityNew(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Slot preview */}
+                {slotStartTime && parseInt(slotCount) > 0 && (
+                  <div className="bg-muted/50 rounded-md p-3">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                      Vorschau ({generateSlotTimes().length} Slots)
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {generateSlotTimes().map((time) => (
+                        <span key={time} className="text-sm bg-white border rounded px-2 py-0.5">
+                          {time} Uhr
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <Button
                   onClick={handleCreateCourse}
                   className="w-full"
-                  disabled={!selectedTemplateId || !courseDate}
+                  disabled={!selectedTemplateId || !courseDate || !slotStartTime || parseInt(slotCount) < 1}
                 >
                   Kurs anlegen
                 </Button>
