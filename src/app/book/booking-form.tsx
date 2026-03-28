@@ -22,6 +22,7 @@ export function BookingForm({ slot, guidePrice }: BookingFormProps) {
   const [phone, setPhone] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
+  const [agreedToEmailComm, setAgreedToEmailComm] = useState(false);
   const [hasScrolledAgb, setHasScrolledAgb] = useState(false);
   const [privacyExpanded, setPrivacyExpanded] = useState(false);
   const [currentStep, setCurrentStep] = useState<Step>("details");
@@ -96,7 +97,7 @@ export function BookingForm({ slot, guidePrice }: BookingFormProps) {
 
   const canProceedFromDetails = email.trim() !== "" && phone.trim() !== "";
   const canProceedFromAgb = agreedToTerms;
-  const canProceedFromPrivacy = agreedToPrivacy;
+  const canProceedFromPrivacy = agreedToPrivacy && agreedToEmailComm;
 
   return (
     <div className="space-y-4">
@@ -399,6 +400,19 @@ export function BookingForm({ slot, guidePrice }: BookingFormProps) {
                 </Label>
               </div>
 
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="emailComm"
+                  checked={agreedToEmailComm}
+                  onChange={(e) => setAgreedToEmailComm(e.target.checked)}
+                  className="mt-1"
+                />
+                <Label htmlFor="emailComm" className="text-sm font-normal leading-snug">
+                  Ich bin einverstanden, dass Buchungsbestätigungen und Terminänderungen per unverschlüsselter E-Mail an mich übermittelt werden.
+                </Label>
+              </div>
+
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => setCurrentStep("agb")}>
                   Zurück
@@ -437,6 +451,10 @@ export function BookingForm({ slot, guidePrice }: BookingFormProps) {
                 <div className="flex items-center gap-2 py-2 border-b">
                   <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
                   <span className="text-sm">Datenschutzerklärung akzeptiert</span>
+                </div>
+                <div className="flex items-center gap-2 py-2 border-b">
+                  <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+                  <span className="text-sm">E-Mail-Kommunikation zugestimmt</span>
                 </div>
               </div>
 
