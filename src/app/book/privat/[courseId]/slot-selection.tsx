@@ -29,12 +29,11 @@ export function PrivatSlotSelection({ course, allCourses, slots }: Props) {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
-        <div className="max-w-lg mx-auto px-4 py-5">
-          <h1 className="text-lg font-semibold tracking-tight">EPHIA Privatpatient:innen-Buchung</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Buche Deinen Behandlungstermin als Privatpatient:in
-          </p>
+      <header className="border-b border-border/20 bg-white">
+        <div className="max-w-lg mx-auto px-4 py-4">
+          <a href="https://ephia.de" target="_blank" rel="noopener noreferrer">
+            <img src="/logo.svg" alt="EPHIA" className="h-7" />
+          </a>
         </div>
       </header>
 

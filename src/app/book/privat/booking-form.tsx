@@ -464,7 +464,7 @@ export function PrivatBookingForm({ slot }: Props) {
                 </div>
               )}
 
-              <div className="flex gap-3">
+              <div className="flex flex-col-reverse sm:flex-row gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => setCurrentStep("privacy")}>
                   Zurück
                 </Button>
