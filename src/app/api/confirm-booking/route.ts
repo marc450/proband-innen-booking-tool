@@ -380,8 +380,8 @@ export async function POST(req: NextRequest) {
 
     <p style="margin-top:0; margin-bottom:20px;">
       Hi ${firstName},<br><br>
-      toll, dass Du Dich für den <strong>${courseTitle}</strong> bei EPHIA angemeldet hast!<br>
-      Wir freuen uns sehr darauf, Dich bald bei uns zu sehen. Hier sind alle wichtigen Informationen zu Deinem Termin auf einen Blick:
+      Deine Buchung für <strong>${courseTitle}</strong> ist bestätigt!<br>
+      Wir freuen uns, Dich bald bei uns begrüßen zu dürfen. Hier sind alle wichtigen Infos zu Deinem Termin:
     </p>
 
     <div style="border-radius:8px; padding:14px 16px; background-color:#FAEBE1; border:1px solid #F0D0B8; font-size:14px; margin:0 0 20px; text-align:left;">

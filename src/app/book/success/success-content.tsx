@@ -18,7 +18,7 @@ export function SuccessContent() {
       return;
     }
 
-    const confirmBooking = async () => {
+    const confirmBooking = async (attempt = 1): Promise<void> => {
       try {
         const res = await fetch("/api/confirm-booking", {
           method: "POST",
@@ -37,6 +37,11 @@ export function SuccessContent() {
 
         setStatus("success");
       } catch (err) {
+        // Retry up to 3 times with increasing delay
+        if (attempt < 3) {
+          await new Promise((r) => setTimeout(r, attempt * 1500));
+          return confirmBooking(attempt + 1);
+        }
         setStatus("error");
         setErrorMessage(err instanceof Error ? err.message : "Ein Fehler ist aufgetreten");
       }
