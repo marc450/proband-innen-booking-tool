@@ -24,7 +24,7 @@ import {
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
-import { Plus, Trash2, Copy, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Copy, ChevronDown, ChevronRight, Edit } from "lucide-react";
 
 export interface SlotBooking {
   id: string;
@@ -81,6 +81,13 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
   // Confirm delete dialogs
   const [deleteCourseConfirm, setDeleteCourseConfirm] = useState<string | null>(null);
   const [deleteSlotConfirm, setDeleteSlotConfirm] = useState<string | null>(null);
+
+  // Edit course dialog
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [editDate, setEditDate] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [editInstructor, setEditInstructor] = useState("");
 
   const supabase = createClient();
 
@@ -187,6 +194,30 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
     setDeleteCourseConfirm(null);
   };
 
+  const openEditCourse = (course: Course) => {
+    setEditingCourse(course);
+    setEditDate(course.course_date || "");
+    setEditLocation(course.location || "");
+    setEditInstructor(course.instructor || "");
+    setEditDialogOpen(true);
+  };
+
+  const handleEditCourse = async () => {
+    if (!editingCourse || !editDate || !editLocation.trim() || !editInstructor) return;
+    const { data, error } = await supabase
+      .from("courses")
+      .update({ course_date: editDate, location: editLocation, instructor: editInstructor })
+      .eq("id", editingCourse.id)
+      .select()
+      .single();
+    if (error) { console.error("Edit error:", error); return; }
+    if (data) {
+      setCourses((prev) => prev.map((c) => c.id === data.id ? data : c));
+    }
+    setEditDialogOpen(false);
+    setEditingCourse(null);
+  };
+
   const buildStartTime = (date: string, time: string): string => {
     return new Date(`${date}T${time}:00`).toISOString();
   };
@@ -288,6 +319,57 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
 
   return (
     <div className="space-y-4">
+      {/* Edit course dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) setEditingCourse(null); }}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>Kurs bearbeiten</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            {editingCourse && (
+              <p className="text-sm font-medium text-muted-foreground">{editingCourse.title}</p>
+            )}
+            <div>
+              <Label>Kursleitende:r Ärzt:in *</Label>
+              <Select value={editInstructor} onValueChange={(v) => setEditInstructor(v || "")}>
+                <SelectTrigger className="mt-1 w-full">
+                  <span className="flex flex-1 text-left line-clamp-1">
+                    {editInstructor
+                      ? editInstructor
+                      : <span className="text-muted-foreground">Dozent:in auswählen...</span>
+                    }
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  {dozenten.map((d) => (
+                    <SelectItem key={d.id} value={formatDozentName(d)}>
+                      {formatDozentName(d)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="edit_date">Datum *</Label>
+                <Input id="edit_date" type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="edit_location">Ort *</Label>
+                <Input id="edit_location" value={editLocation} onChange={(e) => setEditLocation(e.target.value)} />
+              </div>
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleEditCourse}
+              disabled={!editDate || !editLocation.trim() || !editInstructor}
+            >
+              Speichern
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete course confirm */}
       <ConfirmDialog
         open={!!deleteCourseConfirm}
@@ -631,6 +713,10 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                 </button>
 
                 <div className="flex gap-1 shrink-0">
+                  <Button variant="ghost" size="sm" title="Kurs bearbeiten"
+                    onClick={(e) => { e.stopPropagation(); openEditCourse(course); }}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
                   <Button variant="ghost" size="sm" title="Kurs duplizieren"
                     onClick={(e) => { e.stopPropagation(); setDuplicatingCourse(course); setDuplicateDialogOpen(true); }}>
                     <Copy className="h-4 w-4" />
