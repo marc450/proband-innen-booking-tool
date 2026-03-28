@@ -94,9 +94,9 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
                     )}
                   </div>
 
-                  {/* Leistung */}
-                  {group.firstCourse.service_description && (
-                    <div className="px-5 py-4">
+                  {/* Details stack: Leistung, Ärzt:in, Ort */}
+                  <div className="px-5 py-4 space-y-3">
+                    {group.firstCourse.service_description && (
                       <div className="flex gap-3">
                         <Stethoscope className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                         <div>
@@ -104,32 +104,26 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
                           <p className="text-sm mt-0.5">{group.firstCourse.service_description}</p>
                         </div>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Details: Ärzt:in + Ort */}
-                  {(group.firstCourse.instructor || group.firstCourse.location) && (
-                    <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {group.firstCourse.instructor && (
-                        <div className="flex gap-3">
-                          <UserRound className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                          <div>
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leitende:r Ärzt:in</span>
-                            <p className="text-sm mt-0.5">{group.firstCourse.instructor}</p>
-                          </div>
+                    )}
+                    {group.firstCourse.instructor && (
+                      <div className="flex gap-3">
+                        <UserRound className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                        <div>
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leitende:r Ärzt:in</span>
+                          <p className="text-sm mt-0.5">{group.firstCourse.instructor}</p>
                         </div>
-                      )}
-                      {group.firstCourse.location && (
-                        <div className="flex gap-3">
-                          <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                          <div>
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Ort</span>
-                            <p className="text-sm mt-0.5">{group.firstCourse.location}</p>
-                          </div>
+                      </div>
+                    )}
+                    {group.firstCourse.location && (
+                      <div className="flex gap-3">
+                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                        <div>
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Ort</span>
+                          <p className="text-sm mt-0.5">{group.firstCourse.location}</p>
                         </div>
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
 
                   {/* CTA */}
                   <div className="px-5 py-4">

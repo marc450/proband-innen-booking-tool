@@ -100,59 +100,51 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
                     )}
                   </div>
 
-                  {/* Info grid: Leistung + Richtpreis */}
-                  {(group.firstCourse.service_description || group.firstCourse.guide_price) && (
-                    <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {group.firstCourse.service_description && (
-                        <div className="flex gap-3">
-                          <Stethoscope className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                          <div>
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leistung</span>
-                            <p className="text-sm mt-0.5">{group.firstCourse.service_description}</p>
-                          </div>
+                  {/* Details stack: Leistung, Richtpreis, Ärzt:in, Ort */}
+                  <div className="px-5 py-4 space-y-3">
+                    {group.firstCourse.service_description && (
+                      <div className="flex gap-3">
+                        <Stethoscope className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                        <div>
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leistung</span>
+                          <p className="text-sm mt-0.5">{group.firstCourse.service_description}</p>
                         </div>
-                      )}
-                      {group.firstCourse.guide_price && (
-                        <div className="flex gap-3">
-                          <Euro className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                          <div>
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Richtpreis</span>
-                            <p className="text-lg font-bold mt-0.5">{group.firstCourse.guide_price}</p>
-                          </div>
+                      </div>
+                    )}
+                    {group.firstCourse.guide_price && (
+                      <div className="flex gap-3">
+                        <Euro className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                        <div>
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Richtpreis*</span>
+                          <p className="text-lg font-bold mt-0.5">{group.firstCourse.guide_price}</p>
                         </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Details: Ärzt:in + Ort */}
-                  {(group.firstCourse.instructor || group.firstCourse.location) && (
-                    <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {group.firstCourse.instructor && (
-                        <div className="flex gap-3">
-                          <UserRound className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                          <div>
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leitende:r Ärzt:in</span>
-                            <p className="text-sm mt-0.5">{group.firstCourse.instructor}</p>
-                          </div>
+                      </div>
+                    )}
+                    {group.firstCourse.instructor && (
+                      <div className="flex gap-3">
+                        <UserRound className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                        <div>
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leitende:r Ärzt:in</span>
+                          <p className="text-sm mt-0.5">{group.firstCourse.instructor}</p>
                         </div>
-                      )}
-                      {group.firstCourse.location && (
-                        <div className="flex gap-3">
-                          <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                          <div>
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Ort</span>
-                            <p className="text-sm mt-0.5">{group.firstCourse.location}</p>
-                          </div>
+                      </div>
+                    )}
+                    {group.firstCourse.location && (
+                      <div className="flex gap-3">
+                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                        <div>
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Ort</span>
+                          <p className="text-sm mt-0.5">{group.firstCourse.location}</p>
                         </div>
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Pricing disclaimer */}
                   {group.firstCourse.guide_price && (
                     <div className="mx-5 mb-4 bg-muted/50 rounded-md px-3 py-2">
                       <p className="text-[11px] text-muted-foreground leading-relaxed">
-                        Die Bezahlung erfolgt nach der Behandlung vor Ort. Die Abrechnung erfolgt nach GOÄ. Der Richtpreis dient als Orientierung. Der genaue Behandlungsumfang und die endgültigen Kosten werden im persönlichen Aufklärungsgespräch mit der behandelnden Ärzt:in festgelegt.
+                        *Die Bezahlung erfolgt nach der Behandlung vor Ort. Die Abrechnung erfolgt nach GOÄ. Der Richtpreis dient als Orientierung. Der genaue Behandlungsumfang und die endgültigen Kosten werden im persönlichen Aufklärungsgespräch mit der behandelnden Ärzt:in festgelegt.
                       </p>
                     </div>
                   )}
