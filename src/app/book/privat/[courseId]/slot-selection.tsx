@@ -104,12 +104,28 @@ export function PrivatSlotSelection({ course, allCourses, slots }: Props) {
                             <p className="text-sm font-semibold">{dateLabel}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">
                               {dateSlots.length} Zeitfenster · {totalCapacity} {totalCapacity === 1 ? "Platz" : "Plätze"} frei
-                              {dateCourse.instructor && ` · ${dateCourse.instructor}`}
                             </p>
                           </div>
                         </div>
                         <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                       </button>
+
+                      {(dateCourse.instructor || dateCourse.location) && (
+                        <div className="grid grid-cols-2 gap-x-4 px-4 py-3 border-t border-border/40">
+                          {dateCourse.instructor && (
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Dozent:in</p>
+                              <p className="text-xs font-medium">{dateCourse.instructor}</p>
+                            </div>
+                          )}
+                          {dateCourse.location && (
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Ort</p>
+                              <p className="text-xs">{dateCourse.location}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {isExpanded && (
                         <div className="divide-y">
@@ -119,22 +135,6 @@ export function PrivatSlotSelection({ course, allCourses, slots }: Props) {
                               Bitte wähle das <strong>früheste verfügbare Zeitfenster</strong>, damit keine Behandlungslücken in unserem Kurs auftreten.
                             </p>
                           </div>
-                          {(dateCourse.instructor || dateCourse.location) && (
-                            <div className="grid grid-cols-2 gap-x-4 px-4 py-3 bg-muted/30">
-                              {dateCourse.instructor && (
-                                <div>
-                                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Dozent:in</p>
-                                  <p className="text-xs font-medium">{dateCourse.instructor}</p>
-                                </div>
-                              )}
-                              {dateCourse.location && (
-                                <div>
-                                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Ort</p>
-                                  <p className="text-xs">{dateCourse.location}</p>
-                                </div>
-                              )}
-                            </div>
-                          )}
                           {dateSlots.map((slot) => (
                             <button
                               key={slot.id}
