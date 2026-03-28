@@ -128,7 +128,7 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                           <div className="flex items-start gap-2 px-4 py-3 bg-blue-50/50">
                             <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
                             <p className="text-xs text-blue-900">
-                              Bitte wähle das <strong>früheste verfügbare Zeitfenster</strong>, damit möglichst viele Proband:innen behandelt werden können.
+                              Bitte wähle das <strong>früheste verfügbare Zeitfenster</strong>, damit keine Behandlungslücken in unserem Kurs auftreten.
                             </p>
                           </div>
                           {dateSlots.map((slot) => (
