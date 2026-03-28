@@ -132,32 +132,34 @@ export function BookingForm({ slot, guidePrice }: BookingFormProps) {
 
           {/* Step 1: Contact details */}
           {currentStep === "details" && (
-            <div className="space-y-5">
-              <h3 className="font-semibold text-base">Deine Kontaktdaten</h3>
+            <div className="space-y-4">
+              <h3 className="font-semibold text-base mb-2">Deine Kontaktdaten</h3>
 
-              <div>
-                <Label htmlFor="email">E-Mail</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-sm font-medium">E-Mail</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="deine@email.de"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="h-11 text-base"
                   required
                 />
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground">
                   Damit können wir Deine Buchung zuordnen.
                 </p>
               </div>
 
-              <div>
-                <Label htmlFor="phone">Telefon</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="phone" className="text-sm font-medium">Telefon</Label>
                 <Input
                   id="phone"
                   type="tel"
                   placeholder="+49 123 456789"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
+                  className="h-11 text-base"
                   required
                 />
               </div>

@@ -111,69 +111,74 @@ export function PrivatBookingForm({ slot }: Props) {
 
           {/* Step 1: Contact details */}
           {currentStep === "details" && (
-            <div className="space-y-5">
-              <h3 className="font-semibold text-base">Deine Kontaktdaten</h3>
+            <div className="space-y-4">
+              <h3 className="font-semibold text-base mb-2">Deine Kontaktdaten</h3>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="firstName">Vorname</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="firstName" className="text-sm font-medium">Vorname</Label>
                   <Input
                     id="firstName"
                     type="text"
                     placeholder="Vorname"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
+                    className="h-11 text-base"
                     required
                   />
                 </div>
-                <div>
-                  <Label htmlFor="lastName">Nachname</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="lastName" className="text-sm font-medium">Nachname</Label>
                   <Input
                     id="lastName"
                     type="text"
                     placeholder="Nachname"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
+                    className="h-11 text-base"
                     required
                   />
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="email">E-Mail</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-sm font-medium">E-Mail</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="deine@email.de"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="h-11 text-base"
                   required
                 />
               </div>
 
-              <div>
-                <Label htmlFor="phone">Telefon</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="phone" className="text-sm font-medium">Telefon</Label>
                 <Input
                   id="phone"
                   type="tel"
                   placeholder="+49 123 456789"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
+                  className="h-11 text-base"
                   required
                 />
               </div>
 
-              <div>
-                <Label htmlFor="referringDoctor">Name der zuweisenden Ärzt:in</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="referringDoctor" className="text-sm font-medium">Name der zuweisenden Ärzt:in</Label>
                 <Input
                   id="referringDoctor"
                   type="text"
                   placeholder="z.B. Dr. med. Anna Müller"
                   value={referringDoctor}
                   onChange={(e) => setReferringDoctor(e.target.value)}
+                  className="h-11 text-base"
                   required
                 />
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground">
                   Die Ärzt:in, die Dich zu diesem Kurs mitbringt.
                 </p>
               </div>
