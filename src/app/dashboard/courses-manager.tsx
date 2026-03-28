@@ -92,6 +92,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
   // Filters
   const [filterDozent, setFilterDozent] = useState("");
   const [filterDate, setFilterDate] = useState("");
+  const [filterCourse, setFilterCourse] = useState("");
 
   const supabase = createClient();
 
@@ -671,9 +672,25 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3">
-        <Select value={filterDozent} onValueChange={(v) => setFilterDozent(v === "__all" ? "" : (v || ""))}>
-          <SelectTrigger className="w-56 h-9 text-sm">
+      <div className="flex gap-2 flex-wrap">
+        <Select value={filterCourse || "__all"} onValueChange={(v) => setFilterCourse(v === "__all" ? "" : v)}>
+          <SelectTrigger className="w-52 h-10 text-sm bg-white border border-gray-200 rounded-[10px] px-3">
+            <span className="flex flex-1 text-left line-clamp-1">
+              {filterCourse
+                ? filterCourse
+                : <span className="text-muted-foreground">Alle Kurstypen</span>
+              }
+            </span>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all">Alle Kurstypen</SelectItem>
+            {Array.from(new Set(courses.map((c) => c.title).filter(Boolean))).sort().map((name) => (
+              <SelectItem key={name} value={name}>{name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterDozent || "__all"} onValueChange={(v) => setFilterDozent(v === "__all" ? "" : v)}>
+          <SelectTrigger className="w-52 h-10 text-sm bg-white border border-gray-200 rounded-[10px] px-3">
             <span className="flex flex-1 text-left line-clamp-1">
               {filterDozent
                 ? filterDozent
@@ -690,13 +707,13 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
         </Select>
         <Input
           type="date"
-          className="w-44 h-9 text-sm"
+          className="w-44 h-10 text-sm bg-white border border-gray-200 rounded-[10px] px-3"
           value={filterDate}
           onChange={(e) => setFilterDate(e.target.value)}
         />
-        {(filterDozent || filterDate) && (
-          <Button variant="ghost" size="sm" className="h-9 text-sm" onClick={() => { setFilterDozent(""); setFilterDate(""); }}>
-            Filter zurücksetzen
+        {(filterCourse || filterDozent || filterDate) && (
+          <Button variant="ghost" size="sm" className="h-10 text-sm" onClick={() => { setFilterCourse(""); setFilterDozent(""); setFilterDate(""); }}>
+            Zurücksetzen
           </Button>
         )}
       </div>
@@ -704,6 +721,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
       {/* Course list */}
       {(() => {
         const filteredCourses = courses.filter((c) => {
+          if (filterCourse && c.title !== filterCourse) return false;
           if (filterDozent && c.instructor !== filterDozent) return false;
           if (filterDate && c.course_date !== filterDate) return false;
           return true;
