@@ -22,8 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { Plus, Trash2, Edit, Upload, ImageIcon } from "lucide-react";
-import Image from "next/image";
+import { Plus, Trash2, Upload, ImageIcon } from "lucide-react";
 
 interface Props {
   initialTemplates: CourseTemplate[];
@@ -395,7 +394,7 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
         </Button>
       </div>
 
-      {/* Template cards */}
+      {/* Template table */}
       {templates.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
@@ -403,61 +402,66 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {templates.map((tpl) => (
-            <Card key={tpl.id} className="overflow-hidden pt-0 gap-0">
-              {/* Image */}
-              {tpl.image_url ? (
-                <Image
-                  src={tpl.image_url}
-                  alt={tpl.title}
-                  width={600}
-                  height={338}
-                  className="w-full aspect-video object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
-              ) : (
-                <div className="w-full aspect-video bg-muted flex items-center justify-center">
-                  <div className="text-center text-muted-foreground">
-                    <ImageIcon className="h-10 w-10 mx-auto mb-1 opacity-40" />
-                    <span className="text-xs opacity-40">Kursbild</span>
-                  </div>
-                </div>
-              )}
-
-              <CardContent className="p-4 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold text-base">{tpl.title}</h3>
-                  <div className="flex gap-1 shrink-0">
-                    <Button variant="ghost" size="sm" onClick={() => openEdit(tpl)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(tpl.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {tpl.instructor && (
-                  <p className="text-sm text-muted-foreground">Kursleitende:r Ärzt:in: {tpl.instructor}</p>
-                )}
-
-                {tpl.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">{tpl.description}</p>
-                )}
-
-                <div className="flex items-center gap-4 pt-1">
-                  {tpl.service_description && (
-                    <span className="text-xs text-muted-foreground truncate flex-1">{tpl.service_description}</span>
-                  )}
-                  {tpl.guide_price && (
-                    <span className="text-sm font-semibold whitespace-nowrap">Richtpreis: {tpl.guide_price}</span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card>
+          <CardContent className="p-0">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  <th className="text-left px-4 py-3 w-12">Bild</th>
+                  <th className="text-left px-4 py-3">Titel</th>
+                  <th className="text-left px-4 py-3">Dozent:in</th>
+                  <th className="text-left px-4 py-3">Leistung</th>
+                  <th className="text-left px-4 py-3">Richtpreis</th>
+                  <th className="text-right px-4 py-3 w-12"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {templates.map((tpl) => (
+                  <tr
+                    key={tpl.id}
+                    className="border-b last:border-0 hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => openEdit(tpl)}
+                  >
+                    <td className="px-4 py-3">
+                      {tpl.image_url ? (
+                        <img
+                          src={tpl.image_url}
+                          alt={tpl.title}
+                          className="w-12 h-8 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-12 h-8 bg-muted rounded flex items-center justify-center">
+                          <ImageIcon className="h-4 w-4 text-muted-foreground opacity-40" />
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="font-medium">{tpl.title}</span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">
+                      {tpl.instructor || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground max-w-[200px] truncate">
+                      {tpl.service_description || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-semibold">
+                      {tpl.guide_price || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); setDeleteConfirm(tpl.id); }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
