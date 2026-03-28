@@ -399,7 +399,6 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
                 <tr className="border-b text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   <th className="text-left px-4 py-3 w-12">Bild</th>
                   <th className="text-left px-4 py-3">Titel</th>
-                  <th className="text-left px-4 py-3">Dozent:in</th>
                   <th className="text-left px-4 py-3">Leistung</th>
                   <th className="text-left px-4 py-3">Richtpreis</th>
                   <th className="text-right px-4 py-3 w-12"></th>
@@ -427,9 +426,6 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-medium">{tpl.title}</span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">
-                      {tpl.instructor || "—"}
                     </td>
                     <td className="px-4 py-3 text-sm text-muted-foreground max-w-[200px] truncate">
                       {tpl.service_description || "—"}
