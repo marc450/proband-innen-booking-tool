@@ -1,9 +1,3 @@
-import Stripe from "npm:stripe@14.14.0";
-
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
-  apiVersion: "2023-10-16",
-});
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -25,35 +19,48 @@ Deno.serve(async (req) => {
       );
     }
 
-    const session = await stripe.checkout.sessions.create({
-      mode: "setup",
-      locale: "de",
-      ...(email ? { customer_email: email } : {}),
-      payment_method_types: ["card", "sepa_debit"],
-      billing_address_collection: "required",
-      custom_text: {
-        submit: {
-          message:
-            "Du wirst jetzt NICHT belastet. Wir speichern Deine Zahlungsdaten nur fuer den Fall einer No-Show-Gebuehr (50 EUR) bei Nichterscheinen oder Absage weniger als 24h vor dem Termin. Debit- und Kreditkarten werden akzeptiert.",
-        },
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY")!;
+
+    // Build form-encoded body for Stripe API
+    const params = new URLSearchParams();
+    params.set("mode", "setup");
+    params.set("locale", "de");
+    params.set("billing_address_collection", "required");
+    params.set("payment_method_types[0]", "card");
+    params.set("payment_method_types[1]", "sepa_debit");
+    params.set("custom_text[submit][message]",
+      "Du wirst jetzt NICHT belastet. Wir speichern Deine Zahlungsdaten nur fuer den Fall einer No-Show-Gebuehr (50 EUR) bei Nichterscheinen oder Absage weniger als 24h vor dem Termin.");
+    params.set("metadata[slotId]", slotId);
+    params.set("metadata[phone]", phone || "");
+    params.set("success_url", `${successUrl}?session_id={CHECKOUT_SESSION_ID}`);
+    params.set("cancel_url", cancelUrl);
+    if (email) params.set("customer_email", email);
+
+    const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${stripeKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      metadata: {
-        slotId,
-        phone: phone || "",
-      },
-      success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl,
+      body: params.toString(),
     });
 
+    const session = await res.json();
+
+    if (!res.ok) {
+      console.error("Stripe error:", session);
+      return new Response(
+        JSON.stringify({ error: session?.error?.message || "Stripe error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     return new Response(
-      JSON.stringify({
-        checkoutUrl: session.url,
-        sessionId: session.id,
-      }),
+      JSON.stringify({ checkoutUrl: session.url, sessionId: session.id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    console.error("Error creating checkout session:", err);
+    console.error("Error:", err);
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : String(err) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
