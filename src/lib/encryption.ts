@@ -2,15 +2,25 @@ import crypto from "crypto";
 import { Patient, Booking, BookingWithDetails } from "./types";
 
 // --- Key helpers ---
+// Keys are cached as parsed KeyObjects — PEM is parsed only once per process lifetime.
 
-function getPublicKey(): string {
-  const raw = process.env.ENCRYPTION_PUBLIC_KEY || "";
-  return raw.replace(/\\n/g, "\n");
+let _cachedPrivateKey: crypto.KeyObject | null = null;
+let _cachedPublicKey: crypto.KeyObject | null = null;
+
+function getPublicKey(): crypto.KeyObject {
+  if (!_cachedPublicKey) {
+    const raw = (process.env.ENCRYPTION_PUBLIC_KEY || "").replace(/\\n/g, "\n");
+    _cachedPublicKey = crypto.createPublicKey(raw);
+  }
+  return _cachedPublicKey;
 }
 
-function getPrivateKey(): string {
-  const raw = process.env.ENCRYPTION_PRIVATE_KEY || "";
-  return raw.replace(/\\n/g, "\n");
+function getPrivateKey(): crypto.KeyObject {
+  if (!_cachedPrivateKey) {
+    const raw = (process.env.ENCRYPTION_PRIVATE_KEY || "").replace(/\\n/g, "\n");
+    _cachedPrivateKey = crypto.createPrivateKey(raw);
+  }
+  return _cachedPrivateKey;
 }
 
 // --- Core encrypt / decrypt ---
@@ -23,9 +33,9 @@ interface EncryptedPayload {
 
 export function encryptFields(
   fields: Record<string, unknown>,
-  publicKeyPem?: string
+  publicKeyOverride?: crypto.KeyObject | string
 ): EncryptedPayload {
-  const pubKey = publicKeyPem || getPublicKey();
+  const pubKey = publicKeyOverride ?? getPublicKey();
   const plaintext = JSON.stringify(fields);
 
   // Generate random AES-256 key (DEK) and IV
@@ -60,9 +70,9 @@ export function decryptFields<T = Record<string, unknown>>(
   encrypted_data: string,
   encrypted_key: string,
   encryption_iv: string,
-  privateKeyPem?: string
+  privateKeyOverride?: crypto.KeyObject | string
 ): T {
-  const privKey = privateKeyPem || getPrivateKey();
+  const privKey = privateKeyOverride ?? getPrivateKey();
 
   // Decrypt the DEK
   const dek = crypto.privateDecrypt(
