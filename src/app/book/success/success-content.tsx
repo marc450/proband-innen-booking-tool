@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, Loader2, XCircle } from "lucide-react";
 
@@ -21,13 +20,15 @@ export function SuccessContent() {
 
     const confirmBooking = async () => {
       try {
-        const supabase = createClient();
-        const { data, error } = await supabase.functions.invoke("confirm-booking", {
-          body: { sessionId },
+        const res = await fetch("/api/confirm-booking", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
         });
+        const data = await res.json();
 
-        if (error) {
-          throw new Error(error.message);
+        if (!res.ok) {
+          throw new Error(data?.error || "Buchung konnte nicht bestätigt werden.");
         }
 
         if (data?.error) {
@@ -50,7 +51,7 @@ export function SuccessContent() {
         <Card className="max-w-md w-full">
           <CardHeader className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mx-auto mb-4" />
-            <CardTitle>Buchung wird bestaetigt...</CardTitle>
+            <CardTitle>Buchung wird bestätigt...</CardTitle>
             <CardDescription className="text-base mt-2">
               Bitte warte einen Moment.
             </CardDescription>
@@ -81,11 +82,11 @@ export function SuccessContent() {
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
           <CheckCircle className="h-12 w-12 text-primary mx-auto mb-4" />
-          <CardTitle className="text-primary text-2xl">Buchung bestaetigt!</CardTitle>
+          <CardTitle className="text-primary text-2xl">Buchung bestätigt!</CardTitle>
           <CardDescription className="text-base mt-2">
-            Vielen Dank fuer Deine Buchung. Du erhaeltst eine Bestaetigung per E-Mail.
+            Vielen Dank für Deine Buchung. Du erhältst eine Bestätigung per E-Mail.
             Bitte beachte: Bei Nichterscheinen oder Absage weniger als 24 Stunden
-            vor dem Termin wird eine Gebuehr von 50 EUR erhoben.
+            vor dem Termin wird eine Gebühr von 50 EUR erhoben.
           </CardDescription>
         </CardHeader>
       </Card>
