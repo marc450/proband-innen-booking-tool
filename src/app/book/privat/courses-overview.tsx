@@ -3,7 +3,7 @@
 import { AvailableSlot, Course } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, Stethoscope } from "lucide-react";
+import { ImageIcon, Stethoscope, MapPin } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -85,6 +85,12 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
                 <CardContent className="p-0">
                   <div className="px-5 pt-5 pb-4">
                     <h2 className="text-xl font-bold">{group.title}</h2>
+                    {group.firstCourse.location && (
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="text-sm text-muted-foreground">{group.firstCourse.location}</span>
+                      </div>
+                    )}
                     {group.description && (
                       <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
                         {group.description}

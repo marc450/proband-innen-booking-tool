@@ -366,7 +366,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                     />
                   </div>
                   <div>
-                    <Label htmlFor="new_course_location">Ort</Label>
+                    <Label htmlFor="new_course_location">Ort *</Label>
                     <Input
                       id="new_course_location"
                       value={courseLocation}
@@ -442,7 +442,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                 <Button
                   onClick={handleCreateCourse}
                   className="w-full"
-                  disabled={!selectedTemplateId || !courseDate || !slotStartTime || parseInt(slotCount) < 1}
+                  disabled={!selectedTemplateId || !courseDate || !courseLocation.trim() || !slotStartTime || parseInt(slotCount) < 1}
                 >
                   Kurs anlegen
                 </Button>
