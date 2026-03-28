@@ -146,7 +146,6 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
       description: description || null,
       service_description: serviceDescription || null,
       guide_price: guidePrice || null,
-      instructor: (instructor && instructor !== "__none") ? instructor : null,
       image_url: imageUrl || null,
     };
 
@@ -178,7 +177,6 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
             description: data.description,
             service_description: data.service_description,
             guide_price: data.guide_price,
-            instructor: data.instructor,
             image_url: data.image_url,
           })
           .eq("template_id", data.id);
@@ -261,33 +259,6 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
                   placeholder="z.B. Behandlung mimischer Falten mit Botulinum"
                 />
                 <p className="text-[11px] text-muted-foreground mt-1">Wird Proband:innen angezeigt statt des Kursnamens</p>
-              </div>
-              <div>
-                <Label>Kursleitende:r Ärzt:in</Label>
-                {dozenten.length > 0 ? (
-                  <Select value={instructor} onValueChange={(v) => setInstructor(v || "")}>
-                    <SelectTrigger className="mt-1">
-                      <span className="flex flex-1 text-left line-clamp-1">
-                        {instructor && instructor !== "__none"
-                          ? instructor
-                          : <span className="text-muted-foreground">Dozent:in auswählen...</span>
-                        }
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none">Keine:r ausgewählt</SelectItem>
-                      {dozenten.map((d) => (
-                        <SelectItem key={d.id} value={formatDozentName(d)}>
-                          {formatDozentName(d)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Bitte erstelle zuerst Dozent:innen-Profile unter &quot;Dozent:innen&quot;.
-                  </p>
-                )}
               </div>
             </div>
 
