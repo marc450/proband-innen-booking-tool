@@ -78,14 +78,6 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
               Wähle einen Termin und ein Zeitfenster
             </p>
 
-            {course.guide_price && (
-              <div className="bg-muted/50 border rounded-md px-4 py-3 mb-5">
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Die Bezahlung erfolgt nach der Behandlung vor Ort. Die Abrechnung erfolgt nach GOÄ. Der Richtpreis von <span className="font-semibold text-foreground">{course.guide_price}</span> dient als Orientierung. Der genaue Behandlungsumfang und die endgültigen Kosten werden im persönlichen Aufklärungsgespräch mit der behandelnden Ärzt:in festgelegt.
-                </p>
-              </div>
-            )}
-
             {dateEntries.length === 0 ? (
               <Card className="shadow-sm">
                 <CardContent className="py-8 text-center text-muted-foreground">
