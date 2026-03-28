@@ -9,6 +9,7 @@ import { SettingsContent } from "./settings-content";
 export interface AdminUser {
   id: string;
   email: string;
+  title: string | null;
   first_name: string | null;
   last_name: string | null;
   role: "admin" | "dozent";
@@ -40,18 +41,19 @@ export default async function SettingsPage() {
   const adminClient = createAdminClient();
   const [{ data: { users: authUsers } }, { data: profiles }] = await Promise.all([
     adminClient.auth.admin.listUsers(),
-    adminClient.from("profiles").select("id, first_name, last_name, role, is_dozent"),
+    adminClient.from("profiles").select("id, title, first_name, last_name, role, is_dozent"),
   ]);
 
   const profileMap = new Map(
     (profiles || []).map(
-      (p: { id: string; first_name: string | null; last_name: string | null; role: string; is_dozent: boolean }) => [p.id, p]
+      (p: { id: string; title: string | null; first_name: string | null; last_name: string | null; role: string; is_dozent: boolean }) => [p.id, p]
     )
   );
 
   const users: AdminUser[] = authUsers.map((u) => ({
     id: u.id,
     email: u.email || "",
+    title: profileMap.get(u.id)?.title ?? null,
     first_name: profileMap.get(u.id)?.first_name ?? null,
     last_name: profileMap.get(u.id)?.last_name ?? null,
     role: (profileMap.get(u.id)?.role ?? "admin") as "admin" | "dozent",

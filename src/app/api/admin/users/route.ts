@@ -33,13 +33,14 @@ export async function GET() {
 
   const { data: profiles } = await adminClient
     .from("profiles")
-    .select("id, first_name, last_name, role, is_dozent");
+    .select("id, title, first_name, last_name, role, is_dozent");
 
-  const profileMap = new Map((profiles || []).map((p: { id: string; first_name: string | null; last_name: string | null; role: string; is_dozent: boolean }) => [p.id, p]));
+  const profileMap = new Map((profiles || []).map((p: { id: string; title: string | null; first_name: string | null; last_name: string | null; role: string; is_dozent: boolean }) => [p.id, p]));
 
   const result = authUsers.map((u) => ({
     id: u.id,
     email: u.email || "",
+    title: profileMap.get(u.id)?.title ?? null,
     first_name: profileMap.get(u.id)?.first_name ?? null,
     last_name: profileMap.get(u.id)?.last_name ?? null,
     role: (profileMap.get(u.id)?.role ?? "admin") as "admin" | "dozent",
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
   const user = await assertAdmin();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-  const { first_name, last_name, email, role, password } = await req.json();
+  const { title, first_name, last_name, email, role, password } = await req.json();
   if (!email || !first_name || !last_name || !password) {
     return NextResponse.json({ error: "Bitte alle Pflichtfelder ausfüllen." }, { status: 400 });
   }
@@ -73,6 +74,7 @@ export async function POST(req: NextRequest) {
 
   await adminClient.from("profiles").insert({
     id: data.user.id,
+    title: title || null,
     first_name,
     last_name,
     role: role === "admin" ? "admin" : "dozent",

@@ -24,7 +24,7 @@ export default async function DashboardPage() {
     supabase.from("course_templates").select("*").order("title", { ascending: true }),
     supabase
       .from("profiles")
-      .select("id, first_name, last_name")
+      .select("id, title, first_name, last_name")
       .eq("is_dozent", true)
       .order("last_name", { ascending: true }),
   ]);

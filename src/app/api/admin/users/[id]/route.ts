@@ -24,12 +24,12 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  const { first_name, last_name, role, is_dozent } = await req.json();
+  const { title, first_name, last_name, role, is_dozent } = await req.json();
 
   const adminClient = createAdminClient();
   const { error } = await adminClient
     .from("profiles")
-    .update({ first_name, last_name, role, is_dozent })
+    .update({ title, first_name, last_name, role, is_dozent })
     .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

@@ -21,6 +21,7 @@ export interface Dozent {
 // User with Dozent:in role — sourced from profiles table
 export interface DozentUser {
   id: string;
+  title: string | null;
   first_name: string | null;
   last_name: string | null;
 }

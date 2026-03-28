@@ -47,6 +47,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
   const [alertState, setAlertState] = useState<{ title: string; description: string } | null>(null);
 
   // Create form
+  const [title, setTitle] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -59,6 +60,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
 
   // Edit dialog
   const [editTarget, setEditTarget] = useState<AdminUser | null>(null);
+  const [editTitle, setEditTitle] = useState("");
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
   const [editRole, setEditRole] = useState<"admin" | "dozent">("dozent");
@@ -74,7 +76,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
   };
 
   const resetForm = () => {
-    setFirstName(""); setLastName(""); setEmail(""); setPassword("");
+    setTitle(""); setFirstName(""); setLastName(""); setEmail(""); setPassword("");
     setRole("dozent"); setIsDozent(true);
     setCreateError(null); setCreatedCredentials(null); setCopied(false);
   };
@@ -94,7 +96,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     const res = await fetch("/api/admin/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ first_name: firstName, last_name: lastName, email, password, role, is_dozent: isDozent }),
+      body: JSON.stringify({ title: title || null, first_name: firstName, last_name: lastName, email, password, role, is_dozent: isDozent }),
     });
     const data = await res.json();
     setSaving(false);
@@ -118,6 +120,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
 
   const openEdit = (u: AdminUser) => {
     setEditTarget(u);
+    setEditTitle(u.title || "");
     setEditFirstName(u.first_name || "");
     setEditLastName(u.last_name || "");
     setEditRole(u.role);
@@ -136,7 +139,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     const res = await fetch(`/api/admin/users/${editTarget.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ first_name: editFirstName, last_name: editLastName, role: editRole, is_dozent: editIsDozent }),
+      body: JSON.stringify({ title: editTitle || null, first_name: editFirstName, last_name: editLastName, role: editRole, is_dozent: editIsDozent }),
     });
     const data = await res.json();
     setEditSaving(false);
@@ -149,7 +152,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     setUsers((prev) =>
       prev.map((u) =>
         u.id === editTarget.id
-          ? { ...u, first_name: editFirstName, last_name: editLastName, role: editRole, is_dozent: editIsDozent }
+          ? { ...u, title: editTitle || null, first_name: editFirstName, last_name: editLastName, role: editRole, is_dozent: editIsDozent }
           : u
       )
     );
@@ -200,6 +203,10 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
             <DialogTitle>Benutzer bearbeiten</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Titel</Label>
+              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="z.B. Dr., Prof. Dr." />
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Vorname *</Label>
@@ -280,6 +287,10 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
           ) : (
             <>
               <div className="space-y-4 py-2">
+                <div className="space-y-1.5">
+                  <Label>Titel</Label>
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="z.B. Dr., Prof. Dr." />
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>Vorname *</Label>
@@ -382,7 +393,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                   <TableRow key={u.id}>
                     <TableCell className="font-medium whitespace-nowrap">
                       {u.first_name && u.last_name
-                        ? `${u.first_name} ${u.last_name}`
+                        ? [u.title, u.first_name, u.last_name].filter(Boolean).join(" ")
                         : <span className="text-muted-foreground italic">Kein Name</span>}
                       {u.id === currentUserId && (
                         <span className="ml-2 text-xs text-muted-foreground">(Du)</span>

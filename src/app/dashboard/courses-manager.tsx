@@ -45,7 +45,7 @@ interface Props {
 }
 
 function formatDozentName(d: DozentUser): string {
-  return [d.first_name, d.last_name].filter(Boolean).join(" ");
+  return [d.title, d.first_name, d.last_name].filter(Boolean).join(" ");
 }
 
 export function CoursesManager({ initialCourses, initialSlots, initialBookings, templates, dozentUsers }: Props) {
