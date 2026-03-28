@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { createClient } from "@/lib/supabase/server";
-import { Course, Slot, CourseTemplate } from "@/lib/types";
+import { Course, Slot, CourseTemplate, Dozent } from "@/lib/types";
 import { decryptBooking } from "@/lib/encryption";
 import { CoursesManager, SlotBooking } from "./courses-manager";
 
@@ -28,6 +28,11 @@ export default async function DashboardPage() {
     .select("*")
     .order("title", { ascending: true });
 
+  const { data: dozenten } = await supabase
+    .from("dozenten")
+    .select("*")
+    .order("last_name", { ascending: true });
+
   const bookings: SlotBooking[] = (rawBookings || []).map((row) => {
     const decrypted = decryptBooking(row);
     return {
@@ -47,6 +52,7 @@ export default async function DashboardPage() {
       initialSlots={(slots as Slot[]) || []}
       initialBookings={bookings}
       templates={(templates as CourseTemplate[]) || []}
+      dozenten={(dozenten as Dozent[]) || []}
     />
   );
 }

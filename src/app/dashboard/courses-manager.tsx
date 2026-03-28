@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Course, Slot, BookingStatus, CourseTemplate } from "@/lib/types";
+import { Course, Slot, BookingStatus, CourseTemplate, Dozent } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,9 +41,14 @@ interface Props {
   initialSlots: Slot[];
   initialBookings: SlotBooking[];
   templates: CourseTemplate[];
+  dozenten: Dozent[];
 }
 
-export function CoursesManager({ initialCourses, initialSlots, initialBookings, templates }: Props) {
+function formatDozentName(d: Dozent): string {
+  return [d.title, d.first_name, d.last_name].filter(Boolean).join(" ");
+}
+
+export function CoursesManager({ initialCourses, initialSlots, initialBookings, templates, dozenten }: Props) {
   const [courses, setCourses] = useState(initialCourses);
   const [slots, setSlots] = useState(initialSlots);
   const [bookings] = useState(initialBookings);
@@ -60,6 +65,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
   const [slotInterval, setSlotInterval] = useState("30");
   const [slotCount, setSlotCount] = useState("5");
   const [slotCapacityNew, setSlotCapacityNew] = useState("1");
+  const [selectedInstructor, setSelectedInstructor] = useState("");
 
   // Slot dialog
   const [slotDialogOpen, setSlotDialogOpen] = useState(false);
@@ -95,6 +101,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
     setSlotInterval("30");
     setSlotCount("5");
     setSlotCapacityNew("1");
+    setSelectedInstructor("");
   };
 
   const generateSlotTimes = (): string[] => {
@@ -121,7 +128,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
       description: template.description,
       service_description: template.service_description,
       guide_price: template.guide_price,
-      instructor: template.instructor,
+      instructor: selectedInstructor || template.instructor || null,
       image_url: template.image_url,
       course_date: courseDate,
       location: courseLocation || null,
@@ -355,6 +362,27 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
 
                 <div className="border-t" />
 
+                <div>
+                  <Label>Kursleitende:r Ärzt:in *</Label>
+                  <Select value={selectedInstructor} onValueChange={(v) => setSelectedInstructor(v || "")}>
+                    <SelectTrigger className="mt-1 w-full">
+                      <span className="flex flex-1 text-left line-clamp-1">
+                        {selectedInstructor && selectedInstructor !== "__none"
+                          ? selectedInstructor
+                          : <span className="text-muted-foreground">Dozent:in auswählen...</span>
+                        }
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dozenten.map((d) => (
+                        <SelectItem key={d.id} value={formatDozentName(d)}>
+                          {formatDozentName(d)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label htmlFor="new_course_date">Datum *</Label>
@@ -442,7 +470,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                 <Button
                   onClick={handleCreateCourse}
                   className="w-full"
-                  disabled={!selectedTemplateId || !courseDate || !courseLocation.trim() || !slotStartTime || parseInt(slotCount) < 1}
+                  disabled={!selectedTemplateId || !selectedInstructor || !courseDate || !courseLocation.trim() || !slotStartTime || parseInt(slotCount) < 1}
                 >
                   Kurs anlegen
                 </Button>
@@ -586,6 +614,9 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                   className="flex items-center gap-4 flex-1 min-w-0 text-left"
                 >
                   <span className="[flex:3_1_0%] font-semibold text-base truncate min-w-0">{course.title}</span>
+                  <span className="[flex:2_1_0%] text-sm text-muted-foreground truncate">
+                    {course.instructor || <span className="italic opacity-50">Kein:e Dozent:in</span>}
+                  </span>
                   <span className="[flex:2_1_0%] text-sm text-muted-foreground truncate">
                     {course.course_date
                       ? format(parseISO(course.course_date), "dd. MMMM yyyy", { locale: de })
