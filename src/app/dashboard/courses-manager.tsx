@@ -207,14 +207,22 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
   };
 
   const handleEditCourse = async () => {
-    if (!editingCourse || !editDate || !editLocation.trim() || !editInstructor) return;
+    if (!editingCourse || !editDate || !editLocation.trim() || !editInstructor) {
+      console.warn("Edit guard failed:", { editingCourse: !!editingCourse, editDate, editLocation, editInstructor });
+      return;
+    }
+    const updates = { course_date: editDate, location: editLocation, instructor: editInstructor };
     const { data, error } = await supabase
       .from("courses")
-      .update({ course_date: editDate, location: editLocation, instructor: editInstructor })
+      .update(updates)
       .eq("id", editingCourse.id)
       .select()
       .single();
-    if (error) { console.error("Edit error:", error); return; }
+    if (error) {
+      console.error("Edit error:", error);
+      alert(`Fehler beim Speichern: ${error.message}`);
+      return;
+    }
     if (data) {
       setCourses((prev) => prev.map((c) => c.id === data.id ? data : c));
     }
