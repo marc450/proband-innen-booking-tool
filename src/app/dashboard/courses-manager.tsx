@@ -100,15 +100,41 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
 
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
 
+  const resizeImage = (file: File, maxWidth = 1200): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = document.createElement("img");
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas not supported"));
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => (blob ? resolve(blob) : reject(new Error("Blob failed"))),
+          "image/webp",
+          0.82
+        );
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const uploadImage = async (file: File) => {
     setUploadingImage(true);
     setImageUploadError(null);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const fileName = `course-${Date.now()}.${ext}`;
+      const resized = await resizeImage(file);
+      const fileName = `course-${Date.now()}.webp`;
       const { error } = await supabase.storage
         .from("course-images")
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, resized, { upsert: true, contentType: "image/webp" });
       if (error) {
         console.error("Image upload error:", error);
         setImageUploadError(error.message || "Upload fehlgeschlagen");

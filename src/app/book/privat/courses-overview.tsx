@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, Stethoscope } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface Props {
   courses: Course[];
@@ -58,10 +59,14 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
             {groups.map((group) => (
               <Card key={group.title} className="shadow-sm overflow-hidden pt-0 gap-0">
                 {group.firstCourse.image_url ? (
-                  <img
+                  <Image
                     src={group.firstCourse.image_url}
                     alt={group.title}
+                    width={800}
+                    height={450}
                     className="w-full aspect-video object-cover"
+                    sizes="(max-width: 640px) 100vw, 50vw"
+                    priority
                   />
                 ) : (
                   <div className="w-full aspect-video bg-muted flex items-center justify-center">
