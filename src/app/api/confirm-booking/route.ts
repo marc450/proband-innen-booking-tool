@@ -329,12 +329,12 @@ export async function POST(req: NextRequest) {
     // Fetch slot + course details for the email
     const { data: slotInfo } = await supabase
       .from("slots")
-      .select("start_time, courses(title, course_date, location)")
+      .select("start_time, courses(title, treatment_title, course_date, location)")
       .eq("id", slotId)
       .single();
 
-    const courseInfo = slotInfo?.courses as { title?: string; course_date?: string; location?: string } | null;
-    const courseTitle = courseInfo?.title || "Kurs";
+    const courseInfo = slotInfo?.courses as { title?: string; treatment_title?: string; course_date?: string; location?: string } | null;
+    const courseTitle = courseInfo?.treatment_title || courseInfo?.title || "Kurs";
     const courseDate = courseInfo?.course_date || "";
     const courseLocation = courseInfo?.location || "";
     const startTime = slotInfo?.start_time || "";
@@ -369,7 +369,7 @@ export async function POST(req: NextRequest) {
           </div>`;
 
         const infoRows = [
-          { label: "Kurs", value: courseTitle },
+          { label: "Behandlung", value: courseTitle },
           { label: "Datum", value: formattedDate },
           { label: "Uhrzeit", value: formattedTime },
           ...(courseLocation ? [{ label: "Ort", value: courseLocation }] : []),

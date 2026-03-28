@@ -163,9 +163,9 @@ export async function POST(req: NextRequest) {
 
       const html = buildEmailHtml({
         firstName: firstName,
-        intro: `Du wurdest von <strong>${referringDoctor}</strong> als Privatpatient:in für den folgenden Kurs angemeldet:`,
+        intro: `Du wurdest von <strong>${referringDoctor}</strong> als Privatpatient:in für die folgende Behandlung angemeldet:`,
         infoRows: [
-          { label: "Kurs", value: slot.course_title || "" },
+          { label: "Behandlung", value: slot.course_title || "" },
           { label: "Datum", value: dateStr },
           { label: "Uhrzeit", value: timeStr ? `${timeStr} Uhr` : "" },
           { label: "Ort", value: course?.location || "" },

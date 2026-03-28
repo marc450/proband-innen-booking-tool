@@ -41,6 +41,7 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
 
   // Form state
   const [title, setTitle] = useState("");
+  const [treatmentTitle, setTreatmentTitle] = useState("");
   const [description, setDescription] = useState("");
   const [serviceDescription, setServiceDescription] = useState("");
   const [guidePrice, setGuidePrice] = useState("");
@@ -59,6 +60,7 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
 
   const resetForm = () => {
     setTitle("");
+    setTreatmentTitle("");
     setDescription("");
     setServiceDescription("");
     setGuidePrice("");
@@ -140,6 +142,7 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
 
     const payload = {
       title: title.trim(),
+      treatment_title: treatmentTitle.trim() || null,
       description: description || null,
       service_description: serviceDescription || null,
       guide_price: guidePrice || null,
@@ -171,6 +174,7 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
           .from("courses")
           .update({
             title: data.title,
+            treatment_title: data.treatment_title,
             description: data.description,
             service_description: data.service_description,
             guide_price: data.guide_price,
@@ -209,6 +213,7 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
   const openEdit = (template: CourseTemplate) => {
     setEditing(template);
     setTitle(template.title);
+    setTreatmentTitle(template.treatment_title || "");
     setDescription(template.description || "");
     setServiceDescription(template.service_description || "");
     setGuidePrice(template.guide_price || "");
@@ -239,13 +244,23 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Grunddaten</h3>
               <div>
-                <Label htmlFor="tpl_title">Titel *</Label>
+                <Label htmlFor="tpl_title">Kursname (intern) *</Label>
                 <Input
                   id="tpl_title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="z.B. Grundkurs Botulinum"
                 />
+              </div>
+              <div>
+                <Label htmlFor="tpl_treatment_title">Behandlungsname (öffentlich)</Label>
+                <Input
+                  id="tpl_treatment_title"
+                  value={treatmentTitle}
+                  onChange={(e) => setTreatmentTitle(e.target.value)}
+                  placeholder="z.B. Behandlung mimischer Falten mit Botulinum"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">Wird Proband:innen angezeigt statt des Kursnamens</p>
               </div>
               <div>
                 <Label>Kursleitende:r Ärzt:in</Label>

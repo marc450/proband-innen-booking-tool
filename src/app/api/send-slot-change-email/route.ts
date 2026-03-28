@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     firstName: firstName || "Proband:in",
     intro: `wir möchten Dich darüber informieren, dass Dein Termin für den <strong>${courseTitle}</strong> auf Wunsch geändert wurde. Hier sind Deine neuen Termindetails auf einen Blick:`,
     infoRows: [
-      { label: "Kurs", value: courseTitle },
+      { label: "Behandlung", value: courseTitle },
       { label: "Datum", value: date },
       { label: "Uhrzeit", value: time ? `${time} Uhr` : "" },
       { label: "Ort", value: location || "" },

@@ -1,6 +1,7 @@
 export interface CourseTemplate {
   id: string;
   title: string;
+  treatment_title: string | null;
   description: string | null;
   service_description: string | null;
   guide_price: string | null;
@@ -23,6 +24,7 @@ export interface Course {
   id: string;
   template_id: string | null;
   title: string;
+  treatment_title: string | null;
   description: string | null;
   course_date: string | null; // ISO date string yyyy-MM-dd
   location: string | null;

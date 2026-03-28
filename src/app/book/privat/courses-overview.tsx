@@ -85,7 +85,7 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
                 <CardContent className="p-0">
                   {/* Title + subtitle + description */}
                   <div className="px-5 pt-5 pb-4">
-                    <h2 className="text-xl font-bold">{group.title}</h2>
+                    <h2 className="text-xl font-bold">{group.firstCourse.treatment_title || group.title}</h2>
                     <p className="text-xs text-muted-foreground mt-1">Ästhetische Behandlung unter fachärztlicher Anleitung</p>
                     {group.description && (
                       <p className="text-sm text-muted-foreground mt-3 leading-relaxed">

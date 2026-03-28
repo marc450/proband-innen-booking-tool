@@ -49,7 +49,7 @@ export function PrivatSlotSelection({ course, allCourses, slots }: Props) {
             </button>
             <Card className="mb-6 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-base">{course.title}</CardTitle>
+                <CardTitle className="text-base">{course.treatment_title || course.title}</CardTitle>
                 <CardDescription className="flex items-center gap-4 mt-1">
                   <span className="flex items-center gap-1.5">
                     <Calendar className="h-3.5 w-3.5" />
@@ -73,7 +73,7 @@ export function PrivatSlotSelection({ course, allCourses, slots }: Props) {
               &larr; Zurück zur Kursübersicht
             </Link>
 
-            <h2 className="text-lg font-semibold mt-4 mb-1">{course.title}</h2>
+            <h2 className="text-lg font-semibold mt-4 mb-1">{course.treatment_title || course.title}</h2>
             <p className="text-sm text-muted-foreground mb-4">
               Wähle einen Termin und ein Zeitfenster
             </p>
