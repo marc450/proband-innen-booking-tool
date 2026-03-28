@@ -122,6 +122,22 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                               Bitte wähle das <strong>früheste verfügbare Zeitfenster</strong>, damit keine Behandlungslücken in unserem Kurs auftreten.
                             </p>
                           </div>
+                          {(dateCourse.instructor || dateCourse.location) && (
+                            <div className="grid grid-cols-2 gap-x-4 px-4 py-3 bg-muted/30">
+                              {dateCourse.instructor && (
+                                <div>
+                                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Dozent:in</p>
+                                  <p className="text-xs font-medium">{dateCourse.instructor}</p>
+                                </div>
+                              )}
+                              {dateCourse.location && (
+                                <div>
+                                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Ort</p>
+                                  <p className="text-xs">{dateCourse.location}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
                           {dateSlots.map((slot) => (
                             <button
                               key={slot.id}

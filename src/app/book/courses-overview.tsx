@@ -110,20 +110,12 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
                   <hr className="border-border/40" />
 
                   {/* Details grid */}
-                  <div className="space-y-3">
-                    {group.firstCourse.guide_price && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Richtpreis</p>
-                        <p className="text-lg font-bold">EUR {group.firstCourse.guide_price.replace(/[€\s]/g, "")}</p>
-                      </div>
-                    )}
-                    {group.firstCourse.location && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Ort</p>
-                        <p className="text-sm">{group.firstCourse.location}</p>
-                      </div>
-                    )}
-                  </div>
+                  {group.firstCourse.guide_price && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Richtpreis</p>
+                      <p className="text-lg font-bold">EUR {group.firstCourse.guide_price.replace(/[€\s]/g, "")}</p>
+                    </div>
+                  )}
 
                   {/* CTA */}
                   <div className="pt-3 pb-1">
