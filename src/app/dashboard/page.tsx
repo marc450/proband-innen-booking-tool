@@ -1,37 +1,33 @@
 export const dynamic = "force-dynamic";
 
 import { createClient } from "@/lib/supabase/server";
-import { Course, Slot, CourseTemplate, Dozent } from "@/lib/types";
+import { Course, Slot, CourseTemplate, DozentUser } from "@/lib/types";
 import { decryptBooking } from "@/lib/encryption";
 import { CoursesManager, SlotBooking } from "./courses-manager";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const { data: courses } = await supabase
-    .from("courses")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  const { data: slots } = await supabase
-    .from("slots")
-    .select("*")
-    .order("start_time", { ascending: true });
-
-  const { data: rawBookings } = await supabase
-    .from("bookings")
-    .select("id, slot_id, status, patient_id, encrypted_data, encrypted_key, encryption_iv")
-    .neq("status", "cancelled");
-
-  const { data: templates } = await supabase
-    .from("course_templates")
-    .select("*")
-    .order("title", { ascending: true });
-
-  const { data: dozenten } = await supabase
-    .from("dozenten")
-    .select("*")
-    .order("last_name", { ascending: true });
+  const [
+    { data: courses },
+    { data: slots },
+    { data: rawBookings },
+    { data: templates },
+    { data: dozentUsers },
+  ] = await Promise.all([
+    supabase.from("courses").select("*").order("created_at", { ascending: false }),
+    supabase.from("slots").select("*").order("start_time", { ascending: true }),
+    supabase
+      .from("bookings")
+      .select("id, slot_id, status, patient_id, encrypted_data, encrypted_key, encryption_iv")
+      .neq("status", "cancelled"),
+    supabase.from("course_templates").select("*").order("title", { ascending: true }),
+    supabase
+      .from("profiles")
+      .select("id, first_name, last_name")
+      .eq("is_dozent", true)
+      .order("last_name", { ascending: true }),
+  ]);
 
   const bookings: SlotBooking[] = (rawBookings || []).map((row) => {
     const decrypted = decryptBooking(row);
@@ -52,7 +48,7 @@ export default async function DashboardPage() {
       initialSlots={(slots as Slot[]) || []}
       initialBookings={bookings}
       templates={(templates as CourseTemplate[]) || []}
-      dozenten={(dozenten as Dozent[]) || []}
+      dozentUsers={(dozentUsers as DozentUser[]) || []}
     />
   );
 }

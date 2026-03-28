@@ -33,9 +33,9 @@ export async function GET() {
 
   const { data: profiles } = await adminClient
     .from("profiles")
-    .select("id, first_name, last_name, role");
+    .select("id, first_name, last_name, role, is_dozent");
 
-  const profileMap = new Map((profiles || []).map((p: { id: string; first_name: string | null; last_name: string | null; role: string }) => [p.id, p]));
+  const profileMap = new Map((profiles || []).map((p: { id: string; first_name: string | null; last_name: string | null; role: string; is_dozent: boolean }) => [p.id, p]));
 
   const result = authUsers.map((u) => ({
     id: u.id,
@@ -43,6 +43,7 @@ export async function GET() {
     first_name: profileMap.get(u.id)?.first_name ?? null,
     last_name: profileMap.get(u.id)?.last_name ?? null,
     role: (profileMap.get(u.id)?.role ?? "admin") as "admin" | "dozent",
+    is_dozent: profileMap.get(u.id)?.is_dozent ?? false,
     created_at: u.created_at,
   }));
 
@@ -75,6 +76,7 @@ export async function POST(req: NextRequest) {
     first_name,
     last_name,
     role: role === "admin" ? "admin" : "dozent",
+    is_dozent: role === "dozent" ? true : false,
   });
 
   return NextResponse.json({ ok: true, userId: data.user.id });

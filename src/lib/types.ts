@@ -18,6 +18,13 @@ export interface Dozent {
   created_at: string;
 }
 
+// User with Dozent:in role — sourced from profiles table
+export interface DozentUser {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+}
+
 export type BookingStatus = "booked" | "attended" | "no_show" | "cancelled";
 
 export interface Course {

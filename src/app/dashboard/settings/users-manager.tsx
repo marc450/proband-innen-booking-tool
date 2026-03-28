@@ -28,7 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ConfirmDialog, AlertDialog } from "@/components/confirm-dialog";
-import { Plus, Trash2, RefreshCw, Copy, Check } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Copy, Check, Edit } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { AdminUser } from "./page";
@@ -44,10 +44,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [alertState, setAlertState] = useState<{
-    title: string;
-    description: string;
-  } | null>(null);
+  const [alertState, setAlertState] = useState<{ title: string; description: string } | null>(null);
 
   // Create form
   const [firstName, setFirstName] = useState("");
@@ -55,28 +52,31 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"admin" | "dozent">("dozent");
+  const [isDozent, setIsDozent] = useState(true);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // Edit dialog
+  const [editTarget, setEditTarget] = useState<AdminUser | null>(null);
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [editRole, setEditRole] = useState<"admin" | "dozent">("dozent");
+  const [editIsDozent, setEditIsDozent] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
   const generatePassword = () => {
     const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#";
     let pw = "";
-    for (let i = 0; i < 12; i++) {
-      pw += chars[Math.floor(Math.random() * chars.length)];
-    }
+    for (let i = 0; i < 12; i++) pw += chars[Math.floor(Math.random() * chars.length)];
     setPassword(pw);
   };
 
   const resetForm = () => {
-    setFirstName("");
-    setLastName("");
-    setEmail("");
-    setPassword("");
-    setRole("dozent");
-    setCreateError(null);
-    setCreatedCredentials(null);
-    setCopied(false);
+    setFirstName(""); setLastName(""); setEmail(""); setPassword("");
+    setRole("dozent"); setIsDozent(true);
+    setCreateError(null); setCreatedCredentials(null); setCopied(false);
   };
 
   const handleCreate = async () => {
@@ -94,57 +94,78 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     const res = await fetch("/api/admin/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        first_name: firstName,
-        last_name: lastName,
-        email,
-        password,
-        role,
-      }),
+      body: JSON.stringify({ first_name: firstName, last_name: lastName, email, password, role, is_dozent: isDozent }),
     });
     const data = await res.json();
     setSaving(false);
 
     if (!res.ok) {
-      setCreateError(data.error || "Fehler beim Erstellen des Benutzers.");
+      setCreateError(data.error || "Fehler beim Erstellen.");
       return;
     }
 
-    // Show credentials so admin can share them
     setCreatedCredentials({ email, password });
-
-    // Refresh list
     const listRes = await fetch("/api/admin/users");
     if (listRes.ok) setUsers(await listRes.json());
   };
 
   const handleCopyCredentials = () => {
     if (!createdCredentials) return;
-    navigator.clipboard.writeText(
-      `Login: ${createdCredentials.email}\nPasswort: ${createdCredentials.password}`
-    );
+    navigator.clipboard.writeText(`Login: ${createdCredentials.email}\nPasswort: ${createdCredentials.password}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const openEdit = (u: AdminUser) => {
+    setEditTarget(u);
+    setEditFirstName(u.first_name || "");
+    setEditLastName(u.last_name || "");
+    setEditRole(u.role);
+    setEditIsDozent(u.is_dozent);
+    setEditError(null);
+  };
+
+  const handleEdit = async () => {
+    if (!editTarget || !editFirstName.trim() || !editLastName.trim()) {
+      setEditError("Bitte Vor- und Nachname ausfüllen.");
+      return;
+    }
+    setEditSaving(true);
+    setEditError(null);
+
+    const res = await fetch(`/api/admin/users/${editTarget.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ first_name: editFirstName, last_name: editLastName, role: editRole, is_dozent: editIsDozent }),
+    });
+    const data = await res.json();
+    setEditSaving(false);
+
+    if (!res.ok) {
+      setEditError(data.error || "Fehler beim Speichern.");
+      return;
+    }
+
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === editTarget.id
+          ? { ...u, first_name: editFirstName, last_name: editLastName, role: editRole, is_dozent: editIsDozent }
+          : u
+      )
+    );
+    setEditTarget(null);
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
-
-    const res = await fetch(`/api/admin/users/${deleteTarget.id}`, {
-      method: "DELETE",
-    });
+    const res = await fetch(`/api/admin/users/${deleteTarget.id}`, { method: "DELETE" });
     const data = await res.json();
-
     if (!res.ok) {
-      setAlertState({
-        title: "Fehler",
-        description: data.error || "Benutzer konnte nicht gelöscht werden.",
-      });
+      setAlertState({ title: "Fehler", description: data.error || "Benutzer konnte nicht gelöscht werden." });
     } else {
       setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
     }
-
     setDeleting(false);
     setDeleteTarget(null);
   };
@@ -172,31 +193,69 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
         onCancel={() => setDeleteTarget(null)}
       />
 
-      {/* Create dialog */}
-      <Dialog
-        open={showCreate}
-        onOpenChange={(open) => {
-          if (!open) {
-            setShowCreate(false);
-            resetForm();
-          }
-        }}
-      >
+      {/* Edit dialog */}
+      <Dialog open={!!editTarget} onOpenChange={(open) => { if (!open) setEditTarget(null); }}>
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
-            <DialogTitle>
-              {createdCredentials ? "Benutzer erstellt" : "Neuen Benutzer anlegen"}
-            </DialogTitle>
+            <DialogTitle>Benutzer bearbeiten</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Vorname *</Label>
+                <Input value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Nachname *</Label>
+                <Input value={editLastName} onChange={(e) => setEditLastName(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Rolle</Label>
+              <Select value={editRole} onValueChange={(val) => setEditRole(val as "admin" | "dozent")}>
+                <SelectTrigger>
+                  <span>{editRole === "admin" ? "Admin" : "Dozent:in"}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dozent">Dozent:in</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editIsDozent}
+                onChange={(e) => setEditIsDozent(e.target.checked)}
+                className="h-4 w-4 rounded"
+              />
+              <span className="text-sm">Als Dozent:in in Kursen verfügbar</span>
+            </label>
+            {editError && <p className="text-sm text-destructive">{editError}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTarget(null)} disabled={editSaving}>Abbrechen</Button>
+            <Button onClick={handleEdit} disabled={editSaving}>
+              {editSaving ? "Speichern..." : "Speichern"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create dialog */}
+      <Dialog open={showCreate} onOpenChange={(open) => { if (!open) { setShowCreate(false); resetForm(); } }}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>{createdCredentials ? "Benutzer erstellt" : "Neuen Benutzer anlegen"}</DialogTitle>
           </DialogHeader>
 
           {createdCredentials ? (
-            /* Step 2: Show credentials */
             <>
               <div className="space-y-4 py-2">
                 <p className="text-sm text-muted-foreground">
-                  Der Benutzer wurde angelegt. Teile die Zugangsdaten persönlich oder per sicherem Kanal mit.
+                  Teile die Zugangsdaten persönlich oder per sicherem Kanal mit.
                 </p>
-                <div className="rounded-lg bg-muted px-4 py-3 space-y-1.5 font-mono text-sm">
+                <div className="rounded-lg bg-muted px-4 py-3 space-y-2 font-mono text-sm">
                   <div>
                     <span className="text-muted-foreground text-xs uppercase tracking-wide">Login</span>
                     <p className="font-medium">{createdCredentials.email}</p>
@@ -207,7 +266,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Der Benutzer kann das Passwort nach dem Login jederzeit über das Schlüssel-Symbol oben rechts ändern.
+                  Das Passwort kann nach dem Login über das Schlüssel-Symbol oben rechts geändert werden.
                 </p>
               </div>
               <DialogFooter>
@@ -215,41 +274,25 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   {copied ? "Kopiert" : "Kopieren"}
                 </Button>
-                <Button onClick={() => { setShowCreate(false); resetForm(); }}>
-                  Fertig
-                </Button>
+                <Button onClick={() => { setShowCreate(false); resetForm(); }}>Fertig</Button>
               </DialogFooter>
             </>
           ) : (
-            /* Step 1: Create form */
             <>
               <div className="space-y-4 py-2">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>Vorname *</Label>
-                    <Input
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="Max"
-                    />
+                    <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Max" />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Nachname *</Label>
-                    <Input
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      placeholder="Mustermann"
-                    />
+                    <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Mustermann" />
                   </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label>E-Mail-Adresse *</Label>
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="max@ephia.de"
-                  />
+                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="max@ephia.de" />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Temporäres Passwort *</Label>
@@ -260,13 +303,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                       placeholder="Mindestens 8 Zeichen"
                       className="font-mono"
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={generatePassword}
-                      title="Passwort generieren"
-                    >
+                    <Button type="button" variant="outline" size="icon" onClick={generatePassword} title="Generieren">
                       <RefreshCw className="h-4 w-4" />
                     </Button>
                   </div>
@@ -275,7 +312,11 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                   <Label>Rolle</Label>
                   <Select
                     value={role}
-                    onValueChange={(val) => setRole(val as "admin" | "dozent")}
+                    onValueChange={(val) => {
+                      const r = val as "admin" | "dozent";
+                      setRole(r);
+                      setIsDozent(r === "dozent");
+                    }}
                   >
                     <SelectTrigger>
                       <span>{role === "admin" ? "Admin" : "Dozent:in"}</span>
@@ -286,16 +327,19 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                     </SelectContent>
                   </Select>
                 </div>
-                {createError && (
-                  <p className="text-sm text-destructive">{createError}</p>
-                )}
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isDozent}
+                    onChange={(e) => setIsDozent(e.target.checked)}
+                    className="h-4 w-4 rounded"
+                  />
+                  <span className="text-sm">Als Dozent:in in Kursen verfügbar</span>
+                </label>
+                {createError && <p className="text-sm text-destructive">{createError}</p>}
               </div>
               <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => { setShowCreate(false); resetForm(); }}
-                  disabled={saving}
-                >
+                <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }} disabled={saving}>
                   Abbrechen
                 </Button>
                 <Button onClick={handleCreate} disabled={saving}>
@@ -312,7 +356,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
         <p className="text-sm text-muted-foreground">
           Dozent:innen haben Zugang zu allen Bereichen außer Einstellungen.
         </p>
-        <Button size="sm" onClick={() => setShowCreate(true)}>
+        <Button onClick={() => setShowCreate(true)}>
           <Plus className="h-4 w-4 mr-1.5" />
           Benutzer anlegen
         </Button>
@@ -321,9 +365,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
       <Card>
         <CardContent className="p-0">
           {users.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground text-sm">
-              Noch keine Benutzer vorhanden.
-            </div>
+            <div className="py-12 text-center text-muted-foreground text-sm">Noch keine Benutzer vorhanden.</div>
           ) : (
             <Table>
               <TableHeader>
@@ -339,43 +381,37 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                 {users.map((u) => (
                   <TableRow key={u.id}>
                     <TableCell className="font-medium whitespace-nowrap">
-                      {u.first_name && u.last_name ? (
-                        `${u.first_name} ${u.last_name}`
-                      ) : (
-                        <span className="text-muted-foreground italic">
-                          Kein Name
-                        </span>
-                      )}
+                      {u.first_name && u.last_name
+                        ? `${u.first_name} ${u.last_name}`
+                        : <span className="text-muted-foreground italic">Kein Name</span>}
                       {u.id === currentUserId && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          (Du)
-                        </span>
+                        <span className="ml-2 text-xs text-muted-foreground">(Du)</span>
                       )}
                     </TableCell>
                     <TableCell className="text-sm">{u.email}</TableCell>
                     <TableCell>
-                      {u.role === "admin" ? (
-                        <Badge>Admin</Badge>
-                      ) : (
-                        <Badge variant="secondary">Dozent:in</Badge>
-                      )}
+                      <div className="flex flex-wrap gap-1">
+                        {u.role === "admin" && <Badge>Admin</Badge>}
+                        {u.role === "dozent" && <Badge variant="secondary">Dozent:in</Badge>}
+                        {u.role === "admin" && u.is_dozent && (
+                          <Badge variant="secondary">Dozent:in</Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                      {format(new Date(u.created_at), "dd.MM.yyyy", {
-                        locale: de,
-                      })}
+                      {format(new Date(u.created_at), "dd.MM.yyyy", { locale: de })}
                     </TableCell>
                     <TableCell>
-                      {u.id !== currentUserId && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeleteTarget(u)}
-                          title="Benutzer löschen"
-                        >
-                          <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500" />
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(u)} title="Bearbeiten">
+                          <Edit className="h-4 w-4" />
                         </Button>
-                      )}
+                        {u.id !== currentUserId && (
+                          <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(u)} title="Löschen">
+                            <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

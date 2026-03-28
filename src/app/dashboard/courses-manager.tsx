@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Course, Slot, BookingStatus, CourseTemplate, Dozent } from "@/lib/types";
+import { Course, Slot, BookingStatus, CourseTemplate, DozentUser } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,14 +41,14 @@ interface Props {
   initialSlots: Slot[];
   initialBookings: SlotBooking[];
   templates: CourseTemplate[];
-  dozenten: Dozent[];
+  dozentUsers: DozentUser[];
 }
 
-function formatDozentName(d: Dozent): string {
-  return [d.title, d.first_name, d.last_name].filter(Boolean).join(" ");
+function formatDozentName(d: DozentUser): string {
+  return [d.first_name, d.last_name].filter(Boolean).join(" ");
 }
 
-export function CoursesManager({ initialCourses, initialSlots, initialBookings, templates, dozenten }: Props) {
+export function CoursesManager({ initialCourses, initialSlots, initialBookings, templates, dozentUsers }: Props) {
   const [courses, setCourses] = useState(initialCourses);
   const [slots, setSlots] = useState(initialSlots);
   const [bookings] = useState(initialBookings);
@@ -355,7 +355,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                   </span>
                 </SelectTrigger>
                 <SelectContent>
-                  {dozenten.map((d) => (
+                  {dozentUsers.map((d) => (
                     <SelectItem key={d.id} value={formatDozentName(d)}>
                       {formatDozentName(d)}
                     </SelectItem>
@@ -470,7 +470,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                       </span>
                     </SelectTrigger>
                     <SelectContent>
-                      {dozenten.map((d) => (
+                      {dozentUsers.map((d) => (
                         <SelectItem key={d.id} value={formatDozentName(d)}>
                           {formatDozentName(d)}
                         </SelectItem>
