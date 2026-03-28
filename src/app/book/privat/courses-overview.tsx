@@ -57,7 +57,7 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
             Behandlungstermin buchen
           </h1>
           <p className="max-w-xl mx-auto" style={{ fontFamily: "Roboto", fontWeight: "normal", fontSize: "1.0625rem", letterSpacing: "0rem", lineHeight: 1.65, color: "#000000" }}>
-            Wähle Dein gewünschtes Behandlungsangebot und buche Deinen Termin als Privatpatient:in.
+            Bitte wähle den Behandlungstermin in dem Kurs, an dem Deine behandelnde Ärzt:in teilnimmt.
           </p>
         </div>
 
