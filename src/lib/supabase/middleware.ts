@@ -36,5 +36,28 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Cache user role in a cookie so the layout doesn't need a DB call
+  if (user) {
+    const existingRole = request.cookies.get("x-user-role")?.value;
+    if (!existingRole) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      const role = profile?.role ?? "admin";
+      supabaseResponse.cookies.set("x-user-role", role, {
+        path: "/",
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        maxAge: 3600, // 1 hour
+      });
+    }
+  } else {
+    // Clear role cookie if not logged in
+    supabaseResponse.cookies.delete("x-user-role");
+  }
+
   return supabaseResponse;
 }
