@@ -614,10 +614,6 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
               {/* Expanded content */}
               {isExpanded && (
                 <CardContent className="pt-0 pb-4 px-4 border-t">
-                  {course.description && (
-                    <p className="text-sm text-muted-foreground mt-3 mb-4">{course.description}</p>
-                  )}
-
                   <div className="flex items-center justify-between mb-3 mt-3">
                     <span className="text-sm font-medium text-muted-foreground">Slots</span>
                     <Button
