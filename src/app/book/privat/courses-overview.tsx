@@ -3,7 +3,7 @@
 import { AvailableSlot, Course } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, MapPin } from "lucide-react";
+import { ImageIcon } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -51,7 +51,16 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8">
+      <main className="max-w-5xl mx-auto px-4 py-16">
+        <div className="text-center mb-14">
+          <h1 className="font-bold mb-4" style={{ fontFamily: "Roboto", fontSize: "3rem", fontWeight: "bold", letterSpacing: "0rem", lineHeight: 1.25, textTransform: "uppercase", color: "#000000" }}>
+            Behandlungstermin buchen
+          </h1>
+          <p className="max-w-xl mx-auto" style={{ fontFamily: "Roboto", fontWeight: "normal", fontSize: "1.0625rem", letterSpacing: "0rem", lineHeight: 1.65, color: "#000000" }}>
+            Wähle Dein gewünschtes Behandlungsangebot und buche Deinen Termin als Privatpatient:in.
+          </p>
+        </div>
+
         {groups.length === 0 ? (
           <Card className="shadow-sm">
             <CardContent className="py-12 text-center text-muted-foreground">
@@ -81,38 +90,50 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
                   </div>
                 )}
 
-                <CardContent className="p-0">
-                  <div className="px-5 pt-5 pb-5">
-                    {/* Title */}
-                    <h2 className="text-xl font-bold leading-tight">{group.firstCourse.treatment_title || group.title}</h2>
-
-                    {/* Service description as subtitle */}
+                <CardContent className="p-5 flex flex-col gap-3">
+                  <div>
+                    <h2 className="text-lg font-bold leading-tight">{group.firstCourse.treatment_title || group.title}</h2>
                     {group.firstCourse.service_description && (
-                      <p className="text-sm text-muted-foreground mt-1.5">
+                      <p className="text-sm text-muted-foreground mt-1">
                         {group.firstCourse.service_description}
                       </p>
                     )}
-
-                    {/* Compact details */}
-                    <div className="mt-4 space-y-1.5 text-sm text-muted-foreground">
-                      {group.firstCourse.instructor && (
-                        <p>Unter Anleitung von <span className="text-foreground font-medium">{group.firstCourse.instructor}</span></p>
-                      )}
-                      {group.firstCourse.location && (
-                        <p className="flex items-center gap-1.5">
-                          <MapPin className="h-3.5 w-3.5 shrink-0" />
-                          <span>{group.firstCourse.location}</span>
-                        </p>
-                      )}
-                    </div>
                   </div>
 
-                  {/* CTA */}
-                  <div className="px-5 pb-5">
+                  <hr className="border-border/40" />
+
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                    {group.firstCourse.guide_price && (
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Richtpreis</p>
+                        <p className="text-lg font-bold">EUR {group.firstCourse.guide_price.replace(/[€\s]/g, "")}</p>
+                      </div>
+                    )}
+                    {group.firstCourse.instructor && (
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Dozent:in</p>
+                        <p className="text-sm font-medium">{group.firstCourse.instructor}</p>
+                      </div>
+                    )}
+                    {group.firstCourse.location && (
+                      <div className="col-span-2">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Ort</p>
+                        <p className="text-sm">{group.firstCourse.location}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-3 pb-1">
                     <Link href={`/book/privat/${group.firstCourse.id}`}>
-                      <Button className="w-full">Termin buchen</Button>
+                      <Button className="w-full">Termine anschauen</Button>
                     </Link>
                   </div>
+
+                  {group.firstCourse.guide_price && (
+                    <p className="text-[11px] text-muted-foreground/60 text-center">
+                      *Bezahlung nach der Behandlung vor Ort. Abrechnung nach GOÄ.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             ))}
