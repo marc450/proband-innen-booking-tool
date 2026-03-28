@@ -261,6 +261,7 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                   end_time: newSlot?.end_time || b.slots.end_time,
                   courses: {
                     title: newCourse?.title || b.slots.courses.title,
+                    instructor: b.slots.courses.instructor,
                   },
                 },
               }
@@ -543,7 +544,7 @@ export function BookingsManager({ initialBookings, courses }: Props) {
                           )}
                         </TableCell>
                         <TableCell className="text-sm whitespace-nowrap">
-                          {booking.referring_doctor || "—"}
+                          {booking.slots?.courses?.instructor || "—"}
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">

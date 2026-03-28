@@ -118,6 +118,7 @@ export interface BookingWithDetails extends Booking {
     end_time: string;
     courses: {
       title: string;
+      instructor: string | null;
     };
   };
 }

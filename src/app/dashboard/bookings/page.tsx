@@ -16,7 +16,8 @@ export default async function BookingsPage() {
         start_time,
         end_time,
         courses (
-          title
+          title,
+          instructor
         )
       )
     `)
