@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
 
   const html = buildEmailHtml({
     firstName: firstName || "Proband:in",
-    intro: `wir möchten Dich darüber informieren, dass Dein Termin für den <strong>${courseTitle}</strong> auf Wunsch geändert wurde. Hier sind Deine neuen Termindetails auf einen Blick:`,
+    intro: `Dein Termin für <strong>${courseTitle}</strong> wurde geändert. Hier sind Deine neuen Termindetails:`,
     infoRows: [
       { label: "Behandlung", value: courseTitle },
       { label: "Datum", value: date },
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify({
       from: "EPHIA <customerlove@ephia.de>",
       to: [email],
-      subject: `Dein Termin wurde geändert: ${courseTitle}`,
+      subject: `Terminänderung: ${courseTitle}`,
       html,
     }),
   });
