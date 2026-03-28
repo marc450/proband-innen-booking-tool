@@ -302,6 +302,8 @@ export async function POST(req: NextRequest) {
       p_encrypted_key: bookingEncrypted.encrypted_key,
       p_encryption_iv: bookingEncrypted.encryption_iv,
       p_stripe_checkout_session_id: sessionId,
+      p_booking_type: "standard",
+      p_referring_doctor: null,
     });
 
     if (rpcError) {
