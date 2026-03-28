@@ -32,7 +32,7 @@ serve(async (req) => {
       mode: "setup",
       locale: "de",
       ...(email ? { customer_email: email } : {}),
-      payment_method_types: ["card", "klarna"],
+      payment_method_types: ["card"],
       billing_address_collection: "required",
       custom_text: {
         submit: {
