@@ -3,7 +3,7 @@
 import { AvailableSlot, Course } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, Euro, Stethoscope, MapPin } from "lucide-react";
+import { ImageIcon, Euro, Stethoscope, MapPin, UserRound } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -89,26 +89,18 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
                 )}
 
                 <CardContent className="p-0">
-                  {/* Title + description */}
+                  {/* Title + subtitle + description */}
                   <div className="px-5 pt-5 pb-4">
                     <h2 className="text-xl font-bold">{group.title}</h2>
-                    {group.firstCourse.location && (
-                      <div className="flex items-center gap-1.5 mt-1.5">
-                        <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="text-sm text-muted-foreground">{group.firstCourse.location}</span>
-                      </div>
-                    )}
+                    <p className="text-xs text-muted-foreground mt-1">Ästhetische Behandlung unter fachärztlicher Anleitung</p>
                     {group.description && (
-                      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                      <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
                         {group.description}
                       </p>
                     )}
                   </div>
 
                   {/* Info grid: Leistung + Richtpreis */}
-                  {(group.firstCourse.service_description || group.firstCourse.guide_price) && (
-                    <div className="border-t mx-5" />
-                  )}
                   {(group.firstCourse.service_description || group.firstCourse.guide_price) && (
                     <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {group.firstCourse.service_description && (
@@ -132,6 +124,30 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
                     </div>
                   )}
 
+                  {/* Details: Ärzt:in + Ort */}
+                  {(group.firstCourse.instructor || group.firstCourse.location) && (
+                    <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {group.firstCourse.instructor && (
+                        <div className="flex gap-3">
+                          <UserRound className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                          <div>
+                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leitende:r Ärzt:in</span>
+                            <p className="text-sm mt-0.5">{group.firstCourse.instructor}</p>
+                          </div>
+                        </div>
+                      )}
+                      {group.firstCourse.location && (
+                        <div className="flex gap-3">
+                          <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                          <div>
+                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Ort</span>
+                            <p className="text-sm mt-0.5">{group.firstCourse.location}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Pricing disclaimer */}
                   {group.firstCourse.guide_price && (
                     <div className="mx-5 mb-4 bg-muted/50 rounded-md px-3 py-2">
@@ -142,7 +158,7 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
                   )}
 
                   {/* CTA */}
-                  <div className="border-t px-5 py-4">
+                  <div className="px-5 py-4">
                     <Link href={`/book/${group.firstCourse.id}`}>
                       <Button className="w-full">Zu den Terminen</Button>
                     </Link>
