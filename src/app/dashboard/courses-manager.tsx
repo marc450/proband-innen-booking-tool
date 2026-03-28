@@ -706,7 +706,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
           </Card>
         );
         return (
-        <div className="space-y-1">
+        <div className="space-y-2">
         {filteredCourses.map((course) => {
           const courseSlots = slots
             .filter((s) => s.course_id === course.id)
@@ -722,7 +722,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
           return (
             <Card key={course.id} className="overflow-hidden shadow-none">
               {/* Course header row */}
-              <div className="flex items-center gap-2 px-4 py-2">
+              <div className="flex items-center gap-2 px-4 py-1.5">
                 <button
                   onClick={() => toggleCourse(course.id)}
                   className="shrink-0 text-muted-foreground hover:text-foreground"
@@ -747,10 +747,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                       ? format(parseISO(course.course_date), "dd. MMMM yyyy", { locale: de })
                       : <span className="italic">Kein Datum</span>}
                   </span>
-                  <span className="[flex:1_1_0%] text-sm text-muted-foreground text-center whitespace-nowrap">
-                    {courseSlots.length} {courseSlots.length === 1 ? "Slot" : "Slots"}
-                  </span>
-                  <span className={`[flex:1_1_0%] text-sm font-semibold text-right whitespace-nowrap ${bookedCount === totalCapacity && totalCapacity > 0 ? "text-green-600" : "text-red-500"}`}>
+                  <span className={`[flex:1_1_0%] text-sm font-semibold text-center whitespace-nowrap ${bookedCount === totalCapacity && totalCapacity > 0 ? "text-green-600" : "text-red-500"}`}>
                     {bookedCount}/{totalCapacity}
                   </span>
                 </button>
