@@ -126,18 +126,17 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
                     {group.firstCourse.location && (
                       <div className="col-span-2">
                         <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Ort</p>
-                        <p className="text-sm flex items-start gap-1.5">
-                          <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
-                          <span>{group.firstCourse.location}</span>
-                        </p>
+                        <p className="text-sm">{group.firstCourse.location}</p>
                       </div>
                     )}
                   </div>
 
                   {/* CTA */}
-                  <Link href={`/book/${group.firstCourse.id}`}>
-                    <Button className="w-full">Termine anschauen</Button>
-                  </Link>
+                  <div className="pt-3 pb-1">
+                    <Link href={`/book/${group.firstCourse.id}`}>
+                      <Button className="w-full">Termine anschauen</Button>
+                    </Link>
+                  </div>
 
                   {group.firstCourse.guide_price && (
                     <p className="text-[11px] text-muted-foreground/60 text-center">
