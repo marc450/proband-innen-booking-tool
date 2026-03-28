@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     params.set("payment_method_types[0]", "card");
     params.set("payment_method_types[1]", "sepa_debit");
     params.set("custom_text[submit][message]",
-      "Du wirst jetzt NICHT belastet. Wir speichern Deine Zahlungsdaten nur fuer den Fall einer No-Show-Gebuehr (50 EUR) bei Nichterscheinen oder Absage weniger als 24h vor dem Termin.");
+      "Du wirst jetzt NICHT belastet. Wir speichern Deine Zahlungsdaten nur fuer den Fall einer No-Show-Gebuehr (50,00 EUR) bei Nichterscheinen oder Absage weniger als 48h vor dem Termin.");
     params.set("metadata[slotId]", slotId);
     params.set("metadata[phone]", phone || "");
     params.set("success_url", `${successUrl}?session_id={CHECKOUT_SESSION_ID}`);

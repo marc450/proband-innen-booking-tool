@@ -389,7 +389,7 @@ export async function POST(req: NextRequest) {
     </div>
 
     <div style="background-color:#FAEBE1; border:1px solid #F0D0B8; border-radius:8px; padding:14px 16px; margin:0 0 20px; font-size:14px; line-height:1.5;">
-      <strong>Wichtiger Hinweis:</strong> Bei Nichterscheinen oder Absage weniger als 24 Stunden vor dem Termin wird eine Gebühr von 50 EUR erhoben.
+      <strong>Wichtiger Hinweis:</strong> Bei Nichterscheinen oder Absage weniger als 48 Stunden vor dem Termin wird eine Ausfallgebühr von 50,00 EUR erhoben.
     </div>
 
     <p style="margin:0 0 20px;">

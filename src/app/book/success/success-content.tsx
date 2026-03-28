@@ -79,15 +79,20 @@ export function SuccessContent() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="max-w-md w-full">
-        <CardHeader className="text-center">
-          <CheckCircle className="h-12 w-12 text-primary mx-auto mb-4" />
-          <CardTitle className="text-primary text-2xl">Buchung bestätigt!</CardTitle>
-          <CardDescription className="text-base mt-2">
-            Vielen Dank für Deine Buchung. Du erhältst eine Bestätigung per E-Mail.
-            Bitte beachte: Bei Nichterscheinen oder Absage weniger als 24 Stunden
-            vor dem Termin wird eine Gebühr von 50 EUR erhoben.
+      <Card className="max-w-lg w-full shadow-sm">
+        <CardHeader className="text-center px-8 py-10">
+          <CheckCircle className="h-16 w-16 text-primary mx-auto mb-6" />
+          <CardTitle className="text-primary text-3xl font-bold">Buchung bestätigt!</CardTitle>
+          <CardDescription className="text-base mt-4 leading-relaxed">
+            Vielen Dank für Deine Buchung. Du erhältst in Kürze eine Bestätigung per E-Mail.
           </CardDescription>
+          <div className="mt-6 bg-muted/50 border rounded-lg px-5 py-4 text-sm text-muted-foreground leading-relaxed text-left">
+            <p className="font-semibold text-foreground mb-1">Bitte beachte:</p>
+            <p>
+              Bei Nichterscheinen oder Absage weniger als <strong className="text-foreground">48 Stunden</strong> vor
+              dem Termin wird eine Ausfallgebühr von <strong className="text-foreground">50,00 EUR</strong> erhoben.
+            </p>
+          </div>
         </CardHeader>
       </Card>
     </div>

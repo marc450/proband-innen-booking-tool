@@ -151,7 +151,7 @@ export function BookingsManager({ initialBookings, courses }: Props) {
         setAlertState({ title: "Status gesetzt, Zahlung fehlgeschlagen", description: chargeData.error || "Unbekannter Fehler" });
       } else {
         setBookings((prev) => prev.map((b) => b.id === booking.id ? { ...b, charge_id: chargeData.chargeId } : b));
-        setAlertState({ title: "No-Show bestätigt", description: `50 EUR wurden erfolgreich von ${booking.first_name || booking.name} erhoben.` });
+        setAlertState({ title: "No-Show bestätigt", description: `50,00 EUR wurden erfolgreich von ${booking.first_name || booking.name} erhoben.` });
       }
     } catch {
       setAlertState({ title: "Fehler", description: "Ein unerwarteter Fehler ist aufgetreten." });
@@ -309,8 +309,8 @@ export function BookingsManager({ initialBookings, courses }: Props) {
       <ConfirmDialog
         open={!!noShowPending}
         title="No-Show bestätigen"
-        description={`${noShowPending?.booking.first_name || noShowPending?.booking.name} wird als No-Show markiert. Es wird automatisch eine Gebühr von 50 EUR erhoben. Diese Aktion kann nicht rückgängig gemacht werden.`}
-        confirmLabel="Bestätigen & 50 EUR berechnen"
+        description={`${noShowPending?.booking.first_name || noShowPending?.booking.name} wird als No-Show markiert. Es wird automatisch eine Ausfallgebühr von 50,00 EUR erhoben. Diese Aktion kann nicht rückgängig gemacht werden.`}
+        confirmLabel="Bestätigen & 50,00 EUR berechnen"
         variant="destructive"
         onConfirm={handleConfirmNoShow}
         onCancel={() => setNoShowPending(null)}

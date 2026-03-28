@@ -441,7 +441,7 @@ export function BookingForm({ slot, guidePrice }: BookingFormProps) {
               </div>
 
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Im nächsten Schritt wirst Du gebeten, eine Bezahlmethode zu hinterlegen. Diese dient ausschließlich zur Absicherung im Falle eines No-Shows. Es wird jetzt keine Zahlung vorgenommen. Die Bezahlung der Behandlung erfolgt vor Ort.
+                Im nächsten Schritt wirst Du gebeten, eine Bezahlmethode zu hinterlegen. Diese dient ausschließlich zur Absicherung im Falle eines No-Shows (50,00 EUR bei Nichterscheinen oder Absage weniger als 48 Stunden vor dem Termin). Es wird jetzt keine Zahlung vorgenommen. Die Bezahlung der Behandlung erfolgt vor Ort.
               </p>
 
               {error && (

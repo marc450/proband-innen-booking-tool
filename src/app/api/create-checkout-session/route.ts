@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       custom_text: {
         submit: {
           message:
-            "Du wirst jetzt NICHT belastet. Wir speichern Deine Zahlungsdaten nur für den Fall einer No-Show-Gebühr (50 EUR) bei Nichterscheinen oder Absage weniger als 24h vor dem Termin.",
+            "Du wirst jetzt NICHT belastet. Wir speichern Deine Zahlungsdaten nur für den Fall einer No-Show-Gebühr (50,00 EUR) bei Nichterscheinen oder Absage weniger als 48h vor dem Termin.",
         },
       },
       metadata: {

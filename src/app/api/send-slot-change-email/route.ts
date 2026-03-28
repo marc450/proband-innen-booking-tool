@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
       { label: "Uhrzeit", value: time ? `${time} Uhr` : "" },
       { label: "Ort", value: location || "" },
     ],
-    note: bookingType === "private" ? undefined : "Bei Nichterscheinen oder Absage weniger als 24 Stunden vor dem Termin wird eine Gebühr von 50 EUR erhoben.",
+    note: bookingType === "private" ? undefined : "Bei Nichterscheinen oder Absage weniger als 48 Stunden vor dem Termin wird eine Ausfallgebühr von 50,00 EUR erhoben.",
     extraContent: `<p style="margin:0 0 20px;">
       Solltest Du Fragen haben oder einen anderen Termin benötigen, melde Dich jederzeit bei uns:
       <a href="mailto:customerlove@ephia.de" style="color:#0066FF; text-decoration:none;">customerlove@ephia.de</a>
