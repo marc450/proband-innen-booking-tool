@@ -196,8 +196,31 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
         .select()
         .single();
 
+      if (error) {
+        console.error("Update error:", error);
+      }
+
       if (!error && data) {
-        setCourses((prev) => prev.map((c) => (c.id === data.id ? data : c)));
+        // Also update shared fields (image, description, guide_price, service_description, instructor)
+        // across all courses with the same title
+        const sharedFields = {
+          image_url: data.image_url,
+          description: data.description,
+          guide_price: data.guide_price,
+          service_description: data.service_description,
+          instructor: data.instructor,
+        };
+        await supabase
+          .from("courses")
+          .update(sharedFields)
+          .eq("title", data.title)
+          .neq("id", data.id);
+
+        setCourses((prev) =>
+          prev.map((c) =>
+            c.id === data.id ? data : c.title === data.title ? { ...c, ...sharedFields } : c
+          )
+        );
       }
     } else {
       const { data, error } = await supabase

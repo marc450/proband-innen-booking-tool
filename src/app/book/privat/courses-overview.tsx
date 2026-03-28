@@ -31,6 +31,11 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
         description: course.description,
         firstCourse: course,
       });
+    } else {
+      const existing = groupedMap.get(course.title)!;
+      if (!existing.firstCourse.image_url && course.image_url) {
+        existing.firstCourse = course;
+      }
     }
   }
 

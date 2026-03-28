@@ -33,6 +33,12 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
         firstCourse: course,
         totalSlots: 0,
       });
+    } else {
+      // Prefer a course that has an image
+      const existing = groupedMap.get(course.title)!;
+      if (!existing.firstCourse.image_url && course.image_url) {
+        existing.firstCourse = course;
+      }
     }
 
     groupedMap.get(course.title)!.totalSlots += courseSlots.length;
