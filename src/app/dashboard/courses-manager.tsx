@@ -89,6 +89,10 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
   const [editLocation, setEditLocation] = useState("");
   const [editInstructor, setEditInstructor] = useState("");
 
+  // Filters
+  const [filterDozent, setFilterDozent] = useState("");
+  const [filterDate, setFilterDate] = useState("");
+
   const supabase = createClient();
 
   const toggleCourse = (courseId: string) => {
@@ -656,15 +660,54 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
         </Button>
       </div>
 
+      {/* Filters */}
+      <div className="flex gap-3">
+        <Select value={filterDozent} onValueChange={(v) => setFilterDozent(v === "__all" ? "" : (v || ""))}>
+          <SelectTrigger className="w-56 h-9 text-sm">
+            <span className="flex flex-1 text-left line-clamp-1">
+              {filterDozent
+                ? filterDozent
+                : <span className="text-muted-foreground">Alle Dozent:innen</span>
+              }
+            </span>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all">Alle Dozent:innen</SelectItem>
+            {Array.from(new Set(courses.map((c) => c.instructor).filter(Boolean))).sort().map((name) => (
+              <SelectItem key={name!} value={name!}>{name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          type="date"
+          className="w-44 h-9 text-sm"
+          value={filterDate}
+          onChange={(e) => setFilterDate(e.target.value)}
+        />
+        {(filterDozent || filterDate) && (
+          <Button variant="ghost" size="sm" className="h-9 text-sm" onClick={() => { setFilterDozent(""); setFilterDate(""); }}>
+            Filter zurücksetzen
+          </Button>
+        )}
+      </div>
+
       {/* Course list */}
-      {courses.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            Noch keine Kurse angelegt. Erstelle den ersten Kurs.
-          </CardContent>
-        </Card>
-      ) : (
-        courses.map((course) => {
+      {(() => {
+        const filteredCourses = courses.filter((c) => {
+          if (filterDozent && c.instructor !== filterDozent) return false;
+          if (filterDate && c.course_date !== filterDate) return false;
+          return true;
+        });
+        if (filteredCourses.length === 0) return (
+          <Card>
+            <CardContent className="py-12 text-center text-muted-foreground">
+              {courses.length === 0 ? "Noch keine Kurse angelegt. Erstelle den ersten Kurs." : "Keine Kurse entsprechen den Filterkriterien."}
+            </CardContent>
+          </Card>
+        );
+        return (
+        <div className="space-y-1">
+        {filteredCourses.map((course) => {
           const courseSlots = slots
             .filter((s) => s.course_id === course.id)
             .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
@@ -677,9 +720,9 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
           const isExpanded = expandedCourses.has(course.id);
 
           return (
-            <Card key={course.id} className="overflow-hidden">
+            <Card key={course.id} className="overflow-hidden shadow-none">
               {/* Course header row */}
-              <div className="flex items-center gap-2 px-4 py-3">
+              <div className="flex items-center gap-2 px-4 py-2">
                 <button
                   onClick={() => toggleCourse(course.id)}
                   className="shrink-0 text-muted-foreground hover:text-foreground"
@@ -823,8 +866,10 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
               )}
             </Card>
           );
-        })
-      )}
+        })}
+        </div>
+        );
+      })()}
     </div>
   );
 }
