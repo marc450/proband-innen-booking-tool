@@ -114,7 +114,7 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
                     {group.firstCourse.guide_price && (
                       <div>
                         <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Richtpreis</p>
-                        <p className="text-lg font-bold">{group.firstCourse.guide_price}*</p>
+                        <p className="text-lg font-bold">EUR {group.firstCourse.guide_price.replace(/[€\s]/g, "")}</p>
                       </div>
                     )}
                     {group.firstCourse.instructor && (
