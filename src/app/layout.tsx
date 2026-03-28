@@ -11,6 +11,9 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   title: "EPHIA Booking",
   description: "Book your treatment slot for EPHIA aesthetic training courses",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

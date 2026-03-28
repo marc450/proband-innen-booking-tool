@@ -6,7 +6,7 @@ export default function PrivatSuccessPage() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-black/10 bg-background h-[55px] flex items-center">
         <div className="max-w-lg mx-auto px-4 w-full">
-          <a href="https://ephia.de" target="_blank" rel="noopener noreferrer">
+          <a href="https://ephia.de" target="_blank" rel="noopener noreferrer" className="inline-block">
             <img src="/logo.svg" alt="EPHIA" style={{ width: "203px", height: "auto" }} />
           </a>
         </div>
