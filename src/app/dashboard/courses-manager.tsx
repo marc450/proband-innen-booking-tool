@@ -3,23 +3,29 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Course, Slot, BookingStatus } from "@/lib/types";
+import { Course, Slot, BookingStatus, CourseTemplate } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
-import { Plus, Trash2, Edit, Copy, ChevronDown, ChevronRight, ImageIcon, Upload } from "lucide-react";
+import { Plus, Trash2, Copy, ChevronDown, ChevronRight } from "lucide-react";
 
 export interface SlotBooking {
   id: string;
@@ -35,29 +41,22 @@ interface Props {
   initialCourses: Course[];
   initialSlots: Slot[];
   initialBookings: SlotBooking[];
+  templates: CourseTemplate[];
 }
 
-export function CoursesManager({ initialCourses, initialSlots, initialBookings }: Props) {
+export function CoursesManager({ initialCourses, initialSlots, initialBookings, templates }: Props) {
   const [courses, setCourses] = useState(initialCourses);
   const [slots, setSlots] = useState(initialSlots);
   const [bookings] = useState(initialBookings);
 
-  // Expanded courses (all collapsed by default)
+  // Expanded courses
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
 
-  // Course dialog
+  // New course dialog
   const [courseDialogOpen, setCourseDialogOpen] = useState(false);
-  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
-  const [courseTitle, setCourseTitle] = useState("");
-  const [courseDescription, setCourseDescription] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [courseDate, setCourseDate] = useState("");
   const [courseLocation, setCourseLocation] = useState("");
-  const [courseInstructor, setCourseInstructor] = useState("");
-  const [courseGuidePrice, setCourseGuidePrice] = useState("");
-  const [courseServiceDescription, setCourseServiceDescription] = useState("");
-  const [courseImageUrl, setCourseImageUrl] = useState("");
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   // Slot dialog
   const [slotDialogOpen, setSlotDialogOpen] = useState(false);
@@ -86,155 +85,41 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
   };
 
   const resetCourseForm = () => {
-    setCourseTitle("");
-    setCourseDescription("");
+    setSelectedTemplateId("");
     setCourseDate("");
     setCourseLocation("");
-    setCourseInstructor("");
-    setCourseGuidePrice("");
-    setCourseServiceDescription("");
-    setCourseImageUrl("");
-    setImageUploadError(null);
-    setEditingCourse(null);
   };
 
-  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const handleCreateCourse = async () => {
+    const template = templates.find((t) => t.id === selectedTemplateId);
+    if (!template || !courseDate) return;
 
-  const resizeImage = (file: File, maxWidth = 1200): Promise<Blob> => {
-    return new Promise((resolve, reject) => {
-      const img = document.createElement("img");
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        let { width, height } = img;
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return reject(new Error("Canvas not supported"));
-        ctx.drawImage(img, 0, 0, width, height);
-        canvas.toBlob(
-          (blob) => (blob ? resolve(blob) : reject(new Error("Blob failed"))),
-          "image/webp",
-          0.82
-        );
-      };
-      img.onerror = reject;
-      img.src = URL.createObjectURL(file);
-    });
-  };
-
-  const uploadImage = async (file: File) => {
-    setUploadingImage(true);
-    setImageUploadError(null);
-    try {
-      const resized = await resizeImage(file);
-      const fileName = `course-${Date.now()}.webp`;
-      const { error } = await supabase.storage
-        .from("course-images")
-        .upload(fileName, resized, { upsert: true, contentType: "image/webp" });
-      if (error) {
-        console.error("Image upload error:", error);
-        setImageUploadError(error.message || "Upload fehlgeschlagen");
-        return;
-      }
-      const { data: urlData } = supabase.storage
-        .from("course-images")
-        .getPublicUrl(fileName);
-      setCourseImageUrl(urlData.publicUrl);
-    } catch (err) {
-      console.error("Image upload exception:", err);
-      setImageUploadError("Upload fehlgeschlagen");
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await uploadImage(file);
-    e.target.value = "";
-  };
-
-  const handleImageDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith("image/")) {
-      await uploadImage(file);
-    }
-  };
-
-  const handleSaveCourse = async () => {
-    if (!courseTitle.trim()) return;
-
-    const isEditing = !!editingCourse;
-    const editId = editingCourse?.id;
     const payload = {
-      title: courseTitle,
-      description: courseDescription || null,
-      course_date: courseDate || null,
+      template_id: template.id,
+      title: template.title,
+      description: template.description,
+      service_description: template.service_description,
+      guide_price: template.guide_price,
+      instructor: template.instructor,
+      image_url: template.image_url,
+      course_date: courseDate,
       location: courseLocation || null,
-      instructor: courseInstructor || null,
-      guide_price: courseGuidePrice || null,
-      service_description: courseServiceDescription || null,
-      image_url: courseImageUrl || null,
     };
 
     setCourseDialogOpen(false);
     resetCourseForm();
 
-    if (isEditing && editId) {
-      const { data, error } = await supabase
-        .from("courses")
-        .update(payload)
-        .eq("id", editId)
-        .select()
-        .single();
+    const { data, error } = await supabase
+      .from("courses")
+      .insert(payload)
+      .select()
+      .single();
 
-      if (error) {
-        console.error("Update error:", error);
-      }
-
-      if (!error && data) {
-        // Also update shared fields (image, description, guide_price, service_description, instructor)
-        // across all courses with the same title
-        const sharedFields = {
-          image_url: data.image_url,
-          description: data.description,
-          guide_price: data.guide_price,
-          service_description: data.service_description,
-          instructor: data.instructor,
-        };
-        await supabase
-          .from("courses")
-          .update(sharedFields)
-          .eq("title", data.title)
-          .neq("id", data.id);
-
-        setCourses((prev) =>
-          prev.map((c) =>
-            c.id === data.id ? data : c.title === data.title ? { ...c, ...sharedFields } : c
-          )
-        );
-      }
-    } else {
-      const { data, error } = await supabase
-        .from("courses")
-        .insert(payload)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Insert error:", error);
-      }
-      if (!error && data) {
-        setCourses((prev) => [data, ...prev]);
-      }
+    if (error) {
+      console.error("Insert error:", error);
+    }
+    if (!error && data) {
+      setCourses((prev) => [data, ...prev]);
     }
   };
 
@@ -300,9 +185,15 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
     const { data: newCourse, error: courseError } = await supabase
       .from("courses")
       .insert({
+        template_id: duplicatingCourse.template_id,
         title: duplicatingCourse.title,
         description: duplicatingCourse.description,
+        service_description: duplicatingCourse.service_description,
+        guide_price: duplicatingCourse.guide_price,
+        instructor: duplicatingCourse.instructor,
+        image_url: duplicatingCourse.image_url,
         course_date: duplicateDate,
+        location: duplicatingCourse.location,
       })
       .select()
       .single();
@@ -365,164 +256,81 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
         onCancel={() => setDeleteSlotConfirm(null)}
       />
 
-      {/* Course dialog */}
+      {/* New course dialog — simplified: pick template + date */}
       <Dialog open={courseDialogOpen} onOpenChange={(open) => {
         setCourseDialogOpen(open);
         if (!open) resetCourseForm();
       }}>
-        <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[480px]">
           <DialogHeader>
-            <DialogTitle>{editingCourse ? "Kurs bearbeiten" : "Neuer Kurs"}</DialogTitle>
+            <DialogTitle>Neuen Kurs anlegen</DialogTitle>
           </DialogHeader>
-          <div className="space-y-6 pt-2">
-
-            {/* Section: Grunddaten */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Grunddaten</h3>
-              <div>
-                <Label htmlFor="title">Titel *</Label>
-                <Input
-                  id="title"
-                  value={courseTitle}
-                  onChange={(e) => setCourseTitle(e.target.value)}
-                  placeholder="z.B. Botulinum Grundkurs"
-                />
+          <div className="space-y-4 pt-2">
+            {templates.length === 0 ? (
+              <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-md">
+                Bitte erstelle zuerst eine Kursvorlage unter &quot;Kursvorlagen&quot;.
               </div>
-              <div className="grid grid-cols-2 gap-3">
+            ) : (
+              <>
                 <div>
-                  <Label htmlFor="course_date">Datum</Label>
-                  <Input
-                    id="course_date"
-                    type="date"
-                    value={courseDate}
-                    onChange={(e) => setCourseDate(e.target.value)}
-                  />
+                  <Label>Kursvorlage *</Label>
+                  <Select value={selectedTemplateId} onValueChange={(v) => setSelectedTemplateId(v || "")}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Vorlage auswählen..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.title}{t.guide_price ? ` (${t.guide_price})` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div>
-                  <Label htmlFor="instructor">Kursleitende:r Ärzt:in</Label>
-                  <Input
-                    id="instructor"
-                    value={courseInstructor}
-                    onChange={(e) => setCourseInstructor(e.target.value)}
-                    placeholder="z.B. Dr. med. Anna Müller"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="location">Adresse / Ort</Label>
-                <Input
-                  id="location"
-                  value={courseLocation}
-                  onChange={(e) => setCourseLocation(e.target.value)}
-                  placeholder="z.B. Rosa-Luxemburg-Straße 20, 10178 Berlin"
-                />
-              </div>
-            </div>
 
-            <div className="border-t" />
+                {selectedTemplateId && (() => {
+                  const tpl = templates.find((t) => t.id === selectedTemplateId);
+                  if (!tpl) return null;
+                  return (
+                    <div className="bg-muted/50 rounded-md p-3 text-sm space-y-1">
+                      <p className="font-medium">{tpl.title}</p>
+                      {tpl.instructor && <p className="text-muted-foreground">Ärzt:in: {tpl.instructor}</p>}
+                      {tpl.guide_price && <p className="text-muted-foreground">Richtpreis: {tpl.guide_price}</p>}
+                      {tpl.service_description && <p className="text-muted-foreground">{tpl.service_description}</p>}
+                    </div>
+                  );
+                })()}
 
-            {/* Section: Leistung & Preis */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Leistung &amp; Preis</h3>
-              <div>
-                <Label htmlFor="service_description">Leistungsbeschreibung</Label>
-                <Textarea
-                  id="service_description"
-                  value={courseServiceDescription}
-                  onChange={(e) => setCourseServiceDescription(e.target.value)}
-                  placeholder="z.B. Behandlung mimischer Falten in bis zu 3 Zonen des Gesichts."
-                />
-              </div>
-              <div>
-                <Label htmlFor="guide_price">Richtpreis</Label>
-                <Input
-                  id="guide_price"
-                  value={courseGuidePrice}
-                  onChange={(e) => setCourseGuidePrice(e.target.value)}
-                  placeholder="z.B. 99€"
-                />
-              </div>
-            </div>
-
-            <div className="border-t" />
-
-            {/* Section: Beschreibung & Bild */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Beschreibung &amp; Bild</h3>
-              <div>
-                <Label htmlFor="description">Kursbeschreibung</Label>
-                <Textarea
-                  id="description"
-                  value={courseDescription}
-                  onChange={(e) => setCourseDescription(e.target.value)}
-                  placeholder="Beschreibung, die Proband:innen auf der Buchungsseite sehen"
-                  rows={4}
-                />
-              </div>
-              <div>
-                <Label>Kursbild</Label>
-                {courseImageUrl ? (
-                  <div className="mt-1 relative">
-                    <img
-                      src={courseImageUrl}
-                      alt="Kursbild"
-                      className="w-full aspect-video object-cover rounded-md border"
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="new_course_date">Datum *</Label>
+                    <Input
+                      id="new_course_date"
+                      type="date"
+                      value={courseDate}
+                      onChange={(e) => setCourseDate(e.target.value)}
                     />
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={() => setCourseImageUrl("")}
-                    >
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      Entfernen
-                    </Button>
                   </div>
-                ) : (
-                  <label
-                    className={`mt-1 flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-md cursor-pointer transition-colors ${
-                      isDraggingOver
-                        ? "border-primary bg-primary/10"
-                        : "hover:border-primary/50 hover:bg-muted/50"
-                    }`}
-                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDraggingOver(true); }}
-                    onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDraggingOver(true); }}
-                    onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDraggingOver(false); }}
-                    onDrop={handleImageDrop}
-                  >
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageUpload}
-                      disabled={uploadingImage}
+                  <div>
+                    <Label htmlFor="new_course_location">Ort</Label>
+                    <Input
+                      id="new_course_location"
+                      value={courseLocation}
+                      onChange={(e) => setCourseLocation(e.target.value)}
+                      placeholder="z.B. Berlin"
                     />
-                    {uploadingImage ? (
-                      <div className="flex flex-col items-center gap-2">
-                        <svg className="animate-spin h-6 w-6 text-primary" viewBox="0 0 24 24" fill="none">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                        <span className="text-sm text-muted-foreground">Wird hochgeladen...</span>
-                      </div>
-                    ) : (
-                      <>
-                        <Upload className="h-6 w-6 text-muted-foreground mb-1" />
-                        <span className="text-sm text-muted-foreground">Bild hochladen oder hierher ziehen</span>
-                        <span className="text-xs text-muted-foreground">JPG, PNG, WebP</span>
-                      </>
-                    )}
-                  </label>
-                )}
-                {imageUploadError && (
-                  <p className="text-sm text-red-600 mt-1">{imageUploadError}</p>
-                )}
-              </div>
-            </div>
+                  </div>
+                </div>
 
-            <Button onClick={handleSaveCourse} className="w-full" disabled={!courseTitle.trim()}>
-              Speichern
-            </Button>
+                <Button
+                  onClick={handleCreateCourse}
+                  className="w-full"
+                  disabled={!selectedTemplateId || !courseDate}
+                >
+                  Kurs anlegen
+                </Button>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -638,16 +446,13 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
           const bookedCount = courseSlots.reduce((sum, s) => {
             return sum + bookings.filter((b) => b.slot_id === s.id).length;
           }, 0);
-          const remainingCapacity = totalCapacity - bookedCount;
 
           const isExpanded = expandedCourses.has(course.id);
 
           return (
             <Card key={course.id} className="overflow-hidden">
-              {/* Collapsed header — always visible */}
-              {/* Course header row — same skeleton as slot rows below */}
+              {/* Course header row */}
               <div className="flex items-center gap-2 px-4 py-3">
-                {/* Chevron toggle */}
                 <button
                   onClick={() => toggleCourse(course.id)}
                   className="shrink-0 text-muted-foreground hover:text-foreground"
@@ -659,7 +464,6 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                   }
                 </button>
 
-                {/* Shared 4-column content area */}
                 <button
                   onClick={() => toggleCourse(course.id)}
                   className="flex items-center gap-4 flex-1 min-w-0 text-left"
@@ -678,15 +482,10 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                   </span>
                 </button>
 
-                {/* Action buttons — fixed width, slots rows will mirror this */}
                 <div className="flex gap-1 shrink-0">
                   <Button variant="ghost" size="sm" title="Kurs duplizieren"
                     onClick={(e) => { e.stopPropagation(); setDuplicatingCourse(course); setDuplicateDialogOpen(true); }}>
                     <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm"
-                    onClick={(e) => { e.stopPropagation(); setEditingCourse(course); setCourseTitle(course.title); setCourseDescription(course.description || ""); setCourseDate(course.course_date || ""); setCourseLocation(course.location || ""); setCourseInstructor(course.instructor || ""); setCourseGuidePrice(course.guide_price || ""); setCourseServiceDescription(course.service_description || ""); setCourseImageUrl(course.image_url || ""); setCourseDialogOpen(true); }}>
-                    <Edit className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" size="sm"
                     onClick={(e) => { e.stopPropagation(); setDeleteCourseConfirm(course.id); }}>
@@ -743,12 +542,10 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                               key={slot.id}
                               className="flex items-center gap-4 py-2 px-2 rounded-md bg-muted/40"
                             >
-                              {/* Zeit */}
                               <span className="w-28 shrink-0 text-sm font-medium">
                                 {format(new Date(slot.start_time), "HH:mm")} Uhr
                               </span>
 
-                              {/* Status */}
                               <div className="w-24 shrink-0">
                                 {slotBooked > 0
                                   ? <Badge variant="default" className="text-xs">Gebucht</Badge>
@@ -756,7 +553,6 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                                 }
                               </div>
 
-                              {/* Proband:in */}
                               <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                                 {slotBookings.length > 0 ? slotBookings.map((b) => (
                                   b.patient_id ? (
@@ -776,17 +572,14 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings }
                                 )}
                               </div>
 
-                              {/* Kapazität */}
                               <span className="w-24 shrink-0 text-sm text-muted-foreground text-center">
                                 {slot.capacity}
                               </span>
 
-                              {/* Besetzung */}
                               <span className={`w-24 shrink-0 text-sm font-semibold text-center ${slotBooked === slot.capacity ? "text-green-600" : "text-red-500"}`}>
                                 {slotBooked}/{slot.capacity}
                               </span>
 
-                              {/* Delete */}
                               <Button variant="ghost" size="sm" className="w-8 shrink-0 p-0" onClick={() => setDeleteSlotConfirm(slot.id)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>

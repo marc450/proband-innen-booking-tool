@@ -1,7 +1,19 @@
+export interface CourseTemplate {
+  id: string;
+  title: string;
+  description: string | null;
+  service_description: string | null;
+  guide_price: string | null;
+  image_url: string | null;
+  instructor: string | null;
+  created_at: string;
+}
+
 export type BookingStatus = "booked" | "attended" | "no_show" | "cancelled";
 
 export interface Course {
   id: string;
+  template_id: string | null;
   title: string;
   description: string | null;
   course_date: string | null; // ISO date string yyyy-MM-dd
