@@ -392,9 +392,28 @@ export async function POST(req: NextRequest) {
       <strong>Wichtiger Hinweis:</strong> Bei Nichterscheinen oder Absage weniger als 48 Stunden vor dem Termin wird eine Ausfallgebühr von 50,00 EUR erhoben.
     </div>
 
+    <p style="margin:0 0 8px;">
+      Bitte bereite Dich gut auf Deinen Termin bei uns vor, damit Deine Behandlung reibungslos und effektiv verläuft. Gib der behandelnden Ärztin/dem behandelnden Arzt Bescheid, falls das Deine erste ästhetische Behandlung sein wird.
+    </p>
+
+    <p style="margin:20px 0 4px; font-weight:bold;">Hautpflege</p>
+    <p style="margin:0 0 0;">
+      Vermeide 2-3 Tage vor der Behandlung Hautpflegeprodukte, die Deine Haut reizen könnten. Setze stattdessen auf leichte und gut verträgliche Pflege. Achte außerdem darauf, ausreichend Wasser zu trinken, um Deine Haut optimal zu hydratisieren.
+    </p>
+
+    <p style="margin:20px 0 4px; font-weight:bold;">Make-Up</p>
+    <p style="margin:0 0 0;">
+      Am Tag der Behandlung solltest Du möglichst kein Make-up tragen, um die Hygiene während der Behandlung zu gewährleisten. Falls Du Dich ohne Make-up unwohl fühlst, kannst Du leichtes Make-up verwenden und Dich vor Ort im Studio abschminken. Wir bitten Dich, die dafür notwendigen Utensilien selbst mitzubringen.
+    </p>
+
+    <p style="margin:20px 0 4px; font-weight:bold;">Zusätzliche Informationen</p>
+    <p style="margin:0 0 0;">
+      Stelle Dich bitte auf längere Wartezeiten ein und beachte, dass wir in der Praxis keine Kapazitäten für Freunde, Angehörige oder Haustiere haben. Komme daher bitte ohne Begleitung. Am besten bringst Du ein Buch mit oder etwas, womit Du Dich beschäftigen kannst, solltest Du nicht direkt drankommen. Während des Kurses werden wir Vorher-Nachher-Bilder von den Behandlungen erstellen. Dies dient unserer internen Dokumentation.
+    </p>
+
+    <p style="margin:20px 0 4px; font-weight:bold;">Bei Fragen</p>
     <p style="margin:0 0 20px;">
-      Wenn Du vor dem Termin noch Fragen hast, melde Dich jederzeit bei uns:
-      <a href="mailto:customerlove@ephia.de" style="color:#0066FF; text-decoration:none;">customerlove@ephia.de</a>
+      Solltest Du nach Deiner Behandlung noch weitere Fragen haben, möchten wir Dich bitten, Dich zunächst an die Ärztin oder den Arzt zu wenden, die/der Dich behandelt hat. Sollte es dennoch weiterhin Unklarheiten geben, bieten wir allen Ärzt:innen, die wir ausgebildet haben, eine direkte Anlaufstelle für solche Situationen.
     </p>
 
     <p style="margin:0 0 20px;">
