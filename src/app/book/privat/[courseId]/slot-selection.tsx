@@ -29,8 +29,8 @@ export function PrivatSlotSelection({ course, allCourses, slots }: Props) {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-black/10 bg-background">
-        <div className="max-w-lg mx-auto px-4 py-4">
+      <header className="border-b border-black/10 bg-background h-[55px] flex items-center">
+        <div className="max-w-lg mx-auto px-4 w-full">
           <a href="https://ephia.de" target="_blank" rel="noopener noreferrer">
             <img src="/logo.svg" alt="EPHIA" style={{ width: "203px", height: "auto" }} />
           </a>
