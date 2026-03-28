@@ -3,7 +3,7 @@
 import { AvailableSlot, Course } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, Stethoscope, MapPin, UserRound } from "lucide-react";
+import { ImageIcon, MapPin } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -83,52 +83,35 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
                 )}
 
                 <CardContent className="p-0">
-                  {/* Title + subtitle + description */}
-                  <div className="px-5 pt-5 pb-4">
-                    <h2 className="text-xl font-bold">{group.firstCourse.treatment_title || group.title}</h2>
-                    <p className="text-xs text-muted-foreground mt-1">Ästhetische Behandlung unter fachärztlicher Anleitung</p>
-                    {group.description && (
-                      <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-                        {group.description}
+                  <div className="px-5 pt-5 pb-5">
+                    {/* Title */}
+                    <h2 className="text-xl font-bold leading-tight">{group.firstCourse.treatment_title || group.title}</h2>
+
+                    {/* Service description as subtitle */}
+                    {group.firstCourse.service_description && (
+                      <p className="text-sm text-muted-foreground mt-1.5">
+                        {group.firstCourse.service_description}
                       </p>
                     )}
-                  </div>
 
-                  {/* Details stack: Leistung, Ärzt:in, Ort */}
-                  <div className="px-5 py-4 space-y-3">
-                    {group.firstCourse.service_description && (
-                      <div className="flex gap-3">
-                        <Stethoscope className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                        <div>
-                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leistung</span>
-                          <p className="text-sm mt-0.5">{group.firstCourse.service_description}</p>
-                        </div>
-                      </div>
-                    )}
-                    {group.firstCourse.instructor && (
-                      <div className="flex gap-3">
-                        <UserRound className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                        <div>
-                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leitende:r Ärzt:in</span>
-                          <p className="text-sm mt-0.5">{group.firstCourse.instructor}</p>
-                        </div>
-                      </div>
-                    )}
-                    {group.firstCourse.location && (
-                      <div className="flex gap-3">
-                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                        <div>
-                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Ort</span>
-                          <p className="text-sm mt-0.5">{group.firstCourse.location}</p>
-                        </div>
-                      </div>
-                    )}
+                    {/* Compact details */}
+                    <div className="mt-4 space-y-1.5 text-sm text-muted-foreground">
+                      {group.firstCourse.instructor && (
+                        <p>Unter Anleitung von <span className="text-foreground font-medium">{group.firstCourse.instructor}</span></p>
+                      )}
+                      {group.firstCourse.location && (
+                        <p className="flex items-center gap-1.5">
+                          <MapPin className="h-3.5 w-3.5 shrink-0" />
+                          <span>{group.firstCourse.location}</span>
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   {/* CTA */}
-                  <div className="px-5 py-4">
+                  <div className="px-5 pb-5">
                     <Link href={`/book/privat/${group.firstCourse.id}`}>
-                      <Button className="w-full">Zu den Terminen</Button>
+                      <Button className="w-full">Termin buchen</Button>
                     </Link>
                   </div>
                 </CardContent>

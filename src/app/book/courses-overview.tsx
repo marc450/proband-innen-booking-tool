@@ -3,7 +3,7 @@
 import { AvailableSlot, Course } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, Euro, Stethoscope, MapPin, UserRound } from "lucide-react";
+import { ImageIcon, MapPin } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -89,70 +89,50 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
                 )}
 
                 <CardContent className="p-0">
-                  {/* Title + subtitle + description */}
-                  <div className="px-5 pt-5 pb-4">
-                    <h2 className="text-xl font-bold">{group.firstCourse.treatment_title || group.title}</h2>
-                    <p className="text-xs text-muted-foreground mt-1">Ästhetische Behandlung unter fachärztlicher Anleitung</p>
-                    {group.description && (
-                      <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-                        {group.description}
-                      </p>
-                    )}
-                  </div>
+                  <div className="px-5 pt-5 pb-5">
+                    {/* Title */}
+                    <h2 className="text-xl font-bold leading-tight">{group.firstCourse.treatment_title || group.title}</h2>
 
-                  {/* Details stack: Leistung, Richtpreis, Ärzt:in, Ort */}
-                  <div className="px-5 py-4 space-y-3">
+                    {/* Service description as subtitle */}
                     {group.firstCourse.service_description && (
-                      <div className="flex gap-3">
-                        <Stethoscope className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                        <div>
-                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leistung</span>
-                          <p className="text-sm mt-0.5">{group.firstCourse.service_description}</p>
-                        </div>
-                      </div>
+                      <p className="text-sm text-muted-foreground mt-1.5">
+                        {group.firstCourse.service_description}
+                      </p>
                     )}
+
+                    {/* Price highlight */}
                     {group.firstCourse.guide_price && (
-                      <div className="flex gap-3">
-                        <Euro className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                        <div>
-                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Richtpreis*</span>
-                          <p className="text-lg font-bold mt-0.5">{group.firstCourse.guide_price}</p>
-                        </div>
+                      <div className="mt-4 flex items-baseline gap-2">
+                        <span className="text-2xl font-bold">{group.firstCourse.guide_price}</span>
+                        <span className="text-xs text-muted-foreground">Richtpreis*</span>
                       </div>
                     )}
-                    {group.firstCourse.instructor && (
-                      <div className="flex gap-3">
-                        <UserRound className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                        <div>
-                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Leitende:r Ärzt:in</span>
-                          <p className="text-sm mt-0.5">{group.firstCourse.instructor}</p>
-                        </div>
-                      </div>
-                    )}
-                    {group.firstCourse.location && (
-                      <div className="flex gap-3">
-                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                        <div>
-                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Ort</span>
-                          <p className="text-sm mt-0.5">{group.firstCourse.location}</p>
-                        </div>
-                      </div>
+
+                    {/* Compact details */}
+                    <div className="mt-4 space-y-1.5 text-sm text-muted-foreground">
+                      {group.firstCourse.instructor && (
+                        <p>Unter Anleitung von <span className="text-foreground font-medium">{group.firstCourse.instructor}</span></p>
+                      )}
+                      {group.firstCourse.location && (
+                        <p className="flex items-center gap-1.5">
+                          <MapPin className="h-3.5 w-3.5 shrink-0" />
+                          <span>{group.firstCourse.location}</span>
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Disclaimer footnote */}
+                    {group.firstCourse.guide_price && (
+                      <p className="mt-4 text-[11px] text-muted-foreground/70 leading-relaxed">
+                        *Bezahlung nach der Behandlung vor Ort. Abrechnung nach GOÄ. Der genaue Umfang und die Kosten werden im Aufklärungsgespräch festgelegt.
+                      </p>
                     )}
                   </div>
-
-                  {/* Pricing disclaimer */}
-                  {group.firstCourse.guide_price && (
-                    <div className="mx-5 mb-4 bg-muted/50 rounded-md px-3 py-2">
-                      <p className="text-[11px] text-muted-foreground leading-relaxed">
-                        *Die Bezahlung erfolgt nach der Behandlung vor Ort. Die Abrechnung erfolgt nach GOÄ. Der Richtpreis dient als Orientierung. Der genaue Behandlungsumfang und die endgültigen Kosten werden im persönlichen Aufklärungsgespräch mit der behandelnden Ärzt:in festgelegt.
-                      </p>
-                    </div>
-                  )}
 
                   {/* CTA */}
-                  <div className="px-5 py-4">
+                  <div className="px-5 pb-5">
                     <Link href={`/book/${group.firstCourse.id}`}>
-                      <Button className="w-full">Zu den Terminen</Button>
+                      <Button className="w-full">Termin buchen</Button>
                     </Link>
                   </div>
                 </CardContent>
