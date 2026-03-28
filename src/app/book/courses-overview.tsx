@@ -96,51 +96,52 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
                   </div>
                 )}
 
-                <CardContent className="p-0">
-                  <div className="px-5 pt-5 pb-5">
-                    {/* Title */}
-                    <h2 className="text-xl font-bold leading-tight">{group.firstCourse.treatment_title || group.title}</h2>
-
-                    {/* Service description as subtitle */}
+                <CardContent className="p-0 flex flex-col">
+                  {/* Title + description */}
+                  <div className="px-5 pt-5">
+                    <h2 className="text-lg font-bold leading-tight">{group.firstCourse.treatment_title || group.title}</h2>
                     {group.firstCourse.service_description && (
-                      <p className="text-sm text-muted-foreground mt-1.5">
+                      <p className="text-sm text-muted-foreground mt-1">
                         {group.firstCourse.service_description}
-                      </p>
-                    )}
-
-                    {/* Price highlight */}
-                    {group.firstCourse.guide_price && (
-                      <div className="mt-4 flex items-baseline gap-2">
-                        <span className="text-2xl font-bold">{group.firstCourse.guide_price}</span>
-                        <span className="text-xs text-muted-foreground">Richtpreis*</span>
-                      </div>
-                    )}
-
-                    {/* Compact details */}
-                    <div className="mt-4 space-y-1.5 text-sm text-muted-foreground">
-                      {group.firstCourse.instructor && (
-                        <p>Unter Anleitung von <span className="text-foreground font-medium">{group.firstCourse.instructor}</span></p>
-                      )}
-                      {group.firstCourse.location && (
-                        <p className="flex items-center gap-1.5">
-                          <MapPin className="h-3.5 w-3.5 shrink-0" />
-                          <span>{group.firstCourse.location}</span>
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Disclaimer footnote */}
-                    {group.firstCourse.guide_price && (
-                      <p className="mt-4 text-[11px] text-muted-foreground/70 leading-relaxed">
-                        *Bezahlung nach der Behandlung vor Ort. Abrechnung nach GOÄ. Der genaue Umfang und die Kosten werden im Aufklärungsgespräch festgelegt.
                       </p>
                     )}
                   </div>
 
+                  {/* Divider */}
+                  <div className="mx-5 mt-4 border-t border-border/50" />
+
+                  {/* Price + details row */}
+                  <div className="px-5 pt-4 flex items-start justify-between gap-4">
+                    {group.firstCourse.guide_price && (
+                      <div>
+                        <span className="text-2xl font-bold">{group.firstCourse.guide_price}</span>
+                        <span className="text-xs text-muted-foreground ml-1.5">Richtpreis*</span>
+                      </div>
+                    )}
+                    <div className="text-sm text-muted-foreground text-right space-y-0.5">
+                      {group.firstCourse.instructor && (
+                        <p className="font-medium text-foreground">{group.firstCourse.instructor}</p>
+                      )}
+                      {group.firstCourse.location && (
+                        <p className="flex items-center justify-end gap-1">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          {group.firstCourse.location}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Disclaimer */}
+                  {group.firstCourse.guide_price && (
+                    <p className="px-5 mt-3 text-[11px] text-muted-foreground/60 leading-relaxed">
+                      *Bezahlung nach der Behandlung vor Ort. Abrechnung nach GOÄ.
+                    </p>
+                  )}
+
                   {/* CTA */}
-                  <div className="px-5 pb-5">
+                  <div className="px-5 pb-5 mt-4">
                     <Link href={`/book/${group.firstCourse.id}`}>
-                      <Button className="w-full">Termin buchen</Button>
+                      <Button className="w-full">Termine anschauen</Button>
                     </Link>
                   </div>
                 </CardContent>
