@@ -1,5 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@14.14.0?target=deno";
+import Stripe from "npm:stripe@14.14.0";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
   apiVersion: "2023-10-16",
@@ -11,7 +10,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -26,8 +25,6 @@ serve(async (req) => {
       );
     }
 
-    // Create Checkout Session in setup mode
-    // Stripe collects name, email, phone, and billing address
     const session = await stripe.checkout.sessions.create({
       mode: "setup",
       locale: "de",
@@ -58,7 +55,7 @@ serve(async (req) => {
   } catch (err) {
     console.error("Error creating checkout session:", err);
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: err instanceof Error ? err.message : String(err) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
