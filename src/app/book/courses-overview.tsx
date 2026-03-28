@@ -96,9 +96,9 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
                   </div>
                 )}
 
-                <CardContent className="p-0 flex flex-col">
+                <CardContent className="p-5 flex flex-col gap-3">
                   {/* Title + description */}
-                  <div className="px-5 pt-5">
+                  <div>
                     <h2 className="text-lg font-bold leading-tight">{group.firstCourse.treatment_title || group.title}</h2>
                     {group.firstCourse.service_description && (
                       <p className="text-sm text-muted-foreground mt-1">
@@ -107,43 +107,37 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
                     )}
                   </div>
 
-                  {/* Divider */}
-                  <div className="mx-5 mt-4 border-t border-border/50" />
+                  <hr className="border-border/40" />
 
-                  {/* Price + details row */}
-                  <div className="px-5 pt-4 flex items-start justify-between gap-4">
+                  {/* Details */}
+                  <div className="space-y-2">
                     {group.firstCourse.guide_price && (
-                      <div>
+                      <div className="flex items-baseline gap-1.5">
                         <span className="text-2xl font-bold">{group.firstCourse.guide_price}</span>
-                        <span className="text-xs text-muted-foreground ml-1.5">Richtpreis*</span>
+                        <span className="text-xs text-muted-foreground">Richtpreis*</span>
                       </div>
                     )}
-                    <div className="text-sm text-muted-foreground text-right space-y-0.5">
-                      {group.firstCourse.instructor && (
-                        <p className="font-medium text-foreground">{group.firstCourse.instructor}</p>
-                      )}
-                      {group.firstCourse.location && (
-                        <p className="flex items-center justify-end gap-1">
-                          <MapPin className="h-3 w-3 shrink-0" />
-                          {group.firstCourse.location}
-                        </p>
-                      )}
-                    </div>
+                    {group.firstCourse.instructor && (
+                      <p className="text-sm font-medium">{group.firstCourse.instructor}</p>
+                    )}
+                    {group.firstCourse.location && (
+                      <p className="text-sm text-muted-foreground flex items-start gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                        <span>{group.firstCourse.location}</span>
+                      </p>
+                    )}
                   </div>
 
-                  {/* Disclaimer */}
                   {group.firstCourse.guide_price && (
-                    <p className="px-5 mt-3 text-[11px] text-muted-foreground/60 leading-relaxed">
+                    <p className="text-[11px] text-muted-foreground/60">
                       *Bezahlung nach der Behandlung vor Ort. Abrechnung nach GOÄ.
                     </p>
                   )}
 
                   {/* CTA */}
-                  <div className="px-5 pb-5 mt-4">
-                    <Link href={`/book/${group.firstCourse.id}`}>
-                      <Button className="w-full">Termine anschauen</Button>
-                    </Link>
-                  </div>
+                  <Link href={`/book/${group.firstCourse.id}`}>
+                    <Button className="w-full">Termine anschauen</Button>
+                  </Link>
                 </CardContent>
               </Card>
             ))}
