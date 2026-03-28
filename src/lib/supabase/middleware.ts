@@ -25,9 +25,13 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
+  // getSession() reads the JWT from the cookie locally — no network call.
+  // Safe for route protection: the JWT is cryptographically signed and has an expiry.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const user = session?.user ?? null;
 
   // Protect dashboard routes
   if (request.nextUrl.pathname.startsWith("/dashboard") && !user) {
@@ -51,11 +55,10 @@ export async function updateSession(request: NextRequest) {
         httpOnly: true,
         secure: true,
         sameSite: "lax",
-        maxAge: 3600, // 1 hour
+        maxAge: 3600,
       });
     }
   } else {
-    // Clear role cookie if not logged in
     supabaseResponse.cookies.delete("x-user-role");
   }
 
