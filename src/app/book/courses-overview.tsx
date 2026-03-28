@@ -61,7 +61,7 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
           <h1 className="font-bold mb-4" style={{ fontFamily: "Roboto", fontSize: "4.8rem", fontWeight: "bold", letterSpacing: "0rem", lineHeight: 1.25, textTransform: "none" }}>
             Behandlungstermin buchen
           </h1>
-          <p className="text-muted-foreground max-w-xl mx-auto">
+          <p className="text-muted-foreground max-w-xl mx-auto" style={{ fontFamily: "Roboto", fontWeight: "normal", fontSize: "1.7rem", letterSpacing: "0rem", lineHeight: 1.65, textTransform: "none" }}>
             Wähle Dein gewünschtes Behandlungsangebot und buche Deinen Termin als Proband:in in einem unserer ästhetischen Schulungskurse.
           </p>
         </div>
