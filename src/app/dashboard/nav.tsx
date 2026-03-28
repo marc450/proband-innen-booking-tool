@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/dashboard", label: "Kurse" },
   { href: "/dashboard/templates", label: "Kursvorlagen" },
+  { href: "/dashboard/dozenten", label: "Dozent:innen" },
   { href: "/dashboard/bookings", label: "Buchungen" },
   { href: "/dashboard/patients", label: "Proband:innen" },
   { href: "/dashboard/campaigns", label: "Kampagnen" },

@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { createClient } from "@/lib/supabase/server";
-import { CourseTemplate } from "@/lib/types";
+import { CourseTemplate, Dozent } from "@/lib/types";
 import { TemplatesManager } from "../templates-manager";
 
 export default async function TemplatesPage() {
@@ -12,7 +12,15 @@ export default async function TemplatesPage() {
     .select("*")
     .order("created_at", { ascending: false });
 
+  const { data: dozenten } = await supabase
+    .from("dozenten")
+    .select("*")
+    .order("last_name", { ascending: true });
+
   return (
-    <TemplatesManager initialTemplates={(templates as CourseTemplate[]) || []} />
+    <TemplatesManager
+      initialTemplates={(templates as CourseTemplate[]) || []}
+      dozenten={(dozenten as Dozent[]) || []}
+    />
   );
 }

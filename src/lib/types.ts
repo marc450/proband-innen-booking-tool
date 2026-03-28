@@ -9,6 +9,14 @@ export interface CourseTemplate {
   created_at: string;
 }
 
+export interface Dozent {
+  id: string;
+  title: string | null;
+  first_name: string;
+  last_name: string;
+  created_at: string;
+}
+
 export type BookingStatus = "booked" | "attended" | "no_show" | "cancelled";
 
 export interface Course {

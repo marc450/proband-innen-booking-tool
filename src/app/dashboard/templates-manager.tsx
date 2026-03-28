@@ -2,12 +2,19 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { CourseTemplate } from "@/lib/types";
+import { CourseTemplate, Dozent } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -20,10 +27,15 @@ import Image from "next/image";
 
 interface Props {
   initialTemplates: CourseTemplate[];
+  dozenten: Dozent[];
   onTemplatesChange?: (templates: CourseTemplate[]) => void;
 }
 
-export function TemplatesManager({ initialTemplates, onTemplatesChange }: Props) {
+function formatDozentName(d: Dozent): string {
+  return [d.title, d.first_name, d.last_name].filter(Boolean).join(" ");
+}
+
+export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange }: Props) {
   const [templates, setTemplates] = useState(initialTemplates);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<CourseTemplate | null>(null);
@@ -133,7 +145,7 @@ export function TemplatesManager({ initialTemplates, onTemplatesChange }: Props)
       description: description || null,
       service_description: serviceDescription || null,
       guide_price: guidePrice || null,
-      instructor: instructor || null,
+      instructor: (instructor && instructor !== "__none") ? instructor : null,
       image_url: imageUrl || null,
     };
 
@@ -238,13 +250,26 @@ export function TemplatesManager({ initialTemplates, onTemplatesChange }: Props)
                 />
               </div>
               <div>
-                <Label htmlFor="tpl_instructor">Kursleitende:r Ärzt:in</Label>
-                <Input
-                  id="tpl_instructor"
-                  value={instructor}
-                  onChange={(e) => setInstructor(e.target.value)}
-                  placeholder="z.B. Dr. med. Anna Müller"
-                />
+                <Label>Kursleitende:r Ärzt:in</Label>
+                {dozenten.length > 0 ? (
+                  <Select value={instructor} onValueChange={(v) => setInstructor(v || "")}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Dozent:in auswählen..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">Keine:r ausgewählt</SelectItem>
+                      {dozenten.map((d) => (
+                        <SelectItem key={d.id} value={formatDozentName(d)}>
+                          {formatDozentName(d)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Bitte erstelle zuerst Dozent:innen-Profile unter &quot;Dozent:innen&quot;.
+                  </p>
+                )}
               </div>
             </div>
 
