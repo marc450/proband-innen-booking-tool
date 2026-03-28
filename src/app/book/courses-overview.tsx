@@ -58,7 +58,7 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
 
       <main className="max-w-5xl mx-auto px-4 py-16">
         <div className="text-center mb-14">
-          <h1 className="text-4xl font-bold uppercase tracking-tight mb-4">
+          <h1 className="font-bold mb-4" style={{ fontFamily: "Roboto", fontSize: "4.8rem", fontWeight: "bold", letterSpacing: "0rem", lineHeight: 1.25, textTransform: "none" }}>
             Behandlungstermin buchen
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
