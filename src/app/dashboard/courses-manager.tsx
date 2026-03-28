@@ -20,7 +20,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { format, parseISO } from "date-fns";
@@ -324,9 +323,14 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                   <Label>Kursvorlage *</Label>
                   <Select value={selectedTemplateId} onValueChange={(v) => setSelectedTemplateId(v || "")}>
                     <SelectTrigger className="mt-1 w-full">
-                      <SelectValue placeholder="Vorlage auswählen..." />
+                      <span className="flex flex-1 text-left line-clamp-1">
+                        {selectedTemplateId
+                          ? templates.find((t) => t.id === selectedTemplateId)?.title ?? "Vorlage auswählen..."
+                          : <span className="text-muted-foreground">Vorlage auswählen...</span>
+                        }
+                      </span>
                     </SelectTrigger>
-                    <SelectContent className="min-w-[var(--radix-select-trigger-width)]">
+                    <SelectContent>
                       {templates.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
                           {t.title}

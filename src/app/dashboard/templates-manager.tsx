@@ -13,7 +13,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import {
   Dialog,
@@ -253,7 +252,12 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
                 {dozenten.length > 0 ? (
                   <Select value={instructor} onValueChange={(v) => setInstructor(v || "")}>
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Dozent:in auswählen..." />
+                      <span className="flex flex-1 text-left line-clamp-1">
+                        {instructor && instructor !== "__none"
+                          ? instructor
+                          : <span className="text-muted-foreground">Dozent:in auswählen...</span>
+                        }
+                      </span>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none">Keine:r ausgewählt</SelectItem>
