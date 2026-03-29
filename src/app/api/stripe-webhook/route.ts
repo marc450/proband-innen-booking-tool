@@ -79,38 +79,33 @@ async function enrollInLearnWorlds(email: string, courseId: string, firstName?: 
   const baseUrl = LEARNWORLDS_API_URL.replace(/\/$/, "");
 
   try {
-    // Step 1: Create user (no-op if already exists — LW returns 200 or 409)
+    // Step 1: Create user (no-op if already exists)
+    const createBody: Record<string, unknown> = { email, username: email };
+    if (firstName) createBody.first_name = firstName;
+    if (lastName) createBody.last_name = lastName;
+
     const createRes = await fetch(`${baseUrl}/v2/users`, {
       method: "POST",
       headers,
-      body: JSON.stringify({
-        email,
-        username: email,
-        ...(firstName || lastName ? { fields: { firstName, lastName } } : {}),
-      }),
+      body: JSON.stringify(createBody),
     });
+    const createText = await createRes.text();
+    console.log(`LearnWorlds create user: ${createRes.status} ${createText}`);
 
-    if (!createRes.ok && createRes.status !== 409) {
-      const text = await createRes.text();
-      console.error("LearnWorlds create user error:", createRes.status, text);
-      // Continue anyway — user might already exist
-    } else {
-      console.log(`LearnWorlds: user created/exists for ${email}`);
-    }
-
-    // Step 2: Enroll in course
-    const enrollRes = await fetch(`${baseUrl}/v2/users/${encodeURIComponent(email)}/enrollment`, {
+    // Step 2: Enroll in course via /v2/enrollments
+    const enrollRes = await fetch(`${baseUrl}/v2/enrollments`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ productId: courseId, productType: "course" }),
+      body: JSON.stringify({ user_id: email, product_id: courseId, product_type: "course" }),
     });
 
+    const enrollText = await enrollRes.text();
     if (!enrollRes.ok) {
-      console.error("LearnWorlds enrollment error:", enrollRes.status, await enrollRes.text());
+      console.error(`LearnWorlds enrollment error: ${enrollRes.status} ${enrollText}`);
       return;
     }
 
-    console.log(`LearnWorlds: enrolled ${email} in course ${courseId}`);
+    console.log(`LearnWorlds: enrolled ${email} in course ${courseId} — ${enrollText}`);
   } catch (err) {
     console.error("LearnWorlds enrollment failed:", err);
   }
