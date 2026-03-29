@@ -29,8 +29,18 @@ interface Props {
   dozentUsers: DozentUser[];
 }
 
-type SortKey = "status" | "date" | "time" | "course" | "instructor" | "seats";
+type SortKey = "status" | "date" | "time" | "course" | "instructor" | "seats" | "duration";
 type SortDir = "asc" | "desc";
+
+const MONTHS_DE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+
+function dateToLabelDe(dateIso: string): string {
+  const d = new Date(dateIso + "T12:00:00");
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = MONTHS_DE[d.getMonth()];
+  const year = d.getFullYear();
+  return `${day}. ${month} ${year}`;
+}
 
 function dozentDisplayName(d: DozentUser): string {
   return [d.title, d.first_name, d.last_name].filter(Boolean).join(" ");
@@ -47,7 +57,6 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   // Create form state
   const [formTemplateId, setFormTemplateId] = useState("");
   const [formDateIso, setFormDateIso] = useState("");
-  const [formLabelDe, setFormLabelDe] = useState("");
   const [formInstructor, setFormInstructor] = useState("");
   const [formMaxSeats, setFormMaxSeats] = useState("5");
   const [formAddress, setFormAddress] = useState("HYSTUDIO, Rosa-Luxemburg-Straße 20, 10178 Berlin, Deutschland");
@@ -86,6 +95,8 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
           return (a.instructor_name || "").localeCompare(b.instructor_name || "") * dir;
         case "seats":
           return (a.booked_seats / a.max_seats - b.booked_seats / b.max_seats) * dir;
+        case "duration":
+          return ((a.duration_minutes || 0) - (b.duration_minutes || 0)) * dir;
         default:
           return 0;
       }
@@ -114,6 +125,20 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
     if (!error) {
       setSessions((prev) =>
         prev.map((s) => (s.id === id ? { ...s, [field]: value } : s))
+      );
+    }
+  };
+
+  // Update date + auto-derive label
+  const updateDate = async (id: string, dateIso: string) => {
+    const label = dateToLabelDe(dateIso);
+    const { error } = await supabase
+      .from("course_sessions")
+      .update({ date_iso: dateIso, label_de: label })
+      .eq("id", id);
+    if (!error) {
+      setSessions((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, date_iso: dateIso, label_de: label } : s))
       );
     }
   };
@@ -153,12 +178,13 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   // Create
   const handleCreate = async () => {
     if (!formTemplateId || !formDateIso) return;
+    const label = dateToLabelDe(formDateIso);
     const { data, error } = await supabase
       .from("course_sessions")
       .insert({
         template_id: formTemplateId,
         date_iso: formDateIso,
-        label_de: formLabelDe || null,
+        label_de: label,
         instructor_name: formInstructor || null,
         max_seats: parseInt(formMaxSeats) || 5,
         address: formAddress || null,
@@ -171,7 +197,6 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
       setSessions((prev) => [...prev, data].sort((a, b) => a.date_iso.localeCompare(b.date_iso)));
       setShowCreateDialog(false);
       setFormDateIso("");
-      setFormLabelDe("");
       setFormInstructor("");
     }
   };
@@ -188,7 +213,8 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
           <TableRow>
             <SortableHead label="Status" sortKeyName="status" className="w-[100px]" />
             <SortableHead label="Datum" sortKeyName="date" />
-            <SortableHead label="Startzeit" sortKeyName="time" className="w-[100px]" />
+            <SortableHead label="Startzeit" sortKeyName="time" className="w-[90px]" />
+            <SortableHead label="Dauer" sortKeyName="duration" className="w-[80px]" />
             <SortableHead label="Kurs" sortKeyName="course" />
             <SortableHead label="Dozent:in" sortKeyName="instructor" />
             <SortableHead label="Plätze" sortKeyName="seats" className="w-[80px]" />
@@ -198,14 +224,14 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
         <TableBody>
           {sortedSessions.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                 Noch keine Kurstermine erstellt.
               </TableCell>
             </TableRow>
           ) : (
             sortedSessions.map((session) => (
               <TableRow key={session.id}>
-                {/* Status dropdown */}
+                {/* Status */}
                 <TableCell>
                   <select
                     value={session.is_live ? "live" : "offline"}
@@ -221,33 +247,41 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                   </select>
                 </TableCell>
 
-                {/* Date - inline editable */}
+                {/* Date */}
                 <TableCell>
                   <input
                     type="date"
                     value={session.date_iso}
-                    onChange={(e) => {
-                      updateField(session.id, "date_iso", e.target.value);
-                      // Also update label_de with a formatted version
-                      const d = new Date(e.target.value + "T12:00:00");
-                      const label = d.toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" });
-                      updateField(session.id, "label_de", label);
-                    }}
+                    onChange={(e) => updateDate(session.id, e.target.value)}
                     className="border-0 bg-transparent font-medium text-sm p-0 focus:outline-none focus:ring-0 w-[130px]"
                   />
                 </TableCell>
 
-                {/* Start time - inline editable */}
+                {/* Start time - simple text input */}
                 <TableCell>
                   <input
-                    type="time"
+                    type="text"
                     value={session.start_time || ""}
                     onChange={(e) => updateField(session.id, "start_time", e.target.value)}
-                    className="border-0 bg-transparent text-sm p-0 focus:outline-none focus:ring-0 w-[80px]"
+                    placeholder="10:00"
+                    className="border-0 bg-transparent text-sm p-0 focus:outline-none focus:ring-0 w-[60px]"
                   />
                 </TableCell>
 
-                {/* Course - inline editable */}
+                {/* Duration */}
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      value={session.duration_minutes || ""}
+                      onChange={(e) => updateField(session.id, "duration_minutes", parseInt(e.target.value) || 0)}
+                      className="border-0 bg-transparent text-sm p-0 focus:outline-none focus:ring-0 w-[45px]"
+                    />
+                    <span className="text-xs text-muted-foreground">min</span>
+                  </div>
+                </TableCell>
+
+                {/* Course */}
                 <TableCell>
                   <select
                     value={session.template_id}
@@ -262,7 +296,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                   </select>
                 </TableCell>
 
-                {/* Instructor - select from dozent users */}
+                {/* Instructor */}
                 <TableCell>
                   <select
                     value={session.instructor_name || ""}
@@ -273,12 +307,9 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                     {dozentUsers.map((d) => {
                       const name = dozentDisplayName(d);
                       return (
-                        <option key={d.id} value={name}>
-                          {name}
-                        </option>
+                        <option key={d.id} value={name}>{name}</option>
                       );
                     })}
-                    {/* Keep current value if not in dozent list */}
                     {session.instructor_name && !dozentUsers.some((d) => dozentDisplayName(d) === session.instructor_name) && (
                       <option value={session.instructor_name}>{session.instructor_name}</option>
                     )}
@@ -317,7 +348,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
         </TableBody>
       </Table>
 
-      {/* Create dialog - only for new sessions */}
+      {/* Create dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="sm:max-w-[480px]">
           <DialogHeader>
@@ -339,15 +370,9 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 ))}
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>Datum</Label>
-                <Input type="date" value={formDateIso} onChange={(e) => setFormDateIso(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Label (z.B. "15. Feb 2026")</Label>
-                <Input value={formLabelDe} onChange={(e) => setFormLabelDe(e.target.value)} placeholder="15. Feb 2026" />
-              </div>
+            <div className="space-y-1.5">
+              <Label>Datum</Label>
+              <Input type="date" value={formDateIso} onChange={(e) => setFormDateIso(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
