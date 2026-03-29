@@ -433,6 +433,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
               firstname: firstName,
               lastname: lastName,
               phone: phone || undefined,
+              contact_type: "Doctor - Customer",
             },
           }),
         });

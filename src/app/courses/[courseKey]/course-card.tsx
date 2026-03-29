@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Check, Loader2, Award, ChevronDown } from "lucide-react";
+import { TerminUpdateModal } from "./termin-update-modal";
 
 interface CourseDate {
   id: string;
@@ -44,6 +45,7 @@ export function CourseCard({
 }: CourseCardProps) {
   const [selectedDate, setSelectedDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showTerminModal, setShowTerminModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
@@ -199,14 +201,17 @@ export function CourseCard({
               )}
             </button>
 
-            <a
-              href="https://share-eu1.hsforms.com/2FeNQT7foRlSp5S4dYfmW8A"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full text-center text-sm text-gray-500 hover:text-[#0066FF] underline-offset-4 hover:underline font-normal transition-colors mt-0"
+            <button
+              type="button"
+              onClick={() => setShowTerminModal(true)}
+              className="block w-full text-center text-sm text-gray-500 hover:text-[#0066FF] underline-offset-4 hover:underline font-normal transition-colors mt-0 cursor-pointer"
             >
               Schickt mir Termin-Updates
-            </a>
+            </button>
+
+            {showTerminModal && (
+              <TerminUpdateModal onClose={() => setShowTerminModal(false)} />
+            )}
           </div>
         )}
       </div>
