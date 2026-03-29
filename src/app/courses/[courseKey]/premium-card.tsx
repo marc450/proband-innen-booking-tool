@@ -30,13 +30,14 @@ interface PremiumCardProps {
 const INCLUDED_COURSES: IncludedCourse[] = [
   {
     name: "Kombikurs Botulinum",
-    description: "Erlerne die praxisnahe Theorie zur professionellen Behandlung von Patient:innen.",
-    cmePoints: "10",
-    duration: "~6 Stunden",
+    description: "Ideal für Einsteiger:innen: Lerne die Theorie online und die Praxis vor Ort. Onlinekurs + Praxiskurs in einem Paket.",
+    cmePoints: "22",
+    duration: "Online ~6h + Praxistag ~6h",
     features: [
-      "Anatomie, Techniken & Stolpersteine",
+      "Vollständiger Onlinekurs inkludiert",
+      "Vollständiger Praxiskurs inkludiert",
+      "Üben an echten Proband:innen unter Aufsicht",
       "Glabella, Stirn, Krähenfüße",
-      "Schönheitsideale & Hintergründe",
     ],
   },
   {
@@ -280,17 +281,19 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
             <span className="text-base text-[#0066FF] font-bold">Bis zu 49 CME-Punkte</span>
           </li>
           {INCLUDED_COURSES.map((course, index) => (
-            <li key={index} className="flex items-center gap-2">
-              <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" />
-              <span className="text-base text-black">{course.name}</span>
-              <button
-                type="button"
-                onClick={() => setInfoModal(course)}
-                className="text-[#0066FF] hover:text-[#0055DD] flex-shrink-0 transition-colors"
-                aria-label={`Info zu ${course.name}`}
-              >
-                <Info className="w-4 h-4" />
-              </button>
+            <li key={index} className="flex items-start gap-2">
+              <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+              <span className="text-base text-black">
+                {course.name}
+                <button
+                  type="button"
+                  onClick={() => setInfoModal(course)}
+                  className="text-[#0066FF] hover:text-[#0055DD] transition-colors inline-flex align-middle ml-1.5"
+                  aria-label={`Info zu ${course.name}`}
+                >
+                  <Info className="w-4 h-4" />
+                </button>
+              </span>
             </li>
           ))}
         </ul>
