@@ -458,7 +458,6 @@ export async function POST(req: NextRequest) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             text: [
-              `*Neue Buchung* :tada:`,
               `*Typ:* Standard`,
               `*Kurs:* ${courseTitle}`,
               `*Datum:* ${formattedDate}${formattedTime ? `, ${formattedTime}` : ""}`,

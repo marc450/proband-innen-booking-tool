@@ -385,7 +385,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: [
-            `*Neue Kursbuchung* :mortar_board:`,
             `*Name:* ${fullName}`,
             `*Typ:* ${courseType}`,
             `*Kurs:* ${courseLabelDe}`,
