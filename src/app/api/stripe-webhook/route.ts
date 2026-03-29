@@ -18,6 +18,7 @@ const SLACK_WEBHOOK_URL_COURSES = process.env.SLACK_WEBHOOK_URL_COURSES;
 const LEARNWORLDS_API_URL = process.env.LEARNWORLDS_API_URL;
 const LEARNWORLDS_CLIENT_ID = process.env.LEARNWORLDS_CLIENT_ID;
 const LEARNWORLDS_ACCESS_TOKEN = process.env.LEARNWORLDS_ACCESS_TOKEN;
+const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN;
 
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 
@@ -396,6 +397,57 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       });
     } catch (slackErr) {
       console.error("Failed to send Slack notification:", slackErr);
+    }
+  }
+
+  // Create or update HubSpot contact (Auszubildende only, not patients)
+  if (HUBSPOT_ACCESS_TOKEN && email) {
+    try {
+      // Search for existing contact by email
+      const searchRes = await fetch("https://api.hubapi.com/crm/v3/objects/contacts/search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${HUBSPOT_ACCESS_TOKEN}`,
+        },
+        body: JSON.stringify({
+          filterGroups: [{
+            filters: [{ propertyName: "email", operator: "EQ", value: email }],
+          }],
+        }),
+      });
+
+      const searchData = await searchRes.json();
+
+      if (searchData.total === 0) {
+        // Create new contact
+        const createRes = await fetch("https://api.hubapi.com/crm/v3/objects/contacts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${HUBSPOT_ACCESS_TOKEN}`,
+          },
+          body: JSON.stringify({
+            properties: {
+              email,
+              firstname: firstName,
+              lastname: lastName,
+              phone: phone || undefined,
+            },
+          }),
+        });
+
+        if (createRes.ok) {
+          console.log(`HubSpot: created contact for ${email}`);
+        } else {
+          const errText = await createRes.text();
+          console.error(`HubSpot create error: ${createRes.status} ${errText}`);
+        }
+      } else {
+        console.log(`HubSpot: contact already exists for ${email}`);
+      }
+    } catch (hsErr) {
+      console.error("HubSpot error:", hsErr);
     }
   }
 
