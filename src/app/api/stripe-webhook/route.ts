@@ -64,21 +64,44 @@ async function fetchInvoicePdf(invoiceId: string): Promise<{ filename: string; c
   }
 }
 
-// LearnWorlds: enroll user in course using pre-generated access token
-async function enrollInLearnWorlds(email: string, courseId: string) {
+// LearnWorlds: create user if needed, then enroll in course
+async function enrollInLearnWorlds(email: string, courseId: string, firstName?: string, lastName?: string) {
   if (!LEARNWORLDS_API_URL || !LEARNWORLDS_CLIENT_ID || !LEARNWORLDS_ACCESS_TOKEN) {
     console.warn("LearnWorlds env vars not configured, skipping enrollment");
     return;
   }
 
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${LEARNWORLDS_ACCESS_TOKEN}`,
+    "Lw-Client": LEARNWORLDS_CLIENT_ID,
+  };
+  const baseUrl = LEARNWORLDS_API_URL.replace(/\/$/, "");
+
   try {
-    const enrollRes = await fetch(`${LEARNWORLDS_API_URL}v2/users/${encodeURIComponent(email)}/enrollment`, {
+    // Step 1: Create user (no-op if already exists — LW returns 200 or 409)
+    const createRes = await fetch(`${baseUrl}/v2/users`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${LEARNWORLDS_ACCESS_TOKEN}`,
-        "Lw-Client": LEARNWORLDS_CLIENT_ID,
-      },
+      headers,
+      body: JSON.stringify({
+        email,
+        username: email,
+        ...(firstName || lastName ? { fields: { firstName, lastName } } : {}),
+      }),
+    });
+
+    if (!createRes.ok && createRes.status !== 409) {
+      const text = await createRes.text();
+      console.error("LearnWorlds create user error:", createRes.status, text);
+      // Continue anyway — user might already exist
+    } else {
+      console.log(`LearnWorlds: user created/exists for ${email}`);
+    }
+
+    // Step 2: Enroll in course
+    const enrollRes = await fetch(`${baseUrl}/v2/users/${encodeURIComponent(email)}/enrollment`, {
+      method: "POST",
+      headers,
       body: JSON.stringify({ productId: courseId, productType: "course" }),
     });
 
@@ -317,7 +340,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const onlineCourseId = template?.online_course_id;
     if (onlineCourseId) {
       try {
-        await enrollInLearnWorlds(email, onlineCourseId);
+        await enrollInLearnWorlds(email, onlineCourseId, firstName, lastName);
       } catch (lwErr) {
         console.error("LearnWorlds enrollment error:", lwErr);
       }
