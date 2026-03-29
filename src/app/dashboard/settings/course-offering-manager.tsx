@@ -211,6 +211,26 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
 
   const confirmDelete = async () => {
     if (!deleteId) return;
+
+    // Delete dependent records first (courses table has no ON DELETE CASCADE)
+    // course_sessions cascade automatically, but course_bookings reference both
+    // Delete course_bookings that reference this template
+    await supabase.from("course_bookings").delete().eq("template_id", deleteId);
+    // Delete courses (Proband:innen) that use this template
+    // First delete bookings for slots in those courses
+    const { data: courses } = await supabase.from("courses").select("id").eq("template_id", deleteId);
+    if (courses && courses.length > 0) {
+      const courseIds = courses.map((c: { id: string }) => c.id);
+      const { data: slots } = await supabase.from("slots").select("id").in("course_id", courseIds);
+      if (slots && slots.length > 0) {
+        const slotIds = slots.map((s: { id: string }) => s.id);
+        await supabase.from("bookings").delete().in("slot_id", slotIds);
+        await supabase.from("slots").delete().in("course_id", courseIds);
+      }
+      await supabase.from("courses").delete().in("id", courseIds);
+    }
+
+    // Now delete the template (course_sessions cascade automatically)
     const { error } = await supabase.from("course_templates").delete().eq("id", deleteId);
     if (!error) {
       setOfferings((prev) => prev.filter((o) => o.id !== deleteId));
