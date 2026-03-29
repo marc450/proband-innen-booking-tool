@@ -116,7 +116,7 @@ async function enrollInLearnWorlds(email: string, courseId: string, firstName?: 
     const enrollRes = await fetch(`${baseUrl}/v2/users/${lwUserId}/enrollment`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ productId: courseId, productType: "course" }),
+      body: JSON.stringify({ productId: courseId, productType: "course", price: 0 }),
     });
 
     const enrollText = await enrollRes.text();
