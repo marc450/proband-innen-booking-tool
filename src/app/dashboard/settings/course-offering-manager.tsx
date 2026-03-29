@@ -377,6 +377,78 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
               </div>
             </div>
 
+            {/* Descriptions (shown in Stripe checkout) */}
+            <div>
+              <h3 className="font-semibold mb-2">Beschreibungen (Stripe Checkout)</h3>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label>Onlinekurs</Label>
+                  <textarea
+                    value={form.description_online}
+                    onChange={(e) => updateField("description_online", e.target.value)}
+                    rows={2}
+                    className="w-full border rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Praxiskurs</Label>
+                  <textarea
+                    value={form.description_praxis}
+                    onChange={(e) => updateField("description_praxis", e.target.value)}
+                    rows={2}
+                    className="w-full border rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Kombikurs</Label>
+                  <textarea
+                    value={form.description_kombi}
+                    onChange={(e) => updateField("description_kombi", e.target.value)}
+                    rows={2}
+                    className="w-full border rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Success URLs */}
+            <div>
+              <h3 className="font-semibold mb-2">Success URLs</h3>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label>Onlinekurs</Label>
+                  <Input value={form.success_url_online} onChange={(e) => updateField("success_url_online", e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Praxiskurs</Label>
+                  <Input value={form.success_url_praxis} onChange={(e) => updateField("success_url_praxis", e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Kombikurs</Label>
+                  <Input value={form.success_url_kombi} onChange={(e) => updateField("success_url_kombi", e.target.value)} />
+                </div>
+              </div>
+            </div>
+
+            {/* Cancel URLs */}
+            <div>
+              <h3 className="font-semibold mb-2">Cancel URLs</h3>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label>Onlinekurs</Label>
+                  <Input value={form.cancel_url_online} onChange={(e) => updateField("cancel_url_online", e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Praxiskurs</Label>
+                  <Input value={form.cancel_url_praxis} onChange={(e) => updateField("cancel_url_praxis", e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Kombikurs</Label>
+                  <Input value={form.cancel_url_kombi} onChange={(e) => updateField("cancel_url_kombi", e.target.value)} />
+                </div>
+              </div>
+            </div>
+
             {/* LearnWorlds */}
             <div className="space-y-1.5">
               <Label>LearnWorlds Online Course ID (optional)</Label>
