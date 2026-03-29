@@ -31,9 +31,9 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       {/* Logo */}
       <img
-        src="/logo.svg"
+        src="/logo-centered.svg"
         alt="EPHIA by Dr. Sophia"
-        className="w-56 mb-10"
+        className="w-48 mb-10"
       />
 
       <div className="w-full max-w-sm bg-white rounded-[10px] shadow-sm p-8">
