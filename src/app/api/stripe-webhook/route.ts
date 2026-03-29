@@ -334,6 +334,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (email && (courseType === "Onlinekurs" || courseType === "Kombikurs")) {
     const onlineCourseId = template?.online_course_id;
     if (onlineCourseId) {
+      console.log(`LearnWorlds: enrolling ${email} in course ID "${onlineCourseId}"`);
       try {
         await enrollInLearnWorlds(email, onlineCourseId, firstName, lastName);
       } catch (lwErr) {
