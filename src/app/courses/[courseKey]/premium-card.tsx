@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { Check, Loader2, Award, ChevronDown, Info, X } from "lucide-react";
 import { TerminUpdateModal } from "./termin-update-modal";
 
@@ -75,21 +76,21 @@ const INCLUDED_COURSES: IncludedCourse[] = [
 ];
 
 function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose: () => void }) {
-  const [topOffset, setTopOffset] = React.useState(0);
+  const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
-    setTopOffset(window.scrollY);
+    setMounted(true);
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
 
-  return (
+  const modal = (
     <div
-      className="absolute left-0 right-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(0,0,0,0.5)", top: topOffset, height: "100vh" }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
+      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-xl w-full max-w-md shadow-2xl relative">
+      <div className="bg-white rounded-xl w-full max-w-md shadow-2xl relative my-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
@@ -128,6 +129,9 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+  return ReactDOM.createPortal(modal, document.body);
 }
 
 export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }: PremiumCardProps) {

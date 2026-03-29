@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { X, Loader2, CheckCircle } from "lucide-react";
 
 interface Props {
@@ -18,13 +19,10 @@ export function TerminUpdateModal({ onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-  const modalRef = useRef<HTMLDivElement>(null);
-  const [topOffset, setTopOffset] = useState(0);
+  const [mounted, setMounted] = useState(false);
 
-  // In iframes, `fixed` covers the full iframe height, not the visible viewport.
-  // Use absolute positioning relative to current scroll position instead.
   useEffect(() => {
-    setTopOffset(window.scrollY);
+    setMounted(true);
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
@@ -57,14 +55,13 @@ export function TerminUpdateModal({ onClose }: Props) {
     }
   };
 
-  return (
+  const modal = (
     <div
-      className="absolute left-0 right-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(0,0,0,0.5)", top: topOffset, height: "100vh" }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
+      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div ref={modalRef} className="bg-white rounded-xl w-full max-w-md shadow-2xl relative">
-        {/* Close button */}
+      <div className="bg-white rounded-xl w-full max-w-md shadow-2xl relative my-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
@@ -96,7 +93,6 @@ export function TerminUpdateModal({ onClose }: Props) {
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Titel */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">Titel</label>
                   <select
@@ -110,7 +106,6 @@ export function TerminUpdateModal({ onClose }: Props) {
                   </select>
                 </div>
 
-                {/* Vorname / Nachname */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">Vorname <span className="text-red-400">*</span></label>
@@ -136,7 +131,6 @@ export function TerminUpdateModal({ onClose }: Props) {
                   </div>
                 </div>
 
-                {/* E-Mail */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">E-Mail <span className="text-red-400">*</span></label>
                   <input
@@ -149,7 +143,6 @@ export function TerminUpdateModal({ onClose }: Props) {
                   />
                 </div>
 
-                {/* Datenschutz */}
                 <div className="flex items-start gap-3 pt-1">
                   <input
                     type="checkbox"
@@ -197,4 +190,7 @@ export function TerminUpdateModal({ onClose }: Props) {
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+  return ReactDOM.createPortal(modal, document.body);
 }
