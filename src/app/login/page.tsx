@@ -35,10 +35,17 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      {/* Logo */}
+      <img
+        src="/logo.svg"
+        alt="EPHIA by Dr. Sophia"
+        className="w-48 mb-8"
+      />
+
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>EPHIA Staff Login</CardTitle>
+          <CardTitle className="text-center text-xl">Staff Login</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">

@@ -173,8 +173,8 @@ export function DashboardNav({
       <header className="bg-white border-b">
         <div className="max-w-screen-xl mx-auto px-6 flex items-center justify-between h-14">
           <div className="flex items-center gap-8">
-            <Link href="/dashboard" className="font-bold text-lg">
-              EPHIA Admin
+            <Link href="/dashboard" className="flex items-center">
+              <img src="/logo.svg" alt="EPHIA" className="h-6" />
             </Link>
             <nav className="flex items-center gap-4">
               {navGroups.map((group) => (
