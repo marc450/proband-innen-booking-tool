@@ -190,7 +190,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <CourseCard
             title="Onlinekurs"
-            description={template.description_online || "Erlerne die Theorie zur Behandlung."}
+            description={template.description_online || "Erlerne die praxisnahe Theorie zur professionellen Behandlung von Patient:innen."}
             price={formatPrice(template.price_gross_online)}
             features={onlinekursFeatures}
             bookingType="direct"
