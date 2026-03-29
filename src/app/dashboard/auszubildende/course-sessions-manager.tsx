@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Copy, Trash2, ArrowUpDown } from "lucide-react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import type { CourseTemplate, CourseSession, DozentUser } from "@/lib/types";
 
 interface Props {
@@ -51,6 +52,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   const [sessions, setSessions] = useState(initialSessions);
   const [templates] = useState(initialTemplates);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
@@ -167,12 +169,13 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   };
 
   // Delete
-  const deleteSession = async (id: string) => {
-    if (!confirm("Termin wirklich löschen?")) return;
-    const { error } = await supabase.from("course_sessions").delete().eq("id", id);
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from("course_sessions").delete().eq("id", deleteId);
     if (!error) {
-      setSessions((prev) => prev.filter((s) => s.id !== id));
+      setSessions((prev) => prev.filter((s) => s.id !== deleteId));
     }
+    setDeleteId(null);
   };
 
   // Create
@@ -334,7 +337,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                       <Copy className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={() => deleteSession(session.id)}
+                      onClick={() => setDeleteId(session.id)}
                       className="p-1.5 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors"
                       title="Löschen"
                     >
@@ -347,6 +350,17 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
           )}
         </TableBody>
       </Table>
+
+      {/* Delete confirmation */}
+      <ConfirmDialog
+        open={!!deleteId}
+        title="Termin löschen"
+        description="Möchtest Du diesen Kurstermin wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
+        confirmLabel="Löschen"
+        variant="destructive"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+      />
 
       {/* Create dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
