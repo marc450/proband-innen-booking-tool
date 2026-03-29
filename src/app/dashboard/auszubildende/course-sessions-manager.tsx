@@ -283,9 +283,11 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
               >
                 <option value="">Alle</option>
-                {templates.map((t) => (
-                  <option key={t.id} value={t.id}>{t.course_label_de || t.title}</option>
-                ))}
+                {templates
+                  .filter((t) => sessions.some((s) => s.template_id === t.id))
+                  .map((t) => (
+                    <option key={t.id} value={t.id}>{t.course_label_de || t.title}</option>
+                  ))}
               </select>
             </TableHead>
             {/* Dozent:in filter */}
