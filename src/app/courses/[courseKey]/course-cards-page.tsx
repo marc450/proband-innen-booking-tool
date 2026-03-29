@@ -187,55 +187,71 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
           UNSERE KURSANGEBOTE
         </h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <CourseCard
-            title="Onlinekurs"
-            description="Erlerne die praxisnahe Theorie zur professionellen Behandlung von Patient:innen."
-            price={formatPrice(template.price_gross_online)}
-            features={onlinekursFeatures}
-            bookingType="direct"
-            buttonText="Onlinekurs buchen"
-            onBook={() => handleBooking("Onlinekurs")}
-            isLoading={loadingCheckout === "Onlinekurs-direct"}
-            cmePoints="10 CME"
-          />
+        {(() => {
+          const hasOnline = !!template.price_gross_online;
+          const hasPraxis = !!template.price_gross_praxis;
+          const hasKombi = !!template.price_gross_kombi;
+          const cardCount = [hasOnline, hasPraxis, hasKombi].filter(Boolean).length;
+          const gridCols = cardCount === 1 ? "lg:grid-cols-1 max-w-lg mx-auto" : cardCount === 2 ? "lg:grid-cols-2 max-w-4xl mx-auto" : "lg:grid-cols-3";
 
-          <CourseCard
-            title="Praxiskurs"
-            description={
-              <>
-                Wende Dein <strong className="font-bold">bereits existierendes</strong> theoretisches
-                Wissen in der Praxis an.
-              </>
-            }
-            price={formatPrice(template.price_gross_praxis)}
-            features={praxiskursFeatures}
-            bookingType="dropdown"
-            dates={dynamicDates}
-            buttonText="Praxiskurs buchen"
-            additionalInfo="Kursstandort: Berlin-Mitte"
-            onBook={(sessionId) => handleBooking("Praxiskurs", sessionId)}
-            isLoading={loadingCheckout?.startsWith("Praxiskurs-") || false}
-            selectedDateForLoading={loadingCheckout?.replace("Praxiskurs-", "")}
-            cmePoints="12 CME"
-          />
+          return (
+            <div className={`grid grid-cols-1 ${gridCols} gap-8`}>
+              {hasOnline && (
+                <CourseCard
+                  title="Onlinekurs"
+                  description="Erlerne die praxisnahe Theorie zur professionellen Behandlung von Patient:innen."
+                  price={formatPrice(template.price_gross_online)}
+                  features={onlinekursFeatures}
+                  bookingType="direct"
+                  buttonText="Onlinekurs buchen"
+                  onBook={() => handleBooking("Onlinekurs")}
+                  isLoading={loadingCheckout === "Onlinekurs-direct"}
+                  cmePoints="10 CME"
+                />
+              )}
 
-          <CourseCard
-            title="Kombikurs"
-            description="Ideal für Einsteiger:innen: Lerne die Theorie online und die Praxis vor Ort."
-            price={formatPrice(template.price_gross_kombi)}
-            features={kombikursFeatures}
-            bookingType="dropdown"
-            dates={dynamicDates}
-            buttonText="Kombikurs buchen"
-            additionalInfo="Kursstandort: Berlin-Mitte"
-            onBook={(sessionId) => handleBooking("Kombikurs", sessionId)}
-            highlighted={true}
-            isLoading={loadingCheckout?.startsWith("Kombikurs-") || false}
-            selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
-            cmePoints="22 CME"
-          />
-        </div>
+              {hasPraxis && (
+                <CourseCard
+                  title="Praxiskurs"
+                  description={
+                    <>
+                      Wende Dein <strong className="font-bold">bereits existierendes</strong> theoretisches
+                      Wissen in der Praxis an.
+                    </>
+                  }
+                  price={formatPrice(template.price_gross_praxis)}
+                  features={praxiskursFeatures}
+                  bookingType="dropdown"
+                  dates={dynamicDates}
+                  buttonText="Praxiskurs buchen"
+                  additionalInfo="Kursstandort: Berlin-Mitte"
+                  onBook={(sessionId) => handleBooking("Praxiskurs", sessionId)}
+                  isLoading={loadingCheckout?.startsWith("Praxiskurs-") || false}
+                  selectedDateForLoading={loadingCheckout?.replace("Praxiskurs-", "")}
+                  cmePoints="12 CME"
+                />
+              )}
+
+              {hasKombi && (
+                <CourseCard
+                  title="Kombikurs"
+                  description="Ideal für Einsteiger:innen: Lerne die Theorie online und die Praxis vor Ort."
+                  price={formatPrice(template.price_gross_kombi)}
+                  features={kombikursFeatures}
+                  bookingType="dropdown"
+                  dates={dynamicDates}
+                  buttonText="Kombikurs buchen"
+                  additionalInfo="Kursstandort: Berlin-Mitte"
+                  onBook={(sessionId) => handleBooking("Kombikurs", sessionId)}
+                  highlighted={true}
+                  isLoading={loadingCheckout?.startsWith("Kombikurs-") || false}
+                  selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
+                  cmePoints="22 CME"
+                />
+              )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
