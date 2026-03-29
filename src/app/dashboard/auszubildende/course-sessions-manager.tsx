@@ -227,80 +227,6 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
         <Button onClick={() => setShowCreateDialog(true)}>Neuen Termin erstellen</Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted-foreground font-medium">Dozent:in</label>
-          <select
-            value={filterInstructor}
-            onChange={(e) => setFilterInstructor(e.target.value)}
-            className="border rounded-md px-2.5 py-1.5 text-sm min-w-[160px] bg-background"
-          >
-            <option value="">Alle</option>
-            {Array.from(new Set(sessions.map((s) => s.instructor_name).filter(Boolean))).sort().map((name) => (
-              <option key={name!} value={name!}>{name}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted-foreground font-medium">Kurs</label>
-          <select
-            value={filterTemplate}
-            onChange={(e) => setFilterTemplate(e.target.value)}
-            className="border rounded-md px-2.5 py-1.5 text-sm min-w-[200px] bg-background"
-          >
-            <option value="">Alle</option>
-            {templates.map((t) => (
-              <option key={t.id} value={t.id}>{t.course_label_de || t.title}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted-foreground font-medium">Status</label>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="border rounded-md px-2.5 py-1.5 text-sm min-w-[120px] bg-background"
-          >
-            <option value="">Alle</option>
-            <option value="live">Live</option>
-            <option value="offline">Offline</option>
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted-foreground font-medium">Von</label>
-          <input
-            type="date"
-            value={filterDateFrom}
-            onChange={(e) => setFilterDateFrom(e.target.value)}
-            className="border rounded-md px-2.5 py-1.5 text-sm bg-background"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted-foreground font-medium">Bis</label>
-          <input
-            type="date"
-            value={filterDateTo}
-            onChange={(e) => setFilterDateTo(e.target.value)}
-            className="border rounded-md px-2.5 py-1.5 text-sm bg-background"
-          />
-        </div>
-        {(filterInstructor || filterTemplate || filterStatus || filterDateFrom || filterDateTo) && (
-          <button
-            onClick={() => {
-              setFilterInstructor("");
-              setFilterTemplate("");
-              setFilterStatus("");
-              setFilterDateFrom("");
-              setFilterDateTo("");
-            }}
-            className="text-sm text-muted-foreground hover:text-foreground underline pb-1.5"
-          >
-            Zurücksetzen
-          </button>
-        )}
-      </div>
-
       <Table>
         <TableHeader>
           <TableRow>
@@ -312,6 +238,88 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
             <SortableHead label="Dozent:in" sortKeyName="instructor" />
             <SortableHead label="Plätze" sortKeyName="seats" className="w-[80px]" />
             <TableHead className="w-[80px]">Aktionen</TableHead>
+          </TableRow>
+          {/* Filter row */}
+          <TableRow className="hover:bg-transparent">
+            {/* Status filter */}
+            <TableHead className="py-1.5">
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+              >
+                <option value="">Alle</option>
+                <option value="live">Live</option>
+                <option value="offline">Offline</option>
+              </select>
+            </TableHead>
+            {/* Von (above Datum) */}
+            <TableHead className="py-1.5">
+              <input
+                type="date"
+                value={filterDateFrom}
+                onChange={(e) => setFilterDateFrom(e.target.value)}
+                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 font-normal text-foreground"
+                placeholder="Von"
+              />
+            </TableHead>
+            {/* Bis (above Startzeit) */}
+            <TableHead className="py-1.5 w-[90px]">
+              <input
+                type="date"
+                value={filterDateTo}
+                onChange={(e) => setFilterDateTo(e.target.value)}
+                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 font-normal text-foreground"
+                placeholder="Bis"
+              />
+            </TableHead>
+            {/* Dauer — empty */}
+            <TableHead className="py-1.5" />
+            {/* Kurs filter */}
+            <TableHead className="py-1.5">
+              <select
+                value={filterTemplate}
+                onChange={(e) => setFilterTemplate(e.target.value)}
+                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+              >
+                <option value="">Alle</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>{t.course_label_de || t.title}</option>
+                ))}
+              </select>
+            </TableHead>
+            {/* Dozent:in filter */}
+            <TableHead className="py-1.5">
+              <select
+                value={filterInstructor}
+                onChange={(e) => setFilterInstructor(e.target.value)}
+                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+              >
+                <option value="">Alle</option>
+                {Array.from(new Set(sessions.map((s) => s.instructor_name).filter(Boolean))).sort().map((name) => (
+                  <option key={name!} value={name!}>{name}</option>
+                ))}
+              </select>
+            </TableHead>
+            {/* Plätze — empty */}
+            <TableHead className="py-1.5" />
+            {/* Reset button */}
+            <TableHead className="py-1.5">
+              {(filterInstructor || filterTemplate || filterStatus || filterDateFrom || filterDateTo) && (
+                <button
+                  onClick={() => {
+                    setFilterInstructor("");
+                    setFilterTemplate("");
+                    setFilterStatus("");
+                    setFilterDateFrom("");
+                    setFilterDateTo("");
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground underline whitespace-nowrap"
+                >
+                  Zurücksetzen
+                </button>
+              )}
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
