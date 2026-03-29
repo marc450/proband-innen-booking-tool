@@ -653,7 +653,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Kurse & Slots</h1>
+        <h1 className="text-2xl font-bold">Behandlungsangebote</h1>
         {isAdmin && (
           <Button onClick={() => setCourseDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
