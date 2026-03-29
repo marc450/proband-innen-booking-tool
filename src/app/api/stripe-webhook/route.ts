@@ -308,7 +308,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         }
         emailHtml = buildPraxiskursEmail(firstName, courseName, praxisInfo);
       } else {
-        const courseName = courseType === "Premium" ? "Premium Starterpaket" : (template?.name_kombi || courseLabelDe);
+        const courseName = courseType === "Premium" ? "Komplettpaket" : (template?.name_kombi || courseLabelDe);
         emailSubject = `Buchungsbestätigung: ${courseName}`;
 
         let praxisInfo = { address: "", dateFormatted: sessionLabel, startTime: "", endTime: "", instructor: "" };
@@ -364,7 +364,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     }
   }
 
-  // Premium Starterpaket: enroll in all 4 online courses
+  // Komplettpaket: enroll in all 4 online courses
   if (email && courseType === "Premium") {
     const premiumCourseIds = [
       "grundkurs-botulinum-online",

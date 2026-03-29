@@ -28,7 +28,7 @@ interface PremiumCardProps {
 
 const INCLUDED_COURSES: IncludedCourse[] = [
   {
-    name: "Grundkurs Botulinum",
+    name: "Kombikurs Botulinum",
     description: "Erlerne die praxisnahe Theorie zur professionellen Behandlung von Patient:innen.",
     cmePoints: "10",
     duration: "~6 Stunden",
@@ -39,7 +39,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
     ],
   },
   {
-    name: "Aufbaukurs Botulinum: periorale Zone",
+    name: "Aufbaukurs Botulinum: Periorale Zone",
     description: "Lerne mit diesem spezialisierten Onlinekurs die Behandlung der sensiblen perioralen Zone mit präzisen Techniken zu meistern.",
     cmePoints: "10",
     duration: "~6 Stunden",
@@ -50,7 +50,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
     ],
   },
   {
-    name: "Aufbaukurs Botulinum: therapeutische Indikationen",
+    name: "Aufbaukurs Botulinum: Therapeutische Indikationen",
     description: "Erweitere Deine Kompetenz um therapeutische Anwendungen von Botulinum.",
     cmePoints: "10",
     duration: "~6 Stunden",
@@ -170,9 +170,9 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
           <Award className="w-4 h-4" />
           <span className="text-sm font-bold">49 CME</span>
         </div>
-        <h2 className="text-3xl font-bold text-black mb-4 pr-24">Premium Starterpaket</h2>
+        <h2 className="text-3xl font-bold text-black mb-4 pr-24">Komplettpaket</h2>
         <p className="text-black mb-3 mt-3 min-h-[3.5rem]">
-          Das Komplettpaket: 4 Onlinekurse + Praxiskurs in einem Bundle.
+          Das ideale Starterpaket damit Du Dich sicher fühlst: 1 Praxiskurs + 4 Onlinekurse in einem Bundle.
         </p>
       </div>
 
@@ -245,7 +245,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
                 Wird geladen...
               </>
             ) : (
-              "Premium Starterpaket buchen"
+              "Komplettpaket buchen"
             )}
           </button>
         </div>
@@ -253,12 +253,16 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
 
       {/* Included courses */}
       <div className="border-t border-gray-200 pt-6 mt-auto px-8 pb-8">
-        <h3 className="font-bold text-black mb-4">Im Starterpaket inkludiert:</h3>
+        <h3 className="font-bold text-black mb-4">Im Komplettpaket inkludiert:</h3>
         <ul className="space-y-2">
+          <li className="flex items-start gap-2">
+            <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+            <span className="text-base text-[#0066FF] font-bold">Bis zu 49 CME-Punkte</span>
+          </li>
           {INCLUDED_COURSES.map((course, index) => (
             <li key={index} className="flex items-start gap-2">
               <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
-              <span className="text-base text-black flex-1">{course.name}</span>
+              <span className="text-base text-black">{course.name}</span>
               <button
                 type="button"
                 onClick={() => setInfoModal(course)}
@@ -269,10 +273,6 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
               </button>
             </li>
           ))}
-          <li className="flex items-start gap-2">
-            <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
-            <span className="text-base text-[#0066FF] font-bold">Praxiskurs Botulinum (vor Ort)</span>
-          </li>
         </ul>
       </div>
 

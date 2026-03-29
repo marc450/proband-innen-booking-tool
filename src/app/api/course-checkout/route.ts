@@ -96,8 +96,8 @@ export async function POST(req: NextRequest) {
       successUrl = template.success_url_praxis || "https://www.ephia.de/vielen-lieben-dank-praxiskurs";
       cancelUrl = template.cancel_url_praxis || "https://www.ephia.de";
     } else if (isPremium) {
-      // Premium Starterpaket: hardcoded 10% discount on EUR 2.220
-      productName = `Premium Starterpaket – ${sessionLabel}`;
+      // Komplettpaket: hardcoded 10% discount on EUR 2.220
+      productName = `Komplettpaket – ${sessionLabel}`;
       description = "4 Onlinekurse + Praxiskurs Botulinum";
       grossPrice = 2220;
       successUrl = template.success_url_kombi || "https://www.ephia.de/vielen-lieben-dank";
