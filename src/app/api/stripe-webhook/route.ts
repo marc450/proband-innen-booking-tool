@@ -90,7 +90,6 @@ async function enrollInLearnWorlds(email: string, courseId: string, firstName?: 
       body: JSON.stringify(createBody),
     });
     const createText = await createRes.text();
-    console.log(`LearnWorlds create user: ${createRes.status} ${createText}`);
 
     let lwUserId: string | null = null;
 
@@ -103,7 +102,6 @@ async function enrollInLearnWorlds(email: string, courseId: string, firstName?: 
       // User already exists — fetch by email to get their ID
       const getRes = await fetch(`${baseUrl}/v2/users/${encodeURIComponent(email)}`, { headers });
       const getText = await getRes.text();
-      console.log(`LearnWorlds get user: ${getRes.status} ${getText}`);
       try { lwUserId = JSON.parse(getText)?.id ?? null; } catch { /* ignore */ }
     }
 
@@ -354,8 +352,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (email && (courseType === "Onlinekurs" || courseType === "Kombikurs")) {
     const onlineCourseId = template?.online_course_id;
     if (onlineCourseId) {
-      console.log(`LearnWorlds: enrolling ${email} in course ID "${onlineCourseId}"`);
-      try {
+        try {
         await enrollInLearnWorlds(email, onlineCourseId, firstName, lastName);
       } catch (lwErr) {
         console.error("LearnWorlds enrollment error:", lwErr);
