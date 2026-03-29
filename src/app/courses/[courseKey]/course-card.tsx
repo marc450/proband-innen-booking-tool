@@ -159,7 +159,7 @@ export function CourseCard({
                           setSelectedDate(date.id);
                           setDropdownOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between px-4 py-3 text-sm text-left transition-colors ${
+                        className={`w-full flex items-center justify-between px-4 py-2 text-sm text-left transition-colors ${
                           !date.available
                             ? "text-gray-400 cursor-not-allowed"
                             : selectedDate === date.id
