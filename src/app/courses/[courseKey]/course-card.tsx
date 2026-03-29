@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Check, Loader2, Award } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { Check, Loader2, Award, ChevronDown } from "lucide-react";
 
 interface CourseDate {
   id: string;
@@ -43,6 +43,21 @@ export function CourseCard({
   cmePoints,
 }: CourseCardProps) {
   const [selectedDate, setSelectedDate] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedDateObj = dates.find((d) => d.id === selectedDate);
 
   const handleBook = () => {
     if (bookingType === "dropdown") {
@@ -106,25 +121,62 @@ export function CourseCard({
           </div>
         ) : (
           <div className="space-y-4 mb-6">
-            {/* Native select for reliability in iframes */}
-            <select
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full bg-white border-2 border-[#0066FF] text-[#0066FF] font-semibold py-3.5 px-4 rounded-md appearance-none cursor-pointer"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%230066FF' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                backgroundPosition: "right 0.75rem center",
-                backgroundRepeat: "no-repeat",
-                backgroundSize: "1.25em 1.25em",
-              }}
-            >
-              <option value="" disabled>Termine anschauen</option>
-              {dates.map((date) => (
-                <option key={date.id} value={date.id} disabled={!date.available}>
-                  {date.label}{date.availabilityTag ? ` — ${date.availabilityTag}` : ""}
-                </option>
-              ))}
-            </select>
+            {/* Custom dropdown with colored availability badges */}
+            <div ref={dropdownRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="w-full bg-white border-2 border-[#0066FF] text-[#0066FF] font-semibold py-3.5 px-4 rounded-md cursor-pointer flex items-center justify-between"
+              >
+                <span className={selectedDateObj ? "" : "opacity-70"}>
+                  {selectedDateObj ? selectedDateObj.label : "Termine anschauen"}
+                </span>
+                <ChevronDown className={`w-5 h-5 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {dropdownOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[280px] overflow-y-auto">
+                  {dates.map((date) => {
+                    let badgeClasses = "px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap";
+                    if (!date.available) {
+                      badgeClasses += " bg-slate-100 text-slate-500";
+                    } else if (date.availabilityLevel === "low") {
+                      badgeClasses += " bg-[#FAEBE1] text-[#B5475F]";
+                    } else if (date.availabilityLevel === "medium") {
+                      badgeClasses += " bg-amber-100 text-amber-700";
+                    } else if (date.availabilityLevel === "ok") {
+                      badgeClasses += " bg-emerald-100 text-emerald-700";
+                    } else {
+                      badgeClasses += " bg-slate-100 text-slate-600";
+                    }
+
+                    return (
+                      <button
+                        key={date.id}
+                        type="button"
+                        disabled={!date.available}
+                        onClick={() => {
+                          setSelectedDate(date.id);
+                          setDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-4 py-3 text-sm text-left transition-colors ${
+                          !date.available
+                            ? "text-gray-400 cursor-not-allowed"
+                            : selectedDate === date.id
+                              ? "bg-blue-50 font-semibold text-black"
+                              : "font-semibold text-black hover:bg-gray-50"
+                        }`}
+                      >
+                        <span className="truncate mr-3">{date.label}</span>
+                        {date.availabilityTag && (
+                          <span className={badgeClasses}>{date.availabilityTag}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             <button
               onClick={handleBook}
