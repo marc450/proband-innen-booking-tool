@@ -16,7 +16,7 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 const LEARNWORLDS_API_URL = process.env.LEARNWORLDS_API_URL;
 const LEARNWORLDS_CLIENT_ID = process.env.LEARNWORLDS_CLIENT_ID;
-const LEARNWORLDS_CLIENT_SECRET = process.env.LEARNWORLDS_CLIENT_SECRET;
+const LEARNWORLDS_ACCESS_TOKEN = process.env.LEARNWORLDS_ACCESS_TOKEN;
 
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 
@@ -64,39 +64,19 @@ async function fetchInvoicePdf(invoiceId: string): Promise<{ filename: string; c
   }
 }
 
-// LearnWorlds: get OAuth access token, then enroll user in course
+// LearnWorlds: enroll user in course using pre-generated access token
 async function enrollInLearnWorlds(email: string, courseId: string) {
-  if (!LEARNWORLDS_API_URL || !LEARNWORLDS_CLIENT_ID || !LEARNWORLDS_CLIENT_SECRET) {
+  if (!LEARNWORLDS_API_URL || !LEARNWORLDS_CLIENT_ID || !LEARNWORLDS_ACCESS_TOKEN) {
     console.warn("LearnWorlds env vars not configured, skipping enrollment");
     return;
   }
 
   try {
-    // Step 1: Get access token via OAuth2 client credentials
-    const tokenRes = await fetch(`${LEARNWORLDS_API_URL}v2/oauth2/access_token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        client_id: LEARNWORLDS_CLIENT_ID,
-        client_secret: LEARNWORLDS_CLIENT_SECRET,
-        grant_type: "client_credentials",
-      }),
-    });
-
-    if (!tokenRes.ok) {
-      console.error("LearnWorlds token error:", tokenRes.status, await tokenRes.text());
-      return;
-    }
-
-    const tokenData = await tokenRes.json();
-    const accessToken = tokenData.access_token;
-
-    // Step 2: Enroll user in course (LW auto-creates user if not found)
     const enrollRes = await fetch(`${LEARNWORLDS_API_URL}v2/users/${encodeURIComponent(email)}/enrollment`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${LEARNWORLDS_ACCESS_TOKEN}`,
         "Lw-Client": LEARNWORLDS_CLIENT_ID,
       },
       body: JSON.stringify({ productId: courseId, productType: "course" }),
