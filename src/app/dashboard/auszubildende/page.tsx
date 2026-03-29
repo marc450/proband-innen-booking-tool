@@ -1,12 +1,12 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { CourseSessionsManager } from "./course-sessions-manager";
+import { CourseSessionsOverview } from "./course-sessions-overview";
 
 export const dynamic = "force-dynamic";
 
 export default async function AuszubildendePage() {
   const supabase = createAdminClient();
 
-  const [{ data: templates }, { data: sessions }, { data: dozentUsers }] = await Promise.all([
+  const [{ data: templates }, { data: sessions }] = await Promise.all([
     supabase
       .from("course_templates")
       .select("*")
@@ -16,18 +16,12 @@ export default async function AuszubildendePage() {
       .from("course_sessions")
       .select("*")
       .order("date_iso", { ascending: true }),
-    supabase
-      .from("profiles")
-      .select("id, title, first_name, last_name")
-      .eq("is_dozent", true)
-      .order("last_name", { ascending: true }),
   ]);
 
   return (
-    <CourseSessionsManager
+    <CourseSessionsOverview
       initialTemplates={templates ?? []}
       initialSessions={sessions ?? []}
-      dozentUsers={dozentUsers ?? []}
     />
   );
 }

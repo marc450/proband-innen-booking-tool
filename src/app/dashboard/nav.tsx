@@ -30,7 +30,7 @@ const navGroups = [
   {
     label: "Auszubildende",
     items: [
-      { href: "/dashboard/auszubildende", label: "Kurse", exact: true },
+      { href: "/dashboard/auszubildende", label: "Kurstermine", exact: true },
       { href: "/dashboard/auszubildende/buchungen", label: "Buchungen" },
     ],
   },
