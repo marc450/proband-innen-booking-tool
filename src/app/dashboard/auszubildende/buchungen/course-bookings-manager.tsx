@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FileText, ArrowRightLeft } from "lucide-react";
+import { FileText, ArrowRightLeft, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import Link from "next/link";
 import type { CourseBookingStatus } from "@/lib/types";
 
@@ -58,6 +59,7 @@ interface SessionOption {
 
 interface Props {
   initialBookings: BookingRow[];
+  isAdmin?: boolean;
 }
 
 const statusLabels: Record<CourseBookingStatus, string> = {
@@ -67,10 +69,12 @@ const statusLabels: Record<CourseBookingStatus, string> = {
   refunded: "Erstattet",
 };
 
-export function CourseBookingsManager({ initialBookings }: Props) {
+export function CourseBookingsManager({ initialBookings, isAdmin = false }: Props) {
   const supabase = createClient();
   const [bookings, setBookings] = useState(initialBookings);
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   // Session change state
   const [changeBooking, setChangeBooking] = useState<BookingRow | null>(null);
@@ -218,10 +222,64 @@ export function CourseBookingsManager({ initialBookings }: Props) {
     return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
   };
 
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selected.size === filtered.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filtered.map((b) => b.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+
+    // Free up seats for active bookings being deleted
+    for (const id of ids) {
+      const booking = bookings.find((b) => b.id === id);
+      if (booking?.session_id && booking.status !== "cancelled" && booking.status !== "refunded") {
+        await supabase.rpc("decrement_booked_seats", { p_session_id: booking.session_id });
+      }
+    }
+
+    const { error } = await supabase.from("course_bookings").delete().in("id", ids);
+    if (!error) {
+      setBookings((prev) => prev.filter((b) => !ids.includes(b.id)));
+      setSelected(new Set());
+    }
+    setDeleteConfirmOpen(false);
+  };
+
   return (
     <div className="space-y-6">
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        title="Buchungen löschen"
+        description={`Möchtest Du ${selected.size} Buchung${selected.size > 1 ? "en" : ""} wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`}
+        confirmLabel="Löschen"
+        variant="destructive"
+        onConfirm={handleBulkDelete}
+        onCancel={() => setDeleteConfirmOpen(false)}
+      />
+
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Kursbuchungen</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">Kursbuchungen</h1>
+          {isAdmin && selected.size > 0 && (
+            <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
+              <Trash2 className="h-4 w-4 mr-1" />
+              {selected.size} löschen
+            </Button>
+          )}
+        </div>
         <Input
           placeholder="Name oder E-Mail suchen..."
           value={search}
@@ -233,6 +291,16 @@ export function CourseBookingsManager({ initialBookings }: Props) {
       <Table>
         <TableHeader>
           <TableRow>
+            {isAdmin && (
+              <TableHead className="w-[40px]">
+                <input
+                  type="checkbox"
+                  checked={filtered.length > 0 && selected.size === filtered.length}
+                  onChange={toggleSelectAll}
+                  className="rounded"
+                />
+              </TableHead>
+            )}
             <TableHead>Name</TableHead>
             <TableHead>Kurstyp</TableHead>
             <TableHead>Kurs</TableHead>
@@ -241,13 +309,13 @@ export function CourseBookingsManager({ initialBookings }: Props) {
             <TableHead>Betrag</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-[60px]">Rechnung</TableHead>
-            <TableHead className="w-[50px]"></TableHead>
+            {isAdmin && <TableHead className="w-[50px]"></TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {filtered.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={isAdmin ? 10 : 9} className="text-center text-muted-foreground py-8">
                 {search ? "Keine Buchungen gefunden." : "Noch keine Kursbuchungen vorhanden."}
               </TableCell>
             </TableRow>
@@ -256,6 +324,16 @@ export function CourseBookingsManager({ initialBookings }: Props) {
               const name = [booking.first_name, booking.last_name].filter(Boolean).join(" ") || "–";
               return (
                 <TableRow key={booking.id}>
+                  {isAdmin && (
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        checked={selected.has(booking.id)}
+                        onChange={() => toggleSelect(booking.id)}
+                        className="rounded"
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="font-medium">
                     {booking.auszubildende_id ? (
                       <Link
@@ -282,15 +360,19 @@ export function CourseBookingsManager({ initialBookings }: Props) {
                   </TableCell>
                   <TableCell>{formatAmount(booking.amount_paid)}</TableCell>
                   <TableCell>
-                    <select
-                      value={booking.status}
-                      onChange={(e) => updateStatus(booking.id, e.target.value as CourseBookingStatus)}
-                      className="text-sm border rounded px-2 py-1"
-                    >
-                      {Object.entries(statusLabels).map(([value, label]) => (
-                        <option key={value} value={value}>{label}</option>
-                      ))}
-                    </select>
+                    {isAdmin ? (
+                      <select
+                        value={booking.status}
+                        onChange={(e) => updateStatus(booking.id, e.target.value as CourseBookingStatus)}
+                        className="text-sm border rounded px-2 py-1"
+                      >
+                        {Object.entries(statusLabels).map(([value, label]) => (
+                          <option key={value} value={value}>{label}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-sm">{statusLabels[booking.status]}</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     {booking.stripe_invoice_pdf_url ? (
@@ -307,17 +389,19 @@ export function CourseBookingsManager({ initialBookings }: Props) {
                       <span className="text-muted-foreground/40">–</span>
                     )}
                   </TableCell>
-                  <TableCell>
-                    {booking.session_id && (booking.status === "booked" || booking.status === "completed") && (
-                      <button
-                        onClick={() => openSessionChange(booking)}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                        title="Termin ändern"
-                      >
-                        <ArrowRightLeft className="h-4 w-4" />
-                      </button>
-                    )}
-                  </TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      {booking.session_id && (booking.status === "booked" || booking.status === "completed") && (
+                        <button
+                          onClick={() => openSessionChange(booking)}
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                          title="Termin ändern"
+                        >
+                          <ArrowRightLeft className="h-4 w-4" />
+                        </button>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               );
             })
