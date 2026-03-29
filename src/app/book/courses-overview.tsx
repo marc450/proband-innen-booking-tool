@@ -75,7 +75,7 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {groups.map((group) => (
-              <Card key={group.title} className="shadow-sm overflow-hidden pt-0 gap-0">
+              <Card key={group.title} className="shadow-sm overflow-hidden pt-0 gap-0 flex flex-col">
                 {/* Course image */}
                 {group.firstCourse.image_url ? (
                   <Image
@@ -96,9 +96,9 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
                   </div>
                 )}
 
-                <CardContent className="p-5 flex flex-col gap-3">
-                  {/* Title + description */}
-                  <div>
+                <CardContent className="p-5 flex flex-col flex-1 gap-3">
+                  {/* Title + description — grows to push everything else down */}
+                  <div className="flex-1">
                     <h2 className="text-lg font-bold leading-tight">{group.firstCourse.treatment_title || group.title}</h2>
                     {group.firstCourse.service_description && (
                       <p className="text-sm text-muted-foreground mt-1">
@@ -109,7 +109,7 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
 
                   <hr className="border-border/40" />
 
-                  {/* Details grid */}
+                  {/* Price */}
                   {group.firstCourse.guide_price && (
                     <div>
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Richtpreis</p>
