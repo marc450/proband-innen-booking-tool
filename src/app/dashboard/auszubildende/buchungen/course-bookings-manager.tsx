@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { FileText } from "lucide-react";
+import Link from "next/link";
 import type { CourseBookingStatus } from "@/lib/types";
 
 interface BookingRow {
@@ -25,6 +26,7 @@ interface BookingRow {
   amount_paid: number | null;
   status: CourseBookingStatus;
   created_at: string;
+  auszubildende_id: string | null;
   stripe_invoice_url: string | null;
   stripe_invoice_pdf_url: string | null;
   course_sessions: { date_iso: string; label_de: string | null; instructor_name: string | null } | null;
@@ -40,13 +42,6 @@ const statusLabels: Record<CourseBookingStatus, string> = {
   completed: "Abgeschlossen",
   cancelled: "Storniert",
   refunded: "Erstattet",
-};
-
-const statusVariants: Record<CourseBookingStatus, "default" | "secondary" | "destructive"> = {
-  booked: "default",
-  completed: "secondary",
-  cancelled: "destructive",
-  refunded: "destructive",
 };
 
 export function CourseBookingsManager({ initialBookings }: Props) {
@@ -76,6 +71,11 @@ export function CourseBookingsManager({ initialBookings }: Props) {
     return `€${(cents / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })}`;
   };
 
+  const formatDate = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -92,13 +92,13 @@ export function CourseBookingsManager({ initialBookings }: Props) {
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>E-Mail</TableHead>
             <TableHead>Kurstyp</TableHead>
             <TableHead>Kurs</TableHead>
-            <TableHead>Datum</TableHead>
+            <TableHead>Kursdatum</TableHead>
+            <TableHead>Kaufdatum</TableHead>
             <TableHead>Betrag</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="w-[80px]">Rechnung</TableHead>
+            <TableHead className="w-[60px]">Rechnung</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -109,50 +109,64 @@ export function CourseBookingsManager({ initialBookings }: Props) {
               </TableCell>
             </TableRow>
           ) : (
-            filtered.map((booking) => (
-              <TableRow key={booking.id}>
-                <TableCell className="font-medium">
-                  {[booking.first_name, booking.last_name].filter(Boolean).join(" ") || "–"}
-                </TableCell>
-                <TableCell>{booking.email || "–"}</TableCell>
-                <TableCell>
-                  <Badge variant="secondary">{booking.course_type}</Badge>
-                </TableCell>
-                <TableCell>
-                  {booking.course_templates?.course_label_de || booking.course_templates?.title || "–"}
-                </TableCell>
-                <TableCell>
-                  {booking.course_sessions?.label_de || booking.course_sessions?.date_iso || "–"}
-                </TableCell>
-                <TableCell>{formatAmount(booking.amount_paid)}</TableCell>
-                <TableCell>
-                  <select
-                    value={booking.status}
-                    onChange={(e) => updateStatus(booking.id, e.target.value as CourseBookingStatus)}
-                    className="text-sm border rounded px-2 py-1"
-                  >
-                    {Object.entries(statusLabels).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </select>
-                </TableCell>
-                <TableCell>
-                  {booking.stripe_invoice_pdf_url ? (
-                    <a
-                      href={booking.stripe_invoice_pdf_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-                      title="Rechnung herunterladen"
+            filtered.map((booking) => {
+              const name = [booking.first_name, booking.last_name].filter(Boolean).join(" ") || "–";
+              return (
+                <TableRow key={booking.id}>
+                  <TableCell className="font-medium">
+                    {booking.auszubildende_id ? (
+                      <Link
+                        href={`/dashboard/auszubildende/personen/${booking.auszubildende_id}`}
+                        className="text-primary hover:underline"
+                      >
+                        {name}
+                      </Link>
+                    ) : (
+                      name
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{booking.course_type}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    {booking.course_templates?.course_label_de || booking.course_templates?.title || "–"}
+                  </TableCell>
+                  <TableCell>
+                    {booking.course_sessions?.label_de || booking.course_sessions?.date_iso || "–"}
+                  </TableCell>
+                  <TableCell>
+                    {formatDate(booking.created_at)}
+                  </TableCell>
+                  <TableCell>{formatAmount(booking.amount_paid)}</TableCell>
+                  <TableCell>
+                    <select
+                      value={booking.status}
+                      onChange={(e) => updateStatus(booking.id, e.target.value as CourseBookingStatus)}
+                      className="text-sm border rounded px-2 py-1"
                     >
-                      <FileText className="h-4 w-4" />
-                    </a>
-                  ) : (
-                    <span className="text-muted-foreground/40">–</span>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))
+                      {Object.entries(statusLabels).map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
+                    </select>
+                  </TableCell>
+                  <TableCell>
+                    {booking.stripe_invoice_pdf_url ? (
+                      <a
+                        href={booking.stripe_invoice_pdf_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                        title="Rechnung herunterladen"
+                      >
+                        <FileText className="h-4 w-4" />
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground/40">–</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })
           )}
         </TableBody>
       </Table>

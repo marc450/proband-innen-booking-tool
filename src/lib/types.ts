@@ -161,6 +161,18 @@ export interface PatientWithBookings extends Patient {
   bookings: BookingWithDetails[];
 }
 
+export interface Auszubildende {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  notes: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export type CampaignStatus = "draft" | "scheduled" | "sending" | "sent" | "failed";
 
 export interface EmailCampaign {

@@ -171,6 +171,29 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
+  // Upsert auszubildende profile and link to booking
+  if (email) {
+    try {
+      const { data: azubi } = await supabase
+        .from("auszubildende")
+        .upsert(
+          { email, first_name: firstName, last_name: lastName, phone: phone || null },
+          { onConflict: "email" }
+        )
+        .select("id")
+        .single();
+
+      if (azubi && bookingId) {
+        await supabase
+          .from("course_bookings")
+          .update({ auszubildende_id: azubi.id })
+          .eq("id", bookingId);
+      }
+    } catch (err) {
+      console.error("Failed to upsert auszubildende:", err);
+    }
+  }
+
   // Fetch template for email content
   const { data: template } = await supabase
     .from("course_templates")
