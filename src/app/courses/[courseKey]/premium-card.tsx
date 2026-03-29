@@ -75,19 +75,21 @@ const INCLUDED_COURSES: IncludedCourse[] = [
 ];
 
 function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose: () => void }) {
-  const modalRef = React.useRef<HTMLDivElement>(null);
+  const [topOffset, setTopOffset] = React.useState(0);
 
   React.useEffect(() => {
-    modalRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTopOffset(window.scrollY);
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
   }, []);
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      className="absolute left-0 right-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: "rgba(0,0,0,0.5)", top: topOffset, height: "100vh" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div ref={modalRef} className="bg-white rounded-xl w-full max-w-md shadow-2xl relative">
+      <div className="bg-white rounded-xl w-full max-w-md shadow-2xl relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
@@ -218,7 +220,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
               </button>
 
               {dropdownOpen && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[280px] overflow-y-auto">
+                <div className="absolute z-50 w-full min-w-[340px] right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[280px] overflow-y-auto">
                   {dates.map((date) => (
                     <button
                       key={date.id}
@@ -236,7 +238,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
                             : "font-semibold text-black hover:bg-gray-50"
                       }`}
                     >
-                      <span className="truncate mr-3">{date.label}</span>
+                      <span className="mr-3">{date.label}</span>
                       {date.availabilityTag && (
                         <span className={getBadgeClasses(date)}>{date.availabilityTag}</span>
                       )}

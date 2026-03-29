@@ -19,11 +19,14 @@ export function TerminUpdateModal({ onClose }: Props) {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const modalRef = useRef<HTMLDivElement>(null);
+  const [topOffset, setTopOffset] = useState(0);
 
-  // Scroll modal into view — needed inside iframes where fixed positioning
-  // is relative to the full iframe height, not the visible viewport
+  // In iframes, `fixed` covers the full iframe height, not the visible viewport.
+  // Use absolute positioning relative to current scroll position instead.
   useEffect(() => {
-    modalRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTopOffset(window.scrollY);
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,8 +59,8 @@ export function TerminUpdateModal({ onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      className="absolute left-0 right-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: "rgba(0,0,0,0.5)", top: topOffset, height: "100vh" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div ref={modalRef} className="bg-white rounded-xl w-full max-w-md shadow-2xl relative">

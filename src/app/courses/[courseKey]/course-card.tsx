@@ -158,7 +158,7 @@ export function CourseCard({
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[280px] overflow-y-auto">
+                  <div className="absolute z-50 w-full min-w-[340px] right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[280px] overflow-y-auto">
                     {dates.map((date) => {
                       return (
                         <button
@@ -177,7 +177,7 @@ export function CourseCard({
                                 : "font-semibold text-black hover:bg-gray-50"
                           }`}
                         >
-                          <span className="truncate mr-3">{date.label}</span>
+                          <span className="mr-3">{date.label}</span>
                           {date.availabilityTag && (
                             <span className={getBadgeClasses(date)}>{date.availabilityTag}</span>
                           )}
