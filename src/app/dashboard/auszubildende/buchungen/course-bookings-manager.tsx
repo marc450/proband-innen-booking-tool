@@ -348,7 +348,20 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{booking.course_type}</Badge>
+                    <Badge
+                      variant="secondary"
+                      className={
+                        booking.course_type === "Onlinekurs"
+                          ? "bg-sky-100 text-sky-700 hover:bg-sky-100"
+                          : booking.course_type === "Praxiskurs"
+                          ? "bg-amber-100 text-amber-700 hover:bg-amber-100"
+                          : booking.course_type === "Kombikurs"
+                          ? "bg-violet-100 text-violet-700 hover:bg-violet-100"
+                          : ""
+                      }
+                    >
+                      {booking.course_type}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     {booking.course_templates?.course_label_de || booking.course_templates?.title || "–"}
