@@ -419,9 +419,23 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
 
                 {/* Seats */}
                 <TableCell>
-                  <span className={session.booked_seats >= session.max_seats ? "text-emerald-600 font-medium" : ""}>
-                    {session.booked_seats}/{session.max_seats}
-                  </span>
+                  <div className="flex items-center gap-0.5">
+                    <input
+                      type="number"
+                      min={0}
+                      value={session.booked_seats}
+                      onChange={(e) => updateField(session.id, "booked_seats", parseInt(e.target.value) || 0)}
+                      className={`w-8 text-center bg-transparent border-b border-transparent hover:border-gray-300 focus:border-primary focus:outline-none ${session.booked_seats >= session.max_seats ? "text-emerald-600 font-medium" : ""}`}
+                    />
+                    <span className="text-muted-foreground">/</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={session.max_seats}
+                      onChange={(e) => updateField(session.id, "max_seats", parseInt(e.target.value) || 0)}
+                      className={`w-8 text-center bg-transparent border-b border-transparent hover:border-gray-300 focus:border-primary focus:outline-none ${session.booked_seats >= session.max_seats ? "text-emerald-600 font-medium" : ""}`}
+                    />
+                  </div>
                 </TableCell>
 
                 {/* Actions */}
