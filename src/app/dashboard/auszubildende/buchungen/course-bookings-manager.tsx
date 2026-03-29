@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FileText, ArrowRightLeft, Trash2 } from "lucide-react";
+import { Search, Download, ArrowRightLeft, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -75,6 +75,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [invoicePreviewUrl, setInvoicePreviewUrl] = useState<string | null>(null);
 
   // Session change state
   const [changeBooking, setChangeBooking] = useState<BookingRow | null>(null);
@@ -219,7 +220,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
-    return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+    return d.toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" });
   };
 
   const toggleSelect = (id: string) => {
@@ -376,15 +377,24 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                   </TableCell>
                   <TableCell>
                     {booking.stripe_invoice_pdf_url ? (
-                      <a
-                        href={booking.stripe_invoice_pdf_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-                        title="Rechnung herunterladen"
-                      >
-                        <FileText className="h-4 w-4" />
-                      </a>
+                      <span className="inline-flex items-center gap-2">
+                        <button
+                          onClick={() => setInvoicePreviewUrl(booking.stripe_invoice_url || booking.stripe_invoice_pdf_url)}
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                          title="Rechnung ansehen"
+                        >
+                          <Search className="h-4 w-4" />
+                        </button>
+                        <a
+                          href={booking.stripe_invoice_pdf_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                          title="Rechnung herunterladen"
+                        >
+                          <Download className="h-4 w-4" />
+                        </a>
+                      </span>
                     ) : (
                       <span className="text-muted-foreground/40">–</span>
                     )}
@@ -408,6 +418,22 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
           )}
         </TableBody>
       </Table>
+
+      {/* Invoice preview modal */}
+      <Dialog open={!!invoicePreviewUrl} onOpenChange={(open) => { if (!open) setInvoicePreviewUrl(null); }}>
+        <DialogContent className="sm:max-w-[800px] h-[85vh]">
+          <DialogHeader>
+            <DialogTitle>Rechnung</DialogTitle>
+          </DialogHeader>
+          {invoicePreviewUrl && (
+            <iframe
+              src={invoicePreviewUrl}
+              className="w-full flex-1 rounded border-0"
+              style={{ minHeight: "calc(85vh - 80px)" }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Session change dialog */}
       <Dialog open={!!changeBooking} onOpenChange={(open) => { if (!open) setChangeBooking(null); }}>
