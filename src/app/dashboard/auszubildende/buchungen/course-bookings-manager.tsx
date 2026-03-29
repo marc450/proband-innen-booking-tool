@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { FileText } from "lucide-react";
 import type { CourseBookingStatus } from "@/lib/types";
 
 interface BookingRow {
@@ -24,6 +25,8 @@ interface BookingRow {
   amount_paid: number | null;
   status: CourseBookingStatus;
   created_at: string;
+  stripe_invoice_url: string | null;
+  stripe_invoice_pdf_url: string | null;
   course_sessions: { date_iso: string; label_de: string | null; instructor_name: string | null } | null;
   course_templates: { title: string; course_label_de: string | null } | null;
 }
@@ -95,12 +98,13 @@ export function CourseBookingsManager({ initialBookings }: Props) {
             <TableHead>Datum</TableHead>
             <TableHead>Betrag</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead className="w-[80px]">Rechnung</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filtered.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                 {search ? "Keine Buchungen gefunden." : "Noch keine Kursbuchungen vorhanden."}
               </TableCell>
             </TableRow>
@@ -131,6 +135,21 @@ export function CourseBookingsManager({ initialBookings }: Props) {
                       <option key={value} value={value}>{label}</option>
                     ))}
                   </select>
+                </TableCell>
+                <TableCell>
+                  {booking.stripe_invoice_pdf_url ? (
+                    <a
+                      href={booking.stripe_invoice_pdf_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                      title="Rechnung herunterladen"
+                    >
+                      <FileText className="h-4 w-4" />
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground/40">–</span>
+                  )}
                 </TableCell>
               </TableRow>
             ))

@@ -69,7 +69,7 @@ function computeEndTime(startTime: string, durationMinutes: number): string {
   return `${endH}:${endM}`;
 }
 
-// Handle invoice.paid: send invoice email with PDF attachment
+// Handle invoice.paid: send invoice email with PDF attachment + store URL on booking
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
   const email = invoice.customer_email;
   if (!email) return;
@@ -77,6 +77,32 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   const customerName = invoice.customer_name || "";
   const firstName = customerName.split(" ")[0] || "";
   const hostedUrl = invoice.hosted_invoice_url || "";
+  const invoicePdfUrl = invoice.invoice_pdf || "";
+
+  // Store invoice URL on the course_booking (match via payment_intent → checkout session)
+  const supabase = createAdminClient();
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pi = (invoice as any).payment_intent;
+    const paymentIntentId = typeof pi === "string" ? pi : pi?.id;
+
+    if (paymentIntentId) {
+      // Find the checkout session that created this payment intent
+      const sessions = await stripe.checkout.sessions.list({ payment_intent: paymentIntentId, limit: 1 });
+      const checkoutSessionId = sessions.data[0]?.id;
+      if (checkoutSessionId) {
+        await supabase
+          .from("course_bookings")
+          .update({
+            stripe_invoice_url: hostedUrl,
+            stripe_invoice_pdf_url: invoicePdfUrl,
+          })
+          .eq("stripe_checkout_session_id", checkoutSessionId);
+      }
+    }
+  } catch (err) {
+    console.error("Failed to store invoice URL on booking:", err);
+  }
 
   // Fetch and attach the PDF
   const pdf = await fetchInvoicePdf(invoice.id);
