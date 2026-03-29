@@ -426,10 +426,9 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
             <DialogTitle>Rechnung</DialogTitle>
           </DialogHeader>
           {invoicePdfUrl && (
-            <embed
-              src={invoicePdfUrl}
-              type="application/pdf"
-              className="w-full flex-1 rounded"
+            <iframe
+              src={`/api/invoice-pdf?url=${encodeURIComponent(invoicePdfUrl)}`}
+              className="w-full flex-1 rounded border-0"
             />
           )}
         </DialogContent>
