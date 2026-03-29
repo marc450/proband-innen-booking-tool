@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
+const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 
 export async function POST(req: NextRequest) {
   try {
@@ -190,6 +191,40 @@ export async function POST(req: NextRequest) {
           html,
         }),
       });
+    }
+
+    // Send Slack notification
+    if (SLACK_WEBHOOK_URL) {
+      try {
+        const { data: slotCapacity } = await supabase
+          .from("available_slots")
+          .select("remaining_capacity")
+          .eq("id", slotId)
+          .single();
+
+        const dateStr = slot.start_time
+          ? format(new Date(slot.start_time), "EEEE, dd. MMMM yyyy", { locale: de })
+          : "";
+        const timeStr = slot.start_time
+          ? format(new Date(slot.start_time), "HH:mm")
+          : "";
+
+        await fetch(SLACK_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: [
+              `*Neue Buchung* :tada:`,
+              `*Typ:* Privat`,
+              `*Kurs:* ${slot.course_title || ""}`,
+              `*Datum:* ${dateStr}${timeStr ? `, ${timeStr} Uhr` : ""}`,
+              `*Freie Plätze:* ${slotCapacity?.remaining_capacity ?? "?"}`,
+            ].join("\n"),
+          }),
+        });
+      } catch (slackErr) {
+        console.error("Failed to send Slack notification:", slackErr);
+      }
     }
 
     return NextResponse.json({ success: true, bookingId });

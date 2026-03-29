@@ -4,6 +4,7 @@ import crypto from "crypto";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
+const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 const ENCRYPTION_PUBLIC_KEY_PEM = process.env.ENCRYPTION_PUBLIC_KEY!.replace(/\\n/g, "\n");
 
 const supabase = createClient(
@@ -440,6 +441,33 @@ export async function POST(req: NextRequest) {
         });
       } catch (emailErr) {
         console.error("Failed to send confirmation email:", emailErr);
+      }
+    }
+
+    // Send Slack notification
+    if (SLACK_WEBHOOK_URL) {
+      try {
+        const { data: slotCapacity } = await supabase
+          .from("available_slots")
+          .select("remaining_capacity")
+          .eq("id", slotId)
+          .single();
+
+        await fetch(SLACK_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: [
+              `*Neue Buchung* :tada:`,
+              `*Typ:* Standard`,
+              `*Kurs:* ${courseTitle}`,
+              `*Datum:* ${formattedDate}${formattedTime ? `, ${formattedTime}` : ""}`,
+              `*Freie Plätze:* ${slotCapacity?.remaining_capacity ?? "?"}`,
+            ].join("\n"),
+          }),
+        });
+      } catch (slackErr) {
+        console.error("Failed to send Slack notification:", slackErr);
       }
     }
 
