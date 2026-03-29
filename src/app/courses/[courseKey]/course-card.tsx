@@ -107,7 +107,7 @@ export function CourseCard({
             <button
               onClick={handleBook}
               disabled={isLoading}
-              className="w-full bg-[#0066FF] hover:bg-[#0055DD] text-white font-semibold py-4 rounded-md disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+              className="w-full bg-[#0066FF] hover:bg-[#0055DD] text-white font-semibold py-3 rounded-md disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
             >
               {isLoading ? (
                 <>
@@ -126,7 +126,7 @@ export function CourseCard({
               <button
                 type="button"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="w-full bg-white border-2 border-[#0066FF] text-[#0066FF] font-semibold py-3.5 px-4 rounded-md cursor-pointer flex items-center justify-between"
+                className="w-full bg-white border-2 border-[#0066FF] text-[#0066FF] font-semibold py-2.5 px-4 rounded-md cursor-pointer flex items-center justify-between"
               >
                 <span className={selectedDateObj ? "" : "opacity-70"}>
                   {selectedDateObj ? selectedDateObj.label : "Termine anschauen"}
@@ -181,7 +181,7 @@ export function CourseCard({
             <button
               onClick={handleBook}
               disabled={!selectedDate || isLoading}
-              className="w-full bg-[#0066FF] hover:bg-[#0055DD] text-white font-semibold py-4 rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="w-full bg-[#0066FF] hover:bg-[#0055DD] text-white font-semibold py-3 rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
             >
               {isLoading && selectedDate === selectedDateForLoading ? (
                 <>
