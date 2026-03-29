@@ -14,6 +14,7 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET!;
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
+const SLACK_WEBHOOK_URL_COURSES = process.env.SLACK_WEBHOOK_URL_COURSES;
 const LEARNWORLDS_API_URL = process.env.LEARNWORLDS_API_URL;
 const LEARNWORLDS_CLIENT_ID = process.env.LEARNWORLDS_CLIENT_ID;
 const LEARNWORLDS_ACCESS_TOKEN = process.env.LEARNWORLDS_ACCESS_TOKEN;
@@ -362,8 +363,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     }
   }
 
-  // Send Slack notification
-  if (SLACK_WEBHOOK_URL) {
+  // Send Slack notification to #revenue
+  if (SLACK_WEBHOOK_URL_COURSES) {
     try {
       let seatsInfo = "";
       if (sessionId) {
@@ -377,16 +378,20 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         }
       }
 
-      await fetch(SLACK_WEBHOOK_URL, {
+      const betrag = amountTotal ? `€${(amountTotal / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })}` : null;
+
+      await fetch(SLACK_WEBHOOK_URL_COURSES, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: [
             `*Neue Kursbuchung* :mortar_board:`,
+            `*Name:* ${fullName}`,
             `*Typ:* ${courseType}`,
             `*Kurs:* ${courseLabelDe}`,
             sessionLabel ? `*Datum:* ${sessionLabel}` : null,
             seatsInfo ? `*Plätze:* ${seatsInfo}` : null,
+            betrag ? `*Betrag:* ${betrag}` : null,
           ].filter(Boolean).join("\n"),
         }),
       });
