@@ -183,7 +183,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
         </div>
         <h2 className="text-3xl font-bold text-black mb-4 pr-24">Komplettpaket</h2>
         <p className="text-black mb-3 mt-3 min-h-[3.5rem]">
-          Das ideale Starterpaket damit Du Dich sicher fühlst: 1 Praxiskurs + 4 Onlinekurse in einem Bundle.
+          Das ideale Paket für Deinen perfekten Start in die Ästhetik: 1 Praxiskurs + 4 Onlinekurse in einem Bundle.
         </p>
       </div>
 
