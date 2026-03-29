@@ -264,6 +264,29 @@ export function buildCommunityInviteEmail(firstName: string): string {
 </div>`;
 }
 
+export function buildSessionChangeEmail(firstName: string, courseName: string, praxis: PraxisInfo): string {
+  return `<div style="background-color:#fff; padding:0; font-family:Arial, sans-serif;">
+  <div style="background-color:#fff; max-width:600px; margin:0 auto; padding:8px; text-align:left; line-height:1.5;">
+    <p style="margin-top:0; margin-bottom:20px;">
+      Hi ${firstName},<br><br>
+      Dein Kurstermin wurde erfolgreich geändert. Hier sind Deine neuen Kursdetails:
+    </p>
+
+    ${praxiskursInfoBox(praxis)}
+
+    <p style="margin:0 0 20px;">
+      Falls Du Fragen hast, antworte uns einfach auf diese E-Mail.
+    </p>
+    <p style="margin:0 0 20px;">
+      Herzliche Grüße,<br>
+      Dein EPHIA-Team
+    </p>
+
+    ${FOOTER}
+  </div>
+</div>`;
+}
+
 export function buildInvoiceEmail(firstName: string, hostedInvoiceUrl: string): string {
   return `<div style="background-color:#fff; padding:0; font-family:Arial, sans-serif;">
   <div style="background-color:#fff; max-width:600px; margin:0 auto; padding:8px; text-align:left; line-height:1.5;">

@@ -12,13 +12,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FileText } from "lucide-react";
+import { FileText, ArrowRightLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import type { CourseBookingStatus } from "@/lib/types";
 
 interface BookingRow {
   id: string;
   session_id: string | null;
+  template_id: string | null;
   course_type: string;
   first_name: string | null;
   last_name: string | null;
@@ -30,8 +39,21 @@ interface BookingRow {
   auszubildende_id: string | null;
   stripe_invoice_url: string | null;
   stripe_invoice_pdf_url: string | null;
-  course_sessions: { date_iso: string; label_de: string | null; instructor_name: string | null } | null;
+  course_sessions: { date_iso: string; label_de: string | null; instructor_name: string | null; start_time: string | null; duration_minutes: number | null; address: string | null } | null;
   course_templates: { title: string; course_label_de: string | null } | null;
+}
+
+interface SessionOption {
+  id: string;
+  date_iso: string;
+  label_de: string | null;
+  start_time: string | null;
+  duration_minutes: number | null;
+  address: string | null;
+  instructor_name: string | null;
+  booked_seats: number;
+  max_seats: number;
+  template_id: string;
 }
 
 interface Props {
@@ -49,6 +71,12 @@ export function CourseBookingsManager({ initialBookings }: Props) {
   const supabase = createClient();
   const [bookings, setBookings] = useState(initialBookings);
   const [search, setSearch] = useState("");
+
+  // Session change state
+  const [changeBooking, setChangeBooking] = useState<BookingRow | null>(null);
+  const [availableSessions, setAvailableSessions] = useState<SessionOption[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string>("");
+  const [changingSession, setChangingSession] = useState(false);
 
   // Auto-complete bookings where the course date has passed
   useEffect(() => {
@@ -101,6 +129,85 @@ export function CourseBookingsManager({ initialBookings }: Props) {
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b)));
   };
 
+  const openSessionChange = async (booking: BookingRow) => {
+    if (!booking.session_id) return;
+
+    // Fetch available sessions for the same template, excluding current session
+    const { data: sessions } = await supabase
+      .from("course_sessions")
+      .select("id, date_iso, label_de, start_time, duration_minutes, address, instructor_name, booked_seats, max_seats, template_id")
+      .eq("template_id", booking.template_id || "")
+      .eq("is_live", true)
+      .neq("id", booking.session_id)
+      .gte("date_iso", new Date().toISOString().slice(0, 10))
+      .order("date_iso", { ascending: true });
+
+    const available = (sessions || []).filter((s: SessionOption) => s.booked_seats < s.max_seats);
+    setAvailableSessions(available);
+    setSelectedSessionId(available[0]?.id || "");
+    setChangeBooking(booking);
+  };
+
+  const confirmSessionChange = async () => {
+    if (!changeBooking || !selectedSessionId || !changeBooking.session_id) return;
+    setChangingSession(true);
+
+    const newSession = availableSessions.find((s) => s.id === selectedSessionId);
+    if (!newSession) { setChangingSession(false); return; }
+
+    // Update booking to new session
+    const { error } = await supabase
+      .from("course_bookings")
+      .update({ session_id: selectedSessionId })
+      .eq("id", changeBooking.id);
+
+    if (error) { setChangingSession(false); return; }
+
+    // Decrement old session, increment new session
+    await supabase.rpc("decrement_booked_seats", { p_session_id: changeBooking.session_id });
+    await supabase.rpc("increment_booked_seats", { p_session_id: selectedSessionId });
+
+    // Update local state
+    setBookings((prev) =>
+      prev.map((b) =>
+        b.id === changeBooking.id
+          ? {
+              ...b,
+              session_id: selectedSessionId,
+              course_sessions: {
+                date_iso: newSession.date_iso,
+                label_de: newSession.label_de,
+                instructor_name: newSession.instructor_name,
+                start_time: newSession.start_time,
+                duration_minutes: newSession.duration_minutes,
+                address: newSession.address,
+              },
+            }
+          : b
+      )
+    );
+
+    // Send date change email (best effort)
+    const courseName = changeBooking.course_templates?.course_label_de || changeBooking.course_templates?.title || "";
+    fetch("/api/send-session-change-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: changeBooking.email,
+        firstName: changeBooking.first_name,
+        courseName,
+        dateIso: newSession.date_iso,
+        startTime: newSession.start_time,
+        durationMinutes: newSession.duration_minutes,
+        address: newSession.address,
+        instructor: newSession.instructor_name,
+      }),
+    });
+
+    setChangingSession(false);
+    setChangeBooking(null);
+  };
+
   const formatAmount = (cents: number | null) => {
     if (!cents) return "–";
     return `€${(cents / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })}`;
@@ -134,12 +241,13 @@ export function CourseBookingsManager({ initialBookings }: Props) {
             <TableHead>Betrag</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-[60px]">Rechnung</TableHead>
+            <TableHead className="w-[50px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filtered.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                 {search ? "Keine Buchungen gefunden." : "Noch keine Kursbuchungen vorhanden."}
               </TableCell>
             </TableRow>
@@ -199,12 +307,69 @@ export function CourseBookingsManager({ initialBookings }: Props) {
                       <span className="text-muted-foreground/40">–</span>
                     )}
                   </TableCell>
+                  <TableCell>
+                    {booking.session_id && (booking.status === "booked" || booking.status === "completed") && (
+                      <button
+                        onClick={() => openSessionChange(booking)}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        title="Termin ändern"
+                      >
+                        <ArrowRightLeft className="h-4 w-4" />
+                      </button>
+                    )}
+                  </TableCell>
                 </TableRow>
               );
             })
           )}
         </TableBody>
       </Table>
+
+      {/* Session change dialog */}
+      <Dialog open={!!changeBooking} onOpenChange={(open) => { if (!open) setChangeBooking(null); }}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Kurstermin ändern</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <p className="text-sm text-muted-foreground">
+              Aktueller Termin: <strong>{changeBooking?.course_sessions?.label_de || "–"}</strong>
+              {changeBooking?.course_sessions?.start_time && ` um ${changeBooking.course_sessions.start_time} Uhr`}
+            </p>
+
+            {availableSessions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Keine weiteren verfügbaren Termine für diesen Kurs.</p>
+            ) : (
+              <>
+                <div>
+                  <Label>Neuer Termin</Label>
+                  <select
+                    value={selectedSessionId}
+                    onChange={(e) => setSelectedSessionId(e.target.value)}
+                    className="w-full mt-1 border rounded px-3 py-2 text-sm"
+                  >
+                    {availableSessions.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label_de || s.date_iso}
+                        {s.start_time ? ` – ${s.start_time} Uhr` : ""}
+                        {` (${s.booked_seats}/${s.max_seats} Plätze)`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <Button
+                  onClick={confirmSessionChange}
+                  disabled={changingSession || !selectedSessionId}
+                  className="w-full"
+                >
+                  {changingSession ? "Wird geändert..." : "Termin ändern & E-Mail senden"}
+                </Button>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
