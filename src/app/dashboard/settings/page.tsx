@@ -33,11 +33,6 @@ export default async function SettingsPage() {
 
   if (profile && profile.role !== "admin") redirect("/dashboard");
 
-  const { data: templatesData } = await supabase
-    .from("course_templates")
-    .select("*")
-    .order("created_at", { ascending: false });
-
   const adminClient = createAdminClient();
   const [{ data: { users: authUsers } }, { data: profiles }] = await Promise.all([
     adminClient.auth.admin.listUsers(),
@@ -61,11 +56,10 @@ export default async function SettingsPage() {
     created_at: u.created_at,
   }));
 
-  // Fetch Auszubildende course templates and sessions
+  // Fetch all course templates
   const { data: courseOfferingsData } = await supabase
     .from("course_templates")
     .select("*")
-    .not("course_key", "is", null)
     .order("title", { ascending: true });
 
   const { data: courseSessionsData } = await supabase
@@ -81,7 +75,6 @@ export default async function SettingsPage() {
 
   return (
     <SettingsContent
-      initialTemplates={(templatesData as CourseTemplate[]) || []}
       initialUsers={users}
       currentUserId={user.id}
       initialCourseOfferings={(courseOfferingsData as CourseTemplate[]) || []}

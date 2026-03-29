@@ -2,7 +2,6 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TemplatesManager } from "../templates-manager";
 import { UsersManager } from "./users-manager";
 import { CourseOfferingManager } from "./course-offering-manager";
 import { CourseSessionsSettings } from "./course-sessions-settings";
@@ -10,7 +9,6 @@ import { CourseTemplate, CourseSession, DozentUser } from "@/lib/types";
 import { AdminUser } from "./page";
 
 interface Props {
-  initialTemplates: CourseTemplate[];
   initialUsers: AdminUser[];
   currentUserId: string;
   initialCourseOfferings: CourseTemplate[];
@@ -19,7 +17,6 @@ interface Props {
 }
 
 export function SettingsContent({
-  initialTemplates,
   initialUsers,
   currentUserId,
   initialCourseOfferings,
@@ -28,7 +25,7 @@ export function SettingsContent({
 }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const tab = searchParams.get("tab") || "kursvorlagen";
+  const tab = searchParams.get("tab") || "kursangebot";
 
   const handleTabChange = (value: string) => {
     router.replace(`/dashboard/settings?tab=${value}`);
@@ -40,22 +37,10 @@ export function SettingsContent({
 
       <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value="kursvorlagen">Kursvorlagen</TabsTrigger>
-          <TabsTrigger value="benutzer">Benutzer</TabsTrigger>
           <TabsTrigger value="kursangebot">Kursangebot</TabsTrigger>
           <TabsTrigger value="kurstermine">Kurstermine</TabsTrigger>
+          <TabsTrigger value="benutzer">Benutzer</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="kursvorlagen" className="mt-6">
-          <TemplatesManager
-            initialTemplates={initialTemplates}
-            dozenten={[]}
-          />
-        </TabsContent>
-
-        <TabsContent value="benutzer" className="mt-6">
-          <UsersManager initialUsers={initialUsers} currentUserId={currentUserId} />
-        </TabsContent>
 
         <TabsContent value="kursangebot" className="mt-6">
           <CourseOfferingManager initialOfferings={initialCourseOfferings} />
@@ -67,6 +52,10 @@ export function SettingsContent({
             templates={initialCourseOfferings}
             dozentUsers={dozentUsers}
           />
+        </TabsContent>
+
+        <TabsContent value="benutzer" className="mt-6">
+          <UsersManager initialUsers={initialUsers} currentUserId={currentUserId} />
         </TabsContent>
       </Tabs>
     </div>
