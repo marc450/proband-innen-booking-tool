@@ -144,15 +144,15 @@ export function CourseCard({
               <button
                 type="button"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="w-full bg-white border-2 border-[#0066FF] text-[#0066FF] font-semibold py-2.5 px-4 rounded-md cursor-pointer flex items-center justify-between"
+                className="w-full bg-white border-2 border-[#0066FF] text-[#0066FF] font-semibold text-sm py-2.5 px-4 rounded-md cursor-pointer flex items-center justify-between gap-2"
               >
-                <span className={`flex items-center gap-2 min-w-0 flex-1 ${selectedDateObj ? "" : "opacity-70"}`}>
-                  <span className="truncate">{selectedDateObj ? selectedDateObj.label : "Termine anschauen"}</span>
+                <span className={`flex items-center gap-2 whitespace-nowrap ${selectedDateObj ? "" : "opacity-70"}`}>
+                  {selectedDateObj ? selectedDateObj.label : "Termine anschauen"}
                   {selectedDateObj?.availabilityTag && (
-                    <span className={`${getBadgeClasses(selectedDateObj)} flex-shrink-0`}>{selectedDateObj.availabilityTag}</span>
+                    <span className={getBadgeClasses(selectedDateObj)}>{selectedDateObj.availabilityTag}</span>
                   )}
                 </span>
-                <ChevronDown className={`w-5 h-5 flex-shrink-0 ml-2 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+                <ChevronDown className={`w-5 h-5 flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
               </button>
 
               {dropdownOpen && (
