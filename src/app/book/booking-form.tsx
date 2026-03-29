@@ -95,7 +95,10 @@ export function BookingForm({ slot, guidePrice }: BookingFormProps) {
 
   const stepIndex = steps.findIndex((s) => s.key === currentStep);
 
-  const canProceedFromDetails = email.trim() !== "" && phone.trim() !== "";
+  const isBotulinum = slot.course_title?.toLowerCase().includes("botulinum") ?? false;
+  const [confirmedBotulinum, setConfirmedBotulinum] = useState(false);
+
+  const canProceedFromDetails = email.trim() !== "" && phone.trim() !== "" && (!isBotulinum || confirmedBotulinum);
   const canProceedFromAgb = agreedToTerms;
   const canProceedFromPrivacy = agreedToPrivacy && agreedToEmailComm;
 
@@ -163,6 +166,21 @@ export function BookingForm({ slot, guidePrice }: BookingFormProps) {
                   required
                 />
               </div>
+
+              {isBotulinum && (
+                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-md p-3">
+                  <input
+                    type="checkbox"
+                    id="botulinumConfirm"
+                    checked={confirmedBotulinum}
+                    onChange={(e) => setConfirmedBotulinum(e.target.checked)}
+                    className="mt-0.5"
+                  />
+                  <Label htmlFor="botulinumConfirm" className="text-sm font-normal leading-snug text-amber-900">
+                    Ich bestätige, dass meine letzte Behandlung mit Botulinum in der gewünschten Zone mindestens zwei Monate zurückliegt.
+                  </Label>
+                </div>
+              )}
 
               {error && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
