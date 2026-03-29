@@ -21,7 +21,7 @@ const navGroups = [
   {
     label: "Proband:innen",
     items: [
-      { href: "/dashboard", label: "Kurse", exact: true },
+      { href: "/dashboard", label: "Behandlungsangebote", exact: true },
       { href: "/dashboard/bookings", label: "Buchungen" },
       { href: "/dashboard/patients", label: "Proband:innen" },
       { href: "/dashboard/campaigns", label: "Kampagnen" },
