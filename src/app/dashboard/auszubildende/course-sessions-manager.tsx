@@ -59,7 +59,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   // Filters
   const [filterInstructor, setFilterInstructor] = useState("");
   const [filterTemplate, setFilterTemplate] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
+  const [filterStatus, setFilterStatus] = useState("live");
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
 
