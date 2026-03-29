@@ -122,7 +122,7 @@ export function BookingForm({ slot, guidePrice }: BookingFormProps) {
       {guidePrice && (
         <div className="bg-muted/50 border rounded-md px-4 py-3">
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Die Bezahlung erfolgt nach der Behandlung vor Ort. Die Abrechnung erfolgt nach GOÄ. Der Richtpreis von <span className="font-semibold text-foreground">{guidePrice}</span> dient als Orientierung. Der genaue Behandlungsumfang und die endgültigen Kosten werden im persönlichen Aufklärungsgespräch mit der behandelnden Ärzt:in festgelegt.
+            Die Bezahlung erfolgt nach der Behandlung vor Ort. Die Abrechnung erfolgt nach GOÄ. Der Richtpreis von <span className="font-semibold text-foreground">€{guidePrice}</span> dient als Orientierung. Der genaue Behandlungsumfang und die endgültigen Kosten werden im persönlichen Aufklärungsgespräch mit der behandelnden Ärzt:in festgelegt.
           </p>
         </div>
       )}
