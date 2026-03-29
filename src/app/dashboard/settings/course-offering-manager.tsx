@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -13,10 +12,28 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Pencil, Trash2, ArrowUpDown } from "lucide-react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import type { CourseTemplate } from "@/lib/types";
 
 interface Props {
   initialOfferings: CourseTemplate[];
+}
+
+type SortKey = "status" | "name" | "online" | "praxis" | "kombi";
+type SortDir = "asc" | "desc";
+
+function formatPrice(p: number | null | undefined) {
+  if (!p) return "–";
+  return `€${p.toLocaleString("de-DE")}`;
 }
 
 export function CourseOfferingManager({ initialOfferings }: Props) {
@@ -24,6 +41,9 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
   const [offerings, setOfferings] = useState(initialOfferings);
   const [editing, setEditing] = useState<CourseTemplate | null>(null);
   const [showDialog, setShowDialog] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   // Form fields
   const [form, setForm] = useState<Record<string, string>>({});
@@ -148,49 +168,159 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
     }
   };
 
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from("course_templates").delete().eq("id", deleteId);
+    if (!error) {
+      setOfferings((prev) => prev.filter((o) => o.id !== deleteId));
+    }
+    setDeleteId(null);
+  };
+
   const updateField = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const sortedOfferings = useMemo(() => {
+    const sorted = [...offerings];
+    const dir = sortDir === "asc" ? 1 : -1;
+    sorted.sort((a, b) => {
+      switch (sortKey) {
+        case "status":
+          return ((a.status === "live" ? 1 : 0) - (b.status === "live" ? 1 : 0)) * -dir;
+        case "name":
+          return (a.course_label_de || a.title || "").localeCompare(b.course_label_de || b.title || "") * dir;
+        case "online":
+          return ((a.price_gross_online || 0) - (b.price_gross_online || 0)) * dir;
+        case "praxis":
+          return ((a.price_gross_praxis || 0) - (b.price_gross_praxis || 0)) * dir;
+        case "kombi":
+          return ((a.price_gross_kombi || 0) - (b.price_gross_kombi || 0)) * dir;
+        default:
+          return 0;
+      }
+    });
+    return sorted;
+  }, [offerings, sortKey, sortDir]);
+
+  const SortableHead = ({ label, sortKeyName, className }: { label: string; sortKeyName: SortKey; className?: string }) => (
+    <TableHead className={className}>
+      <button
+        onClick={() => toggleSort(sortKeyName)}
+        className="flex items-center gap-1 hover:text-foreground transition-colors"
+      >
+        {label}
+        <ArrowUpDown className="h-3.5 w-3.5 opacity-50" />
+      </button>
+    </TableHead>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Kursangebote für Auszubildende (Ärzt:innen). Jedes Angebot kann einen Onlinekurs, Praxiskurs und Kombikurs enthalten.
-        </p>
+        <h1 className="text-2xl font-bold">Kursangebot</h1>
         <Button onClick={openCreate}>Neues Kursangebot</Button>
       </div>
 
-      <div className="space-y-3">
-        {offerings.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">Noch keine Kursangebote erstellt.</p>
-        ) : (
-          offerings.map((o) => (
-            <div key={o.id} className="bg-white rounded-lg border p-4 flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{o.course_label_de || o.title}</span>
-                  <Badge variant="secondary" className="text-xs">{o.course_key}</Badge>
-                  <button onClick={() => toggleStatus(o)}>
-                    <Badge variant={o.status === "live" ? "default" : "secondary"}>
-                      {o.status === "live" ? "Live" : "Entwurf"}
-                    </Badge>
-                  </button>
-                </div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  Online: {o.price_gross_online ? `€${o.price_gross_online}` : "–"} |{" "}
-                  Praxis: {o.price_gross_praxis ? `€${o.price_gross_praxis}` : "–"} |{" "}
-                  Kombi: {o.price_gross_kombi ? `€${o.price_gross_kombi}` : "–"}
-                </div>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => openEdit(o)}>
-                Bearbeiten
-              </Button>
-            </div>
-          ))
-        )}
-      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <SortableHead label="Status" sortKeyName="status" className="w-[100px]" />
+            <SortableHead label="Kursname" sortKeyName="name" />
+            <SortableHead label="Online" sortKeyName="online" className="w-[100px]" />
+            <SortableHead label="Praxis" sortKeyName="praxis" className="w-[100px]" />
+            <SortableHead label="Kombi" sortKeyName="kombi" className="w-[100px]" />
+            <TableHead className="w-[80px]">Aktionen</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sortedOfferings.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                Noch keine Kursangebote erstellt.
+              </TableCell>
+            </TableRow>
+          ) : (
+            sortedOfferings.map((o) => (
+              <TableRow key={o.id}>
+                {/* Status */}
+                <TableCell>
+                  <select
+                    value={o.status === "live" ? "live" : "draft"}
+                    onChange={() => toggleStatus(o)}
+                    className={`text-xs font-medium rounded-full px-2.5 py-1 border-0 cursor-pointer ${
+                      o.status === "live"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    <option value="live">Live</option>
+                    <option value="draft">Entwurf</option>
+                  </select>
+                </TableCell>
 
+                {/* Name */}
+                <TableCell className="font-medium">
+                  {o.course_label_de || o.title}
+                </TableCell>
+
+                {/* Prices */}
+                <TableCell className="text-sm text-muted-foreground">
+                  {formatPrice(o.price_gross_online)}
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {formatPrice(o.price_gross_praxis)}
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {formatPrice(o.price_gross_kombi)}
+                </TableCell>
+
+                {/* Actions */}
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => openEdit(o)}
+                      className="p-1.5 rounded hover:bg-gray-100 text-muted-foreground hover:text-foreground transition-colors"
+                      title="Bearbeiten"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteId(o.id)}
+                      className="p-1.5 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors"
+                      title="Löschen"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+
+      {/* Delete confirmation */}
+      <ConfirmDialog
+        open={!!deleteId}
+        title="Kursangebot löschen"
+        description="Möchtest Du dieses Kursangebot wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
+        confirmLabel="Löschen"
+        variant="destructive"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+      />
+
+      {/* Create / Edit dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>

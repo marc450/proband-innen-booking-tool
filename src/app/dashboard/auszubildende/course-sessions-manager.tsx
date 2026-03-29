@@ -56,6 +56,13 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
+  // Filters
+  const [filterInstructor, setFilterInstructor] = useState("");
+  const [filterTemplate, setFilterTemplate] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+
   // Create form state
   const [formTemplateId, setFormTemplateId] = useState("");
   const [formDateIso, setFormDateIso] = useState("");
@@ -81,7 +88,16 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   };
 
   const sortedSessions = useMemo(() => {
-    const sorted = [...sessions];
+    const filtered = sessions.filter((s) => {
+      if (filterInstructor && s.instructor_name !== filterInstructor) return false;
+      if (filterTemplate && s.template_id !== filterTemplate) return false;
+      if (filterStatus === "live" && !s.is_live) return false;
+      if (filterStatus === "offline" && s.is_live) return false;
+      if (filterDateFrom && s.date_iso < filterDateFrom) return false;
+      if (filterDateTo && s.date_iso > filterDateTo) return false;
+      return true;
+    });
+    const sorted = [...filtered];
     const dir = sortDir === "asc" ? 1 : -1;
     sorted.sort((a, b) => {
       switch (sortKey) {
@@ -104,7 +120,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
       }
     });
     return sorted;
-  }, [sessions, sortKey, sortDir]);
+  }, [sessions, sortKey, sortDir, filterInstructor, filterTemplate, filterStatus, filterDateFrom, filterDateTo]);
 
   const SortableHead = ({ label, sortKeyName, className }: { label: string; sortKeyName: SortKey; className?: string }) => (
     <TableHead className={className}>
@@ -209,6 +225,80 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Kurstermine</h1>
         <Button onClick={() => setShowCreateDialog(true)}>Neuen Termin erstellen</Button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-muted-foreground font-medium">Dozent:in</label>
+          <select
+            value={filterInstructor}
+            onChange={(e) => setFilterInstructor(e.target.value)}
+            className="border rounded-md px-2.5 py-1.5 text-sm min-w-[160px] bg-background"
+          >
+            <option value="">Alle</option>
+            {Array.from(new Set(sessions.map((s) => s.instructor_name).filter(Boolean))).sort().map((name) => (
+              <option key={name!} value={name!}>{name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-muted-foreground font-medium">Kurs</label>
+          <select
+            value={filterTemplate}
+            onChange={(e) => setFilterTemplate(e.target.value)}
+            className="border rounded-md px-2.5 py-1.5 text-sm min-w-[200px] bg-background"
+          >
+            <option value="">Alle</option>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>{t.course_label_de || t.title}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-muted-foreground font-medium">Status</label>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="border rounded-md px-2.5 py-1.5 text-sm min-w-[120px] bg-background"
+          >
+            <option value="">Alle</option>
+            <option value="live">Live</option>
+            <option value="offline">Offline</option>
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-muted-foreground font-medium">Von</label>
+          <input
+            type="date"
+            value={filterDateFrom}
+            onChange={(e) => setFilterDateFrom(e.target.value)}
+            className="border rounded-md px-2.5 py-1.5 text-sm bg-background"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-muted-foreground font-medium">Bis</label>
+          <input
+            type="date"
+            value={filterDateTo}
+            onChange={(e) => setFilterDateTo(e.target.value)}
+            className="border rounded-md px-2.5 py-1.5 text-sm bg-background"
+          />
+        </div>
+        {(filterInstructor || filterTemplate || filterStatus || filterDateFrom || filterDateTo) && (
+          <button
+            onClick={() => {
+              setFilterInstructor("");
+              setFilterTemplate("");
+              setFilterStatus("");
+              setFilterDateFrom("");
+              setFilterDateTo("");
+            }}
+            className="text-sm text-muted-foreground hover:text-foreground underline pb-1.5"
+          >
+            Zurücksetzen
+          </button>
+        )}
       </div>
 
       <Table>
