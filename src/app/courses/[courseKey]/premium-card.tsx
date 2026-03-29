@@ -188,7 +188,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
       </div>
 
       {/* Body */}
-      <div className="px-8 pt-6 pb-4">
+      <div className="px-5 pt-6 pb-4">
         {/* Price row — fixed height to align with other cards */}
         <div className="mb-6 min-h-[4.5rem]">
           <div className="flex items-baseline gap-3 mb-1">
@@ -281,7 +281,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
       </div>
 
       {/* Included courses */}
-      <div className="border-t border-gray-200 pt-6 mt-auto px-8 pb-8">
+      <div className="border-t border-gray-200 pt-6 mt-auto px-5 pb-8">
         <h3 className="font-bold text-black mb-4">Im Komplettpaket inkludiert:</h3>
         <ul className="space-y-2">
           <li className="flex items-start gap-2">

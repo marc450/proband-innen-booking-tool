@@ -108,7 +108,7 @@ export function CourseCard({
       </div>
 
       {/* Body */}
-      <div className="px-8 pt-6 pb-4">
+      <div className="px-5 pt-6 pb-4">
         {/* Price row — fixed height so it aligns across cards */}
         <div className="mb-6 min-h-[4.5rem]">
           <div className="text-4xl font-bold text-[#0066FF] mb-1">{price}</div>
@@ -226,7 +226,7 @@ export function CourseCard({
       </div>
 
       {/* Features */}
-      <div className="border-t border-gray-200 pt-6 mt-auto px-8 pb-8">
+      <div className="border-t border-gray-200 pt-6 mt-auto px-5 pb-8">
         <h3 className="font-bold text-black mb-4">Im {title.split(" ")[0]} inkludiert:</h3>
         <ul className="space-y-2">
           {features.map((feature, index) => {
