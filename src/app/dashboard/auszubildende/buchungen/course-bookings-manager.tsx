@@ -421,14 +421,26 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
 
       {/* Invoice PDF preview */}
       <Dialog open={!!invoicePdfUrl} onOpenChange={(open) => { if (!open) setInvoicePdfUrl(null); }}>
-        <DialogContent className="sm:max-w-[800px] h-[85vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Rechnung</DialogTitle>
+        <DialogContent className="sm:max-w-[900px] h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <DialogTitle>Rechnung</DialogTitle>
+              {invoicePdfUrl && (
+                <a
+                  href={invoicePdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline"
+                >
+                  Herunterladen
+                </a>
+              )}
+            </div>
           </DialogHeader>
           {invoicePdfUrl && (
             <iframe
-              src={`/api/invoice-pdf?url=${encodeURIComponent(invoicePdfUrl)}`}
-              className="w-full flex-1 rounded border-0"
+              src={`/api/invoice-pdf?url=${encodeURIComponent(invoicePdfUrl)}#toolbar=0&navpanes=0&view=FitH`}
+              className="w-full flex-1 border-0 bg-white"
             />
           )}
         </DialogContent>
