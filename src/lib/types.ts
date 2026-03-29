@@ -33,7 +33,7 @@ export interface CourseTemplate {
   online_course_id: string | null;
 }
 
-export type CourseType = "Onlinekurs" | "Praxiskurs" | "Kombikurs";
+export type CourseType = "Onlinekurs" | "Praxiskurs" | "Kombikurs" | "Premium";
 export type CourseBookingStatus = "booked" | "completed" | "cancelled" | "refunded";
 
 export interface CourseSession {

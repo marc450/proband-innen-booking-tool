@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "courseKey and courseType required" }, { status: 400 });
     }
 
-    if (!["Onlinekurs", "Praxiskurs", "Kombikurs"].includes(courseType)) {
+    if (!["Onlinekurs", "Praxiskurs", "Kombikurs", "Premium"].includes(courseType)) {
       return NextResponse.json({ error: "Invalid courseType" }, { status: 400 });
     }
 
@@ -47,8 +47,9 @@ export async function POST(req: NextRequest) {
 
     const isOnline = courseType === "Onlinekurs";
     const isPraxis = courseType === "Praxiskurs";
+    const isPremium = courseType === "Premium";
 
-    // For Praxiskurs/Kombikurs: validate session
+    // For Praxiskurs/Kombikurs/Premium: validate session
     let sessionLabel = "";
     let sessionDateISO = "";
     if (!isOnline) {
@@ -94,6 +95,13 @@ export async function POST(req: NextRequest) {
       grossPrice = template.price_gross_praxis || 0;
       successUrl = template.success_url_praxis || "https://www.ephia.de/vielen-lieben-dank-praxiskurs";
       cancelUrl = template.cancel_url_praxis || "https://www.ephia.de";
+    } else if (isPremium) {
+      // Premium Starterpaket: hardcoded 10% discount on EUR 2.220
+      productName = `Premium Starterpaket – ${sessionLabel}`;
+      description = "4 Onlinekurse + Praxiskurs Botulinum";
+      grossPrice = 2220;
+      successUrl = template.success_url_kombi || "https://www.ephia.de/vielen-lieben-dank";
+      cancelUrl = template.cancel_url_kombi || "https://www.ephia.de";
     } else {
       // Kombikurs
       productName = `${template.name_kombi || template.title} – ${sessionLabel}`;
@@ -103,7 +111,12 @@ export async function POST(req: NextRequest) {
       cancelUrl = template.cancel_url_kombi || "https://www.ephia.de";
     }
 
-    const unitAmount = Math.round(grossPrice * 100); // EUR to cents
+    let unitAmount = Math.round(grossPrice * 100); // EUR to cents
+
+    // Premium: apply 10% discount
+    if (isPremium) {
+      unitAmount = Math.round(unitAmount * 0.9);
+    }
 
     if (unitAmount <= 0) {
       return NextResponse.json({ error: "Preis nicht konfiguriert" }, { status: 500 });

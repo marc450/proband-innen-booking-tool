@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { CourseCard } from "./course-card";
+import { PremiumCard } from "./premium-card";
 import type { CourseTemplate, CourseSession, CourseType } from "@/lib/types";
 
 interface Props {
@@ -188,9 +189,57 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
         </h2>
 
         {(() => {
+          const isPremiumLayout = template.course_key === "grundkurs_botulinum";
           const hasOnline = !!template.price_gross_online;
           const hasPraxis = !!template.price_gross_praxis;
           const hasKombi = !!template.price_gross_kombi;
+
+          if (isPremiumLayout) {
+            // Grundkurs Botulinum: Onlinekurs, Kombikurs, Premium Starterpaket
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {hasOnline && (
+                  <CourseCard
+                    title="Onlinekurs"
+                    description="Erlerne die praxisnahe Theorie zur professionellen Behandlung von Patient:innen."
+                    price={formatPrice(template.price_gross_online)}
+                    features={onlinekursFeatures}
+                    bookingType="direct"
+                    buttonText="Onlinekurs buchen"
+                    onBook={() => handleBooking("Onlinekurs")}
+                    isLoading={loadingCheckout === "Onlinekurs-direct"}
+                    cmePoints="10 CME"
+                  />
+                )}
+
+                {hasKombi && (
+                  <CourseCard
+                    title="Kombikurs"
+                    description="Ideal für Einsteiger:innen: Lerne die Theorie online und die Praxis vor Ort."
+                    price={formatPrice(template.price_gross_kombi)}
+                    features={kombikursFeatures}
+                    bookingType="dropdown"
+                    dates={dynamicDates}
+                    buttonText="Kombikurs buchen"
+                    additionalInfo="Kursstandort: Berlin-Mitte"
+                    onBook={(sessionId) => handleBooking("Kombikurs", sessionId)}
+                    isLoading={loadingCheckout?.startsWith("Kombikurs-") || false}
+                    selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
+                    cmePoints="22 CME"
+                  />
+                )}
+
+                <PremiumCard
+                  dates={dynamicDates}
+                  onBook={(sessionId) => handleBooking("Premium", sessionId)}
+                  isLoading={loadingCheckout?.startsWith("Premium-") || false}
+                  selectedDateForLoading={loadingCheckout?.replace("Premium-", "")}
+                />
+              </div>
+            );
+          }
+
+          // Default layout for all other courses
           const cardCount = [hasOnline, hasPraxis, hasKombi].filter(Boolean).length;
           const gridCols = cardCount === 1 ? "lg:grid-cols-1 max-w-lg mx-auto" : cardCount === 2 ? "lg:grid-cols-2 max-w-4xl mx-auto" : "lg:grid-cols-3";
 

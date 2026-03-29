@@ -193,7 +193,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   const supabase = createAdminClient();
 
-  const courseType = metadata.courseType as "Onlinekurs" | "Praxiskurs" | "Kombikurs";
+  const courseType = metadata.courseType as "Onlinekurs" | "Praxiskurs" | "Kombikurs" | "Premium";
   const templateId = metadata.templateId;
   const sessionId = metadata.sessionId || null;
   const sessionLabel = metadata.sessionLabel || "";
@@ -308,7 +308,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         }
         emailHtml = buildPraxiskursEmail(firstName, courseName, praxisInfo);
       } else {
-        const courseName = template?.name_kombi || courseLabelDe;
+        const courseName = courseType === "Premium" ? "Premium Starterpaket" : (template?.name_kombi || courseLabelDe);
         emailSubject = `Buchungsbestätigung: ${courseName}`;
 
         let praxisInfo = { address: "", dateFormatted: sessionLabel, startTime: "", endTime: "", instructor: "" };
@@ -350,7 +350,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     }
   }
 
-  // Enroll in LearnWorlds for Onlinekurs and Kombikurs
+  // Enroll in LearnWorlds for Onlinekurs, Kombikurs, and Premium
   if (email && (courseType === "Onlinekurs" || courseType === "Kombikurs")) {
     const onlineCourseId = template?.online_course_id;
     if (onlineCourseId) {
@@ -361,6 +361,23 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       }
     } else {
       console.warn(`No online_course_id for template ${templateId}, skipping LW enrollment`);
+    }
+  }
+
+  // Premium Starterpaket: enroll in all 4 online courses
+  if (email && courseType === "Premium") {
+    const premiumCourseIds = [
+      "grundkurs-botulinum-online",
+      "aufbaukurs-botulinum-periorale-zone",
+      "aufbaukurs-medizinische-indikation-fuer-botulinum-online",
+      "grundkurs-medizinische-hautpflege",
+    ];
+    for (const lwCourseId of premiumCourseIds) {
+      try {
+        await enrollInLearnWorlds(email, lwCourseId, firstName, lastName);
+      } catch (lwErr) {
+        console.error(`LearnWorlds Premium enrollment error (${lwCourseId}):`, lwErr);
+      }
     }
   }
 
