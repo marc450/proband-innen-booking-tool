@@ -447,21 +447,32 @@ export async function POST(req: NextRequest) {
     // Send Slack notification
     if (SLACK_WEBHOOK_URL) {
       try {
-        const { data: slotCapacity } = await supabase
-          .from("available_slots")
-          .select("remaining_capacity")
+        // Get total remaining capacity across all slots in this course
+        const { data: slotForCourse } = await supabase
+          .from("slots")
+          .select("course_id")
           .eq("id", slotId)
           .single();
+
+        let totalRemaining: number | string = "?";
+        if (slotForCourse?.course_id) {
+          const { data: allSlots } = await supabase
+            .from("available_slots")
+            .select("remaining_capacity")
+            .eq("course_id", slotForCourse.course_id);
+          if (allSlots) {
+            totalRemaining = allSlots.reduce((sum: number, s: { remaining_capacity: number }) => sum + (s.remaining_capacity || 0), 0);
+          }
+        }
 
         await fetch(SLACK_WEBHOOK_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             text: [
-              `*Typ:* Standard`,
               `*Kurs:* ${courseTitle}`,
               `*Datum:* ${formattedDate}${formattedTime ? `, ${formattedTime}` : ""}`,
-              `*Freie Plätze:* ${slotCapacity?.remaining_capacity ?? "?"}`,
+              `*Freie Plätze:* ${totalRemaining}`,
             ].join("\n"),
           }),
         });
