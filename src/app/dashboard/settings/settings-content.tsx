@@ -6,7 +6,7 @@ import { TemplatesManager } from "../templates-manager";
 import { UsersManager } from "./users-manager";
 import { CourseOfferingManager } from "./course-offering-manager";
 import { CourseSessionsSettings } from "./course-sessions-settings";
-import { CourseTemplate, CourseSession } from "@/lib/types";
+import { CourseTemplate, CourseSession, DozentUser } from "@/lib/types";
 import { AdminUser } from "./page";
 
 interface Props {
@@ -15,6 +15,7 @@ interface Props {
   currentUserId: string;
   initialCourseOfferings: CourseTemplate[];
   initialCourseSessions: CourseSession[];
+  dozentUsers: DozentUser[];
 }
 
 export function SettingsContent({
@@ -23,6 +24,7 @@ export function SettingsContent({
   currentUserId,
   initialCourseOfferings,
   initialCourseSessions,
+  dozentUsers,
 }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -63,6 +65,7 @@ export function SettingsContent({
           <CourseSessionsSettings
             initialSessions={initialCourseSessions}
             templates={initialCourseOfferings}
+            dozentUsers={dozentUsers}
           />
         </TabsContent>
       </Tabs>

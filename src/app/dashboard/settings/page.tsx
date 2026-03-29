@@ -73,6 +73,12 @@ export default async function SettingsPage() {
     .select("*")
     .order("date_iso", { ascending: true });
 
+  const { data: dozentUsersData } = await adminClient
+    .from("profiles")
+    .select("id, title, first_name, last_name")
+    .eq("is_dozent", true)
+    .order("last_name", { ascending: true });
+
   return (
     <SettingsContent
       initialTemplates={(templatesData as CourseTemplate[]) || []}
@@ -80,6 +86,7 @@ export default async function SettingsPage() {
       currentUserId={user.id}
       initialCourseOfferings={(courseOfferingsData as CourseTemplate[]) || []}
       initialCourseSessions={(courseSessionsData as CourseSession[]) || []}
+      dozentUsers={dozentUsersData ?? []}
     />
   );
 }

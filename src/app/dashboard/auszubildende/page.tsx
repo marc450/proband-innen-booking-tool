@@ -6,21 +6,28 @@ export const dynamic = "force-dynamic";
 export default async function AuszubildendePage() {
   const supabase = createAdminClient();
 
-  const { data: templates } = await supabase
-    .from("course_templates")
-    .select("*")
-    .not("course_key", "is", null)
-    .order("title", { ascending: true });
-
-  const { data: sessions } = await supabase
-    .from("course_sessions")
-    .select("*")
-    .order("date_iso", { ascending: true });
+  const [{ data: templates }, { data: sessions }, { data: dozentUsers }] = await Promise.all([
+    supabase
+      .from("course_templates")
+      .select("*")
+      .not("course_key", "is", null)
+      .order("title", { ascending: true }),
+    supabase
+      .from("course_sessions")
+      .select("*")
+      .order("date_iso", { ascending: true }),
+    supabase
+      .from("profiles")
+      .select("id, title, first_name, last_name")
+      .eq("is_dozent", true)
+      .order("last_name", { ascending: true }),
+  ]);
 
   return (
     <CourseSessionsManager
       initialTemplates={templates ?? []}
       initialSessions={sessions ?? []}
+      dozentUsers={dozentUsers ?? []}
     />
   );
 }
