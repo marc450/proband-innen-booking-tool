@@ -75,13 +75,19 @@ const INCLUDED_COURSES: IncludedCourse[] = [
 ];
 
 function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose: () => void }) {
+  const modalRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    modalRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-xl w-full max-w-md shadow-2xl relative">
+      <div ref={modalRef} className="bg-white rounded-xl w-full max-w-md shadow-2xl relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"

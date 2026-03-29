@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { X, Loader2, CheckCircle } from "lucide-react";
 
 interface Props {
@@ -18,6 +18,13 @@ export function TerminUpdateModal({ onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Scroll modal into view — needed inside iframes where fixed positioning
+  // is relative to the full iframe height, not the visible viewport
+  useEffect(() => {
+    modalRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +60,7 @@ export function TerminUpdateModal({ onClose }: Props) {
       style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-xl w-full max-w-md shadow-2xl relative">
+      <div ref={modalRef} className="bg-white rounded-xl w-full max-w-md shadow-2xl relative">
         {/* Close button */}
         <button
           onClick={onClose}
