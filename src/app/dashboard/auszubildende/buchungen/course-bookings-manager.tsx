@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import type { CourseBookingStatus } from "@/lib/types";
 
 interface BookingRow {
   id: string;
+  session_id: string | null;
   course_type: string;
   first_name: string | null;
   last_name: string | null;
@@ -49,6 +50,23 @@ export function CourseBookingsManager({ initialBookings }: Props) {
   const [bookings, setBookings] = useState(initialBookings);
   const [search, setSearch] = useState("");
 
+  // Auto-complete bookings where the course date has passed
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const toComplete = bookings.filter(
+      (b) => b.status === "booked" && b.course_sessions?.date_iso && b.course_sessions.date_iso < today
+    );
+    if (toComplete.length > 0) {
+      const ids = toComplete.map((b) => b.id);
+      supabase.from("course_bookings").update({ status: "completed" }).in("id", ids).then(() => {
+        setBookings((prev) =>
+          prev.map((b) => (ids.includes(b.id) ? { ...b, status: "completed" as CourseBookingStatus } : b))
+        );
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const filtered = bookings.filter((b) => {
     if (!search) return true;
     const s = search.toLowerCase();
@@ -59,11 +77,28 @@ export function CourseBookingsManager({ initialBookings }: Props) {
     );
   });
 
-  const updateStatus = async (id: string, status: CourseBookingStatus) => {
-    const { error } = await supabase.from("course_bookings").update({ status }).eq("id", id);
-    if (!error) {
-      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
+  const updateStatus = async (id: string, newStatus: CourseBookingStatus) => {
+    const booking = bookings.find((b) => b.id === id);
+    if (!booking) return;
+
+    const oldStatus = booking.status;
+    const wasCancelledOrRefunded = oldStatus === "cancelled" || oldStatus === "refunded";
+    const isCancellingOrRefunding = newStatus === "cancelled" || newStatus === "refunded";
+
+    const { error } = await supabase.from("course_bookings").update({ status: newStatus }).eq("id", id);
+    if (error) return;
+
+    // Free up a seat when cancelling/refunding an active booking
+    if (!wasCancelledOrRefunded && isCancellingOrRefunding && booking.session_id) {
+      await supabase.rpc("decrement_booked_seats", { p_session_id: booking.session_id });
     }
+
+    // Re-claim a seat when reverting from cancelled/refunded back to active
+    if (wasCancelledOrRefunded && !isCancellingOrRefunding && booking.session_id) {
+      await supabase.rpc("increment_booked_seats", { p_session_id: booking.session_id });
+    }
+
+    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b)));
   };
 
   const formatAmount = (cents: number | null) => {
