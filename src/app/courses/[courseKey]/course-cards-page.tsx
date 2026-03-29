@@ -221,7 +221,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     bookingType="dropdown"
                     dates={dynamicDates}
                     buttonText="Kombikurs buchen"
-                    additionalInfo="Kursstandort: Berlin-Mitte"
+                    additionalInfo="Praxiskurs Ort: Berlin-Mitte"
                     onBook={(sessionId) => handleBooking("Kombikurs", sessionId)}
                     isLoading={loadingCheckout?.startsWith("Kombikurs-") || false}
                     selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
@@ -273,7 +273,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   bookingType="dropdown"
                   dates={dynamicDates}
                   buttonText="Praxiskurs buchen"
-                  additionalInfo="Kursstandort: Berlin-Mitte"
+                  additionalInfo="Praxiskurs Ort: Berlin-Mitte"
                   onBook={(sessionId) => handleBooking("Praxiskurs", sessionId)}
                   isLoading={loadingCheckout?.startsWith("Praxiskurs-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Praxiskurs-", "")}
@@ -290,7 +290,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   bookingType="dropdown"
                   dates={dynamicDates}
                   buttonText="Kombikurs buchen"
-                  additionalInfo="Kursstandort: Berlin-Mitte"
+                  additionalInfo="Praxiskurs Ort: Berlin-Mitte"
                   onBook={(sessionId) => handleBooking("Kombikurs", sessionId)}
                   highlighted={true}
                   isLoading={loadingCheckout?.startsWith("Kombikurs-") || false}

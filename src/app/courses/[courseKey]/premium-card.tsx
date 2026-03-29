@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Check, Loader2, Award, ChevronDown, Info, X } from "lucide-react";
+import { TerminUpdateModal } from "./termin-update-modal";
 
 interface CourseDate {
   id: string;
@@ -124,6 +125,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
   const [selectedDate, setSelectedDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [infoModal, setInfoModal] = useState<IncludedCourse | null>(null);
+  const [showTerminModal, setShowTerminModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -178,7 +180,8 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
 
       {/* Body */}
       <div className="px-8 pt-6 pb-4">
-        <div className="mb-4">
+        {/* Price row — fixed height to align with other cards */}
+        <div className="mb-6 min-h-[4.5rem]">
           <div className="flex items-baseline gap-3 mb-1">
             <div className="text-4xl font-bold text-[#0066FF]">EUR 1.998</div>
             <div className="text-lg text-gray-400 line-through">EUR 2.220</div>
@@ -186,68 +189,85 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
           <p className="text-sm text-[#0066FF] font-semibold">10% Rabatt auf alle Einzelkurse</p>
         </div>
 
-        <div className="mb-6 font-semibold text-black min-h-[1.5rem]">Kursstandort Praxis: Berlin-Mitte</div>
+        {/* Location row — fixed height */}
+        <div className="mb-6 min-h-[1.5rem] font-semibold text-black">Praxiskurs Ort: Berlin-Mitte</div>
 
-        {/* Date picker + book button */}
-        <div className="space-y-4 mb-6">
-          <div ref={dropdownRef} className="relative">
+        {/* Action area — fixed height to align with other cards */}
+        <div className="mb-6 min-h-[7.5rem]">
+          <div className="space-y-4">
+            <div ref={dropdownRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="w-full bg-white border-2 border-[#0066FF] text-[#0066FF] font-semibold text-sm py-3 px-4 rounded-md cursor-pointer flex items-center justify-between gap-2"
+              >
+                <span className={`flex items-center gap-2 whitespace-nowrap ${selectedDateObj ? "" : "opacity-70"}`}>
+                  {selectedDateObj ? selectedDateObj.label : "Praxiskurs-Termin wählen"}
+                  {selectedDateObj?.availabilityTag && (
+                    <span className={getBadgeClasses(selectedDateObj)}>{selectedDateObj.availabilityTag}</span>
+                  )}
+                </span>
+                <ChevronDown className={`w-5 h-5 flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {dropdownOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[280px] overflow-y-auto">
+                  {dates.map((date) => (
+                    <button
+                      key={date.id}
+                      type="button"
+                      disabled={!date.available}
+                      onClick={() => {
+                        setSelectedDate(date.id);
+                        setDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-4 py-2 text-sm text-left transition-colors ${
+                        !date.available
+                          ? "text-gray-400 cursor-not-allowed"
+                          : selectedDate === date.id
+                            ? "bg-blue-50 font-semibold text-black"
+                            : "font-semibold text-black hover:bg-gray-50"
+                      }`}
+                    >
+                      <span className="truncate mr-3">{date.label}</span>
+                      {date.availabilityTag && (
+                        <span className={getBadgeClasses(date)}>{date.availabilityTag}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <button
-              type="button"
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="w-full bg-white border-2 border-[#0066FF] text-[#0066FF] font-semibold text-sm py-2.5 px-4 rounded-md cursor-pointer flex items-center justify-between gap-2"
+              onClick={handleBook}
+              disabled={!selectedDate || isLoading}
+              className="w-full bg-[#0066FF] hover:bg-[#0055DD] text-white font-semibold py-3 rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
             >
-              <span className={`flex items-center gap-2 whitespace-nowrap ${selectedDateObj ? "" : "opacity-70"}`}>
-                {selectedDateObj ? selectedDateObj.label : "Praxiskurs-Termin wählen"}
-                {selectedDateObj?.availabilityTag && (
-                  <span className={getBadgeClasses(selectedDateObj)}>{selectedDateObj.availabilityTag}</span>
-                )}
-              </span>
-              <ChevronDown className={`w-5 h-5 flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+              {isLoading && selectedDate === selectedDateForLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Wird geladen...
+                </>
+              ) : (
+                "Komplettpaket buchen"
+              )}
             </button>
-
-            {dropdownOpen && (
-              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[280px] overflow-y-auto">
-                {dates.map((date) => (
-                  <button
-                    key={date.id}
-                    type="button"
-                    disabled={!date.available}
-                    onClick={() => {
-                      setSelectedDate(date.id);
-                      setDropdownOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-4 py-2 text-sm text-left transition-colors ${
-                      !date.available
-                        ? "text-gray-400 cursor-not-allowed"
-                        : selectedDate === date.id
-                          ? "bg-blue-50 font-semibold text-black"
-                          : "font-semibold text-black hover:bg-gray-50"
-                    }`}
-                  >
-                    <span className="truncate mr-3">{date.label}</span>
-                    {date.availabilityTag && (
-                      <span className={getBadgeClasses(date)}>{date.availabilityTag}</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
+        </div>
 
+        {/* Termin-Updates link */}
+        <div className="min-h-[1.25rem] mb-2">
           <button
-            onClick={handleBook}
-            disabled={!selectedDate || isLoading}
-            className="w-full bg-[#0066FF] hover:bg-[#0055DD] text-white font-semibold py-3 rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+            type="button"
+            onClick={() => setShowTerminModal(true)}
+            className="block w-full text-center text-sm text-gray-500 hover:text-[#0066FF] underline-offset-4 hover:underline font-normal transition-colors cursor-pointer"
           >
-            {isLoading && selectedDate === selectedDateForLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Wird geladen...
-              </>
-            ) : (
-              "Komplettpaket buchen"
-            )}
+            Schickt mir Termin-Updates
           </button>
+          {showTerminModal && (
+            <TerminUpdateModal onClose={() => setShowTerminModal(false)} />
+          )}
         </div>
       </div>
 
@@ -260,13 +280,13 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
             <span className="text-base text-[#0066FF] font-bold">Bis zu 49 CME-Punkte</span>
           </li>
           {INCLUDED_COURSES.map((course, index) => (
-            <li key={index} className="flex items-start gap-2">
-              <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+            <li key={index} className="flex items-center gap-2">
+              <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" />
               <span className="text-base text-black">{course.name}</span>
               <button
                 type="button"
                 onClick={() => setInfoModal(course)}
-                className="text-[#0066FF] hover:text-[#0055DD] flex-shrink-0 mt-0.5 transition-colors"
+                className="text-[#0066FF] hover:text-[#0055DD] flex-shrink-0 transition-colors"
                 aria-label={`Info zu ${course.name}`}
               >
                 <Info className="w-4 h-4" />

@@ -109,111 +109,120 @@ export function CourseCard({
 
       {/* Body */}
       <div className="px-8 pt-6 pb-4">
-        <div className="mb-6">
+        {/* Price row — fixed height so it aligns across cards */}
+        <div className="mb-6 min-h-[4.5rem]">
           <div className="text-4xl font-bold text-[#0066FF] mb-1">{price}</div>
           <p className="text-sm text-black">Ratenzahlungen sind möglich mit Klarna.</p>
         </div>
 
-        {additionalInfo ? (
-          <div className="mb-6 font-semibold text-black min-h-[1.5rem]">{additionalInfo}</div>
-        ) : (
-          <div className="mb-6 min-h-[1.5rem]" />
-        )}
+        {/* Location row — fixed height */}
+        <div className="mb-6 min-h-[1.5rem] font-semibold text-black">
+          {additionalInfo || "\u00A0"}
+        </div>
 
-        {bookingType === "direct" ? (
-          <div className="mb-6">
-            <button
-              onClick={handleBook}
-              disabled={isLoading}
-              className="w-full bg-[#0066FF] hover:bg-[#0055DD] text-white font-semibold py-3 rounded-md disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Wird geladen...
-                </>
-              ) : (
-                buttonText
-              )}
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-4 mb-6">
-            {/* Custom dropdown with colored availability badges */}
-            <div ref={dropdownRef} className="relative">
+        {/* Action area — fixed height so buttons/dropdowns align */}
+        <div className="mb-6 min-h-[7.5rem]">
+          {bookingType === "direct" ? (
+            <div className="flex flex-col justify-end h-full">
+              <button
+                onClick={handleBook}
+                disabled={isLoading}
+                className="w-full bg-[#0066FF] hover:bg-[#0055DD] text-white font-semibold py-3 rounded-md disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Wird geladen...
+                  </>
+                ) : (
+                  buttonText
+                )}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Custom dropdown with colored availability badges */}
+              <div ref={dropdownRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="w-full bg-white border-2 border-[#0066FF] text-[#0066FF] font-semibold text-sm py-3 px-4 rounded-md cursor-pointer flex items-center justify-between gap-2"
+                >
+                  <span className={`flex items-center gap-2 whitespace-nowrap ${selectedDateObj ? "" : "opacity-70"}`}>
+                    {selectedDateObj ? selectedDateObj.label : "Termine anschauen"}
+                    {selectedDateObj?.availabilityTag && (
+                      <span className={getBadgeClasses(selectedDateObj)}>{selectedDateObj.availabilityTag}</span>
+                    )}
+                  </span>
+                  <ChevronDown className={`w-5 h-5 flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {dropdownOpen && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[280px] overflow-y-auto">
+                    {dates.map((date) => {
+                      return (
+                        <button
+                          key={date.id}
+                          type="button"
+                          disabled={!date.available}
+                          onClick={() => {
+                            setSelectedDate(date.id);
+                            setDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-4 py-2 text-sm text-left transition-colors ${
+                            !date.available
+                              ? "text-gray-400 cursor-not-allowed"
+                              : selectedDate === date.id
+                                ? "bg-blue-50 font-semibold text-black"
+                                : "font-semibold text-black hover:bg-gray-50"
+                          }`}
+                        >
+                          <span className="truncate mr-3">{date.label}</span>
+                          {date.availabilityTag && (
+                            <span className={getBadgeClasses(date)}>{date.availabilityTag}</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={handleBook}
+                disabled={!selectedDate || isLoading}
+                className="w-full bg-[#0066FF] hover:bg-[#0055DD] text-white font-semibold py-3 rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              >
+                {isLoading && selectedDate === selectedDateForLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Wird geladen...
+                  </>
+                ) : (
+                  buttonText
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Termin-Updates link — always rendered for dropdown cards, invisible spacer for direct */}
+        <div className="min-h-[1.25rem] mb-2">
+          {bookingType === "dropdown" && (
+            <>
               <button
                 type="button"
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="w-full bg-white border-2 border-[#0066FF] text-[#0066FF] font-semibold text-sm py-2.5 px-4 rounded-md cursor-pointer flex items-center justify-between gap-2"
+                onClick={() => setShowTerminModal(true)}
+                className="block w-full text-center text-sm text-gray-500 hover:text-[#0066FF] underline-offset-4 hover:underline font-normal transition-colors cursor-pointer"
               >
-                <span className={`flex items-center gap-2 whitespace-nowrap ${selectedDateObj ? "" : "opacity-70"}`}>
-                  {selectedDateObj ? selectedDateObj.label : "Termine anschauen"}
-                  {selectedDateObj?.availabilityTag && (
-                    <span className={getBadgeClasses(selectedDateObj)}>{selectedDateObj.availabilityTag}</span>
-                  )}
-                </span>
-                <ChevronDown className={`w-5 h-5 flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+                Schickt mir Termin-Updates
               </button>
-
-              {dropdownOpen && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[280px] overflow-y-auto">
-                  {dates.map((date) => {
-                    return (
-                      <button
-                        key={date.id}
-                        type="button"
-                        disabled={!date.available}
-                        onClick={() => {
-                          setSelectedDate(date.id);
-                          setDropdownOpen(false);
-                        }}
-                        className={`w-full flex items-center justify-between px-4 py-2 text-sm text-left transition-colors ${
-                          !date.available
-                            ? "text-gray-400 cursor-not-allowed"
-                            : selectedDate === date.id
-                              ? "bg-blue-50 font-semibold text-black"
-                              : "font-semibold text-black hover:bg-gray-50"
-                        }`}
-                      >
-                        <span className="truncate mr-3">{date.label}</span>
-                        {date.availabilityTag && (
-                          <span className={getBadgeClasses(date)}>{date.availabilityTag}</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+              {showTerminModal && (
+                <TerminUpdateModal onClose={() => setShowTerminModal(false)} />
               )}
-            </div>
-
-            <button
-              onClick={handleBook}
-              disabled={!selectedDate || isLoading}
-              className="w-full bg-[#0066FF] hover:bg-[#0055DD] text-white font-semibold py-3 rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
-            >
-              {isLoading && selectedDate === selectedDateForLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Wird geladen...
-                </>
-              ) : (
-                buttonText
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowTerminModal(true)}
-              className="block w-full text-center text-sm text-gray-500 hover:text-[#0066FF] underline-offset-4 hover:underline font-normal transition-colors mt-0 cursor-pointer"
-            >
-              Schickt mir Termin-Updates
-            </button>
-
-            {showTerminModal && (
-              <TerminUpdateModal onClose={() => setShowTerminModal(false)} />
-            )}
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Features */}
