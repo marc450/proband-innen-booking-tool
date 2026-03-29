@@ -287,17 +287,13 @@ export function buildSessionChangeEmail(firstName: string, courseName: string, p
 </div>`;
 }
 
-export function buildInvoiceEmail(firstName: string, hostedInvoiceUrl: string): string {
+export function buildInvoiceEmail(firstName: string): string {
   return `<div style="background-color:#fff; padding:0; font-family:Arial, sans-serif;">
   <div style="background-color:#fff; max-width:600px; margin:0 auto; padding:8px; text-align:left; line-height:1.5;">
     <p style="margin-top:0; margin-bottom:20px;">
       Hi ${firstName},<br><br>
       mit dieser E-Mail senden wir Dir hier Deine Rechnung zu Deinem Kauf. Falls Du Fragen oder Änderungswünsche hast, dann antworte uns einfach auf diese E-Mail.
     </p>
-
-    ${hostedInvoiceUrl ? `<div style="text-align:center; margin-bottom:20px;">
-      <a href="${hostedInvoiceUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block; text-decoration:none; background-color:#0066FF; color:white; padding:10px 20px; border-radius:10px; font-size:16px; font-family:Arial, sans-serif; cursor:pointer;">hier geht's zur Rechnung</a>
-    </div>` : ""}
 
     <p style="margin:0 0 20px;">
       Herzliche Grüße,<br>

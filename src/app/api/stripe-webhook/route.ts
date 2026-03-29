@@ -108,7 +108,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   const pdf = await fetchInvoicePdf(invoice.id);
   const attachments = pdf ? [pdf] : undefined;
 
-  const emailHtml = buildInvoiceEmail(firstName, hostedUrl);
+  const emailHtml = buildInvoiceEmail(firstName);
   await sendEmail(email, "Deine EPHIA-Rechnung", emailHtml, attachments);
 
   console.log(`Invoice email sent for ${invoice.id} to ${email}`);
