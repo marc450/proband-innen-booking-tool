@@ -25,7 +25,7 @@ export function SettingsContent({
 }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const tab = searchParams.get("tab") || "kursangebot";
+  const tab = searchParams.get("tab") || "kurstermine";
 
   const handleTabChange = (value: string) => {
     router.replace(`/dashboard/settings?tab=${value}`);
@@ -37,9 +37,9 @@ export function SettingsContent({
 
       <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value="kursangebot">Kursangebot</TabsTrigger>
           <TabsTrigger value="kurstermine">Kurstermine</TabsTrigger>
-          <TabsTrigger value="benutzer">Benutzer</TabsTrigger>
+          <TabsTrigger value="kursangebot">Kurse</TabsTrigger>
+          <TabsTrigger value="benutzer">Benutzer:innen</TabsTrigger>
         </TabsList>
 
         <TabsContent value="kursangebot" className="mt-6">
