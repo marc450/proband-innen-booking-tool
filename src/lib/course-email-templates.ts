@@ -17,15 +17,25 @@ const RECHNUNG_SECTION = `
       Deine Rechnung senden wir Dir in einer separaten E-Mail automatisch zu, sobald Deine Zahlung bestätigt wurde. Bitte beachte, dass dieser Prozess bei SEPA-Bezahlungen bis zu zwei Wochen dauern kann.
     </p>`;
 
+const MONTHS_DE_FULL = [
+  "Januar", "Februar", "März", "April", "Mai", "Juni",
+  "Juli", "August", "September", "Oktober", "November", "Dezember",
+];
+
+export function formatDateDe(dateIso: string): string {
+  const [y, m, d] = dateIso.split("-").map(Number);
+  return `${String(d).padStart(2, "0")}. ${MONTHS_DE_FULL[m - 1]} ${y}`;
+}
+
 function praxiskursInfoBox({
   address,
-  dateLabel,
+  dateFormatted,
   startTime,
   endTime,
   instructor,
 }: {
   address: string;
-  dateLabel: string;
+  dateFormatted: string;
   startTime: string;
   endTime: string;
   instructor: string;
@@ -36,7 +46,7 @@ function praxiskursInfoBox({
         <span style="font-weight:bold;">Kursort:</span> ${address}
       </p>
       <p style="margin:0 0 6px;">
-        <span style="font-weight:bold;">Datum:</span> ${dateLabel}
+        <span style="font-weight:bold;">Datum:</span> ${dateFormatted}
       </p>
       <p style="margin:0 0 6px;">
         <span style="font-weight:bold;">Beginn:</span> ${startTime} Uhr
@@ -56,7 +66,7 @@ function praxiskursInfoBox({
 const PROBANDINNEN_SECTION = `
     <h3 style="margin:16px 0 10px;font-size:16px;font-weight:bold;">Proband:innen-Organisation</h3>
     <p style="margin:0 0 20px;">
-      Für den Praxiskurs bringen idealerweise alle Teilnehmer:innen eine:n eigene:n Proband:in mit. Dein:e Proband:in registriert sich bitte spätestens zwei Wochen vor Kursbeginn über <a href="https://2e9hm2.share-eu1.hsforms.com/2FeNQT7foRlSp5S4dYfmW8A" style="color:#0066FF;text-decoration:none;">unser Formular</a> und gibt dort Deinen Namen sowie das gebuchte Kursdatum an.
+      Für den Praxiskurs sollten alle Teilnehmer:innen eine:n eigene:n Proband:in mitbringen. Dein:e Proband:in registriert sich bitte spätestens zwei Wochen vor Kursbeginn über <a href="https://proband-innen-booking-tool-production-1269.up.railway.app/book" style="color:#0066FF;text-decoration:none;">diesen Link</a>.
       <br><br>
       Solltest Du keine:n Proband:in mitbringen können, ist das kein Ausschlusskriterium: Melde Dich einfach unter <a href="mailto:customerlove@ephia.de" style="color:#0066FF;text-decoration:none;">customerlove@ephia.de</a>, wir greifen dann auf unseren Proband:innen-Pool zurück und versuchen, eine passende Person für Dich zu organisieren. Bitte beachte, dass Anmeldungen von Proband:innen nach einer Woche vor Kursstart nicht mehr beachtet werden können.
     </p>
@@ -74,7 +84,7 @@ const VORAUSSETZUNG_SECTION = `
 
 interface PraxisInfo {
   address: string;
-  dateLabel: string;
+  dateFormatted: string;
   startTime: string;
   endTime: string;
   instructor: string;

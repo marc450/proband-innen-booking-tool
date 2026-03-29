@@ -5,6 +5,7 @@ import {
   buildPraxiskursEmail,
   buildKombikursEmail,
   buildCommunityInviteEmail,
+  formatDateDe,
 } from "@/lib/course-email-templates";
 import Stripe from "stripe";
 
@@ -146,7 +147,7 @@ export async function POST(req: NextRequest) {
           emailSubject = `Buchungsbestätigung: ${courseName}`;
 
           // Fetch session details for the email
-          let praxisInfo = { address: "", dateLabel: sessionLabel, startTime: "", endTime: "", instructor: "" };
+          let praxisInfo = { address: "", dateFormatted: sessionLabel, startTime: "", endTime: "", instructor: "" };
           if (sessionId) {
             const { data: sess } = await supabase
               .from("course_sessions")
@@ -156,7 +157,7 @@ export async function POST(req: NextRequest) {
             if (sess) {
               praxisInfo = {
                 address: sess.address || "",
-                dateLabel: sess.label_de || sess.date_iso,
+                dateFormatted: sess.date_iso ? formatDateDe(sess.date_iso) : sess.label_de || "",
                 startTime: sess.start_time || "",
                 endTime: sess.start_time && sess.duration_minutes
                   ? computeEndTime(sess.start_time, sess.duration_minutes)
@@ -171,7 +172,7 @@ export async function POST(req: NextRequest) {
           const courseName = template?.name_kombi || courseLabelDe;
           emailSubject = `Buchungsbestätigung: ${courseName}`;
 
-          let praxisInfo = { address: "", dateLabel: sessionLabel, startTime: "", endTime: "", instructor: "" };
+          let praxisInfo = { address: "", dateFormatted: sessionLabel, startTime: "", endTime: "", instructor: "" };
           if (sessionId) {
             const { data: sess } = await supabase
               .from("course_sessions")
@@ -181,7 +182,7 @@ export async function POST(req: NextRequest) {
             if (sess) {
               praxisInfo = {
                 address: sess.address || "",
-                dateLabel: sess.label_de || sess.date_iso,
+                dateFormatted: sess.date_iso ? formatDateDe(sess.date_iso) : sess.label_de || "",
                 startTime: sess.start_time || "",
                 endTime: sess.start_time && sess.duration_minutes
                   ? computeEndTime(sess.start_time, sess.duration_minutes)
