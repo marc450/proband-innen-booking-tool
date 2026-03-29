@@ -75,7 +75,6 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [invoicePreviewUrl, setInvoicePreviewUrl] = useState<string | null>(null);
 
   // Session change state
   const [changeBooking, setChangeBooking] = useState<BookingRow | null>(null);
@@ -378,13 +377,17 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                   <TableCell>
                     {booking.stripe_invoice_pdf_url ? (
                       <span className="inline-flex items-center gap-2">
-                        <button
-                          onClick={() => setInvoicePreviewUrl(booking.stripe_invoice_url || booking.stripe_invoice_pdf_url)}
-                          className="text-muted-foreground hover:text-foreground transition-colors"
-                          title="Rechnung ansehen"
-                        >
-                          <Search className="h-4 w-4" />
-                        </button>
+                        {booking.stripe_invoice_url && (
+                          <a
+                            href={booking.stripe_invoice_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                            title="Rechnung ansehen"
+                          >
+                            <Search className="h-4 w-4" />
+                          </a>
+                        )}
                         <a
                           href={booking.stripe_invoice_pdf_url}
                           target="_blank"
@@ -418,22 +421,6 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
           )}
         </TableBody>
       </Table>
-
-      {/* Invoice preview modal */}
-      <Dialog open={!!invoicePreviewUrl} onOpenChange={(open) => { if (!open) setInvoicePreviewUrl(null); }}>
-        <DialogContent className="sm:max-w-[800px] h-[85vh]">
-          <DialogHeader>
-            <DialogTitle>Rechnung</DialogTitle>
-          </DialogHeader>
-          {invoicePreviewUrl && (
-            <iframe
-              src={invoicePreviewUrl}
-              className="w-full flex-1 rounded border-0"
-              style={{ minHeight: "calc(85vh - 80px)" }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Session change dialog */}
       <Dialog open={!!changeBooking} onOpenChange={(open) => { if (!open) setChangeBooking(null); }}>
