@@ -59,6 +59,22 @@ export function CourseCard({
 
   const selectedDateObj = dates.find((d) => d.id === selectedDate);
 
+  const getBadgeClasses = (date: CourseDate) => {
+    let cls = "px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap";
+    if (!date.available) {
+      cls += " bg-slate-100 text-slate-500";
+    } else if (date.availabilityLevel === "low") {
+      cls += " bg-[#FAEBE1] text-[#B5475F]";
+    } else if (date.availabilityLevel === "medium") {
+      cls += " bg-amber-100 text-amber-700";
+    } else if (date.availabilityLevel === "ok") {
+      cls += " bg-emerald-100 text-emerald-700";
+    } else {
+      cls += " bg-slate-100 text-slate-600";
+    }
+    return cls;
+  };
+
   const handleBook = () => {
     if (bookingType === "dropdown") {
       if (!selectedDate) {
@@ -128,28 +144,18 @@ export function CourseCard({
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="w-full bg-white border-2 border-[#0066FF] text-[#0066FF] font-semibold py-2.5 px-4 rounded-md cursor-pointer flex items-center justify-between"
               >
-                <span className={selectedDateObj ? "" : "opacity-70"}>
+                <span className={`flex items-center gap-2 ${selectedDateObj ? "" : "opacity-70"}`}>
                   {selectedDateObj ? selectedDateObj.label : "Termine anschauen"}
+                  {selectedDateObj?.availabilityTag && (
+                    <span className={getBadgeClasses(selectedDateObj)}>{selectedDateObj.availabilityTag}</span>
+                  )}
                 </span>
-                <ChevronDown className={`w-5 h-5 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+                <ChevronDown className={`w-5 h-5 flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
               </button>
 
               {dropdownOpen && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[280px] overflow-y-auto">
                   {dates.map((date) => {
-                    let badgeClasses = "px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap";
-                    if (!date.available) {
-                      badgeClasses += " bg-slate-100 text-slate-500";
-                    } else if (date.availabilityLevel === "low") {
-                      badgeClasses += " bg-[#FAEBE1] text-[#B5475F]";
-                    } else if (date.availabilityLevel === "medium") {
-                      badgeClasses += " bg-amber-100 text-amber-700";
-                    } else if (date.availabilityLevel === "ok") {
-                      badgeClasses += " bg-emerald-100 text-emerald-700";
-                    } else {
-                      badgeClasses += " bg-slate-100 text-slate-600";
-                    }
-
                     return (
                       <button
                         key={date.id}
@@ -169,7 +175,7 @@ export function CourseCard({
                       >
                         <span className="truncate mr-3">{date.label}</span>
                         {date.availabilityTag && (
-                          <span className={badgeClasses}>{date.availabilityTag}</span>
+                          <span className={getBadgeClasses(date)}>{date.availabilityTag}</span>
                         )}
                       </button>
                     );
