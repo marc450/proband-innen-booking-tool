@@ -16,21 +16,48 @@ const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 
-async function sendEmail(to: string, subject: string, html: string) {
+async function sendEmail(
+  to: string,
+  subject: string,
+  html: string,
+  attachments?: { filename: string; content: string }[]
+) {
   if (!RESEND_API_KEY) return;
+  const payload: Record<string, unknown> = {
+    from: "EPHIA <customerlove@ephia.de>",
+    to: [to],
+    subject,
+    html,
+  };
+  if (attachments?.length) {
+    payload.attachments = attachments;
+  }
   await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${RESEND_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      from: "EPHIA <customerlove@ephia.de>",
-      to: [to],
-      subject,
-      html,
-    }),
+    body: JSON.stringify(payload),
   });
+}
+
+async function fetchInvoicePdf(invoiceId: string): Promise<{ filename: string; content: string } | null> {
+  try {
+    const invoice = await stripe.invoices.retrieve(invoiceId);
+    if (!invoice.invoice_pdf) return null;
+
+    const res = await fetch(invoice.invoice_pdf);
+    if (!res.ok) return null;
+
+    const buffer = await res.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString("base64");
+    const number = invoice.number || "rechnung";
+    return { filename: `EPHIA_Rechnung_${number}.pdf`, content: base64 };
+  } catch (err) {
+    console.error("Failed to fetch invoice PDF:", err);
+    return null;
+  }
 }
 
 function computeEndTime(startTime: string, durationMinutes: number): string {
@@ -132,6 +159,14 @@ export async function POST(req: NextRequest) {
 
     const courseLabelDe = template?.course_label_de || template?.title || "Kurs";
 
+    // Fetch invoice PDF if available
+    const invoiceId = typeof session.invoice === "string" ? session.invoice : session.invoice?.id || null;
+    let invoiceAttachment: { filename: string; content: string }[] | undefined;
+    if (invoiceId) {
+      const pdf = await fetchInvoicePdf(invoiceId);
+      if (pdf) invoiceAttachment = [pdf];
+    }
+
     // Send confirmation email
     if (email) {
       try {
@@ -194,7 +229,7 @@ export async function POST(req: NextRequest) {
           emailHtml = buildKombikursEmail(firstName, courseName, praxisInfo);
         }
 
-        await sendEmail(email, emailSubject, emailHtml);
+        await sendEmail(email, emailSubject, emailHtml, invoiceAttachment);
       } catch (emailErr) {
         console.error("Failed to send course confirmation email:", emailErr);
       }

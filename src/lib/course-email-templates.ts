@@ -14,7 +14,7 @@ const FOOTER = `
 const RECHNUNG_SECTION = `
     <h3 style="margin:16px 0 10px;font-size:16px;font-weight:bold;">Deine Rechnung</h3>
     <p style="margin:0 0 20px;">
-      Deine Rechnung senden wir Dir in einer separaten E-Mail automatisch zu, sobald Deine Zahlung bestätigt wurde. Bitte beachte, dass dieser Prozess bei SEPA-Bezahlungen bis zu zwei Wochen dauern kann.
+      Deine Rechnung findest Du als PDF im Anhang dieser E-Mail. Bitte beachte, dass bei SEPA-Bezahlungen die finale Rechnung erst nach Zahlungseingang erstellt werden kann.
     </p>`;
 
 const MONTHS_DE_FULL = [
