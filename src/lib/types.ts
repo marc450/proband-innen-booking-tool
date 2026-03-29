@@ -8,6 +8,64 @@ export interface CourseTemplate {
   image_url: string | null;
   instructor: string | null;
   created_at: string;
+  // Auszubildende-specific fields (nullable for Proband:innen templates)
+  course_key: string | null;
+  course_label_de: string | null;
+  name_online: string | null;
+  name_praxis: string | null;
+  name_kombi: string | null;
+  price_gross_online: number | null;
+  price_gross_praxis: number | null;
+  price_gross_kombi: number | null;
+  vat_rate_online: number | null;
+  vat_rate_praxis: number | null;
+  vat_rate_kombi: number | null;
+  description_online: string | null;
+  description_praxis: string | null;
+  description_kombi: string | null;
+  success_url_online: string | null;
+  success_url_praxis: string | null;
+  success_url_kombi: string | null;
+  cancel_url_online: string | null;
+  cancel_url_praxis: string | null;
+  cancel_url_kombi: string | null;
+  status: string | null;
+  online_course_id: string | null;
+}
+
+export type CourseType = "Onlinekurs" | "Praxiskurs" | "Kombikurs";
+export type CourseBookingStatus = "booked" | "completed" | "cancelled" | "refunded";
+
+export interface CourseSession {
+  id: string;
+  template_id: string;
+  date_iso: string;
+  label_de: string | null;
+  instructor_name: string | null;
+  max_seats: number;
+  booked_seats: number;
+  address: string | null;
+  start_time: string | null;
+  duration_minutes: number | null;
+  is_live: boolean;
+  created_at: string;
+}
+
+export interface CourseBooking {
+  id: string;
+  session_id: string | null;
+  template_id: string;
+  course_type: CourseType;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+  stripe_checkout_session_id: string | null;
+  stripe_customer_id: string | null;
+  amount_paid: number | null;
+  status: CourseBookingStatus;
+  audience_tag: string | null;
+  created_at: string;
 }
 
 export interface Dozent {

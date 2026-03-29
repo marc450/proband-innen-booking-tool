@@ -48,10 +48,15 @@ src/
         slot-selection.tsx
       success/page.tsx
 
-    dashboard/                      # PROTECTED: Staff admin interface
+    courses/[courseKey]/             # PUBLIC: Auszubildende course landing page (iframe embed)
+      page.tsx                      # Server: fetches template + live sessions
+      course-cards-page.tsx         # Client: 3 cards (Onlinekurs/Praxiskurs/Kombikurs)
+      course-card.tsx               # Card component with date picker + checkout
+
+    dashboard/                      # PROTECTED: Staff admin interface (dropdown nav)
       layout.tsx
-      nav.tsx
-      page.tsx                      # Main dashboard (courses, slots, bookings)
+      nav.tsx                       # Grouped nav: Proband:innen ▾ / Auszubildende ▾ / Einstellungen
+      page.tsx                      # Main dashboard (Proband:innen courses, slots, bookings)
       courses-manager.tsx           # CRUD courses + slots + templates
       templates-manager.tsx
       bookings/
@@ -64,9 +69,17 @@ src/
       campaigns/
         campaigns-manager.tsx       # Email campaigns: draft/schedule/send
         new/campaign-composer.tsx
+      auszubildende/                  # Auszubildende (doctor course bookings)
+        page.tsx                    # Course sessions overview
+        course-sessions-manager.tsx # CRUD sessions, toggle is_live
+        buchungen/
+          page.tsx                  # Course bookings list
+          course-bookings-manager.tsx # Bookings table with search/status
       settings/
-        settings-content.tsx
+        settings-content.tsx        # 4 tabs: Kursvorlagen, Benutzer, Kursangebot, Kurstermine
         users-manager.tsx           # Staff user management (roles: admin/dozent)
+        course-offering-manager.tsx # CRUD for Auszubildende course templates
+        course-sessions-settings.tsx # Session management (reuses course-sessions-manager)
 
     api/                            # Backend API routes (Next.js route handlers)
       create-checkout-session/      # POST: Stripe setup intent → checkout URL
@@ -80,6 +93,9 @@ src/
       delete-patient/               # POST: Hard-deletes patient + bookings
       import-patients/              # POST: Bulk import patients from JSON (CSV/Excel)
       migrate-encryption/           # POST: One-off E2EE migration helper
+      course-checkout/              # POST: Stripe payment checkout for course bookings
+      course-sessions/              # GET: Live sessions for a template (polling endpoint)
+      stripe-webhook/               # POST: Stripe webhook (checkout.session.completed → booking + emails + Slack)
       admin/users/route.ts          # GET list staff, POST create staff
       admin/users/[id]/route.ts     # PATCH update, DELETE remove staff
 
@@ -123,8 +139,12 @@ supabase/
 | `dozenten` | Instructor profiles | `id`, `title`, `first_name`, `last_name` |
 | `profiles` | Staff user profiles | `id` (FK auth.users), `first_name`, `last_name`, `role` (admin/dozent), `is_dozent`, `title` |
 | `available_slots` | VIEW: slots + remaining capacity | All slot columns + `course_title`, `remaining_capacity` |
+| `course_sessions` | Auszubildende course dates | `id`, `template_id`, `date_iso`, `label_de`, `instructor_name`, `max_seats`, `booked_seats`, `address`, `start_time`, `duration_minutes`, `is_live` |
+| `course_bookings` | Auszubildende bookings (NO E2EE) | `id`, `session_id`, `template_id`, `course_type`, `first_name`, `last_name`, `email`, `phone`, `stripe_checkout_session_id`, `amount_paid`, `status`, `audience_tag` |
 
 **Atomic booking creation**: RPC `create_encrypted_booking()` — locks slot row (FOR UPDATE), checks capacity, raises `SLOT_FULL` / `DUPLICATE_BOOKING` exceptions.
+
+**Atomic course booking**: RPC `create_course_booking()` — locks session row (FOR UPDATE), checks capacity, increments `booked_seats`, inserts into `course_bookings`. Raises `SESSION_FULL` / `SESSION_NOT_FOUND`.
 
 ---
 
@@ -154,6 +174,15 @@ All patient PII is encrypted at rest. **Do not change encryption logic without c
 1. Staff or doctor fills form (patient name, email, phone, referringDoctor)
 2. `POST /api/create-private-booking` → eligibility check → encrypt → RPC → email + Slack
 3. No Stripe involved
+
+### Auszubildende Course Booking (`/courses/[courseKey]`, embedded in LearnWorlds iframe)
+1. Doctor visits landing page (3 cards: Onlinekurs/Praxiskurs/Kombikurs)
+2. For Praxiskurs/Kombikurs: selects a date from dropdown (shows availability)
+3. Clicks "buchen" → `POST /api/course-checkout` → Stripe payment checkout (real charge)
+4. Stripe redirects to ephia.de thank-you page
+5. Stripe webhook `POST /api/stripe-webhook` fires on `checkout.session.completed`
+6. Webhook: RPC `create_course_booking()` (atomic seat management), sends confirmation email + WhatsApp community invite + Slack notification
+7. No E2EE — doctor PII stored in plaintext in `course_bookings`
 
 ### No-Show Penalty
 - Admin sets booking status to `no_show` in dashboard
@@ -193,6 +222,9 @@ ENCRYPTION_PRIVATE_KEY            # PEM format, \\n escaped, server-side only
 
 # Notifications
 SLACK_WEBHOOK_URL                 # Optional; skipped if not set
+
+# Stripe Webhook
+STRIPE_WEBHOOK_SECRET             # For verifying Stripe webhook signatures
 ```
 
 ---

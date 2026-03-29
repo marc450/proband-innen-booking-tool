@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
-import { CourseTemplate } from "@/lib/types";
+import { CourseTemplate, CourseSession } from "@/lib/types";
 import { SettingsContent } from "./settings-content";
 
 export interface AdminUser {
@@ -61,11 +61,25 @@ export default async function SettingsPage() {
     created_at: u.created_at,
   }));
 
+  // Fetch Auszubildende course templates and sessions
+  const { data: courseOfferingsData } = await supabase
+    .from("course_templates")
+    .select("*")
+    .not("course_key", "is", null)
+    .order("title", { ascending: true });
+
+  const { data: courseSessionsData } = await supabase
+    .from("course_sessions")
+    .select("*")
+    .order("date_iso", { ascending: true });
+
   return (
     <SettingsContent
       initialTemplates={(templatesData as CourseTemplate[]) || []}
       initialUsers={users}
       currentUserId={user.id}
+      initialCourseOfferings={(courseOfferingsData as CourseTemplate[]) || []}
+      initialCourseSessions={(courseSessionsData as CourseSession[]) || []}
     />
   );
 }

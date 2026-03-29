@@ -1,0 +1,242 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { CourseCard } from "./course-card";
+import type { CourseTemplate, CourseSession, CourseType } from "@/lib/types";
+
+interface Props {
+  template: CourseTemplate;
+  sessions: CourseSession[];
+}
+
+// Features per course type (Grundkurs Botulinum)
+const onlinekursFeatures = [
+  { text: "10 CME-Punkte" },
+  { text: "13 Lernkapitel" },
+  { text: "2+ Stunden Behandlungsvideos" },
+  { text: "Vorlagen für Rechnungen" },
+  { text: "Vorlagen für Patient:innen-Infos" },
+  { text: "1.5 Jahre Zugriff (inkl. Updates)" },
+  { text: "EPHIA-Zertifikat nach Abschluss" },
+];
+
+const praxiskursFeatures = [
+  { text: "bis zu 12 CME-Punkte" },
+  { text: "6+ Stunden gemeinsames Behandeln" },
+  { text: "Üben an echten Proband:innen" },
+  { text: "Geübt wird mit BTX nicht NaCl" },
+  { text: "Erfahrene Dozent:innen-Aufsicht" },
+  { text: "Max. 7 Teilnehmer:innen" },
+  { text: "EPHIA-Zertifikat nach Abschluss" },
+];
+
+const kombikursFeatures = [
+  { text: "bis zu 22 CME-Punkte" },
+  { text: "Vollständiger Onlinekurs inkludiert" },
+  { text: "Vollständiger Praxiskurs inkludiert" },
+  { text: "EPHIA-Zertifikat nach Abschluss" },
+];
+
+function formatSessionLabel(session: CourseSession): string {
+  let label = session.label_de || session.date_iso;
+
+  if (session.start_time && session.duration_minutes) {
+    const [h, m] = session.start_time.split(":").map(Number);
+    const endMinutes = h * 60 + m + session.duration_minutes;
+    const endH = String(Math.floor(endMinutes / 60)).padStart(2, "0");
+    const endM = String(endMinutes % 60).padStart(2, "0");
+    label = `${label} · ${session.start_time}–${endH}:${endM}`;
+  }
+
+  return label;
+}
+
+function getAvailability(session: CourseSession) {
+  const remaining = session.max_seats - session.booked_seats;
+  const available = remaining > 0;
+
+  let availabilityTag: string | null = null;
+  let availabilityLevel: "low" | "medium" | "ok" | "none" = "none";
+
+  if (!available) {
+    availabilityTag = "ausgebucht";
+    availabilityLevel = "none";
+  } else if (remaining === 1) {
+    availabilityTag = "1 Platz frei";
+    availabilityLevel = "low";
+  } else if (remaining === 2) {
+    availabilityTag = "2 Plätze frei";
+    availabilityLevel = "medium";
+  } else {
+    availabilityTag = "2+ Plätze frei";
+    availabilityLevel = "ok";
+  }
+
+  return { available, availabilityTag, availabilityLevel };
+}
+
+export function CourseCardsPage({ template, sessions: initialSessions }: Props) {
+  const [sessions, setSessions] = useState(initialSessions);
+  const [loadingCheckout, setLoadingCheckout] = useState<string | null>(null);
+
+  // Poll for session updates every 60 seconds
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/course-sessions?templateId=${template.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSessions(data.sessions);
+        }
+      } catch {
+        // silently ignore polling errors
+      }
+    };
+
+    const interval = setInterval(poll, 60_000);
+    return () => clearInterval(interval);
+  }, [template.id]);
+
+  // Reset loading when user returns to page (after Stripe redirect)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        setLoadingCheckout(null);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
+  const dynamicDates = sessions.map((session) => {
+    const { available, availabilityTag, availabilityLevel } = getAvailability(session);
+    return {
+      id: session.id,
+      label: formatSessionLabel(session),
+      available,
+      availabilityTag,
+      availabilityLevel,
+    };
+  });
+
+  const redirectTo = (url: string) => {
+    try {
+      if (window.top && window.top !== window) {
+        window.top.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+    } catch {
+      window.location.href = url;
+    }
+  };
+
+  const handleBooking = async (courseType: CourseType, sessionId?: string) => {
+    const loadingKey = `${courseType}-${sessionId || "direct"}`;
+    setLoadingCheckout(loadingKey);
+
+    const timeoutId = setTimeout(() => setLoadingCheckout(null), 10_000);
+
+    try {
+      if (courseType !== "Onlinekurs" && !sessionId) {
+        alert("Bitte wähle zuerst einen Termin.");
+        clearTimeout(timeoutId);
+        setLoadingCheckout(null);
+        return;
+      }
+
+      const res = await fetch("/api/course-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseKey: template.course_key,
+          courseType,
+          sessionId: sessionId ?? null,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.url) {
+        alert(data.error || "Fehler beim Starten des Checkouts.");
+        clearTimeout(timeoutId);
+        setLoadingCheckout(null);
+        return;
+      }
+
+      redirectTo(data.url);
+    } catch {
+      alert("Unerwarteter Fehler beim Starten des Checkouts.");
+      clearTimeout(timeoutId);
+      setLoadingCheckout(null);
+    }
+  };
+
+  const formatPrice = (amount: number | null) => {
+    if (!amount) return "";
+    return `EUR ${amount.toLocaleString("de-DE")}`;
+  };
+
+  return (
+    <div className="min-h-screen py-12 px-4" style={{ backgroundColor: "#0066FF" }}>
+      <div className="max-w-7xl mx-auto">
+        <h2
+          className="text-4xl font-bold text-center mb-20 mt-20 tracking-wide"
+          style={{ color: "#fff" }}
+        >
+          UNSERE KURSANGEBOTE
+        </h2>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <CourseCard
+            title="Onlinekurs"
+            description={template.description_online || "Erlerne die Theorie zur Behandlung."}
+            price={formatPrice(template.price_gross_online)}
+            features={onlinekursFeatures}
+            bookingType="direct"
+            buttonText="Onlinekurs buchen"
+            onBook={() => handleBooking("Onlinekurs")}
+            isLoading={loadingCheckout === "Onlinekurs-direct"}
+            cmePoints="10 CME"
+          />
+
+          <CourseCard
+            title="Praxiskurs"
+            description={
+              <>
+                Wende Dein <strong className="font-bold">bereits existierendes</strong> theoretisches
+                Wissen in der Praxis an.
+              </>
+            }
+            price={formatPrice(template.price_gross_praxis)}
+            features={praxiskursFeatures}
+            bookingType="dropdown"
+            dates={dynamicDates}
+            buttonText="Praxiskurs buchen"
+            additionalInfo="Kursstandort: Berlin-Mitte"
+            onBook={(sessionId) => handleBooking("Praxiskurs", sessionId)}
+            isLoading={loadingCheckout?.startsWith("Praxiskurs-") || false}
+            selectedDateForLoading={loadingCheckout?.replace("Praxiskurs-", "")}
+            cmePoints="12 CME"
+          />
+
+          <CourseCard
+            title="Kombikurs"
+            description="Ideal für Einsteiger:innen: Lerne die Theorie online und die Praxis vor Ort."
+            price={formatPrice(template.price_gross_kombi)}
+            features={kombikursFeatures}
+            bookingType="dropdown"
+            dates={dynamicDates}
+            buttonText="Kombikurs buchen"
+            additionalInfo="Kursstandort: Berlin-Mitte"
+            onBook={(sessionId) => handleBooking("Kombikurs", sessionId)}
+            highlighted={true}
+            isLoading={loadingCheckout?.startsWith("Kombikurs-") || false}
+            selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
+            cmePoints="22 CME"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}

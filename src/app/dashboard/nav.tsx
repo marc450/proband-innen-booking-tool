@@ -15,13 +15,25 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { KeyRound } from "lucide-react";
+import { KeyRound, ChevronDown } from "lucide-react";
 
-const baseNavItems = [
-  { href: "/dashboard", label: "Kurse" },
-  { href: "/dashboard/bookings", label: "Buchungen" },
-  { href: "/dashboard/patients", label: "Proband:innen" },
-  { href: "/dashboard/campaigns", label: "Kampagnen" },
+const navGroups = [
+  {
+    label: "Proband:innen",
+    items: [
+      { href: "/dashboard", label: "Kurse", exact: true },
+      { href: "/dashboard/bookings", label: "Buchungen" },
+      { href: "/dashboard/patients", label: "Proband:innen" },
+      { href: "/dashboard/campaigns", label: "Kampagnen" },
+    ],
+  },
+  {
+    label: "Auszubildende",
+    items: [
+      { href: "/dashboard/auszubildende", label: "Kurse", exact: true },
+      { href: "/dashboard/auszubildende/buchungen", label: "Buchungen" },
+    ],
+  },
 ];
 
 export function DashboardNav({
@@ -41,13 +53,16 @@ export function DashboardNav({
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
 
-  const navItems = [
-    ...baseNavItems,
-    ...(role === "admin"
-      ? [{ href: "/dashboard/settings", label: "Einstellungen" }]
-      : []),
-  ];
+  // Determine which group is active based on current path
+  const isGroupActive = (group: typeof navGroups[0]) =>
+    group.items.some((item) =>
+      item.exact ? pathname === item.href : pathname.startsWith(item.href)
+    );
+
+  const isItemActive = (item: { href: string; exact?: boolean }) =>
+    item.exact ? pathname === item.href : pathname.startsWith(item.href);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -160,25 +175,59 @@ export function DashboardNav({
             <Link href="/dashboard" className="font-bold text-lg">
               EPHIA Admin
             </Link>
-            <nav className="flex gap-4">
-              {navItems.map((item) => (
+            <nav className="flex items-center gap-4">
+              {navGroups.map((group) => (
+                <div key={group.label} className="relative">
+                  <button
+                    onClick={() => setOpenGroup(openGroup === group.label ? null : group.label)}
+                    onBlur={() => setTimeout(() => setOpenGroup(null), 150)}
+                    className={cn(
+                      "flex items-center gap-1 text-sm transition-colors",
+                      isGroupActive(group)
+                        ? "text-foreground font-medium"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {group.label}
+                    <ChevronDown className={cn(
+                      "h-3.5 w-3.5 transition-transform",
+                      openGroup === group.label && "rotate-180"
+                    )} />
+                  </button>
+                  {openGroup === group.label && (
+                    <div className="absolute top-full left-0 mt-1 bg-white border rounded-lg shadow-lg py-1 min-w-[160px] z-50">
+                      {group.items.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setOpenGroup(null)}
+                          className={cn(
+                            "block px-4 py-2 text-sm transition-colors",
+                            isItemActive(item)
+                              ? "text-foreground font-medium bg-gray-50"
+                              : "text-muted-foreground hover:text-foreground hover:bg-gray-50"
+                          )}
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {role === "admin" && (
                 <Link
-                  key={item.href}
-                  href={item.href}
+                  href="/dashboard/settings"
                   className={cn(
                     "text-sm transition-colors",
-                    item.href === "/dashboard"
-                      ? pathname === "/dashboard"
-                        ? "text-foreground font-medium"
-                        : "text-muted-foreground hover:text-foreground"
-                      : pathname.startsWith(item.href)
-                        ? "text-foreground font-medium"
-                        : "text-muted-foreground hover:text-foreground"
+                    pathname.startsWith("/dashboard/settings")
+                      ? "text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  {item.label}
+                  Einstellungen
                 </Link>
-              ))}
+              )}
             </nav>
           </div>
 
