@@ -232,7 +232,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     buttonText="Onlinekurs buchen"
                     onBook={() => handleBooking("Onlinekurs")}
                     isLoading={loadingCheckout === "Onlinekurs-direct"}
-                    cmePoints={template.cme_online || "10 CME"}
+                    cmePoints={template.cme_online || undefined}
                   />
                 )}
 
@@ -249,7 +249,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     onBook={(sessionId) => handleBooking("Kombikurs", sessionId)}
                     isLoading={loadingCheckout?.startsWith("Kombikurs-") || false}
                     selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
-                    cmePoints={template.cme_kombi || "22 CME"}
+                    cmePoints={template.cme_kombi || undefined}
                   />
                 )}
 
@@ -279,7 +279,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   buttonText="Onlinekurs buchen"
                   onBook={() => handleBooking("Onlinekurs")}
                   isLoading={loadingCheckout === "Onlinekurs-direct"}
-                  cmePoints={template.cme_online || "10 CME"}
+                  cmePoints={template.cme_online || undefined}
                 />
               )}
 
@@ -301,7 +301,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   onBook={(sessionId) => handleBooking("Praxiskurs", sessionId)}
                   isLoading={loadingCheckout?.startsWith("Praxiskurs-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Praxiskurs-", "")}
-                  cmePoints={template.cme_praxis || "12 CME"}
+                  cmePoints={template.cme_praxis || undefined}
                 />
               )}
 
@@ -319,7 +319,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   highlighted={true}
                   isLoading={loadingCheckout?.startsWith("Kombikurs-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
-                  cmePoints={template.cme_kombi || "22 CME"}
+                  cmePoints={template.cme_kombi || undefined}
                 />
               )}
             </div>
