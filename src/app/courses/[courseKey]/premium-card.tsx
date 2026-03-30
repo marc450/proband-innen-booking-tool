@@ -290,7 +290,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
         <ul className="space-y-2">
           <li className="flex items-start gap-2">
             <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
-            <span className="text-base text-[#0066FF] font-bold">Akkreditiert mit bis zu 49 CME-Punkten</span>
+            <span className="text-base text-[#0066FF] font-bold">Akkreditiert mit 49 CME-Punkten</span>
           </li>
           {INCLUDED_COURSES.map((course, index) => (
             <li key={index} className="flex items-start gap-2">
