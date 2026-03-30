@@ -24,6 +24,8 @@ export function TerminUpdateModal({ onClose }: Props) {
   useEffect(() => {
     setMounted(true);
     document.body.style.overflow = "hidden";
+    // Scroll to top so the modal is visible in the iframe viewport
+    window.scrollTo({ top: 0, behavior: "smooth" });
     return () => { document.body.style.overflow = ""; };
   }, []);
 
