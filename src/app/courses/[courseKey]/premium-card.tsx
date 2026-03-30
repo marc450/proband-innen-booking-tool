@@ -203,7 +203,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
         </div>
 
         {/* Location row — fixed height */}
-        <div className="mb-6 min-h-[1.5rem] font-semibold text-black">Praxiskurs Ort: Berlin-Mitte</div>
+        <div className="mb-6 min-h-[1.5rem] font-semibold text-black">Praxiskurs-Standort: Berlin-Mitte</div>
 
         {/* Action area — fixed height to align with other cards */}
         <div className="mb-6 min-h-[7.5rem]">
