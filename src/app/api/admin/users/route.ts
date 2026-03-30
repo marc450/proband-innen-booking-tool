@@ -43,7 +43,7 @@ export async function GET() {
     title: profileMap.get(u.id)?.title ?? null,
     first_name: profileMap.get(u.id)?.first_name ?? null,
     last_name: profileMap.get(u.id)?.last_name ?? null,
-    role: (profileMap.get(u.id)?.role ?? "admin") as "admin" | "dozent",
+    role: (profileMap.get(u.id)?.role ?? "admin") as "admin" | "nutzer",
     is_dozent: profileMap.get(u.id)?.is_dozent ?? false,
     created_at: u.created_at,
   }));
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
   const user = await assertAdmin();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-  const { title, first_name, last_name, email, role, password } = await req.json();
+  const { title, first_name, last_name, email, role, is_dozent, password } = await req.json();
   if (!email || !first_name || !last_name || !password) {
     return NextResponse.json({ error: "Bitte alle Pflichtfelder ausfüllen." }, { status: 400 });
   }
@@ -77,8 +77,8 @@ export async function POST(req: NextRequest) {
     title: title || null,
     first_name,
     last_name,
-    role: role === "admin" ? "admin" : "dozent",
-    is_dozent: role === "dozent" ? true : false,
+    role: role === "admin" ? "admin" : "nutzer",
+    is_dozent: is_dozent ?? false,
   });
 
   return NextResponse.json({ ok: true, userId: data.user.id });

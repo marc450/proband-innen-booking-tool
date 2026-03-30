@@ -12,7 +12,7 @@ export interface AdminUser {
   title: string | null;
   first_name: string | null;
   last_name: string | null;
-  role: "admin" | "dozent";
+  role: "admin" | "nutzer";
   is_dozent: boolean;
   created_at: string;
 }
@@ -51,7 +51,7 @@ export default async function SettingsPage() {
     title: profileMap.get(u.id)?.title ?? null,
     first_name: profileMap.get(u.id)?.first_name ?? null,
     last_name: profileMap.get(u.id)?.last_name ?? null,
-    role: (profileMap.get(u.id)?.role ?? "admin") as "admin" | "dozent",
+    role: (profileMap.get(u.id)?.role ?? "admin") as "admin" | "nutzer",
     is_dozent: profileMap.get(u.id)?.is_dozent ?? false,
     created_at: u.created_at,
   }));

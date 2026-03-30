@@ -42,7 +42,7 @@ export function DashboardNav({
   role,
 }: {
   userEmail: string;
-  role: "admin" | "dozent";
+  role: "admin" | "nutzer";
 }) {
   const pathname = usePathname();
   const router = useRouter();

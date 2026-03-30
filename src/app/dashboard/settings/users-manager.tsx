@@ -52,8 +52,8 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"admin" | "dozent">("dozent");
-  const [isDozent, setIsDozent] = useState(true);
+  const [role, setRole] = useState<"admin" | "nutzer">("nutzer");
+  const [isDozent, setIsDozent] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -63,7 +63,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
   const [editTitle, setEditTitle] = useState("");
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
-  const [editRole, setEditRole] = useState<"admin" | "dozent">("dozent");
+  const [editRole, setEditRole] = useState<"admin" | "nutzer">("nutzer");
   const [editIsDozent, setEditIsDozent] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -77,7 +77,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
 
   const resetForm = () => {
     setTitle(""); setFirstName(""); setLastName(""); setEmail(""); setPassword("");
-    setRole("dozent"); setIsDozent(true);
+    setRole("nutzer"); setIsDozent(false);
     setCreateError(null); setCreatedCredentials(null); setCopied(false);
   };
 
@@ -219,12 +219,12 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
             </div>
             <div className="space-y-1.5">
               <Label>Rolle</Label>
-              <Select value={editRole} onValueChange={(val) => setEditRole(val as "admin" | "dozent")}>
+              <Select value={editRole} onValueChange={(val) => setEditRole(val as "admin" | "nutzer")}>
                 <SelectTrigger>
-                  <span>{editRole === "admin" ? "Admin" : "Dozent:in"}</span>
+                  <span>{editRole === "admin" ? "Admin" : "Nutzer:in"}</span>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="dozent">Dozent:in</SelectItem>
+                  <SelectItem value="nutzer">Nutzer:in</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
@@ -324,16 +324,15 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                   <Select
                     value={role}
                     onValueChange={(val) => {
-                      const r = val as "admin" | "dozent";
+                      const r = val as "admin" | "nutzer";
                       setRole(r);
-                      setIsDozent(r === "dozent");
                     }}
                   >
                     <SelectTrigger>
-                      <span>{role === "admin" ? "Admin" : "Dozent:in"}</span>
+                      <span>{role === "admin" ? "Admin" : "Nutzer:in"}</span>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="dozent">Dozent:in</SelectItem>
+                      <SelectItem value="nutzer">Nutzer:in</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
@@ -403,9 +402,9 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {u.role === "admin" && <Badge>Admin</Badge>}
-                        {u.role === "dozent" && <Badge variant="secondary">Dozent:in</Badge>}
-                        {u.role === "admin" && u.is_dozent && (
-                          <Badge variant="secondary">Dozent:in</Badge>
+                        {u.role === "nutzer" && <Badge variant="secondary">Nutzer:in</Badge>}
+                        {u.is_dozent && (
+                          <Badge variant="outline">Dozent:in</Badge>
                         )}
                       </div>
                     </TableCell>
