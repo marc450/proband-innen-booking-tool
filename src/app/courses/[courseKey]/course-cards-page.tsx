@@ -31,6 +31,16 @@ const praxiskursFeatures = [
   { text: "EPHIA-Zertifikat nach Abschluss" },
 ];
 
+const praxiskursSkulptraFeatures = [
+  { text: "Akkreditiert mit 12 CME-Punkten" },
+  { text: "6+ Stunden gemeinsames Behandeln" },
+  { text: "Üben an echten Proband:innen" },
+  { text: "Geübt wird mit Sculptra® und Skinbooster in Gesicht und Körper" },
+  { text: "Erfahrene Dozent:innen-Aufsicht" },
+  { text: "Max. 5 Teilnehmer:innen" },
+  { text: "EPHIA-Zertifikat nach Abschluss" },
+];
+
 const kombikursFeatures = [
   { text: "bis zu 22 CME-Punkte" },
   { text: "Vollständiger Onlinekurs inkludiert" },
@@ -269,7 +279,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     </>
                   }
                   price={formatPrice(template.price_gross_praxis)}
-                  features={praxiskursFeatures}
+                  features={template.course_key === "aufbaukurs_skulptra" ? praxiskursSkulptraFeatures : praxiskursFeatures}
                   bookingType="dropdown"
                   dates={dynamicDates}
                   buttonText="Praxiskurs buchen"
