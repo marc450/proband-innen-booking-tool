@@ -12,7 +12,7 @@ interface Props {
 
 // Features per course type (Grundkurs Botulinum)
 const onlinekursFeatures = [
-  { text: "10 CME-Punkte" },
+  { text: "Akkreditiert mit 10 CME-Punkten" },
   { text: "13 Lernkapitel" },
   { text: "2+ Stunden Behandlungsvideos" },
   { text: "Vorlagen für Rechnungen" },
@@ -22,7 +22,7 @@ const onlinekursFeatures = [
 ];
 
 const praxiskursFeatures = [
-  { text: "bis zu 12 CME-Punkte" },
+  { text: "Akkreditiert mit 12 CME-Punkten" },
   { text: "6+ Stunden gemeinsames Behandeln" },
   { text: "Üben an echten Proband:innen" },
   { text: "Geübt wird mit BTX nicht NaCl" },
@@ -42,9 +42,20 @@ const praxiskursSkulptraFeatures = [
 ];
 
 const kombikursFeatures = [
-  { text: "bis zu 22 CME-Punkte" },
+  { text: "Akkreditiert mit 22 CME-Punkten" },
   { text: "Vollständiger Onlinekurs inkludiert" },
   { text: "Vollständiger Praxiskurs inkludiert" },
+  { text: "EPHIA-Zertifikat nach Abschluss" },
+];
+
+const kombikursBotulinumFeatures = [
+  { text: "Akkreditiert mit 22 CME-Punkten" },
+  { text: "Vollständiger Onlinekurs inkludiert" },
+  { text: "6+ Stunden gemeinsames Behandeln" },
+  { text: "Üben an echten Proband:innen" },
+  { text: "Üben mit Botulinum anstelle NaCl" },
+  { text: "Erfahrene Dozent:innen-Aufsicht" },
+  { text: "Max. 7 Teilnehmer:innen" },
   { text: "EPHIA-Zertifikat nach Abschluss" },
 ];
 
@@ -227,7 +238,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     title="Kombikurs"
                     description="Ideal für Einsteiger:innen: Lerne die Theorie online und die Praxis vor Ort."
                     price={formatPrice(template.price_gross_kombi)}
-                    features={kombikursFeatures}
+                    features={kombikursBotulinumFeatures}
                     bookingType="dropdown"
                     dates={dynamicDates}
                     buttonText="Kombikurs buchen"
