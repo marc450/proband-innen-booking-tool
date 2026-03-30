@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Download, ArrowRightLeft, Trash2 } from "lucide-react";
+import { Search, Download, ArrowRightLeft, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -83,6 +83,11 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
   const [selectedSessionId, setSelectedSessionId] = useState<string>("");
   const [changingSession, setChangingSession] = useState(false);
 
+  // Cancellation state
+  const [cancelBooking, setCancelBooking] = useState<BookingRow | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState("");
+
   // Auto-complete bookings where the course date has passed
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -114,6 +119,13 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
     const booking = bookings.find((b) => b.id === id);
     if (!booking) return;
 
+    // Intercept cancellation — show confirmation modal instead of direct update
+    if (newStatus === "cancelled" && booking.status !== "cancelled" && booking.status !== "refunded") {
+      setCancelBooking(booking);
+      setCancelError("");
+      return;
+    }
+
     const oldStatus = booking.status;
     const wasCancelledOrRefunded = oldStatus === "cancelled" || oldStatus === "refunded";
     const isCancellingOrRefunding = newStatus === "cancelled" || newStatus === "refunded";
@@ -132,6 +144,38 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
     }
 
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b)));
+  };
+
+  const confirmCancellation = async () => {
+    if (!cancelBooking) return;
+    setCancelling(true);
+    setCancelError("");
+
+    try {
+      const res = await fetch("/api/cancel-course-booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId: cancelBooking.id }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setCancelError(data.error || "Fehler bei der Stornierung");
+        setCancelling(false);
+        return;
+      }
+
+      // Update local state
+      setBookings((prev) =>
+        prev.map((b) => (b.id === cancelBooking.id ? { ...b, status: "cancelled" as CourseBookingStatus } : b))
+      );
+      setCancelBooking(null);
+    } catch {
+      setCancelError("Unerwarteter Fehler. Bitte versuche es erneut.");
+    } finally {
+      setCancelling(false);
+    }
   };
 
   const openSessionChange = async (booking: BookingRow) => {
@@ -456,6 +500,67 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
               className="w-full flex-1 border-0 bg-white"
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancellation confirmation dialog */}
+      <Dialog open={!!cancelBooking} onOpenChange={(open) => { if (!open && !cancelling) setCancelBooking(null); }}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Buchung stornieren</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm space-y-2">
+              <p className="font-semibold text-red-800">Folgende Aktionen werden ausgeführt:</p>
+              <ul className="list-disc list-inside text-red-700 space-y-1">
+                {cancelBooking?.amount_paid ? (
+                  <li>Stripe-Erstattung von {(cancelBooking.amount_paid / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })} € wird ausgelöst</li>
+                ) : null}
+                {cancelBooking?.amount_paid ? <li>Stornorechnung wird erstellt</li> : null}
+                <li>Stornierungsmail wird an {cancelBooking?.email || "Kund:in"} gesendet</li>
+                {cancelBooking?.session_id && <li>Platz im Kurs wird freigegeben</li>}
+              </ul>
+            </div>
+
+            <div className="text-sm">
+              <p><strong>Kund:in:</strong> {[cancelBooking?.first_name, cancelBooking?.last_name].filter(Boolean).join(" ")}</p>
+              <p><strong>Kurs:</strong> {cancelBooking?.course_templates?.course_label_de || cancelBooking?.course_templates?.title || "–"}</p>
+              {cancelBooking?.course_sessions?.label_de && (
+                <p><strong>Termin:</strong> {cancelBooking.course_sessions.label_de}</p>
+              )}
+              {cancelBooking?.amount_paid ? (
+                <p><strong>Betrag:</strong> {(cancelBooking.amount_paid / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })} €</p>
+              ) : null}
+            </div>
+
+            {cancelError && <p className="text-red-500 text-sm">{cancelError}</p>}
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setCancelBooking(null)}
+                disabled={cancelling}
+              >
+                Abbrechen
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={confirmCancellation}
+                disabled={cancelling}
+              >
+                {cancelling ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Wird storniert...
+                  </>
+                ) : (
+                  "Stornierung bestätigen"
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
