@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function AuszubildendeManager({ initialAuszubildende, bookingCounts }: Props) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
 
   const filtered = initialAuszubildende.filter((a) => {
@@ -69,7 +71,7 @@ export function AuszubildendeManager({ initialAuszubildende, bookingCounts }: Pr
               const name = [azubi.first_name, azubi.last_name].filter(Boolean).join(" ") || "–";
               const count = bookingCounts[azubi.id] || 0;
               return (
-                <TableRow key={azubi.id} className="cursor-pointer hover:bg-muted/50">
+                <TableRow key={azubi.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/dashboard/auszubildende/personen/${azubi.id}`)}>
                   <TableCell className="font-medium">
                     <Link
                       href={`/dashboard/auszubildende/personen/${azubi.id}`}
