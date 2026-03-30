@@ -151,6 +151,7 @@ export async function POST(req: NextRequest) {
       "metadata[sessionId]": sessionId || "",
       "metadata[sessionLabel]": sessionLabel,
       "metadata[sessionDateISO]": sessionDateISO,
+      "metadata[audienceTag]": courseKey === "grundkurs_botulinum_zahnmedizin" ? "Zahnmediziner:in" : "Humanmediziner:in",
     };
 
     const session = await stripePost("/checkout/sessions", params);

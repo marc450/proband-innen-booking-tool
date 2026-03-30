@@ -22,11 +22,27 @@ export default async function CoursePage({
 
   if (!template) return notFound();
 
-  // Fetch live sessions for this template
+  // Some courses share sessions with another template (e.g. Zahnmedizin uses Botulinum sessions)
+  const SESSION_SHARING: Record<string, string> = {
+    grundkurs_botulinum_zahnmedizin: "grundkurs_botulinum",
+  };
+
+  let sessionTemplateId = template.id;
+  const sharedKey = SESSION_SHARING[courseKey];
+  if (sharedKey) {
+    const { data: sharedTemplate } = await supabase
+      .from("course_templates")
+      .select("id")
+      .eq("course_key", sharedKey)
+      .single();
+    if (sharedTemplate) sessionTemplateId = sharedTemplate.id;
+  }
+
+  // Fetch live sessions
   const { data: sessions } = await supabase
     .from("course_sessions")
     .select("*")
-    .eq("template_id", template.id)
+    .eq("template_id", sessionTemplateId)
     .eq("is_live", true)
     .order("date_iso", { ascending: true });
 

@@ -185,6 +185,18 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
     return `EUR ${amount.toLocaleString("de-DE")}`;
   };
 
+  // Course-specific overrides for header and card descriptions
+  const COURSE_OVERRIDES: Record<string, { header?: string; onlineDesc?: string | React.ReactNode; praxisDesc?: string | React.ReactNode }> = {
+    grundkurs_botulinum_zahnmedizin: {
+      header: "UNSERE KURSANGEBOTE FÜR ZAHNÄRZT:INNEN",
+      onlineDesc: "Erlerne die Theorie zur Behandlung von Patient:innen mit Botulinum.",
+    },
+  };
+
+  const overrides = COURSE_OVERRIDES[template.course_key || ""] || {};
+  const pageHeader = overrides.header || "UNSERE KURSANGEBOTE";
+  const onlineDescription = overrides.onlineDesc || "Erlerne die praxisnahe Theorie zur professionellen Behandlung von Patient:innen.";
+
   return (
     <div className="min-h-screen py-12 px-4" style={{ backgroundColor: "#0066FF" }}>
       <div className="max-w-7xl mx-auto">
@@ -192,7 +204,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
           className="text-4xl font-bold text-center mb-20 mt-20 tracking-wide"
           style={{ color: "#fff" }}
         >
-          UNSERE KURSANGEBOTE
+          {pageHeader}
         </h2>
 
         {(() => {
@@ -213,7 +225,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                 {hasOnline && (
                   <CourseCard
                     title="Onlinekurs"
-                    description="Erlerne die praxisnahe Theorie zur professionellen Behandlung von Patient:innen."
+                    description={onlineDescription}
                     price={formatPrice(template.price_gross_online)}
                     features={onlineFeatures}
                     bookingType="direct"

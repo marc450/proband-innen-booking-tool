@@ -199,6 +199,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const sessionLabel = metadata.sessionLabel || "";
   const courseKey = metadata.courseKey;
   const checkoutSessionId = session.id;
+  const audienceTag = metadata.audienceTag || "Humanmediziner:in";
 
   // Idempotency: check if this checkout session was already processed
   const { data: existing } = await supabase
@@ -239,6 +240,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (rpcError) {
     console.error("Course booking RPC error:", rpcError);
     return;
+  }
+
+  // Set audience_tag on the booking
+  if (bookingId && audienceTag) {
+    await supabase
+      .from("course_bookings")
+      .update({ audience_tag: audienceTag })
+      .eq("id", bookingId);
   }
 
   // Upsert auszubildende profile and link to booking

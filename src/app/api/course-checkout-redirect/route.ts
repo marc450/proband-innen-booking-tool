@@ -79,6 +79,7 @@ export async function GET(req: NextRequest) {
       "metadata[sessionId]": "",
       "metadata[sessionLabel]": "",
       "metadata[sessionDateISO]": "",
+      "metadata[audienceTag]": courseKey === "grundkurs_botulinum_zahnmedizin" ? "Zahnmediziner:in" : "Humanmediziner:in",
     };
 
     const session = await stripePost("/checkout/sessions", params);
