@@ -48,6 +48,7 @@ export interface CourseSession {
   date_iso: string;
   label_de: string | null;
   instructor_name: string | null;
+  betreuer_name: string | null;
   max_seats: number;
   booked_seats: number;
   address: string | null;

@@ -28,9 +28,10 @@ interface Props {
   initialTemplates: CourseTemplate[];
   initialSessions: CourseSession[];
   dozentUsers: DozentUser[];
+  betreuerUsers?: DozentUser[];
 }
 
-type SortKey = "status" | "date" | "time" | "course" | "instructor" | "seats" | "duration";
+type SortKey = "status" | "date" | "time" | "course" | "instructor" | "betreuer" | "seats" | "duration";
 type SortDir = "asc" | "desc";
 
 const MONTHS_DE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
@@ -47,7 +48,7 @@ function dozentDisplayName(d: DozentUser): string {
   return [d.title, d.first_name, d.last_name].filter(Boolean).join(" ");
 }
 
-export function CourseSessionsManager({ initialTemplates, initialSessions, dozentUsers }: Props) {
+export function CourseSessionsManager({ initialTemplates, initialSessions, dozentUsers, betreuerUsers = [] }: Props) {
   const supabase = createClient();
   const [sessions, setSessions] = useState(initialSessions);
   const [templates] = useState(initialTemplates);
@@ -111,6 +112,8 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
           return getTemplateName(a.template_id).localeCompare(getTemplateName(b.template_id)) * dir;
         case "instructor":
           return (a.instructor_name || "").localeCompare(b.instructor_name || "") * dir;
+        case "betreuer":
+          return (a.betreuer_name || "").localeCompare(b.betreuer_name || "") * dir;
         case "seats":
           return (a.booked_seats / a.max_seats - b.booked_seats / b.max_seats) * dir;
         case "duration":
@@ -236,6 +239,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
             <SortableHead label="Dauer" sortKeyName="duration" className="w-[80px]" />
             <SortableHead label="Kurs" sortKeyName="course" />
             <SortableHead label="Dozent:in" sortKeyName="instructor" />
+            <SortableHead label="Kursbetreuung" sortKeyName="betreuer" />
             <SortableHead label="Plätze" sortKeyName="seats" className="w-[80px]" />
             <TableHead className="w-[80px]">Aktionen</TableHead>
           </TableRow>
@@ -415,6 +419,26 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                     })}
                     {session.instructor_name && !dozentUsers.some((d) => dozentDisplayName(d) === session.instructor_name) && (
                       <option value={session.instructor_name}>{session.instructor_name}</option>
+                    )}
+                  </select>
+                </TableCell>
+
+                {/* Kursbetreuung */}
+                <TableCell>
+                  <select
+                    value={session.betreuer_name || ""}
+                    onChange={(e) => updateField(session.id, "betreuer_name", e.target.value)}
+                    className="border-0 bg-transparent text-sm p-0 focus:outline-none focus:ring-0 cursor-pointer max-w-[200px] truncate"
+                  >
+                    <option value="">–</option>
+                    {betreuerUsers.map((d) => {
+                      const name = dozentDisplayName(d);
+                      return (
+                        <option key={d.id} value={name}>{name}</option>
+                      );
+                    })}
+                    {session.betreuer_name && !betreuerUsers.some((d) => dozentDisplayName(d) === session.betreuer_name) && (
+                      <option value={session.betreuer_name}>{session.betreuer_name}</option>
                     )}
                   </select>
                 </TableCell>

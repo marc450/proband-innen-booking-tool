@@ -14,6 +14,7 @@ interface Props {
   initialCourseOfferings: CourseTemplate[];
   initialCourseSessions: CourseSession[];
   dozentUsers: DozentUser[];
+  betreuerUsers: DozentUser[];
 }
 
 export function SettingsContent({
@@ -22,6 +23,7 @@ export function SettingsContent({
   initialCourseOfferings,
   initialCourseSessions,
   dozentUsers,
+  betreuerUsers,
 }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -51,6 +53,7 @@ export function SettingsContent({
             initialSessions={initialCourseSessions}
             templates={initialCourseOfferings}
             dozentUsers={dozentUsers}
+            betreuerUsers={betreuerUsers}
           />
         </TabsContent>
 

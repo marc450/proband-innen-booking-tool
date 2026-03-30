@@ -7,14 +7,16 @@ interface Props {
   initialSessions: CourseSession[];
   templates: CourseTemplate[];
   dozentUsers: DozentUser[];
+  betreuerUsers: DozentUser[];
 }
 
-export function CourseSessionsSettings({ initialSessions, templates, dozentUsers }: Props) {
+export function CourseSessionsSettings({ initialSessions, templates, dozentUsers, betreuerUsers }: Props) {
   return (
     <CourseSessionsManager
       initialTemplates={templates}
       initialSessions={initialSessions}
       dozentUsers={dozentUsers}
+      betreuerUsers={betreuerUsers}
     />
   );
 }

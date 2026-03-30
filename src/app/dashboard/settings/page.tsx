@@ -14,6 +14,7 @@ export interface AdminUser {
   last_name: string | null;
   role: "admin" | "nutzer";
   is_dozent: boolean;
+  is_kursbetreuung: boolean;
   created_at: string;
 }
 
@@ -36,13 +37,11 @@ export default async function SettingsPage() {
   const adminClient = createAdminClient();
   const [{ data: { users: authUsers } }, { data: profiles }] = await Promise.all([
     adminClient.auth.admin.listUsers(),
-    adminClient.from("profiles").select("id, title, first_name, last_name, role, is_dozent"),
+    adminClient.from("profiles").select("id, title, first_name, last_name, role, is_dozent, is_kursbetreuung"),
   ]);
 
   const profileMap = new Map(
-    (profiles || []).map(
-      (p: { id: string; title: string | null; first_name: string | null; last_name: string | null; role: string; is_dozent: boolean }) => [p.id, p]
-    )
+    (profiles || []).map((p: any) => [p.id, p])
   );
 
   const users: AdminUser[] = authUsers.map((u) => ({
@@ -53,6 +52,7 @@ export default async function SettingsPage() {
     last_name: profileMap.get(u.id)?.last_name ?? null,
     role: (profileMap.get(u.id)?.role ?? "admin") as "admin" | "nutzer",
     is_dozent: profileMap.get(u.id)?.is_dozent ?? false,
+    is_kursbetreuung: profileMap.get(u.id)?.is_kursbetreuung ?? false,
     created_at: u.created_at,
   }));
 
@@ -67,11 +67,18 @@ export default async function SettingsPage() {
     .select("*")
     .order("date_iso", { ascending: true });
 
-  const { data: dozentUsersData } = await adminClient
-    .from("profiles")
-    .select("id, title, first_name, last_name")
-    .eq("is_dozent", true)
-    .order("last_name", { ascending: true });
+  const [{ data: dozentUsersData }, { data: betreuerUsersData }] = await Promise.all([
+    adminClient
+      .from("profiles")
+      .select("id, title, first_name, last_name")
+      .eq("is_dozent", true)
+      .order("last_name", { ascending: true }),
+    adminClient
+      .from("profiles")
+      .select("id, title, first_name, last_name")
+      .eq("is_kursbetreuung", true)
+      .order("last_name", { ascending: true }),
+  ]);
 
   return (
     <SettingsContent
@@ -80,6 +87,7 @@ export default async function SettingsPage() {
       initialCourseOfferings={(courseOfferingsData as CourseTemplate[]) || []}
       initialCourseSessions={(courseSessionsData as CourseSession[]) || []}
       dozentUsers={dozentUsersData ?? []}
+      betreuerUsers={betreuerUsersData ?? []}
     />
   );
 }

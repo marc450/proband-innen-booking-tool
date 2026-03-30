@@ -54,6 +54,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"admin" | "nutzer">("nutzer");
   const [isDozent, setIsDozent] = useState(false);
+  const [isKursbetreuung, setIsKursbetreuung] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -65,6 +66,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
   const [editLastName, setEditLastName] = useState("");
   const [editRole, setEditRole] = useState<"admin" | "nutzer">("nutzer");
   const [editIsDozent, setEditIsDozent] = useState(false);
+  const [editIsKursbetreuung, setEditIsKursbetreuung] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
@@ -77,7 +79,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
 
   const resetForm = () => {
     setTitle(""); setFirstName(""); setLastName(""); setEmail(""); setPassword("");
-    setRole("nutzer"); setIsDozent(false);
+    setRole("nutzer"); setIsDozent(false); setIsKursbetreuung(false);
     setCreateError(null); setCreatedCredentials(null); setCopied(false);
   };
 
@@ -96,7 +98,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     const res = await fetch("/api/admin/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: title || null, first_name: firstName, last_name: lastName, email, password, role, is_dozent: isDozent }),
+      body: JSON.stringify({ title: title || null, first_name: firstName, last_name: lastName, email, password, role, is_dozent: isDozent, is_kursbetreuung: isKursbetreuung }),
     });
     const data = await res.json();
     setSaving(false);
@@ -125,6 +127,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     setEditLastName(u.last_name || "");
     setEditRole(u.role);
     setEditIsDozent(u.is_dozent);
+    setEditIsKursbetreuung(u.is_kursbetreuung);
     setEditError(null);
   };
 
@@ -139,7 +142,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     const res = await fetch(`/api/admin/users/${editTarget.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: editTitle || null, first_name: editFirstName, last_name: editLastName, role: editRole, is_dozent: editIsDozent }),
+      body: JSON.stringify({ title: editTitle || null, first_name: editFirstName, last_name: editLastName, role: editRole, is_dozent: editIsDozent, is_kursbetreuung: editIsKursbetreuung }),
     });
     const data = await res.json();
     setEditSaving(false);
@@ -152,7 +155,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     setUsers((prev) =>
       prev.map((u) =>
         u.id === editTarget.id
-          ? { ...u, title: editTitle || null, first_name: editFirstName, last_name: editLastName, role: editRole, is_dozent: editIsDozent }
+          ? { ...u, title: editTitle || null, first_name: editFirstName, last_name: editLastName, role: editRole, is_dozent: editIsDozent, is_kursbetreuung: editIsKursbetreuung }
           : u
       )
     );
@@ -237,6 +240,15 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                 className="h-4 w-4 rounded"
               />
               <span className="text-sm">Als Dozent:in in Kursen verfügbar</span>
+            </label>
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editIsKursbetreuung}
+                onChange={(e) => setEditIsKursbetreuung(e.target.checked)}
+                className="h-4 w-4 rounded"
+              />
+              <span className="text-sm">Als Kursbetreuung verfügbar</span>
             </label>
             {editError && <p className="text-sm text-destructive">{editError}</p>}
           </div>
@@ -346,6 +358,15 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                   />
                   <span className="text-sm">Als Dozent:in in Kursen verfügbar</span>
                 </label>
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isKursbetreuung}
+                    onChange={(e) => setIsKursbetreuung(e.target.checked)}
+                    className="h-4 w-4 rounded"
+                  />
+                  <span className="text-sm">Als Kursbetreuung verfügbar</span>
+                </label>
                 {createError && <p className="text-sm text-destructive">{createError}</p>}
               </div>
               <DialogFooter>
@@ -405,6 +426,9 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                         {u.role === "nutzer" && <Badge variant="secondary">Nutzer:in</Badge>}
                         {u.is_dozent && (
                           <Badge variant="outline">Dozent:in</Badge>
+                        )}
+                        {u.is_kursbetreuung && (
+                          <Badge variant="outline">Kursbetreuung</Badge>
                         )}
                       </div>
                     </TableCell>

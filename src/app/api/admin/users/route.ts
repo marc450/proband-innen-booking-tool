@@ -33,9 +33,9 @@ export async function GET() {
 
   const { data: profiles } = await adminClient
     .from("profiles")
-    .select("id, title, first_name, last_name, role, is_dozent");
+    .select("id, title, first_name, last_name, role, is_dozent, is_kursbetreuung");
 
-  const profileMap = new Map((profiles || []).map((p: { id: string; title: string | null; first_name: string | null; last_name: string | null; role: string; is_dozent: boolean }) => [p.id, p]));
+  const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
   const result = authUsers.map((u) => ({
     id: u.id,
@@ -45,6 +45,7 @@ export async function GET() {
     last_name: profileMap.get(u.id)?.last_name ?? null,
     role: (profileMap.get(u.id)?.role ?? "admin") as "admin" | "nutzer",
     is_dozent: profileMap.get(u.id)?.is_dozent ?? false,
+    is_kursbetreuung: profileMap.get(u.id)?.is_kursbetreuung ?? false,
     created_at: u.created_at,
   }));
 
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
   const user = await assertAdmin();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-  const { title, first_name, last_name, email, role, is_dozent, password } = await req.json();
+  const { title, first_name, last_name, email, role, is_dozent, is_kursbetreuung, password } = await req.json();
   if (!email || !first_name || !last_name || !password) {
     return NextResponse.json({ error: "Bitte alle Pflichtfelder ausfüllen." }, { status: 400 });
   }
@@ -79,6 +80,7 @@ export async function POST(req: NextRequest) {
     last_name,
     role: role === "admin" ? "admin" : "nutzer",
     is_dozent: is_dozent ?? false,
+    is_kursbetreuung: is_kursbetreuung ?? false,
   });
 
   return NextResponse.json({ ok: true, userId: data.user.id });

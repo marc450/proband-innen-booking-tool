@@ -112,6 +112,7 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
             <SortableHead label="Dauer" sortKeyName="duration" className="w-[80px]" />
             <SortableHead label="Kurs" sortKeyName="course" />
             <SortableHead label="Dozent:in" sortKeyName="instructor" />
+            <SortableHead label="Kursbetreuung" sortKeyName="instructor" />
             <SortableHead label="Plätze" sortKeyName="seats" className="w-[80px]" />
           </TableRow>
           {/* Filter row */}
@@ -170,6 +171,7 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
                 ))}
               </select>
             </TableHead>
+            <TableHead className="py-1.5" />
             <TableHead className="py-1.5">
               {(filterInstructor || filterTemplate || filterStatus || filterDateFrom || filterDateTo) && (
                 <button
@@ -191,7 +193,7 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
         <TableBody>
           {sortedSessions.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                 Keine Kurstermine gefunden.
               </TableCell>
             </TableRow>
@@ -223,6 +225,9 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
                 </TableCell>
                 <TableCell className="text-sm">
                   {session.instructor_name || "–"}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {session.betreuer_name || "–"}
                 </TableCell>
                 <TableCell>
                   <span className={session.booked_seats >= session.max_seats ? "text-emerald-600 font-medium" : ""}>
