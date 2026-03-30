@@ -24,7 +24,7 @@ const navGroups = [
       { href: "/dashboard", label: "Behandlungsangebote", exact: true },
       { href: "/dashboard/bookings", label: "Buchungen" },
       { href: "/dashboard/patients", label: "Proband:innen" },
-      { href: "/dashboard/campaigns", label: "Kampagnen" },
+      { href: "/dashboard/campaigns", label: "Kampagnen", adminOnly: true },
     ],
   },
   {
@@ -197,7 +197,7 @@ export function DashboardNav({
                   </button>
                   {openGroup === group.label && (
                     <div className="absolute top-full left-0 mt-1 bg-white border rounded-lg shadow-lg py-1 min-w-[160px] z-50">
-                      {group.items.map((item) => (
+                      {group.items.filter((item) => !item.adminOnly || role === "admin").map((item) => (
                         <Link
                           key={item.href}
                           href={item.href}
