@@ -35,7 +35,7 @@ const praxiskursSkulptraFeatures = [
   { text: "Akkreditiert mit 12 CME-Punkten" },
   { text: "6+ Stunden gemeinsames Behandeln" },
   { text: "Üben an echten Proband:innen" },
-  { text: "Geübt wird mit Sculptra® und Skinbooster in Gesicht und Körper" },
+  { text: "Geübt wird mit Sculptra® und Skinbooster im Gesicht und am Körper" },
   { text: "Erfahrene Dozent:innen-Aufsicht" },
   { text: "Max. 5 Teilnehmer:innen" },
   { text: "EPHIA-Zertifikat nach Abschluss" },
