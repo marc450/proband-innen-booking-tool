@@ -31,6 +31,12 @@ export interface CourseTemplate {
   cancel_url_kombi: string | null;
   status: string | null;
   online_course_id: string | null;
+  features_online: string[] | null;
+  features_praxis: string[] | null;
+  features_kombi: string[] | null;
+  cme_online: string | null;
+  cme_praxis: string | null;
+  cme_kombi: string | null;
 }
 
 export type CourseType = "Onlinekurs" | "Praxiskurs" | "Kombikurs" | "Premium";

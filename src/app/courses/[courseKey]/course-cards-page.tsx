@@ -10,8 +10,16 @@ interface Props {
   sessions: CourseSession[];
 }
 
-// Features per course type (Grundkurs Botulinum)
-const onlinekursFeatures = [
+// Convert DB feature arrays to component format, with fallbacks
+function toFeatures(dbFeatures: string[] | null, fallback: { text: string }[]): { text: string }[] {
+  if (dbFeatures && dbFeatures.length > 0) {
+    return dbFeatures.map((text) => ({ text }));
+  }
+  return fallback;
+}
+
+// Fallback features (used when DB has no features set)
+const defaultOnlinekursFeatures = [
   { text: "Akkreditiert mit 10 CME-Punkten" },
   { text: "13 Lernkapitel" },
   { text: "2+ Stunden Behandlungsvideos" },
@@ -21,41 +29,19 @@ const onlinekursFeatures = [
   { text: "EPHIA-Zertifikat nach Abschluss" },
 ];
 
-const praxiskursFeatures = [
+const defaultPraxiskursFeatures = [
   { text: "Akkreditiert mit 12 CME-Punkten" },
   { text: "6+ Stunden gemeinsames Behandeln" },
   { text: "Üben an echten Proband:innen" },
-  { text: "Geübt wird mit BTX nicht NaCl" },
   { text: "Erfahrene Dozent:innen-Aufsicht" },
   { text: "Max. 7 Teilnehmer:innen" },
   { text: "EPHIA-Zertifikat nach Abschluss" },
 ];
 
-const praxiskursSkulptraFeatures = [
-  { text: "Akkreditiert mit 12 CME-Punkten" },
-  { text: "6+ Stunden gemeinsames Behandeln" },
-  { text: "Üben an echten Proband:innen" },
-  { text: "Geübt wird mit Sculptra® und Skinbooster im Gesicht und am Körper" },
-  { text: "Erfahrene Dozent:innen-Aufsicht" },
-  { text: "Max. 5 Teilnehmer:innen" },
-  { text: "EPHIA-Zertifikat nach Abschluss" },
-];
-
-const kombikursFeatures = [
+const defaultKombikursFeatures = [
   { text: "Akkreditiert mit 22 CME-Punkten" },
   { text: "Vollständiger Onlinekurs inkludiert" },
   { text: "Vollständiger Praxiskurs inkludiert" },
-  { text: "EPHIA-Zertifikat nach Abschluss" },
-];
-
-const kombikursBotulinumFeatures = [
-  { text: "Akkreditiert mit 22 CME-Punkten" },
-  { text: "Vollständiger Onlinekurs inkludiert" },
-  { text: "6+ Stunden gemeinsames Behandeln" },
-  { text: "Üben an echten Proband:innen" },
-  { text: "Üben mit Botulinum anstelle NaCl" },
-  { text: "Erfahrene Dozent:innen-Aufsicht" },
-  { text: "Max. 7 Teilnehmer:innen" },
   { text: "EPHIA-Zertifikat nach Abschluss" },
 ];
 
@@ -215,6 +201,11 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
           const hasPraxis = !!template.price_gross_praxis;
           const hasKombi = !!template.price_gross_kombi;
 
+          // Resolve features from DB, falling back to defaults
+          const onlineFeatures = toFeatures(template.features_online, defaultOnlinekursFeatures);
+          const praxisFeatures = toFeatures(template.features_praxis, defaultPraxiskursFeatures);
+          const kombiFeatures = toFeatures(template.features_kombi, defaultKombikursFeatures);
+
           if (isPremiumLayout) {
             // Grundkurs Botulinum: Onlinekurs, Kombikurs, Premium Starterpaket
             return (
@@ -224,12 +215,12 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     title="Onlinekurs"
                     description="Erlerne die praxisnahe Theorie zur professionellen Behandlung von Patient:innen."
                     price={formatPrice(template.price_gross_online)}
-                    features={onlinekursFeatures}
+                    features={onlineFeatures}
                     bookingType="direct"
                     buttonText="Onlinekurs buchen"
                     onBook={() => handleBooking("Onlinekurs")}
                     isLoading={loadingCheckout === "Onlinekurs-direct"}
-                    cmePoints="10 CME"
+                    cmePoints={template.cme_online || "10 CME"}
                   />
                 )}
 
@@ -238,7 +229,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     title="Kombikurs"
                     description="Ideal für Einsteiger:innen: Lerne die Theorie online und die Praxis vor Ort."
                     price={formatPrice(template.price_gross_kombi)}
-                    features={kombikursBotulinumFeatures}
+                    features={kombiFeatures}
                     bookingType="dropdown"
                     dates={dynamicDates}
                     buttonText="Kombikurs buchen"
@@ -246,7 +237,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     onBook={(sessionId) => handleBooking("Kombikurs", sessionId)}
                     isLoading={loadingCheckout?.startsWith("Kombikurs-") || false}
                     selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
-                    cmePoints="22 CME"
+                    cmePoints={template.cme_kombi || "22 CME"}
                   />
                 )}
 
@@ -271,12 +262,12 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   title="Onlinekurs"
                   description="Erlerne die praxisnahe Theorie zur professionellen Behandlung von Patient:innen."
                   price={formatPrice(template.price_gross_online)}
-                  features={onlinekursFeatures}
+                  features={onlineFeatures}
                   bookingType="direct"
                   buttonText="Onlinekurs buchen"
                   onBook={() => handleBooking("Onlinekurs")}
                   isLoading={loadingCheckout === "Onlinekurs-direct"}
-                  cmePoints="10 CME"
+                  cmePoints={template.cme_online || "10 CME"}
                 />
               )}
 
@@ -290,7 +281,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     </>
                   }
                   price={formatPrice(template.price_gross_praxis)}
-                  features={template.course_key === "aufbaukurs_skulptra" ? praxiskursSkulptraFeatures : praxiskursFeatures}
+                  features={praxisFeatures}
                   bookingType="dropdown"
                   dates={dynamicDates}
                   buttonText="Praxiskurs buchen"
@@ -298,7 +289,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   onBook={(sessionId) => handleBooking("Praxiskurs", sessionId)}
                   isLoading={loadingCheckout?.startsWith("Praxiskurs-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Praxiskurs-", "")}
-                  cmePoints="12 CME"
+                  cmePoints={template.cme_praxis || "12 CME"}
                 />
               )}
 
@@ -307,7 +298,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   title="Kombikurs"
                   description="Ideal für Einsteiger:innen: Lerne die Theorie online und die Praxis vor Ort."
                   price={formatPrice(template.price_gross_kombi)}
-                  features={kombikursFeatures}
+                  features={kombiFeatures}
                   bookingType="dropdown"
                   dates={dynamicDates}
                   buttonText="Kombikurs buchen"
@@ -316,7 +307,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   highlighted={true}
                   isLoading={loadingCheckout?.startsWith("Kombikurs-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
-                  cmePoints="22 CME"
+                  cmePoints={template.cme_kombi || "22 CME"}
                 />
               )}
             </div>
