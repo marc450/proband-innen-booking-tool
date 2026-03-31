@@ -337,7 +337,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
             </TableRow>
           ) : (
             sortedSessions.map((session) => (
-              <TableRow key={session.id} className={Number(session.booked_seats) >= Number(session.max_seats) && Number(session.max_seats) > 0 ? "!bg-emerald-50 hover:!bg-emerald-100" : ""}>
+              <TableRow key={session.id} style={Number(session.booked_seats) >= Number(session.max_seats) && Number(session.max_seats) > 0 ? { backgroundColor: "#ecfdf5" } : undefined}>
                 {/* Status */}
                 <TableCell>
                   <select
