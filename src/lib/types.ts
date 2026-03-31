@@ -176,6 +176,12 @@ export interface Auszubildende {
   phone: string | null;
   notes: string | null;
   status: string;
+  title: string | null;
+  gender: string | null;
+  specialty: string | null;
+  birthdate: string | null;
+  efn: string | null;
+  profile_complete: boolean;
   created_at: string;
   updated_at: string;
 }

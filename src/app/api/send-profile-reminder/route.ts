@@ -1,0 +1,42 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { sendProfileReminderEmail } from "@/lib/post-purchase";
+
+export async function POST(req: NextRequest) {
+  try {
+    const { bookingId, email } = await req.json();
+
+    if (!bookingId || !email) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
+
+    const supabase = createAdminClient();
+
+    // Fetch booking — only send if profile not yet complete
+    const { data: booking } = await supabase
+      .from("course_bookings")
+      .select("id, first_name, profile_complete, profile_reminder_sent")
+      .eq("id", bookingId)
+      .eq("email", email)
+      .single();
+
+    if (!booking || booking.profile_complete || booking.profile_reminder_sent) {
+      return NextResponse.json({ ok: true, skipped: true });
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen-booking-tool-production-1269.up.railway.app";
+
+    await sendProfileReminderEmail(email, booking.first_name || "dort", bookingId, baseUrl);
+
+    // Mark as sent so we don't send again
+    await supabase
+      .from("course_bookings")
+      .update({ profile_reminder_sent: true })
+      .eq("id", bookingId);
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Send profile reminder error:", err);
+    return NextResponse.json({ error: "Failed" }, { status: 500 });
+  }
+}

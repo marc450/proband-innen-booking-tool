@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CheckCircle, Loader2 } from "lucide-react";
 
 const TITLE_OPTIONS = ["Dr. med.", "Dr. med. dent.", "Prof. Dr.", "PD Dr.", "Kein Titel"];
@@ -48,6 +48,32 @@ export function SuccessContent({ booking, profileComplete }: Props) {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(profileComplete);
   const [error, setError] = useState("");
+  const reminderSentRef = useRef(false);
+
+  // Send reminder email when user leaves page without completing profile
+  useEffect(() => {
+    if (!booking || profileComplete || done) return;
+
+    const triggerReminder = () => {
+      if (reminderSentRef.current || done) return;
+      reminderSentRef.current = true;
+      // Use sendBeacon for reliability on page close
+      const payload = JSON.stringify({ bookingId: booking.id, email: booking.email });
+      navigator.sendBeacon("/api/send-profile-reminder", payload);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") triggerReminder();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("beforeunload", triggerReminder);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("beforeunload", triggerReminder);
+    };
+  }, [booking, profileComplete, done]);
 
   // Booking not found yet (webhook may not have fired)
   if (!booking) {
@@ -82,7 +108,7 @@ export function SuccessContent({ booking, profileComplete }: Props) {
           Wenn Du bereits einen Account bei uns hast, dann kannst Du Dich direkt einloggen und mit dem Lernen beginnen.
         </p>
         <a
-          href="https://www.ephia.de/login"
+          href="https://www.ephia.de/start"
           className="inline-block bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-lg py-3.5 px-8 rounded-[10px] transition-colors"
         >
           Zum Login

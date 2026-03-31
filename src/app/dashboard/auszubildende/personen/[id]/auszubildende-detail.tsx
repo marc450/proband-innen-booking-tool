@@ -149,6 +149,46 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings }: Props) {
                 </a>
               </div>
             )}
+            {/* Profile fields */}
+            {azubi.profile_complete && (
+              <div className="pt-3 mt-3 border-t border-gray-100 space-y-1.5">
+                {azubi.title && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <span className="w-24 text-xs font-medium">Titel</span>
+                    <span className="text-foreground">{azubi.title}</span>
+                  </div>
+                )}
+                {azubi.gender && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <span className="w-24 text-xs font-medium">Geschlecht</span>
+                    <span className="text-foreground">{azubi.gender}</span>
+                  </div>
+                )}
+                {azubi.specialty && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <span className="w-24 text-xs font-medium">Fachrichtung</span>
+                    <span className="text-foreground">{azubi.specialty}</span>
+                  </div>
+                )}
+                {azubi.birthdate && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <span className="w-24 text-xs font-medium">Geburtsdatum</span>
+                    <span className="text-foreground">{formatDate(azubi.birthdate)}</span>
+                  </div>
+                )}
+                {azubi.efn && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <span className="w-24 text-xs font-medium">EFN</span>
+                    <span className="text-foreground font-mono">{azubi.efn}</span>
+                  </div>
+                )}
+              </div>
+            )}
+            {!azubi.profile_complete && (
+              <div className="pt-3 mt-3 border-t border-gray-100">
+                <span className="text-xs text-amber-600 font-medium">Profil unvollständig</span>
+              </div>
+            )}
             <div className="pt-2 text-xs text-muted-foreground">
               Erstellt am {formatDateTime(azubi.created_at)}
             </div>

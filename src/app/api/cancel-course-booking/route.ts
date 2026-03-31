@@ -52,11 +52,42 @@ export async function POST(req: NextRequest) {
     }
 
     if (!booking.stripe_checkout_session_id) {
-      // No Stripe session — just update status and free seat
+      // No Stripe session — just update status, free seat, and send email
       await supabase.from("course_bookings").update({ status: "cancelled" }).eq("id", bookingId);
       if (booking.session_id) {
         await supabase.rpc("decrement_booked_seats", { p_session_id: booking.session_id });
       }
+
+      // Send cancellation email even for free bookings
+      if (booking.email && booking.first_name) {
+        const courseName = booking.course_templates?.course_label_de || booking.course_templates?.title || "Kurs";
+        const sessionDate = booking.course_sessions?.label_de || null;
+        const intro = sessionDate
+          ? `Deine Buchung für den Kurs <strong>${courseName}</strong> am <strong>${sessionDate}</strong> wurde storniert.`
+          : `Deine Buchung für den <strong>${courseName}</strong> wurde storniert.`;
+
+        const emailHtml = buildEmailHtml({
+          firstName: booking.first_name,
+          intro,
+          infoRows: [],
+          note: "Falls Du Fragen hast, melde Dich gerne bei uns.",
+        });
+
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: "EPHIA <customerlove@ephia.de>",
+            to: booking.email,
+            subject: "Deine Buchung wurde storniert",
+            html: emailHtml,
+          }),
+        });
+      }
+
       return NextResponse.json({ success: true, refunded: false });
     }
 
