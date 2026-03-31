@@ -80,35 +80,28 @@ export async function POST(req: NextRequest) {
     let productName: string;
     let description: string;
     let grossPrice: number;
-    let successUrl: string;
-    let cancelUrl: string;
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen-booking-tool-production-1269.up.railway.app";
+    const successUrl = `${baseUrl}/courses/success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = "https://www.ephia.de";
 
     if (isOnline) {
       productName = template.name_online || template.title;
       description = template.description_online || "";
       grossPrice = template.price_gross_online || 0;
-      successUrl = template.success_url_online || "https://www.ephia.de/vielen-lieben-dank";
-      cancelUrl = template.cancel_url_online || "https://www.ephia.de";
     } else if (isPraxis) {
       productName = `${template.name_praxis || template.title} – ${sessionLabel}`;
       description = template.description_praxis || "";
       grossPrice = template.price_gross_praxis || 0;
-      successUrl = template.success_url_praxis || "https://www.ephia.de/vielen-lieben-dank-praxiskurs";
-      cancelUrl = template.cancel_url_praxis || "https://www.ephia.de";
     } else if (isPremium) {
       // Komplettpaket: hardcoded 10% discount on EUR 2.220
       productName = `Komplettpaket – ${sessionLabel}`;
       description = "4 Onlinekurse + Praxiskurs Botulinum";
       grossPrice = 2220;
-      successUrl = template.success_url_kombi || "https://www.ephia.de/vielen-lieben-dank";
-      cancelUrl = template.cancel_url_kombi || "https://www.ephia.de";
     } else {
       // Kombikurs
       productName = `${template.name_kombi || template.title} – ${sessionLabel}`;
       description = template.description_kombi || "";
       grossPrice = template.price_gross_kombi || 0;
-      successUrl = template.success_url_kombi || "https://www.ephia.de/vielen-lieben-dank";
-      cancelUrl = template.cancel_url_kombi || "https://www.ephia.de";
     }
 
     let unitAmount = Math.round(grossPrice * 100); // EUR to cents

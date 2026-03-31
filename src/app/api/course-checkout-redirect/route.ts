@@ -45,8 +45,9 @@ export async function GET(req: NextRequest) {
     const productName = template.name_online || template.title;
     const description = template.description_online || "";
     const grossPrice = template.price_gross_online || 0;
-    const successUrl = template.success_url_online || "https://www.ephia.de/vielen-lieben-dank";
-    const cancelUrl = template.cancel_url_online || "https://www.ephia.de";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen-booking-tool-production-1269.up.railway.app";
+    const successUrl = `${baseUrl}/courses/success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = "https://www.ephia.de";
 
     const unitAmount = Math.round(grossPrice * 100);
     if (unitAmount <= 0) {

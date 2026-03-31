@@ -1,52 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  buildOnlinekursEmail,
-  buildPraxiskursEmail,
-  buildKombikursEmail,
-  buildCommunityInviteEmail,
   buildInvoiceEmail,
-  formatDateDe,
 } from "@/lib/course-email-templates";
+import {
+  sendEmailViaResend,
+  enrollInLearnWorlds,
+  runPostPurchaseFlow,
+  sendProfileReminderEmail,
+  PostPurchaseData,
+  CourseType,
+} from "@/lib/post-purchase";
 import Stripe from "stripe";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET!;
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
-const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
-const SLACK_WEBHOOK_URL_COURSES = process.env.SLACK_WEBHOOK_URL_COURSES;
-const LEARNWORLDS_API_URL = process.env.LEARNWORLDS_API_URL;
-const LEARNWORLDS_CLIENT_ID = process.env.LEARNWORLDS_CLIENT_ID;
-const LEARNWORLDS_ACCESS_TOKEN = process.env.LEARNWORLDS_ACCESS_TOKEN;
-const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN;
 
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 
-async function sendEmail(
-  to: string,
-  subject: string,
-  html: string,
-  attachments?: { filename: string; content: string }[]
-) {
-  if (!RESEND_API_KEY) return;
-  const payload: Record<string, unknown> = {
-    from: "EPHIA <customerlove@ephia.de>",
-    to: [to],
-    subject,
-    html,
-  };
-  if (attachments?.length) {
-    payload.attachments = attachments;
-  }
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-}
+// Use sendEmailViaResend from post-purchase.ts
+const sendEmail = sendEmailViaResend;
 
 async function fetchInvoicePdf(invoiceId: string): Promise<{ filename: string; content: string } | null> {
   try {
@@ -66,78 +40,7 @@ async function fetchInvoicePdf(invoiceId: string): Promise<{ filename: string; c
   }
 }
 
-// LearnWorlds: create user if needed, then enroll in course
-async function enrollInLearnWorlds(email: string, courseId: string, firstName?: string, lastName?: string) {
-  if (!LEARNWORLDS_API_URL || !LEARNWORLDS_CLIENT_ID || !LEARNWORLDS_ACCESS_TOKEN) {
-    console.warn("LearnWorlds env vars not configured, skipping enrollment");
-    return;
-  }
-
-  const headers = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${LEARNWORLDS_ACCESS_TOKEN}`,
-    "Lw-Client": LEARNWORLDS_CLIENT_ID,
-  };
-  const baseUrl = LEARNWORLDS_API_URL.replace(/\/$/, "");
-
-  try {
-    // Step 1: Create user — if exists (200), get their ID; if new (201), use returned ID
-    const createBody: Record<string, unknown> = { email, username: email };
-    if (firstName) createBody.first_name = firstName;
-    if (lastName) createBody.last_name = lastName;
-
-    const createRes = await fetch(`${baseUrl}/v2/users`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(createBody),
-    });
-    const createText = await createRes.text();
-
-    let lwUserId: string | null = null;
-
-    if (createRes.ok) {
-      // 201 created — parse ID from response
-      try { lwUserId = JSON.parse(createText)?.id ?? null; } catch { /* ignore */ }
-    }
-
-    if (!lwUserId) {
-      // User already exists — fetch by email to get their ID
-      const getRes = await fetch(`${baseUrl}/v2/users/${encodeURIComponent(email)}`, { headers });
-      const getText = await getRes.text();
-      try { lwUserId = JSON.parse(getText)?.id ?? null; } catch { /* ignore */ }
-    }
-
-    if (!lwUserId) {
-      console.error("LearnWorlds: could not determine user ID, skipping enrollment");
-      return;
-    }
-
-    // Step 2: Enroll using internal LW user ID
-    const enrollRes = await fetch(`${baseUrl}/v2/users/${lwUserId}/enrollment`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ productId: courseId, productType: "course", price: 0 }),
-    });
-
-    const enrollText = await enrollRes.text();
-    if (!enrollRes.ok) {
-      console.error(`LearnWorlds enrollment error: ${enrollRes.status} ${enrollText}`);
-      return;
-    }
-
-    console.log(`LearnWorlds: enrolled ${email} (${lwUserId}) in course ${courseId} — ${enrollText}`);
-  } catch (err) {
-    console.error("LearnWorlds enrollment failed:", err);
-  }
-}
-
-function computeEndTime(startTime: string, durationMinutes: number): string {
-  const [h, m] = startTime.split(":").map(Number);
-  const totalMinutes = h * 60 + m + durationMinutes;
-  const endH = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
-  const endM = String(totalMinutes % 60).padStart(2, "0");
-  return `${endH}:${endM}`;
-}
+// enrollInLearnWorlds is imported from post-purchase.ts
 
 // Handle invoice.paid: send invoice email with PDF attachment + store URL on booking
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
@@ -273,212 +176,53 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     }
   }
 
-  // Fetch template for email content
-  const { data: template } = await supabase
-    .from("course_templates")
-    .select("*")
-    .eq("id", templateId)
-    .single();
-
-  const courseLabelDe = template?.course_label_de || template?.title || "Kurs";
-
-  // Send confirmation email (no invoice attachment — that comes via invoice.paid)
+  // Check if this is a returning customer with a complete profile
+  let isReturningCustomer = false;
   if (email) {
-    try {
-      let emailHtml: string;
-      let emailSubject: string;
+    const { data: azubi } = await supabase
+      .from("auszubildende")
+      .select("profile_complete")
+      .eq("email", email)
+      .maybeSingle();
 
-      if (courseType === "Onlinekurs") {
-        const courseName = template?.name_online || courseLabelDe;
-        emailSubject = `Buchungsbestätigung: ${courseName}`;
-        emailHtml = buildOnlinekursEmail(firstName, courseName);
-      } else if (courseType === "Praxiskurs") {
-        const courseName = template?.name_praxis || courseLabelDe;
-        emailSubject = `Buchungsbestätigung: ${courseName}`;
-
-        let praxisInfo = { address: "", dateFormatted: sessionLabel, startTime: "", endTime: "", instructor: "" };
-        if (sessionId) {
-          const { data: sess } = await supabase
-            .from("course_sessions")
-            .select("*")
-            .eq("id", sessionId)
-            .single();
-          if (sess) {
-            praxisInfo = {
-              address: sess.address || "",
-              dateFormatted: sess.date_iso ? formatDateDe(sess.date_iso) : sess.label_de || "",
-              startTime: sess.start_time || "",
-              endTime: sess.start_time && sess.duration_minutes
-                ? computeEndTime(sess.start_time, sess.duration_minutes)
-                : "",
-              instructor: sess.instructor_name || "",
-            };
-          }
-        }
-        emailHtml = buildPraxiskursEmail(firstName, courseName, praxisInfo);
-      } else {
-        const courseName = courseType === "Premium" ? "Komplettpaket" : (template?.name_kombi || courseLabelDe);
-        emailSubject = `Buchungsbestätigung: ${courseName}`;
-
-        let praxisInfo = { address: "", dateFormatted: sessionLabel, startTime: "", endTime: "", instructor: "" };
-        if (sessionId) {
-          const { data: sess } = await supabase
-            .from("course_sessions")
-            .select("*")
-            .eq("id", sessionId)
-            .single();
-          if (sess) {
-            praxisInfo = {
-              address: sess.address || "",
-              dateFormatted: sess.date_iso ? formatDateDe(sess.date_iso) : sess.label_de || "",
-              startTime: sess.start_time || "",
-              endTime: sess.start_time && sess.duration_minutes
-                ? computeEndTime(sess.start_time, sess.duration_minutes)
-                : "",
-              instructor: sess.instructor_name || "",
-            };
-          }
-        }
-        emailHtml = buildKombikursEmail(firstName, courseName, praxisInfo);
-      }
-
-      await sendEmail(email, emailSubject, emailHtml);
-    } catch (emailErr) {
-      console.error("Failed to send course confirmation email:", emailErr);
-    }
-
-    // Send WhatsApp community invite
-    try {
-      await sendEmail(
-        email,
-        "Willkommen in der EPHIA-Community!",
-        buildCommunityInviteEmail(firstName)
-      );
-    } catch (inviteErr) {
-      console.error("Failed to send community invite email:", inviteErr);
+    if (azubi?.profile_complete) {
+      isReturningCustomer = true;
     }
   }
 
-  // Enroll in LearnWorlds for Onlinekurs, Kombikurs, and Premium
-  if (email && (courseType === "Onlinekurs" || courseType === "Kombikurs")) {
-    const onlineCourseId = template?.online_course_id;
-    if (onlineCourseId) {
-        try {
-        await enrollInLearnWorlds(email, onlineCourseId, firstName, lastName);
-      } catch (lwErr) {
-        console.error("LearnWorlds enrollment error:", lwErr);
-      }
-    } else {
-      console.warn(`No online_course_id for template ${templateId}, skipping LW enrollment`);
-    }
-  }
-
-  // Komplettpaket: enroll in all 4 online courses
-  if (email && courseType === "Premium") {
-    const premiumCourseIds = [
-      "grundkurs-botulinum-online",
-      "aufbaukurs-botulinum-periorale-zone",
-      "aufbaukurs-medizinische-indikation-fuer-botulinum-online",
-      "grundkurs-medizinische-hautpflege",
-    ];
-    for (const lwCourseId of premiumCourseIds) {
+  if (isReturningCustomer) {
+    // Returning customer: run full post-purchase flow immediately
+    const postPurchaseData: PostPurchaseData = {
+      bookingId: bookingId as string,
+      email,
+      firstName,
+      lastName,
+      fullName,
+      phone,
+      courseType: courseType as CourseType,
+      courseKey,
+      templateId,
+      sessionId,
+      sessionLabel,
+      amountTotal,
+      audienceTag,
+    };
+    await runPostPurchaseFlow(postPurchaseData);
+  } else {
+    // New customer: send "complete your profile" reminder email
+    // Post-purchase flow will be triggered after profile completion
+    if (email) {
       try {
-        await enrollInLearnWorlds(email, lwCourseId, firstName, lastName);
-      } catch (lwErr) {
-        console.error(`LearnWorlds Premium enrollment error (${lwCourseId}):`, lwErr);
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen-booking-tool-production-1269.up.railway.app";
+        await sendProfileReminderEmail(email, firstName, bookingId as string, baseUrl);
+        console.log(`Profile reminder email sent to ${email} for booking ${bookingId}`);
+      } catch (reminderErr) {
+        console.error("Failed to send profile reminder email:", reminderErr);
       }
     }
   }
 
-  // Send Slack notification to #revenue
-  if (SLACK_WEBHOOK_URL_COURSES) {
-    try {
-      let seatsInfo = "";
-      if (sessionId) {
-        const { data: updatedSession } = await supabase
-          .from("course_sessions")
-          .select("booked_seats, max_seats")
-          .eq("id", sessionId)
-          .single();
-        if (updatedSession) {
-          seatsInfo = `${updatedSession.booked_seats}/${updatedSession.max_seats}`;
-        }
-      }
-
-      const betrag = amountTotal ? `€${(amountTotal / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })}` : null;
-
-      await fetch(SLACK_WEBHOOK_URL_COURSES, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: [
-            `*Name:* ${fullName}`,
-            `*Typ:* ${courseType}`,
-            `*Kurs:* ${courseLabelDe}`,
-            sessionLabel ? `*Datum:* ${sessionLabel}` : null,
-            seatsInfo ? `*Plätze:* ${seatsInfo}` : null,
-            betrag ? `*Betrag:* ${betrag}` : null,
-          ].filter(Boolean).join("\n"),
-        }),
-      });
-    } catch (slackErr) {
-      console.error("Failed to send Slack notification:", slackErr);
-    }
-  }
-
-  // Create or update HubSpot contact (Auszubildende only, not patients)
-  if (HUBSPOT_ACCESS_TOKEN && email) {
-    try {
-      // Search for existing contact by email
-      const searchRes = await fetch("https://api.hubapi.com/crm/v3/objects/contacts/search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${HUBSPOT_ACCESS_TOKEN}`,
-        },
-        body: JSON.stringify({
-          filterGroups: [{
-            filters: [{ propertyName: "email", operator: "EQ", value: email }],
-          }],
-        }),
-      });
-
-      const searchData = await searchRes.json();
-
-      if (searchData.total === 0) {
-        // Create new contact
-        const createRes = await fetch("https://api.hubapi.com/crm/v3/objects/contacts", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${HUBSPOT_ACCESS_TOKEN}`,
-          },
-          body: JSON.stringify({
-            properties: {
-              email,
-              firstname: firstName,
-              lastname: lastName,
-              phone: phone || undefined,
-              contact_type: "Doctor - Customer",
-            },
-          }),
-        });
-
-        if (createRes.ok) {
-          console.log(`HubSpot: created contact for ${email}`);
-        } else {
-          const errText = await createRes.text();
-          console.error(`HubSpot create error: ${createRes.status} ${errText}`);
-        }
-      } else {
-        console.log(`HubSpot: contact already exists for ${email}`);
-      }
-    } catch (hsErr) {
-      console.error("HubSpot error:", hsErr);
-    }
-  }
-
-  console.log(`Course booking created: ${bookingId} (${courseType} / ${courseKey})`);
+  console.log(`Course booking created: ${bookingId} (${courseType} / ${courseKey}) — profile ${isReturningCustomer ? "complete" : "pending"}`);
 }
 
 export async function POST(req: NextRequest) {
