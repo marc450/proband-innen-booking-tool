@@ -50,27 +50,26 @@ export function SuccessContent({ booking, profileComplete }: Props) {
   const [error, setError] = useState("");
   const reminderSentRef = useRef(false);
 
-  // Send reminder email when user leaves page without completing profile
+  // Send reminder email when user closes/leaves page without completing profile
+  // Uses beforeunload only (not visibilitychange which fires too eagerly on redirects)
+  // Minimum 30s on page before the reminder can fire to avoid false triggers
   useEffect(() => {
     if (!booking || profileComplete || done) return;
 
+    const mountedAt = Date.now();
+
     const triggerReminder = () => {
       if (reminderSentRef.current || done) return;
+      // Don't fire if user has been on the page less than 30 seconds
+      if (Date.now() - mountedAt < 30_000) return;
       reminderSentRef.current = true;
-      // Use sendBeacon for reliability on page close
       const payload = JSON.stringify({ bookingId: booking.id, email: booking.email });
       navigator.sendBeacon("/api/send-profile-reminder", payload);
     };
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") triggerReminder();
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("beforeunload", triggerReminder);
 
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("beforeunload", triggerReminder);
     };
   }, [booking, profileComplete, done]);

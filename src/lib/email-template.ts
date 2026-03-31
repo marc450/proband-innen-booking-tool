@@ -53,9 +53,9 @@ export function buildEmailHtml({
       ${intro}
     </p>
 
-    <div style="border-radius:8px; padding:14px 16px; background-color:#FAEBE1; border:1px solid #F0D0B8; font-size:14px; margin:0 0 20px; text-align:left;">
+    ${rows ? `<div style="border-radius:8px; padding:14px 16px; background-color:#FAEBE1; border:1px solid #F0D0B8; font-size:14px; margin:0 0 20px; text-align:left;">
       ${rows}
-    </div>
+    </div>` : ""}
 
     ${noteHtml}
     ${extraContent}
