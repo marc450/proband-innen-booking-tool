@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
     const tokens = await exchangeCodeForTokens(code);
     await saveTokens(tokens.access_token, tokens.refresh_token, tokens.expires_in);
     // Redirect to inbox after successful auth
-    return NextResponse.redirect(new URL("/dashboard/inbox", request.url));
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+    return NextResponse.redirect(`${baseUrl}/dashboard/inbox`);
   } catch (error) {
     console.error("Gmail OAuth callback error:", error);
     return NextResponse.json({ error: "Failed to connect Gmail" }, { status: 500 });
