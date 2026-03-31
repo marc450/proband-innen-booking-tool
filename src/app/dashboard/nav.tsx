@@ -37,6 +37,10 @@ const navGroups = [
   },
 ];
 
+const standaloneNavItems = [
+  { href: "/dashboard/inbox", label: "Inbox" },
+];
+
 export function DashboardNav({
   userEmail,
   role,
@@ -215,6 +219,20 @@ export function DashboardNav({
                     </div>
                   )}
                 </div>
+              ))}
+              {standaloneNavItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "text-sm transition-colors",
+                    pathname.startsWith(item.href)
+                      ? "text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {item.label}
+                </Link>
               ))}
               {role === "admin" && (
                 <Link

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmailHistory } from "@/components/email-history";
 import {
   Table,
   TableBody,
@@ -192,6 +193,7 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings }: Props) {
             <div className="pt-2 text-xs text-muted-foreground">
               Erstellt am {formatDateTime(azubi.created_at)}
             </div>
+            <EmailHistory email={azubi.email} />
           </CardContent>
         </Card>
 

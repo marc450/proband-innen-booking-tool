@@ -26,6 +26,7 @@ import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { ArrowLeft, Mail, Phone, MapPin, AlertTriangle, Ban, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Check, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { EmailHistory } from "@/components/email-history";
 
 const bookingStatusLabels: Record<BookingStatus, string> = {
   booked: "Gebucht",
@@ -209,6 +210,7 @@ export function PatientDetail({ patient, bookings }: Props) {
             <div className="text-xs text-muted-foreground pt-2">
               Erstellt am {format(new Date(patient.created_at), "dd.MM.yyyy HH:mm", { locale: de })}
             </div>
+            {patient.email && <EmailHistory email={patient.email} />}
           </CardContent>
         </Card>
 
