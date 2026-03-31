@@ -310,7 +310,8 @@ export async function sendProfileReminderEmail(email: string, firstName: string,
   const html = buildEmailHtml({
     firstName,
     intro: "Vielen Dank für Deine Buchung! Wir benötigen noch ein paar Angaben von Dir, damit wir Deinen Kurs freischalten können.",
-    closing: `<a href="${profileUrl}" style="display:inline-block;color:#0066FF;font-weight:600;font-size:14px;text-decoration:underline;">Profil vervollständigen →</a><br><br>Liebe Grüße,<br>Dein EPHIA-Team`,
+    infoRows: [],
+    closing: `<a href="${profileUrl}" style="display:inline-block;color:#0066FF;font-weight:600;font-size:14px;text-decoration:underline;">Profil vervollständigen →</a>`,
   });
 
   await sendEmailViaResend(email, "Bitte vervollständige Dein Profil", html);
