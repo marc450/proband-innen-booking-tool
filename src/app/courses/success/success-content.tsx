@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { CheckCircle, Loader2 } from "lucide-react";
+import { CheckCircle, ClipboardList, Loader2 } from "lucide-react";
 
 const TITLE_OPTIONS = ["Dr. med.", "Dr. med. dent.", "Prof. Dr.", "PD Dr.", "Kein Titel"];
 const GENDER_OPTIONS = ["Weiblich", "Männlich", "Divers"];
@@ -168,8 +168,8 @@ export function SuccessContent({ booking, profileComplete }: Props) {
 
   return (
     <div className="bg-white rounded-[10px] p-8 shadow-sm">
-      <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
-      <h2 className="text-xl font-bold text-black text-center mb-1">Zahlung erfolgreich!</h2>
+      <ClipboardList className="w-10 h-10 text-[#0066FF] mx-auto mb-2" />
+      <h2 className="text-xl font-bold text-black text-center mb-1">Noch ein Schritt!</h2>
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
         <p className="text-amber-800 text-sm text-center font-medium">
           ⚠️ Bitte schließe dieses Fenster noch nicht! Wir benötigen noch ein paar Angaben, um Deinen Kurs freizuschalten.
