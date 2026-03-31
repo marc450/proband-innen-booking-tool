@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptPatient } from "@/lib/encryption";
 import { buildEmailHtml } from "@/lib/email-template";
+import { sendProfileReminderEmail } from "@/lib/post-purchase";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -20,9 +21,36 @@ export async function GET(req: NextRequest) {
 
   const supabase = createAdminClient();
   const now = new Date();
-  const results = { reminders72h: 0, reminders24h: 0, errors: 0 };
+  const results = { reminders72h: 0, reminders24h: 0, profileReminders: 0, errors: 0 };
 
   try {
+    // ── Profile completion reminders for Auszubildende ──
+    // Send reminder to users who haven't completed their profile 30+ minutes after booking
+    const thirtyMinAgo = new Date(now.getTime() - 30 * 60 * 1000).toISOString();
+    const { data: incompleteBookings } = await supabase
+      .from("course_bookings")
+      .select("id, email, first_name")
+      .eq("profile_complete", false)
+      .eq("profile_reminder_sent", false)
+      .lt("created_at", thirtyMinAgo);
+
+    if (incompleteBookings && incompleteBookings.length > 0) {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen-booking-tool-production-1269.up.railway.app";
+      for (const b of incompleteBookings) {
+        try {
+          await sendProfileReminderEmail(b.email, b.first_name || "Du", b.id, baseUrl);
+          await supabase
+            .from("course_bookings")
+            .update({ profile_reminder_sent: true })
+            .eq("id", b.id);
+          results.profileReminders++;
+        } catch (err) {
+          console.error(`Profile reminder error for booking ${b.id}:`, err);
+          results.errors++;
+        }
+      }
+    }
+
     // Fetch all booked (active) bookings with their slot + course info
     const { data: bookings, error } = await supabase
       .from("bookings")

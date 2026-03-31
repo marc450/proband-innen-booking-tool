@@ -209,17 +209,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     };
     await runPostPurchaseFlow(postPurchaseData);
   } else {
-    // New customer: send "complete your profile" reminder email
-    // Post-purchase flow will be triggered after profile completion
-    if (email) {
-      try {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen-booking-tool-production-1269.up.railway.app";
-        await sendProfileReminderEmail(email, firstName, bookingId as string, baseUrl);
-        console.log(`Profile reminder email sent to ${email} for booking ${bookingId}`);
-      } catch (reminderErr) {
-        console.error("Failed to send profile reminder email:", reminderErr);
-      }
-    }
+    // New customer: profile form is shown on the success page.
+    // If they don't complete it within 30 min, a cron job sends a reminder email.
+    console.log(`New customer ${email} for booking ${bookingId} — awaiting profile completion`);
   }
 
   console.log(`Course booking created: ${bookingId} (${courseType} / ${courseKey}) — profile ${isReturningCustomer ? "complete" : "pending"}`);

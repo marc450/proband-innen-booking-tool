@@ -143,11 +143,13 @@ export function SuccessContent({ booking, profileComplete }: Props) {
 
   return (
     <div className="bg-white rounded-[10px] p-8 shadow-sm">
-      <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
+      <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
       <h2 className="text-xl font-bold text-black text-center mb-1">Zahlung erfolgreich!</h2>
-      <p className="text-gray-500 text-sm text-center mb-6">
-        Bitte vervollständige noch kurz Dein Profil, damit wir Deinen Kurs freischalten können.
-      </p>
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+        <p className="text-amber-800 text-sm text-center font-medium">
+          ⚠️ Bitte schließe dieses Fenster noch nicht! Wir benötigen noch ein paar Angaben, um Deinen Kurs freizuschalten.
+        </p>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Title */}
