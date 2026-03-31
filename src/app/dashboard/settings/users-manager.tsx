@@ -383,13 +383,10 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
       </Dialog>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Dozent:innen haben Zugang zu allen Bereichen außer Einstellungen.
-        </p>
+      <div className="flex items-center justify-end">
         <Button onClick={() => setShowCreate(true)}>
           <Plus className="h-4 w-4 mr-1.5" />
-          Benutzer anlegen
+          Benutzer:in anlegen
         </Button>
       </div>
 
