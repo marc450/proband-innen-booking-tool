@@ -6,7 +6,11 @@ const GMAIL_CLIENT_SECRET = process.env.GMAIL_CLIENT_SECRET!;
 const GMAIL_REDIRECT_URI = process.env.GMAIL_REDIRECT_URI!;
 const GMAIL_USER_EMAIL = process.env.GMAIL_USER_EMAIL || "customerlove@ephia.de";
 const GMAIL_API = "https://gmail.googleapis.com/gmail/v1";
-const SCOPES = ["https://mail.google.com/"];
+const SCOPES = [
+  "https://www.googleapis.com/auth/gmail.readonly",
+  "https://www.googleapis.com/auth/gmail.send",
+  "https://www.googleapis.com/auth/gmail.modify",
+];
 
 // ── OAuth helpers ──
 
