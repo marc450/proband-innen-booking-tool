@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +71,7 @@ const statusLabels: Record<CourseBookingStatus, string> = {
 };
 
 export function CourseBookingsManager({ initialBookings, isAdmin = false }: Props) {
+  const router = useRouter();
   const supabase = createClient();
   const [bookings, setBookings] = useState(initialBookings);
   const [search, setSearch] = useState("");
@@ -368,13 +370,14 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
             filtered.map((booking) => {
               const name = [booking.first_name, booking.last_name].filter(Boolean).join(" ") || "–";
               return (
-                <TableRow key={booking.id}>
+                <TableRow key={booking.id} className="cursor-pointer" onClick={() => router.push(`/dashboard/auszubildende/buchungen/${booking.id}`)}>
                   {isAdmin && (
                     <TableCell>
                       <input
                         type="checkbox"
                         checked={selected.has(booking.id)}
                         onChange={() => toggleSelect(booking.id)}
+                        onClick={(e) => e.stopPropagation()}
                         className="rounded"
                       />
                     </TableCell>
@@ -384,6 +387,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                       <Link
                         href={`/dashboard/auszubildende/personen/${booking.auszubildende_id}`}
                         className="text-primary hover:underline"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {name}
                       </Link>
@@ -422,6 +426,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                       <select
                         value={booking.status}
                         onChange={(e) => updateStatus(booking.id, e.target.value as CourseBookingStatus)}
+                        onClick={(e) => e.stopPropagation()}
                         className="text-sm border rounded px-2 py-1"
                       >
                         {Object.entries(statusLabels).map(([value, label]) => (
@@ -436,7 +441,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                     {booking.stripe_invoice_pdf_url ? (
                       <span className="inline-flex items-center gap-2">
                         <button
-                          onClick={() => setInvoicePdfUrl(booking.stripe_invoice_pdf_url)}
+                          onClick={(e) => { e.stopPropagation(); setInvoicePdfUrl(booking.stripe_invoice_pdf_url); }}
                           className="text-muted-foreground hover:text-foreground transition-colors"
                           title="Rechnung ansehen"
                         >
@@ -446,6 +451,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                           href={booking.stripe_invoice_pdf_url}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                           className="text-muted-foreground hover:text-foreground transition-colors"
                           title="Rechnung herunterladen"
                         >
@@ -460,7 +466,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                     <TableCell>
                       {booking.session_id && (booking.status === "booked" || booking.status === "completed") && (
                         <button
-                          onClick={() => openSessionChange(booking)}
+                          onClick={(e) => { e.stopPropagation(); openSessionChange(booking); }}
                           className="text-muted-foreground hover:text-foreground transition-colors"
                           title="Termin ändern"
                         >
