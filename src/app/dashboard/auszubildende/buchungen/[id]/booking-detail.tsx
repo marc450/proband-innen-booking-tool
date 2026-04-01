@@ -272,38 +272,37 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
           </div>
         )}
 
-        {/* Documents */}
-        <div className="bg-white rounded-[10px] p-6 shadow-sm">
-          <h2 className="text-base font-bold mb-4 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-gray-400" />
-            Dokumente & Links
-          </h2>
-          <div className="space-y-3">
-            {booking.stripe_invoice_url && (
-              <a href={booking.stripe_invoice_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-[#0066FF] hover:underline">
-                <ExternalLink className="w-3.5 h-3.5" /> Rechnung (Online)
-              </a>
-            )}
-            {booking.stripe_invoice_pdf_url && (
-              <a href={booking.stripe_invoice_pdf_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-[#0066FF] hover:underline">
-                <ExternalLink className="w-3.5 h-3.5" /> Rechnung (PDF)
-              </a>
-            )}
-            {booking.stripe_credit_note_url && (
-              <a href={booking.stripe_credit_note_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-[#0066FF] hover:underline">
-                <ExternalLink className="w-3.5 h-3.5" /> Stornorechnung
-              </a>
-            )}
-            {s && !s.error && s.receiptUrl && (
-              <a href={s.receiptUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-[#0066FF] hover:underline">
-                <ExternalLink className="w-3.5 h-3.5" /> Stripe-Beleg
-              </a>
-            )}
-            {!booking.stripe_invoice_url && !booking.stripe_credit_note_url && (!s || s.error) && (
-              <p className="text-sm text-gray-400">Keine Dokumente verfügbar</p>
-            )}
+        {/* Documents — only show if there are any */}
+        {(booking.stripe_invoice_url || booking.stripe_invoice_pdf_url || booking.stripe_credit_note_url || (s && !s.error && s.receiptUrl)) && (
+          <div className="bg-white rounded-[10px] p-6 shadow-sm">
+            <h2 className="text-base font-bold mb-4 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-gray-400" />
+              Dokumente
+            </h2>
+            <div className="space-y-3">
+              {booking.stripe_invoice_url && (
+                <a href={booking.stripe_invoice_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-[#0066FF] hover:underline">
+                  <ExternalLink className="w-3.5 h-3.5" /> Rechnung (Online)
+                </a>
+              )}
+              {booking.stripe_invoice_pdf_url && (
+                <a href={booking.stripe_invoice_pdf_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-[#0066FF] hover:underline">
+                  <ExternalLink className="w-3.5 h-3.5" /> Rechnung (PDF)
+                </a>
+              )}
+              {booking.stripe_credit_note_url && (
+                <a href={booking.stripe_credit_note_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-[#0066FF] hover:underline">
+                  <ExternalLink className="w-3.5 h-3.5" /> Stornorechnung
+                </a>
+              )}
+              {s && !s.error && s.receiptUrl && (
+                <a href={s.receiptUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-[#0066FF] hover:underline">
+                  <ExternalLink className="w-3.5 h-3.5" /> Stripe-Beleg
+                </a>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Stripe IDs (for debugging) */}
         {s && !s.error && (
