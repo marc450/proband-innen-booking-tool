@@ -101,49 +101,25 @@ export async function GET(request: NextRequest) {
         };
       }
 
-      // Check for applied discounts/coupons
+      // Check for applied discounts/coupons via line items
       let coupon = null;
-      if (session.discounts && session.discounts.length > 0) {
-        try {
-          const discountId = typeof session.discounts[0] === "string" ? session.discounts[0] : (session.discounts[0] as { discount?: string })?.discount;
-          if (discountId) {
-            const stripeDiscount = await stripe.discounts.del(discountId).catch(() => null);
-            if (stripeDiscount) {
-              coupon = {
-                id: (stripeDiscount as unknown as { coupon?: { id: string; name: string; percent_off: number | null; amount_off: number | null } }).coupon?.id,
-                name: (stripeDiscount as unknown as { coupon?: { name: string } }).coupon?.name,
-                percent_off: (stripeDiscount as unknown as { coupon?: { percent_off: number | null } }).coupon?.percent_off,
-                amount_off: (stripeDiscount as unknown as { coupon?: { amount_off: number | null } }).coupon?.amount_off,
-              };
-            }
-          }
-        } catch {
-          // Ignore discount fetch errors
-        }
-      }
-
-      // Get promotion code if used
       let promoCode = null;
-      if ((session as unknown as { allow_promotion_codes?: boolean }).allow_promotion_codes) {
-        // Promo codes enabled but we need to check the line items
+      try {
         const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
           expand: ["data.discounts"],
         });
         if (lineItems.data.length > 0) {
-          const discounts = lineItems.data[0].discounts || [];
-          if (discounts.length > 0) {
-            const d = discounts[0] as unknown as { discount?: { coupon?: { id: string; name: string; percent_off: number | null; amount_off: number | null }; promotion_code?: string } };
-            if (d.discount?.coupon) {
-              coupon = {
-                id: d.discount.coupon.id,
-                name: d.discount.coupon.name,
-                percent_off: d.discount.coupon.percent_off,
-                amount_off: d.discount.coupon.amount_off,
-              };
-            }
-            if (d.discount?.promotion_code) {
+          const discounts = (lineItems.data[0] as unknown as { discounts?: Array<{ discount?: { coupon?: { id: string; name: string; percent_off: number | null; amount_off: number | null }; promotion_code?: string } }> }).discounts || [];
+          if (discounts.length > 0 && discounts[0].discount?.coupon) {
+            coupon = {
+              id: discounts[0].discount.coupon.id,
+              name: discounts[0].discount.coupon.name,
+              percent_off: discounts[0].discount.coupon.percent_off,
+              amount_off: discounts[0].discount.coupon.amount_off,
+            };
+            if (discounts[0].discount.promotion_code) {
               try {
-                const pc = await stripe.promotionCodes.retrieve(d.discount.promotion_code as string);
+                const pc = await stripe.promotionCodes.retrieve(discounts[0].discount.promotion_code);
                 promoCode = pc.code;
               } catch {
                 // ignore
@@ -151,6 +127,8 @@ export async function GET(request: NextRequest) {
             }
           }
         }
+      } catch {
+        // Ignore discount fetch errors
       }
 
       // Tax info
