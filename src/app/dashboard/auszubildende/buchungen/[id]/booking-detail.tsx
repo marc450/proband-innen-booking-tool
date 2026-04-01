@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, CreditCard, Receipt, Tag, User, Calendar, FileText, ExternalLink, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, CreditCard, Receipt, Calendar, FileText, ExternalLink, Loader2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 interface StripeDetails {
@@ -268,54 +268,26 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
           )}
         </div>
 
-        {/* Fees */}
-        {s && !s.error && s.fees.length > 0 && (
+        {/* Netto-Kalkulation */}
+        {s && !s.error && s.amountTotal && (
           <div className="bg-white rounded-[10px] p-6 shadow-sm">
             <h2 className="text-base font-bold mb-4 flex items-center gap-2">
               <Receipt className="w-4 h-4 text-gray-400" />
-              Gebühren & Nettobetrag
+              Netto-Kalkulation
             </h2>
+            <InfoRow label="Bruttobetrag" value={formatCurrency(s.amountTotal)} />
+            {s.discount && (
+              <InfoRow label={s.promoCode ? `Rabatt (Code: ${s.promoCode})` : s.coupon?.name ? `Rabatt (${s.coupon.name})` : "Rabatt"} value={<span className="text-red-500">-{formatCurrency(s.discount.amount)}</span>} />
+            )}
             {s.fees.map((fee, i) => (
               <InfoRow key={i} label={fee.description || fee.type} value={<span className="text-red-500">-{formatCurrency(fee.amount)}</span>} />
             ))}
-            <div className="border-t border-gray-100 my-3" />
-            <InfoRow label="Gebühren gesamt" value={<span className="text-red-500">-{formatCurrency(s.totalFees)}</span>} />
-            <InfoRow label="Nettobetrag (nach Gebühren)" value={<span className="font-bold text-emerald-600">{formatCurrency(s.netAmount)}</span>} />
-          </div>
-        )}
-
-        {/* Discount / Promo */}
-        {s && !s.error && (s.coupon || s.promoCode) && (
-          <div className="bg-white rounded-[10px] p-6 shadow-sm">
-            <h2 className="text-base font-bold mb-4 flex items-center gap-2">
-              <Tag className="w-4 h-4 text-gray-400" />
-              Rabatt / Gutscheincode
-            </h2>
-            {s.promoCode && <InfoRow label="Gutscheincode" value={<span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-xs">{s.promoCode}</span>} />}
-            {s.coupon && (
-              <>
-                <InfoRow label="Coupon" value={s.coupon.name || s.coupon.id} />
-                {s.coupon.percent_off && <InfoRow label="Rabatt" value={`${s.coupon.percent_off}%`} />}
-                {s.coupon.amount_off && <InfoRow label="Rabatt" value={formatCurrency(s.coupon.amount_off)} />}
-              </>
-            )}
-            {s.discount && <InfoRow label="Rabattbetrag" value={`-${formatCurrency(s.discount.amount)}`} />}
-          </div>
-        )}
-
-        {/* Profile Info */}
-        {auszubildendeProfile && (
-          <div className="bg-white rounded-[10px] p-6 shadow-sm">
-            <h2 className="text-base font-bold mb-4 flex items-center gap-2">
-              <User className="w-4 h-4 text-gray-400" />
-              Profil
-            </h2>
-            <InfoRow label="Name" value={`${auszubildendeProfile.title || ""} ${auszubildendeProfile.first_name} ${auszubildendeProfile.last_name}`.trim()} />
-            <InfoRow label="E-Mail" value={auszubildendeProfile.email} />
-            <InfoRow label="Geschlecht" value={auszubildendeProfile.gender || "–"} />
-            <InfoRow label="Fachrichtung" value={auszubildendeProfile.specialty || "–"} />
-            <InfoRow label="Geburtsdatum" value={auszubildendeProfile.birthdate ? formatDate(auszubildendeProfile.birthdate) : "–"} />
-            <InfoRow label="EFN" value={auszubildendeProfile.efn || "–"} mono />
+            {s.tax && <InfoRow label="MwSt." value={<span className="text-red-500">-{formatCurrency(s.tax.amount)}</span>} />}
+            <div className="border-t-2 border-gray-200 my-3" />
+            <div className="flex justify-between py-2.5">
+              <span className="text-sm font-bold text-gray-900">Nettobetrag</span>
+              <span className="text-sm font-bold text-emerald-600">{formatCurrency(s.netAmount)}</span>
+            </div>
           </div>
         )}
 

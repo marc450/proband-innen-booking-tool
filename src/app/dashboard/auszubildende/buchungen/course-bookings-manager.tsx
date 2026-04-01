@@ -41,6 +41,7 @@ interface BookingRow {
   auszubildende_id: string | null;
   stripe_invoice_url: string | null;
   stripe_invoice_pdf_url: string | null;
+  stripe_invoice_number: string | null;
   course_sessions: { date_iso: string; label_de: string | null; instructor_name: string | null; start_time: string | null; duration_minutes: number | null; address: string | null } | null;
   course_templates: { title: string; course_label_de: string | null } | null;
 }
@@ -348,6 +349,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                 />
               </TableHead>
             )}
+            <TableHead>Buchungsnr.</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Kurstyp</TableHead>
             <TableHead>Kurs</TableHead>
@@ -362,7 +364,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
         <TableBody>
           {filtered.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={isAdmin ? 10 : 9} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={isAdmin ? 11 : 10} className="text-center text-muted-foreground py-8">
                 {search ? "Keine Buchungen gefunden." : "Noch keine Kursbuchungen vorhanden."}
               </TableCell>
             </TableRow>
@@ -382,6 +384,9 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                       />
                     </TableCell>
                   )}
+                  <TableCell className="font-mono text-xs text-gray-500">
+                    {booking.stripe_invoice_number || "–"}
+                  </TableCell>
                   <TableCell className="font-medium">
                     {booking.auszubildende_id ? (
                       <Link

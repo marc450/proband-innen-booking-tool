@@ -69,6 +69,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
           .update({
             stripe_invoice_url: hostedUrl,
             stripe_invoice_pdf_url: invoicePdfUrl,
+            stripe_invoice_number: invoice.number || null,
           })
           .eq("stripe_checkout_session_id", checkoutSessionId);
       }
