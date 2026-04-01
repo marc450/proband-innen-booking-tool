@@ -275,18 +275,22 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
               <Receipt className="w-4 h-4 text-gray-400" />
               Netto-Kalkulation
             </h2>
-            <InfoRow label="Bruttobetrag (inkl. MwSt.)" value={formatCurrency(s.amountTotal)} />
+            <InfoRow label="Bruttobetrag" value={formatCurrency(s.amountTotal)} />
             {s.discount && (
-              <InfoRow label={s.promoCode ? `Rabatt (Code: ${s.promoCode})` : s.coupon?.name ? `Rabatt (${s.coupon.name})` : "Rabatt"} value={<span className="text-red-500">-{formatCurrency(s.discount.amount)}</span>} />
+              <InfoRow label={s.promoCode ? `Discount Code (${s.promoCode})` : s.coupon?.name ? `Rabatt (${s.coupon.name})` : "Rabatt"} value={<span className="text-red-500">-{formatCurrency(s.discount.amount)}</span>} />
             )}
-            {s.tax && <InfoRow label="davon MwSt." value={<span className="text-gray-500">{formatCurrency(s.tax.amount)}</span>} />}
             {s.fees.map((fee, i) => (
               <InfoRow key={i} label={fee.description || fee.type} value={<span className="text-red-500">-{formatCurrency(fee.amount)}</span>} />
             ))}
-            <div className="border-t-2 border-gray-200 my-3" />
+            <div className="border-t border-gray-200 my-2" />
+            <InfoRow label="Auszahlung" value={<span className="font-bold">{formatCurrency(s.netAmount)}</span>} />
+            {s.tax && (
+              <InfoRow label="MwSt." value={<span className="text-red-500">-{formatCurrency(s.tax.amount)}</span>} />
+            )}
+            <div className="border-t-2 border-gray-200 my-2" />
             <div className="flex justify-between py-2.5">
-              <span className="text-sm font-bold text-gray-900">Auszahlung (nach Gebühren)</span>
-              <span className="text-sm font-bold text-emerald-600">{formatCurrency(s.netAmount)}</span>
+              <span className="text-sm font-bold text-gray-900">Nettobetrag</span>
+              <span className="text-sm font-bold text-emerald-600">{formatCurrency(s.netAmount - (s.tax?.amount || 0))}</span>
             </div>
           </div>
         )}
