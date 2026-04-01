@@ -54,6 +54,7 @@ interface BookingData {
     stripe_invoice_url: string | null;
     stripe_invoice_pdf_url: string | null;
     stripe_credit_note_url: string | null;
+    stripe_invoice_number: string | null;
     course_sessions: { date_iso: string; label_de: string | null; instructor_name: string | null; start_time: string | null; duration_minutes: number | null; address: string | null } | null;
     course_templates: { title: string; course_label_de: string | null; course_key: string | null } | null;
   };
@@ -192,9 +193,11 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
         </Link>
         <div className="flex-1">
           <h1 className="text-2xl font-bold">
-            {booking.first_name} {booking.last_name}
+            {booking.stripe_invoice_number || `#${booking.id.slice(0, 8)}`}
           </h1>
-          <p className="text-gray-500 text-sm">{booking.email}</p>
+          <p className="text-gray-500 text-sm">
+            {[booking.first_name, booking.last_name].filter(Boolean).join(" ")}{booking.email ? ` · ${booking.email}` : ""}
+          </p>
         </div>
         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${courseTypeColors[booking.course_type] || "bg-gray-100 text-gray-600"}`}>
           {booking.course_type}
@@ -205,20 +208,19 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Payment Info */}
+        {/* Payment Method */}
         <div className="bg-white rounded-[10px] p-6 shadow-sm">
           <h2 className="text-base font-bold mb-4 flex items-center gap-2">
             <CreditCard className="w-4 h-4 text-gray-400" />
-            Zahlungsdetails
+            Zahlungsmethode
           </h2>
           {s && !s.error ? (
             <>
-              <InfoRow label="Zahlungsmethode" value={getPaymentMethodLabel(s.paymentMethod)} />
+              <InfoRow label="Methode" value={getPaymentMethodLabel(s.paymentMethod)} />
               {s.paymentMethod?.type === "card" && s.paymentMethod.card && (
                 <>
                   <InfoRow label="Kartentyp" value={s.paymentMethod.card.funding === "credit" ? "Kreditkarte" : s.paymentMethod.card.funding === "debit" ? "Debitkarte" : s.paymentMethod.card.funding} />
                   <InfoRow label="Land" value={s.paymentMethod.card.country || "–"} />
-                  <InfoRow label="Gültig bis" value={`${String(s.paymentMethod.card.exp_month).padStart(2, "0")}/${s.paymentMethod.card.exp_year}`} />
                 </>
               )}
               {s.klarnaDetails && (
@@ -227,13 +229,6 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
               {s.paymentMethod?.type === "klarna" && !s.klarnaDetails && (
                 <InfoRow label="Klarna-Zahlungsart" value="Klarna" />
               )}
-              <div className="border-t border-gray-100 my-3" />
-              <InfoRow label="Betrag (brutto)" value={formatCurrency(s.amountTotal)} />
-              {s.amountSubtotal !== s.amountTotal && (
-                <InfoRow label="Betrag (netto)" value={formatCurrency(s.amountSubtotal)} />
-              )}
-              {s.tax && <InfoRow label="MwSt." value={formatCurrency(s.tax.amount)} />}
-              {s.discount && <InfoRow label="Rabatt" value={`-${formatCurrency(s.discount.amount)}`} />}
               <InfoRow label="Zahlungsstatus" value={
                 s.paymentStatus === "paid" ? <span className="text-emerald-600">Bezahlt</span> :
                 s.paymentStatus === "unpaid" ? <span className="text-red-600">Nicht bezahlt</span> :
@@ -304,11 +299,6 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
                 <ExternalLink className="w-3.5 h-3.5" /> Stripe-Beleg
               </a>
             )}
-            {s && !s.error && s.chargeId && (
-              <a href={`https://dashboard.stripe.com/payments/${s.chargeId}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-[#0066FF] hover:underline">
-                <ExternalLink className="w-3.5 h-3.5" /> In Stripe öffnen
-              </a>
-            )}
             {!booking.stripe_invoice_url && !booking.stripe_credit_note_url && (!s || s.error) && (
               <p className="text-sm text-gray-400">Keine Dokumente verfügbar</p>
             )}
@@ -319,6 +309,13 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
         {s && !s.error && (
           <div className="bg-white rounded-[10px] p-6 shadow-sm">
             <h2 className="text-base font-bold mb-4 text-gray-400 text-xs uppercase tracking-wide">Stripe-Referenzen</h2>
+            {s.chargeId && (
+              <div className="mb-3">
+                <a href={`https://dashboard.stripe.com/payments/${s.chargeId}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-[#0066FF] hover:underline">
+                  <ExternalLink className="w-3.5 h-3.5" /> In Stripe öffnen
+                </a>
+              </div>
+            )}
             <InfoRow label="Checkout Session" value={<span className="font-mono text-xs">{booking.stripe_checkout_session_id?.slice(0, 20)}...</span>} />
             {s.paymentIntentId && <InfoRow label="Payment Intent" value={<span className="font-mono text-xs">{s.paymentIntentId.slice(0, 20)}...</span>} />}
             {booking.stripe_customer_id && <InfoRow label="Customer" value={<span className="font-mono text-xs">{booking.stripe_customer_id.slice(0, 20)}...</span>} />}
