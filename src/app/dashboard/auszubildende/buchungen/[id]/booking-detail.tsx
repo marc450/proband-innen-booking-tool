@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, CreditCard, Receipt, Calendar, FileText, ExternalLink, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, CreditCard, Receipt, FileText, ExternalLink, Loader2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 interface StripeDetails {
@@ -205,24 +205,6 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Booking Info */}
-        <div className="bg-white rounded-[10px] p-6 shadow-sm">
-          <h2 className="text-base font-bold mb-4 flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-gray-400" />
-            Buchungsdetails
-          </h2>
-          <InfoRow label="Buchungs-ID" value={<span className="font-mono text-xs">{booking.id.slice(0, 8)}...</span>} />
-          <InfoRow label="Kurs" value={booking.course_templates?.title || "–"} />
-          <InfoRow label="Kurstyp" value={booking.course_type} />
-          <InfoRow label="Kursdatum" value={booking.course_sessions?.date_iso ? formatDate(booking.course_sessions.date_iso) : "–"} />
-          <InfoRow label="Startzeit" value={booking.course_sessions?.start_time || "–"} />
-          <InfoRow label="Dozent:in" value={booking.course_sessions?.instructor_name || "–"} />
-          <InfoRow label="Ort" value={booking.course_sessions?.address || "–"} />
-          <InfoRow label="Kaufdatum" value={formatDate(booking.created_at)} />
-          <InfoRow label="Zielgruppe" value={booking.audience_tag || "–"} />
-          {booking.phone && <InfoRow label="Telefon" value={booking.phone} />}
-        </div>
-
         {/* Payment Info */}
         <div className="bg-white rounded-[10px] p-6 shadow-sm">
           <h2 className="text-base font-bold mb-4 flex items-center gap-2">
