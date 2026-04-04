@@ -10,6 +10,7 @@ export default async function BookPage() {
   const { data: courses } = await supabase
     .from("courses")
     .select("*")
+    .eq("status", "online")
     .order("course_date", { ascending: true });
 
   const { data: slots } = await supabase

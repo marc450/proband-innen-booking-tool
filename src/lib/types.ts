@@ -105,6 +105,7 @@ export interface Course {
   guide_price: string | null;
   service_description: string | null;
   image_url: string | null;
+  status: "online" | "offline";
   created_at: string;
 }
 

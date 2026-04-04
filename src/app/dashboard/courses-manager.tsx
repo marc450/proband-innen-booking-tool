@@ -757,6 +757,12 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                   onClick={() => toggleCourse(course.id)}
                   className="flex items-center gap-4 flex-1 min-w-0 text-left"
                 >
+                  <span className="shrink-0">
+                    {course.status === "offline"
+                      ? <Badge variant="secondary" className="text-xs">Offline</Badge>
+                      : <Badge variant="outline" className="text-xs text-green-700 border-green-300 bg-green-50">Live</Badge>
+                    }
+                  </span>
                   <span className="[flex:3_1_0%] font-semibold text-base truncate min-w-0">{course.title}</span>
                   <span className="[flex:2_1_0%] text-sm text-muted-foreground truncate">
                     {course.instructor || <span className="italic opacity-50">Kein:e Dozent:in</span>}
