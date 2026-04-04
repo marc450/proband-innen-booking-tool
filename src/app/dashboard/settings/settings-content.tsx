@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UsersManager } from "./users-manager";
 import { CourseOfferingManager } from "./course-offering-manager";
 import { CourseSessionsSettings } from "./course-sessions-settings";
+import { DiscountCodesManager } from "./discount-codes-manager";
 import { CourseTemplate, CourseSession, DozentUser } from "@/lib/types";
 import { AdminUser } from "./page";
 
@@ -41,6 +42,7 @@ export function SettingsContent({
         <TabsList>
           <TabsTrigger value="kurstermine">Kurstermine</TabsTrigger>
           <TabsTrigger value="kursangebot">Kurse</TabsTrigger>
+          <TabsTrigger value="rabattcodes">Rabattcodes</TabsTrigger>
           <TabsTrigger value="benutzer">Benutzer:innen</TabsTrigger>
         </TabsList>
 
@@ -55,6 +57,10 @@ export function SettingsContent({
             dozentUsers={dozentUsers}
             betreuerUsers={betreuerUsers}
           />
+        </TabsContent>
+
+        <TabsContent value="rabattcodes" className="mt-6">
+          <DiscountCodesManager />
         </TabsContent>
 
         <TabsContent value="benutzer" className="mt-6">
