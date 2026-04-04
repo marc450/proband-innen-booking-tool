@@ -3,7 +3,9 @@
 import React, { useState, useEffect } from "react";
 import { CourseCard } from "./course-card";
 import { PremiumCard } from "./premium-card";
+import { CurriculumBanner } from "./curriculum-banner";
 import type { CourseTemplate, CourseSession, CourseType } from "@/lib/types";
+import { getCurriculumForCourseKey } from "@/lib/curricula";
 
 interface Props {
   template: CourseTemplate;
@@ -197,6 +199,8 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
   const pageHeader = overrides.header || "UNSERE KURSANGEBOTE";
   const onlineDescription = overrides.onlineDesc || "Erlerne die praxisnahe Theorie zur professionellen Behandlung von Patient:innen.";
 
+  const curriculum = getCurriculumForCourseKey(template.course_key || "");
+
   return (
     <div className="min-h-screen py-12 px-4" style={{ backgroundColor: "#0066FF" }}>
       <div className="max-w-7xl mx-auto">
@@ -325,6 +329,10 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
             </div>
           );
         })()}
+
+        {curriculum && (
+          <CurriculumBanner curriculum={curriculum} />
+        )}
       </div>
     </div>
   );

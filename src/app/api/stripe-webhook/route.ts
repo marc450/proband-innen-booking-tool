@@ -88,9 +88,170 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   console.log(`Invoice email sent for ${invoice.id} to ${email}`);
 }
 
+// Handle curriculum bundle checkout
+async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
+  const metadata = session.metadata || {};
+  const supabase = createAdminClient();
+
+  const curriculumSlug = metadata.curriculumSlug;
+  const courseType = metadata.courseType || "Kombikurs";
+  const bundleGroupId = metadata.bundleGroupId;
+  const checkoutSessionId = session.id;
+  const audienceTag = metadata.audienceTag || "Humanmediziner:in";
+
+  // Parse metadata
+  let courseKeys: string[] = [];
+  let sessionsMap: Record<string, string> = {};
+  let sessionLabelsMap: Record<string, string> = {};
+  let templateIds: string[] = [];
+
+  try {
+    courseKeys = JSON.parse(metadata.courseKeys || "[]");
+    sessionsMap = JSON.parse(metadata.sessions || "{}");
+    sessionLabelsMap = JSON.parse(metadata.sessionLabels || "{}");
+    templateIds = JSON.parse(metadata.templateIds || "[]");
+  } catch {
+    console.error("Failed to parse curriculum metadata");
+    return;
+  }
+
+  // Idempotency: check if any booking with this checkout session already exists
+  const { data: existing } = await supabase
+    .from("course_bookings")
+    .select("id")
+    .eq("stripe_checkout_session_id", checkoutSessionId)
+    .limit(1);
+
+  if (existing && existing.length > 0) return;
+
+  // Extract customer details
+  const cd = session.customer_details as { email?: string; name?: string; phone?: string } | null;
+  const email = cd?.email || "";
+  const fullName = cd?.name || "";
+  const phone = cd?.phone || "";
+  const nameParts = fullName.split(" ");
+  const firstName = nameParts[0] || "";
+  const lastName = nameParts.slice(1).join(" ") || "";
+  const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id || null;
+  const amountTotal = session.amount_total || 0;
+
+  // Calculate per-course amount (split evenly for record-keeping)
+  const perCourseAmount = Math.round(amountTotal / courseKeys.length);
+
+  // Fetch all templates
+  const { data: templates } = await supabase
+    .from("course_templates")
+    .select("id, course_key, name_kombi, title, online_course_id, course_label_de")
+    .in("id", templateIds);
+
+  const bookingIds: string[] = [];
+
+  // Create a booking for each course in the curriculum
+  for (let i = 0; i < courseKeys.length; i++) {
+    const courseKey = courseKeys[i];
+    const sessionId = sessionsMap[courseKey] || null;
+    const templateId = templateIds[i];
+
+    const { data: bookingId, error: rpcError } = await supabase.rpc("create_course_booking", {
+      p_session_id: sessionId,
+      p_template_id: templateId,
+      p_course_type: courseType,
+      p_first_name: firstName,
+      p_last_name: lastName,
+      p_email: email,
+      p_phone: phone,
+      p_stripe_checkout_session_id: checkoutSessionId,
+      p_stripe_customer_id: customerId,
+      p_amount_paid: perCourseAmount,
+    });
+
+    if (rpcError) {
+      console.error(`Curriculum booking RPC error for ${courseKey}:`, rpcError);
+      continue;
+    }
+
+    if (bookingId) {
+      bookingIds.push(bookingId);
+
+      // Set bundle_group_id and audience_tag
+      await supabase
+        .from("course_bookings")
+        .update({
+          bundle_group_id: bundleGroupId,
+          audience_tag: audienceTag,
+        })
+        .eq("id", bookingId);
+    }
+  }
+
+  // Upsert auszubildende profile
+  if (email) {
+    try {
+      const { data: azubi } = await supabase
+        .from("auszubildende")
+        .upsert(
+          { email, first_name: firstName, last_name: lastName, phone: phone || null },
+          { onConflict: "email" }
+        )
+        .select("id, profile_complete")
+        .single();
+
+      if (azubi) {
+        // Link all bookings to the auszubildende
+        for (const bookingId of bookingIds) {
+          await supabase
+            .from("course_bookings")
+            .update({ auszubildende_id: azubi.id })
+            .eq("id", bookingId);
+        }
+
+        if (azubi.profile_complete) {
+          // Returning customer: run post-purchase flow for each course
+          for (let i = 0; i < courseKeys.length; i++) {
+            const courseKey = courseKeys[i];
+            const sessionId = sessionsMap[courseKey] || null;
+            const sessionLabel = sessionLabelsMap[courseKey] || "";
+            const templateId = templateIds[i];
+            const bookingId = bookingIds[i];
+            if (!bookingId) continue;
+
+            const postPurchaseData: PostPurchaseData = {
+              bookingId,
+              email,
+              firstName,
+              lastName,
+              fullName,
+              phone,
+              courseType: courseType as CourseType,
+              courseKey,
+              templateId,
+              sessionId,
+              sessionLabel,
+              amountTotal: perCourseAmount,
+              audienceTag,
+            };
+            await runPostPurchaseFlow(postPurchaseData);
+          }
+        } else {
+          console.log(`New curriculum customer ${email} — awaiting profile completion`);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to upsert auszubildende for curriculum:", err);
+    }
+  }
+
+  console.log(`Curriculum bundle created: ${curriculumSlug}, ${bookingIds.length} bookings (bundleGroupId: ${bundleGroupId})`);
+}
+
 // Handle checkout.session.completed: create booking + send confirmation
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const metadata = session.metadata || {};
+
+  // Route to curriculum handler if this is a curriculum purchase
+  if (metadata.curriculumSlug) {
+    return handleCurriculumCheckout(session);
+  }
 
   // Only process course bookings (identified by courseKey in metadata)
   if (!metadata.courseKey) return;

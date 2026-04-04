@@ -42,6 +42,7 @@ interface BookingRow {
   stripe_invoice_url: string | null;
   stripe_invoice_pdf_url: string | null;
   stripe_invoice_number: string | null;
+  bundle_group_id: string | null;
   course_sessions: { date_iso: string; label_de: string | null; instructor_name: string | null; start_time: string | null; duration_minutes: number | null; address: string | null } | null;
   course_templates: { title: string; course_label_de: string | null } | null;
 }
@@ -87,6 +88,9 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
   const [changingSession, setChangingSession] = useState(false);
 
   // Cancellation state
+  // Bundle filter
+  const [bundleFilter, setBundleFilter] = useState<string | null>(null);
+
   const [cancelBooking, setCancelBooking] = useState<BookingRow | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState("");
@@ -109,6 +113,9 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
   }, []);
 
   const filtered = bookings.filter((b) => {
+    // Bundle filter
+    if (bundleFilter && b.bundle_group_id !== bundleFilter) return false;
+
     if (!search) return true;
     const s = search.toLowerCase();
     return (
@@ -321,6 +328,15 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">Kursbuchungen</h1>
+          {bundleFilter && (
+            <Badge
+              variant="outline"
+              className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 cursor-pointer"
+              onClick={() => setBundleFilter(null)}
+            >
+              Curriculum-Bundle ✕
+            </Badge>
+          )}
           {isAdmin && selected.size > 0 && (
             <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
               <Trash2 className="h-4 w-4 mr-1" />
@@ -401,20 +417,36 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant="secondary"
-                      className={
-                        booking.course_type === "Onlinekurs"
-                          ? "bg-sky-100 text-sky-700 hover:bg-sky-100"
-                          : booking.course_type === "Praxiskurs"
-                          ? "bg-amber-100 text-amber-700 hover:bg-amber-100"
-                          : booking.course_type === "Kombikurs"
-                          ? "bg-violet-100 text-violet-700 hover:bg-violet-100"
-                          : ""
-                      }
-                    >
-                      {booking.course_type}
-                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      <Badge
+                        variant="secondary"
+                        className={
+                          booking.course_type === "Onlinekurs"
+                            ? "bg-sky-100 text-sky-700 hover:bg-sky-100"
+                            : booking.course_type === "Praxiskurs"
+                            ? "bg-amber-100 text-amber-700 hover:bg-amber-100"
+                            : booking.course_type === "Kombikurs"
+                            ? "bg-violet-100 text-violet-700 hover:bg-violet-100"
+                            : ""
+                        }
+                      >
+                        {booking.course_type}
+                      </Badge>
+                      {booking.bundle_group_id && (
+                        <Badge
+                          variant="outline"
+                          className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 cursor-pointer text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setBundleFilter(
+                              bundleFilter === booking.bundle_group_id ? null : booking.bundle_group_id
+                            );
+                          }}
+                        >
+                          Curriculum
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {booking.course_templates?.course_label_de || booking.course_templates?.title || "–"}

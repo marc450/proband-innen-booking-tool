@@ -15,11 +15,14 @@ export default async function CourseSuccessPage({ searchParams }: Props) {
   let profileComplete = false;
 
   // Route 1: From Stripe redirect (session_id)
+  // For curriculum bundles, multiple bookings share the same checkout session — use the first one for profile flow
   if (params.session_id) {
     const { data } = await supabase
       .from("course_bookings")
       .select("id, email, first_name, last_name, course_type, template_id, session_id, stripe_checkout_session_id, amount_paid, audience_tag, profile_complete, auszubildende_id")
       .eq("stripe_checkout_session_id", params.session_id)
+      .order("created_at", { ascending: true })
+      .limit(1)
       .maybeSingle();
 
     booking = data;

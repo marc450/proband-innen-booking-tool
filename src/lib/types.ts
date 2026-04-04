@@ -72,6 +72,7 @@ export interface CourseBooking {
   amount_paid: number | null;
   status: CourseBookingStatus;
   audience_tag: string | null;
+  bundle_group_id: string | null;
   created_at: string;
 }
 
