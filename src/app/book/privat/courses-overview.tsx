@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { AvailableSlot, Course } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,16 @@ interface CourseGroup {
 }
 
 export function PrivatCoursesOverview({ courses, slots }: Props) {
+  useEffect(() => {
+    const sendHeight = () => {
+      window.parent.postMessage({ type: "ephia-resize", height: document.body.scrollHeight }, "*");
+    };
+    sendHeight();
+    const observer = new ResizeObserver(sendHeight);
+    observer.observe(document.body);
+    return () => observer.disconnect();
+  }, []);
+
   const groupedMap = new Map<string, CourseGroup>();
 
   for (const course of courses) {
