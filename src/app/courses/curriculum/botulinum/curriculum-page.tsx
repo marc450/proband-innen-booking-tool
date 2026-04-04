@@ -1,23 +1,16 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Check, Loader2, Award, ChevronDown, ArrowRight } from "lucide-react";
+import { Check, Loader2, Award, ChevronDown, ArrowRight, BookOpen, Stethoscope } from "lucide-react";
 import type { CurriculumConfig } from "@/lib/curricula";
 import type { CourseTemplate, CourseSession } from "@/lib/types";
+import { CURRICULUM_COURSE_CONTENT } from "@/lib/curriculum-content";
 
 interface Props {
   curriculum: CurriculumConfig;
   templates: CourseTemplate[];
   sessions: CourseSession[];
 }
-
-// ephia.de landing page links per course
-const COURSE_LANDING_PAGES: Record<string, string> = {
-  grundkurs_botulinum: "https://www.ephia.de/grundkurs-botulinum",
-  grundkurs_medizinische_hautpflege: "https://www.ephia.de/grundkurs-medizinische-hautpflege",
-  aufbaukurs_therapeutische_indikationen_botulinum: "https://www.ephia.de/aufbaukurs-therapeutische-indikationen",
-  masterclass_botulinum: "https://www.ephia.de/masterclass-botulinum",
-};
 
 function formatSessionLabel(session: CourseSession): string {
   let label = session.label_de || session.date_iso;
@@ -74,6 +67,7 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
   const [sessions, setSessions] = useState(initialSessions);
   const [selectedSessions, setSelectedSessions] = useState<Record<string, string>>({});
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [loadingCheckout, setLoadingCheckout] = useState(false);
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -134,18 +128,6 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
     return template.price_gross_kombi;
   };
 
-  const getCourseName = (template: CourseTemplate) => {
-    const config = getCourseConfig(template.course_key || "");
-    if (config?.courseType === "Onlinekurs") return template.name_online || template.title;
-    return template.name_kombi || template.title;
-  };
-
-  const getCourseFeatures = (template: CourseTemplate) => {
-    const config = getCourseConfig(template.course_key || "");
-    if (config?.courseType === "Onlinekurs") return template.features_online;
-    return template.features_kombi;
-  };
-
   const getCourseCme = (template: CourseTemplate) => {
     const config = getCourseConfig(template.course_key || "");
     if (config?.courseType === "Onlinekurs") return template.cme_online;
@@ -154,6 +136,15 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
 
   const isOnlineCourse = (courseKey: string) =>
     getCourseConfig(courseKey)?.courseType === "Onlinekurs";
+
+  const toggleCard = (courseKey: string) => {
+    setExpandedCards((prev) => {
+      const next = new Set(prev);
+      if (next.has(courseKey)) next.delete(courseKey);
+      else next.add(courseKey);
+      return next;
+    });
+  };
 
   // Pricing
   const totalGross = templates.reduce(
@@ -165,7 +156,6 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
 
   const allSessionsSelected = templates.every((t) => {
     const courseKey = t.course_key || "";
-    // Online-only courses don't need a session
     if (isOnlineCourse(courseKey)) return true;
     const courseSessions = getSessionsForTemplate(t.id);
     if (courseSessions.length === 0) return false;
@@ -244,7 +234,9 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
             const selectedId = selectedSessions[courseKey];
             const selectedSession = courseSessions.find((s) => s.id === selectedId);
             const isLast = index === templates.length - 1;
-            const landingPage = COURSE_LANDING_PAGES[courseKey];
+            const isOnline = isOnlineCourse(courseKey);
+            const isExpanded = expandedCards.has(courseKey);
+            const content = CURRICULUM_COURSE_CONTENT[courseKey];
 
             return (
               <div key={template.id} className="relative flex gap-6">
@@ -265,13 +257,11 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h3 className="text-xl font-bold text-black">
-                          {getCourseName(template)}
+                          {content?.title || template.title}
                         </h3>
-                        {isOnlineCourse(courseKey) && (
-                          <span className="inline-block mt-1 text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                            Onlinekurs
-                          </span>
-                        )}
+                        <p className="text-sm text-gray-600 mt-1">
+                          {isOnline ? "Onlinekurs" : "Onlinekurs und Praxiskurs"}
+                        </p>
                         {getCourseCme(template) && (
                           <div className="inline-flex items-center gap-1 mt-2 bg-[#0066FF] text-white px-2.5 py-1 rounded-full text-sm font-bold">
                             <Award className="w-3.5 h-3.5" />
@@ -290,23 +280,11 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
 
                   {/* Card body */}
                   <div className="p-5">
-                    {/* Features */}
-                    {getCourseFeatures(template) && getCourseFeatures(template)!.length > 0 && (
-                      <ul className="space-y-1.5 mb-4">
-                        {getCourseFeatures(template)!.map((feature, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm">
-                            <Check className="w-4 h-4 text-[#0066FF] flex-shrink-0 mt-0.5" />
-                            <span className="text-black">{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
                     {/* Session picker (only for Kombikurs) */}
-                    {!isOnlineCourse(courseKey) && (
+                    {!isOnline && (
                       <div
                         ref={(el) => { dropdownRefs.current[courseKey] = el; }}
-                        className="relative"
+                        className="relative mb-4"
                       >
                         <button
                           type="button"
@@ -320,7 +298,7 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
                           >
                             {selectedSession
                               ? formatSessionLabel(selectedSession)
-                              : "Termin auswählen"}
+                              : "Praxiskurs-Termin auswählen"}
                             {selectedSession && (() => {
                               const { availabilityTag, availabilityLevel } = getAvailability(selectedSession);
                               return availabilityTag ? (
@@ -385,23 +363,92 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
                     )}
 
                     {/* Online-only indicator */}
-                    {isOnlineCourse(courseKey) && (
-                      <div className="text-sm text-gray-500 italic">
+                    {isOnline && (
+                      <p className="text-sm text-gray-500 mb-4">
                         Sofort verfügbar nach Kauf
-                      </div>
+                      </p>
                     )}
 
-                    {/* Link to individual course page */}
-                    {landingPage && (
-                      <a
-                        href={landingPage}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 mt-3 text-sm text-[#0066FF] hover:underline font-medium"
+                    {/* Details accordion toggle */}
+                    {content && (
+                      <button
+                        type="button"
+                        onClick={() => toggleCard(courseKey)}
+                        className="w-full flex items-center justify-between text-sm font-semibold text-[#0066FF] hover:text-[#0055DD] transition-colors py-1"
                       >
-                        Mehr erfahren
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </a>
+                        <span>Kursdetails ansehen</span>
+                        <ChevronDown
+                          className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                        />
+                      </button>
+                    )}
+
+                    {/* Accordion content */}
+                    {isExpanded && content && (
+                      <div className="mt-4 space-y-5">
+                        {/* Lernziele */}
+                        <div>
+                          <h4 className="text-sm font-bold text-black mb-2">Lernziele</h4>
+                          <ul className="space-y-1.5">
+                            {content.lernziele.map((ziel, i) => (
+                              <li key={i} className="flex items-start gap-2 text-sm">
+                                <Check className="w-4 h-4 text-[#0066FF] flex-shrink-0 mt-0.5" />
+                                <span className="text-gray-700">{ziel}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Two-column: Onlinekurs + Praxiskurs */}
+                        <div className={`grid gap-4 ${content.praxiskursFeatures ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"}`}>
+                          {/* Onlinekurs column */}
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <div className="flex items-center gap-2 mb-3">
+                              <BookOpen className="w-4 h-4 text-[#0066FF]" />
+                              <h5 className="text-sm font-bold text-black">
+                                {content.praxiskursFeatures ? "Inkludierter Onlinekurs" : "Onlinekurs"}
+                              </h5>
+                            </div>
+                            <ul className="space-y-1.5">
+                              {content.onlinekursFeatures.map((f, i) => (
+                                <li key={i} className="flex items-start gap-2 text-xs">
+                                  <Check className="w-3.5 h-3.5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+                                  <span className="text-gray-600">{f}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          {/* Praxiskurs column */}
+                          {content.praxiskursFeatures && (
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <div className="flex items-center gap-2 mb-3">
+                                <Stethoscope className="w-4 h-4 text-[#0066FF]" />
+                                <h5 className="text-sm font-bold text-black">Inkludierter Praxiskurs</h5>
+                              </div>
+                              <ul className="space-y-1.5">
+                                {content.praxiskursFeatures.map((f, i) => (
+                                  <li key={i} className="flex items-start gap-2 text-xs">
+                                    <Check className="w-3.5 h-3.5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+                                    <span className="text-gray-600">{f}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Mehr erfahren link */}
+                        <a
+                          href={content.landingPage}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-sm text-[#0066FF] hover:underline font-medium"
+                        >
+                          Mehr erfahren auf ephia.de
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -419,7 +466,7 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
               Komplettpaket {curriculum.title}
             </h2>
             <p className="text-gray-600">
-              Alle {templates.length} Kurse als Kombikurs in einem Paket
+              Alle {templates.length} Kurse in einem Paket
             </p>
           </div>
 
@@ -454,8 +501,8 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
                   }`}
                   title={
                     isSelected
-                      ? `${t.name_kombi || t.title}: Termin ausgewählt`
-                      : `${t.name_kombi || t.title}: Termin auswählen`
+                      ? `${CURRICULUM_COURSE_CONTENT[courseKey]?.title || t.title}: Termin ausgewählt`
+                      : `${CURRICULUM_COURSE_CONTENT[courseKey]?.title || t.title}: Termin auswählen`
                   }
                 />
               );
