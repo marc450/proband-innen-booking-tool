@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 // Protected with a secret token — set CRON_SECRET in Railway environment variables
+// Recommended schedule: 0 22 * * * (UTC) = midnight German time
 export async function POST(req: Request) {
   const authHeader = req.headers.get("authorization");
   const secret = process.env.CRON_SECRET;
@@ -17,18 +18,42 @@ export async function POST(req: Request) {
 
   const today = new Date().toISOString().split("T")[0]; // yyyy-MM-dd
 
-  const { data, error } = await supabase
+  // 1. Proband:innen courses — go offline the morning AFTER their date
+  //    (slots already close 30 min before start_time at query level)
+  //    Uses lt = strictly before today, so course stays "Live" on its own day
+  const { data: expiredCourses, error: coursesError } = await supabase
     .from("courses")
     .update({ status: "offline" })
-    .lte("course_date", today)
+    .lt("course_date", today)
     .eq("status", "online")
     .select("id, title, course_date");
 
-  if (error) {
-    console.error("expire-courses cron error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (coursesError) {
+    console.error("expire-courses error:", coursesError);
+    return NextResponse.json({ error: coursesError.message }, { status: 500 });
   }
 
-  console.log(`expire-courses: set ${data?.length ?? 0} course(s) to offline`);
-  return NextResponse.json({ expired: data?.length ?? 0, courses: data });
+  // 2. Auszubildende course sessions — go offline on the day itself
+  //    Uses lte = today and earlier, so session goes offline as soon as date_iso = today
+  const { data: expiredSessions, error: sessionsError } = await supabase
+    .from("course_sessions")
+    .update({ is_live: false })
+    .lte("date_iso", today)
+    .eq("is_live", true)
+    .select("id, date_iso");
+
+  if (sessionsError) {
+    console.error("expire-sessions error:", sessionsError);
+    return NextResponse.json({ error: sessionsError.message }, { status: 500 });
+  }
+
+  console.log(
+    `expire-courses: ${expiredCourses?.length ?? 0} course(s) offline, ` +
+    `${expiredSessions?.length ?? 0} session(s) offline`
+  );
+
+  return NextResponse.json({
+    courses_expired: expiredCourses?.length ?? 0,
+    sessions_expired: expiredSessions?.length ?? 0,
+  });
 }

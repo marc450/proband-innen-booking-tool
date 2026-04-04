@@ -17,7 +17,7 @@ export default async function PrivatBookPage() {
     .from("available_slots")
     .select("*")
     .gt("remaining_capacity", 0)
-    .gt("start_time", new Date().toISOString())
+    .gt("start_time", new Date(Date.now() + 30 * 60 * 1000).toISOString())
     .order("start_time", { ascending: true });
 
   return (
