@@ -94,22 +94,23 @@ async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
   const supabase = createAdminClient();
 
   const curriculumSlug = metadata.curriculumSlug;
-  const courseType = metadata.courseType || "Kombikurs";
   const bundleGroupId = metadata.bundleGroupId;
   const checkoutSessionId = session.id;
   const audienceTag = metadata.audienceTag || "Humanmediziner:in";
 
   // Parse metadata
   let courseKeys: string[] = [];
-  let sessionsMap: Record<string, string> = {};
+  let sessionsMap: Record<string, string | null> = {};
   let sessionLabelsMap: Record<string, string> = {};
   let templateIds: string[] = [];
+  let courseTypesMap: Record<string, string> = {};
 
   try {
     courseKeys = JSON.parse(metadata.courseKeys || "[]");
     sessionsMap = JSON.parse(metadata.sessions || "{}");
     sessionLabelsMap = JSON.parse(metadata.sessionLabels || "{}");
     templateIds = JSON.parse(metadata.templateIds || "[]");
+    courseTypesMap = JSON.parse(metadata.courseTypes || "{}");
   } catch {
     console.error("Failed to parse curriculum metadata");
     return;
@@ -152,10 +153,12 @@ async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
     const sessionId = sessionsMap[courseKey] || null;
     const templateId = templateIds[i];
 
+    const courseTypeForKey = courseTypesMap[courseKey] || "Kombikurs";
+
     const { data: bookingId, error: rpcError } = await supabase.rpc("create_course_booking", {
       p_session_id: sessionId,
       p_template_id: templateId,
-      p_course_type: courseType,
+      p_course_type: courseTypeForKey,
       p_first_name: firstName,
       p_last_name: lastName,
       p_email: email,
@@ -213,6 +216,7 @@ async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
             const sessionLabel = sessionLabelsMap[courseKey] || "";
             const templateId = templateIds[i];
             const bookingId = bookingIds[i];
+            const courseTypeForKey = courseTypesMap[courseKey] || "Kombikurs";
             if (!bookingId) continue;
 
             const postPurchaseData: PostPurchaseData = {
@@ -222,7 +226,7 @@ async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
               lastName,
               fullName,
               phone,
-              courseType: courseType as CourseType,
+              courseType: courseTypeForKey as CourseType,
               courseKey,
               templateId,
               sessionId,

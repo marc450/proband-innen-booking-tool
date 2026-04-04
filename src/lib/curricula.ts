@@ -7,6 +7,7 @@
 export interface CurriculumCourse {
   courseKey: string;
   sort: number;
+  courseType: "Kombikurs" | "Onlinekurs";
 }
 
 export interface CurriculumConfig {
@@ -14,7 +15,6 @@ export interface CurriculumConfig {
   title: string;
   subtitle: string;
   description: string;
-  courseType: "Kombikurs";
   discountPercent: number;
   courses: CurriculumCourse[];
 }
@@ -25,13 +25,12 @@ export const CURRICULUM_BOTULINUM: CurriculumConfig = {
   subtitle: "Dein Weg zur Spezialisierung in der Botulinumtoxin-Therapie",
   description:
     "Vier aufeinander aufbauende Kurse, die Dich vom Grundlagenwissen bis zur Masterclass begleiten. Buche das Komplettpaket und spare 10%.",
-  courseType: "Kombikurs",
   discountPercent: 10,
   courses: [
-    { courseKey: "grundkurs_botulinum", sort: 1 },
-    { courseKey: "grundkurs_medizinische_hautpflege", sort: 2 },
-    { courseKey: "aufbaukurs_therapeutische_indikationen_botulinum", sort: 3 },
-    { courseKey: "masterclass_botulinum", sort: 4 },
+    { courseKey: "grundkurs_botulinum", sort: 1, courseType: "Kombikurs" },
+    { courseKey: "grundkurs_medizinische_hautpflege", sort: 2, courseType: "Onlinekurs" },
+    { courseKey: "aufbaukurs_therapeutische_indikationen_botulinum", sort: 3, courseType: "Kombikurs" },
+    { courseKey: "masterclass_botulinum", sort: 4, courseType: "Kombikurs" },
   ],
 } as const;
 

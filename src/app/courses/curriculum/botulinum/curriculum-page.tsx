@@ -125,19 +125,51 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
   const getSessionsForTemplate = (templateId: string) =>
     sessions.filter((s) => s.template_id === templateId);
 
+  const getCourseConfig = (courseKey: string) =>
+    curriculum.courses.find((c) => c.courseKey === courseKey);
+
+  const getCoursePrice = (template: CourseTemplate) => {
+    const config = getCourseConfig(template.course_key || "");
+    if (config?.courseType === "Onlinekurs") return template.price_gross_online;
+    return template.price_gross_kombi;
+  };
+
+  const getCourseName = (template: CourseTemplate) => {
+    const config = getCourseConfig(template.course_key || "");
+    if (config?.courseType === "Onlinekurs") return template.name_online || template.title;
+    return template.name_kombi || template.title;
+  };
+
+  const getCourseFeatures = (template: CourseTemplate) => {
+    const config = getCourseConfig(template.course_key || "");
+    if (config?.courseType === "Onlinekurs") return template.features_online;
+    return template.features_kombi;
+  };
+
+  const getCourseCme = (template: CourseTemplate) => {
+    const config = getCourseConfig(template.course_key || "");
+    if (config?.courseType === "Onlinekurs") return template.cme_online;
+    return template.cme_kombi;
+  };
+
+  const isOnlineCourse = (courseKey: string) =>
+    getCourseConfig(courseKey)?.courseType === "Onlinekurs";
+
   // Pricing
   const totalGross = templates.reduce(
-    (sum, t) => sum + (t.price_gross_kombi || 0),
+    (sum, t) => sum + (getCoursePrice(t) || 0),
     0
   );
   const discountedTotal = totalGross * (1 - curriculum.discountPercent / 100);
   const savings = totalGross - discountedTotal;
 
   const allSessionsSelected = templates.every((t) => {
+    const courseKey = t.course_key || "";
+    // Online-only courses don't need a session
+    if (isOnlineCourse(courseKey)) return true;
     const courseSessions = getSessionsForTemplate(t.id);
-    // If no sessions available at all, it's not selectable
     if (courseSessions.length === 0) return false;
-    return !!selectedSessions[t.course_key || ""];
+    return !!selectedSessions[courseKey];
   });
 
   const redirectTo = (url: string) => {
@@ -229,22 +261,27 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
                 {/* Card */}
                 <div className="bg-white rounded-[10px] shadow-lg flex-1 mb-6">
                   {/* Card header */}
-                  <div className="p-5" style={{ backgroundColor: "hsl(24, 71%, 93%)" }}>
+                  <div className="rounded-t-[10px] p-5" style={{ backgroundColor: "hsl(24, 71%, 93%)" }}>
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h3 className="text-xl font-bold text-black">
-                          {template.name_kombi || template.title}
+                          {getCourseName(template)}
                         </h3>
-                        {template.cme_kombi && (
+                        {isOnlineCourse(courseKey) && (
+                          <span className="inline-block mt-1 text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                            Onlinekurs
+                          </span>
+                        )}
+                        {getCourseCme(template) && (
                           <div className="inline-flex items-center gap-1 mt-2 bg-[#0066FF] text-white px-2.5 py-1 rounded-full text-sm font-bold">
                             <Award className="w-3.5 h-3.5" />
-                            {template.cme_kombi}
+                            {getCourseCme(template)}
                           </div>
                         )}
                       </div>
                       <div className="text-right flex-shrink-0">
                         <div className="text-2xl font-bold text-[#0066FF]">
-                          {formatPrice(template.price_gross_kombi)}
+                          {formatPrice(getCoursePrice(template))}
                         </div>
                         <div className="text-xs text-gray-500">Einzelpreis</div>
                       </div>
@@ -254,9 +291,9 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
                   {/* Card body */}
                   <div className="p-5">
                     {/* Features */}
-                    {template.features_kombi && template.features_kombi.length > 0 && (
+                    {getCourseFeatures(template) && getCourseFeatures(template)!.length > 0 && (
                       <ul className="space-y-1.5 mb-4">
-                        {template.features_kombi.map((feature, i) => (
+                        {getCourseFeatures(template)!.map((feature, i) => (
                           <li key={i} className="flex items-start gap-2 text-sm">
                             <Check className="w-4 h-4 text-[#0066FF] flex-shrink-0 mt-0.5" />
                             <span className="text-black">{feature}</span>
@@ -265,85 +302,94 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
                       </ul>
                     )}
 
-                    {/* Session picker */}
-                    <div
-                      ref={(el) => { dropdownRefs.current[courseKey] = el; }}
-                      className="relative"
-                    >
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setOpenDropdown(openDropdown === courseKey ? null : courseKey)
-                        }
-                        className="w-full bg-white border-2 border-[#0066FF] text-[#0066FF] font-semibold text-sm py-2.5 px-4 rounded-md cursor-pointer flex items-center justify-between gap-2"
+                    {/* Session picker (only for Kombikurs) */}
+                    {!isOnlineCourse(courseKey) && (
+                      <div
+                        ref={(el) => { dropdownRefs.current[courseKey] = el; }}
+                        className="relative"
                       >
-                        <span
-                          className={`flex items-center gap-2 ${selectedSession ? "" : "opacity-70"}`}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenDropdown(openDropdown === courseKey ? null : courseKey)
+                          }
+                          className="w-full bg-white border-2 border-[#0066FF] text-[#0066FF] font-semibold text-sm py-2.5 px-4 rounded-md cursor-pointer flex items-center justify-between gap-2"
                         >
-                          {selectedSession
-                            ? formatSessionLabel(selectedSession)
-                            : "Termin auswählen"}
-                          {selectedSession && (() => {
-                            const { availabilityTag, availabilityLevel } = getAvailability(selectedSession);
-                            return availabilityTag ? (
-                              <span className={getBadgeClasses(availabilityLevel)}>
-                                {availabilityTag}
-                              </span>
-                            ) : null;
-                          })()}
-                        </span>
-                        <ChevronDown
-                          className={`w-5 h-5 flex-shrink-0 transition-transform ${
-                            openDropdown === courseKey ? "rotate-180" : ""
-                          }`}
-                        />
-                      </button>
+                          <span
+                            className={`flex items-center gap-2 ${selectedSession ? "" : "opacity-70"}`}
+                          >
+                            {selectedSession
+                              ? formatSessionLabel(selectedSession)
+                              : "Termin auswählen"}
+                            {selectedSession && (() => {
+                              const { availabilityTag, availabilityLevel } = getAvailability(selectedSession);
+                              return availabilityTag ? (
+                                <span className={getBadgeClasses(availabilityLevel)}>
+                                  {availabilityTag}
+                                </span>
+                              ) : null;
+                            })()}
+                          </span>
+                          <ChevronDown
+                            className={`w-5 h-5 flex-shrink-0 transition-transform ${
+                              openDropdown === courseKey ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
 
-                      {openDropdown === courseKey && (
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[240px] overflow-y-auto">
-                          {courseSessions.length === 0 ? (
-                            <div className="px-4 py-3 text-sm text-gray-400">
-                              Noch keine Termine verfügbar
-                            </div>
-                          ) : (
-                            courseSessions.map((session) => {
-                              const { available, availabilityTag, availabilityLevel } =
-                                getAvailability(session);
-                              return (
-                                <button
-                                  key={session.id}
-                                  type="button"
-                                  disabled={!available}
-                                  onClick={() => {
-                                    setSelectedSessions((prev) => ({
-                                      ...prev,
-                                      [courseKey]: session.id,
-                                    }));
-                                    setOpenDropdown(null);
-                                  }}
-                                  className={`w-full flex items-center justify-between px-4 py-2 text-sm text-left transition-colors ${
-                                    !available
-                                      ? "text-gray-400 cursor-not-allowed"
-                                      : selectedId === session.id
-                                        ? "bg-blue-50 font-semibold text-black"
-                                        : "font-semibold text-black hover:bg-gray-50"
-                                  }`}
-                                >
-                                  <span className="mr-3">
-                                    {formatSessionLabel(session)}
-                                  </span>
-                                  {availabilityTag && (
-                                    <span className={getBadgeClasses(availabilityLevel)}>
-                                      {availabilityTag}
+                        {openDropdown === courseKey && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[240px] overflow-y-auto">
+                            {courseSessions.length === 0 ? (
+                              <div className="px-4 py-3 text-sm text-gray-400">
+                                Noch keine Termine verfügbar
+                              </div>
+                            ) : (
+                              courseSessions.map((session) => {
+                                const { available, availabilityTag, availabilityLevel } =
+                                  getAvailability(session);
+                                return (
+                                  <button
+                                    key={session.id}
+                                    type="button"
+                                    disabled={!available}
+                                    onClick={() => {
+                                      setSelectedSessions((prev) => ({
+                                        ...prev,
+                                        [courseKey]: session.id,
+                                      }));
+                                      setOpenDropdown(null);
+                                    }}
+                                    className={`w-full flex items-center justify-between px-4 py-2 text-sm text-left transition-colors ${
+                                      !available
+                                        ? "text-gray-400 cursor-not-allowed"
+                                        : selectedId === session.id
+                                          ? "bg-blue-50 font-semibold text-black"
+                                          : "font-semibold text-black hover:bg-gray-50"
+                                    }`}
+                                  >
+                                    <span className="mr-3">
+                                      {formatSessionLabel(session)}
                                     </span>
-                                  )}
-                                </button>
-                              );
-                            })
-                          )}
-                        </div>
-                      )}
-                    </div>
+                                    {availabilityTag && (
+                                      <span className={getBadgeClasses(availabilityLevel)}>
+                                        {availabilityTag}
+                                      </span>
+                                    )}
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Online-only indicator */}
+                    {isOnlineCourse(courseKey) && (
+                      <div className="text-sm text-gray-500 italic">
+                        Sofort verfügbar nach Kauf
+                      </div>
+                    )}
 
                     {/* Link to individual course page */}
                     {landingPage && (
@@ -399,7 +445,7 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
           <div className="flex items-center justify-center gap-2 mb-6">
             {templates.map((t) => {
               const courseKey = t.course_key || "";
-              const isSelected = !!selectedSessions[courseKey];
+              const isSelected = isOnlineCourse(courseKey) || !!selectedSessions[courseKey];
               return (
                 <div
                   key={t.id}

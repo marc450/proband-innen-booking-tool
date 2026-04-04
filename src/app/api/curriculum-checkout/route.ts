@@ -57,12 +57,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate all sessions
-    const sessionEntries: { courseKey: string; sessionId: string; templateId: string; label: string; dateISO: string }[] = [];
+    // Validate sessions and collect entries
+    const sessionEntries: { courseKey: string; sessionId: string | null; templateId: string; label: string; dateISO: string; courseType: string }[] = [];
 
     for (const course of curriculum.courses) {
       const template = templates.find((t: { course_key: string }) => t.course_key === course.courseKey);
       if (!template) continue;
+
+      if (course.courseType === "Onlinekurs") {
+        // Online courses don't need a session
+        sessionEntries.push({
+          courseKey: course.courseKey,
+          sessionId: null,
+          templateId: template.id,
+          label: "",
+          dateISO: "",
+          courseType: "Onlinekurs",
+        });
+        continue;
+      }
 
       const sessionId = sessions[course.courseKey];
       if (!sessionId) {
@@ -99,23 +112,34 @@ export async function POST(req: NextRequest) {
         templateId: template.id,
         label: session.label_de || session.date_iso,
         dateISO: session.date_iso,
+        courseType: "Kombikurs",
       });
     }
 
-    // Calculate pricing
+    // Calculate pricing (use per-course type price)
     let totalGross = 0;
     const courseNames: string[] = [];
 
-    for (const template of templates) {
-      const price = template.price_gross_kombi;
+    for (const course of curriculum.courses) {
+      const template = templates.find((t: { course_key: string }) => t.course_key === course.courseKey);
+      if (!template) continue;
+
+      const price = course.courseType === "Onlinekurs"
+        ? template.price_gross_online
+        : template.price_gross_kombi;
+
+      const name = course.courseType === "Onlinekurs"
+        ? (template.name_online || template.title)
+        : (template.name_kombi || template.title);
+
       if (!price || price <= 0) {
         return NextResponse.json(
-          { error: `Preis für ${template.name_kombi || template.title} nicht konfiguriert` },
+          { error: `Preis für ${name} nicht konfiguriert` },
           { status: 500 }
         );
       }
       totalGross += price;
-      courseNames.push(template.name_kombi || template.title);
+      courseNames.push(name);
     }
 
     // Apply discount
@@ -162,7 +186,6 @@ export async function POST(req: NextRequest) {
 
       // Metadata for webhook processing
       "metadata[curriculumSlug]": slug,
-      "metadata[courseType]": curriculum.courseType,
       "metadata[bundleGroupId]": bundleGroupId,
       "metadata[templateIds]": JSON.stringify(
         sessionEntries.map((e) => e.templateId)
@@ -174,6 +197,9 @@ export async function POST(req: NextRequest) {
         Object.fromEntries(sessionEntries.map((e) => [e.courseKey, e.label]))
       ),
       "metadata[courseKeys]": JSON.stringify(courseKeys),
+      "metadata[courseTypes]": JSON.stringify(
+        Object.fromEntries(sessionEntries.map((e) => [e.courseKey, e.courseType]))
+      ),
       "metadata[audienceTag]": "Humanmediziner:in",
     };
 
