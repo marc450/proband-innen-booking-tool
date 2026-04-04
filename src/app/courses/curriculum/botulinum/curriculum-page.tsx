@@ -227,7 +227,7 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
                 </div>
 
                 {/* Card */}
-                <div className="bg-white rounded-[10px] shadow-lg flex-1 mb-6 overflow-hidden">
+                <div className="bg-white rounded-[10px] shadow-lg flex-1 mb-6">
                   {/* Card header */}
                   <div className="p-5" style={{ backgroundColor: "hsl(24, 71%, 93%)" }}>
                     <div className="flex items-start justify-between gap-3">
