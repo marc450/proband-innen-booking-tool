@@ -297,15 +297,21 @@ export function PatientsManager({ initialPatients }: Props) {
         </DialogContent>
       </Dialog>
 
-      <Card>
+      {/*
+        overflow-visible on the Card and containerClassName on the Table both
+        disable the default clipping wrappers so that position:sticky on the
+        thead sticks to the viewport rather than to the nearest clipped
+        ancestor.
+      */}
+      <Card className="overflow-visible">
         <CardContent className="p-0">
           {filteredPatients.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground">
               Keine Proband:innen gefunden
             </div>
           ) : (
-            <Table>
-              <TableHeader>
+            <Table containerClassName="relative w-full overflow-visible">
+              <TableHeader className="sticky top-0 z-10 bg-card shadow-[0_1px_0_0_var(--border)]">
                 <TableRow>
                   <TableHead className="cursor-pointer select-none" onClick={() => handleSort("name")}>Name<SortIcon col="name" /></TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={() => handleSort("email")}>E-Mail<SortIcon col="email" /></TableHead>

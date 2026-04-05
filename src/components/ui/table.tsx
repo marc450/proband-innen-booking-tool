@@ -4,11 +4,20 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+type TableProps = React.ComponentProps<"table"> & {
+  // Escape hatch for overriding the outer scroll container. The default
+  // `overflow-x-auto` coerces overflow-y to auto per the CSS spec, which
+  // means sticky <thead>s would stick inside this wrapper instead of the
+  // viewport. Pages that want a viewport-sticky header can pass
+  // `containerClassName="relative w-full"` to opt out.
+  containerClassName?: string
+}
+
+function Table({ className, containerClassName, ...props }: TableProps) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className={cn("relative w-full overflow-x-auto", containerClassName)}
     >
       <table
         data-slot="table"
