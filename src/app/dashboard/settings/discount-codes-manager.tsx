@@ -21,8 +21,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertDialog } from "@/components/confirm-dialog";
-import { Plus, Power, PowerOff } from "lucide-react";
+import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
+import { Plus, Power, PowerOff, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
@@ -42,6 +42,7 @@ export function DiscountCodesManager() {
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [alertState, setAlertState] = useState<{ title: string; description: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DiscountCode | null>(null);
 
   const [code, setCode] = useState("");
   const [percentOff, setPercentOff] = useState("10");
@@ -101,6 +102,21 @@ export function DiscountCodesManager() {
     await load();
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const target = deleteTarget;
+    setDeleteTarget(null);
+    const res = await fetch(`/api/admin/discount-codes/${target.id}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setAlertState({ title: "Fehler", description: data.error || "Rabattcode konnte nicht gelöscht werden." });
+      return;
+    }
+    setCodes((prev) => prev.filter((x) => x.id !== target.id));
+  };
+
   const toggleActive = async (c: DiscountCode) => {
     const res = await fetch(`/api/admin/discount-codes/${c.id}`, {
       method: "PATCH",
@@ -122,6 +138,20 @@ export function DiscountCodesManager() {
         title={alertState?.title ?? ""}
         description={alertState?.description ?? ""}
         onClose={() => setAlertState(null)}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Rabattcode löschen?"
+        description={
+          deleteTarget
+            ? `Der Rabattcode "${deleteTarget.code}" wird endgültig gelöscht und kann danach nicht mehr eingelöst werden.`
+            : ""
+        }
+        confirmLabel="Löschen"
+        variant="destructive"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
 
       <Dialog
@@ -241,18 +271,29 @@ export function DiscountCodesManager() {
                       {format(new Date(c.created * 1000), "dd.MM.yyyy", { locale: de })}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleActive(c)}
-                        title={c.active ? "Deaktivieren" : "Aktivieren"}
-                      >
-                        {c.active ? (
-                          <PowerOff className="h-4 w-4" />
-                        ) : (
-                          <Power className="h-4 w-4" />
-                        )}
-                      </Button>
+                      <div className="flex items-center gap-1 justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleActive(c)}
+                          title={c.active ? "Deaktivieren" : "Aktivieren"}
+                        >
+                          {c.active ? (
+                            <PowerOff className="h-4 w-4" />
+                          ) : (
+                            <Power className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteTarget(c)}
+                          title="Löschen"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -51,7 +51,8 @@ interface StripePromotionCode {
     id: string;
     percent_off: number | null;
     name: string | null;
-  };
+    deleted?: boolean;
+  } | null;
 }
 
 export async function GET() {
@@ -62,15 +63,18 @@ export async function GET() {
     const data = await stripeFetch(
       "/promotion_codes?limit=100&expand[]=data.coupon"
     );
-    const codes = (data.data as StripePromotionCode[]).map((p) => ({
-      id: p.id,
-      code: p.code,
-      active: p.active,
-      times_redeemed: p.times_redeemed,
-      max_redemptions: p.max_redemptions,
-      percent_off: p.coupon?.percent_off ?? null,
-      created: p.created,
-    }));
+    const codes = (data.data as StripePromotionCode[])
+      // Filter out orphans whose coupon has been deleted (our soft-delete flow)
+      .filter((p) => p.coupon && !p.coupon.deleted)
+      .map((p) => ({
+        id: p.id,
+        code: p.code,
+        active: p.active,
+        times_redeemed: p.times_redeemed,
+        max_redemptions: p.max_redemptions,
+        percent_off: p.coupon?.percent_off ?? null,
+        created: p.created,
+      }));
     return NextResponse.json(codes);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Fehler beim Laden";
@@ -115,24 +119,27 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // 1. Create coupon
+    // 1. Create coupon (no max_redemptions here — that caps the coupon across
+    // ALL promotion codes; we want the cap on THIS promotion code instead)
     const couponBody: Record<string, string> = {
       percent_off: String(pct),
       duration: "once",
       name: normalizedCode,
     };
-    if (max !== null) couponBody.max_redemptions = String(max);
 
     const coupon = await stripeFetch("/coupons", {
       method: "POST",
       body: couponBody,
     });
 
-    // 2. Create promotion code referencing the coupon
+    // 2. Create promotion code referencing the coupon, with max_redemptions
+    // set on the promotion code itself so the user-facing redemption limit
+    // actually takes effect.
     const promoBody: Record<string, string> = {
       coupon: coupon.id,
       code: normalizedCode,
     };
+    if (max !== null) promoBody.max_redemptions = String(max);
 
     const promo = await stripeFetch("/promotion_codes", {
       method: "POST",
