@@ -144,7 +144,11 @@ main > div > h1.text-2xl.font-bold:first-child {
 }
 
 /* Dark-mode compatibility: remap hardcoded Tailwind color utilities that
-   are scattered across dashboard files so they don't need individual fixes. */
+   are scattered across dashboard files so they don't need individual fixes.
+   Wrapped in @layer utilities so the rules land in the same cascade layer
+   as Tailwind's generated utilities — with higher specificity (0,2,0) than
+   the single-class utilities (0,1,0), they reliably win. */
+@layer utilities {
 .dark .bg-white {
   background-color: var(--card) !important;
 }
@@ -236,5 +240,6 @@ main > div > h1.text-2xl.font-bold:first-child {
 .dark .text-blue-700,
 .dark .text-blue-800 {
   color: #7fa8ff !important;
+}
 }
 
