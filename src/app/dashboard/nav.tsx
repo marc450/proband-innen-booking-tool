@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,11 +15,36 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { KeyRound, ChevronDown } from "lucide-react";
+import {
+  KeyRound,
+  LogOut,
+  Users,
+  GraduationCap,
+  Inbox,
+  Settings,
+  LucideIcon,
+} from "lucide-react";
 
-const navGroups = [
+type NavItem = {
+  href: string;
+  label: string;
+  exact?: boolean;
+  adminOnly?: boolean;
+};
+
+type NavGroup = {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  items: NavItem[];
+  adminOnly?: boolean;
+};
+
+const navGroups: NavGroup[] = [
   {
+    key: "proband",
     label: "Proband:innen",
+    icon: Users,
     items: [
       { href: "/dashboard", label: "Behandlungsangebote", exact: true },
       { href: "/dashboard/bookings", label: "Buchungen" },
@@ -28,18 +53,37 @@ const navGroups = [
     ],
   },
   {
+    key: "auszubildende",
     label: "Auszubildende",
+    icon: GraduationCap,
     items: [
       { href: "/dashboard/auszubildende", label: "Kurstermine", exact: true },
       { href: "/dashboard/auszubildende/buchungen", label: "Buchungen" },
       { href: "/dashboard/auszubildende/personen", label: "Auszubildende" },
     ],
   },
+  {
+    key: "inbox",
+    label: "Inbox",
+    icon: Inbox,
+    items: [{ href: "/dashboard/inbox", label: "Inbox", exact: false }],
+  },
+  {
+    key: "admin",
+    label: "Admin",
+    icon: Settings,
+    adminOnly: true,
+    items: [
+      { href: "/dashboard/settings?tab=kurstermine", label: "Kurstermine" },
+      { href: "/dashboard/settings?tab=kursangebot", label: "Kurse" },
+      { href: "/dashboard/settings?tab=rabattcodes", label: "Rabattcodes" },
+      { href: "/dashboard/settings?tab=rechnungen", label: "Rechnungen" },
+      { href: "/dashboard/settings?tab=benutzer", label: "Benutzer:innen" },
+    ],
+  },
 ];
 
-const standaloneNavItems = [
-  { href: "/dashboard/inbox", label: "Inbox" },
-];
+const HOVER_DELAY_MS = 150;
 
 export function DashboardNav({
   userEmail,
@@ -58,16 +102,45 @@ export function DashboardNav({
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
-  const [openGroup, setOpenGroup] = useState<string | null>(null);
 
-  // Determine which group is active based on current path
-  const isGroupActive = (group: typeof navGroups[0]) =>
-    group.items.some((item) =>
-      item.exact ? pathname === item.href : pathname.startsWith(item.href)
-    );
+  const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isItemActive = (item: { href: string; exact?: boolean }) =>
-    item.exact ? pathname === item.href : pathname.startsWith(item.href);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  const visibleGroups = navGroups.filter((g) => !g.adminOnly || role === "admin");
+
+  const isItemActive = (item: NavItem) => {
+    const pathOnly = item.href.split("?")[0];
+    return item.exact ? pathname === pathOnly : pathname.startsWith(pathOnly);
+  };
+
+  const isGroupActive = (group: NavGroup) =>
+    group.items
+      .filter((i) => !i.adminOnly || role === "admin")
+      .some(isItemActive);
+
+  const handleEnter = (key: string) => {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    hoverTimer.current = setTimeout(() => setHoveredGroup(key), HOVER_DELAY_MS);
+  };
+  const handleLeave = () => {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    hoverTimer.current = setTimeout(() => setHoveredGroup(null), HOVER_DELAY_MS);
+  };
+
+  // Close user menu on outside click
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [userMenuOpen]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -80,6 +153,7 @@ export function DashboardNav({
     setPasswordError(null);
     setPasswordSuccess(false);
     setShowPasswordDialog(true);
+    setUserMenuOpen(false);
   };
 
   const handleChangePassword = async () => {
@@ -101,6 +175,11 @@ export function DashboardNav({
       setPasswordSuccess(true);
     }
   };
+
+  const initials = (userEmail || "")
+    .split("@")[0]
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <>
@@ -174,97 +253,134 @@ export function DashboardNav({
         </DialogContent>
       </Dialog>
 
-      <header className="bg-white border-b">
-        <div className="max-w-screen-xl mx-auto px-6 flex items-center justify-between h-14">
-          <div className="flex items-center gap-8">
-            <Link href="/dashboard" className="flex items-center">
-              <img src="/logo.svg" alt="EPHIA" className="h-6" />
-            </Link>
-            <nav className="flex items-center gap-4">
-              {navGroups.map((group) => (
-                <div key={group.label} className="relative">
-                  <button
-                    onClick={() => setOpenGroup(openGroup === group.label ? null : group.label)}
-                    onBlur={() => setTimeout(() => setOpenGroup(null), 150)}
+      {/* Sidebar */}
+      <aside
+        className="fixed top-0 left-0 bottom-0 w-14 bg-[#FAEBE1] border-r border-black/10 flex flex-col items-center py-3 z-40"
+      >
+        {/* Logo */}
+        <Link href="/dashboard" className="mb-4 flex items-center justify-center h-10 w-10">
+          <img src="/logo.svg" alt="EPHIA" className="h-6 w-6 object-contain" />
+        </Link>
+
+        {/* Nav icons */}
+        <nav className="flex flex-col gap-1 flex-1 w-full items-center">
+          {visibleGroups.map((group) => {
+            const Icon = group.icon;
+            const active = isGroupActive(group);
+            const items = group.items.filter((i) => !i.adminOnly || role === "admin");
+            const isSingle = items.length === 1;
+            const firstHref = items[0]?.href;
+
+            return (
+              <div
+                key={group.key}
+                className="relative"
+                onMouseEnter={() => handleEnter(group.key)}
+                onMouseLeave={handleLeave}
+              >
+                {isSingle ? (
+                  <Link
+                    href={firstHref}
                     className={cn(
-                      "flex items-center gap-1 text-sm transition-colors",
-                      isGroupActive(group)
-                        ? "text-foreground font-medium"
-                        : "text-muted-foreground hover:text-foreground"
+                      "flex items-center justify-center h-10 w-10 rounded-lg transition-colors",
+                      active
+                        ? "bg-black/10 text-foreground"
+                        : "text-muted-foreground hover:bg-black/5 hover:text-foreground"
                     )}
+                    title={group.label}
                   >
-                    {group.label}
-                    <ChevronDown className={cn(
-                      "h-3.5 w-3.5 transition-transform",
-                      openGroup === group.label && "rotate-180"
-                    )} />
+                    <Icon className="h-5 w-5" />
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex items-center justify-center h-10 w-10 rounded-lg transition-colors",
+                      active
+                        ? "bg-black/10 text-foreground"
+                        : "text-muted-foreground hover:bg-black/5 hover:text-foreground"
+                    )}
+                    title={group.label}
+                  >
+                    <Icon className="h-5 w-5" />
                   </button>
-                  {openGroup === group.label && (
-                    <div className="absolute top-full left-0 mt-1 bg-white border rounded-lg shadow-lg py-1 min-w-[160px] z-50">
-                      {group.items.filter((item) => !item.adminOnly || role === "admin").map((item) => (
+                )}
+
+                {/* Flyout */}
+                {hoveredGroup === group.key && !isSingle && (
+                  <div
+                    className="absolute left-full top-0 ml-1 bg-white border rounded-lg shadow-lg py-1 min-w-[200px]"
+                    onMouseEnter={() => handleEnter(group.key)}
+                    onMouseLeave={handleLeave}
+                  >
+                    <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {group.label}
+                    </div>
+                    {items.map((item) => {
+                      const itemActive = isItemActive(item);
+                      return (
                         <Link
                           key={item.href}
                           href={item.href}
-                          onClick={() => setOpenGroup(null)}
+                          onClick={() => setHoveredGroup(null)}
                           className={cn(
                             "block px-4 py-2 text-sm transition-colors",
-                            isItemActive(item)
+                            itemActive
                               ? "text-foreground font-medium bg-gray-50"
                               : "text-muted-foreground hover:text-foreground hover:bg-gray-50"
                           )}
                         >
                           {item.label}
                         </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-              {standaloneNavItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "text-sm transition-colors",
-                    pathname.startsWith(item.href)
-                      ? "text-foreground font-medium"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {item.label}
-                </Link>
-              ))}
-              {role === "admin" && (
-                <Link
-                  href="/dashboard/settings"
-                  className={cn(
-                    "text-sm transition-colors",
-                    pathname.startsWith("/dashboard/settings")
-                      ? "text-foreground font-medium"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Admin
-                </Link>
-              )}
-            </nav>
-          </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={openPasswordDialog}
-              className="group flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              title="Passwort ändern"
-            >
-              <span className="hidden sm:inline">{userEmail}</span>
-              <KeyRound className="h-3.5 w-3.5 opacity-40 group-hover:opacity-100 transition-opacity" />
-            </button>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              Abmelden
-            </Button>
-          </div>
+        {/* User avatar / menu */}
+        <div className="relative" ref={userMenuRef}>
+          <button
+            type="button"
+            onClick={() => setUserMenuOpen((v) => !v)}
+            className={cn(
+              "h-9 w-9 rounded-full bg-[#0066FF] text-white text-xs font-semibold flex items-center justify-center transition-opacity",
+              userMenuOpen ? "opacity-100" : "opacity-90 hover:opacity-100"
+            )}
+            title={userEmail}
+          >
+            {initials || "EP"}
+          </button>
+
+          {userMenuOpen && (
+            <div className="absolute left-full bottom-0 ml-1 bg-white border rounded-lg shadow-lg py-1 min-w-[220px] z-50">
+              <div className="px-4 py-2 border-b">
+                <p className="text-xs text-muted-foreground">Angemeldet als</p>
+                <p className="text-sm font-medium truncate">{userEmail}</p>
+              </div>
+              <button
+                type="button"
+                onClick={openPasswordDialog}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-gray-50 transition-colors"
+              >
+                <KeyRound className="h-4 w-4" />
+                Passwort ändern
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-gray-50 transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                Abmelden
+              </button>
+            </div>
+          )}
         </div>
-      </header>
+      </aside>
     </>
   );
 }
