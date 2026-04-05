@@ -20,7 +20,7 @@ import {
   LogOut,
   Users,
   GraduationCap,
-  Inbox,
+  Mail,
   Settings,
   Moon,
   Sun,
@@ -66,7 +66,7 @@ const navGroups: NavGroup[] = [
   {
     key: "emails",
     label: "E-Mails",
-    icon: Inbox,
+    icon: Mail,
     items: [
       { href: "/dashboard/inbox", label: "Inbox" },
       { href: "/dashboard/campaigns", label: "Kampagnen", adminOnly: true },
