@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +56,47 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings }: Props) {
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(azubi.notes || "");
   const [savingNotes, setSavingNotes] = useState(false);
+
+  // Address editor state
+  const [editingAddress, setEditingAddress] = useState(false);
+  const [addrLine1, setAddrLine1] = useState(azubi.address_line1 || "");
+  const [addrPostal, setAddrPostal] = useState(azubi.address_postal_code || "");
+  const [addrCity, setAddrCity] = useState(azubi.address_city || "");
+  const [addrCountry, setAddrCountry] = useState(azubi.address_country || "DE");
+  const [savingAddress, setSavingAddress] = useState(false);
+
+  const hasAddress = !!(
+    azubi.address_line1 ||
+    azubi.address_postal_code ||
+    azubi.address_city
+  );
+
+  const openAddressEditor = () => {
+    setAddrLine1(azubi.address_line1 || "");
+    setAddrPostal(azubi.address_postal_code || "");
+    setAddrCity(azubi.address_city || "");
+    setAddrCountry(azubi.address_country || "DE");
+    setEditingAddress(true);
+  };
+
+  const handleSaveAddress = async () => {
+    setSavingAddress(true);
+    const patch = {
+      address_line1: addrLine1.trim() || null,
+      address_postal_code: addrPostal.trim() || null,
+      address_city: addrCity.trim() || null,
+      address_country: addrCountry.trim() || null,
+    };
+    const { error } = await supabase
+      .from("auszubildende")
+      .update(patch)
+      .eq("id", azubi.id);
+    if (!error) {
+      setAzubi((prev) => ({ ...prev, ...patch }));
+      setEditingAddress(false);
+    }
+    setSavingAddress(false);
+  };
 
   const personName = [azubi.first_name, azubi.last_name].filter(Boolean).join(" ");
   const isCompany = azubi.contact_type === "company";
@@ -167,12 +209,52 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings }: Props) {
                 <span className="text-foreground font-mono">{azubi.vat_id}</span>
               </div>
             )}
-            {(azubi.address_line1 ||
-              azubi.address_postal_code ||
-              azubi.address_city) && (
+            {editingAddress ? (
               <div className="flex items-start gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground mt-2.5" />
+                <div className="flex-1 space-y-2">
+                  <Input
+                    placeholder="Straße und Hausnummer"
+                    value={addrLine1}
+                    onChange={(e) => setAddrLine1(e.target.value)}
+                  />
+                  <div className="grid grid-cols-3 gap-2">
+                    <Input
+                      placeholder="PLZ"
+                      value={addrPostal}
+                      onChange={(e) => setAddrPostal(e.target.value)}
+                    />
+                    <Input
+                      placeholder="Stadt"
+                      value={addrCity}
+                      onChange={(e) => setAddrCity(e.target.value)}
+                      className="col-span-2"
+                    />
+                  </div>
+                  <Input
+                    placeholder="Land (ISO, z.B. DE)"
+                    value={addrCountry}
+                    onChange={(e) => setAddrCountry(e.target.value)}
+                  />
+                  <div className="flex gap-2 pt-1">
+                    <Button size="sm" onClick={handleSaveAddress} disabled={savingAddress}>
+                      {savingAddress ? "Speichern..." : "Speichern"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditingAddress(false)}
+                      disabled={savingAddress}
+                    >
+                      Abbrechen
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : hasAddress ? (
+              <div className="flex items-start gap-2 group">
                 <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <div className="text-foreground leading-snug">
+                <div className="text-foreground leading-snug flex-1">
                   {azubi.address_line1 && <div>{azubi.address_line1}</div>}
                   {(azubi.address_postal_code || azubi.address_city) && (
                     <div>
@@ -185,7 +267,25 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings }: Props) {
                     <div>{azubi.address_country}</div>
                   )}
                 </div>
+                <button
+                  onClick={openAddressEditor}
+                  className="p-1 rounded hover:bg-gray-100 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
+                  title="Adresse bearbeiten"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
               </div>
+            ) : (
+              <button
+                onClick={openAddressEditor}
+                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                title="Adresse hinzufügen"
+              >
+                <MapPin className="h-4 w-4" />
+                <span className="text-xs underline-offset-2 hover:underline">
+                  Adresse hinzufügen
+                </span>
+              </button>
             )}
             {isCompany && personName && (
               <div className="flex items-center gap-2 text-muted-foreground">
