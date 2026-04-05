@@ -199,7 +199,7 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
             </TableRow>
           ) : (
             sortedSessions.map((session) => (
-              <TableRow key={session.id} style={Number(session.booked_seats) >= Number(session.max_seats) && Number(session.max_seats) > 0 ? { backgroundColor: "#ecfdf5" } : undefined}>
+              <TableRow key={session.id} style={Number(session.booked_seats) >= Number(session.max_seats) && Number(session.max_seats) > 0 ? { backgroundColor: "var(--soldout-bg)" } : undefined}>
                 <TableCell>
                   <span
                     className={`text-xs font-medium rounded-full px-2.5 py-1 ${
