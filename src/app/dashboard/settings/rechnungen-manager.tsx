@@ -547,7 +547,10 @@ export function RechnungenManager(_props: Props) {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Mindestens 2 Zeichen..."
-                        className="pl-9"
+                        // inline style overrides the admin-scoped input CSS
+                        // in globals.css which forces padding-left: 1rem and
+                        // would otherwise swallow the search icon's space.
+                        style={{ paddingLeft: "2.5rem" }}
                       />
                     </div>
                     {searchQuery.trim().length >= 2 && (
