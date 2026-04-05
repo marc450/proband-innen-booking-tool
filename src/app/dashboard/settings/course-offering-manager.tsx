@@ -355,8 +355,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Kursangebot</h1>
+      <div className="flex items-center justify-end">
         <Button onClick={openCreate}>Neuer Kurs</Button>
       </div>
 
