@@ -20,9 +20,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Upload } from "lucide-react";
+import { Upload, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import type { Auszubildende } from "@/lib/types";
 
 // Shape matches the server-side ImportRow in /api/import-auszubildende.
@@ -50,6 +57,9 @@ type ImportResult = {
   invalid?: number;
   error?: string;
 };
+
+type SortKey = "name" | "email" | "bookings" | "status" | "created_at";
+type SortDir = "asc" | "desc";
 
 const typeLabel = (t: Auszubildende["contact_type"]): string => {
   switch (t) {
@@ -80,10 +90,35 @@ export function AuszubildendeManager({
 }: Props) {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  // In the "other" scope we mix Firma + Sonstige contacts; a type filter
+  // lets the user split them. In the auszubildende scope it's always
+  // auszubildende so we hide the filter there.
+  const [typeFilter, setTypeFilter] = useState<"all" | "company" | "other">("all");
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importRows, setImportRows] = useState<ImportRow[] | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return <ArrowUpDown className="ml-1 h-3 w-3 opacity-40 inline" />;
+    return sortDir === "asc" ? (
+      <ArrowUp className="ml-1 h-3 w-3 inline" />
+    ) : (
+      <ArrowDown className="ml-1 h-3 w-3 inline" />
+    );
+  };
 
   const pageTitle = scope === "other" ? "Sonstige Kontakte" : "Ärzt:innen";
   const countLabel =
@@ -221,17 +256,42 @@ export function AuszubildendeManager({
     }
   };
 
-  const filtered = initialAuszubildende.filter((a) => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return (
-      a.first_name?.toLowerCase().includes(s) ||
-      a.last_name?.toLowerCase().includes(s) ||
-      a.email?.toLowerCase().includes(s) ||
-      a.phone?.toLowerCase().includes(s) ||
-      a.company_name?.toLowerCase().includes(s)
-    );
-  });
+  const filtered = initialAuszubildende
+    .filter((a) => {
+      if (statusFilter !== "all" && a.status !== statusFilter) return false;
+      if (scope === "other" && typeFilter !== "all" && a.contact_type !== typeFilter) return false;
+      if (!search) return true;
+      const s = search.toLowerCase();
+      return (
+        a.first_name?.toLowerCase().includes(s) ||
+        a.last_name?.toLowerCase().includes(s) ||
+        a.email?.toLowerCase().includes(s) ||
+        a.phone?.toLowerCase().includes(s) ||
+        a.company_name?.toLowerCase().includes(s)
+      );
+    })
+    .sort((a, b) => {
+      const dir = sortDir === "asc" ? 1 : -1;
+      const nameOf = (x: Auszubildende) => {
+        const person = [x.first_name, x.last_name].filter(Boolean).join(" ");
+        return (x.contact_type === "company"
+          ? x.company_name || person
+          : person || x.company_name || ""
+        ).toLowerCase();
+      };
+      switch (sortKey) {
+        case "name":
+          return nameOf(a).localeCompare(nameOf(b)) * dir;
+        case "email":
+          return (a.email || "").localeCompare(b.email || "") * dir;
+        case "bookings":
+          return ((bookingCounts[a.id] || 0) - (bookingCounts[b.id] || 0)) * dir;
+        case "status":
+          return (a.status || "").localeCompare(b.status || "") * dir;
+        case "created_at":
+          return (a.created_at || "").localeCompare(b.created_at || "") * dir;
+      }
+    });
 
   return (
     <div className="space-y-6">
@@ -247,6 +307,34 @@ export function AuszubildendeManager({
             onChange={(e) => setSearch(e.target.value)}
             className="max-w-xs"
           />
+          {scope === "other" && (
+            <Select
+              value={typeFilter}
+              onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}
+            >
+              <SelectTrigger className="w-[140px] h-9">
+                <SelectValue placeholder="Typ" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle Typen</SelectItem>
+                <SelectItem value="company">Firma</SelectItem>
+                <SelectItem value="other">Sonstige</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
+          >
+            <SelectTrigger className="w-[140px] h-9">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle Status</SelectItem>
+              <SelectItem value="active">Aktiv</SelectItem>
+              <SelectItem value="inactive">Inaktiv</SelectItem>
+            </SelectContent>
+          </Select>
           {scope === "auszubildende" && (
             <>
               <input
@@ -388,12 +476,23 @@ export function AuszubildendeManager({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
+            <TableHead className="cursor-pointer select-none" onClick={() => handleSort("name")}>
+              Name<SortIcon col="name" />
+            </TableHead>
             <TableHead>Typ</TableHead>
-            <TableHead>E-Mail</TableHead>
+            <TableHead className="cursor-pointer select-none" onClick={() => handleSort("email")}>
+              E-Mail<SortIcon col="email" />
+            </TableHead>
             <TableHead>Telefon</TableHead>
-            <TableHead className="text-center">Buchungen</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead
+              className="text-center cursor-pointer select-none"
+              onClick={() => handleSort("bookings")}
+            >
+              Buchungen<SortIcon col="bookings" />
+            </TableHead>
+            <TableHead className="cursor-pointer select-none" onClick={() => handleSort("status")}>
+              Status<SortIcon col="status" />
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -412,8 +511,14 @@ export function AuszubildendeManager({
                 : personName || azubi.company_name || "–";
               const count = bookingCounts[azubi.id] || 0;
               return (
-                <TableRow key={azubi.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/dashboard/auszubildende/personen/${azubi.id}`)}>
-                  <TableCell className="font-medium">
+                <TableRow
+                  key={azubi.id}
+                  // Fixed height keeps every row identical whether or not a
+                  // Firma sub-label is shown underneath the name.
+                  className="h-16 cursor-pointer hover:bg-muted/50"
+                  onClick={() => router.push(`/dashboard/auszubildende/personen/${azubi.id}`)}
+                >
+                  <TableCell className="font-medium align-middle">
                     <Link
                       href={`/dashboard/auszubildende/personen/${azubi.id}`}
                       className="text-primary hover:underline"
@@ -424,15 +529,15 @@ export function AuszubildendeManager({
                       <div className="text-xs text-muted-foreground">{azubi.company_name}</div>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="align-middle">
                     <Badge variant="outline" className="text-xs">
                       {typeLabel(azubi.contact_type)}
                     </Badge>
                   </TableCell>
-                  <TableCell>{azubi.email}</TableCell>
-                  <TableCell>{azubi.phone || "–"}</TableCell>
-                  <TableCell className="text-center">{count}</TableCell>
-                  <TableCell>
+                  <TableCell className="align-middle">{azubi.email}</TableCell>
+                  <TableCell className="align-middle">{azubi.phone || "–"}</TableCell>
+                  <TableCell className="text-center align-middle">{count}</TableCell>
+                  <TableCell className="align-middle">
                     <span className={`text-xs font-medium rounded-full px-2.5 py-1 ${
                       azubi.status === "active"
                         ? "bg-emerald-100 text-emerald-700"
