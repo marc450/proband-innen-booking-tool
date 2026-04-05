@@ -97,8 +97,8 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
     return `${d}.${m}.${y}`;
   };
 
-  // Visual hint when a filter is active. "live" is the default for filterStatus,
-  // so it only counts as active if the user explicitly changed it to something else.
+  // Visual hint when a filter is active. Any non-empty value counts as active,
+  // including the default "live" status, so users always see that data is filtered.
   const filterActiveClass = (isActive: boolean) =>
     isActive
       ? "ring-2 ring-primary bg-primary/10 text-primary font-medium"
@@ -106,7 +106,7 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
   const activeFilterCount =
     (filterInstructor ? 1 : 0) +
     (filterTemplate ? 1 : 0) +
-    (filterStatus && filterStatus !== "live" ? 1 : 0) +
+    (filterStatus ? 1 : 0) +
     (filterDateFrom ? 1 : 0) +
     (filterDateTo ? 1 : 0);
 
@@ -139,7 +139,7 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className={`w-full rounded px-1.5 py-1 text-xs border-0 cursor-pointer ${filterActiveClass(!!filterStatus && filterStatus !== "live")}`}
+                className={`w-full rounded px-1.5 py-1 text-xs border-0 cursor-pointer ${filterActiveClass(!!filterStatus)}`}
               >
                 <option value="">Alle</option>
                 <option value="live">Live</option>
