@@ -110,6 +110,7 @@ export async function POST(req: NextRequest) {
     addressCountry,
     auszubildendeId,
     contactType,
+    isCompany: isCompanyFlag,
     createContact,
     lineItems,
     daysUntilDue,
@@ -125,6 +126,10 @@ export async function POST(req: NextRequest) {
     addressCountry?: string;
     auszubildendeId?: string;
     contactType?: ContactType;
+    // Whether the contact is a company (separate from contactType, because
+    // an Auszubildende:r or Sonstige:r can be invoiced as a Praxis/Firma
+    // without changing their classification).
+    isCompany?: boolean;
     // When true, a new auszubildende row is upserted from the provided fields
     // before the invoice is created. Used by the "Neue Person/Firma" mode.
     createContact?: boolean;
@@ -133,8 +138,11 @@ export async function POST(req: NextRequest) {
   };
 
   // Validation: company contacts only need companyName + email; all others
-  // need first + last name + email.
-  const isCompany = contactType === "company";
+  // need first + last name + email. The company-ness is driven by an
+  // explicit flag so that any type (except proband) can be a company
+  // without losing its classification. Legacy contactType="company" is
+  // still honored for backwards compatibility.
+  const isCompany = isCompanyFlag === true || contactType === "company";
   if (!email?.trim()) {
     return NextResponse.json(
       { error: "E-Mail ist erforderlich." },
@@ -198,11 +206,8 @@ export async function POST(req: NextRequest) {
     if (!isCompany && companyName?.trim()) {
       customerBody["metadata[company_name]"] = companyName.trim();
     }
-    if (!isCompany) {
-      customerBody["metadata[contact_type]"] = contactType || "other";
-    } else {
-      customerBody["metadata[contact_type]"] = "company";
-    }
+    customerBody["metadata[contact_type]"] = contactType || "other";
+    if (isCompany) customerBody["metadata[is_company]"] = "true";
 
     const customer = await stripeFetch("/customers", {
       method: "POST",
@@ -217,9 +222,15 @@ export async function POST(req: NextRequest) {
       try {
         const admin = createAdminClient();
         const emailKey = email.trim().toLowerCase();
+        // Persist the real contact_type (auszubildende/proband/other). We
+        // intentionally do NOT store "company" here — a Praxis that is an
+        // Auszubildende:r stays classified as such; the presence of
+        // company_name plus empty first/last name indicates company-ness.
+        const persistedType: ContactType =
+          contactType && contactType !== "company" ? contactType : "other";
         const row: Record<string, unknown> = {
           email: emailKey,
-          contact_type: contactType || "other",
+          contact_type: persistedType,
           company_name: companyName?.trim() || null,
           first_name: isCompany ? null : firstName?.trim() || null,
           last_name: isCompany ? null : lastName?.trim() || null,

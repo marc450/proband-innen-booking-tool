@@ -46,6 +46,11 @@ type AuszubildendePick = {
 };
 
 type ContactType = "auszubildende" | "proband" | "other" | "company";
+// The three real kinds a new contact can be. "company" only exists on
+// legacy auszubildende rows and on patient search results (never) — we no
+// longer let the admin pick it directly; instead "Ist eine Firma" toggles
+// the company flag independently from the type.
+type NewContactType = "auszubildende" | "proband" | "other";
 
 type ContactSearchResult = {
   id: string;
@@ -101,6 +106,12 @@ const contactTypeLabel = (t: ContactType): string => {
   }
 };
 
+const newTypeOptions: { value: NewContactType; label: string }[] = [
+  { value: "auszubildende", label: "Auszubildende:r" },
+  { value: "proband", label: "Proband:in" },
+  { value: "other", label: "Sonstige:r" },
+];
+
 export function RechnungenManager(_props: Props) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,8 +133,11 @@ export function RechnungenManager(_props: Props) {
   const [selectedContact, setSelectedContact] = useState<ContactSearchResult | null>(null);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // New-contact type picker (defaults to auszubildende)
-  const [newContactType, setNewContactType] = useState<ContactType>("auszubildende");
+  // New-contact type picker (defaults to auszubildende) + independent
+  // company flag. Proband:innen are always private persons, so the flag
+  // is locked off when proband is selected.
+  const [newContactType, setNewContactType] = useState<NewContactType>("auszubildende");
+  const [newIsCompany, setNewIsCompany] = useState(false);
 
   // Shared person/company fields
   const [firstName, setFirstName] = useState("");
@@ -161,6 +175,7 @@ export function RechnungenManager(_props: Props) {
     setSearchResults([]);
     setSelectedContact(null);
     setNewContactType("auszubildende");
+    setNewIsCompany(false);
     setFirstName("");
     setLastName("");
     setEmail("");
@@ -239,11 +254,21 @@ export function RechnungenManager(_props: Props) {
 
   const totalAmount = lineItems.reduce((sum, li) => sum + (Number(li.amount) || 0), 0);
 
-  // Effective contact type for the payload: existing contacts keep their own
-  // type (we already know what they are); new contacts use the radio choice.
+  // Effective contact type + company flag for the payload.
+  // - Existing contacts keep their own type. A contact is a "company" if
+  //   either the legacy contact_type='company' is set, OR company_name is
+  //   filled while first/last name are empty (the new convention).
+  // - New contacts use the radio choice plus the independent company
+  //   toggle. Proband:innen are locked to personal (never a company).
   const effectiveContactType: ContactType =
     mode === "existing" && selectedContact ? selectedContact.contactType : newContactType;
-  const isCompany = effectiveContactType === "company";
+  const isCompany =
+    mode === "existing" && selectedContact
+      ? selectedContact.contactType === "company" ||
+        (!!selectedContact.companyName &&
+          !selectedContact.firstName &&
+          !selectedContact.lastName)
+      : newContactType !== "proband" && newIsCompany;
 
   const handleCreate = async () => {
     setCreateError(null);
@@ -302,6 +327,7 @@ export function RechnungenManager(_props: Props) {
             ? selectedContact.id
             : undefined,
         contactType: effectiveContactType,
+        isCompany,
         createContact: mode === "new",
         lineItems: parsedLines,
         daysUntilDue: Number(daysUntilDue) || 14,
@@ -583,23 +609,38 @@ export function RechnungenManager(_props: Props) {
                   </div>
                 )}
 
-                {/* New: type picker */}
+                {/* New: type picker + independent "Ist eine Firma" toggle.
+                    Proband:innen can never be companies. */}
                 {mode === "new" && (
                   <div className="space-y-2">
                     <Label>Typ</Label>
                     <div className="flex flex-wrap gap-2">
-                      {(["auszubildende", "proband", "other", "company"] as const).map((t) => (
+                      {newTypeOptions.map((t) => (
                         <Button
-                          key={t}
+                          key={t.value}
                           type="button"
-                          variant={newContactType === t ? "default" : "outline"}
+                          variant={newContactType === t.value ? "default" : "outline"}
                           size="sm"
-                          onClick={() => setNewContactType(t)}
+                          onClick={() => {
+                            setNewContactType(t.value);
+                            if (t.value === "proband") setNewIsCompany(false);
+                          }}
                         >
-                          {contactTypeLabel(t)}
+                          {t.label}
                         </Button>
                       ))}
                     </div>
+                    {newContactType !== "proband" && (
+                      <label className="inline-flex items-center gap-2 pt-1 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={newIsCompany}
+                          onChange={(e) => setNewIsCompany(e.target.checked)}
+                          className="h-4 w-4 rounded"
+                        />
+                        <span className="text-sm">Ist eine Firma/Praxis</span>
+                      </label>
+                    )}
                   </div>
                 )}
 
