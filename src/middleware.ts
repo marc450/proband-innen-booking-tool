@@ -14,15 +14,19 @@ export async function middleware(request: NextRequest) {
   const hostname = host.split(":")[0]; // strip port if present
   const pathname = request.nextUrl.pathname;
 
-  // On admin.ephia.de: block booking-only paths
+  // On admin.ephia.de: send root to dashboard (auth redirect to /login happens downstream)
+  // and block booking-only paths.
   if (hostname === ADMIN_DOMAIN) {
+    if (pathname === "/") {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
     const isBookingPath = BOOKING_ONLY_PATHS.some((p) => pathname.startsWith(p));
     if (isBookingPath) {
       return NextResponse.rewrite(new URL("/not-found", request.url));
     }
   }
 
-  // On proband-innen.ephia.de: block admin-only paths
+  // On proband-innen.ephia.de: block admin-only paths.
   if (hostname === BOOKING_DOMAIN) {
     const isAdminPath = ADMIN_ONLY_PATHS.some((p) => pathname.startsWith(p));
     if (isAdminPath) {
