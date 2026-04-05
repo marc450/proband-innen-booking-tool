@@ -27,8 +27,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertDialog } from "@/components/confirm-dialog";
-import { Plus, Trash2, Copy, Check, ExternalLink, FileText } from "lucide-react";
+import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
+import { Plus, Trash2, Copy, Check, ExternalLink, FileText, Ban } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
@@ -75,6 +75,8 @@ export function RechnungenManager({ initialAuszubildende }: Props) {
   const [alertState, setAlertState] = useState<{ title: string; description: string } | null>(null);
   const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null);
   const [copied, setCopied] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<Invoice | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
   // Form state
   const [mode, setMode] = useState<"existing" | "new">("existing");
@@ -196,6 +198,25 @@ export function RechnungenManager({ initialAuszubildende }: Props) {
     await load();
   };
 
+  const handleCancelInvoice = async () => {
+    if (!cancelTarget) return;
+    setCancelling(true);
+    const res = await fetch(`/api/admin/invoices/${cancelTarget.id}`, {
+      method: "DELETE",
+    });
+    const data = await res.json().catch(() => ({}));
+    setCancelling(false);
+    if (!res.ok) {
+      setAlertState({
+        title: "Stornierung fehlgeschlagen",
+        description: data.error || "Die Rechnung konnte nicht storniert werden.",
+      });
+      return;
+    }
+    setCancelTarget(null);
+    await load();
+  };
+
   const handleCopyLink = () => {
     if (!createdInvoice?.hosted_invoice_url) return;
     navigator.clipboard.writeText(createdInvoice.hosted_invoice_url);
@@ -233,6 +254,23 @@ export function RechnungenManager({ initialAuszubildende }: Props) {
         title={alertState?.title ?? ""}
         description={alertState?.description ?? ""}
         onClose={() => setAlertState(null)}
+      />
+
+      <ConfirmDialog
+        open={!!cancelTarget}
+        title="Rechnung stornieren?"
+        description={
+          cancelTarget
+            ? `Rechnung ${cancelTarget.number || cancelTarget.id.slice(0, 10)} über ${formatAmount(
+                cancelTarget.amount_due,
+                cancelTarget.currency || "eur"
+              )} wird storniert. Entwürfe werden komplett gelöscht, offene Rechnungen werden in Stripe als "void" markiert. Der Zahlungslink ist danach nicht mehr nutzbar.`
+            : ""
+        }
+        confirmLabel={cancelling ? "Wird storniert..." : "Stornieren"}
+        variant="destructive"
+        onConfirm={handleCancelInvoice}
+        onCancel={() => setCancelTarget(null)}
       />
 
       <Dialog
@@ -560,6 +598,19 @@ export function RechnungenManager({ initialAuszubildende }: Props) {
                               <FileText className="h-4 w-4" />
                             </Button>
                           </a>
+                        )}
+                        {(inv.status === "open" ||
+                          inv.status === "draft" ||
+                          inv.status === "uncollectible") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setCancelTarget(inv)}
+                            title="Rechnung stornieren"
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Ban className="h-4 w-4" />
+                          </Button>
                         )}
                       </div>
                     </TableCell>
