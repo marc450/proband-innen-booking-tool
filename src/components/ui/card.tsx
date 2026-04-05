@@ -17,7 +17,9 @@ function Card({
         // TableHeader can stick to the viewport instead of to the
         // card's padding box. Cards without a table keep overflow-hidden
         // so their rounded corners still clip image/media children.
-        "group/card flex flex-col gap-4 overflow-hidden has-[table]:overflow-visible rounded-xl bg-card py-4 text-sm text-card-foreground has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+        // shadow-[…] gives a subtle lift so white cards separate from the
+        // near-white --dashboard-bg without darkening the page background.
+        "group/card flex flex-col gap-4 overflow-hidden has-[table]:overflow-visible rounded-xl bg-card py-4 text-sm text-card-foreground shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.06)] ring-1 ring-black/5 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
         className
       )}
       {...props}
