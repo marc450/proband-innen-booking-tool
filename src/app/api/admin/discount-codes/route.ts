@@ -47,6 +47,7 @@ interface StripePromotionCode {
   times_redeemed: number;
   max_redemptions: number | null;
   created: number;
+  metadata?: Record<string, string>;
   coupon: {
     id: string;
     percent_off: number | null;
@@ -64,8 +65,15 @@ export async function GET() {
       "/promotion_codes?limit=100&expand[]=data.coupon"
     );
     const codes = (data.data as StripePromotionCode[])
-      // Filter out orphans whose coupon has been deleted (our soft-delete flow)
-      .filter((p) => p.coupon && !p.coupon.deleted)
+      // Filter out codes we have soft-deleted. The metadata flag is the
+      // reliable signal — Stripe still returns the cached coupon object on
+      // the promotion code even after the coupon itself has been deleted.
+      .filter(
+        (p) =>
+          p.metadata?.deleted !== "true" &&
+          p.coupon &&
+          !p.coupon.deleted
+      )
       .map((p) => ({
         id: p.id,
         code: p.code,

@@ -74,10 +74,13 @@ export async function PATCH(
   }
 }
 
-// Stripe does not allow deleting promotion codes, but deleting the underlying
-// coupon invalidates any promotion codes that reference it. We also deactivate
-// the promotion code first so it disappears from admin listings immediately,
-// and the GET endpoint filters out promo codes whose coupon has been deleted.
+// Stripe does not allow deleting promotion codes. To "delete" we:
+//   1. Deactivate the promotion code so it cannot be redeemed anymore
+//   2. Mark it with metadata[deleted]=true so the GET endpoint can hide it
+//   3. Delete the underlying coupon as a belt-and-suspenders safeguard
+// The metadata flag is the reliable hiding mechanism — we used to rely on
+// the expanded coupon being returned as a deleted stub, but Stripe keeps
+// returning the full coupon object on the promotion code after deletion.
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -92,10 +95,14 @@ export async function DELETE(
     const promo = await stripeGet(`/promotion_codes/${id}`);
     const couponId: string | undefined = promo?.coupon?.id;
 
-    // 2. Deactivate the promotion code so it can no longer be redeemed
-    await stripePost(`/promotion_codes/${id}`, { active: "false" });
+    // 2. Deactivate and tag with deleted metadata so the list hides it
+    await stripePost(`/promotion_codes/${id}`, {
+      active: "false",
+      "metadata[deleted]": "true",
+      "metadata[deleted_at]": String(Math.floor(Date.now() / 1000)),
+    });
 
-    // 3. Delete the coupon — this permanently invalidates the promo code
+    // 3. Delete the underlying coupon — permanently invalidates the code
     if (couponId) {
       try {
         await stripeDelete(`/coupons/${couponId}`);
