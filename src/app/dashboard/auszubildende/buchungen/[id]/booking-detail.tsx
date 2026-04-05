@@ -103,7 +103,10 @@ function formatDate(dateStr: string) {
 }
 
 function getPaymentMethodLabel(pm: StripeDetails["paymentMethod"]) {
-  if (!pm) return "Unbekannt";
+  // pm can be null (no payment intent, e.g. 100% discount) or an object
+  // whose `type` Stripe didn't populate. Bail out gracefully in both
+  // cases so we don't crash the whole detail page on pm.type.charAt().
+  if (!pm || !pm.type) return "Keine Zahlungsmethode";
   switch (pm.type) {
     case "card":
       if (pm.card) {
@@ -216,7 +219,16 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
           </h2>
           {s && !s.error ? (
             <>
-              <InfoRow label="Methode" value={getPaymentMethodLabel(s.paymentMethod)} />
+              <InfoRow
+                label="Methode"
+                value={
+                  s.paymentMethod
+                    ? getPaymentMethodLabel(s.paymentMethod)
+                    : s.amountTotal === 0
+                      ? "Keine Zahlung (0 €)"
+                      : "Unbekannt"
+                }
+              />
               {s.paymentMethod?.type === "card" && s.paymentMethod.card && (
                 <>
                   <InfoRow label="Kartentyp" value={s.paymentMethod.card.funding === "credit" ? "Kreditkarte" : s.paymentMethod.card.funding === "debit" ? "Debitkarte" : s.paymentMethod.card.funding} />

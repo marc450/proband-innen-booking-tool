@@ -49,8 +49,11 @@ export async function GET(request: NextRequest) {
       const balanceTransaction = latestCharge?.balance_transaction as Stripe.BalanceTransaction | null;
       const customer = session.customer as Stripe.Customer | null;
 
-      // Extract payment method details
-      let paymentMethodInfo: Record<string, unknown> = {};
+      // Extract payment method details. When there is no PaymentIntent at all
+      // (e.g. a 100% discount booking with amountTotal = 0) Stripe never
+      // attaches a payment method, so we return null instead of {} — the
+      // client renders "Keine Stripe-Zahlung" in that case.
+      let paymentMethodInfo: Record<string, unknown> | null = null;
       if (paymentMethod) {
         paymentMethodInfo = {
           type: paymentMethod.type,
