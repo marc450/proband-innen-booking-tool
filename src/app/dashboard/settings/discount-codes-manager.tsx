@@ -172,7 +172,7 @@ export function DiscountCodesManager() {
             </div>
             <div className="rounded-lg bg-muted px-3 py-2.5 text-xs text-muted-foreground">
               Rabattcodes gelten nur für Auszubildende-Kurse (Einzelkurse, Curricula, Komplettpakete). Bei
-              Curricula und Komplettpaketen ersetzt der Code den integrierten 10%-Rabatt.
+              Curricula und Komplettpaketen wird der Code zusätzlich zum integrierten 10%-Rabatt angewendet.
             </div>
             {createError && <p className="text-sm text-destructive">{createError}</p>}
           </div>
