@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
+import Link from "next/link";
 
 type AuszubildendePick = {
   id: string;
@@ -69,19 +70,43 @@ type ContactSearchResult = {
   title: string | null;
 };
 
-interface Invoice {
+// Shape returned by /api/admin/transactions — a unified ledger row for
+// Stripe invoices (admin-created, no-show, other) AND standalone charges
+// from the course-booking checkout flow. See that endpoint for the full
+// classification rules.
+type TransactionKind =
+  | "invoice_manual"
+  | "invoice_no_show"
+  | "invoice_other"
+  | "charge";
+
+interface Transaction {
+  id: string;
+  kind: TransactionKind;
+  created: number;
+  amount: number;
+  currency: string;
+  status: string;
+  customer_name: string | null;
+  customer_email: string | null;
+  description: string | null;
+  invoice_number: string | null;
+  hosted_invoice_url: string | null;
+  invoice_pdf_url: string | null;
+  receipt_url: string | null;
+  amount_refunded: number;
+  auszubildende_id: string | null;
+}
+
+// Local type returned by the POST /api/admin/invoices create flow.
+interface CreatedInvoice {
   id: string;
   number: string | null;
   status: string;
   amount_due: number;
-  amount_paid: number;
   currency: string;
-  created: number;
-  due_date: number | null;
   hosted_invoice_url: string | null;
   invoice_pdf: string | null;
-  customer_name: string | null;
-  customer_email: string | null;
 }
 
 interface LineItem {
@@ -117,15 +142,25 @@ const newTypeOptions: { value: NewContactType; label: string }[] = [
   { value: "other", label: "Sonstige:r" },
 ];
 
+type FilterKey = "all" | "invoice" | "charge" | "no_show";
+
+const filterOptions: { value: FilterKey; label: string }[] = [
+  { value: "all", label: "Alle" },
+  { value: "invoice", label: "Rechnungen" },
+  { value: "charge", label: "Kurs-Buchungen" },
+  { value: "no_show", label: "No-Shows" },
+];
+
 export function RechnungenManager(_props: Props) {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<FilterKey>("all");
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [alertState, setAlertState] = useState<{ title: string; description: string } | null>(null);
-  const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null);
+  const [createdInvoice, setCreatedInvoice] = useState<CreatedInvoice | null>(null);
   const [copied, setCopied] = useState(false);
-  const [cancelTarget, setCancelTarget] = useState<Invoice | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Transaction | null>(null);
   const [cancelling, setCancelling] = useState(false);
 
   // Form state — two top-level modes
@@ -161,12 +196,15 @@ export function RechnungenManager(_props: Props) {
 
   const load = async () => {
     setLoading(true);
-    const res = await fetch("/api/admin/invoices");
+    const res = await fetch("/api/admin/transactions");
     if (res.ok) {
-      setInvoices(await res.json());
+      setTransactions(await res.json());
     } else {
       const data = await res.json();
-      setAlertState({ title: "Fehler", description: data.error || "Rechnungen konnten nicht geladen werden." });
+      setAlertState({
+        title: "Fehler",
+        description: data.error || "Transaktionen konnten nicht geladen werden.",
+      });
     }
     setLoading(false);
   };
@@ -398,6 +436,7 @@ export function RechnungenManager(_props: Props) {
   const statusBadge = (status: string) => {
     switch (status) {
       case "paid":
+      case "succeeded":
         return <Badge className="bg-green-600 hover:bg-green-600">Bezahlt</Badge>;
       case "open":
         return <Badge variant="secondary">Offen</Badge>;
@@ -407,10 +446,54 @@ export function RechnungenManager(_props: Props) {
         return <Badge variant="destructive">Uneinbringlich</Badge>;
       case "void":
         return <Badge variant="outline">Storniert</Badge>;
+      case "refunded":
+        return <Badge variant="destructive">Erstattet</Badge>;
+      case "partially_refunded":
+        return <Badge variant="destructive">Teilw. erstattet</Badge>;
+      case "pending":
+        return <Badge variant="secondary">Ausstehend</Badge>;
+      case "failed":
+        return <Badge variant="destructive">Fehlgeschlagen</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
+
+  const kindBadge = (kind: TransactionKind) => {
+    switch (kind) {
+      case "invoice_manual":
+        return <Badge variant="outline" className="text-xs">Rechnung</Badge>;
+      case "invoice_no_show":
+        return (
+          <Badge variant="outline" className="text-xs border-amber-500 text-amber-700">
+            No-Show
+          </Badge>
+        );
+      case "charge":
+        return (
+          <Badge variant="outline" className="text-xs border-blue-500 text-blue-700">
+            Kurs-Buchung
+          </Badge>
+        );
+      case "invoice_other":
+      default:
+        return <Badge variant="outline" className="text-xs">Sonstige</Badge>;
+    }
+  };
+
+  // Filter chips apply in-memory to the already-loaded transaction list.
+  const filteredTransactions = transactions.filter((t) => {
+    if (filter === "all") return true;
+    if (filter === "invoice")
+      return t.kind === "invoice_manual" || t.kind === "invoice_other";
+    if (filter === "charge") return t.kind === "charge";
+    if (filter === "no_show") return t.kind === "invoice_no_show";
+    return true;
+  });
+
+  const canCancelTransaction = (t: Transaction) =>
+    (t.kind === "invoice_manual" || t.kind === "invoice_no_show") &&
+    (t.status === "open" || t.status === "draft" || t.status === "uncollectible");
 
   return (
     <div className="space-y-6">
@@ -426,8 +509,8 @@ export function RechnungenManager(_props: Props) {
         title="Rechnung stornieren?"
         description={
           cancelTarget
-            ? `Rechnung ${cancelTarget.number || cancelTarget.id.slice(0, 10)} über ${formatAmount(
-                cancelTarget.amount_due,
+            ? `Rechnung ${cancelTarget.invoice_number || cancelTarget.id.slice(0, 10)} über ${formatAmount(
+                cancelTarget.amount,
                 cancelTarget.currency || "eur"
               )} wird storniert. Entwürfe werden komplett gelöscht, offene Rechnungen werden in Stripe als "void" markiert. Der Zahlungslink ist danach nicht mehr nutzbar.`
             : ""
@@ -840,7 +923,20 @@ export function RechnungenManager(_props: Props) {
         </DialogContent>
       </Dialog>
 
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          {filterOptions.map((f) => (
+            <Button
+              key={f.value}
+              type="button"
+              variant={filter === f.value ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilter(f.value)}
+            >
+              {f.label}
+            </Button>
+          ))}
+        </div>
         <Button onClick={() => setShowCreate(true)}>
           <Plus className="h-4 w-4 mr-1.5" />
           Neue Rechnung
@@ -850,87 +946,122 @@ export function RechnungenManager(_props: Props) {
       <Card>
         <CardContent className="p-0">
           {loading ? (
-            <div className="py-12 text-center text-muted-foreground text-sm">Lade Rechnungen...</div>
-          ) : invoices.length === 0 ? (
+            <div className="py-12 text-center text-muted-foreground text-sm">Lade Transaktionen...</div>
+          ) : filteredTransactions.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground text-sm">
-              Noch keine Rechnungen vorhanden.
+              {transactions.length === 0
+                ? "Noch keine Transaktionen vorhanden."
+                : "Keine Treffer für diesen Filter."}
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nummer</TableHead>
+                  <TableHead>Typ</TableHead>
                   <TableHead>Kund:in</TableHead>
                   <TableHead>Betrag</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Fällig</TableHead>
-                  <TableHead>Erstellt</TableHead>
+                  <TableHead>Datum</TableHead>
+                  <TableHead>Dokumente</TableHead>
                   <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoices.map((inv) => (
-                  <TableRow key={inv.id}>
-                    <TableCell className="font-mono text-sm">{inv.number || inv.id.slice(0, 10)}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">{inv.customer_name || "—"}</div>
-                      <div className="text-xs text-muted-foreground">{inv.customer_email}</div>
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {formatAmount(inv.amount_due, inv.currency)}
-                    </TableCell>
-                    <TableCell>{statusBadge(inv.status)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                      {inv.due_date
-                        ? format(new Date(inv.due_date * 1000), "dd.MM.yyyy", { locale: de })
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                      {format(new Date(inv.created * 1000), "dd.MM.yyyy", { locale: de })}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        {inv.hosted_invoice_url && (
-                          <a
-                            href={inv.hosted_invoice_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="Zahlungslink öffnen"
+                {filteredTransactions.map((t) => {
+                  const customerNode = (
+                    <>
+                      <div className="text-sm">{t.customer_name || "—"}</div>
+                      <div className="text-xs text-muted-foreground">{t.customer_email || ""}</div>
+                      {t.invoice_number && (
+                        <div className="text-xs text-muted-foreground font-mono">
+                          {t.invoice_number}
+                        </div>
+                      )}
+                    </>
+                  );
+                  return (
+                    <TableRow key={t.id}>
+                      <TableCell>{kindBadge(t.kind)}</TableCell>
+                      <TableCell>
+                        {t.auszubildende_id ? (
+                          <Link
+                            href={`/dashboard/auszubildende/personen/${t.auszubildende_id}`}
+                            className="block hover:underline"
                           >
-                            <Button variant="ghost" size="sm">
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
-                          </a>
+                            {customerNode}
+                          </Link>
+                        ) : (
+                          customerNode
                         )}
-                        {inv.invoice_pdf && (
-                          <a
-                            href={inv.invoice_pdf}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="PDF öffnen"
-                          >
-                            <Button variant="ghost" size="sm">
-                              <FileText className="h-4 w-4" />
-                            </Button>
-                          </a>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {formatAmount(t.amount, t.currency)}
+                        {t.amount_refunded > 0 && (
+                          <div className="text-xs text-muted-foreground">
+                            - {formatAmount(t.amount_refunded, t.currency)} erstattet
+                          </div>
                         )}
-                        {(inv.status === "open" ||
-                          inv.status === "draft" ||
-                          inv.status === "uncollectible") && (
+                      </TableCell>
+                      <TableCell>{statusBadge(t.status)}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                        {format(new Date(t.created * 1000), "dd.MM.yyyy", { locale: de })}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          {t.invoice_pdf_url && (
+                            <a
+                              href={t.invoice_pdf_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="PDF öffnen"
+                            >
+                              <Button variant="ghost" size="sm">
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                            </a>
+                          )}
+                          {t.hosted_invoice_url && (
+                            <a
+                              href={t.hosted_invoice_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Zahlungslink öffnen"
+                            >
+                              <Button variant="ghost" size="sm">
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
+                            </a>
+                          )}
+                          {t.receipt_url && (
+                            <a
+                              href={t.receipt_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Beleg öffnen"
+                            >
+                              <Button variant="ghost" size="sm">
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
+                            </a>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {canCancelTransaction(t) && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setCancelTarget(inv)}
+                            onClick={() => setCancelTarget(t)}
                             title="Rechnung stornieren"
                             className="text-destructive hover:text-destructive"
                           >
                             <Ban className="h-4 w-4" />
                           </Button>
                         )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

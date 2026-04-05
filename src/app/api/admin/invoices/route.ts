@@ -297,6 +297,7 @@ export async function POST(req: NextRequest) {
       days_until_due: String(dueDays),
       auto_advance: "false",
       "metadata[source]": "admin_dashboard",
+      "metadata[kind]": "manual",
       "metadata[created_by]": user.id,
     };
     if (auszubildendeId) invoiceBody["metadata[auszubildendeId]"] = auszubildendeId;

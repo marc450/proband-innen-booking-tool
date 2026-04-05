@@ -66,11 +66,15 @@ export async function POST(req: NextRequest) {
       description: `No-Show-Gebühr / No-show fee (Booking ${bookingId})`,
     });
 
-    // Create, finalize, and pay the invoice
+    // Create, finalize, and pay the invoice. The metadata is what lets the
+    // unified Rechnungen/Transactions view identify this as a no-show fee.
     const invoice = await stripePost("/invoices", {
       customer: booking.stripe_customer_id,
       auto_advance: 1,
       collection_method: "charge_automatically",
+      "metadata[source]": "admin_dashboard",
+      "metadata[kind]": "no_show",
+      "metadata[booking_id]": bookingId,
     });
 
     const finalizedInvoice = await stripePost(`/invoices/${invoice.id}/finalize`, {});
