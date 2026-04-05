@@ -49,6 +49,7 @@
 }
 
 :root {
+  --dashboard-bg: #f9fafb;
   --soldout-bg: #ecfdf5;
   --soldout-bg-hover: #d1fae5;
   --background: #FAEBE1;
@@ -86,6 +87,7 @@
 }
 
 .dark {
+  --dashboard-bg: #17120f;
   --soldout-bg: rgba(74, 222, 128, 0.1);
   --soldout-bg-hover: rgba(74, 222, 128, 0.18);
   /* Warm charcoal palette: promotes EPHIA beige to accent, blue CTA stays anchor */
@@ -140,7 +142,7 @@ main > div > h1.text-2xl.font-bold:first-child {
   position: sticky;
   top: 0;
   z-index: 30;
-  background-color: var(--background);
+  background-color: var(--dashboard-bg);
   margin-left: -2rem;
   margin-right: -2rem;
   margin-top: -1.5rem;

@@ -28,7 +28,8 @@ export default async function DashboardLayout({
   return (
     <div
       data-dashboard-root
-      className={`min-h-screen bg-background text-foreground ${theme === "dark" ? "dark" : ""}`}
+      style={{ backgroundColor: "var(--dashboard-bg)" }}
+      className={`min-h-screen text-foreground ${theme === "dark" ? "dark" : ""}`}
     >
       <DashboardNav userEmail={session.user.email || ""} role={role} theme={theme} />
       <main className="ml-14 px-8 py-6">{children}</main>
