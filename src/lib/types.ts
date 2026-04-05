@@ -184,6 +184,8 @@ export interface Auszubildende {
   birthdate: string | null;
   efn: string | null;
   profile_complete: boolean;
+  contact_type: "auszubildende" | "proband" | "other" | "company" | null;
+  company_name: string | null;
   created_at: string;
   updated_at: string;
 }

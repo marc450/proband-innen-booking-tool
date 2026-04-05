@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Pencil, FileText, Mail, Phone } from "lucide-react";
+import { ArrowLeft, Pencil, FileText, Mail, Phone, Building2 } from "lucide-react";
 import Link from "next/link";
 import type { Auszubildende, CourseBookingStatus } from "@/lib/types";
 
@@ -56,7 +56,11 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings }: Props) {
   const [notes, setNotes] = useState(azubi.notes || "");
   const [savingNotes, setSavingNotes] = useState(false);
 
-  const name = [azubi.first_name, azubi.last_name].filter(Boolean).join(" ") || "Unbekannt";
+  const personName = [azubi.first_name, azubi.last_name].filter(Boolean).join(" ");
+  const isCompany = azubi.contact_type === "company";
+  const name = isCompany
+    ? azubi.company_name || "Firma"
+    : personName || azubi.company_name || "Unbekannt";
 
   const handleStatusChange = async (status: string) => {
     const { error } = await supabase
@@ -148,6 +152,19 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings }: Props) {
                 <a href={`tel:${azubi.phone}`} className="text-primary hover:underline">
                   {azubi.phone}
                 </a>
+              </div>
+            )}
+            {azubi.company_name && !isCompany && (
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <span className="text-foreground">{azubi.company_name}</span>
+                <span className="text-xs text-muted-foreground">(Praxis/Firma)</span>
+              </div>
+            )}
+            {isCompany && personName && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <span className="w-24 text-xs font-medium">Ansprechperson</span>
+                <span className="text-foreground">{personName}</span>
               </div>
             )}
             {/* Profile fields */}

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
+
+type ContactType = "auszubildende" | "proband" | "other" | "company";
 
 async function assertAdmin() {
   const supabase = await createClient();
@@ -100,33 +103,58 @@ export async function POST(req: NextRequest) {
     lastName,
     email,
     phone,
+    companyName,
     addressLine1,
     addressPostalCode,
     addressCity,
     addressCountry,
     auszubildendeId,
+    contactType,
+    createContact,
     lineItems,
     daysUntilDue,
   } = body as {
-    firstName: string;
-    lastName: string;
+    firstName?: string;
+    lastName?: string;
     email: string;
     phone?: string;
+    companyName?: string;
     addressLine1?: string;
     addressPostalCode?: string;
     addressCity?: string;
     addressCountry?: string;
     auszubildendeId?: string;
+    contactType?: ContactType;
+    // When true, a new auszubildende row is upserted from the provided fields
+    // before the invoice is created. Used by the "Neue Person/Firma" mode.
+    createContact?: boolean;
     lineItems: LineItemInput[];
     daysUntilDue: number;
   };
 
-  // Validation
-  if (!firstName?.trim() || !lastName?.trim() || !email?.trim()) {
+  // Validation: company contacts only need companyName + email; all others
+  // need first + last name + email.
+  const isCompany = contactType === "company";
+  if (!email?.trim()) {
     return NextResponse.json(
-      { error: "Vorname, Nachname und E-Mail sind erforderlich." },
+      { error: "E-Mail ist erforderlich." },
       { status: 400 }
     );
+  }
+  if (isCompany) {
+    if (!companyName?.trim()) {
+      return NextResponse.json(
+        { error: "Firmenname ist erforderlich." },
+        { status: 400 }
+      );
+    }
+  } else {
+    if (!firstName?.trim() || !lastName?.trim()) {
+      return NextResponse.json(
+        { error: "Vorname und Nachname sind erforderlich." },
+        { status: 400 }
+      );
+    }
   }
   if (!Array.isArray(lineItems) || lineItems.length === 0) {
     return NextResponse.json(
@@ -151,9 +179,15 @@ export async function POST(req: NextRequest) {
   const dueDays = Number.isFinite(daysUntilDue) && daysUntilDue > 0 ? Math.floor(daysUntilDue) : 14;
 
   try {
-    // 1. Create Stripe Customer
+    // 1. Create Stripe Customer. For company contacts, the Stripe "name"
+    //    must be the company so the invoice header shows the company name.
+    //    For personal contacts we still persist companyName in metadata if
+    //    supplied (e.g. a Praxis paying for the course) so it surfaces later.
+    const personName = !isCompany
+      ? `${firstName!.trim()} ${lastName!.trim()}`
+      : "";
     const customerBody: Record<string, string> = {
-      name: `${firstName.trim()} ${lastName.trim()}`,
+      name: isCompany ? companyName!.trim() : personName,
       email: email.trim(),
     };
     if (phone) customerBody.phone = phone;
@@ -161,11 +195,44 @@ export async function POST(req: NextRequest) {
     if (addressPostalCode) customerBody["address[postal_code]"] = addressPostalCode;
     if (addressCity) customerBody["address[city]"] = addressCity;
     if (addressCountry) customerBody["address[country]"] = addressCountry;
+    if (!isCompany && companyName?.trim()) {
+      customerBody["metadata[company_name]"] = companyName.trim();
+    }
+    if (!isCompany) {
+      customerBody["metadata[contact_type]"] = contactType || "other";
+    } else {
+      customerBody["metadata[contact_type]"] = "company";
+    }
 
     const customer = await stripeFetch("/customers", {
       method: "POST",
       body: customerBody,
     });
+
+    // 1b. Optionally upsert a row into the auszubildende contact table so
+    //     the contact becomes searchable later. This runs for the "Neue
+    //     Person/Firma" mode only; when an existing contact was picked the
+    //     caller passes createContact=false.
+    if (createContact) {
+      try {
+        const admin = createAdminClient();
+        const emailKey = email.trim().toLowerCase();
+        const row: Record<string, unknown> = {
+          email: emailKey,
+          contact_type: contactType || "other",
+          company_name: companyName?.trim() || null,
+          first_name: isCompany ? null : firstName?.trim() || null,
+          last_name: isCompany ? null : lastName?.trim() || null,
+          phone: phone?.trim() || null,
+        };
+        // Upsert on email so repeated sends don't create duplicates
+        await admin.from("auszubildende").upsert(row, { onConflict: "email" });
+      } catch (contactErr) {
+        // Don't fail the invoice just because the contact row couldn't be
+        // stored — the Stripe invoice is the source of truth.
+        console.warn("Contact upsert failed:", contactErr);
+      }
+    }
 
     // 2. Create invoice items (they auto-attach to the next invoice for this customer)
     for (const li of lineItems) {

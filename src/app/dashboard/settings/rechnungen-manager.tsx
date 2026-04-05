@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,12 +14,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -28,7 +22,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
-import { Plus, Trash2, Copy, Check, ExternalLink, FileText, Ban } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Copy,
+  Check,
+  ExternalLink,
+  FileText,
+  Ban,
+  Search,
+  X,
+} from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
@@ -38,6 +42,20 @@ type AuszubildendePick = {
   last_name: string | null;
   email: string;
   phone: string | null;
+  title: string | null;
+};
+
+type ContactType = "auszubildende" | "proband" | "other" | "company";
+
+type ContactSearchResult = {
+  id: string;
+  source: "auszubildende" | "patient";
+  contactType: ContactType;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+  phone: string | null;
+  companyName: string | null;
   title: string | null;
 };
 
@@ -62,12 +80,28 @@ interface LineItem {
 }
 
 interface Props {
-  initialAuszubildende: AuszubildendePick[];
+  // Kept for API compatibility with settings-content; no longer used directly
+  // because contact selection now goes through the live search endpoint.
+  initialAuszubildende?: AuszubildendePick[];
 }
 
 const emptyLine = (): LineItem => ({ description: "", amount: "" });
 
-export function RechnungenManager({ initialAuszubildende }: Props) {
+const contactTypeLabel = (t: ContactType): string => {
+  switch (t) {
+    case "auszubildende":
+      return "Auszubildende:r";
+    case "proband":
+      return "Proband:in";
+    case "company":
+      return "Firma";
+    case "other":
+    default:
+      return "Sonstige:r";
+  }
+};
+
+export function RechnungenManager(_props: Props) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -78,13 +112,25 @@ export function RechnungenManager({ initialAuszubildende }: Props) {
   const [cancelTarget, setCancelTarget] = useState<Invoice | null>(null);
   const [cancelling, setCancelling] = useState(false);
 
-  // Form state
+  // Form state — two top-level modes
   const [mode, setMode] = useState<"existing" | "new">("existing");
-  const [existingId, setExistingId] = useState<string>("");
+
+  // Existing-contact autocomplete
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<ContactSearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<ContactSearchResult | null>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // New-contact type picker (defaults to auszubildende)
+  const [newContactType, setNewContactType] = useState<ContactType>("auszubildende");
+
+  // Shared person/company fields
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [addressPostalCode, setAddressPostalCode] = useState("");
   const [addressCity, setAddressCity] = useState("");
@@ -111,11 +157,15 @@ export function RechnungenManager({ initialAuszubildende }: Props) {
 
   const resetForm = () => {
     setMode("existing");
-    setExistingId("");
+    setSearchQuery("");
+    setSearchResults([]);
+    setSelectedContact(null);
+    setNewContactType("auszubildende");
     setFirstName("");
     setLastName("");
     setEmail("");
     setPhone("");
+    setCompanyName("");
     setAddressLine1("");
     setAddressPostalCode("");
     setAddressCity("");
@@ -127,15 +177,58 @@ export function RechnungenManager({ initialAuszubildende }: Props) {
     setCopied(false);
   };
 
-  const handleExistingSelect = (id: string) => {
-    setExistingId(id);
-    const a = initialAuszubildende.find((x) => x.id === id);
-    if (a) {
-      setFirstName(a.first_name || "");
-      setLastName(a.last_name || "");
-      setEmail(a.email);
-      setPhone(a.phone || "");
+  // Debounced live search against /api/admin/contact-search
+  useEffect(() => {
+    if (mode !== "existing") return;
+    if (selectedContact) return;
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setSearchResults([]);
+      setSearching(false);
+      return;
     }
+    setSearching(true);
+    searchTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/admin/contact-search?q=${encodeURIComponent(q)}&limit=20`
+        );
+        if (res.ok) {
+          const data = (await res.json()) as ContactSearchResult[];
+          setSearchResults(data);
+        } else {
+          setSearchResults([]);
+        }
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 250);
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, [searchQuery, mode, selectedContact]);
+
+  const pickContact = (c: ContactSearchResult) => {
+    setSelectedContact(c);
+    setSearchResults([]);
+    setSearchQuery("");
+    setFirstName(c.firstName || "");
+    setLastName(c.lastName || "");
+    setEmail(c.email || "");
+    setPhone(c.phone || "");
+    setCompanyName(c.companyName || "");
+  };
+
+  const clearSelectedContact = () => {
+    setSelectedContact(null);
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setPhone("");
+    setCompanyName("");
   };
 
   const addLine = () => setLineItems((prev) => [...prev, emptyLine()]);
@@ -146,13 +239,35 @@ export function RechnungenManager({ initialAuszubildende }: Props) {
 
   const totalAmount = lineItems.reduce((sum, li) => sum + (Number(li.amount) || 0), 0);
 
+  // Effective contact type for the payload: existing contacts keep their own
+  // type (we already know what they are); new contacts use the radio choice.
+  const effectiveContactType: ContactType =
+    mode === "existing" && selectedContact ? selectedContact.contactType : newContactType;
+  const isCompany = effectiveContactType === "company";
+
   const handleCreate = async () => {
     setCreateError(null);
 
-    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
-      setCreateError("Vorname, Nachname und E-Mail sind erforderlich.");
+    if (mode === "existing" && !selectedContact) {
+      setCreateError("Bitte wähle eine bestehende Person oder Firma aus.");
       return;
     }
+    if (!email.trim()) {
+      setCreateError("E-Mail ist erforderlich.");
+      return;
+    }
+    if (isCompany) {
+      if (!companyName.trim()) {
+        setCreateError("Firmenname ist erforderlich.");
+        return;
+      }
+    } else {
+      if (!firstName.trim() || !lastName.trim()) {
+        setCreateError("Vorname und Nachname sind erforderlich.");
+        return;
+      }
+    }
+
     const parsedLines = lineItems.map((li) => ({
       description: li.description.trim(),
       amount: Number(li.amount),
@@ -173,15 +288,21 @@ export function RechnungenManager({ initialAuszubildende }: Props) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        firstName,
-        lastName,
+        firstName: firstName || undefined,
+        lastName: lastName || undefined,
         email,
         phone: phone || undefined,
+        companyName: companyName || undefined,
         addressLine1: addressLine1 || undefined,
         addressPostalCode: addressPostalCode || undefined,
         addressCity: addressCity || undefined,
         addressCountry: addressCountry || undefined,
-        auszubildendeId: mode === "existing" && existingId ? existingId : undefined,
+        auszubildendeId:
+          mode === "existing" && selectedContact?.source === "auszubildende"
+            ? selectedContact.id
+            : undefined,
+        contactType: effectiveContactType,
+        createContact: mode === "new",
         lineItems: parsedLines,
         daysUntilDue: Number(daysUntilDue) || 14,
       }),
@@ -294,7 +415,7 @@ export function RechnungenManager({ initialAuszubildende }: Props) {
               <div className="space-y-4 py-2">
                 <p className="text-sm text-muted-foreground">
                   Die Rechnung wurde in Stripe erstellt, aber nicht automatisch per E-Mail versendet.
-                  Teile den folgenden Link mit dem:der Auszubildenden zum Bezahlen.
+                  Teile den folgenden Link mit dem:der Empfänger:in zum Bezahlen.
                 </p>
                 <div className="rounded-lg bg-muted px-4 py-3 space-y-2">
                   <div>
@@ -341,17 +462,20 @@ export function RechnungenManager({ initialAuszubildende }: Props) {
           ) : (
             <>
               <div className="space-y-4 py-2">
-                {/* Customer selection */}
+                {/* Mode switch */}
                 <div className="space-y-2">
-                  <Label>Kund:in</Label>
-                  <div className="flex gap-2">
+                  <Label>Empfänger:in</Label>
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       type="button"
                       variant={mode === "existing" ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setMode("existing")}
+                      onClick={() => {
+                        setMode("existing");
+                        clearSelectedContact();
+                      }}
                     >
-                      Bestehende:r Auszubildende:r
+                      Bestehende Person/Firma
                     </Button>
                     <Button
                       type="button"
@@ -359,59 +483,176 @@ export function RechnungenManager({ initialAuszubildende }: Props) {
                       size="sm"
                       onClick={() => {
                         setMode("new");
-                        setExistingId("");
-                        setFirstName("");
-                        setLastName("");
-                        setEmail("");
-                        setPhone("");
+                        clearSelectedContact();
+                        setSearchQuery("");
+                        setSearchResults([]);
                       }}
                     >
-                      Neu eingeben
+                      Neue Person/Firma
                     </Button>
                   </div>
                 </div>
 
-                {mode === "existing" && (
-                  <div className="space-y-1.5">
-                    <Label>Auszubildende:r auswählen</Label>
-                    <Select value={existingId} onValueChange={(v) => handleExistingSelect(v ?? "")}>
-                      <SelectTrigger>
-                        <span>
-                          {existingId
-                            ? (() => {
-                                const a = initialAuszubildende.find((x) => x.id === existingId);
-                                return a
-                                  ? `${a.first_name || ""} ${a.last_name || ""} (${a.email})`.trim()
-                                  : "Auswählen...";
-                              })()
-                            : "Auswählen..."}
-                        </span>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {initialAuszubildende.map((a) => (
-                          <SelectItem key={a.id} value={a.id}>
-                            {[a.title, a.first_name, a.last_name].filter(Boolean).join(" ")} — {a.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                {/* Existing: live autocomplete */}
+                {mode === "existing" && !selectedContact && (
+                  <div className="space-y-1.5 relative">
+                    <Label>Suchen (Name, E-Mail, Firma)</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Mindestens 2 Zeichen..."
+                        className="pl-9"
+                      />
+                    </div>
+                    {searchQuery.trim().length >= 2 && (
+                      <div className="rounded-lg bg-background/80 shadow-sm mt-1 max-h-64 overflow-y-auto">
+                        {searching ? (
+                          <div className="p-3 text-sm text-muted-foreground">Suche...</div>
+                        ) : searchResults.length === 0 ? (
+                          <div className="p-3 text-sm text-muted-foreground">
+                            Keine Treffer. Nutze "Neue Person/Firma".
+                          </div>
+                        ) : (
+                          <ul className="divide-y divide-border/50">
+                            {searchResults.map((c) => (
+                              <li key={`${c.source}-${c.id}`}>
+                                <button
+                                  type="button"
+                                  onClick={() => pickContact(c)}
+                                  className="w-full text-left px-3 py-2 hover:bg-muted/60 transition-colors"
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <div className="text-sm font-medium truncate">
+                                        {c.contactType === "company"
+                                          ? c.companyName || "—"
+                                          : [c.title, c.firstName, c.lastName]
+                                              .filter(Boolean)
+                                              .join(" ") || "—"}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground truncate">
+                                        {c.email}
+                                        {c.companyName && c.contactType !== "company"
+                                          ? ` · ${c.companyName}`
+                                          : ""}
+                                      </div>
+                                    </div>
+                                    <Badge variant="outline" className="shrink-0 text-xs">
+                                      {contactTypeLabel(c.contactType)}
+                                    </Badge>
+                                  </div>
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
                   </div>
+                )}
+
+                {mode === "existing" && selectedContact && (
+                  <div className="rounded-lg bg-muted/60 px-3 py-2 flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium truncate">
+                          {selectedContact.contactType === "company"
+                            ? selectedContact.companyName || "—"
+                            : [selectedContact.firstName, selectedContact.lastName]
+                                .filter(Boolean)
+                                .join(" ") || "—"}
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          {contactTypeLabel(selectedContact.contactType)}
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {selectedContact.email}
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearSelectedContact}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+
+                {/* New: type picker */}
+                {mode === "new" && (
+                  <div className="space-y-2">
+                    <Label>Typ</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {(["auszubildende", "proband", "other", "company"] as const).map((t) => (
+                        <Button
+                          key={t}
+                          type="button"
+                          variant={newContactType === t ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setNewContactType(t)}
+                        >
+                          {contactTypeLabel(t)}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Company name (company mode, or optional companyName for person) */}
+                {isCompany ? (
+                  <div className="space-y-1.5">
+                    <Label>Firmenname *</Label>
+                    <Input
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      disabled={mode === "existing" && !!selectedContact}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label>Vorname *</Label>
+                        <Input
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          disabled={mode === "existing" && !!selectedContact}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Nachname *</Label>
+                        <Input
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          disabled={mode === "existing" && !!selectedContact}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Firma (optional)</Label>
+                      <Input
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        placeholder="z.B. Praxis, die für die Person zahlt"
+                      />
+                    </div>
+                  </>
                 )}
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label>Vorname *</Label>
-                    <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Nachname *</Label>
-                    <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
                     <Label>E-Mail *</Label>
-                    <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={mode === "existing" && !!selectedContact}
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Telefon</Label>
