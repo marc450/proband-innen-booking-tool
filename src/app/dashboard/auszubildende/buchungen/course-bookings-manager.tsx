@@ -459,16 +459,20 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                   </TableCell>
                   <TableCell>{formatAmount(booking.amount_paid)}</TableCell>
                   <TableCell>
-                    {isAdmin ? (
+                    {isAdmin && booking.status !== "refunded" ? (
                       <select
                         value={booking.status}
                         onChange={(e) => updateStatus(booking.id, e.target.value as CourseBookingStatus)}
                         onClick={(e) => e.stopPropagation()}
                         className="text-sm border rounded px-2 py-1"
                       >
-                        {Object.entries(statusLabels).map(([value, label]) => (
-                          <option key={value} value={value}>{label}</option>
-                        ))}
+                        {Object.entries(statusLabels)
+                          // "refunded" is only ever set automatically by the
+                          // Stripe charge.refunded webhook, never by the admin.
+                          .filter(([value]) => value !== "refunded")
+                          .map(([value, label]) => (
+                            <option key={value} value={value}>{label}</option>
+                          ))}
                       </select>
                     ) : (
                       <span className="text-sm">{statusLabels[booking.status]}</span>

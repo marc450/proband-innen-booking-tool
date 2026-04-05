@@ -383,6 +383,61 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   console.log(`Course booking created: ${bookingId} (${courseType} / ${courseKey}) — profile ${isReturningCustomer ? "complete" : "pending"}`);
 }
 
+// Handle charge.refunded: when Stripe finishes processing a refund (triggered
+// either by our cancel-course-booking flow or manually in the Stripe dashboard),
+// flip the booking status from "cancelled" to "refunded" so staff can see at a
+// glance that the money has actually been returned to the customer.
+async function handleChargeRefunded(charge: Stripe.Charge) {
+  const paymentIntentId =
+    typeof charge.payment_intent === "string"
+      ? charge.payment_intent
+      : charge.payment_intent?.id;
+  if (!paymentIntentId) {
+    console.log("charge.refunded without payment_intent — skipping");
+    return;
+  }
+
+  // Find the checkout session that used this payment intent, then locate the
+  // matching course_booking by stripe_checkout_session_id.
+  const sessions = await stripe.checkout.sessions.list({
+    payment_intent: paymentIntentId,
+    limit: 1,
+  });
+  const sessionId = sessions.data[0]?.id;
+  if (!sessionId) {
+    console.log(`No checkout session found for payment_intent ${paymentIntentId}`);
+    return;
+  }
+
+  const supabase = createAdminClient();
+  const { data: booking, error: lookupErr } = await supabase
+    .from("course_bookings")
+    .select("id, status")
+    .eq("stripe_checkout_session_id", sessionId)
+    .maybeSingle();
+
+  if (lookupErr) {
+    console.error("Failed to look up booking for refund:", lookupErr);
+    return;
+  }
+  if (!booking) {
+    console.log(`No course_booking found for session ${sessionId}`);
+    return;
+  }
+
+  const { error: updateErr } = await supabase
+    .from("course_bookings")
+    .update({ status: "refunded" })
+    .eq("id", booking.id);
+
+  if (updateErr) {
+    console.error("Failed to mark booking as refunded:", updateErr);
+    return;
+  }
+
+  console.log(`Course booking ${booking.id} marked as refunded (was ${booking.status})`);
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.text();
   const signature = req.headers.get("stripe-signature");
@@ -404,6 +459,8 @@ export async function POST(req: NextRequest) {
       await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
     } else if (event.type === "invoice.paid") {
       await handleInvoicePaid(event.data.object as Stripe.Invoice);
+    } else if (event.type === "charge.refunded") {
+      await handleChargeRefunded(event.data.object as Stripe.Charge);
     }
   } catch (err) {
     console.error("Webhook processing error:", err);
