@@ -130,3 +130,15 @@
   }
 }
 
+/* Sticky dashboard page titles: first h1 inside dashboard main sticks to top */
+main > div > h1.text-2xl.font-bold:first-child {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background-color: #f9fafb;
+  margin-left: -2rem;
+  margin-right: -2rem;
+  margin-top: -1.5rem;
+  padding: 1.5rem 2rem 0.75rem 2rem;
+}
+
