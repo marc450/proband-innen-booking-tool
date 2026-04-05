@@ -6,10 +6,13 @@ import { cn } from "@/lib/utils"
 
 type TableProps = React.ComponentProps<"table"> & {
   // Escape hatch for overriding the outer scroll container. The default
-  // `overflow-x-auto` coerces overflow-y to auto per the CSS spec, which
-  // means sticky <thead>s would stick inside this wrapper instead of the
-  // viewport. Pages that want a viewport-sticky header can pass
-  // `containerClassName="relative w-full"` to opt out.
+  // uses `overflow-x-clip` so that overflow-y stays `visible` (the spec
+  // allows clip+visible without coercion), which is what lets the sticky
+  // <thead> in TableHeader stick to the viewport rather than to a
+  // scroll-box ancestor. Pages that need real horizontal scrolling can
+  // pass `containerClassName="overflow-x-auto"` to opt back in — they
+  // then lose viewport-sticky headers because that wrapper becomes a
+  // vertical scroll container too.
   containerClassName?: string
 }
 
@@ -17,7 +20,7 @@ function Table({ className, containerClassName, ...props }: TableProps) {
   return (
     <div
       data-slot="table-container"
-      className={cn("relative w-full overflow-x-auto", containerClassName)}
+      className={cn("relative w-full overflow-x-clip", containerClassName)}
     >
       <table
         data-slot="table"
@@ -32,7 +35,14 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("[&_tr]:border-b", className)}
+      // Sticky by default so long tables keep their header visible as the
+      // page scrolls. bg-card matches any surrounding Card (and is sane
+      // enough when the table is used bare). The 1px shadow acts as a
+      // bottom border once the thead detaches from its normal flow.
+      className={cn(
+        "[&_tr]:border-b sticky top-0 z-10 bg-card shadow-[0_1px_0_0_var(--border)]",
+        className
+      )}
       {...props}
     />
   )
