@@ -51,12 +51,14 @@ const patientStatusLabels: Record<PatientStatus, string> = {
 interface Props {
   patient: Patient;
   bookings: BookingWithDetails[];
+  // Nutzer:innen can view the profile but not send emails from here.
+  isAdmin?: boolean;
 }
 
 type SortKey = "course" | "date" | "status" | "booked_at";
 type SortDir = "asc" | "desc";
 
-export function PatientDetail({ patient, bookings }: Props) {
+export function PatientDetail({ patient, bookings, isAdmin = true }: Props) {
   const [status, setStatus] = useState<PatientStatus>(patient.patient_status);
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -243,6 +245,7 @@ export function PatientDetail({ patient, bookings }: Props) {
             [patient.first_name, patient.last_name].filter(Boolean).join(" ") ||
             undefined
           }
+          canCompose={isAdmin}
         />
       )}
 

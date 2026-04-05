@@ -82,9 +82,12 @@ const navGroups: NavGroup[] = [
     key: "emails",
     label: "E-Mails",
     icon: Mail,
+    // Whole group is admin-only: Nutzer:innen must not access the shared
+    // customerlove inbox or outbound email campaigns.
+    adminOnly: true,
     items: [
       { href: "/dashboard/inbox", label: "Inbox" },
-      { href: "/dashboard/campaigns", label: "Kampagnen", adminOnly: true },
+      { href: "/dashboard/campaigns", label: "Kampagnen" },
     ],
   },
   {

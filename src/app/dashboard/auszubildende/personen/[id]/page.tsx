@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
+import { isAdmin as checkIsAdmin } from "@/lib/auth";
 import { AuszubildendeDetail } from "./auszubildende-detail";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +11,7 @@ export default async function AuszubildendeDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const isAdmin = await checkIsAdmin();
   const supabase = createAdminClient();
 
   const { data: azubi } = await supabase
@@ -30,6 +32,7 @@ export default async function AuszubildendeDetailPage({
     <AuszubildendeDetail
       azubi={azubi}
       bookings={bookings ?? []}
+      isAdmin={isAdmin}
     />
   );
 }

@@ -34,9 +34,13 @@ interface ThreadSummary {
 export function EmailHistory({
   email,
   displayName,
+  canCompose = true,
 }: {
   email: string;
   displayName?: string;
+  // Nutzer:innen can view past threads but must not send mail from a
+  // profile. Default true keeps admin-only call sites unaffected.
+  canCompose?: boolean;
 }) {
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -154,7 +158,7 @@ export function EmailHistory({
               <span className="text-xs font-normal">({threads.length})</span>
             )}
           </CardTitle>
-          {!composing && (
+          {canCompose && !composing && (
             <Button
               size="sm"
               onClick={openComposer}
@@ -168,7 +172,7 @@ export function EmailHistory({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Inline composer */}
-        {composing && (
+        {canCompose && composing && (
           <div className="border border-gray-200 rounded-[10px] p-4 space-y-3 bg-gray-50/40">
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">

@@ -34,6 +34,9 @@ interface BookingRow {
 interface Props {
   azubi: Auszubildende;
   bookings: BookingRow[];
+  // Nutzer:innen see the profile but no revenue columns and can't send
+  // emails from here. Default true keeps admin-only call sites working.
+  isAdmin?: boolean;
 }
 
 const statusLabels: Record<CourseBookingStatus, string> = {
@@ -50,7 +53,7 @@ const statusVariants: Record<CourseBookingStatus, "default" | "secondary" | "des
   refunded: "destructive",
 };
 
-export function AuszubildendeDetail({ azubi: initialAzubi, bookings }: Props) {
+export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = true }: Props) {
   const supabase = createClient();
   const [azubi, setAzubi] = useState(initialAzubi);
   const [editingNotes, setEditingNotes] = useState(false);
@@ -360,7 +363,7 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings }: Props) {
       </div>
 
       {/* Emails */}
-      <EmailHistory email={azubi.email} displayName={personName || undefined} />
+      <EmailHistory email={azubi.email} displayName={personName || undefined} canCompose={isAdmin} />
 
       {/* Notes */}
       <Card>
@@ -416,15 +419,15 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings }: Props) {
                 <TableHead>Kurs</TableHead>
                 <TableHead>Kursdatum</TableHead>
                 <TableHead>Kaufdatum</TableHead>
-                <TableHead>Betrag</TableHead>
+                {isAdmin && <TableHead>Betrag</TableHead>}
                 <TableHead>Status</TableHead>
-                <TableHead className="w-[60px]">Rechnung</TableHead>
+                {isAdmin && <TableHead className="w-[60px]">Rechnung</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {bookings.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={isAdmin ? 7 : 5} className="text-center text-muted-foreground py-8">
                     Noch keine Buchungen vorhanden.
                   </TableCell>
                 </TableRow>
@@ -443,27 +446,29 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings }: Props) {
                     <TableCell>
                       {formatDate(booking.created_at)}
                     </TableCell>
-                    <TableCell>{formatAmount(booking.amount_paid)}</TableCell>
+                    {isAdmin && <TableCell>{formatAmount(booking.amount_paid)}</TableCell>}
                     <TableCell>
                       <Badge variant={statusVariants[booking.status]}>
                         {statusLabels[booking.status]}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      {booking.stripe_invoice_pdf_url ? (
-                        <a
-                          href={booking.stripe_invoice_pdf_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors"
-                          title="Rechnung herunterladen"
-                        >
-                          <FileText className="h-4 w-4" />
-                        </a>
-                      ) : (
-                        <span className="text-muted-foreground/40">–</span>
-                      )}
-                    </TableCell>
+                    {isAdmin && (
+                      <TableCell>
+                        {booking.stripe_invoice_pdf_url ? (
+                          <a
+                            href={booking.stripe_invoice_pdf_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                            title="Rechnung herunterladen"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground/40">–</span>
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}

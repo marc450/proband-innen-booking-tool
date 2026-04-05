@@ -371,16 +371,16 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
             <TableHead>Kurs</TableHead>
             <TableHead>Kursdatum</TableHead>
             <TableHead>Kaufdatum</TableHead>
-            <TableHead>Betrag</TableHead>
+            {isAdmin && <TableHead>Betrag</TableHead>}
             <TableHead>Status</TableHead>
-            <TableHead className="w-[60px]">Rechnung</TableHead>
+            {isAdmin && <TableHead className="w-[60px]">Rechnung</TableHead>}
             {isAdmin && <TableHead className="w-[50px]"></TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {filtered.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={isAdmin ? 11 : 10} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={isAdmin ? 11 : 8} className="text-center text-muted-foreground py-8">
                 {search ? "Keine Buchungen gefunden." : "Noch keine Kursbuchungen vorhanden."}
               </TableCell>
             </TableRow>
@@ -457,7 +457,9 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                   <TableCell>
                     {formatDate(booking.created_at)}
                   </TableCell>
-                  <TableCell>{formatAmount(booking.amount_paid)}</TableCell>
+                  {isAdmin && (
+                    <TableCell>{formatAmount(booking.amount_paid)}</TableCell>
+                  )}
                   <TableCell>
                     {isAdmin && booking.status !== "refunded" ? (
                       <select
@@ -478,31 +480,33 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                       <span className="text-sm">{statusLabels[booking.status]}</span>
                     )}
                   </TableCell>
-                  <TableCell>
-                    {booking.stripe_invoice_pdf_url ? (
-                      <span className="inline-flex items-center gap-2">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setInvoicePdfUrl(booking.stripe_invoice_pdf_url); }}
-                          className="text-muted-foreground hover:text-foreground transition-colors"
-                          title="Rechnung ansehen"
-                        >
-                          <Search className="h-4 w-4" />
-                        </button>
-                        <a
-                          href={booking.stripe_invoice_pdf_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-muted-foreground hover:text-foreground transition-colors"
-                          title="Rechnung herunterladen"
-                        >
-                          <Download className="h-4 w-4" />
-                        </a>
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground/40">–</span>
-                    )}
-                  </TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      {booking.stripe_invoice_pdf_url ? (
+                        <span className="inline-flex items-center gap-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setInvoicePdfUrl(booking.stripe_invoice_pdf_url); }}
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                            title="Rechnung ansehen"
+                          >
+                            <Search className="h-4 w-4" />
+                          </button>
+                          <a
+                            href={booking.stripe_invoice_pdf_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                            title="Rechnung herunterladen"
+                          >
+                            <Download className="h-4 w-4" />
+                          </a>
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/40">–</span>
+                      )}
+                    </TableCell>
+                  )}
                   {isAdmin && (
                     <TableCell>
                       {booking.session_id && (booking.status === "booked" || booking.status === "completed") && (

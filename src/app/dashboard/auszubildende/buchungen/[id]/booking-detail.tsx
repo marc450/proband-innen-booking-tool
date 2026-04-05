@@ -148,7 +148,17 @@ function InfoRow({ label, value, mono }: { label: string; value: React.ReactNode
   );
 }
 
-export function BookingDetail({ bookingId }: { bookingId: string }) {
+export function BookingDetail({
+  bookingId,
+  isAdmin = true,
+}: {
+  bookingId: string;
+  // Nutzer:innen see the booking metadata but no revenue details: no
+  // Stripe payment method, net calculation, invoice documents, or the
+  // amount column. Defaults to true to stay backwards-compatible for any
+  // call site that forgets to thread the role through.
+  isAdmin?: boolean;
+}) {
   const [data, setData] = useState<BookingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -211,6 +221,9 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Revenue-related sections are admin-only. Nutzer:innen see the
+            booking header + status but none of the Stripe/payout details. */}
+        {isAdmin && (<>
         {/* Payment Method */}
         <div className="bg-white rounded-[10px] p-6 shadow-sm">
           <h2 className="text-base font-bold mb-4 flex items-center gap-2">
@@ -333,6 +346,7 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
             {s.chargeId && <InfoRow label="Charge" value={<span className="font-mono text-xs">{s.chargeId.slice(0, 20)}...</span>} />}
           </div>
         )}
+        </>)}
       </div>
     </div>
   );

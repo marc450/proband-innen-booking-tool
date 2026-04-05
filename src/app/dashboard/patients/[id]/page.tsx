@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { decryptPatient, decryptBookingWithDetails } from "@/lib/encryption";
 import { notFound } from "next/navigation";
+import { isAdmin as checkIsAdmin } from "@/lib/auth";
 import { PatientDetail } from "./patient-detail";
 
 export default async function PatientDetailPage({
@@ -9,6 +10,7 @@ export default async function PatientDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const isAdmin = await checkIsAdmin();
   const supabase = await createClient();
 
   const [{ data: patient, error }, { data: bookings }] = await Promise.all([
@@ -28,6 +30,7 @@ export default async function PatientDetailPage({
     <PatientDetail
       patient={decryptPatient(patient)}
       bookings={(bookings || []).map(decryptBookingWithDetails)}
+      isAdmin={isAdmin}
     />
   );
 }
