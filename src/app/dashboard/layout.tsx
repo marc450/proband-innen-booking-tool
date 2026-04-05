@@ -23,10 +23,14 @@ export default async function DashboardLayout({
   // Read role from cookie (set by middleware) — no DB call needed
   const cookieStore = await cookies();
   const role = (cookieStore.get("x-user-role")?.value ?? "admin") as "admin" | "nutzer";
+  const theme = (cookieStore.get("x-theme")?.value ?? "light") as "light" | "dark";
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <DashboardNav userEmail={session.user.email || ""} role={role} />
+    <div
+      data-dashboard-root
+      className={`min-h-screen bg-background text-foreground ${theme === "dark" ? "dark" : ""}`}
+    >
+      <DashboardNav userEmail={session.user.email || ""} role={role} theme={theme} />
       <main className="ml-14 px-8 py-6">{children}</main>
     </div>
   );

@@ -22,6 +22,8 @@ import {
   GraduationCap,
   Inbox,
   Settings,
+  Moon,
+  Sun,
   LucideIcon,
 } from "lucide-react";
 
@@ -88,10 +90,24 @@ const HOVER_DELAY_MS = 150;
 export function DashboardNav({
   userEmail,
   role,
+  theme = "light",
 }: {
   userEmail: string;
   role: "admin" | "nutzer";
+  theme?: "light" | "dark";
 }) {
+  const [currentTheme, setCurrentTheme] = useState<"light" | "dark">(theme);
+
+  const toggleTheme = () => {
+    const next = currentTheme === "dark" ? "light" : "dark";
+    setCurrentTheme(next);
+    document.cookie = `x-theme=${next}; path=/; max-age=31536000; SameSite=Lax`;
+    const root = document.querySelector("[data-dashboard-root]");
+    if (root) {
+      root.classList.toggle("dark", next === "dark");
+    }
+    router.refresh();
+  };
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -255,7 +271,7 @@ export function DashboardNav({
 
       {/* Sidebar */}
       <aside
-        className="fixed top-0 left-0 bottom-0 w-14 bg-[#FAEBE1] border-r border-black/10 flex flex-col items-center py-3 z-40"
+        className="fixed top-0 left-0 bottom-0 w-14 bg-sidebar border-r border-sidebar-border flex flex-col items-center py-3 z-40"
       >
         {/* Logo */}
         <Link href="/dashboard" className="mb-4 flex items-center justify-center h-10 w-10">
@@ -361,6 +377,23 @@ export function DashboardNav({
                 <p className="text-xs text-muted-foreground">Angemeldet als</p>
                 <p className="text-sm font-medium truncate">{userEmail}</p>
               </div>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-gray-50 transition-colors"
+              >
+                {currentTheme === "dark" ? (
+                  <>
+                    <Sun className="h-4 w-4" />
+                    Helles Design
+                  </>
+                ) : (
+                  <>
+                    <Moon className="h-4 w-4" />
+                    Dunkles Design
+                  </>
+                )}
+              </button>
               <button
                 type="button"
                 onClick={openPasswordDialog}
