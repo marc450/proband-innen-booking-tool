@@ -336,7 +336,12 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
             </TableRow>
           ) : (
             sortedSessions.map((session) => (
-              <tr key={session.id} data-slot="table-row" className={`border-b transition-colors ${Number(session.booked_seats) >= Number(session.max_seats) && Number(session.max_seats) > 0 ? "bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/15" : "hover:bg-muted/50"}`}>
+              <tr
+                key={session.id}
+                data-slot="table-row"
+                data-soldout={Number(session.booked_seats) >= Number(session.max_seats) && Number(session.max_seats) > 0 ? "true" : undefined}
+                className="border-b transition-colors hover:bg-muted/50 data-[soldout=true]:bg-[color:var(--soldout-bg)] data-[soldout=true]:hover:bg-[color:var(--soldout-bg-hover)]"
+              >
                 {/* Status */}
                 <TableCell>
                   <select

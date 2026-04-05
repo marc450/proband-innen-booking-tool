@@ -49,6 +49,8 @@
 }
 
 :root {
+  --soldout-bg: #ecfdf5;
+  --soldout-bg-hover: #d1fae5;
   --background: #FAEBE1;
   --foreground: oklch(0.2 0.02 280);
   --card: oklch(1 0 0);
@@ -84,6 +86,8 @@
 }
 
 .dark {
+  --soldout-bg: rgba(74, 222, 128, 0.1);
+  --soldout-bg-hover: rgba(74, 222, 128, 0.18);
   /* Warm charcoal palette: promotes EPHIA beige to accent, blue CTA stays anchor */
   --background: #17120f;
   --foreground: #ece7e1;
