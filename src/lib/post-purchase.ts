@@ -239,7 +239,7 @@ export async function runPostPurchaseFlow(data: PostPurchaseData) {
         body: JSON.stringify({
           text: [
             `*Name:* ${data.fullName}`,
-            `*Typ:* ${data.courseType}`,
+            `*Typ:* ${data.courseType === "Premium" ? "Komplettpaket" : data.courseType}`,
             `*Kurs:* ${courseLabelDe}`,
             data.sessionLabel ? `*Datum:* ${data.sessionLabel}` : null,
             seatsInfo ? `*Plätze:* ${seatsInfo}` : null,
