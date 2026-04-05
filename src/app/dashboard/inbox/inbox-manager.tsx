@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Mail } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { useSignature } from "@/hooks/use-signature";
 import { ThreadListPane, type ThreadSummary, type InboxFilter } from "./thread-list-pane";
 import { ConversationPane, type ThreadMessage } from "./conversation-pane";
 import { ContactSidebar } from "./contact-sidebar";
@@ -30,7 +30,7 @@ export function InboxManager() {
   const [threadMessages, setThreadMessages] = useState<ThreadMessage[]>([]);
   const [threadLoading, setThreadLoading] = useState(false);
 
-  const [signature, setSignature] = useState<{ html: string } | null>(null);
+  const signature = useSignature();
 
   // In-place compose state. When `composing` is true the center column
   // renders <ComposePane/> instead of a thread, and the left column shows
@@ -40,40 +40,6 @@ export function InboxManager() {
   const [composeSubject, setComposeSubject] = useState("");
   const [composeBody, setComposeBody] = useState("");
   const [composeSending, setComposeSending] = useState(false);
-
-  // Build signature from the authenticated user's profile row. We keep this
-  // client-side rather than adding a new column or API route. Format is the
-  // minimal EPHIA sign-off that matches the rest of the app tone.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const supabase = createClient();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) return;
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("first_name, last_name, title")
-          .eq("id", user.id)
-          .maybeSingle();
-        if (cancelled || !profile) return;
-        const name = [profile.title, profile.first_name, profile.last_name]
-          .filter(Boolean)
-          .join(" ");
-        const html = `<div style="color:#6b7280;font-size:13px;">Viele Grüße<br>${
-          name || "Dein EPHIA Team"
-        }<br>EPHIA · customerlove@ephia.de</div>`;
-        setSignature({ html });
-      } catch {
-        // Silently skip — signature is a nice-to-have.
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Translate our filter tabs into a Gmail query. "Beantwortet" is handled
   // client-side since it's a simple !lastMessageInbound check and Gmail has

@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/app/dashboard/inbox/rich-text-editor";
+import { useSignature } from "@/hooks/use-signature";
 
 // Contact profile email card. Lists past Gmail threads with this contact
 // and embeds an inline composer so staff can send an email without
@@ -47,6 +48,7 @@ export function EmailHistory({
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const signature = useSignature();
 
   const fetchEmails = useCallback(async () => {
     if (!email) {
@@ -92,7 +94,10 @@ export function EmailHistory({
 
   const openComposer = () => {
     setSubject("");
-    setBody("");
+    // Seed the editor with the user's signature so the sign-off matches
+    // every other composer in the admin panel. The <br><br> gives the
+    // user space to type above it without fighting with contenteditable.
+    setBody(signature?.html ? `<br><br>${signature.html}` : "");
     setSendError(null);
     setComposing(true);
   };
