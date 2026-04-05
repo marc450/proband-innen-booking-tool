@@ -51,7 +51,6 @@ const navGroups: NavGroup[] = [
       { href: "/dashboard", label: "Behandlungsangebote", exact: true },
       { href: "/dashboard/bookings", label: "Buchungen" },
       { href: "/dashboard/patients", label: "Proband:innen" },
-      { href: "/dashboard/campaigns", label: "Kampagnen", adminOnly: true },
     ],
   },
   {
@@ -65,10 +64,13 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    key: "inbox",
-    label: "Inbox",
+    key: "emails",
+    label: "E-Mails",
     icon: Inbox,
-    items: [{ href: "/dashboard/inbox", label: "Inbox", exact: false }],
+    items: [
+      { href: "/dashboard/inbox", label: "Inbox" },
+      { href: "/dashboard/campaigns", label: "Kampagnen", adminOnly: true },
+    ],
   },
   {
     key: "admin",
