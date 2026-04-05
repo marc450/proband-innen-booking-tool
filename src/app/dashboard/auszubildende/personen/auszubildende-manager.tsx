@@ -32,11 +32,23 @@ const typeLabel = (t: Auszubildende["contact_type"]): string => {
 interface Props {
   initialAuszubildende: Auszubildende[];
   bookingCounts: Record<string, number>;
+  // Determines page title / count label. Actual row filtering by
+  // contact_type happens server-side in page.tsx.
+  scope?: "auszubildende" | "other";
 }
 
-export function AuszubildendeManager({ initialAuszubildende, bookingCounts }: Props) {
+export function AuszubildendeManager({
+  initialAuszubildende,
+  bookingCounts,
+  scope = "auszubildende",
+}: Props) {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const pageTitle = scope === "other" ? "Sonstige Kontakte" : "Auszubildende";
+  const countLabel =
+    scope === "other"
+      ? `${initialAuszubildende.length} Kontakte`
+      : `${initialAuszubildende.length} Auszubildende`;
 
   const filtered = initialAuszubildende.filter((a) => {
     if (!search) return true;
@@ -53,9 +65,11 @@ export function AuszubildendeManager({ initialAuszubildende, bookingCounts }: Pr
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Auszubildende</h1>
+        <h1 className="text-2xl font-bold">{pageTitle}</h1>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-muted-foreground">{filtered.length} Auszubildende</span>
+          <span className="text-sm text-muted-foreground">
+            {search ? `${filtered.length} / ${countLabel}` : countLabel}
+          </span>
           <Input
             placeholder="Name, E-Mail oder Telefon suchen..."
             value={search}

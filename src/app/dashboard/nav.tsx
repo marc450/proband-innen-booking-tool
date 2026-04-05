@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,11 +19,12 @@ import {
   KeyRound,
   LogOut,
   Users,
-  GraduationCap,
   Mail,
-  Settings,
   Moon,
   Sun,
+  Receipt,
+  CalendarDays,
+  ShieldCheck,
   LucideIcon,
 } from "lucide-react";
 
@@ -44,23 +45,37 @@ type NavGroup = {
 
 const navGroups: NavGroup[] = [
   {
-    key: "proband",
-    label: "Proband:innen",
+    key: "contacts",
+    label: "Kontakte",
     icon: Users,
     items: [
-      { href: "/dashboard", label: "Behandlungsangebote", exact: true },
-      { href: "/dashboard/bookings", label: "Buchungen" },
+      {
+        href: "/dashboard/auszubildende/personen?type=auszubildende",
+        label: "Auszubildende",
+      },
       { href: "/dashboard/patients", label: "Proband:innen" },
+      {
+        href: "/dashboard/auszubildende/personen?type=other",
+        label: "Sonstige",
+      },
     ],
   },
   {
-    key: "auszubildende",
-    label: "Auszubildende",
-    icon: GraduationCap,
+    key: "bookings",
+    label: "Buchungen",
+    icon: Receipt,
+    items: [
+      { href: "/dashboard/bookings", label: "Proband:innen" },
+      { href: "/dashboard/auszubildende/buchungen", label: "Auszubildende" },
+    ],
+  },
+  {
+    key: "termine",
+    label: "Termine",
+    icon: CalendarDays,
     items: [
       { href: "/dashboard/auszubildende", label: "Kurstermine", exact: true },
-      { href: "/dashboard/auszubildende/buchungen", label: "Buchungen" },
-      { href: "/dashboard/auszubildende/personen", label: "Auszubildende" },
+      { href: "/dashboard/behandlungstermine", label: "Behandlungstermine" },
     ],
   },
   {
@@ -75,7 +90,7 @@ const navGroups: NavGroup[] = [
   {
     key: "admin",
     label: "Admin",
-    icon: Settings,
+    icon: ShieldCheck,
     adminOnly: true,
     items: [
       { href: "/dashboard/settings?tab=kurstermine", label: "Kurstermine" },
@@ -111,6 +126,7 @@ export function DashboardNav({
     router.refresh();
   };
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const supabase = createClient();
 
@@ -130,8 +146,21 @@ export function DashboardNav({
   const visibleGroups = navGroups.filter((g) => !g.adminOnly || role === "admin");
 
   const isItemActive = (item: NavItem) => {
-    const pathOnly = item.href.split("?")[0];
-    return item.exact ? pathname === pathOnly : pathname.startsWith(pathOnly);
+    // Split path and query so we can compare both parts. Two nav entries may
+    // point to the same path with different ?type= values (e.g. Kontakte >
+    // Auszubildende vs Sonstige), in which case we must match on the query
+    // string too to avoid both rows lighting up.
+    const [pathOnly, queryString] = item.href.split("?");
+    const pathMatches = item.exact
+      ? pathname === pathOnly
+      : pathname.startsWith(pathOnly);
+    if (!pathMatches) return false;
+    if (!queryString) return true;
+    const required = new URLSearchParams(queryString);
+    for (const [key, value] of required) {
+      if (searchParams?.get(key) !== value) return false;
+    }
+    return true;
   };
 
   const isGroupActive = (group: NavGroup) =>
