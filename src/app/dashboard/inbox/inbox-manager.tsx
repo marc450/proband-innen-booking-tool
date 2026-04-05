@@ -1,453 +1,374 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Input } from "@/components/ui/input";
+import { Loader2, Mail, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Search,
-  RefreshCw,
-  Mail,
-  Send,
-  ChevronLeft,
-  Loader2,
-  AlertCircle,
-  PenSquare,
-  MailOpen,
-  ArrowLeft,
-} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { createClient } from "@/lib/supabase/client";
+import { ThreadListPane, type ThreadSummary, type InboxFilter } from "./thread-list-pane";
+import { ConversationPane, type ThreadMessage } from "./conversation-pane";
+import { ContactSidebar } from "./contact-sidebar";
+import { RichTextEditor } from "./rich-text-editor";
 
-interface ThreadSummary {
-  id: string;
-  subject: string;
-  snippet: string;
-  lastDate: string;
-  contactName: string;
-  contactEmail: string;
-  messageCount: number;
-  isUnread: boolean;
-}
-
-interface ThreadMessage {
-  id: string;
-  threadId: string;
-  from: string;
-  fromEmail: string;
-  fromName: string;
-  to: string;
-  cc: string;
-  subject: string;
-  date: string;
-  body: { html: string; text: string };
-  isInbound: boolean;
-  labels: string[];
-  messageId: string;
-  references: string;
-}
+// Three-pane HubSpot-style inbox. The parent owns all state: thread list,
+// active filter/search, selected thread, and compose modal. Each pane is
+// a pure view component that receives props + callbacks.
 
 export function InboxManager() {
   const searchParams = useSearchParams();
   const initialThread = searchParams.get("thread");
+
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authUrl, setAuthUrl] = useState<string | null>(null);
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeSearch, setActiveSearch] = useState("");
+  const [filter, setFilter] = useState<InboxFilter>("all");
   const [nextPageToken, setNextPageToken] = useState<string | undefined>();
-  const [selectedThread, setSelectedThread] = useState<string | null>(null);
+
+  const [selectedThread, setSelectedThread] = useState<string | null>(initialThread);
   const [threadMessages, setThreadMessages] = useState<ThreadMessage[]>([]);
   const [threadLoading, setThreadLoading] = useState(false);
-  const [showCompose, setShowCompose] = useState(false);
-  const [showReply, setShowReply] = useState(false);
 
-  // Compose state
+  const [signature, setSignature] = useState<{ html: string } | null>(null);
+
+  // Compose modal state
+  const [composeOpen, setComposeOpen] = useState(false);
   const [composeTo, setComposeTo] = useState("");
   const [composeSubject, setComposeSubject] = useState("");
   const [composeBody, setComposeBody] = useState("");
-  const [sending, setSending] = useState(false);
+  const [composeSending, setComposeSending] = useState(false);
 
-  const fetchThreads = useCallback(async (query?: string, pageToken?: string) => {
-    setLoading(true);
-    setError(null);
-    setAuthUrl(null);
-    try {
-      const params = new URLSearchParams();
-      params.set("maxResults", "25");
-      if (query) params.set("q", query);
-      if (pageToken) params.set("pageToken", pageToken);
-
-      const res = await fetch(`/api/gmail/threads?${params}`);
-      const data = await res.json();
-
-      if (!res.ok) {
-        if (data.authUrl) {
-          setAuthUrl(data.authUrl);
-          setError("Gmail ist noch nicht verbunden.");
-        } else {
-          setError(data.error || "Fehler beim Laden der E-Mails");
-        }
-        return;
+  // Build signature from the authenticated user's profile row. We keep this
+  // client-side rather than adding a new column or API route. Format is the
+  // minimal EPHIA sign-off that matches the rest of the app tone.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("first_name, last_name, title")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (cancelled || !profile) return;
+        const name = [profile.title, profile.first_name, profile.last_name]
+          .filter(Boolean)
+          .join(" ");
+        const html = `<div style="color:#6b7280;font-size:13px;">Viele Grüße<br>${
+          name || "Dein EPHIA Team"
+        }<br>EPHIA · customerlove@ephia.de</div>`;
+        setSignature({ html });
+      } catch {
+        // Silently skip — signature is a nice-to-have.
       }
-
-      if (pageToken) {
-        setThreads((prev) => [...prev, ...data.threads]);
-      } else {
-        setThreads(data.threads);
-      }
-      setNextPageToken(data.nextPageToken);
-    } catch {
-      setError("Verbindungsfehler");
-    } finally {
-      setLoading(false);
-    }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  // Translate our filter tabs into a Gmail query. "Beantwortet" is handled
+  // client-side since it's a simple !lastMessageInbound check and Gmail has
+  // no single query operator for it.
+  const buildQuery = useCallback(
+    (search: string, f: InboxFilter) => {
+      const parts: string[] = [];
+      if (search.trim()) parts.push(search.trim());
+      if (f === "unread") parts.push("is:unread");
+      if (f === "spam") parts.push("in:spam");
+      return parts.join(" ");
+    },
+    []
+  );
+
+  const fetchThreads = useCallback(
+    async (opts?: { pageToken?: string; search?: string; filter?: InboxFilter }) => {
+      const s = opts?.search ?? searchQuery;
+      const f = opts?.filter ?? filter;
+      setLoading(true);
+      setError(null);
+      setAuthUrl(null);
+      try {
+        const params = new URLSearchParams();
+        params.set("maxResults", "25");
+        const q = buildQuery(s, f);
+        if (q) params.set("q", q);
+        if (opts?.pageToken) params.set("pageToken", opts.pageToken);
+
+        const res = await fetch(`/api/gmail/threads?${params}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (data.authUrl) {
+            setAuthUrl(data.authUrl);
+            setError("Gmail ist noch nicht verbunden.");
+          } else {
+            setError(data.error || "Fehler beim Laden der E-Mails");
+          }
+          return;
+        }
+
+        if (opts?.pageToken) {
+          setThreads((prev) => [...prev, ...data.threads]);
+        } else {
+          setThreads(data.threads);
+        }
+        setNextPageToken(data.nextPageToken);
+      } catch {
+        setError("Verbindungsfehler");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [buildQuery, searchQuery, filter]
+  );
 
   useEffect(() => {
     fetchThreads();
-    // If URL has ?thread=..., open it directly
-    if (initialThread) openThread(initialThread);
-  }, [fetchThreads]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setActiveSearch(searchQuery);
-    setNextPageToken(undefined);
-    fetchThreads(searchQuery);
-  };
+  // Client-side filter for "Beantwortet": show only threads whose most
+  // recent message we sent (i.e. not inbound).
+  const visibleThreads = useMemo(() => {
+    if (filter === "answered") {
+      return threads.filter((t) => !t.lastMessageInbound);
+    }
+    return threads;
+  }, [threads, filter]);
 
-  const openThread = async (threadId: string) => {
+  const openThread = useCallback(async (threadId: string) => {
     setSelectedThread(threadId);
     setThreadLoading(true);
-    setShowReply(false);
     try {
       const res = await fetch(`/api/gmail/threads?threadId=${threadId}`);
       const data = await res.json();
       if (res.ok) {
         setThreadMessages(data.thread.messages);
-        // Mark as read
-        const unreadMsgs = data.thread.messages.filter((m: ThreadMessage) => m.labels.includes("UNREAD"));
-        for (const msg of unreadMsgs) {
+        // Mark unread messages as read in the background.
+        const unread = data.thread.messages.filter((m: ThreadMessage) =>
+          m.labels.includes("UNREAD")
+        );
+        for (const msg of unread) {
           fetch("/api/gmail/labels", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ messageId: msg.id, removeLabels: ["UNREAD"] }),
           }).catch(() => {});
         }
-        // Update thread list to mark as read
-        setThreads((prev) => prev.map((t) => t.id === threadId ? { ...t, isUnread: false } : t));
+        setThreads((prev) =>
+          prev.map((t) => (t.id === threadId ? { ...t, isUnread: false } : t))
+        );
       }
-    } catch {
-      // ignore
     } finally {
       setThreadLoading(false);
     }
+  }, []);
+
+  // Auto-open initial thread from query param on mount.
+  useEffect(() => {
+    if (initialThread) openThread(initialThread);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleFilterChange = (f: InboxFilter) => {
+    setFilter(f);
+    setNextPageToken(undefined);
+    fetchThreads({ filter: f });
   };
 
-  const handleSend = async (isReply = false) => {
-    setSending(true);
-    try {
-      const lastMsg = threadMessages[threadMessages.length - 1];
-      const payload: Record<string, string> = {
-        to: isReply ? (lastMsg.isInbound ? lastMsg.fromEmail : lastMsg.to.split(",")[0].trim()) : composeTo,
-        subject: isReply ? lastMsg.subject : composeSubject,
-        htmlBody: `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;">${composeBody.replace(/\n/g, "<br>")}</div>`,
-      };
-      if (isReply) {
-        payload.threadId = lastMsg.threadId;
-        payload.inReplyTo = lastMsg.messageId;
-        payload.references = lastMsg.references ? `${lastMsg.references} ${lastMsg.messageId}` : lastMsg.messageId;
-      }
+  const handleSearchSubmit = () => {
+    setNextPageToken(undefined);
+    fetchThreads({ search: searchQuery });
+  };
 
+  const handleRefresh = () => fetchThreads();
+
+  const handleLoadMore = () => {
+    if (nextPageToken) fetchThreads({ pageToken: nextPageToken });
+  };
+
+  const handleReplySent = () => {
+    if (selectedThread) openThread(selectedThread);
+    fetchThreads();
+  };
+
+  // Contact email for sidebar: derive from the most recent inbound message,
+  // fall back to the first message's To, fall back to the thread summary.
+  const contactEmail = useMemo(() => {
+    if (!selectedThread) return null;
+    const inbound = [...threadMessages].reverse().find((m) => m.isInbound);
+    if (inbound) return inbound.fromEmail;
+    const first = threadMessages[0];
+    if (first?.to) return first.to.split(",")[0].trim();
+    return threads.find((t) => t.id === selectedThread)?.contactEmail || null;
+  }, [selectedThread, threadMessages, threads]);
+
+  const contactDisplayName = useMemo(() => {
+    if (!selectedThread) return undefined;
+    return threads.find((t) => t.id === selectedThread)?.contactName;
+  }, [selectedThread, threads]);
+
+  const handleComposeSend = async () => {
+    setComposeSending(true);
+    try {
       const res = await fetch("/api/gmail/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          to: composeTo,
+          subject: composeSubject,
+          htmlBody: `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;">${composeBody}</div>`,
+        }),
       });
-
       if (res.ok) {
+        setComposeOpen(false);
+        setComposeTo("");
+        setComposeSubject("");
         setComposeBody("");
-        if (isReply) {
-          setShowReply(false);
-          // Reload thread
-          openThread(selectedThread!);
-        } else {
-          setShowCompose(false);
-          setComposeTo("");
-          setComposeSubject("");
-          fetchThreads(activeSearch);
-        }
+        fetchThreads();
       }
-    } catch {
-      // ignore
     } finally {
-      setSending(false);
+      setComposeSending(false);
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return "";
-    const d = new Date(dateStr);
-    const now = new Date();
-    const isToday = d.toDateString() === now.toDateString();
-    if (isToday) return d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-    const isThisYear = d.getFullYear() === now.getFullYear();
-    if (isThisYear) return d.toLocaleDateString("de-DE", { day: "numeric", month: "short" });
-    return d.toLocaleDateString("de-DE", { day: "numeric", month: "short", year: "numeric" });
+  const openCompose = () => {
+    const sig = signature?.html ? `<br><br>${signature.html}` : "";
+    setComposeBody(sig);
+    setComposeOpen(true);
   };
 
-  const formatFullDate = (dateStr: string) => {
-    if (!dateStr) return "";
-    return new Date(dateStr).toLocaleString("de-DE", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  // ── Auth required ──
+  // ── Gmail auth required ──
   if (authUrl) {
     return (
-      <div className="p-8 text-center">
-        <Mail className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-        <h2 className="text-xl font-bold mb-2">Gmail verbinden</h2>
-        <p className="text-muted-foreground mb-6">
-          Verbinde das customerlove@ephia.de Postfach, um E-Mails in der App zu sehen und zu beantworten.
-        </p>
-        <a
-          href={authUrl}
-          className="inline-block bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-base py-3 px-6 rounded-[10px] transition-colors"
-        >
-          Gmail verbinden
-        </a>
-      </div>
-    );
-  }
-
-  // ── Compose view ──
-  if (showCompose) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setShowCompose(false)} className="text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <h1 className="text-2xl font-bold">Neue E-Mail</h1>
-        </div>
-        <div className="bg-white rounded-[10px] p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">An</label>
-            <Input value={composeTo} onChange={(e) => setComposeTo(e.target.value)} placeholder="email@example.com" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Betreff</label>
-            <Input value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)} placeholder="Betreff" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nachricht</label>
-            <textarea
-              value={composeBody}
-              onChange={(e) => setComposeBody(e.target.value)}
-              rows={12}
-              className="w-full border border-gray-200 rounded-[10px] px-3 py-2.5 text-sm focus:outline-none focus:border-[#0066FF] resize-y"
-              placeholder="Deine Nachricht..."
-            />
-          </div>
-          <div className="flex justify-end">
-            <Button
-              onClick={() => handleSend(false)}
-              disabled={sending || !composeTo || !composeSubject || !composeBody}
-              className="bg-[#0066FF] hover:bg-[#0055DD]"
-            >
-              {sending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-              Senden
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Thread detail view ──
-  if (selectedThread) {
-    const threadSubject = threadMessages[0]?.subject || "";
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => { setSelectedThread(null); setThreadMessages([]); }}
-            className="text-muted-foreground hover:text-foreground"
+      <div className="h-full flex items-center justify-center p-8">
+        <div className="max-w-md text-center">
+          <Mail className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-2">Gmail verbinden</h2>
+          <p className="text-muted-foreground mb-6">
+            Verbinde das customerlove@ephia.de Postfach, um E-Mails in der App
+            zu sehen und zu beantworten.
+          </p>
+          <a
+            href={authUrl}
+            className="inline-block bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-base py-3 px-6 rounded-[10px] transition-colors"
           >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <h1 className="text-lg font-bold truncate flex-1">{threadSubject}</h1>
-          <span className="text-xs text-muted-foreground">{threadMessages.length} Nachricht{threadMessages.length !== 1 && "en"}</span>
+            Gmail verbinden
+          </a>
         </div>
-
-        {threadLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {threadMessages.map((msg) => (
-              <div key={msg.id} className={`bg-white rounded-[10px] p-5 ${msg.isInbound ? "" : "border-l-4 border-[#0066FF]"}`}>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <span className="font-semibold text-sm">{msg.fromName}</span>
-                    <span className="text-xs text-muted-foreground ml-2">&lt;{msg.fromEmail}&gt;</span>
-                    {!msg.isInbound && (
-                      <span className="ml-2 text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">Gesendet</span>
-                    )}
-                  </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">{formatFullDate(msg.date)}</span>
-                </div>
-                {msg.to && (
-                  <p className="text-xs text-muted-foreground mb-3">An: {msg.to}</p>
-                )}
-                <div
-                  className="prose prose-sm max-w-none text-sm [&_img]:max-w-full [&_table]:text-sm"
-                  dangerouslySetInnerHTML={{ __html: msg.body.html || msg.body.text.replace(/\n/g, "<br>") }}
-                />
-              </div>
-            ))}
-
-            {/* Reply box */}
-            {showReply ? (
-              <div className="bg-white rounded-[10px] p-5 space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Antwort an: {threadMessages[threadMessages.length - 1]?.isInbound
-                    ? threadMessages[threadMessages.length - 1]?.fromEmail
-                    : threadMessages[threadMessages.length - 1]?.to.split(",")[0].trim()}
-                </p>
-                <textarea
-                  value={composeBody}
-                  onChange={(e) => setComposeBody(e.target.value)}
-                  rows={6}
-                  className="w-full border border-gray-200 rounded-[10px] px-3 py-2.5 text-sm focus:outline-none focus:border-[#0066FF] resize-y"
-                  placeholder="Deine Antwort..."
-                  autoFocus
-                />
-                <div className="flex gap-2 justify-end">
-                  <Button variant="outline" onClick={() => { setShowReply(false); setComposeBody(""); }}>
-                    Abbrechen
-                  </Button>
-                  <Button
-                    onClick={() => handleSend(true)}
-                    disabled={sending || !composeBody}
-                    className="bg-[#0066FF] hover:bg-[#0055DD]"
-                  >
-                    {sending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-                    Antworten
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex justify-center">
-                <Button variant="outline" onClick={() => setShowReply(true)}>
-                  <Mail className="h-4 w-4 mr-2" />
-                  Antworten
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     );
   }
 
-  // ── Thread list view ──
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Inbox</h1>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => fetchThreads(activeSearch)} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          </Button>
-          <Button onClick={() => setShowCompose(true)} className="bg-[#0066FF] hover:bg-[#0055DD]" size="sm">
-            <PenSquare className="h-4 w-4 mr-2" />
-            Neue E-Mail
-          </Button>
-        </div>
-      </div>
-
-      <form onSubmit={handleSearch} className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="E-Mails durchsuchen..."
-            className="pl-9"
-          />
-        </div>
-        <Button type="submit" variant="outline">Suchen</Button>
-      </form>
-
-      {error && !authUrl && (
-        <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 p-3 rounded-[10px]">
-          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+    <div className="h-full flex flex-col">
+      {error && (
+        <div className="bg-destructive/10 text-destructive text-sm px-4 py-2 flex-shrink-0">
           {error}
         </div>
       )}
+      <div className="flex-1 grid grid-cols-[320px_1fr_360px] min-h-0">
+        <ThreadListPane
+          threads={visibleThreads}
+          loading={loading}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onSearchSubmit={handleSearchSubmit}
+          filter={filter}
+          onFilterChange={handleFilterChange}
+          selectedThreadId={selectedThread}
+          onSelectThread={openThread}
+          onCompose={openCompose}
+          onRefresh={handleRefresh}
+          nextPageToken={nextPageToken}
+          onLoadMore={handleLoadMore}
+        />
+        <ConversationPane
+          threadId={selectedThread}
+          messages={threadMessages}
+          loading={threadLoading}
+          signature={signature}
+          onSent={handleReplySent}
+        />
+        <div className="border-l border-gray-100 bg-white overflow-hidden">
+          <ContactSidebar email={contactEmail} displayName={contactDisplayName} />
+        </div>
+      </div>
 
-      {loading && threads.length === 0 ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : threads.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <MailOpen className="h-10 w-10 mx-auto mb-3 opacity-40" />
-          <p>Keine E-Mails gefunden</p>
-        </div>
-      ) : (
-        <>
-          <div className="bg-white rounded-[10px] divide-y overflow-hidden">
-            {threads.map((thread) => (
+      {/* Compose modal */}
+      {composeOpen && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-end justify-end p-6">
+          <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-xl flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+              <h3 className="text-sm font-bold">Neue E-Mail</h3>
               <button
-                key={thread.id}
-                onClick={() => openThread(thread.id)}
-                className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors flex items-center gap-3 ${
-                  thread.isUnread ? "bg-blue-50/50" : ""
-                }`}
+                onClick={() => setComposeOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
               >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className={`text-sm truncate ${thread.isUnread ? "font-bold" : "font-medium"}`}>
-                      {thread.contactName || thread.contactEmail || "Unbekannt"}
-                    </span>
-                    {thread.messageCount > 1 && (
-                      <span className="text-xs text-muted-foreground flex-shrink-0">({thread.messageCount})</span>
-                    )}
-                    <span className="text-xs text-muted-foreground ml-auto flex-shrink-0">
-                      {formatDate(thread.lastDate)}
-                    </span>
-                  </div>
-                  <p className={`text-sm truncate ${thread.isUnread ? "font-semibold text-foreground" : "text-foreground"}`}>
-                    {thread.subject || "(kein Betreff)"}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">{thread.snippet}</p>
-                </div>
+                <X className="h-4 w-4" />
               </button>
-            ))}
-          </div>
-
-          {nextPageToken && (
-            <div className="flex justify-center">
+            </div>
+            <div className="p-5 space-y-3 overflow-y-auto">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  An
+                </label>
+                <Input
+                  value={composeTo}
+                  onChange={(e) => setComposeTo(e.target.value)}
+                  placeholder="email@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Betreff
+                </label>
+                <Input
+                  value={composeSubject}
+                  onChange={(e) => setComposeSubject(e.target.value)}
+                  placeholder="Betreff"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Nachricht
+                </label>
+                <RichTextEditor value={composeBody} onChange={setComposeBody} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-100">
+              <Button variant="outline" onClick={() => setComposeOpen(false)}>
+                Abbrechen
+              </Button>
               <Button
-                variant="outline"
-                onClick={() => fetchThreads(activeSearch, nextPageToken)}
-                disabled={loading}
+                onClick={handleComposeSend}
+                disabled={
+                  composeSending ||
+                  !composeTo ||
+                  !composeSubject ||
+                  !composeBody.trim()
+                }
+                className="bg-[#0066FF] hover:bg-[#0055DD]"
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Mehr laden
+                {composeSending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Send className="h-4 w-4 mr-2" />
+                )}
+                Senden
               </Button>
             </div>
-          )}
-        </>
+          </div>
+        </div>
       )}
     </div>
   );

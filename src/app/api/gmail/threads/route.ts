@@ -45,6 +45,10 @@ export async function GET(request: NextRequest) {
           const lastFrom = getHeader(lastMsg, "From");
           const lastDate = new Date(Number(lastMsg.internalDate)).toISOString();
           const isUnread = lastMsg.labelIds?.includes("UNREAD") || false;
+          // Whether the most recent message was sent by the contact (inbound)
+          // or by us (outbound). Used by the "Beantwortet" filter in the
+          // inbox UI to hide threads that still need a reply.
+          const lastMessageInbound = isInbound(lastMsg);
 
           // Get the external participant (not customerlove@ephia.de)
           const participants = new Set<string>();
@@ -86,9 +90,10 @@ export async function GET(request: NextRequest) {
             contactEmail,
             messageCount: full.messages.length,
             isUnread,
+            lastMessageInbound,
           };
         } catch {
-          return { id: t.id, subject: "", snippet: t.snippet, lastDate: "", lastFrom: "", contactName: "", contactEmail: "", messageCount: 0, isUnread: false };
+          return { id: t.id, subject: "", snippet: t.snippet, lastDate: "", lastFrom: "", contactName: "", contactEmail: "", messageCount: 0, isUnread: false, lastMessageInbound: true };
         }
       })
     );
