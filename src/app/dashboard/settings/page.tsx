@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
-import { CourseTemplate, CourseSession } from "@/lib/types";
+import { CourseTemplate, CourseSession, Auszubildende } from "@/lib/types";
 import { SettingsContent } from "./settings-content";
 
 export interface AdminUser {
@@ -67,6 +67,11 @@ export default async function SettingsPage() {
     .select("*")
     .order("date_iso", { ascending: true });
 
+  const { data: auszubildendeData } = await adminClient
+    .from("auszubildende")
+    .select("id, first_name, last_name, email, phone, title")
+    .order("last_name", { ascending: true });
+
   const [{ data: dozentUsersData }, { data: betreuerUsersData }] = await Promise.all([
     adminClient
       .from("profiles")
@@ -88,6 +93,7 @@ export default async function SettingsPage() {
       initialCourseSessions={(courseSessionsData as CourseSession[]) || []}
       dozentUsers={dozentUsersData ?? []}
       betreuerUsers={betreuerUsersData ?? []}
+      initialAuszubildende={(auszubildendeData ?? []) as Pick<Auszubildende, "id" | "first_name" | "last_name" | "email" | "phone" | "title">[]}
     />
   );
 }

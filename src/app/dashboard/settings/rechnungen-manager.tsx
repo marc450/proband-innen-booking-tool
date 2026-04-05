@@ -487,8 +487,7 @@ export function RechnungenManager({ initialAuszubildende }: Props) {
         </DialogContent>
       </Dialog>
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Rechnungen</h1>
+      <div className="flex items-center justify-end">
         <Button onClick={() => setShowCreate(true)}>
           <Plus className="h-4 w-4 mr-1.5" />
           Neue Rechnung

@@ -6,8 +6,11 @@ import { UsersManager } from "./users-manager";
 import { CourseOfferingManager } from "./course-offering-manager";
 import { CourseSessionsSettings } from "./course-sessions-settings";
 import { DiscountCodesManager } from "./discount-codes-manager";
-import { CourseTemplate, CourseSession, DozentUser } from "@/lib/types";
+import { RechnungenManager } from "./rechnungen-manager";
+import { CourseTemplate, CourseSession, DozentUser, Auszubildende } from "@/lib/types";
 import { AdminUser } from "./page";
+
+type AuszubildendePick = Pick<Auszubildende, "id" | "first_name" | "last_name" | "email" | "phone" | "title">;
 
 interface Props {
   initialUsers: AdminUser[];
@@ -16,6 +19,7 @@ interface Props {
   initialCourseSessions: CourseSession[];
   dozentUsers: DozentUser[];
   betreuerUsers: DozentUser[];
+  initialAuszubildende: AuszubildendePick[];
 }
 
 export function SettingsContent({
@@ -25,6 +29,7 @@ export function SettingsContent({
   initialCourseSessions,
   dozentUsers,
   betreuerUsers,
+  initialAuszubildende,
 }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -36,13 +41,14 @@ export function SettingsContent({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Einstellungen</h1>
+      <h1 className="text-2xl font-bold">Admin</h1>
 
       <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="kurstermine">Kurstermine</TabsTrigger>
           <TabsTrigger value="kursangebot">Kurse</TabsTrigger>
           <TabsTrigger value="rabattcodes">Rabattcodes</TabsTrigger>
+          <TabsTrigger value="rechnungen">Rechnungen</TabsTrigger>
           <TabsTrigger value="benutzer">Benutzer:innen</TabsTrigger>
         </TabsList>
 
@@ -61,6 +67,10 @@ export function SettingsContent({
 
         <TabsContent value="rabattcodes" className="mt-6">
           <DiscountCodesManager />
+        </TabsContent>
+
+        <TabsContent value="rechnungen" className="mt-6">
+          <RechnungenManager initialAuszubildende={initialAuszubildende} />
         </TabsContent>
 
         <TabsContent value="benutzer" className="mt-6">
