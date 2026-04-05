@@ -259,7 +259,7 @@ export function DashboardNav({
       >
         {/* Logo */}
         <Link href="/dashboard" className="mb-4 flex items-center justify-center h-10 w-10">
-          <img src="/logo.svg" alt="EPHIA" className="h-6 w-6 object-contain" />
+          <img src="/favicon.svg" alt="EPHIA" className="h-7 w-7 object-contain" />
         </Link>
 
         {/* Nav icons */}
