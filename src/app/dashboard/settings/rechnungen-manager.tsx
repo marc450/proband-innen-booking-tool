@@ -706,14 +706,15 @@ export function RechnungenManager(_props: Props) {
                         />
                       </div>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Firma (optional)</Label>
-                      <Input
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        placeholder="z.B. Praxis, die für die Person zahlt"
-                      />
-                    </div>
+                    {/* Firma field only when the checkbox is on. For the
+                        existing-contact case we still show it so a company
+                        name stored on the contact stays visible. */}
+                    {(mode === "existing" && selectedContact?.companyName) && (
+                      <div className="space-y-1.5">
+                        <Label>Firma</Label>
+                        <Input value={companyName} disabled />
+                      </div>
+                    )}
                   </>
                 )}
 
