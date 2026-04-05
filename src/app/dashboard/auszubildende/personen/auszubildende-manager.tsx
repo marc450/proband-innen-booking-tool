@@ -61,7 +61,7 @@ const typeLabel = (t: Auszubildende["contact_type"]): string => {
       return "Sonstige";
     case "auszubildende":
     default:
-      return "Auszubildende:r";
+      return "Ärzt:in";
   }
 };
 
@@ -85,11 +85,11 @@ export function AuszubildendeManager({
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
-  const pageTitle = scope === "other" ? "Sonstige Kontakte" : "Auszubildende";
+  const pageTitle = scope === "other" ? "Sonstige Kontakte" : "Ärzt:innen";
   const countLabel =
     scope === "other"
       ? `${initialAuszubildende.length} Kontakte`
-      : `${initialAuszubildende.length} Auszubildende`;
+      : `${initialAuszubildende.length} Ärzt:innen`;
 
   // Parses the file with the xlsx lib, which handles CSV as well. For
   // .csv files we read as text first and pass type:"string" — reading
@@ -282,7 +282,7 @@ export function AuszubildendeManager({
       >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Auszubildende importieren</DialogTitle>
+            <DialogTitle>Ärzt:innen importieren</DialogTitle>
           </DialogHeader>
 
           {importResult ? (
@@ -294,7 +294,7 @@ export function AuszubildendeManager({
               ) : (
                 <>
                   <p className="text-green-600 font-medium">
-                    {importResult.inserted} Auszubildende erfolgreich importiert.
+                    {importResult.inserted} Ärzt:innen erfolgreich importiert.
                   </p>
                   {importResult.skipped > 0 && (
                     <p className="text-muted-foreground">

@@ -484,7 +484,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
                   <div className="space-y-1.5">
                     <Label>Course Key (URL-Slug)</Label>
                     <Input value={form.course_key} onChange={(e) => updateField("course_key", e.target.value)} placeholder="grundkurs_botulinum" />
-                    <p className="text-[11px] text-muted-foreground">Nur nötig für Auszubildende-Buchungsseiten</p>
+                    <p className="text-[11px] text-muted-foreground">Nur nötig für Ärzt:innen-Buchungsseiten</p>
                   </div>
                   <div className="space-y-1.5">
                     <Label>LearnWorlds Course ID</Label>
@@ -592,7 +592,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
 
             {/* ── Auszubildende: Anzeigenamen ── */}
             <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Auszubildende: Anzeigenamen</h3>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Ärzt:innen: Anzeigenamen</h3>
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <Label>Onlinekurs</Label>
@@ -613,7 +613,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
 
             {/* ── Auszubildende: Preise ── */}
             <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Auszubildende: Preise (brutto, EUR)</h3>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Ärzt:innen: Preise (brutto, EUR)</h3>
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <Label>Online</Label>
@@ -634,7 +634,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
 
             {/* ── Auszubildende: Beschreibungen (Stripe) ── */}
             <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Auszubildende: Beschreibungen (Stripe)</h3>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Ärzt:innen: Beschreibungen (Stripe)</h3>
               <div className="space-y-3">
                 <div className="space-y-1.5">
                   <Label>Onlinekurs</Label>

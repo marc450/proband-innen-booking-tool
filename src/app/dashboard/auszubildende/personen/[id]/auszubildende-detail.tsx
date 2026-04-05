@@ -157,7 +157,7 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings }: Props) {
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        Alle Auszubildende
+        Alle Ärzt:innen
       </Link>
 
       {/* Info + Stats */}

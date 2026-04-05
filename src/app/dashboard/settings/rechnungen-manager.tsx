@@ -125,7 +125,7 @@ const emptyLine = (): LineItem => ({ description: "", amount: "" });
 const contactTypeLabel = (t: ContactType): string => {
   switch (t) {
     case "auszubildende":
-      return "Auszubildende:r";
+      return "Ärzt:in";
     case "proband":
       return "Proband:in";
     case "company":
@@ -137,7 +137,7 @@ const contactTypeLabel = (t: ContactType): string => {
 };
 
 const newTypeOptions: { value: NewContactType; label: string }[] = [
-  { value: "auszubildende", label: "Auszubildende:r" },
+  { value: "auszubildende", label: "Ärzt:in" },
   { value: "proband", label: "Proband:in" },
   { value: "other", label: "Sonstige:r" },
 ];

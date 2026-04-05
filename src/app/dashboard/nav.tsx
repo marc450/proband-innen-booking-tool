@@ -51,7 +51,7 @@ const navGroups: NavGroup[] = [
     items: [
       {
         href: "/dashboard/auszubildende/personen?type=auszubildende",
-        label: "Auszubildende",
+        label: "Ärzt:innen",
       },
       { href: "/dashboard/patients", label: "Proband:innen" },
       {
@@ -66,7 +66,7 @@ const navGroups: NavGroup[] = [
     icon: Receipt,
     items: [
       { href: "/dashboard/bookings", label: "Proband:innen" },
-      { href: "/dashboard/auszubildende/buchungen", label: "Auszubildende" },
+      { href: "/dashboard/auszubildende/buchungen", label: "Ärzt:innen" },
     ],
   },
   {
