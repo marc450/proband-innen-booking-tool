@@ -2,14 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Loader2, Mail, Send, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ThreadListPane, type ThreadSummary, type InboxFilter } from "./thread-list-pane";
 import { ConversationPane, type ThreadMessage } from "./conversation-pane";
 import { ContactSidebar } from "./contact-sidebar";
-import { RichTextEditor } from "./rich-text-editor";
+import { ComposePane } from "./compose-pane";
 
 // Three-pane HubSpot-style inbox. The parent owns all state: thread list,
 // active filter/search, selected thread, and compose modal. Each pane is
@@ -34,8 +32,10 @@ export function InboxManager() {
 
   const [signature, setSignature] = useState<{ html: string } | null>(null);
 
-  // Compose modal state
-  const [composeOpen, setComposeOpen] = useState(false);
+  // In-place compose state. When `composing` is true the center column
+  // renders <ComposePane/> instead of a thread, and the left column shows
+  // a synthetic draft item at the top.
+  const [composing, setComposing] = useState(false);
   const [composeTo, setComposeTo] = useState("");
   const [composeSubject, setComposeSubject] = useState("");
   const [composeBody, setComposeBody] = useState("");
@@ -146,6 +146,7 @@ export function InboxManager() {
   }, [threads, filter]);
 
   const openThread = useCallback(async (threadId: string) => {
+    setComposing(false);
     setSelectedThread(threadId);
     setThreadLoading(true);
     try {
@@ -201,21 +202,26 @@ export function InboxManager() {
     fetchThreads();
   };
 
-  // Contact email for sidebar: derive from the most recent inbound message,
-  // fall back to the first message's To, fall back to the thread summary.
+  // Contact email for sidebar: while composing, follow the recipient input
+  // (once it parses as an email). Otherwise derive from the selected thread.
   const contactEmail = useMemo(() => {
+    if (composing) {
+      const trimmed = composeTo.trim();
+      return /\S+@\S+\.\S+/.test(trimmed) ? trimmed : null;
+    }
     if (!selectedThread) return null;
     const inbound = [...threadMessages].reverse().find((m) => m.isInbound);
     if (inbound) return inbound.fromEmail;
     const first = threadMessages[0];
     if (first?.to) return first.to.split(",")[0].trim();
     return threads.find((t) => t.id === selectedThread)?.contactEmail || null;
-  }, [selectedThread, threadMessages, threads]);
+  }, [composing, composeTo, selectedThread, threadMessages, threads]);
 
   const contactDisplayName = useMemo(() => {
+    if (composing) return undefined;
     if (!selectedThread) return undefined;
     return threads.find((t) => t.id === selectedThread)?.contactName;
-  }, [selectedThread, threads]);
+  }, [composing, selectedThread, threads]);
 
   const handleComposeSend = async () => {
     setComposeSending(true);
@@ -230,7 +236,7 @@ export function InboxManager() {
         }),
       });
       if (res.ok) {
-        setComposeOpen(false);
+        setComposing(false);
         setComposeTo("");
         setComposeSubject("");
         setComposeBody("");
@@ -241,10 +247,21 @@ export function InboxManager() {
     }
   };
 
+  const cancelCompose = () => {
+    setComposing(false);
+    setComposeTo("");
+    setComposeSubject("");
+    setComposeBody("");
+  };
+
   const openCompose = () => {
     const sig = signature?.html ? `<br><br>${signature.html}` : "";
     setComposeBody(sig);
-    setComposeOpen(true);
+    setComposeTo("");
+    setComposeSubject("");
+    setComposing(true);
+    setSelectedThread(null);
+    setThreadMessages([]);
   };
 
   // ── Gmail auth required ──
@@ -295,88 +312,43 @@ export function InboxManager() {
             onRefresh={handleRefresh}
             nextPageToken={nextPageToken}
             onLoadMore={handleLoadMore}
+            composing={composing}
+            composeSubject={composeSubject}
+            composeTo={composeTo}
+            onSelectDraft={() => {
+              // No-op for now: clicking the draft just keeps the compose
+              // pane open. Kept as a prop so we can wire focus-the-editor
+              // behaviour later without another API change.
+            }}
           />
         </div>
         <div className="min-h-0 overflow-hidden">
-          <ConversationPane
-            threadId={selectedThread}
-            messages={threadMessages}
-            loading={threadLoading}
-            signature={signature}
-            onSent={handleReplySent}
-          />
+          {composing ? (
+            <ComposePane
+              to={composeTo}
+              subject={composeSubject}
+              body={composeBody}
+              sending={composeSending}
+              onToChange={setComposeTo}
+              onSubjectChange={setComposeSubject}
+              onBodyChange={setComposeBody}
+              onSend={handleComposeSend}
+              onCancel={cancelCompose}
+            />
+          ) : (
+            <ConversationPane
+              threadId={selectedThread}
+              messages={threadMessages}
+              loading={threadLoading}
+              signature={signature}
+              onSent={handleReplySent}
+            />
+          )}
         </div>
         <div className="min-h-0 overflow-hidden border-l border-gray-100 bg-white">
           <ContactSidebar email={contactEmail} displayName={contactDisplayName} />
         </div>
       </div>
-
-      {/* Compose modal */}
-      {composeOpen && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-end justify-end p-6">
-          <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-xl flex flex-col max-h-[80vh]">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-              <h3 className="text-sm font-bold">Neue E-Mail</h3>
-              <button
-                onClick={() => setComposeOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="p-5 space-y-3 overflow-y-auto">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
-                  An
-                </label>
-                <Input
-                  value={composeTo}
-                  onChange={(e) => setComposeTo(e.target.value)}
-                  placeholder="email@example.com"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Betreff
-                </label>
-                <Input
-                  value={composeSubject}
-                  onChange={(e) => setComposeSubject(e.target.value)}
-                  placeholder="Betreff"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Nachricht
-                </label>
-                <RichTextEditor value={composeBody} onChange={setComposeBody} />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-100">
-              <Button variant="outline" onClick={() => setComposeOpen(false)}>
-                Abbrechen
-              </Button>
-              <Button
-                onClick={handleComposeSend}
-                disabled={
-                  composeSending ||
-                  !composeTo ||
-                  !composeSubject ||
-                  !composeBody.trim()
-                }
-                className="bg-[#0066FF] hover:bg-[#0055DD]"
-              >
-                {composeSending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Send className="h-4 w-4 mr-2" />
-                )}
-                Senden
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

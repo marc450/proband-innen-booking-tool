@@ -35,6 +35,12 @@ interface Props {
   onRefresh: () => void;
   nextPageToken?: string;
   onLoadMore: () => void;
+  // When true, show a synthetic "Neue E-Mail" item at the top of the list
+  // that represents the in-progress compose draft in the center column.
+  composing: boolean;
+  composeSubject: string;
+  composeTo: string;
+  onSelectDraft: () => void;
 }
 
 const FILTERS: { key: InboxFilter; label: string }[] = [
@@ -69,6 +75,10 @@ export function ThreadListPane({
   onRefresh,
   nextPageToken,
   onLoadMore,
+  composing,
+  composeSubject,
+  composeTo,
+  onSelectDraft,
 }: Props) {
   return (
     <div className="flex flex-col h-full bg-white border-r border-gray-100">
@@ -106,7 +116,7 @@ export function ThreadListPane({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Durchsuchen..."
-            className="pl-9 h-9"
+            className="!pl-9 h-9"
           />
         </form>
       </div>
@@ -130,6 +140,27 @@ export function ThreadListPane({
 
       {/* Thread list */}
       <div className="flex-1 overflow-y-auto">
+        {composing && (
+          <button
+            onClick={onSelectDraft}
+            className="w-full text-left px-4 py-3 border-b border-gray-50 bg-[#0066FF]/5 border-l-2 border-l-[#0066FF] transition-colors"
+          >
+            <div className="flex items-center justify-between gap-2 mb-0.5">
+              <span className="text-sm font-bold text-[#0066FF] truncate">
+                {composeTo || "Neue E-Mail"}
+              </span>
+              <span className="text-[11px] text-[#0066FF] font-medium flex-shrink-0">
+                Entwurf
+              </span>
+            </div>
+            <p className="text-xs font-semibold text-gray-900 truncate">
+              {composeSubject || "(Betreff)"}
+            </p>
+            <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+              Wird gerade verfasst…
+            </p>
+          </button>
+        )}
         {loading && threads.length === 0 ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
