@@ -277,29 +277,36 @@ export function InboxManager() {
         </div>
       )}
       <div className="flex-1 grid grid-cols-[320px_1fr_360px] min-h-0">
-        <ThreadListPane
-          threads={visibleThreads}
-          loading={loading}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onSearchSubmit={handleSearchSubmit}
-          filter={filter}
-          onFilterChange={handleFilterChange}
-          selectedThreadId={selectedThread}
-          onSelectThread={openThread}
-          onCompose={openCompose}
-          onRefresh={handleRefresh}
-          nextPageToken={nextPageToken}
-          onLoadMore={handleLoadMore}
-        />
-        <ConversationPane
-          threadId={selectedThread}
-          messages={threadMessages}
-          loading={threadLoading}
-          signature={signature}
-          onSent={handleReplySent}
-        />
-        <div className="border-l border-gray-100 bg-white overflow-hidden">
+        {/* Each grid child needs min-h-0 + overflow-hidden, otherwise the
+            grid items default to min-height:auto and the inner
+            overflow-y-auto containers can never scroll. */}
+        <div className="min-h-0 overflow-hidden">
+          <ThreadListPane
+            threads={visibleThreads}
+            loading={loading}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onSearchSubmit={handleSearchSubmit}
+            filter={filter}
+            onFilterChange={handleFilterChange}
+            selectedThreadId={selectedThread}
+            onSelectThread={openThread}
+            onCompose={openCompose}
+            onRefresh={handleRefresh}
+            nextPageToken={nextPageToken}
+            onLoadMore={handleLoadMore}
+          />
+        </div>
+        <div className="min-h-0 overflow-hidden">
+          <ConversationPane
+            threadId={selectedThread}
+            messages={threadMessages}
+            loading={threadLoading}
+            signature={signature}
+            onSent={handleReplySent}
+          />
+        </div>
+        <div className="min-h-0 overflow-hidden border-l border-gray-100 bg-white">
           <ContactSidebar email={contactEmail} displayName={contactDisplayName} />
         </div>
       </div>
