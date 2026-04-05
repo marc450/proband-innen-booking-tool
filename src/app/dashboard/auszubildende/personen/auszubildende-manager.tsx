@@ -91,50 +91,116 @@ export function AuszubildendeManager({
       ? `${initialAuszubildende.length} Kontakte`
       : `${initialAuszubildende.length} Auszubildende`;
 
-  // Parses the file (CSV or XLSX) with the xlsx lib — it auto-detects
-  // format from the byte stream. Column names must match the server
-  // ImportRow shape exactly; the HubSpot export cleanup script we use
-  // already produces this header row.
+  // Parses the file with the xlsx lib, which handles CSV as well. For
+  // .csv files we read as text first and pass type:"string" — reading
+  // CSV from a Uint8Array silently produces zero rows on some encodings
+  // (BOM, UTF-8 umlauts) so we avoid that path entirely. XLSX files
+  // still go through the binary path. Any exception surfaces in the
+  // dialog instead of vanishing into the console.
+  const parseCsvText = (text: string): ImportRow[] => {
+    // Strip UTF-8 BOM if present.
+    if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+    const wb = read(text, { type: "string" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const json: Record<string, string>[] = utils.sheet_to_json(ws, {
+      defval: "",
+    });
+    return mapRows(json);
+  };
+
+  const parseXlsxBytes = (bytes: Uint8Array): ImportRow[] => {
+    const wb = read(bytes, { type: "array" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const json: Record<string, string>[] = utils.sheet_to_json(ws, {
+      defval: "",
+    });
+    return mapRows(json);
+  };
+
+  const mapRows = (json: Record<string, string>[]): ImportRow[] => {
+    const str = (v: string | undefined) => {
+      const s = (v ?? "").toString().trim();
+      return s.length ? s : null;
+    };
+    return json
+      .map((row) => ({
+        first_name: str(row["first_name"]),
+        last_name: str(row["last_name"]),
+        title: str(row["title"]),
+        email: (row["email"] ?? "").toString().trim().toLowerCase(),
+        phone: str(row["phone"]),
+        company_name: str(row["company_name"]),
+        address_line1: str(row["address_line1"]),
+        address_postal_code: str(row["address_postal_code"]),
+        address_city: str(row["address_city"]),
+        address_country: str(row["address_country"]),
+        efn: str(row["efn"]),
+        specialty: str(row["specialty"]),
+        created_at: str(row["created_at"]),
+      }))
+      .filter((r) => r.email.length > 0);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const isCsv =
+      file.name.toLowerCase().endsWith(".csv") ||
+      file.type === "text/csv" ||
+      file.type === "application/csv";
+
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      const data = new Uint8Array(ev.target?.result as ArrayBuffer);
-      const wb = read(data, { type: "array" });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const json: Record<string, string>[] = utils.sheet_to_json(ws, {
-        defval: "",
+
+    reader.onerror = () => {
+      setImportResult({
+        inserted: 0,
+        skipped: 0,
+        error: `Datei konnte nicht gelesen werden: ${reader.error?.message ?? "unbekannter Fehler"}`,
       });
-
-      const str = (v: string | undefined) => {
-        const s = (v ?? "").trim();
-        return s.length ? s : null;
-      };
-
-      const parsed: ImportRow[] = json
-        .map((row) => ({
-          first_name: str(row["first_name"]),
-          last_name: str(row["last_name"]),
-          title: str(row["title"]),
-          email: (row["email"] ?? "").trim().toLowerCase(),
-          phone: str(row["phone"]),
-          company_name: str(row["company_name"]),
-          address_line1: str(row["address_line1"]),
-          address_postal_code: str(row["address_postal_code"]),
-          address_city: str(row["address_city"]),
-          address_country: str(row["address_country"]),
-          efn: str(row["efn"]),
-          specialty: str(row["specialty"]),
-          created_at: str(row["created_at"]),
-        }))
-        .filter((r) => r.email.length > 0);
-
-      setImportRows(parsed);
-      setImportResult(null);
+      setImportRows([]);
     };
-    reader.readAsArrayBuffer(file);
-    // Reset so the same file can be selected again after the dialog closes.
+
+    reader.onload = (ev) => {
+      try {
+        let parsed: ImportRow[];
+        if (isCsv) {
+          const text = (ev.target?.result as string) ?? "";
+          parsed = parseCsvText(text);
+        } else {
+          const bytes = new Uint8Array(ev.target?.result as ArrayBuffer);
+          parsed = parseXlsxBytes(bytes);
+        }
+        if (parsed.length === 0) {
+          setImportResult({
+            inserted: 0,
+            skipped: 0,
+            error:
+              "Keine Zeilen mit E-Mail gefunden. Prüfe die Spaltennamen (erwartet: first_name, last_name, email, ...).",
+          });
+          setImportRows([]);
+          return;
+        }
+        setImportRows(parsed);
+        setImportResult(null);
+      } catch (err) {
+        setImportResult({
+          inserted: 0,
+          skipped: 0,
+          error: `Datei konnte nicht verarbeitet werden: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        });
+        setImportRows([]);
+      }
+    };
+
+    if (isCsv) {
+      reader.readAsText(file, "utf-8");
+    } else {
+      reader.readAsArrayBuffer(file);
+    }
+    // Reset so the same file can be picked again after closing the dialog.
     e.target.value = "";
   };
 
