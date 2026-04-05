@@ -2,14 +2,12 @@
 
 import { useState, useMemo } from "react";
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
-  TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, X } from "lucide-react";
 import type { CourseTemplate, CourseSession } from "@/lib/types";
 
 interface Props {
@@ -99,12 +97,32 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
     return `${d}.${m}.${y}`;
   };
 
+  // Visual hint when a filter is active. "live" is the default for filterStatus,
+  // so it only counts as active if the user explicitly changed it to something else.
+  const filterActiveClass = (isActive: boolean) =>
+    isActive
+      ? "ring-2 ring-primary bg-primary/10 text-primary font-medium"
+      : "bg-gray-100 text-foreground";
+  const activeFilterCount =
+    (filterInstructor ? 1 : 0) +
+    (filterTemplate ? 1 : 0) +
+    (filterStatus && filterStatus !== "live" ? 1 : 0) +
+    (filterDateFrom ? 1 : 0) +
+    (filterDateTo ? 1 : 0);
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Kurstermine</h1>
+      <h1 className="text-2xl font-bold flex items-center gap-3">
+        Kurstermine
+        {activeFilterCount > 0 && (
+          <span className="text-xs font-medium text-primary bg-primary/10 border border-primary/30 rounded-full px-2.5 py-1">
+            {activeFilterCount} {activeFilterCount === 1 ? "Filter aktiv" : "Filter aktiv"}
+          </span>
+        )}
+      </h1>
 
-      <Table>
-        <TableHeader>
+      <table className="w-full caption-bottom text-sm" data-slot="table">
+        <thead data-slot="table-header" className="sticky top-[60px] z-20 bg-[color:var(--dashboard-bg)] [&_tr]:border-b [&_th]:bg-[color:var(--dashboard-bg)]">
           <TableRow>
             <SortableHead label="Status" sortKeyName="status" className="w-[100px]" />
             <SortableHead label="Datum" sortKeyName="date" />
@@ -121,7 +139,7 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+                className={`w-full rounded px-1.5 py-1 text-xs border-0 cursor-pointer ${filterActiveClass(!!filterStatus && filterStatus !== "live")}`}
               >
                 <option value="">Alle</option>
                 <option value="live">Live</option>
@@ -133,7 +151,7 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
                 type="date"
                 value={filterDateFrom}
                 onChange={(e) => setFilterDateFrom(e.target.value)}
-                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 font-normal text-foreground"
+                className={`w-full rounded px-1.5 py-1 text-xs border-0 ${filterActiveClass(!!filterDateFrom)}`}
               />
             </TableHead>
             <TableHead className="py-1.5 w-[90px]">
@@ -141,7 +159,7 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
                 type="date"
                 value={filterDateTo}
                 onChange={(e) => setFilterDateTo(e.target.value)}
-                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 font-normal text-foreground"
+                className={`w-full rounded px-1.5 py-1 text-xs border-0 ${filterActiveClass(!!filterDateTo)}`}
               />
             </TableHead>
             <TableHead className="py-1.5" />
@@ -149,7 +167,7 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
               <select
                 value={filterTemplate}
                 onChange={(e) => setFilterTemplate(e.target.value)}
-                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+                className={`w-full rounded px-1.5 py-1 text-xs border-0 cursor-pointer ${filterActiveClass(!!filterTemplate)}`}
               >
                 <option value="">Alle</option>
                 {templates
@@ -163,7 +181,7 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
               <select
                 value={filterInstructor}
                 onChange={(e) => setFilterInstructor(e.target.value)}
-                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+                className={`w-full rounded px-1.5 py-1 text-xs border-0 cursor-pointer ${filterActiveClass(!!filterInstructor)}`}
               >
                 <option value="">Alle</option>
                 {Array.from(new Set(sessions.map((s) => s.instructor_name).filter(Boolean))).sort().map((name) => (
@@ -173,23 +191,24 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
             </TableHead>
             <TableHead className="py-1.5" />
             <TableHead className="py-1.5">
-              {(filterInstructor || filterTemplate || filterStatus || filterDateFrom || filterDateTo) && (
+              {activeFilterCount > 0 && (
                 <button
                   onClick={() => {
                     setFilterInstructor("");
                     setFilterTemplate("");
-                    setFilterStatus("");
+                    setFilterStatus("live");
                     setFilterDateFrom("");
                     setFilterDateTo("");
                   }}
-                  className="text-xs text-muted-foreground hover:text-foreground underline whitespace-nowrap"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline whitespace-nowrap font-medium"
                 >
+                  <X className="h-3 w-3" />
                   Reset
                 </button>
               )}
             </TableHead>
           </TableRow>
-        </TableHeader>
+        </thead>
         <TableBody>
           {sortedSessions.length === 0 ? (
             <TableRow>
@@ -238,7 +257,7 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
             ))
           )}
         </TableBody>
-      </Table>
+      </table>
     </div>
   );
 }
