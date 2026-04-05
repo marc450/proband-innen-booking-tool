@@ -210,7 +210,6 @@ export function PatientDetail({ patient, bookings }: Props) {
             <div className="text-xs text-muted-foreground pt-2">
               Erstellt am {format(new Date(patient.created_at), "dd.MM.yyyy HH:mm", { locale: de })}
             </div>
-            {patient.email && <EmailHistory email={patient.email} />}
           </CardContent>
         </Card>
 
@@ -235,6 +234,17 @@ export function PatientDetail({ patient, bookings }: Props) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Emails */}
+      {patient.email && (
+        <EmailHistory
+          email={patient.email}
+          displayName={
+            [patient.first_name, patient.last_name].filter(Boolean).join(" ") ||
+            undefined
+          }
+        />
+      )}
 
       {/* Notes */}
       <Card>

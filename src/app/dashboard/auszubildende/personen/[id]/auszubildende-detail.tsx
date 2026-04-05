@@ -336,7 +336,6 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings }: Props) {
             <div className="pt-2 text-xs text-muted-foreground">
               Erstellt am {formatDateTime(azubi.created_at)}
             </div>
-            <EmailHistory email={azubi.email} />
           </CardContent>
         </Card>
 
@@ -359,6 +358,9 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings }: Props) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Emails */}
+      <EmailHistory email={azubi.email} displayName={personName || undefined} />
 
       {/* Notes */}
       <Card>
