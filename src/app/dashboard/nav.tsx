@@ -96,7 +96,7 @@ const navGroups: NavGroup[] = [
       { href: "/dashboard/settings?tab=kurstermine", label: "Kurstermine" },
       { href: "/dashboard/settings?tab=kursangebot", label: "Kurse" },
       { href: "/dashboard/settings?tab=rabattcodes", label: "Rabattcodes" },
-      { href: "/dashboard/settings?tab=rechnungen", label: "Rechnungen" },
+      { href: "/dashboard/settings?tab=rechnungen", label: "Zahlungsverläufe" },
       { href: "/dashboard/settings?tab=benutzer", label: "Benutzer:innen" },
     ],
   },

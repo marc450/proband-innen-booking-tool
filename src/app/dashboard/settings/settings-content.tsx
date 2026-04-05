@@ -25,7 +25,7 @@ const TAB_TITLES: Record<string, string> = {
   kurstermine: "Kurstermine",
   kursangebot: "Kurse",
   rabattcodes: "Rabattcodes",
-  rechnungen: "Rechnungen",
+  rechnungen: "Zahlungsverläufe",
   benutzer: "Benutzer:innen",
 };
 
