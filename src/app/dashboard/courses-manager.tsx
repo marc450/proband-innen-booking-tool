@@ -337,7 +337,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
     <div className="space-y-4">
       {/* Edit course dialog */}
       <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) setEditingCourse(null); }}>
-        <DialogContent className="sm:max-w-[440px]">
+        <DialogContent size="wide">
           <DialogHeader>
             <DialogTitle>Kurs bearbeiten</DialogTitle>
           </DialogHeader>
@@ -413,7 +413,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
         setCourseDialogOpen(open);
         if (!open) resetCourseForm();
       }}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent size="wide">
           <DialogHeader>
             <DialogTitle>Neuen Kurs anlegen</DialogTitle>
           </DialogHeader>

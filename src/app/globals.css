@@ -277,5 +277,16 @@ body:has([data-dashboard-root]) [data-slot="input"] {
 body:has([data-dashboard-root]) [data-slot="input"]::file-selector-button {
   height: 2rem;
 }
+
+/* Admin Select triggers match the same h-11 / rounded-[10px] as inputs+buttons
+   so dropdowns align visually with the rest of the form controls. */
+[data-dashboard-root] [data-slot="select-trigger"][data-size="default"],
+body:has([data-dashboard-root]) [data-slot="select-trigger"][data-size="default"] {
+  height: 2.75rem;
+  border-radius: 10px;
+  padding-left: 1rem;
+  padding-right: 0.75rem;
+  font-size: 1rem;
+}
 }
 

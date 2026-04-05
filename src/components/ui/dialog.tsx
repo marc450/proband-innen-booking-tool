@@ -52,7 +52,7 @@ function DialogContent({
   // "wide" doubles the default modal width for content-heavy admin dialogs.
   const sizeClasses =
     size === "wide"
-      ? "sm:max-w-[min(calc(100%-2rem),64rem)]"
+      ? "sm:max-w-[min(calc(100%-2rem),60rem)]"
       : "sm:max-w-sm"
   return (
     <DialogPortal>
