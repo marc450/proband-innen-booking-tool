@@ -244,7 +244,7 @@ export function RechnungenManager({ initialAuszubildende }: Props) {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[560px] max-h-[85vh] overflow-y-auto">
+        <DialogContent size="wide" className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {createdInvoice ? "Rechnung erstellt" : "Neue Rechnung erstellen"}

@@ -466,7 +466,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
 
       {/* Create / Edit dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
+        <DialogContent size="wide" className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Kurs bearbeiten" : "Neuer Kurs"}</DialogTitle>
           </DialogHeader>

@@ -233,7 +233,7 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
       />
 
       <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-        <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
+        <DialogContent size="wide" className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Kursvorlage bearbeiten" : "Neue Kursvorlage"}</DialogTitle>
           </DialogHeader>

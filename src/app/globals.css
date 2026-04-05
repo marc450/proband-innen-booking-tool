@@ -247,5 +247,35 @@ main > div > h1.text-2xl.font-bold:first-child {
 .dark .text-blue-800 {
   color: #7fa8ff !important;
 }
+
+/* Admin dialogs: match page background, drop the footer panel so the modal
+   feels like a floating surface continuous with the canvas. */
+[data-dashboard-root] [data-slot="dialog-content"],
+body:has([data-dashboard-root]) [data-slot="dialog-content"] {
+  background-color: var(--dashboard-bg) !important;
+  border-radius: 14px;
+}
+[data-dashboard-root] [data-slot="dialog-footer"],
+body:has([data-dashboard-root]) [data-slot="dialog-footer"] {
+  background-color: transparent !important;
+  border-top: none !important;
+}
+
+/* Admin inputs: match the default Button — h-11, rounded-[10px], text-base,
+   matching padding. Scoped to shadcn Input via data-slot so public booking
+   forms stay untouched. Also targets native <select> inside admin forms
+   (but NOT inside table filter rows, which keep their compact size). */
+[data-dashboard-root] [data-slot="input"],
+body:has([data-dashboard-root]) [data-slot="input"] {
+  height: 2.75rem;
+  border-radius: 10px;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  font-size: 1rem;
+}
+[data-dashboard-root] [data-slot="input"]::file-selector-button,
+body:has([data-dashboard-root]) [data-slot="input"]::file-selector-button {
+  height: 2rem;
+}
 }
 
