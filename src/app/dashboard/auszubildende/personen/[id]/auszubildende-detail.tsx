@@ -161,6 +161,12 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings }: Props) {
                 <span className="text-xs text-muted-foreground">(Praxis/Firma)</span>
               </div>
             )}
+            {azubi.vat_id && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <span className="w-24 text-xs font-medium">USt.-IdNr.</span>
+                <span className="text-foreground font-mono">{azubi.vat_id}</span>
+              </div>
+            )}
             {isCompany && personName && (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <span className="w-24 text-xs font-medium">Ansprechperson</span>

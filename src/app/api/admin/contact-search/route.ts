@@ -29,6 +29,7 @@ export type ContactSearchResult = {
   email: string;
   phone: string | null;
   companyName: string | null;
+  vatId: string | null;
   title: string | null;
 };
 
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest) {
     const like = `%${q}%`;
     const { data: rows } = await admin
       .from("auszubildende")
-      .select("id, first_name, last_name, email, phone, title, contact_type, company_name")
+      .select("id, first_name, last_name, email, phone, title, contact_type, company_name, vat_id")
       .or(
         [
           `first_name.ilike.${like}`,
@@ -78,6 +79,7 @@ export async function GET(req: NextRequest) {
         email: r.email,
         phone: r.phone,
         companyName: r.company_name ?? null,
+        vatId: (r as { vat_id?: string | null }).vat_id ?? null,
         title: r.title,
       });
     }
@@ -117,6 +119,7 @@ export async function GET(req: NextRequest) {
         email: p.email,
         phone: p.phone,
         companyName: null,
+        vatId: null,
         title: null,
       });
       if (results.length >= limit * 2) break;

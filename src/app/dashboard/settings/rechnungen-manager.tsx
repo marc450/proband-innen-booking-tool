@@ -61,6 +61,7 @@ type ContactSearchResult = {
   email: string;
   phone: string | null;
   companyName: string | null;
+  vatId: string | null;
   title: string | null;
 };
 
@@ -145,6 +146,7 @@ export function RechnungenManager(_props: Props) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [vatId, setVatId] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [addressPostalCode, setAddressPostalCode] = useState("");
   const [addressCity, setAddressCity] = useState("");
@@ -181,6 +183,7 @@ export function RechnungenManager(_props: Props) {
     setEmail("");
     setPhone("");
     setCompanyName("");
+    setVatId("");
     setAddressLine1("");
     setAddressPostalCode("");
     setAddressCity("");
@@ -235,6 +238,7 @@ export function RechnungenManager(_props: Props) {
     setEmail(c.email || "");
     setPhone(c.phone || "");
     setCompanyName(c.companyName || "");
+    setVatId(c.vatId || "");
   };
 
   const clearSelectedContact = () => {
@@ -244,6 +248,7 @@ export function RechnungenManager(_props: Props) {
     setEmail("");
     setPhone("");
     setCompanyName("");
+    setVatId("");
   };
 
   const addLine = () => setLineItems((prev) => [...prev, emptyLine()]);
@@ -318,6 +323,7 @@ export function RechnungenManager(_props: Props) {
         email,
         phone: phone || undefined,
         companyName: companyName || undefined,
+        vatId: vatId || undefined,
         addressLine1: addressLine1 || undefined,
         addressPostalCode: addressPostalCode || undefined,
         addressCity: addressCity || undefined,
@@ -646,13 +652,24 @@ export function RechnungenManager(_props: Props) {
 
                 {/* Company name (company mode, or optional companyName for person) */}
                 {isCompany ? (
-                  <div className="space-y-1.5">
-                    <Label>Firmenname *</Label>
-                    <Input
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      disabled={mode === "existing" && !!selectedContact}
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Firmenname *</Label>
+                      <Input
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        disabled={mode === "existing" && !!selectedContact}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>USt.-IdNr. (optional)</Label>
+                      <Input
+                        value={vatId}
+                        onChange={(e) => setVatId(e.target.value)}
+                        placeholder="z.B. DE123456789"
+                        disabled={mode === "existing" && !!selectedContact}
+                      />
+                    </div>
                   </div>
                 ) : (
                   <>

@@ -104,6 +104,7 @@ export async function POST(req: NextRequest) {
     email,
     phone,
     companyName,
+    vatId,
     addressLine1,
     addressPostalCode,
     addressCity,
@@ -120,6 +121,9 @@ export async function POST(req: NextRequest) {
     email: string;
     phone?: string;
     companyName?: string;
+    // EU VAT / USt.-IdNr.; attached to the Stripe customer as a tax_id of
+    // type eu_vat and persisted on the auszubildende row for reuse.
+    vatId?: string;
     addressLine1?: string;
     addressPostalCode?: string;
     addressCity?: string;
@@ -214,6 +218,24 @@ export async function POST(req: NextRequest) {
       body: customerBody,
     });
 
+    // Attach VAT ID as a Stripe tax_id so it shows on the invoice header.
+    // eu_vat covers EU VAT numbers incl. the German USt.-IdNr. We tolerate
+    // failures here (Stripe rejects malformed VAT numbers) so an invalid
+    // VAT ID doesn't block the whole invoice.
+    if (isCompany && vatId?.trim()) {
+      try {
+        await stripeFetch(`/customers/${customer.id}/tax_ids`, {
+          method: "POST",
+          body: {
+            type: "eu_vat",
+            value: vatId.trim(),
+          },
+        });
+      } catch (taxErr) {
+        console.warn("Tax ID attach failed:", taxErr);
+      }
+    }
+
     // 1b. Optionally upsert a row into the auszubildende contact table so
     //     the contact becomes searchable later. This runs for the "Neue
     //     Person/Firma" mode only; when an existing contact was picked the
@@ -232,6 +254,7 @@ export async function POST(req: NextRequest) {
           email: emailKey,
           contact_type: persistedType,
           company_name: companyName?.trim() || null,
+          vat_id: vatId?.trim() || null,
           first_name: isCompany ? null : firstName?.trim() || null,
           last_name: isCompany ? null : lastName?.trim() || null,
           phone: phone?.trim() || null,

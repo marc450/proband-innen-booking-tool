@@ -186,6 +186,7 @@ export interface Auszubildende {
   profile_complete: boolean;
   contact_type: "auszubildende" | "proband" | "other" | "company" | null;
   company_name: string | null;
+  vat_id: string | null;
   created_at: string;
   updated_at: string;
 }
