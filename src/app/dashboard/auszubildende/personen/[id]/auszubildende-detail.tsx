@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Pencil, FileText, Mail, Phone, Building2 } from "lucide-react";
+import { ArrowLeft, Pencil, FileText, Mail, Phone, Building2, MapPin } from "lucide-react";
 import Link from "next/link";
 import type { Auszubildende, CourseBookingStatus } from "@/lib/types";
 
@@ -165,6 +165,26 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings }: Props) {
               <div className="flex items-center gap-2 text-muted-foreground">
                 <span className="w-24 text-xs font-medium">USt.-IdNr.</span>
                 <span className="text-foreground font-mono">{azubi.vat_id}</span>
+              </div>
+            )}
+            {(azubi.address_line1 ||
+              azubi.address_postal_code ||
+              azubi.address_city) && (
+              <div className="flex items-start gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <div className="text-foreground leading-snug">
+                  {azubi.address_line1 && <div>{azubi.address_line1}</div>}
+                  {(azubi.address_postal_code || azubi.address_city) && (
+                    <div>
+                      {[azubi.address_postal_code, azubi.address_city]
+                        .filter(Boolean)
+                        .join(" ")}
+                    </div>
+                  )}
+                  {azubi.address_country && azubi.address_country !== "DE" && (
+                    <div>{azubi.address_country}</div>
+                  )}
+                </div>
               </div>
             )}
             {isCompany && personName && (

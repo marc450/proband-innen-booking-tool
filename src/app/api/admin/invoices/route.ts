@@ -259,6 +259,14 @@ export async function POST(req: NextRequest) {
           last_name: isCompany ? null : lastName?.trim() || null,
           phone: phone?.trim() || null,
         };
+        // Only write address columns when the admin actually supplied them,
+        // so we don't blank out values that were captured from a previous
+        // checkout flow.
+        if (addressLine1?.trim()) row.address_line1 = addressLine1.trim();
+        if (addressPostalCode?.trim())
+          row.address_postal_code = addressPostalCode.trim();
+        if (addressCity?.trim()) row.address_city = addressCity.trim();
+        if (addressCountry?.trim()) row.address_country = addressCountry.trim();
         // Upsert on email so repeated sends don't create duplicates
         await admin.from("auszubildende").upsert(row, { onConflict: "email" });
       } catch (contactErr) {

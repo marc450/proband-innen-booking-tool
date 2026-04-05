@@ -125,14 +125,36 @@ async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
 
   if (existing && existing.length > 0) return;
 
-  // Extract customer details
-  const cd = session.customer_details as { email?: string; name?: string; phone?: string } | null;
+  // Extract customer details. Stripe checkout has billing_address_collection
+  // set to "required" and tax_id_collection enabled, so we also extract the
+  // address + (optional) EU VAT number here and persist them on the
+  // auszubildende row so they auto-fill future invoices.
+  const cd = session.customer_details as {
+    email?: string;
+    name?: string;
+    phone?: string;
+    address?: {
+      line1?: string | null;
+      line2?: string | null;
+      postal_code?: string | null;
+      city?: string | null;
+      state?: string | null;
+      country?: string | null;
+    } | null;
+    tax_ids?: Array<{ type?: string | null; value?: string | null }> | null;
+  } | null;
   const email = cd?.email || "";
   const fullName = cd?.name || "";
   const phone = cd?.phone || "";
   const nameParts = fullName.split(" ");
   const firstName = nameParts[0] || "";
   const lastName = nameParts.slice(1).join(" ") || "";
+  const addressLine1 = cd?.address?.line1 || null;
+  const addressPostalCode = cd?.address?.postal_code || null;
+  const addressCity = cd?.address?.city || null;
+  const addressCountry = cd?.address?.country || null;
+  const euVatId =
+    cd?.tax_ids?.find((t) => t?.type === "eu_vat")?.value?.trim() || null;
   const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id || null;
   const amountTotal = session.amount_total || 0;
 
@@ -190,12 +212,24 @@ async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
   // Upsert auszubildende profile
   if (email) {
     try {
+      // Only overwrite address/vat_id columns if Stripe actually returned
+      // them, so a second checkout without an address doesn't blank out a
+      // previously stored one.
+      const azubiRow: Record<string, unknown> = {
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone || null,
+      };
+      if (addressLine1) azubiRow.address_line1 = addressLine1;
+      if (addressPostalCode) azubiRow.address_postal_code = addressPostalCode;
+      if (addressCity) azubiRow.address_city = addressCity;
+      if (addressCountry) azubiRow.address_country = addressCountry;
+      if (euVatId) azubiRow.vat_id = euVatId;
+
       const { data: azubi } = await supabase
         .from("auszubildende")
-        .upsert(
-          { email, first_name: firstName, last_name: lastName, phone: phone || null },
-          { onConflict: "email" }
-        )
+        .upsert(azubiRow, { onConflict: "email" })
         .select("id, profile_complete")
         .single();
 
@@ -279,14 +313,34 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   if (existing) return;
 
-  // Extract customer details
-  const cd = session.customer_details as { email?: string; name?: string; phone?: string } | null;
+  // Extract customer details (incl. billing address + optional EU VAT).
+  // Same shape as the curriculum branch above.
+  const cd = session.customer_details as {
+    email?: string;
+    name?: string;
+    phone?: string;
+    address?: {
+      line1?: string | null;
+      line2?: string | null;
+      postal_code?: string | null;
+      city?: string | null;
+      state?: string | null;
+      country?: string | null;
+    } | null;
+    tax_ids?: Array<{ type?: string | null; value?: string | null }> | null;
+  } | null;
   const email = cd?.email || "";
   const fullName = cd?.name || "";
   const phone = cd?.phone || "";
   const nameParts = fullName.split(" ");
   const firstName = nameParts[0] || "";
   const lastName = nameParts.slice(1).join(" ") || "";
+  const addressLine1 = cd?.address?.line1 || null;
+  const addressPostalCode = cd?.address?.postal_code || null;
+  const addressCity = cd?.address?.city || null;
+  const addressCountry = cd?.address?.country || null;
+  const euVatId =
+    cd?.tax_ids?.find((t) => t?.type === "eu_vat")?.value?.trim() || null;
   const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id || null;
 
   // Get amount paid
@@ -322,12 +376,21 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Upsert auszubildende profile and link to booking
   if (email) {
     try {
+      const azubiRow: Record<string, unknown> = {
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone || null,
+      };
+      if (addressLine1) azubiRow.address_line1 = addressLine1;
+      if (addressPostalCode) azubiRow.address_postal_code = addressPostalCode;
+      if (addressCity) azubiRow.address_city = addressCity;
+      if (addressCountry) azubiRow.address_country = addressCountry;
+      if (euVatId) azubiRow.vat_id = euVatId;
+
       const { data: azubi } = await supabase
         .from("auszubildende")
-        .upsert(
-          { email, first_name: firstName, last_name: lastName, phone: phone || null },
-          { onConflict: "email" }
-        )
+        .upsert(azubiRow, { onConflict: "email" })
         .select("id")
         .single();
 

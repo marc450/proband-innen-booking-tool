@@ -30,6 +30,10 @@ export type ContactSearchResult = {
   phone: string | null;
   companyName: string | null;
   vatId: string | null;
+  addressLine1: string | null;
+  addressPostalCode: string | null;
+  addressCity: string | null;
+  addressCountry: string | null;
   title: string | null;
 };
 
@@ -58,7 +62,9 @@ export async function GET(req: NextRequest) {
     const like = `%${q}%`;
     const { data: rows } = await admin
       .from("auszubildende")
-      .select("id, first_name, last_name, email, phone, title, contact_type, company_name, vat_id")
+      .select(
+        "id, first_name, last_name, email, phone, title, contact_type, company_name, vat_id, address_line1, address_postal_code, address_city, address_country"
+      )
       .or(
         [
           `first_name.ilike.${like}`,
@@ -80,6 +86,14 @@ export async function GET(req: NextRequest) {
         phone: r.phone,
         companyName: r.company_name ?? null,
         vatId: (r as { vat_id?: string | null }).vat_id ?? null,
+        addressLine1:
+          (r as { address_line1?: string | null }).address_line1 ?? null,
+        addressPostalCode:
+          (r as { address_postal_code?: string | null }).address_postal_code ??
+          null,
+        addressCity: (r as { address_city?: string | null }).address_city ?? null,
+        addressCountry:
+          (r as { address_country?: string | null }).address_country ?? null,
         title: r.title,
       });
     }
@@ -120,6 +134,10 @@ export async function GET(req: NextRequest) {
         phone: p.phone,
         companyName: null,
         vatId: null,
+        addressLine1: null,
+        addressPostalCode: null,
+        addressCity: null,
+        addressCountry: null,
         title: null,
       });
       if (results.length >= limit * 2) break;

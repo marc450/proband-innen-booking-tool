@@ -187,6 +187,10 @@ export interface Auszubildende {
   contact_type: "auszubildende" | "proband" | "other" | "company" | null;
   company_name: string | null;
   vat_id: string | null;
+  address_line1: string | null;
+  address_postal_code: string | null;
+  address_city: string | null;
+  address_country: string | null;
   created_at: string;
   updated_at: string;
 }

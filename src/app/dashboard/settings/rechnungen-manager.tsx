@@ -62,6 +62,10 @@ type ContactSearchResult = {
   phone: string | null;
   companyName: string | null;
   vatId: string | null;
+  addressLine1: string | null;
+  addressPostalCode: string | null;
+  addressCity: string | null;
+  addressCountry: string | null;
   title: string | null;
 };
 
@@ -239,6 +243,10 @@ export function RechnungenManager(_props: Props) {
     setPhone(c.phone || "");
     setCompanyName(c.companyName || "");
     setVatId(c.vatId || "");
+    setAddressLine1(c.addressLine1 || "");
+    setAddressPostalCode(c.addressPostalCode || "");
+    setAddressCity(c.addressCity || "");
+    setAddressCountry(c.addressCountry || "DE");
   };
 
   const clearSelectedContact = () => {
@@ -249,6 +257,10 @@ export function RechnungenManager(_props: Props) {
     setPhone("");
     setCompanyName("");
     setVatId("");
+    setAddressLine1("");
+    setAddressPostalCode("");
+    setAddressCity("");
+    setAddressCountry("DE");
   };
 
   const addLine = () => setLineItems((prev) => [...prev, emptyLine()]);
