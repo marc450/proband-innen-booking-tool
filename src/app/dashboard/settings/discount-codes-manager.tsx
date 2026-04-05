@@ -22,7 +22,27 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
-import { Plus, Power, PowerOff, Trash2 } from "lucide-react";
+import { Plus, Power, PowerOff, Trash2, Shuffle } from "lucide-react";
+
+// Random coupon code generator — avoids ambiguous characters (0/O, 1/I/L)
+// so codes stay readable when shared verbally or over chat.
+function generateRandomCode(length = 10): string {
+  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  let result = "";
+  const crypto = typeof window !== "undefined" ? window.crypto : undefined;
+  if (crypto?.getRandomValues) {
+    const buf = new Uint32Array(length);
+    crypto.getRandomValues(buf);
+    for (let i = 0; i < length; i++) {
+      result += alphabet[buf[i] % alphabet.length];
+    }
+  } else {
+    for (let i = 0; i < length; i++) {
+      result += alphabet[Math.floor(Math.random() * alphabet.length)];
+    }
+  }
+  return result;
+}
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
@@ -170,12 +190,24 @@ export function DiscountCodesManager() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label>Code *</Label>
-              <Input
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="z.B. WELCOME10"
-                className="font-mono"
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  placeholder="z.B. WELCOME10"
+                  className="font-mono flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCode(generateRandomCode())}
+                  title="Zufälligen Code generieren"
+                  className="shrink-0"
+                >
+                  <Shuffle className="h-4 w-4" />
+                  Zufall
+                </Button>
+              </div>
               <p className="text-xs text-muted-foreground">
                 Nur Buchstaben, Zahlen, Bindestriche und Unterstriche.
               </p>
