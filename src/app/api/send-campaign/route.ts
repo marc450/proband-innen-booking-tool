@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildEmailHtml, type EmailButton } from "@/lib/email-template";
+import { buildEmailHtml, type ContentBlock } from "@/lib/email-template";
 import { decryptPatient } from "@/lib/encryption";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
@@ -17,24 +17,22 @@ export async function POST(req: NextRequest) {
   const {
     name,
     subject,
-    bodyText,
+    contentBlocks,
     audienceType,
-    buttons,
     excludedIds,
     excludeBlacklisted,
     scheduledAt,
   } = await req.json() as {
     name: string;
     subject: string;
-    bodyText: string;
+    contentBlocks: ContentBlock[];
     audienceType: AudienceType;
-    buttons: EmailButton[];
     excludedIds: string[];
     excludeBlacklisted: boolean;
     scheduledAt: string | null;
   };
 
-  if (!subject || !bodyText) {
+  if (!subject || !contentBlocks?.length) {
     return NextResponse.json({ error: "Pflichtfelder fehlen." }, { status: 400 });
   }
 
@@ -86,13 +84,19 @@ export async function POST(req: NextRequest) {
   const status = scheduledAt ? "scheduled" : "sending";
   const sendAtParam = scheduledAt ? new Date(scheduledAt).toISOString() : undefined;
 
+  // Store text summary for DB record
+  const bodyTextSummary = contentBlocks
+    .filter((b): b is ContentBlock & { type: "text" } => b.type === "text")
+    .map((b) => b.text)
+    .join("\n\n");
+
   // Save campaign to DB
   const { data: campaign, error: insertErr } = await supabase
     .from("email_campaigns")
     .insert({
       name: name || null,
       subject,
-      body_text: bodyText,
+      body_text: bodyTextSummary,
       recipient_count: recipients.length,
       excluded_patient_ids: Array.from(excludedSet),
       status,
@@ -105,9 +109,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: insertErr?.message || "Kampagne konnte nicht gespeichert werden." }, { status: 500 });
   }
 
-  // Build and send emails in batches
-  const validButtons = (buttons || []).filter((b: EmailButton) => b.label && b.url);
-
   try {
     for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
       const batch = recipients.slice(i, i + BATCH_SIZE);
@@ -118,8 +119,7 @@ export async function POST(req: NextRequest) {
         subject,
         html: buildEmailHtml({
           firstName: r.first_name || "Kolleg:in",
-          intro: bodyText,
-          buttons: validButtons,
+          contentBlocks,
         }),
         ...(sendAtParam ? { send_at: sendAtParam } : {}),
       }));

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { buildEmailHtml } from "@/lib/email-template";
+import { buildEmailHtml, type ContentBlock } from "@/lib/email-template";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { ArrowLeft, Send, Clock, ChevronDown, ChevronRight, Search, Plus, X, Link as LinkIcon } from "lucide-react";
+import { ArrowLeft, Send, Clock, ChevronDown, ChevronRight, Search, Plus, X, Link as LinkIcon, Type, GripVertical } from "lucide-react";
 import Link from "next/link";
 
 interface PatientOption {
@@ -46,22 +46,18 @@ interface Props {
 
 type AudienceType = "probandinnen" | "aerztinnen" | "alle";
 
-interface EmailButton {
-  label: string;
-  url: string;
-}
-
 export function CampaignComposer({ patients, auszubildende }: Props) {
   const router = useRouter();
 
   // Form state
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
-  const [bodyText, setBodyText] = useState("");
+  const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([
+    { type: "text", text: "" },
+  ]);
   const [audienceType, setAudienceType] = useState<AudienceType>("probandinnen");
   const [excludeBlacklisted, setExcludeBlacklisted] = useState(true);
   const [manuallyExcluded, setManuallyExcluded] = useState<Set<string>>(new Set());
-  const [buttons, setButtons] = useState<EmailButton[]>([]);
   const [scheduleMode, setScheduleMode] = useState<"now" | "later">("now");
   const [scheduledAt, setScheduledAt] = useState("");
   const [recipientSearch, setRecipientSearch] = useState("");
@@ -137,28 +133,38 @@ export function CampaignComposer({ patients, auszubildende }: Props) {
     });
   };
 
-  // Button management
-  const addButton = () => {
-    if (buttons.length < 3) {
-      setButtons([...buttons, { label: "", url: "" }]);
-    }
+  // Content block management
+  const updateBlock = (index: number, updates: Record<string, string>) => {
+    setContentBlocks((prev) =>
+      prev.map((b, i) => (i === index ? { ...b, ...updates } as ContentBlock : b))
+    );
   };
-  const updateButton = (index: number, field: "label" | "url", value: string) => {
-    setButtons((prev) => prev.map((b, i) => (i === index ? { ...b, [field]: value } : b)));
+  const removeBlock = (index: number) => {
+    setContentBlocks((prev) => prev.filter((_, i) => i !== index));
   };
-  const removeButton = (index: number) => {
-    setButtons((prev) => prev.filter((_, i) => i !== index));
+  const insertBlock = (afterIndex: number, block: ContentBlock) => {
+    setContentBlocks((prev) => [
+      ...prev.slice(0, afterIndex + 1),
+      block,
+      ...prev.slice(afterIndex + 1),
+    ]);
   };
+
+  const hasContent = contentBlocks.some(
+    (b) => (b.type === "text" && b.text.trim()) || (b.type === "button" && b.label && b.url)
+  );
 
   // Live preview HTML
   const previewHtml = useMemo(() => {
-    const validButtons = buttons.filter((b) => b.label && b.url);
+    const previewBlocks = contentBlocks.map((b) => {
+      if (b.type === "text") return { ...b, text: b.text || "Dein Text erscheint hier..." };
+      return b;
+    });
     return buildEmailHtml({
       firstName: "Max",
-      intro: bodyText || "Dein E-Mail-Text erscheint hier...",
-      buttons: validButtons,
+      contentBlocks: previewBlocks,
     });
-  }, [bodyText, buttons]);
+  }, [contentBlocks]);
 
   // Schedule validation
   const scheduleError = useMemo(() => {
@@ -174,7 +180,7 @@ export function CampaignComposer({ patients, auszubildende }: Props) {
   const canSend =
     name.trim() &&
     subject.trim() &&
-    bodyText.trim() &&
+    hasContent &&
     eligibleContacts.length > 0 &&
     (scheduleMode === "now" || (scheduledAt && !scheduleError));
 
@@ -184,16 +190,14 @@ export function CampaignComposer({ patients, auszubildende }: Props) {
     setError(null);
 
     try {
-      const validButtons = buttons.filter((b) => b.label && b.url);
       const res = await fetch("/api/send-campaign", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
           subject,
-          bodyText,
+          contentBlocks,
           audienceType,
-          buttons: validButtons,
           excludedIds: Array.from(manuallyExcluded),
           excludeBlacklisted,
           scheduledAt: scheduleMode === "later" ? new Date(scheduledAt).toISOString() : null,
@@ -263,52 +267,72 @@ export function CampaignComposer({ patients, auszubildende }: Props) {
                   placeholder="Betreff der E-Mail..."
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Text</Label>
-                <Textarea
-                  value={bodyText}
-                  onChange={(e) => setBodyText(e.target.value)}
-                  placeholder="Der Haupttext Deiner E-Mail."
-                  className="min-h-[180px] resize-y"
-                />
-              </div>
 
-              {/* Buttons */}
-              <div className="space-y-2">
-                <Label>Buttons</Label>
-                {buttons.map((btn, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <Input
-                      value={btn.label}
-                      onChange={(e) => updateButton(i, "label", e.target.value)}
-                      placeholder="Button-Text"
-                      className="flex-1"
-                    />
-                    <div className="relative flex-1">
-                      <LinkIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <Input
-                        value={btn.url}
-                        onChange={(e) => updateButton(i, "url", e.target.value)}
-                        placeholder="https://..."
-                        className="pl-7"
-                      />
+              {/* Content blocks */}
+              <div className="space-y-3">
+                <Label>Inhalt</Label>
+                {contentBlocks.map((block, i) => (
+                  <div key={i} className="space-y-1">
+                    {block.type === "text" ? (
+                      <div className="relative">
+                        <Textarea
+                          value={block.text}
+                          onChange={(e) => updateBlock(i, { text: e.target.value })}
+                          placeholder="Text eingeben..."
+                          className="min-h-[100px] resize-y pr-8"
+                        />
+                        {contentBlocks.length > 1 && (
+                          <button
+                            onClick={() => removeBlock(i)}
+                            className="absolute top-2 right-2 text-gray-300 hover:text-gray-500"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 bg-blue-50 rounded-lg p-2">
+                        <LinkIcon className="h-4 w-4 text-[#0066FF] flex-shrink-0" />
+                        <Input
+                          value={block.label}
+                          onChange={(e) => updateBlock(i, { label: e.target.value })}
+                          placeholder="Button-Text"
+                          className="flex-1 h-8 text-sm"
+                        />
+                        <Input
+                          value={block.url}
+                          onChange={(e) => updateBlock(i, { url: e.target.value })}
+                          placeholder="https://..."
+                          className="flex-1 h-8 text-sm"
+                        />
+                        <button
+                          onClick={() => removeBlock(i)}
+                          className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Insert controls between blocks */}
+                    <div className="flex items-center justify-center gap-2 py-1">
+                      <button
+                        onClick={() => insertBlock(i, { type: "text", text: "" })}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted transition-colors"
+                      >
+                        <Type className="h-3 w-3" />
+                        Text
+                      </button>
+                      <button
+                        onClick={() => insertBlock(i, { type: "button", label: "", url: "" })}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted transition-colors"
+                      >
+                        <Plus className="h-3 w-3" />
+                        Button
+                      </button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeButton(i)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
                   </div>
                 ))}
-                {buttons.length < 3 && (
-                  <Button variant="outline" size="sm" onClick={addButton}>
-                    <Plus className="h-3.5 w-3.5 mr-1" />
-                    Button hinzufügen
-                  </Button>
-                )}
               </div>
             </CardContent>
           </Card>
