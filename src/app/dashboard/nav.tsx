@@ -146,6 +146,25 @@ export function DashboardNav({
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
+  // Unread email indicator
+  const [hasUnread, setHasUnread] = useState(false);
+  useEffect(() => {
+    if (role !== "admin") return;
+    const checkUnread = async () => {
+      try {
+        const res = await fetch("/api/gmail/threads?maxResults=1&q=is:unread");
+        if (!res.ok) return;
+        const data = await res.json();
+        setHasUnread((data.threads?.length || 0) > 0);
+      } catch {
+        // silently ignore
+      }
+    };
+    checkUnread();
+    const interval = setInterval(checkUnread, 60_000);
+    return () => clearInterval(interval);
+  }, [role]);
+
   const visibleGroups = navGroups.filter((g) => !g.adminOnly || role === "admin");
 
   const isItemActive = (item: NavItem) => {
@@ -332,7 +351,7 @@ export function DashboardNav({
                   <Link
                     href={firstHref}
                     className={cn(
-                      "flex items-center justify-center h-10 w-10 rounded-lg transition-colors",
+                      "relative flex items-center justify-center h-10 w-10 rounded-lg transition-colors",
                       active
                         ? "bg-black/10 text-foreground"
                         : "text-muted-foreground hover:bg-black/5 hover:text-foreground"
@@ -340,12 +359,15 @@ export function DashboardNav({
                     title={group.label}
                   >
                     <Icon className="h-5 w-5" />
+                    {group.key === "emails" && hasUnread && (
+                      <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-[#0066FF] rounded-full border-2 border-[var(--sidebar)]" />
+                    )}
                   </Link>
                 ) : (
                   <button
                     type="button"
                     className={cn(
-                      "flex items-center justify-center h-10 w-10 rounded-lg transition-colors",
+                      "relative flex items-center justify-center h-10 w-10 rounded-lg transition-colors",
                       active
                         ? "bg-black/10 text-foreground"
                         : "text-muted-foreground hover:bg-black/5 hover:text-foreground"
@@ -353,6 +375,9 @@ export function DashboardNav({
                     title={group.label}
                   >
                     <Icon className="h-5 w-5" />
+                    {group.key === "emails" && hasUnread && (
+                      <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-[#0066FF] rounded-full border-2 border-[var(--sidebar)]" />
+                    )}
                   </button>
                 )}
 
