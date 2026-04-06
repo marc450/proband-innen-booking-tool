@@ -13,12 +13,14 @@ import type { CourseTemplate, CourseSession } from "@/lib/types";
 interface Props {
   initialTemplates: CourseTemplate[];
   initialSessions: CourseSession[];
+  dentistSessionIds?: string[];
 }
 
 type SortKey = "status" | "date" | "time" | "course" | "instructor" | "seats" | "duration";
 type SortDir = "asc" | "desc";
 
-export function CourseSessionsOverview({ initialTemplates, initialSessions }: Props) {
+export function CourseSessionsOverview({ initialTemplates, initialSessions, dentistSessionIds = [] }: Props) {
+  const dentistSet = useMemo(() => new Set(dentistSessionIds), [dentistSessionIds]);
   const sessions = initialSessions;
   const templates = initialTemplates;
   const [sortKey, setSortKey] = useState<SortKey>("date");
@@ -133,6 +135,7 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
             <SortableHead label="Kursbetreuung" sortKeyName="instructor" />
             <SortableHead label="Plätze" sortKeyName="seats" className="w-[80px]" />
             <TableHead>CME Beantragung</TableHead>
+            <TableHead>Zahnmedizin</TableHead>
           </TableRow>
           {/* Filter row */}
           <TableRow className="hover:bg-transparent">
@@ -209,12 +212,13 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
               )}
             </TableHead>
             <TableHead className="py-1.5" />
+            <TableHead className="py-1.5" />
           </TableRow>
         </thead>
         <TableBody>
           {sortedSessions.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                 Keine Kurstermine gefunden.
               </TableCell>
             </TableRow>
@@ -257,6 +261,13 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
                 </TableCell>
                 <TableCell className="text-sm">
                   {session.cme_status || "Nicht beantragt"}
+                </TableCell>
+                <TableCell>
+                  {dentistSet.has(session.id) && (
+                    <span className="text-xs font-medium bg-amber-100 text-amber-700 rounded-full px-2.5 py-1">
+                      Zahnmedizin
+                    </span>
+                  )}
                 </TableCell>
               </TableRow>
             ))

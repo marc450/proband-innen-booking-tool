@@ -29,6 +29,7 @@ interface Props {
   initialSessions: CourseSession[];
   dozentUsers: DozentUser[];
   betreuerUsers?: DozentUser[];
+  dentistSessionIds?: string[];
 }
 
 type SortKey = "status" | "date" | "time" | "course" | "instructor" | "betreuer" | "seats" | "duration";
@@ -48,9 +49,10 @@ function dozentDisplayName(d: DozentUser): string {
   return [d.title, d.first_name, d.last_name].filter(Boolean).join(" ");
 }
 
-export function CourseSessionsManager({ initialTemplates, initialSessions, dozentUsers, betreuerUsers = [] }: Props) {
+export function CourseSessionsManager({ initialTemplates, initialSessions, dozentUsers, betreuerUsers = [], dentistSessionIds = [] }: Props) {
   const supabase = createClient();
   const [sessions, setSessions] = useState(initialSessions);
+  const dentistSet = new Set(dentistSessionIds);
   const [templates] = useState(initialTemplates);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -241,6 +243,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
             <SortableHead label="Kursbetreuung" sortKeyName="betreuer" />
             <SortableHead label="Plätze" sortKeyName="seats" className="w-[80px]" />
             <TableHead>CME Beantragung</TableHead>
+            <TableHead>Zahnmedizin</TableHead>
             <TableHead className="w-[80px]">Aktionen</TableHead>
           </TableRow>
           {/* Filter row */}
@@ -311,6 +314,8 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
             <TableHead className="py-1.5" />
             {/* CME — empty */}
             <TableHead className="py-1.5" />
+            {/* Zahnmedizin — empty */}
+            <TableHead className="py-1.5" />
             {/* Reset button */}
             <TableHead className="py-1.5">
               {(filterInstructor || filterTemplate || filterStatus || filterDateFrom || filterDateTo) && (
@@ -333,7 +338,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
         <TableBody>
           {sortedSessions.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                 Noch keine Kurstermine erstellt.
               </TableCell>
             </TableRow>
@@ -483,6 +488,15 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                     <option value="LÄK Brandenburg">LÄK Brandenburg</option>
                     <option value="Buchung auf anderen Kurs">Buchung auf anderen Kurs</option>
                   </select>
+                </TableCell>
+
+                {/* Zahnmedizin */}
+                <TableCell>
+                  {dentistSet.has(session.id) && (
+                    <span className="text-xs font-medium bg-amber-100 text-amber-700 rounded-full px-2.5 py-1">
+                      Zahnmedizin
+                    </span>
+                  )}
                 </TableCell>
 
                 {/* Actions */}

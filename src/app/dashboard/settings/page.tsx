@@ -62,10 +62,17 @@ export default async function SettingsPage() {
     .select("*")
     .order("title", { ascending: true });
 
-  const { data: courseSessionsData } = await supabase
-    .from("course_sessions")
-    .select("*")
-    .order("date_iso", { ascending: true });
+  const [{ data: courseSessionsData }, { data: dentistBookingsData }] = await Promise.all([
+    supabase
+      .from("course_sessions")
+      .select("*")
+      .order("date_iso", { ascending: true }),
+    supabase
+      .from("course_bookings")
+      .select("session_id")
+      .eq("audience_tag", "Zahnmediziner:in")
+      .not("session_id", "is", null),
+  ]);
 
   const { data: auszubildendeData } = await adminClient
     .from("auszubildende")
@@ -94,6 +101,7 @@ export default async function SettingsPage() {
       dozentUsers={dozentUsersData ?? []}
       betreuerUsers={betreuerUsersData ?? []}
       initialAuszubildende={(auszubildendeData ?? []) as Pick<Auszubildende, "id" | "first_name" | "last_name" | "email" | "phone" | "title">[]}
+      dentistSessionIds={Array.from(new Set((dentistBookingsData ?? []).map((b) => b.session_id).filter(Boolean)))}
     />
   );
 }
