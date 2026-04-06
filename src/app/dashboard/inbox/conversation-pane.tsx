@@ -140,7 +140,7 @@ export function ConversationPane({
 
   if (!threadId) {
     return (
-      <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm bg-gray-50/30">
+      <div className="h-full flex items-center justify-center text-muted-foreground text-sm bg-gray-50/30">
         Wähle eine Konversation aus der Liste.
       </div>
     );

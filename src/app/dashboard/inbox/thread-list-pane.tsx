@@ -181,17 +181,24 @@ export function ThreadListPane({
                     className={`w-full text-left px-4 py-3 border-b border-gray-50 transition-colors ${
                       selected
                         ? "bg-[#0066FF]/5 border-l-2 border-l-[#0066FF]"
-                        : "hover:bg-gray-50 border-l-2 border-l-transparent"
+                        : t.isUnread
+                          ? "bg-blue-50/50 hover:bg-blue-50 border-l-2 border-l-transparent"
+                          : "hover:bg-gray-50 border-l-2 border-l-transparent"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2 mb-0.5">
-                      <span
-                        className={`text-sm truncate ${
-                          t.isUnread ? "font-bold text-gray-900" : "font-medium text-gray-800"
-                        }`}
-                      >
-                        {t.contactName || t.contactEmail || "Unbekannt"}
-                      </span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        {t.isUnread && (
+                          <span className="w-2 h-2 rounded-full bg-[#0066FF] flex-shrink-0" />
+                        )}
+                        <span
+                          className={`text-sm truncate ${
+                            t.isUnread ? "font-bold text-gray-900" : "font-medium text-gray-800"
+                          }`}
+                        >
+                          {t.contactName || t.contactEmail || "Unbekannt"}
+                        </span>
+                      </div>
                       <span className="text-[11px] text-muted-foreground flex-shrink-0">
                         {formatDate(t.lastDate)}
                       </span>
@@ -199,7 +206,7 @@ export function ThreadListPane({
                     <p
                       className={`text-xs truncate ${
                         t.isUnread ? "font-semibold text-gray-900" : "text-gray-700"
-                      }`}
+                      } ${t.isUnread ? "ml-4" : ""}`}
                     >
                       {t.subject || "(kein Betreff)"}
                       {t.messageCount > 1 && (
@@ -208,7 +215,7 @@ export function ThreadListPane({
                         </span>
                       )}
                     </p>
-                    <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                    <p className={`text-[11px] text-muted-foreground truncate mt-0.5 ${t.isUnread ? "ml-4" : ""}`}>
                       {t.snippet}
                     </p>
                   </button>
