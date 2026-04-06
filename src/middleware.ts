@@ -18,7 +18,11 @@ export async function middleware(request: NextRequest) {
   // and block booking-only paths.
   if (hostname === ADMIN_DOMAIN) {
     if (pathname === "/") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      // Detect mobile devices via User-Agent and redirect accordingly
+      const ua = request.headers.get("user-agent") ?? "";
+      const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+      const target = isMobile ? "/m" : "/dashboard";
+      return NextResponse.redirect(new URL(target, request.url));
     }
     const isBookingPath = BOOKING_ONLY_PATHS.some((p) => pathname.startsWith(p));
     if (isBookingPath) {
