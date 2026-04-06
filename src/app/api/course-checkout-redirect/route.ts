@@ -42,7 +42,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Kurs nicht gefunden" }, { status: 404 });
     }
 
-    const productName = template.name_online || template.title;
+    const isDentist = courseKey === "grundkurs_botulinum_zahnmedizin";
+    const productName = isDentist
+      ? `${template.name_online || template.title} (Zahnmedizin)`
+      : template.name_online || template.title;
     const description = template.description_online || "";
     const grossPrice = template.price_gross_online || 0;
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen-booking-tool-production-1269.up.railway.app";

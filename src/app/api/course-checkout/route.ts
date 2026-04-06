@@ -84,12 +84,18 @@ export async function POST(req: NextRequest) {
     const successUrl = `${baseUrl}/courses/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = "https://www.ephia.de";
 
+    const isDentist = courseKey === "grundkurs_botulinum_zahnmedizin";
+
     if (isOnline) {
-      productName = template.name_online || template.title;
+      productName = isDentist
+        ? `${template.name_online || template.title} (Zahnmedizin)`
+        : template.name_online || template.title;
       description = template.description_online || "";
       grossPrice = template.price_gross_online || 0;
     } else if (isPraxis) {
-      productName = `${template.name_praxis || template.title} – ${sessionLabel}`;
+      productName = isDentist
+        ? `${template.name_praxis || template.title} (Zahnmedizin) – ${sessionLabel}`
+        : `${template.name_praxis || template.title} – ${sessionLabel}`;
       description = template.description_praxis || "";
       grossPrice = template.price_gross_praxis || 0;
     } else if (isPremium) {
@@ -99,7 +105,9 @@ export async function POST(req: NextRequest) {
       grossPrice = 2220;
     } else {
       // Kombikurs
-      productName = `${template.name_kombi || template.title} – ${sessionLabel}`;
+      productName = isDentist
+        ? `${template.name_kombi || template.title} (Zahnmedizin) – ${sessionLabel}`
+        : `${template.name_kombi || template.title} – ${sessionLabel}`;
       description = template.description_kombi || "";
       grossPrice = template.price_gross_kombi || 0;
     }
