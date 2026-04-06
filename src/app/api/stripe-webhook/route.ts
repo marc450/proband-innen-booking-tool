@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   buildInvoiceEmail,
 } from "@/lib/course-email-templates";
+import { buildEmailHtml } from "@/lib/email-template";
 import {
   sendEmailViaResend,
   enrollInLearnWorlds,
@@ -272,6 +273,48 @@ async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
           }
         } else {
           console.log(`New curriculum customer ${email} — awaiting profile completion`);
+
+          // Immediate Slack notification for curriculum bundle
+          const SLACK_WEBHOOK_URL_COURSES = process.env.SLACK_WEBHOOK_URL_COURSES;
+          if (SLACK_WEBHOOK_URL_COURSES) {
+            try {
+              const betrag = amountTotal ? `€${(amountTotal / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })}` : null;
+              await fetch(SLACK_WEBHOOK_URL_COURSES, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  text: [
+                    `*Name:* ${fullName}`,
+                    `*Typ:* Komplettpaket (Curriculum)`,
+                    `*Kurse:* ${courseKeys.join(", ")}`,
+                    betrag ? `*Betrag:* ${betrag}` : null,
+                    `⚠️ *Profil noch nicht vollständig*`,
+                  ].filter(Boolean).join("\n"),
+                }),
+              });
+            } catch (slackErr) {
+              console.error("Failed to send Slack notification for new curriculum customer:", slackErr);
+            }
+          }
+
+          // Immediate basic confirmation email for curriculum
+          if (email) {
+            try {
+              const betragStr = amountTotal ? `€${(amountTotal / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })}` : "";
+              const html = buildEmailHtml({
+                firstName: firstName || "Kolleg:in",
+                intro: "vielen Dank für Deine Buchung des Curriculum-Komplettpakets! Wir haben Deine Zahlung erhalten.",
+                infoRows: [
+                  { label: "Paket", value: curriculumSlug || "Curriculum" },
+                  ...(betragStr ? [{ label: "Betrag", value: betragStr }] : []),
+                ],
+                note: "Bitte schließe Dein Profil ab, um Zugang zu Deinen Kursen zu erhalten. Falls Du die Seite geschlossen hast, erhältst Du in Kürze eine E-Mail mit einem Link.",
+              });
+              await sendEmailViaResend(email, "Buchungsbestätigung: Curriculum Komplettpaket", html);
+            } catch (emailErr) {
+              console.error("Failed to send immediate confirmation email for curriculum:", emailErr);
+            }
+          }
         }
       }
     } catch (err) {
@@ -439,8 +482,67 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     await runPostPurchaseFlow(postPurchaseData);
   } else {
     // New customer: profile form is shown on the success page.
-    // If they don't complete it within 30 min, a cron job sends a reminder email.
+    // Send immediate Slack notification + basic confirmation email so the
+    // team knows someone paid, even if the customer never completes the profile.
     console.log(`New customer ${email} for booking ${bookingId} — awaiting profile completion`);
+
+    // Immediate Slack notification (with "profile pending" note)
+    const SLACK_WEBHOOK_URL_COURSES = process.env.SLACK_WEBHOOK_URL_COURSES;
+    if (SLACK_WEBHOOK_URL_COURSES) {
+      try {
+        let seatsInfo = "";
+        if (sessionId) {
+          const { data: sess } = await supabase.from("course_sessions").select("booked_seats, max_seats").eq("id", sessionId).single();
+          if (sess) seatsInfo = `${sess.booked_seats}/${sess.max_seats}`;
+        }
+        const { data: tmpl } = await supabase.from("course_templates").select("course_label_de, title").eq("id", templateId).single();
+        const courseLabelDe = tmpl?.course_label_de || tmpl?.title || courseKey;
+        const betrag = amountTotal ? `€${(amountTotal / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })}` : null;
+
+        await fetch(SLACK_WEBHOOK_URL_COURSES, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: [
+              `*Name:* ${fullName}`,
+              `*Typ:* ${courseType === "Premium" ? "Komplettpaket" : courseType}`,
+              `*Kurs:* ${courseLabelDe}`,
+              sessionLabel ? `*Datum:* ${sessionLabel}` : null,
+              seatsInfo ? `*Plätze:* ${seatsInfo}` : null,
+              betrag ? `*Betrag:* ${betrag}` : null,
+              `⚠️ *Profil noch nicht vollständig*`,
+            ].filter(Boolean).join("\n"),
+          }),
+        });
+      } catch (slackErr) {
+        console.error("Failed to send Slack notification for new customer:", slackErr);
+      }
+    }
+
+    // Immediate basic confirmation email
+    if (email) {
+      try {
+        const { data: tmpl } = await supabase.from("course_templates").select("course_label_de, title").eq("id", templateId).single();
+        const courseLabelDe = tmpl?.course_label_de || tmpl?.title || "Kurs";
+        const betragStr = amountTotal ? `€${(amountTotal / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })}` : "";
+
+        const html = buildEmailHtml({
+          firstName: firstName || "Kolleg:in",
+          intro: "vielen Dank für Deine Buchung! Wir haben Deine Zahlung erhalten.",
+          infoRows: [
+            { label: "Kurs", value: courseLabelDe },
+            { label: "Kurstyp", value: courseType || "" },
+            ...(sessionLabel ? [{ label: "Datum", value: sessionLabel }] : []),
+            ...(betragStr ? [{ label: "Betrag", value: betragStr }] : []),
+          ],
+          note: "Bitte schließe Dein Profil ab, um Zugang zu Deinem Kurs zu erhalten. Falls Du die Seite geschlossen hast, erhältst Du in Kürze eine E-Mail mit einem Link.",
+        });
+
+        await sendEmailViaResend(email, `Buchungsbestätigung: ${courseLabelDe}`, html);
+      } catch (emailErr) {
+        console.error("Failed to send immediate confirmation email:", emailErr);
+      }
+    }
   }
 
   console.log(`Course booking created: ${bookingId} (${courseType} / ${courseKey}) — profile ${isReturningCustomer ? "complete" : "pending"}`);

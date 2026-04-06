@@ -44,6 +44,7 @@ interface BookingRow {
   stripe_invoice_url: string | null;
   stripe_invoice_pdf_url: string | null;
   stripe_invoice_number: string | null;
+  profile_complete: boolean | null;
   bundle_group_id: string | null;
   course_sessions: { date_iso: string; label_de: string | null; instructor_name: string | null; start_time: string | null; duration_minutes: number | null; address: string | null } | null;
   course_templates: { title: string; course_label_de: string | null } | null;
@@ -469,17 +470,24 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                     {booking.stripe_invoice_number || "–"}
                   </TableCell>
                   <TableCell className="font-medium">
-                    {booking.auszubildende_id ? (
-                      <Link
-                        href={`/dashboard/auszubildende/personen/${booking.auszubildende_id}`}
-                        className="text-primary hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {name}
-                      </Link>
-                    ) : (
-                      name
-                    )}
+                    <div className="flex items-center gap-2">
+                      {booking.auszubildende_id ? (
+                        <Link
+                          href={`/dashboard/auszubildende/personen/${booking.auszubildende_id}`}
+                          className="text-primary hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {name}
+                        </Link>
+                      ) : (
+                        name
+                      )}
+                      {!booking.profile_complete && booking.status === "booked" && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                          Profil unvollständig
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1.5">
