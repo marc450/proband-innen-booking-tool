@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -21,8 +22,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pencil, Trash2, ArrowUpDown, Upload, ImageIcon } from "lucide-react";
+import { Pencil, Trash2, Upload, ImageIcon } from "lucide-react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { TableHeaderBar } from "@/components/table/table-header-bar";
+import { SortableHead } from "@/components/table/sortable-head";
+import { useTableSort } from "@/hooks/use-table-sort";
 import type { CourseTemplate } from "@/lib/types";
 
 interface Props {
@@ -30,7 +34,6 @@ interface Props {
 }
 
 type SortKey = "status" | "name" | "online" | "praxis" | "kombi";
-type SortDir = "asc" | "desc";
 
 function formatPrice(p: number | null | undefined) {
   if (!p) return "–";
@@ -43,8 +46,9 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
   const [editing, setEditing] = useState<CourseTemplate | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [sortKey, setSortKey] = useState<SortKey>("name");
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  // Sorting via shared hook
+  const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("name", "asc");
 
   // Image upload state
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -242,15 +246,6 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDir(sortDir === "asc" ? "desc" : "asc");
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  };
-
   // Image upload helpers
   const resizeImage = (file: File, maxWidth = 1200): Promise<Blob> => {
     return new Promise((resolve, reject) => {
@@ -341,33 +336,23 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
     return sorted;
   }, [offerings, sortKey, sortDir]);
 
-  const SortableHead = ({ label, sortKeyName, className }: { label: string; sortKeyName: SortKey; className?: string }) => (
-    <TableHead className={className}>
-      <button
-        onClick={() => toggleSort(sortKeyName)}
-        className="flex items-center gap-1 hover:text-foreground transition-colors"
-      >
-        {label}
-        <ArrowUpDown className="h-3.5 w-3.5 opacity-50" />
-      </button>
-    </TableHead>
-  );
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end">
-        <Button onClick={openCreate}>Neuer Kurs</Button>
-      </div>
+      <TableHeaderBar
+        title="Kursangebot"
+        count={offerings.length}
+        actions={<Button onClick={openCreate}>Neuer Kurs</Button>}
+      />
 
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[60px]">Bild</TableHead>
-            <SortableHead label="Status" sortKeyName="status" className="w-[100px]" />
-            <SortableHead label="Kursname" sortKeyName="name" />
-            <SortableHead label="Online" sortKeyName="online" className="w-[100px]" />
-            <SortableHead label="Praxis" sortKeyName="praxis" className="w-[100px]" />
-            <SortableHead label="Kombi" sortKeyName="kombi" className="w-[100px]" />
+            <SortableHead label="Status" sortKey="status" currentKey={sortKey} direction={sortDir} onSort={handleSort} className="w-[100px]" />
+            <SortableHead label="Kursname" sortKey="name" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+            <SortableHead label="Online" sortKey="online" currentKey={sortKey} direction={sortDir} onSort={handleSort} className="w-[100px]" />
+            <SortableHead label="Praxis" sortKey="praxis" currentKey={sortKey} direction={sortDir} onSort={handleSort} className="w-[100px]" />
+            <SortableHead label="Kombi" sortKey="kombi" currentKey={sortKey} direction={sortDir} onSort={handleSort} className="w-[100px]" />
             <TableHead className="w-[80px]">Aktionen</TableHead>
           </TableRow>
         </TableHeader>
@@ -396,20 +381,18 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
                   )}
                 </TableCell>
 
-                {/* Status */}
+                {/* Status — clickable Badge toggle */}
                 <TableCell onClick={(e) => e.stopPropagation()}>
-                  <select
-                    value={o.status === "live" ? "live" : "draft"}
-                    onChange={() => toggleStatus(o)}
-                    className={`text-xs font-medium rounded-full px-2.5 py-1 border-0 cursor-pointer ${
+                  <Badge
+                    className={`cursor-pointer select-none ${
                       o.status === "live"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-gray-100 text-gray-600"
+                        ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
+                    onClick={() => toggleStatus(o)}
                   >
-                    <option value="live">Live</option>
-                    <option value="draft">Entwurf</option>
-                  </select>
+                    {o.status === "live" ? "Live" : "Entwurf"}
+                  </Badge>
                 </TableCell>
 
                 {/* Name */}

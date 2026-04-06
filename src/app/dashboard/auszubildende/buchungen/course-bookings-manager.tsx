@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -23,6 +22,9 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { TableHeaderBar } from "@/components/table/table-header-bar";
+import { SortableHead } from "@/components/table/sortable-head";
+import { useTableSort } from "@/hooks/use-table-sort";
 import Link from "next/link";
 import type { CourseBookingStatus } from "@/lib/types";
 
@@ -65,12 +67,44 @@ interface Props {
   isAdmin?: boolean;
 }
 
+type SortKey = "name" | "kurstyp" | "kurs" | "kursdatum" | "kaufdatum" | "betrag" | "status";
+
 const statusLabels: Record<CourseBookingStatus, string> = {
   booked: "Gebucht",
   completed: "Abgeschlossen",
   cancelled: "Storniert",
   refunded: "Erstattet",
 };
+
+const statusBadgeVariant: Record<CourseBookingStatus, "default" | "secondary" | "destructive" | "outline"> = {
+  booked: "default",
+  completed: "secondary",
+  cancelled: "destructive",
+  refunded: "outline",
+};
+
+const statusOrder: CourseBookingStatus[] = ["booked", "completed", "cancelled", "refunded"];
+
+function getSortValue(booking: BookingRow, key: SortKey): string | number {
+  switch (key) {
+    case "name":
+      return [booking.first_name, booking.last_name].filter(Boolean).join(" ").toLowerCase();
+    case "kurstyp":
+      return booking.course_type.toLowerCase();
+    case "kurs":
+      return (booking.course_templates?.course_label_de || booking.course_templates?.title || "").toLowerCase();
+    case "kursdatum":
+      return booking.course_sessions?.date_iso || "";
+    case "kaufdatum":
+      return booking.created_at;
+    case "betrag":
+      return booking.amount_paid || 0;
+    case "status":
+      return statusOrder.indexOf(booking.status);
+    default:
+      return "";
+  }
+}
 
 export function CourseBookingsManager({ initialBookings, isAdmin = false }: Props) {
   const router = useRouter();
@@ -80,6 +114,9 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [invoicePdfUrl, setInvoicePdfUrl] = useState<string | null>(null);
+
+  // Sorting
+  const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("kaufdatum", "desc");
 
   // Session change state
   const [changeBooking, setChangeBooking] = useState<BookingRow | null>(null);
@@ -94,6 +131,23 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
   const [cancelBooking, setCancelBooking] = useState<BookingRow | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState("");
+
+  // Status dropdown state
+  const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close status dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+        setStatusDropdownId(null);
+      }
+    }
+    if (statusDropdownId) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [statusDropdownId]);
 
   // Auto-complete bookings where the course date has passed
   useEffect(() => {
@@ -125,6 +179,14 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
     );
   });
 
+  // Sort filtered results
+  const sorted = [...filtered].sort((a, b) => {
+    const aVal = getSortValue(a, sortKey);
+    const bVal = getSortValue(b, sortKey);
+    const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+    return sortDir === "asc" ? cmp : -cmp;
+  });
+
   const updateStatus = async (id: string, newStatus: CourseBookingStatus) => {
     const booking = bookings.find((b) => b.id === id);
     if (!booking) return;
@@ -133,6 +195,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
     if (newStatus === "cancelled" && booking.status !== "cancelled" && booking.status !== "refunded") {
       setCancelBooking(booking);
       setCancelError("");
+      setStatusDropdownId(null);
       return;
     }
 
@@ -154,6 +217,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
     }
 
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b)));
+    setStatusDropdownId(null);
   };
 
   const confirmCancellation = async () => {
@@ -286,10 +350,10 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
   };
 
   const toggleSelectAll = () => {
-    if (selected.size === filtered.length) {
+    if (selected.size === sorted.length) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(filtered.map((b) => b.id)));
+      setSelected(new Set(sorted.map((b) => b.id)));
     }
   };
 
@@ -313,6 +377,8 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
     setDeleteConfirmOpen(false);
   };
 
+  const sortProps = { currentKey: sortKey, direction: sortDir, onSort: handleSort as (key: string) => void };
+
   return (
     <div className="space-y-6">
       <ConfirmDialog
@@ -325,32 +391,31 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
         onCancel={() => setDeleteConfirmOpen(false)}
       />
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">Kursbuchungen</h1>
-          {bundleFilter && (
-            <Badge
-              variant="outline"
-              className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 cursor-pointer"
-              onClick={() => setBundleFilter(null)}
-            >
-              Curriculum-Bundle ✕
-            </Badge>
-          )}
-          {isAdmin && selected.size > 0 && (
-            <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
-              <Trash2 className="h-4 w-4 mr-1" />
-              {selected.size} löschen
-            </Button>
-          )}
-        </div>
-        <Input
-          placeholder="Name oder E-Mail suchen..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs"
-        />
-      </div>
+      <TableHeaderBar
+        title="Kursbuchungen"
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Name oder E-Mail suchen..."
+        filters={
+          <>
+            {bundleFilter && (
+              <Badge
+                variant="outline"
+                className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 cursor-pointer"
+                onClick={() => setBundleFilter(null)}
+              >
+                Curriculum-Bundle ✕
+              </Badge>
+            )}
+            {isAdmin && selected.size > 0 && (
+              <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
+                <Trash2 className="h-4 w-4 mr-1" />
+                {selected.size} löschen
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <Table>
         <TableHeader>
@@ -359,33 +424,33 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
               <TableHead className="w-[40px]">
                 <input
                   type="checkbox"
-                  checked={filtered.length > 0 && selected.size === filtered.length}
+                  checked={sorted.length > 0 && selected.size === sorted.length}
                   onChange={toggleSelectAll}
                   className="rounded"
                 />
               </TableHead>
             )}
             <TableHead>Buchungsnr.</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Kurstyp</TableHead>
-            <TableHead>Kurs</TableHead>
-            <TableHead>Kursdatum</TableHead>
-            <TableHead>Kaufdatum</TableHead>
-            {isAdmin && <TableHead>Betrag</TableHead>}
-            <TableHead>Status</TableHead>
+            <SortableHead label="Name" sortKey="name" {...sortProps} />
+            <SortableHead label="Kurstyp" sortKey="kurstyp" {...sortProps} />
+            <SortableHead label="Kurs" sortKey="kurs" {...sortProps} />
+            <SortableHead label="Kursdatum" sortKey="kursdatum" {...sortProps} />
+            <SortableHead label="Kaufdatum" sortKey="kaufdatum" {...sortProps} />
+            {isAdmin && <SortableHead label="Betrag" sortKey="betrag" {...sortProps} />}
+            <SortableHead label="Status" sortKey="status" {...sortProps} />
             {isAdmin && <TableHead className="w-[60px]">Rechnung</TableHead>}
             {isAdmin && <TableHead className="w-[50px]"></TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filtered.length === 0 ? (
+          {sorted.length === 0 ? (
             <TableRow>
               <TableCell colSpan={isAdmin ? 11 : 8} className="text-center text-muted-foreground py-8">
                 {search ? "Keine Buchungen gefunden." : "Noch keine Kursbuchungen vorhanden."}
               </TableCell>
             </TableRow>
           ) : (
-            filtered.map((booking) => {
+            sorted.map((booking) => {
               const name = [booking.first_name, booking.last_name].filter(Boolean).join(" ") || "–";
               return (
                 <TableRow key={booking.id} className="cursor-pointer" onClick={() => router.push(`/dashboard/auszubildende/buchungen/${booking.id}`)}>
@@ -461,24 +526,39 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                     <TableCell>{formatAmount(booking.amount_paid)}</TableCell>
                   )}
                   <TableCell>
-                    {isAdmin && booking.status !== "refunded" ? (
-                      <select
-                        value={booking.status}
-                        onChange={(e) => updateStatus(booking.id, e.target.value as CourseBookingStatus)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-sm border rounded px-2 py-1"
+                    <div className="relative" onClick={(e) => e.stopPropagation()}>
+                      <Badge
+                        variant={statusBadgeVariant[booking.status]}
+                        className={isAdmin && booking.status !== "refunded" ? "cursor-pointer" : ""}
+                        onClick={() => {
+                          if (isAdmin && booking.status !== "refunded") {
+                            setStatusDropdownId(statusDropdownId === booking.id ? null : booking.id);
+                          }
+                        }}
                       >
-                        {Object.entries(statusLabels)
-                          // "refunded" is only ever set automatically by the
-                          // Stripe charge.refunded webhook, never by the admin.
-                          .filter(([value]) => value !== "refunded")
-                          .map(([value, label]) => (
-                            <option key={value} value={value}>{label}</option>
-                          ))}
-                      </select>
-                    ) : (
-                      <span className="text-sm">{statusLabels[booking.status]}</span>
-                    )}
+                        {statusLabels[booking.status]}
+                      </Badge>
+                      {isAdmin && booking.status !== "refunded" && statusDropdownId === booking.id && (
+                        <div
+                          ref={statusDropdownRef}
+                          className="absolute z-50 top-full left-0 mt-1 bg-white rounded-lg shadow-lg border py-1 min-w-[140px]"
+                        >
+                          {statusOrder
+                            .filter((s) => s !== "refunded" && s !== booking.status)
+                            .map((s) => (
+                              <button
+                                key={s}
+                                className="w-full text-left px-3 py-1.5 text-sm hover:bg-muted transition-colors flex items-center gap-2"
+                                onClick={() => updateStatus(booking.id, s)}
+                              >
+                                <Badge variant={statusBadgeVariant[s]} className="pointer-events-none">
+                                  {statusLabels[s]}
+                                </Badge>
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                   {isAdmin && (
                     <TableCell>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ConfirmDialog, AlertDialog } from "@/components/confirm-dialog";
+import { TableHeaderBar } from "@/components/table/table-header-bar";
+import { SortableHead } from "@/components/table/sortable-head";
+import { useTableSort } from "@/hooks/use-table-sort";
 import { Plus, Trash2, RefreshCw, Copy, Check, Edit } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -37,6 +40,8 @@ interface Props {
   initialUsers: AdminUser[];
   currentUserId: string;
 }
+
+type SortKey = "name" | "email" | "role" | "since";
 
 export function UsersManager({ initialUsers, currentUserId }: Props) {
   const [users, setUsers] = useState(initialUsers);
@@ -69,6 +74,32 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
   const [editIsKursbetreuung, setEditIsKursbetreuung] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+
+  // Sorting
+  const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("name", "asc");
+
+  const sortedUsers = useMemo(() => {
+    const sorted = [...users];
+    const dir = sortDir === "asc" ? 1 : -1;
+    sorted.sort((a, b) => {
+      switch (sortKey) {
+        case "name": {
+          const nameA = [a.title, a.first_name, a.last_name].filter(Boolean).join(" ").toLowerCase();
+          const nameB = [b.title, b.first_name, b.last_name].filter(Boolean).join(" ").toLowerCase();
+          return nameA.localeCompare(nameB) * dir;
+        }
+        case "email":
+          return (a.email || "").localeCompare(b.email || "") * dir;
+        case "role":
+          return (a.role || "").localeCompare(b.role || "") * dir;
+        case "since":
+          return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir;
+        default:
+          return 0;
+      }
+    });
+    return sorted;
+  }, [users, sortKey, sortDir]);
 
   const generatePassword = () => {
     const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#";
@@ -382,13 +413,16 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* Header */}
-      <div className="flex items-center justify-end">
-        <Button onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4 mr-1.5" />
-          Benutzer:in anlegen
-        </Button>
-      </div>
+      <TableHeaderBar
+        title="Benutzer:innen"
+        count={users.length}
+        actions={
+          <Button onClick={() => setShowCreate(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Benutzer:in anlegen
+          </Button>
+        }
+      />
 
       <Card>
         <CardContent className="p-0">
@@ -398,15 +432,15 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>E-Mail</TableHead>
-                  <TableHead>Rolle</TableHead>
-                  <TableHead>Seit</TableHead>
+                  <SortableHead label="Name" sortKey="name" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+                  <SortableHead label="E-Mail" sortKey="email" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+                  <SortableHead label="Rolle" sortKey="role" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+                  <SortableHead label="Seit" sortKey="since" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
                   <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((u) => (
+                {sortedUsers.map((u) => (
                   <TableRow key={u.id}>
                     <TableCell className="font-medium whitespace-nowrap">
                       {u.first_name && u.last_name

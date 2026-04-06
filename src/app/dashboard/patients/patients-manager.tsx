@@ -6,7 +6,6 @@ import { read, utils } from "xlsx";
 import { createClient } from "@/lib/supabase/client";
 import { Patient, PatientStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -16,13 +15,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -30,9 +22,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { TableHeaderBar } from "@/components/table/table-header-bar";
+import { SortableHead } from "@/components/table/sortable-head";
+import { useTableSort } from "@/hooks/use-table-sort";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Search, ChevronRight, AlertTriangle, Ban, ArrowUpDown, ArrowUp, ArrowDown, Upload, Trash2 } from "lucide-react";
+import { ChevronRight, AlertTriangle, Ban, Upload, Trash2 } from "lucide-react";
 
 interface ImportRow {
   first_name: string | null;
@@ -52,42 +48,38 @@ const statusLabels: Record<PatientStatus, string> = {
   blacklist: "Blacklist",
 };
 
-const statusBadgeVariants: Record<PatientStatus, "default" | "secondary" | "destructive" | "outline"> = {
+const statusBadgeVariants: Record<PatientStatus, "outline" | "secondary" | "destructive"> = {
   active: "outline",
   warning: "secondary",
   blacklist: "destructive",
 };
 
+const statusColors: Record<PatientStatus, string> = {
+  active: "text-green-600",
+  warning: "text-amber-600",
+  blacklist: "",
+};
+
+const allStatuses: PatientStatus[] = ["active", "warning", "blacklist"];
+
 type SortKey = "name" | "email" | "city" | "status" | "created_at";
-type SortDir = "asc" | "desc";
 
 export function PatientsManager({ initialPatients }: Props) {
   const [patients, setPatients] = useState(initialPatients);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("created_at");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("created_at", "desc");
   const [importRows, setImportRows] = useState<ImportRow[] | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ inserted: number; skipped: number } | null>(null);
   const [deletePatient, setDeletePatient] = useState<Patient | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const supabase = createClient();
 
-  function handleSort(key: SortKey) {
-    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else { setSortKey(key); setSortDir("asc"); }
-  }
-
-  function SortIcon({ col }: { col: SortKey }) {
-    if (sortKey !== col) return <ArrowUpDown className="ml-1 h-3 w-3 opacity-40 inline" />;
-    return sortDir === "asc"
-      ? <ArrowUp className="ml-1 h-3 w-3 inline" />
-      : <ArrowDown className="ml-1 h-3 w-3 inline" />;
-  }
-
   const handleStatusChange = async (patientId: string, newStatus: PatientStatus) => {
+    setStatusDropdownId(null);
     setPatients((prev) => prev.map((p) => p.id === patientId ? { ...p, patient_status: newStatus } : p));
     await supabase
       .from("patients")
@@ -199,27 +191,22 @@ export function PatientsManager({ initialPatients }: Props) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Proband:innen</h1>
+      <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
 
-      <div className="flex items-center gap-2">
-        <Search className="h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Name, E-Mail, Telefon oder Ort..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-sm"
-        />
-        <span className="text-sm text-muted-foreground ml-2">
-          {filteredPatients.length} Proband:innen
-        </span>
-        <div className="ml-auto">
-          <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
+      <TableHeaderBar
+        title="Proband:innen"
+        count={filteredPatients.length}
+        countLabel="Proband:innen"
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Name, E-Mail, Telefon oder Ort..."
+        actions={
           <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" />
             Import Excel
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Import preview modal */}
       <Dialog open={!!importRows} onOpenChange={(open) => { if (!open) { setImportRows(null); setImportResult(null); } }}>
@@ -307,12 +294,12 @@ export function PatientsManager({ initialPatients }: Props) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("name")}>Name<SortIcon col="name" /></TableHead>
-                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("email")}>E-Mail<SortIcon col="email" /></TableHead>
+                  <SortableHead label="Name" sortKey="name" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
+                  <SortableHead label="E-Mail" sortKey="email" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
                   <TableHead>Telefon</TableHead>
-                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("city")}>Ort<SortIcon col="city" /></TableHead>
-                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("status")}>Status<SortIcon col="status" /></TableHead>
-                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("created_at")}>Erstellt am<SortIcon col="created_at" /></TableHead>
+                  <SortableHead label="Ort" sortKey="city" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
+                  <SortableHead label="Status" sortKey="status" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
+                  <SortableHead label="Erstellt am" sortKey="created_at" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
@@ -336,29 +323,32 @@ export function PatientsManager({ initialPatients }: Props) {
                         : ""}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Select
-                        value={patient.patient_status}
-                        onValueChange={(val) => handleStatusChange(patient.id, val as PatientStatus)}
-                      >
-                        <SelectTrigger className="w-[120px] h-8">
-                          <span>{statusLabels[patient.patient_status]}</span>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Aktiv</SelectItem>
-                          <SelectItem value="warning">
-                            <span className="flex items-center gap-1.5">
-                              <AlertTriangle className="h-3 w-3 text-amber-600" />
-                              Warnung
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="blacklist">
-                            <span className="flex items-center gap-1.5">
-                              <Ban className="h-3 w-3 text-red-600" />
-                              Blacklist
-                            </span>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="relative">
+                        <Badge
+                          variant={statusBadgeVariants[patient.patient_status]}
+                          className={`cursor-pointer ${statusColors[patient.patient_status]}`}
+                          onClick={() =>
+                            setStatusDropdownId(statusDropdownId === patient.id ? null : patient.id)
+                          }
+                        >
+                          {statusLabels[patient.patient_status]}
+                        </Badge>
+                        {statusDropdownId === patient.id && (
+                          <div className="absolute z-50 mt-1 left-0 bg-popover border rounded-md shadow-md py-1 min-w-[140px]">
+                            {allStatuses.map((s) => (
+                              <button
+                                key={s}
+                                className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-muted text-left"
+                                onClick={() => handleStatusChange(patient.id, s)}
+                              >
+                                {s === "warning" && <AlertTriangle className="h-3 w-3 text-amber-600" />}
+                                {s === "blacklist" && <Ban className="h-3 w-3 text-red-600" />}
+                                {statusLabels[s]}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {format(new Date(patient.created_at), "dd.MM.yyyy", { locale: de })}

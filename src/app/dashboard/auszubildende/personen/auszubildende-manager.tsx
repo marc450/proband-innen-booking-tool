@@ -4,7 +4,6 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { read, utils } from "xlsx";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +28,10 @@ import {
 } from "@/components/ui/select";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Upload, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Upload } from "lucide-react";
+import { TableHeaderBar } from "@/components/table/table-header-bar";
+import { SortableHead } from "@/components/table/sortable-head";
+import { useTableSort } from "@/hooks/use-table-sort";
 import type { Auszubildende } from "@/lib/types";
 
 // Shape matches the server-side ImportRow in /api/import-auszubildende.
@@ -59,7 +61,6 @@ type ImportResult = {
 };
 
 type SortKey = "name" | "email" | "bookings" | "status" | "created_at";
-type SortDir = "asc" | "desc";
 
 const typeLabel = (t: Auszubildende["contact_type"]): string => {
   switch (t) {
@@ -95,36 +96,14 @@ export function AuszubildendeManager({
   // lets the user split them. In the auszubildende scope it's always
   // auszubildende so we hide the filter there.
   const [typeFilter, setTypeFilter] = useState<"all" | "company" | "other">("all");
-  const [sortKey, setSortKey] = useState<SortKey>("name");
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("name", "asc");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importRows, setImportRows] = useState<ImportRow[] | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  };
-
-  const SortIcon = ({ col }: { col: SortKey }) => {
-    if (sortKey !== col) return <ArrowUpDown className="ml-1 h-3 w-3 opacity-40 inline" />;
-    return sortDir === "asc" ? (
-      <ArrowUp className="ml-1 h-3 w-3 inline" />
-    ) : (
-      <ArrowDown className="ml-1 h-3 w-3 inline" />
-    );
-  };
-
   const pageTitle = scope === "other" ? "Sonstige Kontakte" : "Ärzt:innen";
-  const countLabel =
-    scope === "other"
-      ? `${initialAuszubildende.length} Kontakte`
-      : `${initialAuszubildende.length} Ärzt:innen`;
+  const countLabel = scope === "other" ? "Kontakte" : "Ärzt:innen";
 
   // Parses the file with the xlsx lib, which handles CSV as well. For
   // .csv files we read as text first and pass type:"string" — reading
@@ -295,47 +274,47 @@ export function AuszubildendeManager({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{pageTitle}</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-muted-foreground">
-            {search ? `${filtered.length} / ${countLabel}` : countLabel}
-          </span>
-          <Input
-            placeholder="Name, E-Mail oder Telefon suchen..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="max-w-xs"
-          />
-          {scope === "other" && (
+      <TableHeaderBar
+        title={pageTitle}
+        count={filtered.length}
+        countLabel={countLabel}
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Name, E-Mail oder Telefon suchen..."
+        filters={
+          <>
+            {scope === "other" && (
+              <Select
+                value={typeFilter}
+                onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}
+              >
+                <SelectTrigger className="w-[140px] h-9">
+                  <SelectValue placeholder="Typ" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle Typen</SelectItem>
+                  <SelectItem value="company">Firma</SelectItem>
+                  <SelectItem value="other">Sonstige</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
             <Select
-              value={typeFilter}
-              onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
             >
               <SelectTrigger className="w-[140px] h-9">
-                <SelectValue placeholder="Typ" />
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle Typen</SelectItem>
-                <SelectItem value="company">Firma</SelectItem>
-                <SelectItem value="other">Sonstige</SelectItem>
+                <SelectItem value="all">Alle Status</SelectItem>
+                <SelectItem value="active">Aktiv</SelectItem>
+                <SelectItem value="inactive">Inaktiv</SelectItem>
               </SelectContent>
             </Select>
-          )}
-          <Select
-            value={statusFilter}
-            onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
-          >
-            <SelectTrigger className="w-[140px] h-9">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alle Status</SelectItem>
-              <SelectItem value="active">Aktiv</SelectItem>
-              <SelectItem value="inactive">Inaktiv</SelectItem>
-            </SelectContent>
-          </Select>
-          {scope === "auszubildende" && (
+          </>
+        }
+        actions={
+          scope === "auszubildende" ? (
             <>
               <input
                 ref={fileInputRef}
@@ -353,9 +332,9 @@ export function AuszubildendeManager({
                 Import CSV
               </Button>
             </>
-          )}
-        </div>
-      </div>
+          ) : undefined
+        }
+      />
 
       {/* Import preview / result dialog. Skips any email that already
           exists in the auszubildende table — no overwrites, no merge. */}
@@ -476,23 +455,37 @@ export function AuszubildendeManager({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="cursor-pointer select-none" onClick={() => handleSort("name")}>
-              Name<SortIcon col="name" />
-            </TableHead>
+            <SortableHead
+              label="Name"
+              sortKey="name"
+              currentKey={sortKey}
+              direction={sortDir}
+              onSort={handleSort as (key: string) => void}
+            />
             <TableHead>Typ</TableHead>
-            <TableHead className="cursor-pointer select-none" onClick={() => handleSort("email")}>
-              E-Mail<SortIcon col="email" />
-            </TableHead>
+            <SortableHead
+              label="E-Mail"
+              sortKey="email"
+              currentKey={sortKey}
+              direction={sortDir}
+              onSort={handleSort as (key: string) => void}
+            />
             <TableHead>Telefon</TableHead>
-            <TableHead
-              className="text-center cursor-pointer select-none"
-              onClick={() => handleSort("bookings")}
-            >
-              Buchungen<SortIcon col="bookings" />
-            </TableHead>
-            <TableHead className="cursor-pointer select-none" onClick={() => handleSort("status")}>
-              Status<SortIcon col="status" />
-            </TableHead>
+            <SortableHead
+              label="Buchungen"
+              sortKey="bookings"
+              currentKey={sortKey}
+              direction={sortDir}
+              onSort={handleSort as (key: string) => void}
+              className="text-center"
+            />
+            <SortableHead
+              label="Status"
+              sortKey="status"
+              currentKey={sortKey}
+              direction={sortDir}
+              onSort={handleSort as (key: string) => void}
+            />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -538,13 +531,16 @@ export function AuszubildendeManager({
                   <TableCell className="align-middle">{azubi.phone || "–"}</TableCell>
                   <TableCell className="text-center align-middle">{count}</TableCell>
                   <TableCell className="align-middle">
-                    <span className={`text-xs font-medium rounded-full px-2.5 py-1 ${
-                      azubi.status === "active"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}>
+                    <Badge
+                      variant="secondary"
+                      className={`text-xs ${
+                        azubi.status === "active"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
                       {azubi.status === "active" ? "Aktiv" : "Inaktiv"}
-                    </span>
+                    </Badge>
                   </TableCell>
                 </TableRow>
               );

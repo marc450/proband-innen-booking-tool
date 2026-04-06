@@ -7,7 +7,6 @@ import { EmailCampaign, CampaignStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -16,9 +15,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableHeaderBar } from "@/components/table/table-header-bar";
+import { SortableHead } from "@/components/table/sortable-head";
+import { useTableSort } from "@/hooks/use-table-sort";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Plus, ArrowUpDown, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 
 const statusLabels: Record<CampaignStatus, string> = {
   draft: "In Bearbeitung",
@@ -37,7 +39,6 @@ const statusVariants: Record<CampaignStatus, "default" | "secondary" | "destruct
 };
 
 type SortKey = "name" | "status" | "recipients" | "created" | "sent";
-type SortDir = "asc" | "desc";
 type StatusFilter = "all" | CampaignStatus;
 
 interface Props {
@@ -48,21 +49,19 @@ function formatDateShort(dateStr: string) {
   return format(new Date(dateStr), "dd.MM.yyyy HH:mm", { locale: de });
 }
 
+const statusFilters: { value: StatusFilter; label: string }[] = [
+  { value: "all", label: "Alle" },
+  { value: "draft", label: "In Bearbeitung" },
+  { value: "sent", label: "Gesendet" },
+  { value: "scheduled", label: "Geplant" },
+  { value: "failed", label: "Fehlgeschlagen" },
+];
+
 export function CampaignsManager({ campaigns }: Props) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [sortKey, setSortKey] = useState<SortKey>("created");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
-
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDir(sortDir === "asc" ? "desc" : "asc");
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  };
+  const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("created", "desc");
 
   const filtered = useMemo(() => {
     let result = campaigns;
@@ -104,51 +103,39 @@ export function CampaignsManager({ campaigns }: Props) {
     return result;
   }, [campaigns, statusFilter, search, sortKey, sortDir]);
 
-  const statusFilters: { value: StatusFilter; label: string }[] = [
-    { value: "all", label: "Alle" },
-    { value: "draft", label: "In Bearbeitung" },
-    { value: "sent", label: "Gesendet" },
-    { value: "scheduled", label: "Geplant" },
-    { value: "failed", label: "Fehlgeschlagen" },
-  ];
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Kampagnen</h1>
-        <Link href="/dashboard/campaigns/new">
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Neue Kampagne
-          </Button>
-        </Link>
-      </div>
-
-      {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Name oder Betreff..."
-            className="!pl-9 h-9"
-          />
-        </div>
-        <div className="flex gap-1">
-          {statusFilters.map(({ value, label }) => (
-            <Button
-              key={value}
-              variant={statusFilter === value ? "default" : "outline"}
-              size="sm"
-              onClick={() => setStatusFilter(value)}
-              className="h-8 text-xs"
-            >
-              {label}
+      <TableHeaderBar
+        title="Kampagnen"
+        count={filtered.length}
+        countLabel="Kampagnen"
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Name oder Betreff..."
+        filters={
+          <div className="flex gap-1">
+            {statusFilters.map(({ value, label }) => (
+              <Button
+                key={value}
+                variant={statusFilter === value ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatusFilter(value)}
+                className="h-8 text-xs"
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+        }
+        actions={
+          <Link href="/dashboard/campaigns/new">
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Neue Kampagne
             </Button>
-          ))}
-        </div>
-      </div>
+          </Link>
+        }
+      />
 
       <Card>
         <CardContent className="p-0">
@@ -162,52 +149,42 @@ export function CampaignsManager({ campaigns }: Props) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>
-                    <button
-                      onClick={() => toggleSort("name")}
-                      className="flex items-center gap-1 font-medium"
-                    >
-                      Name
-                      <ArrowUpDown className="h-3 w-3 opacity-50" />
-                    </button>
-                  </TableHead>
+                  <SortableHead
+                    label="Name"
+                    sortKey="name"
+                    currentKey={sortKey}
+                    direction={sortDir}
+                    onSort={handleSort as (key: string) => void}
+                  />
                   <TableHead>Betreff</TableHead>
-                  <TableHead>
-                    <button
-                      onClick={() => toggleSort("status")}
-                      className="flex items-center gap-1 font-medium"
-                    >
-                      Status
-                      <ArrowUpDown className="h-3 w-3 opacity-50" />
-                    </button>
-                  </TableHead>
-                  <TableHead>
-                    <button
-                      onClick={() => toggleSort("recipients")}
-                      className="flex items-center gap-1 font-medium"
-                    >
-                      Empfänger:innen
-                      <ArrowUpDown className="h-3 w-3 opacity-50" />
-                    </button>
-                  </TableHead>
-                  <TableHead>
-                    <button
-                      onClick={() => toggleSort("created")}
-                      className="flex items-center gap-1 font-medium"
-                    >
-                      Erstellt
-                      <ArrowUpDown className="h-3 w-3 opacity-50" />
-                    </button>
-                  </TableHead>
-                  <TableHead>
-                    <button
-                      onClick={() => toggleSort("sent")}
-                      className="flex items-center gap-1 font-medium"
-                    >
-                      Gesendet
-                      <ArrowUpDown className="h-3 w-3 opacity-50" />
-                    </button>
-                  </TableHead>
+                  <SortableHead
+                    label="Status"
+                    sortKey="status"
+                    currentKey={sortKey}
+                    direction={sortDir}
+                    onSort={handleSort as (key: string) => void}
+                  />
+                  <SortableHead
+                    label="Empfänger:innen"
+                    sortKey="recipients"
+                    currentKey={sortKey}
+                    direction={sortDir}
+                    onSort={handleSort as (key: string) => void}
+                  />
+                  <SortableHead
+                    label="Erstellt"
+                    sortKey="created"
+                    currentKey={sortKey}
+                    direction={sortDir}
+                    onSort={handleSort as (key: string) => void}
+                  />
+                  <SortableHead
+                    label="Gesendet"
+                    sortKey="sent"
+                    currentKey={sortKey}
+                    direction={sortDir}
+                    onSort={handleSort as (key: string) => void}
+                  />
                 </TableRow>
               </TableHeader>
               <TableBody>

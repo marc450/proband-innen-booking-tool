@@ -1,18 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { BookingStatus, BookingWithDetails } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import {
   Table,
@@ -31,9 +29,12 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { ConfirmDialog, AlertDialog } from "@/components/confirm-dialog";
+import { TableHeaderBar } from "@/components/table/table-header-bar";
+import { SortableHead } from "@/components/table/sortable-head";
+import { useTableSort } from "@/hooks/use-table-sort";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Search, ArrowLeftRight, Trash2 } from "lucide-react";
+import { ArrowLeftRight, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type BookingWithHash = BookingWithDetails & { email_hash?: string };
@@ -65,6 +66,82 @@ const statusVariants: Record<BookingStatus, "default" | "secondary" | "destructi
   cancelled: "outline",
 };
 
+const allStatuses: BookingStatus[] = ["booked", "attended", "no_show", "cancelled"];
+
+type SortKey = "name" | "kurs" | "termin" | "typ" | "arzt" | "status";
+
+function StatusBadgeDropdown({
+  booking,
+  isAdmin,
+  chargingId,
+  onStatusChange,
+}: {
+  booking: BookingWithDetails;
+  isAdmin: boolean;
+  chargingId: string | null;
+  onStatusChange: (bookingId: string, newStatus: BookingStatus) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const isCharging = chargingId === booking.id;
+
+  if (!isAdmin) {
+    return (
+      <Badge variant={statusVariants[booking.status]}>
+        {statusLabels[booking.status]}
+      </Badge>
+    );
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!isCharging) setOpen((o) => !o);
+        }}
+        disabled={isCharging}
+        className="cursor-pointer disabled:cursor-wait"
+      >
+        <Badge variant={statusVariants[booking.status]}>
+          {isCharging ? "..." : statusLabels[booking.status]}
+        </Badge>
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 left-0 bg-popover border border-border rounded-md shadow-md py-1 min-w-[130px]">
+          {allStatuses.map((s) => (
+            <button
+              key={s}
+              type="button"
+              className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-muted text-left"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(false);
+                if (s !== booking.status) onStatusChange(booking.id, s);
+              }}
+            >
+              <Badge variant={statusVariants[s]}>{statusLabels[s]}</Badge>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function BookingsManager({ initialBookings, courses, isAdmin = true }: Props) {
   const [bookings, setBookings] = useState(initialBookings);
   const [filterCourse, setFilterCourse] = useState<string>("all");
@@ -91,6 +168,8 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
   const [slotChangeError, setSlotChangeError] = useState<string | null>(null);
   const [savingSlotChange, setSavingSlotChange] = useState(false);
 
+  const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("termin", "desc");
+
   const supabase = createClient();
   const router = useRouter();
 
@@ -111,6 +190,47 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
     }
     return true;
   });
+
+  const sortedBookings = useMemo(() => {
+    const sorted = [...filteredBookings];
+    const dir = sortDir === "asc" ? 1 : -1;
+
+    sorted.sort((a, b) => {
+      switch (sortKey) {
+        case "name": {
+          const nameA = (a.first_name && a.last_name ? `${a.first_name} ${a.last_name}` : a.name || "").toLowerCase();
+          const nameB = (b.first_name && b.last_name ? `${b.first_name} ${b.last_name}` : b.name || "").toLowerCase();
+          return dir * nameA.localeCompare(nameB, "de");
+        }
+        case "kurs": {
+          const kA = (a.slots?.courses?.title || "").toLowerCase();
+          const kB = (b.slots?.courses?.title || "").toLowerCase();
+          return dir * kA.localeCompare(kB, "de");
+        }
+        case "termin": {
+          const tA = a.slots?.start_time ? new Date(a.slots.start_time).getTime() : 0;
+          const tB = b.slots?.start_time ? new Date(b.slots.start_time).getTime() : 0;
+          return dir * (tA - tB);
+        }
+        case "typ": {
+          const typA = a.booking_type || "";
+          const typB = b.booking_type || "";
+          return dir * typA.localeCompare(typB);
+        }
+        case "arzt": {
+          const aI = (a.slots?.courses?.instructor || "").toLowerCase();
+          const bI = (b.slots?.courses?.instructor || "").toLowerCase();
+          return dir * aI.localeCompare(bI, "de");
+        }
+        case "status": {
+          return dir * a.status.localeCompare(b.status);
+        }
+        default:
+          return 0;
+      }
+    });
+    return sorted;
+  }, [filteredBookings, sortKey, sortDir]);
 
   const handleStatusChange = async (bookingId: string, newStatus: BookingStatus) => {
     if (newStatus === "no_show") {
@@ -431,25 +551,17 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
         </DialogContent>
       </Dialog>
 
-      <h1 className="text-2xl font-bold">Buchungen</h1>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Filter</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Name oder E-Mail..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-[200px]"
-              />
-            </div>
+      <TableHeaderBar
+        title="Buchungen"
+        count={filteredBookings.length}
+        countLabel="Buchungen"
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Name oder E-Mail..."
+        filters={
+          <>
             <Select value={filterCourse} onValueChange={(val) => { if (val) setFilterCourse(val); }}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-[200px] h-9">
                 <span className="truncate">
                   {filterCourse === "all"
                     ? "Alle Kurse"
@@ -469,7 +581,7 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
               type="date"
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
-              className="w-[180px]"
+              className="w-[180px] h-9"
             />
             {(filterCourse !== "all" || filterDate || searchQuery) && (
               <Button
@@ -484,129 +596,108 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
                 Filter zurücksetzen
               </Button>
             )}
-          </div>
-        </CardContent>
-      </Card>
+          </>
+        }
+      />
 
-      <Card>
-        <CardContent className="p-0">
-          {filteredBookings.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground">
-              Keine Buchungen gefunden
-            </div>
-          ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Kurs</TableHead>
-                      <TableHead>Termin</TableHead>
-                      <TableHead>Typ</TableHead>
-                      <TableHead>Ärzt:in</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredBookings.map((booking) => (
-                      <TableRow key={booking.id}>
-                        <TableCell className="font-medium whitespace-nowrap">
-                          {booking.patient_id ? (
-                            <button
-                              className="text-primary hover:underline text-left"
-                              onClick={() => router.push(`/dashboard/patients/${booking.patient_id}`)}
-                            >
-                              {booking.first_name && booking.last_name
-                                ? `${booking.first_name} ${booking.last_name}`
-                                : booking.name}
-                            </button>
-                          ) : (
-                            <span>
-                              {booking.first_name && booking.last_name
-                                ? `${booking.first_name} ${booking.last_name}`
-                                : booking.name}
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">{booking.slots?.courses?.title || "—"}</TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          {booking.slots?.start_time
-                            ? format(new Date(booking.slots.start_time), "dd.MM.yyyy HH:mm", { locale: de })
-                            : "—"}
-                        </TableCell>
-                        <TableCell>
-                          {booking.booking_type === "private" ? (
-                            <Badge variant="outline" className="text-blue-600 border-blue-300 whitespace-nowrap">
-                              Privat
-                            </Badge>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">Standard</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm whitespace-nowrap">
-                          {booking.slots?.courses?.instructor || "—"}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-1">
-                            {isAdmin ? (
-                            <Select
-                              value={booking.status}
-                              onValueChange={(val) => handleStatusChange(booking.id, val as BookingStatus)}
-                              disabled={chargingId === booking.id}
-                            >
-                              <SelectTrigger className="w-[130px] h-8">
-                                <Badge variant={statusVariants[booking.status]}>
-                                  {chargingId === booking.id ? "..." : statusLabels[booking.status]}
-                                </Badge>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="booked">Gebucht</SelectItem>
-                                <SelectItem value="attended">Erschienen</SelectItem>
-                                <SelectItem value="no_show">No-Show</SelectItem>
-                                <SelectItem value="cancelled">Storniert</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            ) : (
-                              <Badge variant={statusVariants[booking.status]}>
-                                {statusLabels[booking.status]}
-                              </Badge>
-                            )}
-                            {booking.charge_id && (
-                              <Badge variant="outline" className="text-green-600 text-xs w-fit">
-                                Belastet
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenSlotChange(booking)}
-                              title="Slot ändern"
-                            >
-                              <ArrowLeftRight className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDeleteBookingPending(booking)}
-                              title="Buchung löschen"
-                            >
-                              <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-        </CardContent>
-      </Card>
+      {sortedBookings.length === 0 ? (
+        <div className="py-12 text-center text-muted-foreground">
+          Keine Buchungen gefunden
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <SortableHead label="Name" sortKey="name" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
+                <SortableHead label="Kurs" sortKey="kurs" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
+                <SortableHead label="Termin" sortKey="termin" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
+                <SortableHead label="Typ" sortKey="typ" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
+                <SortableHead label="Ärzt:in" sortKey="arzt" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
+                <SortableHead label="Status" sortKey="status" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedBookings.map((booking) => (
+                <TableRow key={booking.id}>
+                  <TableCell className="font-medium whitespace-nowrap">
+                    {booking.patient_id ? (
+                      <button
+                        className="text-primary hover:underline text-left"
+                        onClick={() => router.push(`/dashboard/patients/${booking.patient_id}`)}
+                      >
+                        {booking.first_name && booking.last_name
+                          ? `${booking.first_name} ${booking.last_name}`
+                          : booking.name}
+                      </button>
+                    ) : (
+                      <span>
+                        {booking.first_name && booking.last_name
+                          ? `${booking.first_name} ${booking.last_name}`
+                          : booking.name}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">{booking.slots?.courses?.title || "—"}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {booking.slots?.start_time
+                      ? format(new Date(booking.slots.start_time), "dd.MM.yyyy HH:mm", { locale: de })
+                      : "—"}
+                  </TableCell>
+                  <TableCell>
+                    {booking.booking_type === "private" ? (
+                      <Badge variant="outline" className="text-blue-600 border-blue-300 whitespace-nowrap">
+                        Privat
+                      </Badge>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Standard</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-sm whitespace-nowrap">
+                    {booking.slots?.courses?.instructor || "—"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <StatusBadgeDropdown
+                        booking={booking}
+                        isAdmin={isAdmin}
+                        chargingId={chargingId}
+                        onStatusChange={handleStatusChange}
+                      />
+                      {booking.charge_id && (
+                        <Badge variant="outline" className="text-green-600 text-xs w-fit">
+                          Belastet
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleOpenSlotChange(booking)}
+                        title="Slot ändern"
+                      >
+                        <ArrowLeftRight className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleteBookingPending(booking)}
+                        title="Buchung löschen"
+                      >
+                        <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }

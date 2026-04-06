@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
+import { TableHeaderBar } from "@/components/table/table-header-bar";
+import { SortableHead } from "@/components/table/sortable-head";
+import { useTableSort } from "@/hooks/use-table-sort";
 import { Plus, Power, PowerOff, Trash2, Shuffle } from "lucide-react";
 
 // Random coupon code generator — avoids ambiguous characters (0/O, 1/I/L)
@@ -56,6 +59,8 @@ interface DiscountCode {
   created: number;
 }
 
+type SortKey = "code" | "discount" | "redemptions" | "status" | "created";
+
 export function DiscountCodesManager() {
   const [codes, setCodes] = useState<DiscountCode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,6 +73,31 @@ export function DiscountCodesManager() {
   const [percentOff, setPercentOff] = useState("10");
   const [maxRedemptions, setMaxRedemptions] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
+
+  // Sorting
+  const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("code", "asc");
+
+  const sortedCodes = useMemo(() => {
+    const sorted = [...codes];
+    const dir = sortDir === "asc" ? 1 : -1;
+    sorted.sort((a, b) => {
+      switch (sortKey) {
+        case "code":
+          return a.code.localeCompare(b.code) * dir;
+        case "discount":
+          return ((a.percent_off || 0) - (b.percent_off || 0)) * dir;
+        case "redemptions":
+          return (a.times_redeemed - b.times_redeemed) * dir;
+        case "status":
+          return ((a.active ? 1 : 0) - (b.active ? 1 : 0)) * dir;
+        case "created":
+          return (a.created - b.created) * dir;
+        default:
+          return 0;
+      }
+    });
+    return sorted;
+  }, [codes, sortKey, sortDir]);
 
   const load = async () => {
     setLoading(true);
@@ -256,12 +286,16 @@ export function DiscountCodesManager() {
         </DialogContent>
       </Dialog>
 
-      <div className="flex items-center justify-end">
-        <Button onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4 mr-1.5" />
-          Rabattcode anlegen
-        </Button>
-      </div>
+      <TableHeaderBar
+        title="Rabattcodes"
+        count={codes.length}
+        actions={
+          <Button onClick={() => setShowCreate(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Rabattcode anlegen
+          </Button>
+        }
+      />
 
       <Card>
         <CardContent className="p-0">
@@ -275,16 +309,16 @@ export function DiscountCodesManager() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Rabatt</TableHead>
-                  <TableHead>Einlösungen</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Erstellt</TableHead>
+                  <SortableHead label="Code" sortKey="code" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+                  <SortableHead label="Rabatt" sortKey="discount" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+                  <SortableHead label="Einlösungen" sortKey="redemptions" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+                  <SortableHead label="Status" sortKey="status" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+                  <SortableHead label="Erstellt" sortKey="created" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
                   <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {codes.map((c) => (
+                {sortedCodes.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-mono font-medium">{c.code}</TableCell>
                     <TableCell>{c.percent_off != null ? `${c.percent_off}%` : "–"}</TableCell>
