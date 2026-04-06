@@ -175,7 +175,7 @@ export async function getMessage(messageId: string): Promise<GmailMessage> {
 }
 
 // Send email
-export async function sendEmail(to: string, subject: string, htmlBody: string, inReplyTo?: string, references?: string, threadId?: string) {
+export async function sendEmail(to: string, subject: string, htmlBody: string, inReplyTo?: string, references?: string, threadId?: string, cc?: string, bcc?: string) {
   const boundary = `boundary_${Date.now()}`;
   const fromHeader = `EPHIA <${GMAIL_USER_EMAIL}>`;
 
@@ -187,6 +187,8 @@ export async function sendEmail(to: string, subject: string, htmlBody: string, i
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
   ];
 
+  if (cc) rawHeaders.push(`Cc: ${cc}`);
+  if (bcc) rawHeaders.push(`Bcc: ${bcc}`);
   if (inReplyTo) rawHeaders.push(`In-Reply-To: ${inReplyTo}`);
   if (references) rawHeaders.push(`References: ${references}`);
 

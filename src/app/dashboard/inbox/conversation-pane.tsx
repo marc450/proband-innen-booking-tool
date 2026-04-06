@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Send, X, Reply } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "./rich-text-editor";
 
 // Middle pane: renders the selected Gmail thread and a reply composer.
@@ -59,12 +60,20 @@ export function ConversationPane({
 }: Props) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyHtml, setReplyHtml] = useState("");
+  const [replyCc, setReplyCc] = useState("");
+  const [replyBcc, setReplyBcc] = useState("");
+  const [showCc, setShowCc] = useState(false);
+  const [showBcc, setShowBcc] = useState(false);
   const [sending, setSending] = useState(false);
 
   // Reset composer when switching threads.
   useEffect(() => {
     setReplyOpen(false);
     setReplyHtml("");
+    setReplyCc("");
+    setReplyBcc("");
+    setShowCc(false);
+    setShowBcc(false);
   }, [threadId]);
 
   const lastMsg = messages[messages.length - 1];
@@ -72,18 +81,30 @@ export function ConversationPane({
   const openReply = () => {
     const sig = signature?.html ? `<br><br>${signature.html}` : "";
     setReplyHtml(sig);
+    // Auto-populate CC from the last message's CC header
+    if (lastMsg?.cc) {
+      setReplyCc(lastMsg.cc);
+      setShowCc(true);
+    } else {
+      setReplyCc("");
+      setShowCc(false);
+    }
+    setReplyBcc("");
+    setShowBcc(false);
     setReplyOpen(true);
   };
 
   const threadSubject = useMemo(() => messages[0]?.subject || "", [messages]);
 
+  const replyTo = lastMsg?.isInbound
+    ? lastMsg.fromEmail
+    : lastMsg?.to.split(",")[0].trim();
+
   const handleSend = async () => {
     if (!lastMsg) return;
     setSending(true);
     try {
-      const to = lastMsg.isInbound
-        ? lastMsg.fromEmail
-        : lastMsg.to.split(",")[0].trim();
+      const to = replyTo;
       const subject = lastMsg.subject.startsWith("Re:")
         ? lastMsg.subject
         : `Re: ${lastMsg.subject}`;
@@ -99,11 +120,17 @@ export function ConversationPane({
           references: lastMsg.references
             ? `${lastMsg.references} ${lastMsg.messageId}`
             : lastMsg.messageId,
+          cc: replyCc || undefined,
+          bcc: replyBcc || undefined,
         }),
       });
       if (res.ok) {
         setReplyOpen(false);
         setReplyHtml("");
+        setReplyCc("");
+        setReplyBcc("");
+        setShowCc(false);
+        setShowBcc(false);
         onSent();
       }
     } finally {
@@ -162,10 +189,16 @@ export function ConversationPane({
                 </span>
               </div>
               {msg.to && (
-                <p className="text-xs text-muted-foreground mb-3 truncate">
+                <p className="text-xs text-muted-foreground mb-1 truncate">
                   An: {msg.to}
                 </p>
               )}
+              {msg.cc && (
+                <p className="text-xs text-muted-foreground mb-3 truncate">
+                  CC: {msg.cc}
+                </p>
+              )}
+              {!msg.cc && msg.to && <div className="mb-2" />}
               <div
                 className="prose prose-sm max-w-none text-sm [&_img]:max-w-full [&_table]:text-sm"
                 dangerouslySetInnerHTML={{
@@ -193,23 +226,102 @@ export function ConversationPane({
           </div>
         ) : (
           <div className="p-4 space-y-3">
+            {/* To + CC/BCC toggle */}
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>
-                An:{" "}
-                {lastMsg?.isInbound
-                  ? lastMsg.fromEmail
-                  : lastMsg?.to.split(",")[0].trim()}
-              </span>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="flex-shrink-0">An: {replyTo}</span>
+                {(!showCc || !showBcc) && (
+                  <div className="flex gap-2 flex-shrink-0">
+                    {!showCc && (
+                      <button
+                        type="button"
+                        onClick={() => setShowCc(true)}
+                        className="text-xs text-[#0066FF] hover:underline font-medium"
+                      >
+                        CC
+                      </button>
+                    )}
+                    {!showBcc && (
+                      <button
+                        type="button"
+                        onClick={() => setShowBcc(true)}
+                        className="text-xs text-[#0066FF] hover:underline font-medium"
+                      >
+                        BCC
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
               <button
                 onClick={() => {
                   setReplyOpen(false);
                   setReplyHtml("");
+                  setReplyCc("");
+                  setReplyBcc("");
+                  setShowCc(false);
+                  setShowBcc(false);
                 }}
                 className="text-gray-500 hover:text-gray-700"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
+
+            {/* CC row */}
+            {showCc && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-gray-500 w-10 flex-shrink-0">
+                  CC
+                </label>
+                <Input
+                  value={replyCc}
+                  onChange={(e) => setReplyCc(e.target.value)}
+                  placeholder="email@example.com"
+                  type="email"
+                  className="flex-1 border-0 !px-0 focus-visible:ring-0 h-7 text-xs"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCc(false);
+                    setReplyCc("");
+                  }}
+                  className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* BCC row */}
+            {showBcc && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-gray-500 w-10 flex-shrink-0">
+                  BCC
+                </label>
+                <Input
+                  value={replyBcc}
+                  onChange={(e) => setReplyBcc(e.target.value)}
+                  placeholder="email@example.com"
+                  type="email"
+                  className="flex-1 border-0 !px-0 focus-visible:ring-0 h-7 text-xs"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBcc(false);
+                    setReplyBcc("");
+                  }}
+                  className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+
             <RichTextEditor
               value={replyHtml}
               onChange={setReplyHtml}

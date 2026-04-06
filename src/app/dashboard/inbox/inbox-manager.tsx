@@ -39,6 +39,8 @@ export function InboxManager() {
   const [composeTo, setComposeTo] = useState("");
   const [composeSubject, setComposeSubject] = useState("");
   const [composeBody, setComposeBody] = useState("");
+  const [composeCc, setComposeCc] = useState("");
+  const [composeBcc, setComposeBcc] = useState("");
   const [composeSending, setComposeSending] = useState(false);
 
   // Translate our filter tabs into a Gmail query. "Beantwortet" is handled
@@ -199,6 +201,8 @@ export function InboxManager() {
           to: composeTo,
           subject: composeSubject,
           htmlBody: `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;">${composeBody}</div>`,
+          cc: composeCc || undefined,
+          bcc: composeBcc || undefined,
         }),
       });
       if (res.ok) {
@@ -206,6 +210,8 @@ export function InboxManager() {
         setComposeTo("");
         setComposeSubject("");
         setComposeBody("");
+        setComposeCc("");
+        setComposeBcc("");
         fetchThreads();
       }
     } finally {
@@ -218,6 +224,8 @@ export function InboxManager() {
     setComposeTo("");
     setComposeSubject("");
     setComposeBody("");
+    setComposeCc("");
+    setComposeBcc("");
   };
 
   const openCompose = () => {
@@ -225,6 +233,8 @@ export function InboxManager() {
     setComposeBody(sig);
     setComposeTo("");
     setComposeSubject("");
+    setComposeCc("");
+    setComposeBcc("");
     setComposing(true);
     setSelectedThread(null);
     setThreadMessages([]);
@@ -294,10 +304,14 @@ export function InboxManager() {
               to={composeTo}
               subject={composeSubject}
               body={composeBody}
+              cc={composeCc}
+              bcc={composeBcc}
               sending={composeSending}
               onToChange={setComposeTo}
               onSubjectChange={setComposeSubject}
               onBodyChange={setComposeBody}
+              onCcChange={setComposeCc}
+              onBccChange={setComposeBcc}
               onSend={handleComposeSend}
               onCancel={cancelCompose}
             />

@@ -32,7 +32,11 @@ export function RichTextEditor({
   className = "",
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const latestHtmlRef = useRef(value);
+  // Initialise to null (not `value`) so the first useEffect run always
+  // pushes `value` into the DOM — otherwise the editor mounts with an
+  // empty div even when the caller passes a non-empty initial value
+  // (e.g. the email signature).
+  const latestHtmlRef = useRef<string | null>(null);
 
   // Only push the HTML string into the DOM when it differs from what we
   // last emitted. Without this guard, every keystroke re-syncs the DOM

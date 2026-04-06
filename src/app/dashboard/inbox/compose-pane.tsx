@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Loader2, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,10 +15,14 @@ interface Props {
   to: string;
   subject: string;
   body: string;
+  cc: string;
+  bcc: string;
   sending: boolean;
   onToChange: (v: string) => void;
   onSubjectChange: (v: string) => void;
   onBodyChange: (v: string) => void;
+  onCcChange: (v: string) => void;
+  onBccChange: (v: string) => void;
   onSend: () => void;
   onCancel: () => void;
 }
@@ -26,13 +31,20 @@ export function ComposePane({
   to,
   subject,
   body,
+  cc,
+  bcc,
   sending,
   onToChange,
   onSubjectChange,
   onBodyChange,
+  onCcChange,
+  onBccChange,
   onSend,
   onCancel,
 }: Props) {
+  const [showCc, setShowCc] = useState(false);
+  const [showBcc, setShowBcc] = useState(false);
+
   const canSend = !!to.trim() && !!subject.trim() && body.trim().length > 0;
   return (
     <div className="flex flex-col h-full bg-gray-50/30">
@@ -49,6 +61,7 @@ export function ComposePane({
 
       <div className="flex-1 overflow-y-auto p-6">
         <div className="bg-white rounded-[10px] p-5 space-y-4 max-w-3xl mx-auto">
+          {/* To row */}
           <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
             <label className="text-xs font-medium text-gray-500 w-16 flex-shrink-0">
               An
@@ -60,7 +73,85 @@ export function ComposePane({
               type="email"
               className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8"
             />
+            {(!showCc || !showBcc) && (
+              <div className="flex gap-2 flex-shrink-0">
+                {!showCc && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCc(true)}
+                    className="text-xs text-[#0066FF] hover:underline font-medium"
+                  >
+                    CC
+                  </button>
+                )}
+                {!showBcc && (
+                  <button
+                    type="button"
+                    onClick={() => setShowBcc(true)}
+                    className="text-xs text-[#0066FF] hover:underline font-medium"
+                  >
+                    BCC
+                  </button>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* CC row */}
+          {showCc && (
+            <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
+              <label className="text-xs font-medium text-gray-500 w-16 flex-shrink-0">
+                CC
+              </label>
+              <Input
+                value={cc}
+                onChange={(e) => onCcChange(e.target.value)}
+                placeholder="email@example.com"
+                type="email"
+                className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCc(false);
+                  onCcChange("");
+                }}
+                className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* BCC row */}
+          {showBcc && (
+            <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
+              <label className="text-xs font-medium text-gray-500 w-16 flex-shrink-0">
+                BCC
+              </label>
+              <Input
+                value={bcc}
+                onChange={(e) => onBccChange(e.target.value)}
+                placeholder="email@example.com"
+                type="email"
+                className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setShowBcc(false);
+                  onBccChange("");
+                }}
+                className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Subject row */}
           <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
             <label className="text-xs font-medium text-gray-500 w-16 flex-shrink-0">
               Betreff
