@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Send, X, Reply, Paperclip, FileText, Image, File } from "lucide-react";
+import { Loader2, Send, X, Reply, Paperclip, FileText, Image, File, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "./rich-text-editor";
@@ -39,6 +39,7 @@ interface Props {
   loading: boolean;
   signature: Signature | null;
   onSent: () => void;
+  onDelete: () => void;
 }
 
 function formatFullDate(dateStr: string) {
@@ -58,6 +59,7 @@ export function ConversationPane({
   loading,
   signature,
   onSent,
+  onDelete,
 }: Props) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyHtml, setReplyHtml] = useState("");
@@ -181,9 +183,32 @@ export function ConversationPane({
         <h2 className="text-base font-bold truncate">
           {threadSubject || "(kein Betreff)"}
         </h2>
-        <span className="text-xs text-muted-foreground ml-4 flex-shrink-0">
-          {messages.length} Nachricht{messages.length !== 1 && "en"}
-        </span>
+        <div className="flex items-center gap-3 ml-4 flex-shrink-0">
+          <span className="text-xs text-muted-foreground">
+            {messages.length} Nachricht{messages.length !== 1 && "en"}
+          </span>
+          <button
+            onClick={async () => {
+              if (!confirm("Diese Konversation wirklich löschen?")) return;
+              try {
+                for (const msg of messages) {
+                  await fetch("/api/gmail/labels", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ messageId: msg.id, addLabels: ["TRASH"] }),
+                  });
+                }
+                onDelete();
+              } catch {
+                // best effort
+              }
+            }}
+            className="p-1.5 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors"
+            title="Löschen"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Messages */}

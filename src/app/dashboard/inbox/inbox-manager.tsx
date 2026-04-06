@@ -348,6 +348,11 @@ export function InboxManager() {
               loading={threadLoading}
               signature={signature}
               onSent={handleReplySent}
+              onDelete={() => {
+                setSelectedThread(null);
+                setThreadMessages([]);
+                fetchThreads();
+              }}
             />
           )}
         </div>
