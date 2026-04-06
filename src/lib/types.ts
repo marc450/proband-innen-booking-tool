@@ -199,6 +199,7 @@ export type CampaignStatus = "draft" | "scheduled" | "sending" | "sent" | "faile
 
 export interface EmailCampaign {
   id: string;
+  name: string | null;
   course_id: string | null;
   subject: string;
   body_text: string;

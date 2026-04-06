@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { EmailCampaign, CampaignStatus, Course } from "@/lib/types";
+import { EmailCampaign, CampaignStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,12 +35,9 @@ const statusVariants: Record<CampaignStatus, "default" | "secondary" | "destruct
 
 interface Props {
   campaigns: EmailCampaign[];
-  courses: Pick<Course, "id" | "title">[];
 }
 
-export function CampaignsManager({ campaigns, courses }: Props) {
-  const courseMap = new Map(courses.map((c) => [c.id, c.title]));
-
+export function CampaignsManager({ campaigns }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -63,8 +60,8 @@ export function CampaignsManager({ campaigns, courses }: Props) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Name</TableHead>
                   <TableHead>Betreff</TableHead>
-                  <TableHead>Kurs</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Empfänger:innen</TableHead>
                   <TableHead>Datum</TableHead>
@@ -73,9 +70,11 @@ export function CampaignsManager({ campaigns, courses }: Props) {
               <TableBody>
                 {campaigns.map((c) => (
                   <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.subject}</TableCell>
+                    <TableCell className="font-medium">
+                      {c.name || "—"}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {c.course_id ? courseMap.get(c.course_id) || "—" : "—"}
+                      {c.subject}
                     </TableCell>
                     <TableCell>
                       <Badge variant={statusVariants[c.status]}>

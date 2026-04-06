@@ -1,17 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildEmailHtml } from "@/lib/email-template";
+import { buildEmailHtml, type EmailButton } from "@/lib/email-template";
 import { decryptPatient } from "@/lib/encryption";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const BATCH_SIZE = 100;
 
-export async function POST(req: NextRequest) {
-  const { courseId, subject, bodyText, excludedPatientIds, excludeBlacklisted, scheduledAt } = await req.json();
+type AudienceType = "probandinnen" | "aerztinnen" | "alle";
 
-  if (!courseId || !subject || !bodyText) {
+interface Recipient {
+  email: string;
+  first_name: string | null;
+}
+
+export async function POST(req: NextRequest) {
+  const {
+    name,
+    subject,
+    bodyText,
+    audienceType,
+    buttons,
+    excludedIds,
+    excludeBlacklisted,
+    scheduledAt,
+  } = await req.json() as {
+    name: string;
+    subject: string;
+    bodyText: string;
+    audienceType: AudienceType;
+    buttons: EmailButton[];
+    excludedIds: string[];
+    excludeBlacklisted: boolean;
+    scheduledAt: string | null;
+  };
+
+  if (!subject || !bodyText) {
     return NextResponse.json({ error: "Pflichtfelder fehlen." }, { status: 400 });
   }
 
@@ -20,53 +43,43 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createAdminClient();
-
-  // Fetch course
-  const { data: course } = await supabase
-    .from("courses")
-    .select("id, title, course_date, location")
-    .eq("id", courseId)
-    .single();
-
-  if (!course) {
-    return NextResponse.json({ error: "Kurs nicht gefunden." }, { status: 404 });
-  }
-
-  // Fetch all patients and decrypt
-  const { data: rawPatients } = await supabase
-    .from("patients")
-    .select("*");
-  const allPatients = (rawPatients || []).map(decryptPatient);
-
-  if (allPatients.length === 0) {
-    return NextResponse.json({ error: "Keine Proband:innen vorhanden." }, { status: 400 });
-  }
-
-  // Filter recipients
-  const excludedSet = new Set(excludedPatientIds || []);
+  const excludedSet = new Set(excludedIds || []);
   const emailsSeen = new Set<string>();
-  const recipients = allPatients.filter((p) => {
-    if (!p.email) return false;
-    if (excludeBlacklisted && p.patient_status === "blacklist") return false;
-    if (excludedSet.has(p.id)) return false;
-    const emailLower = p.email.toLowerCase();
-    if (emailsSeen.has(emailLower)) return false;
-    emailsSeen.add(emailLower);
-    return true;
-  });
+  const recipients: Recipient[] = [];
+
+  // Resolve recipients based on audience type
+  if (audienceType === "probandinnen" || audienceType === "alle") {
+    const { data: rawPatients } = await supabase.from("patients").select("*");
+    const allPatients = (rawPatients || []).map(decryptPatient);
+    for (const p of allPatients) {
+      if (!p.email) continue;
+      if (excludeBlacklisted && p.patient_status === "blacklist") continue;
+      if (excludedSet.has(`p-${p.id}`)) continue;
+      const emailLower = p.email.toLowerCase();
+      if (emailsSeen.has(emailLower)) continue;
+      emailsSeen.add(emailLower);
+      recipients.push({ email: p.email, first_name: p.first_name });
+    }
+  }
+
+  if (audienceType === "aerztinnen" || audienceType === "alle") {
+    const { data: azubis } = await supabase
+      .from("auszubildende")
+      .select("id, email, first_name, contact_type");
+    for (const a of azubis || []) {
+      const ct = a.contact_type as string | null;
+      if (ct !== "auszubildende" && ct !== null) continue;
+      if (!a.email) continue;
+      if (excludedSet.has(`a-${a.id}`)) continue;
+      const emailLower = a.email.toLowerCase();
+      if (emailsSeen.has(emailLower)) continue;
+      emailsSeen.add(emailLower);
+      recipients.push({ email: a.email, first_name: a.first_name });
+    }
+  }
 
   if (recipients.length === 0) {
     return NextResponse.json({ error: "Keine Empfänger:innen nach Filterung." }, { status: 400 });
-  }
-
-  // Format course details
-  let formattedDate = "";
-  if (course.course_date) {
-    try {
-      formattedDate = format(new Date(course.course_date + "T00:00:00"), "EEEE, dd. MMMM yyyy", { locale: de });
-    } catch {
-      formattedDate = course.course_date;
-    }
   }
 
   // Determine status and send_at
@@ -77,7 +90,7 @@ export async function POST(req: NextRequest) {
   const { data: campaign, error: insertErr } = await supabase
     .from("email_campaigns")
     .insert({
-      course_id: courseId,
+      name: name || null,
       subject,
       body_text: bodyText,
       recipient_count: recipients.length,
@@ -93,22 +106,20 @@ export async function POST(req: NextRequest) {
   }
 
   // Build and send emails in batches
+  const validButtons = (buttons || []).filter((b: EmailButton) => b.label && b.url);
+
   try {
     for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
       const batch = recipients.slice(i, i + BATCH_SIZE);
 
-      const emails = batch.map((p) => ({
+      const emails = batch.map((r) => ({
         from: "EPHIA <customerlove@ephia.de>",
-        to: [p.email],
+        to: [r.email],
         subject,
         html: buildEmailHtml({
-          firstName: p.first_name || "Proband:in",
+          firstName: r.first_name || "Kolleg:in",
           intro: bodyText,
-          infoRows: [
-            { label: "Kurs", value: course.title },
-            { label: "Datum", value: formattedDate },
-            { label: "Ort", value: course.location || "" },
-          ],
+          buttons: validButtons,
         }),
         ...(sendAtParam ? { send_at: sendAtParam } : {}),
       }));

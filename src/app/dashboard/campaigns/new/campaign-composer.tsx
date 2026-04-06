@@ -10,12 +10,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -27,15 +21,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { ArrowLeft, Send, Clock, ChevronDown, ChevronRight, Search } from "lucide-react";
+import { ArrowLeft, Send, Clock, ChevronDown, ChevronRight, Search, Plus, X, Link as LinkIcon } from "lucide-react";
 import Link from "next/link";
-
-interface CourseOption {
-  id: string;
-  title: string;
-  course_date: string | null;
-  location: string | null;
-}
 
 interface PatientOption {
   id: string;
@@ -45,20 +32,36 @@ interface PatientOption {
   patient_status: "active" | "warning" | "blacklist";
 }
 
-interface Props {
-  courses: CourseOption[];
-  patients: PatientOption[];
+interface AuszubildendeOption {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
 }
 
-export function CampaignComposer({ courses, patients }: Props) {
+interface Props {
+  patients: PatientOption[];
+  auszubildende: AuszubildendeOption[];
+}
+
+type AudienceType = "probandinnen" | "aerztinnen" | "alle";
+
+interface EmailButton {
+  label: string;
+  url: string;
+}
+
+export function CampaignComposer({ patients, auszubildende }: Props) {
   const router = useRouter();
 
   // Form state
-  const [courseId, setCourseId] = useState("");
+  const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
   const [bodyText, setBodyText] = useState("");
+  const [audienceType, setAudienceType] = useState<AudienceType>("probandinnen");
   const [excludeBlacklisted, setExcludeBlacklisted] = useState(true);
   const [manuallyExcluded, setManuallyExcluded] = useState<Set<string>>(new Set());
+  const [buttons, setButtons] = useState<EmailButton[]>([]);
   const [scheduleMode, setScheduleMode] = useState<"now" | "later">("now");
   const [scheduledAt, setScheduledAt] = useState("");
   const [recipientSearch, setRecipientSearch] = useState("");
@@ -69,35 +72,61 @@ export function CampaignComposer({ courses, patients }: Props) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const selectedCourse = courses.find((c) => c.id === courseId);
+  // Reset exclusions when audience changes
+  const handleAudienceChange = (newAudience: AudienceType) => {
+    setAudienceType(newAudience);
+    setManuallyExcluded(new Set());
+    setRecipientSearch("");
+  };
 
-  // Deduplicate patients by email, prefer non-blacklisted
-  const uniquePatients = useMemo(() => {
-    const byEmail = new Map<string, PatientOption>();
-    for (const p of patients) {
-      const existing = byEmail.get(p.email.toLowerCase());
-      if (!existing || (existing.patient_status === "blacklist" && p.patient_status !== "blacklist")) {
-        byEmail.set(p.email.toLowerCase(), p);
-      }
+  // Merge contacts into a unified list depending on audience
+  const allContacts = useMemo(() => {
+    const patientContacts = patients.map((p) => ({
+      id: `p-${p.id}`,
+      rawId: p.id,
+      email: p.email,
+      first_name: p.first_name,
+      last_name: p.last_name,
+      isBlacklisted: p.patient_status === "blacklist",
+      source: "proband" as const,
+    }));
+    const azubiContacts = auszubildende.map((a) => ({
+      id: `a-${a.id}`,
+      rawId: a.id,
+      email: a.email,
+      first_name: a.first_name,
+      last_name: a.last_name,
+      isBlacklisted: false,
+      source: "azubi" as const,
+    }));
+
+    if (audienceType === "probandinnen") return patientContacts;
+    if (audienceType === "aerztinnen") return azubiContacts;
+    // "alle" — merge and dedupe by email
+    type Contact = typeof patientContacts[0] | typeof azubiContacts[0];
+    const byEmail = new Map<string, Contact>();
+    for (const c of [...azubiContacts, ...patientContacts]) {
+      const key = c.email.toLowerCase();
+      if (!byEmail.has(key)) byEmail.set(key, c);
     }
     return Array.from(byEmail.values());
-  }, [patients]);
+  }, [patients, auszubildende, audienceType]);
 
-  const eligiblePatients = useMemo(() => {
-    return uniquePatients.filter((p) => {
-      if (excludeBlacklisted && p.patient_status === "blacklist") return false;
-      if (manuallyExcluded.has(p.id)) return false;
+  const eligibleContacts = useMemo(() => {
+    return allContacts.filter((c) => {
+      if (excludeBlacklisted && c.isBlacklisted) return false;
+      if (manuallyExcluded.has(c.id)) return false;
       return true;
     });
-  }, [uniquePatients, excludeBlacklisted, manuallyExcluded]);
+  }, [allContacts, excludeBlacklisted, manuallyExcluded]);
 
   const filteredRecipients = useMemo(() => {
-    if (!recipientSearch) return uniquePatients;
+    if (!recipientSearch) return allContacts;
     const q = recipientSearch.toLowerCase();
-    return uniquePatients.filter((p) =>
-      [p.first_name, p.last_name, p.email].filter(Boolean).join(" ").toLowerCase().includes(q)
+    return allContacts.filter((c) =>
+      [c.first_name, c.last_name, c.email].filter(Boolean).join(" ").toLowerCase().includes(q)
     );
-  }, [uniquePatients, recipientSearch]);
+  }, [allContacts, recipientSearch]);
 
   const toggleExclude = (id: string) => {
     setManuallyExcluded((prev) => {
@@ -108,22 +137,28 @@ export function CampaignComposer({ courses, patients }: Props) {
     });
   };
 
-  const formattedDate = selectedCourse?.course_date
-    ? format(new Date(selectedCourse.course_date + "T00:00:00"), "EEEE, dd. MMMM yyyy", { locale: de })
-    : "";
+  // Button management
+  const addButton = () => {
+    if (buttons.length < 3) {
+      setButtons([...buttons, { label: "", url: "" }]);
+    }
+  };
+  const updateButton = (index: number, field: "label" | "url", value: string) => {
+    setButtons((prev) => prev.map((b, i) => (i === index ? { ...b, [field]: value } : b)));
+  };
+  const removeButton = (index: number) => {
+    setButtons((prev) => prev.filter((_, i) => i !== index));
+  };
 
   // Live preview HTML
   const previewHtml = useMemo(() => {
+    const validButtons = buttons.filter((b) => b.label && b.url);
     return buildEmailHtml({
       firstName: "Max",
       intro: bodyText || "Dein E-Mail-Text erscheint hier...",
-      infoRows: [
-        { label: "Kurs", value: selectedCourse?.title || "Kursname" },
-        { label: "Datum", value: formattedDate || "Kursdatum" },
-        { label: "Ort", value: selectedCourse?.location || "" },
-      ],
+      buttons: validButtons,
     });
-  }, [bodyText, selectedCourse, formattedDate]);
+  }, [bodyText, buttons]);
 
   // Schedule validation
   const scheduleError = useMemo(() => {
@@ -137,10 +172,10 @@ export function CampaignComposer({ courses, patients }: Props) {
   }, [scheduleMode, scheduledAt]);
 
   const canSend =
-    courseId &&
+    name.trim() &&
     subject.trim() &&
     bodyText.trim() &&
-    eligiblePatients.length > 0 &&
+    eligibleContacts.length > 0 &&
     (scheduleMode === "now" || (scheduledAt && !scheduleError));
 
   const handleSend = async () => {
@@ -149,14 +184,17 @@ export function CampaignComposer({ courses, patients }: Props) {
     setError(null);
 
     try {
+      const validButtons = buttons.filter((b) => b.label && b.url);
       const res = await fetch("/api/send-campaign", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          courseId,
+          name,
           subject,
           bodyText,
-          excludedPatientIds: Array.from(manuallyExcluded),
+          audienceType,
+          buttons: validButtons,
+          excludedIds: Array.from(manuallyExcluded),
           excludeBlacklisted,
           scheduledAt: scheduleMode === "later" ? new Date(scheduledAt).toISOString() : null,
         }),
@@ -177,6 +215,8 @@ export function CampaignComposer({ courses, patients }: Props) {
     }
   };
 
+  const hasBlacklisted = audienceType !== "aerztinnen" && allContacts.some((c) => c.isBlacklisted);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -192,40 +232,20 @@ export function CampaignComposer({ courses, patients }: Props) {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Left: Form */}
         <div className="space-y-6">
-          {/* Course selector */}
+          {/* Campaign name */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Kurs</CardTitle>
+              <CardTitle className="text-base">Kampagne</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Select value={courseId} onValueChange={(val) => {
-                if (!val) return;
-                setCourseId(val);
-                const c = courses.find((c) => c.id === val);
-                if (c && !subject) setSubject(`Einladung: ${c.title}`);
-              }}>
-                <SelectTrigger>
-                  <span className="truncate">
-                    {courseId
-                      ? courses.find((c) => c.id === courseId)?.title ?? "Kurs wählen..."
-                      : "Kurs wählen..."}
-                  </span>
-                </SelectTrigger>
-                <SelectContent className="w-[--radix-select-trigger-width]">
-                  {courses.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.title}
-                      {c.course_date ? ` (${format(new Date(c.course_date + "T00:00:00"), "dd.MM.yyyy")})` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedCourse && (
-                <div className="text-sm text-muted-foreground space-y-1">
-                  {formattedDate && <div>{formattedDate}</div>}
-                  {selectedCourse.location && <div>{selectedCourse.location}</div>}
-                </div>
-              )}
+              <div className="space-y-2">
+                <Label>Name</Label>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="z.B. Einladung Grundkurs Mai, Newsletter April..."
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -248,9 +268,47 @@ export function CampaignComposer({ courses, patients }: Props) {
                 <Textarea
                   value={bodyText}
                   onChange={(e) => setBodyText(e.target.value)}
-                  placeholder="Der Haupttext Deiner E-Mail. Kursdetails werden automatisch als Info-Box angehängt."
+                  placeholder="Der Haupttext Deiner E-Mail."
                   className="min-h-[180px] resize-y"
                 />
+              </div>
+
+              {/* Buttons */}
+              <div className="space-y-2">
+                <Label>Buttons</Label>
+                {buttons.map((btn, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Input
+                      value={btn.label}
+                      onChange={(e) => updateButton(i, "label", e.target.value)}
+                      placeholder="Button-Text"
+                      className="flex-1"
+                    />
+                    <div className="relative flex-1">
+                      <LinkIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        value={btn.url}
+                        onChange={(e) => updateButton(i, "url", e.target.value)}
+                        placeholder="https://..."
+                        className="pl-7"
+                      />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeButton(i)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+                {buttons.length < 3 && (
+                  <Button variant="outline" size="sm" onClick={addButton}>
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    Button hinzufügen
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -259,24 +317,47 @@ export function CampaignComposer({ courses, patients }: Props) {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">
-                Empfänger:innen ({eligiblePatients.length})
+                Empfänger:innen ({eligibleContacts.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="exclude-blacklist"
-                  checked={excludeBlacklisted}
-                  onCheckedChange={(checked: boolean) => setExcludeBlacklisted(checked)}
-                />
-                <label htmlFor="exclude-blacklist" className="text-sm">
-                  Blacklisted Proband:innen ausschließen
-                  {excludeBlacklisted && (() => {
-                    const count = uniquePatients.filter((p) => p.patient_status === "blacklist").length;
-                    return count > 0 ? ` (${count} ausgeschlossen)` : "";
-                  })()}
-                </label>
+              {/* Audience toggle */}
+              <div className="flex bg-muted rounded-lg p-1">
+                {([
+                  { value: "probandinnen", label: "Proband:innen" },
+                  { value: "aerztinnen", label: "Ärzt:innen" },
+                  { value: "alle", label: "Alle" },
+                ] as const).map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => handleAudienceChange(value)}
+                    className={`flex-1 py-1.5 text-sm font-semibold rounded-md transition-colors ${
+                      audienceType === value
+                        ? "bg-white text-foreground shadow-sm"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
+
+              {hasBlacklisted && (
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="exclude-blacklist"
+                    checked={excludeBlacklisted}
+                    onCheckedChange={(checked: boolean) => setExcludeBlacklisted(checked)}
+                  />
+                  <label htmlFor="exclude-blacklist" className="text-sm">
+                    Blacklisted Proband:innen ausschließen
+                    {excludeBlacklisted && (() => {
+                      const count = allContacts.filter((c) => c.isBlacklisted).length;
+                      return count > 0 ? ` (${count} ausgeschlossen)` : "";
+                    })()}
+                  </label>
+                </div>
+              )}
 
               <button
                 className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
@@ -298,26 +379,25 @@ export function CampaignComposer({ courses, patients }: Props) {
                     />
                   </div>
                   <div className="max-h-[240px] overflow-y-auto border rounded-md divide-y">
-                    {filteredRecipients.map((p) => {
-                      const isBlacklisted = p.patient_status === "blacklist";
-                      const isExcluded = manuallyExcluded.has(p.id) || (excludeBlacklisted && isBlacklisted);
-                      const name = [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email;
+                    {filteredRecipients.map((c) => {
+                      const isExcluded = manuallyExcluded.has(c.id) || (excludeBlacklisted && c.isBlacklisted);
+                      const displayName = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email;
 
                       return (
                         <label
-                          key={p.id}
+                          key={c.id}
                           className={`flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-muted/50 ${isExcluded ? "opacity-50" : ""}`}
                         >
                           <Checkbox
                             checked={!isExcluded}
-                            disabled={excludeBlacklisted && isBlacklisted}
+                            disabled={excludeBlacklisted && c.isBlacklisted}
                             onCheckedChange={() => {
-                              if (!(excludeBlacklisted && isBlacklisted)) toggleExclude(p.id);
+                              if (!(excludeBlacklisted && c.isBlacklisted)) toggleExclude(c.id);
                             }}
                           />
-                          <span className="flex-1 min-w-0 truncate">{name}</span>
-                          <span className="text-xs text-muted-foreground truncate">{p.email}</span>
-                          {isBlacklisted && (
+                          <span className="flex-1 min-w-0 truncate">{displayName}</span>
+                          <span className="text-xs text-muted-foreground truncate">{c.email}</span>
+                          {c.isBlacklisted && (
                             <span className="text-xs text-red-500 shrink-0">Blacklist</span>
                           )}
                         </label>
@@ -389,7 +469,7 @@ export function CampaignComposer({ courses, patients }: Props) {
               ) : (
                 <>
                   <Send className="h-4 w-4 mr-2" />
-                  An {eligiblePatients.length} Empfänger:innen senden
+                  An {eligibleContacts.length} Empfänger:innen senden
                 </>
               )}
             </Button>
@@ -421,8 +501,8 @@ export function CampaignComposer({ courses, patients }: Props) {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {scheduleMode === "later"
-                ? `Die E-Mail wird am ${scheduledAt ? format(new Date(scheduledAt), "dd.MM.yyyy 'um' HH:mm", { locale: de }) : ""} an ${eligiblePatients.length} Empfänger:innen gesendet.`
-                : `Die E-Mail wird jetzt an ${eligiblePatients.length} Empfänger:innen gesendet. Dieser Vorgang kann nicht rückgängig gemacht werden.`}
+                ? `Die E-Mail wird am ${scheduledAt ? format(new Date(scheduledAt), "dd.MM.yyyy 'um' HH:mm", { locale: de }) : ""} an ${eligibleContacts.length} Empfänger:innen gesendet.`
+                : `Die E-Mail wird jetzt an ${eligibleContacts.length} Empfänger:innen gesendet. Dieser Vorgang kann nicht rückgängig gemacht werden.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

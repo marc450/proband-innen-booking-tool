@@ -16,18 +16,25 @@ interface InfoBoxRow {
   value: string;
 }
 
+export interface EmailButton {
+  label: string;
+  url: string;
+}
+
 export function buildEmailHtml({
   firstName,
   intro,
-  infoRows,
+  infoRows = [],
   note,
+  buttons = [],
   closing = "Herzliche Grüße,<br>Dein EPHIA-Team",
   extraContent = "",
 }: {
   firstName: string;
   intro: string;
-  infoRows: InfoBoxRow[];
+  infoRows?: InfoBoxRow[];
   note?: string;
+  buttons?: EmailButton[];
   closing?: string;
   extraContent?: string;
 }): string {
@@ -45,6 +52,19 @@ export function buildEmailHtml({
        </div>`
     : "";
 
+  const buttonsHtml = buttons.length > 0
+    ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+        <tr><td>
+          ${buttons
+            .map(
+              (b) =>
+                `<a href="${b.url}" target="_blank" style="display:inline-block;background-color:#0066FF;color:#ffffff;font-weight:bold;font-size:16px;padding:12px 24px;border-radius:10px;text-decoration:none;margin:0 8px 8px 0;">${b.label}</a>`
+            )
+            .join("\n          ")}
+        </td></tr>
+      </table>`
+    : "";
+
   return `<div style="background-color:#fff; padding:0; font-family:Arial, sans-serif;">
   <div style="background-color:#fff; max-width:600px; margin:0 auto; padding:8px; text-align:left; line-height:1.5;">
 
@@ -52,6 +72,8 @@ export function buildEmailHtml({
       Hi ${firstName},<br><br>
       ${intro}
     </p>
+
+    ${buttonsHtml}
 
     ${rows ? `<div style="border-radius:8px; padding:14px 16px; background-color:#FAEBE1; border:1px solid #F0D0B8; font-size:14px; margin:0 0 20px; text-align:left;">
       ${rows}
