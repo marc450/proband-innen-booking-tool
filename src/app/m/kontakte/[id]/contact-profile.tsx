@@ -147,15 +147,15 @@ export function ContactProfile({ patient, bookings, isAdmin }: Props) {
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3 mt-5">
-          <div className="bg-[#FAEBE1] rounded-[10px] py-2">
+          <div className="bg-gray-100 rounded-[10px] py-2">
             <div className="text-lg font-bold text-black">{bookings.length}</div>
             <div className="text-[10px] text-gray-500">Buchungen</div>
           </div>
-          <div className="bg-[#FAEBE1] rounded-[10px] py-2">
+          <div className="bg-gray-100 rounded-[10px] py-2">
             <div className="text-lg font-bold text-emerald-600">{attendedCount}</div>
             <div className="text-[10px] text-gray-500">Erschienen</div>
           </div>
-          <div className="bg-[#FAEBE1] rounded-[10px] py-2">
+          <div className="bg-gray-100 rounded-[10px] py-2">
             <div className="text-lg font-bold text-red-600">{noShowCount}</div>
             <div className="text-[10px] text-gray-500">No-Show</div>
           </div>

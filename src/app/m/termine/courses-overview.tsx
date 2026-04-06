@@ -1,14 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, MapPin, User, Clock } from "lucide-react";
-import type { Course, Slot } from "@/lib/types";
+import { ChevronDown, MapPin, User, Clock, Users } from "lucide-react";
+import type { Course, Slot, CourseTemplate, CourseSession } from "@/lib/types";
 
 interface Props {
   courses: Course[];
   slots: Slot[];
   slotBookingCounts: Record<string, number>;
+  templates: CourseTemplate[];
+  sessions: CourseSession[];
 }
+
+type Tab = "kurstermine" | "behandlungstermine";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("de-DE", {
@@ -30,7 +34,14 @@ function getFillColor(booked: number, capacity: number) {
   return "text-emerald-600 bg-emerald-50";
 }
 
-export function CoursesOverview({ courses, slots, slotBookingCounts }: Props) {
+export function CoursesOverview({
+  courses,
+  slots,
+  slotBookingCounts,
+  templates,
+  sessions,
+}: Props) {
+  const [tab, setTab] = useState<Tab>("kurstermine");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const toggle = (id: string) => {
@@ -45,103 +56,186 @@ export function CoursesOverview({ courses, slots, slotBookingCounts }: Props) {
   const getSlotsForCourse = (courseId: string) =>
     slots.filter((s) => s.course_id === courseId);
 
+  const getTemplateName = (templateId: string) => {
+    const t = templates.find((t) => t.id === templateId);
+    return t?.course_label_de || t?.title || "Unbekannt";
+  };
+
+  // Only show live sessions for Kurstermine
+  const liveSessions = sessions.filter((s) => s.is_live);
+
   return (
     <div>
       <h1 className="text-xl font-bold text-black mb-4">Termine</h1>
 
-      {courses.length === 0 && (
-        <p className="text-center text-sm text-gray-400 py-8">
-          Keine aktiven Kurse.
-        </p>
+      {/* Tab toggle */}
+      <div className="flex bg-white rounded-[10px] p-1 mb-4">
+        <button
+          onClick={() => { setTab("kurstermine"); setExpanded(new Set()); }}
+          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
+            tab === "kurstermine"
+              ? "bg-[#0066FF] text-white"
+              : "text-gray-500"
+          }`}
+        >
+          Kurstermine
+        </button>
+        <button
+          onClick={() => { setTab("behandlungstermine"); setExpanded(new Set()); }}
+          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
+            tab === "behandlungstermine"
+              ? "bg-[#0066FF] text-white"
+              : "text-gray-500"
+          }`}
+        >
+          Behandlungstermine
+        </button>
+      </div>
+
+      {/* Kurstermine (course sessions for Auszubildende) */}
+      {tab === "kurstermine" && (
+        <div className="space-y-3">
+          {liveSessions.length === 0 && (
+            <p className="text-center text-sm text-gray-400 py-8">
+              Keine Live-Kurstermine.
+            </p>
+          )}
+          {liveSessions.map((session) => (
+            <div key={session.id} className="bg-white rounded-[10px] p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-bold text-black">
+                    {getTemplateName(session.template_id)}
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formatDate(session.date_iso)}
+                  </p>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                    {session.instructor_name && (
+                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        {session.instructor_name}
+                      </span>
+                    )}
+                    {session.address && (
+                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        {session.address}
+                      </span>
+                    )}
+                    {session.start_time && (
+                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatTime(session.start_time)}
+                        {session.duration_minutes ? ` (${session.duration_minutes} Min)` : ""}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span
+                  className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                    getFillColor(session.booked_seats, session.max_seats)
+                  }`}
+                >
+                  <Users className="w-3 h-3 inline mr-0.5" />
+                  {session.booked_seats}/{session.max_seats}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
-      <div className="space-y-3">
-        {courses.map((course) => {
-          const courseSlots = getSlotsForCourse(course.id);
-          const isExpanded = expanded.has(course.id);
+      {/* Behandlungstermine (Proband:innen courses with slots) */}
+      {tab === "behandlungstermine" && (
+        <div className="space-y-3">
+          {courses.length === 0 && (
+            <p className="text-center text-sm text-gray-400 py-8">
+              Keine aktiven Behandlungstermine.
+            </p>
+          )}
+          {courses.map((course) => {
+            const courseSlots = getSlotsForCourse(course.id);
+            const isExpanded = expanded.has(course.id);
 
-          return (
-            <div key={course.id} className="bg-white rounded-[10px] overflow-hidden">
-              {/* Course header */}
-              <button
-                onClick={() => toggle(course.id)}
-                className="w-full p-4 text-left active:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-sm font-bold text-black">
-                      {course.title}
-                    </h3>
-                    {course.course_date && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        {formatDate(course.course_date)}
-                      </p>
-                    )}
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
-                      {course.location && (
-                        <span className="text-xs text-gray-500 flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {course.location}
-                        </span>
+            return (
+              <div key={course.id} className="bg-white rounded-[10px] overflow-hidden">
+                <button
+                  onClick={() => toggle(course.id)}
+                  className="w-full p-4 text-left active:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-sm font-bold text-black">
+                        {course.title}
+                      </h3>
+                      {course.course_date && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formatDate(course.course_date)}
+                        </p>
                       )}
-                      {course.instructor && (
-                        <span className="text-xs text-gray-500 flex items-center gap-1">
-                          <User className="w-3 h-3" />
-                          {course.instructor}
-                        </span>
-                      )}
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                        {course.location && (
+                          <span className="text-xs text-gray-500 flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {course.location}
+                          </span>
+                        )}
+                        {course.instructor && (
+                          <span className="text-xs text-gray-500 flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            {course.instructor}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-xs text-gray-400">
+                        {courseSlots.length} Slot{courseSlots.length !== 1 ? "s" : ""}
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 text-gray-400 transition-transform ${
+                          isExpanded ? "rotate-180" : ""
+                        }`}
+                      />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-xs text-gray-400">
-                      {courseSlots.length} Slot{courseSlots.length !== 1 ? "s" : ""}
-                    </span>
-                    <ChevronDown
-                      className={`w-4 h-4 text-gray-400 transition-transform ${
-                        isExpanded ? "rotate-180" : ""
-                      }`}
-                    />
-                  </div>
-                </div>
-              </button>
+                </button>
 
-              {/* Slots */}
-              {isExpanded && courseSlots.length > 0 && (
-                <div className="px-4 pb-4 space-y-2">
-                  {courseSlots.map((slot) => {
-                    const booked = slotBookingCounts[slot.id] || 0;
-                    const fillColor = getFillColor(booked, slot.capacity);
-
-                    return (
-                      <div
-                        key={slot.id}
-                        className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2.5"
-                      >
-                        <div className="flex items-center gap-2 text-sm text-black">
-                          <Clock className="w-3.5 h-3.5 text-gray-400" />
-                          {formatTime(slot.start_time)}
-                          {slot.end_time ? ` – ${formatTime(slot.end_time)}` : ""}
-                        </div>
-                        <span
-                          className={`text-xs font-semibold px-2 py-0.5 rounded-full ${fillColor}`}
+                {isExpanded && courseSlots.length > 0 && (
+                  <div className="px-4 pb-4 space-y-2">
+                    {courseSlots.map((slot) => {
+                      const booked = slotBookingCounts[slot.id] || 0;
+                      const fillColor = getFillColor(booked, slot.capacity);
+                      return (
+                        <div
+                          key={slot.id}
+                          className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2.5"
                         >
-                          {booked}/{slot.capacity}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                          <div className="flex items-center gap-2 text-sm text-black">
+                            <Clock className="w-3.5 h-3.5 text-gray-400" />
+                            {formatTime(slot.start_time)}
+                            {slot.end_time ? ` – ${formatTime(slot.end_time)}` : ""}
+                          </div>
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${fillColor}`}>
+                            {booked}/{slot.capacity}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
-              {isExpanded && courseSlots.length === 0 && (
-                <div className="px-4 pb-4">
-                  <p className="text-xs text-gray-400">Keine Slots angelegt.</p>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                {isExpanded && courseSlots.length === 0 && (
+                  <div className="px-4 pb-4">
+                    <p className="text-xs text-gray-400">Keine Slots angelegt.</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

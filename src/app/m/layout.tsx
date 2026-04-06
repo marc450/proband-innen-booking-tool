@@ -29,7 +29,7 @@ export default async function MobileLayout({
   return (
     <div
       className="min-h-dvh text-foreground pb-24"
-      style={{ backgroundColor: "#FAEBE1" }}
+      style={{ backgroundColor: "#F5F5F5" }}
       data-role={role}
     >
       <main className="px-4 pt-4">{children}</main>

@@ -167,7 +167,7 @@ export function BookingsList({ initialBookings, courses, isAdmin }: Props) {
       {/* Grouped list */}
       {sortedDates.map((date) => (
         <div key={date} className="mb-5">
-          <div className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 sticky top-0 bg-[#FAEBE1] py-1 z-10">
+          <div className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 sticky top-0 bg-[#F5F5F5] py-1 z-10">
             {date !== "Unbekannt" ? formatDate(date) : date}
           </div>
           <div className="space-y-2">
