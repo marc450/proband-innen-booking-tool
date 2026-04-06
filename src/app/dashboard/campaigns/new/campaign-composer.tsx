@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { ArrowLeft, Send, Clock, ChevronDown, ChevronRight, Search, Plus, X, Link as LinkIcon, Type, GripVertical } from "lucide-react";
+import { ArrowLeft, Send, Clock, ChevronDown, ChevronRight, Search, Plus, X, Link as LinkIcon, Type, Save } from "lucide-react";
 import Link from "next/link";
 
 interface PatientOption {
@@ -39,22 +39,33 @@ interface AuszubildendeOption {
   last_name: string | null;
 }
 
+interface ExistingCampaign {
+  id: string;
+  name: string | null;
+  subject: string;
+  body_text: string;
+}
+
 interface Props {
   patients: PatientOption[];
   auszubildende: AuszubildendeOption[];
+  existingCampaign?: ExistingCampaign;
 }
 
 type AudienceType = "probandinnen" | "aerztinnen" | "alle";
 
-export function CampaignComposer({ patients, auszubildende }: Props) {
+export function CampaignComposer({ patients, auszubildende, existingCampaign }: Props) {
   const router = useRouter();
 
-  // Form state
-  const [name, setName] = useState("");
-  const [subject, setSubject] = useState("");
-  const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([
-    { type: "text", text: "" },
-  ]);
+  // Form state — pre-fill from existing draft if editing
+  const [campaignId, setCampaignId] = useState(existingCampaign?.id || "");
+  const [name, setName] = useState(existingCampaign?.name || "");
+  const [subject, setSubject] = useState(existingCampaign?.subject || "");
+  const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>(
+    existingCampaign?.body_text
+      ? [{ type: "text", text: existingCampaign.body_text }]
+      : [{ type: "text", text: "" }]
+  );
   const [audienceType, setAudienceType] = useState<AudienceType>("probandinnen");
   const [excludeBlacklisted, setExcludeBlacklisted] = useState(true);
   const [manuallyExcluded, setManuallyExcluded] = useState<Set<string>>(new Set());
@@ -65,6 +76,7 @@ export function CampaignComposer({ patients, auszubildende }: Props) {
 
   // UI state
   const [sending, setSending] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -219,6 +231,40 @@ export function CampaignComposer({ patients, auszubildende }: Props) {
     }
   };
 
+  const handleSaveDraft = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/save-campaign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: campaignId || undefined,
+          name,
+          subject,
+          contentBlocks,
+          audienceType,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        setError(result.error || "Fehler beim Speichern.");
+        return;
+      }
+      if (result.campaignId && !campaignId) {
+        setCampaignId(result.campaignId);
+      }
+      router.push("/dashboard/campaigns");
+      router.refresh();
+    } catch {
+      setError("Netzwerkfehler beim Speichern.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const canSaveDraft = !!(name.trim() || subject.trim());
+
   const hasBlacklisted = audienceType !== "aerztinnen" && allContacts.some((c) => c.isBlacklisted);
 
   return (
@@ -230,7 +276,9 @@ export function CampaignComposer({ patients, auszubildende }: Props) {
             Alle Kampagnen
           </Button>
         </Link>
-        <h1 className="text-2xl font-bold">Neue Kampagne</h1>
+        <h1 className="text-2xl font-bold">
+          {existingCampaign ? "Kampagne bearbeiten" : "Neue Kampagne"}
+        </h1>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -479,8 +527,22 @@ export function CampaignComposer({ patients, auszubildende }: Props) {
 
           <div className="flex gap-3">
             <Button
+              variant="outline"
+              onClick={handleSaveDraft}
+              disabled={!canSaveDraft || saving || sending}
+            >
+              {saving ? (
+                "Speichern..."
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Entwurf speichern
+                </>
+              )}
+            </Button>
+            <Button
               onClick={() => setConfirmOpen(true)}
-              disabled={!canSend || sending}
+              disabled={!canSend || sending || saving}
               className="flex-1"
             >
               {sending ? (
