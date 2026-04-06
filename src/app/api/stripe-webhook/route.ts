@@ -405,7 +405,29 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   if (rpcError) {
     console.error("Course booking RPC error:", rpcError);
-    return;
+    // Alert via Slack so the team knows a payment was received but booking failed
+    const SLACK_WEBHOOK_URL_COURSES = process.env.SLACK_WEBHOOK_URL_COURSES;
+    if (SLACK_WEBHOOK_URL_COURSES) {
+      try {
+        await fetch(SLACK_WEBHOOK_URL_COURSES, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: [
+              `🚨 *BUCHUNG FEHLGESCHLAGEN*`,
+              `*Name:* ${fullName}`,
+              `*E-Mail:* ${email}`,
+              `*Kurs:* ${courseKey} (${courseType})`,
+              `*Stripe Session:* ${checkoutSessionId}`,
+              `*Fehler:* ${rpcError.message || JSON.stringify(rpcError)}`,
+              `Bitte manuell prüfen!`,
+            ].join("\n"),
+          }),
+        });
+      } catch { /* best effort */ }
+    }
+    // Throw so Stripe gets a 500 and retries the webhook
+    throw new Error(`Course booking RPC failed: ${rpcError.message}`);
   }
 
   // Set audience_tag on the booking
@@ -629,8 +651,12 @@ export async function POST(req: NextRequest) {
     }
   } catch (err) {
     console.error("Webhook processing error:", err);
+    // Return 500 so Stripe retries the webhook (up to ~16 attempts over 3 days)
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Webhook processing failed" },
+      { status: 500 }
+    );
   }
 
-  // Always return 200 to Stripe
   return NextResponse.json({ received: true });
 }
