@@ -56,6 +56,7 @@ export interface CourseSession {
   duration_minutes: number | null;
   is_live: boolean;
   cme_status: string | null;
+  has_zahnmedizin: boolean;
   created_at: string;
 }
 

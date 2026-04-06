@@ -19,7 +19,6 @@ interface Props {
   dozentUsers: DozentUser[];
   betreuerUsers: DozentUser[];
   initialAuszubildende: AuszubildendePick[];
-  dentistSessionIds: string[];
 }
 
 const TAB_TITLES: Record<string, string> = {
@@ -38,7 +37,6 @@ export function SettingsContent({
   dozentUsers,
   betreuerUsers,
   initialAuszubildende,
-  dentistSessionIds,
 }: Props) {
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab") || "kurstermine";
@@ -62,7 +60,6 @@ export function SettingsContent({
             templates={initialCourseOfferings}
             dozentUsers={dozentUsers}
             betreuerUsers={betreuerUsers}
-            dentistSessionIds={dentistSessionIds}
           />
         );
     }

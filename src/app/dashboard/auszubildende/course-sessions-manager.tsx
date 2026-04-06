@@ -29,7 +29,6 @@ interface Props {
   initialSessions: CourseSession[];
   dozentUsers: DozentUser[];
   betreuerUsers?: DozentUser[];
-  dentistSessionIds?: string[];
 }
 
 type SortKey = "status" | "date" | "time" | "course" | "instructor" | "betreuer" | "seats" | "duration";
@@ -49,10 +48,9 @@ function dozentDisplayName(d: DozentUser): string {
   return [d.title, d.first_name, d.last_name].filter(Boolean).join(" ");
 }
 
-export function CourseSessionsManager({ initialTemplates, initialSessions, dozentUsers, betreuerUsers = [], dentistSessionIds = [] }: Props) {
+export function CourseSessionsManager({ initialTemplates, initialSessions, dozentUsers, betreuerUsers = [] }: Props) {
   const supabase = createClient();
   const [sessions, setSessions] = useState(initialSessions);
-  const dentistSet = new Set(dentistSessionIds);
   const [templates] = useState(initialTemplates);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -492,7 +490,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
 
                 {/* Zahnmedizin */}
                 <TableCell>
-                  {dentistSet.has(session.id) && (
+                  {session.has_zahnmedizin && (
                     <span className="text-xs font-medium bg-amber-100 text-amber-700 rounded-full px-2.5 py-1">
                       Zahnmedizin
                     </span>

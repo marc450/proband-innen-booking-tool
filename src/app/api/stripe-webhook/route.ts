@@ -438,6 +438,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       .eq("id", bookingId);
   }
 
+  // Auto-flag session as containing a dentist booking
+  if (sessionId && audienceTag === "Zahnmediziner:in") {
+    await supabase
+      .from("course_sessions")
+      .update({ has_zahnmedizin: true })
+      .eq("id", sessionId);
+  }
+
   // Upsert auszubildende profile and link to booking
   if (email) {
     try {

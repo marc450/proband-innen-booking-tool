@@ -13,14 +13,12 @@ import type { CourseTemplate, CourseSession } from "@/lib/types";
 interface Props {
   initialTemplates: CourseTemplate[];
   initialSessions: CourseSession[];
-  dentistSessionIds?: string[];
 }
 
 type SortKey = "status" | "date" | "time" | "course" | "instructor" | "seats" | "duration";
 type SortDir = "asc" | "desc";
 
-export function CourseSessionsOverview({ initialTemplates, initialSessions, dentistSessionIds = [] }: Props) {
-  const dentistSet = useMemo(() => new Set(dentistSessionIds), [dentistSessionIds]);
+export function CourseSessionsOverview({ initialTemplates, initialSessions }: Props) {
   const sessions = initialSessions;
   const templates = initialTemplates;
   const [sortKey, setSortKey] = useState<SortKey>("date");
@@ -263,7 +261,7 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions, dent
                   {session.cme_status || "Nicht beantragt"}
                 </TableCell>
                 <TableCell>
-                  {dentistSet.has(session.id) && (
+                  {session.has_zahnmedizin && (
                     <span className="text-xs font-medium bg-amber-100 text-amber-700 rounded-full px-2.5 py-1">
                       Zahnmedizin
                     </span>
