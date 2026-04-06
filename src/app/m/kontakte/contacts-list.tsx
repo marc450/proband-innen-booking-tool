@@ -118,7 +118,7 @@ export function ContactsList({ patients, auszubildende }: Props) {
           {filteredAuszubildende.map((a) => (
             <button
               key={a.id}
-              onClick={() => router.push(`/dashboard/auszubildende/personen/${a.id}`)}
+              onClick={() => router.push(`/m/kontakte/arzt/${a.id}`)}
               className="w-full bg-white rounded-[10px] px-4 py-3.5 flex items-center gap-3 active:bg-gray-50 transition-colors text-left"
             >
               <div className="w-10 h-10 rounded-full bg-[#0066FF]/10 flex items-center justify-center flex-shrink-0">
