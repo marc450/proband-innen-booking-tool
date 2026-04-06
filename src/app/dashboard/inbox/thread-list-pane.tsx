@@ -87,19 +87,6 @@ export function ThreadListPane({
   const [deleteThreadId, setDeleteThreadId] = useState<string | null>(null);
 
   return (
-    <>
-    <ConfirmDialog
-      open={!!deleteThreadId}
-      onCancel={() => setDeleteThreadId(null)}
-      title="Konversation löschen"
-      description="Diese Konversation wird in den Papierkorb verschoben."
-      confirmLabel="Löschen"
-      variant="destructive"
-      onConfirm={() => {
-        if (deleteThreadId) onDeleteThread(deleteThreadId);
-        setDeleteThreadId(null);
-      }}
-    />
     <div className="flex flex-col h-full bg-white border-r border-gray-100">
       {/* Header */}
       <div className="p-4 border-b border-gray-100">
@@ -266,7 +253,18 @@ export function ThreadListPane({
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={!!deleteThreadId}
+        onCancel={() => setDeleteThreadId(null)}
+        title="Konversation löschen"
+        description="Diese Konversation wird in den Papierkorb verschoben."
+        confirmLabel="Löschen"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteThreadId) onDeleteThread(deleteThreadId);
+          setDeleteThreadId(null);
+        }}
+      />
     </div>
-    </>
   );
 }
