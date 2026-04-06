@@ -144,7 +144,7 @@ export function ContactSidebar({ email, displayName }: Props) {
 
   if (!email) {
     return (
-      <div className="p-6 text-center text-sm text-muted-foreground">
+      <div className="h-full flex items-center justify-center p-6 text-center text-sm text-muted-foreground">
         Wähle eine Konversation, um Kontaktdetails zu sehen.
       </div>
     );
