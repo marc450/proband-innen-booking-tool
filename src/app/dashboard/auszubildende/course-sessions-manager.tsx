@@ -240,6 +240,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
             <SortableHead label="Dozent:in" sortKeyName="instructor" />
             <SortableHead label="Kursbetreuung" sortKeyName="betreuer" />
             <SortableHead label="Plätze" sortKeyName="seats" className="w-[80px]" />
+            <TableHead>CME Beantragung</TableHead>
             <TableHead className="w-[80px]">Aktionen</TableHead>
           </TableRow>
           {/* Filter row */}
@@ -308,6 +309,8 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
             </TableHead>
             {/* Plätze — empty */}
             <TableHead className="py-1.5" />
+            {/* CME — empty */}
+            <TableHead className="py-1.5" />
             {/* Reset button */}
             <TableHead className="py-1.5">
               {(filterInstructor || filterTemplate || filterStatus || filterDateFrom || filterDateTo) && (
@@ -330,7 +333,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
         <TableBody>
           {sortedSessions.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                 Noch keine Kurstermine erstellt.
               </TableCell>
             </TableRow>
@@ -466,6 +469,20 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                       className={`w-8 text-center bg-transparent border-b border-transparent hover:border-gray-300 focus:border-primary focus:outline-none ${session.booked_seats >= session.max_seats ? "text-emerald-600 font-medium" : ""}`}
                     />
                   </div>
+                </TableCell>
+
+                {/* CME Beantragung */}
+                <TableCell>
+                  <select
+                    value={session.cme_status || "Nicht beantragt"}
+                    onChange={(e) => updateField(session.id, "cme_status", e.target.value)}
+                    className="border-0 bg-transparent text-sm p-0 focus:outline-none focus:ring-0 cursor-pointer max-w-[200px]"
+                  >
+                    <option value="Nicht beantragt">Nicht beantragt</option>
+                    <option value="LÄK Berlin">LÄK Berlin</option>
+                    <option value="LÄK Brandenburg">LÄK Brandenburg</option>
+                    <option value="Buchung auf anderen Kurs">Buchung auf anderen Kurs</option>
+                  </select>
                 </TableCell>
 
                 {/* Actions */}

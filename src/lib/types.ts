@@ -55,6 +55,7 @@ export interface CourseSession {
   start_time: string | null;
   duration_minutes: number | null;
   is_live: boolean;
+  cme_status: string | null;
   created_at: string;
 }
 

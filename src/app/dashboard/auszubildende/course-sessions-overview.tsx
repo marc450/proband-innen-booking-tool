@@ -132,6 +132,7 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
             <SortableHead label="Dozent:in" sortKeyName="instructor" />
             <SortableHead label="Kursbetreuung" sortKeyName="instructor" />
             <SortableHead label="Plätze" sortKeyName="seats" className="w-[80px]" />
+            <TableHead>CME Beantragung</TableHead>
           </TableRow>
           {/* Filter row */}
           <TableRow className="hover:bg-transparent">
@@ -207,12 +208,13 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
                 </button>
               )}
             </TableHead>
+            <TableHead className="py-1.5" />
           </TableRow>
         </thead>
         <TableBody>
           {sortedSessions.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                 Keine Kurstermine gefunden.
               </TableCell>
             </TableRow>
@@ -252,6 +254,9 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
                   <span className={session.booked_seats >= session.max_seats ? "text-emerald-600 font-medium" : ""}>
                     {session.booked_seats}/{session.max_seats}
                   </span>
+                </TableCell>
+                <TableCell className="text-sm">
+                  {session.cme_status || "Nicht beantragt"}
                 </TableCell>
               </TableRow>
             ))
