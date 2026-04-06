@@ -5,7 +5,7 @@ const ADMIN_DOMAIN = "admin.ephia.de";
 const BOOKING_DOMAIN = "proband-innen.ephia.de";
 
 // Routes that belong to the admin domain only
-const ADMIN_ONLY_PATHS = ["/dashboard", "/login"];
+const ADMIN_ONLY_PATHS = ["/dashboard", "/login", "/m"];
 // Routes that belong to the booking domain only
 const BOOKING_ONLY_PATHS = ["/book", "/courses"];
 
