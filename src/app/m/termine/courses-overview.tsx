@@ -29,9 +29,9 @@ function formatTime(timeStr: string) {
 
 function getFillColor(booked: number, capacity: number) {
   const ratio = booked / capacity;
-  if (ratio >= 1) return "text-red-600 bg-red-50";
+  if (ratio >= 1) return "text-emerald-600 bg-emerald-50";
   if (ratio >= 0.7) return "text-amber-600 bg-amber-50";
-  return "text-emerald-600 bg-emerald-50";
+  return "text-red-600 bg-red-50";
 }
 
 export function CoursesOverview({
