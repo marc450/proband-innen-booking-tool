@@ -4,9 +4,9 @@ import { useState, useRef, useEffect } from "react";
 
 // Inline-editable row used in the inbox contact sidebar. Default state
 // shows the label + current value. Clicking the value flips it into an
-// input; blur or Enter commits via the onSave callback, Escape cancels.
-// The parent owns the "source of truth" value and applies the optimistic
-// update + server sync.
+// input (or select if `options` is provided); blur or Enter commits via
+// the onSave callback, Escape cancels. The parent owns the "source of
+// truth" value and applies the optimistic update + server sync.
 
 interface Props {
   label: string;
@@ -16,6 +16,7 @@ interface Props {
   type?: "text" | "email" | "tel" | "date";
   readOnly?: boolean;
   multiline?: boolean;
+  options?: string[];
 }
 
 export function EditableField({
@@ -26,10 +27,11 @@ export function EditableField({
   type = "text",
   readOnly = false,
   multiline = false,
+  options,
 }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value ?? "");
-  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null>(null);
 
   useEffect(() => {
     if (!editing) setDraft(value ?? "");
@@ -38,7 +40,6 @@ export function EditableField({
   useEffect(() => {
     if (editing && inputRef.current) {
       inputRef.current.focus();
-      if ("select" in inputRef.current) inputRef.current.select();
     }
   }, [editing]);
 
@@ -55,43 +56,71 @@ export function EditableField({
     setEditing(false);
   };
 
+  const renderEditor = () => {
+    if (options) {
+      return (
+        <select
+          ref={(el) => { inputRef.current = el; }}
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            // Auto-commit on select change
+            const next = e.target.value.trim() === "" ? null : e.target.value.trim();
+            if (next !== (value ?? null)) onSave(next);
+            setEditing(false);
+          }}
+          onBlur={() => setEditing(false)}
+          onKeyDown={(e) => { if (e.key === "Escape") cancel(); }}
+          className="w-full text-sm border border-[#0066FF] rounded px-2 py-1 outline-none bg-white"
+        >
+          <option value="">Bitte wählen...</option>
+          {options.map((opt) => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      );
+    }
+
+    if (multiline) {
+      return (
+        <textarea
+          ref={(el) => { inputRef.current = el; }}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") cancel();
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) commit();
+          }}
+          rows={3}
+          className="w-full text-sm border border-[#0066FF] rounded px-2 py-1.5 outline-none resize-y"
+        />
+      );
+    }
+
+    return (
+      <input
+        ref={(el) => { inputRef.current = el; }}
+        type={type}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") cancel();
+          if (e.key === "Enter") commit();
+        }}
+        className="w-full text-sm border border-[#0066FF] rounded px-2 py-1 outline-none"
+      />
+    );
+  };
+
   return (
     <div className="py-2">
       <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1">
         {label}
       </p>
       {editing && !readOnly ? (
-        multiline ? (
-          <textarea
-            ref={(el) => {
-              inputRef.current = el;
-            }}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commit}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") cancel();
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) commit();
-            }}
-            rows={3}
-            className="w-full text-sm border border-[#0066FF] rounded px-2 py-1.5 outline-none resize-y"
-          />
-        ) : (
-          <input
-            ref={(el) => {
-              inputRef.current = el;
-            }}
-            type={type}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commit}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") cancel();
-              if (e.key === "Enter") commit();
-            }}
-            className="w-full text-sm border border-[#0066FF] rounded px-2 py-1 outline-none"
-          />
-        )
+        renderEditor()
       ) : (
         <button
           type="button"

@@ -92,6 +92,24 @@ function formatDate(iso: string | null) {
   });
 }
 
+const TITLE_OPTIONS = ["Dr. med.", "Dr. med. dent.", "Prof. Dr.", "PD Dr.", "Kein Titel"];
+const GENDER_OPTIONS = ["Weiblich", "Männlich", "Divers"];
+const SPECIALTIES = [
+  "Allgemeinmedizin", "Anatomie", "Anästhesiologie", "Arbeitsmedizin",
+  "Augenheilkunde", "Chirurgie", "Dermatologie", "Gynäkologie",
+  "Hals-Nasen-Ohrenkunde", "Humangenetik", "Hygiene- und Umweltmedizin",
+  "Hämatologie", "Innere Medizin", "Kardiologie", "Kinder- und Jugendmedizin",
+  "Kinder- und Jugendpsychiatrie und -psychotherapie",
+  "Mund-Kiefer-Gesichtschirurgie", "Neurochirurgie", "Neurologie",
+  "Nuklearmedizin", "Onkologie", "Orthopädie",
+  "Öffentliches Gesundheitswesen", "Pathologie", "Pharmakologie",
+  "Phoniatrie und Pädaudiologie", "Physikalische und Rehabilitative Medizin",
+  "Physiologie", "Psychiatrie und Psychotherapie",
+  "Psychosomatische Medizin und Psychotherapie", "Radiologie",
+  "Rechtsmedizin", "Strahlentherapie", "Transfusionsmedizin",
+  "Urologie", "Unfallchirurgie", "Zahnmedizin",
+];
+
 export function ContactSidebar({ email, displayName }: Props) {
   const [data, setData] = useState<ContactPayload | null>(null);
   const [loading, setLoading] = useState(false);
@@ -249,6 +267,7 @@ export function ContactSidebar({ email, displayName }: Props) {
                   label="Titel"
                   value={contact.title}
                   onSave={(v) => saveField("title", v)}
+                  options={TITLE_OPTIONS}
                 />
                 <EditableField
                   label="Firma"
@@ -259,6 +278,7 @@ export function ContactSidebar({ email, displayName }: Props) {
                   label="Fachrichtung"
                   value={contact.specialty}
                   onSave={(v) => saveField("specialty", v)}
+                  options={SPECIALTIES}
                 />
                 <EditableField
                   label="EFN"
@@ -269,6 +289,7 @@ export function ContactSidebar({ email, displayName }: Props) {
                   label="Geschlecht"
                   value={contact.gender}
                   onSave={(v) => saveField("gender", v)}
+                  options={GENDER_OPTIONS}
                 />
                 <EditableField
                   label="Geburtsdatum"
