@@ -20,15 +20,17 @@ export default async function CourseBookingPage({
     .eq("id", courseId)
     .single();
 
-  if (!course) {
+  const today = new Date().toISOString().slice(0, 10);
+  if (!course || (course.course_date && course.course_date < today)) {
     notFound();
   }
 
-  // Fetch all sibling courses with the same title (different dates)
+  // Fetch all sibling courses with the same title (different dates), only future
   const { data: siblingCourses } = await supabase
     .from("courses")
     .select("*")
     .eq("title", course.title)
+    .gte("course_date", today)
     .order("course_date", { ascending: true });
 
   const allCourses = (siblingCourses as Course[]) || [course as Course];
