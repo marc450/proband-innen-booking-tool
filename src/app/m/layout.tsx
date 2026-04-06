@@ -5,11 +5,6 @@ import { BottomTabBar } from "./bottom-tab-bar";
 
 export const metadata = {
   title: "EPHIA Mobile",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    viewportFit: "cover" as const,
-  },
 };
 
 export default async function MobileLayout({
