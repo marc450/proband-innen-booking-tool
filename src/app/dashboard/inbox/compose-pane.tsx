@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Loader2, Send, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { Loader2, Send, X, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "./rich-text-editor";
@@ -23,6 +23,8 @@ interface Props {
   onBodyChange: (v: string) => void;
   onCcChange: (v: string) => void;
   onBccChange: (v: string) => void;
+  attachments: globalThis.File[];
+  onAttachmentsChange: (files: globalThis.File[]) => void;
   onSend: () => void;
   onCancel: () => void;
 }
@@ -39,11 +41,14 @@ export function ComposePane({
   onBodyChange,
   onCcChange,
   onBccChange,
+  attachments,
+  onAttachmentsChange,
   onSend,
   onCancel,
 }: Props) {
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canSend = !!to.trim() && !!subject.trim() && body.trim().length > 0;
   return (
@@ -172,22 +177,67 @@ export function ComposePane({
         </div>
       </div>
 
-      <div className="border-t border-gray-100 bg-white px-6 py-3 flex justify-end gap-2">
-        <Button variant="outline" onClick={onCancel}>
-          Abbrechen
-        </Button>
-        <Button
-          onClick={onSend}
-          disabled={sending || !canSend}
-          className="bg-[#0066FF] hover:bg-[#0055DD]"
-        >
-          {sending ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <Send className="h-4 w-4 mr-2" />
-          )}
-          Senden
-        </Button>
+      {/* Attachment chips */}
+      {attachments.length > 0 && (
+        <div className="px-6 py-2 bg-white border-t border-gray-100 flex flex-wrap gap-2">
+          {attachments.map((file, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-700"
+            >
+              <Paperclip className="h-3 w-3 text-gray-400" />
+              <span className="truncate max-w-[150px]">{file.name}</span>
+              <span className="text-gray-400">{Math.round(file.size / 1024)} KB</span>
+              <button
+                onClick={() => onAttachmentsChange(attachments.filter((_, idx) => idx !== i))}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="border-t border-gray-100 bg-white px-6 py-3 flex items-center justify-between">
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              onAttachmentsChange([...attachments, ...files]);
+              e.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+            title="Anhang hinzufügen"
+          >
+            <Paperclip className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onCancel}>
+            Abbrechen
+          </Button>
+          <Button
+            onClick={onSend}
+            disabled={sending || !canSend}
+            className="bg-[#0066FF] hover:bg-[#0055DD]"
+          >
+            {sending ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Send className="h-4 w-4 mr-2" />
+            )}
+            Senden
+          </Button>
+        </div>
       </div>
     </div>
   );

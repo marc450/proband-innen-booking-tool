@@ -174,17 +174,75 @@ export async function getMessage(messageId: string): Promise<GmailMessage> {
   return gmailFetch(`messages/${messageId}?format=full`);
 }
 
-// Send email
-export async function sendEmail(to: string, subject: string, htmlBody: string, inReplyTo?: string, references?: string, threadId?: string, cc?: string, bcc?: string) {
-  const boundary = `boundary_${Date.now()}`;
+// Download attachment by ID
+export async function downloadAttachment(messageId: string, attachmentId: string): Promise<{ data: string; size: number }> {
+  return gmailFetch(`messages/${messageId}/attachments/${attachmentId}`);
+}
+
+// Extract attachment metadata from message parts
+export interface AttachmentMeta {
+  filename: string;
+  mimeType: string;
+  size: number;
+  attachmentId: string;
+}
+
+export function getAttachments(message: GmailMessage): AttachmentMeta[] {
+  const attachments: AttachmentMeta[] = [];
+
+  function walk(parts?: GmailPart[]) {
+    if (!parts) return;
+    for (const part of parts) {
+      if (part.filename && part.body?.attachmentId) {
+        attachments.push({
+          filename: part.filename,
+          mimeType: part.mimeType,
+          size: part.body.size || 0,
+          attachmentId: part.body.attachmentId,
+        });
+      }
+      if (part.parts) walk(part.parts);
+    }
+  }
+
+  walk(message.payload.parts);
+  return attachments;
+}
+
+// Send email (with optional attachments)
+export interface EmailAttachment {
+  filename: string;
+  mimeType: string;
+  content: string; // base64 encoded
+}
+
+export async function sendEmail(
+  to: string,
+  subject: string,
+  htmlBody: string,
+  inReplyTo?: string,
+  references?: string,
+  threadId?: string,
+  cc?: string,
+  bcc?: string,
+  attachments?: EmailAttachment[]
+) {
   const fromHeader = `EPHIA <${GMAIL_USER_EMAIL}>`;
+  const hasAttachments = attachments && attachments.length > 0;
+
+  const outerBoundary = `boundary_${Date.now()}`;
+  const innerBoundary = `inner_${Date.now()}`;
+
+  const contentType = hasAttachments
+    ? `multipart/mixed; boundary="${outerBoundary}"`
+    : `multipart/alternative; boundary="${outerBoundary}"`;
 
   let rawHeaders = [
     `From: ${fromHeader}`,
     `To: ${to}`,
     `Subject: ${subject}`,
     `MIME-Version: 1.0`,
-    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    `Content-Type: ${contentType}`,
   ];
 
   if (cc) rawHeaders.push(`Cc: ${cc}`);
@@ -192,16 +250,40 @@ export async function sendEmail(to: string, subject: string, htmlBody: string, i
   if (inReplyTo) rawHeaders.push(`In-Reply-To: ${inReplyTo}`);
   if (references) rawHeaders.push(`References: ${references}`);
 
-  const rawBody = [
-    rawHeaders.join("\r\n"),
-    "",
-    `--${boundary}`,
-    "Content-Type: text/html; charset=UTF-8",
-    "Content-Transfer-Encoding: base64",
-    "",
-    Buffer.from(htmlBody).toString("base64"),
-    `--${boundary}--`,
-  ].join("\r\n");
+  const parts: string[] = [rawHeaders.join("\r\n"), ""];
+
+  if (hasAttachments) {
+    // multipart/mixed: inner alternative for HTML, then attachment parts
+    parts.push(`--${outerBoundary}`);
+    parts.push(`Content-Type: multipart/alternative; boundary="${innerBoundary}"`);
+    parts.push("");
+    parts.push(`--${innerBoundary}`);
+    parts.push("Content-Type: text/html; charset=UTF-8");
+    parts.push("Content-Transfer-Encoding: base64");
+    parts.push("");
+    parts.push(Buffer.from(htmlBody).toString("base64"));
+    parts.push(`--${innerBoundary}--`);
+
+    for (const att of attachments!) {
+      parts.push(`--${outerBoundary}`);
+      parts.push(`Content-Type: ${att.mimeType}; name="${att.filename}"`);
+      parts.push(`Content-Disposition: attachment; filename="${att.filename}"`);
+      parts.push("Content-Transfer-Encoding: base64");
+      parts.push("");
+      parts.push(att.content);
+    }
+    parts.push(`--${outerBoundary}--`);
+  } else {
+    // Simple multipart/alternative (no attachments)
+    parts.push(`--${outerBoundary}`);
+    parts.push("Content-Type: text/html; charset=UTF-8");
+    parts.push("Content-Transfer-Encoding: base64");
+    parts.push("");
+    parts.push(Buffer.from(htmlBody).toString("base64"));
+    parts.push(`--${outerBoundary}--`);
+  }
+
+  const rawBody = parts.join("\r\n");
 
   const encodedMessage = Buffer.from(rawBody)
     .toString("base64")

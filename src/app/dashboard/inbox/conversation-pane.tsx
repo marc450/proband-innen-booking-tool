@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Loader2, Send, X, Reply } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Loader2, Send, X, Reply, Paperclip, FileText, Image, File } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "./rich-text-editor";
@@ -26,6 +26,7 @@ export interface ThreadMessage {
   labels: string[];
   messageId: string;
   references: string;
+  attachments?: { filename: string; mimeType: string; size: number; attachmentId: string }[];
 }
 
 interface Signature {
@@ -62,9 +63,11 @@ export function ConversationPane({
   const [replyHtml, setReplyHtml] = useState("");
   const [replyCc, setReplyCc] = useState("");
   const [replyBcc, setReplyBcc] = useState("");
+  const [replyAttachments, setReplyAttachments] = useState<globalThis.File[]>([]);
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
   const [sending, setSending] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Reset composer when switching threads.
   useEffect(() => {
@@ -72,6 +75,7 @@ export function ConversationPane({
     setReplyHtml("");
     setReplyCc("");
     setReplyBcc("");
+    setReplyAttachments([]);
     setShowCc(false);
     setShowBcc(false);
   }, [threadId]);
@@ -100,6 +104,18 @@ export function ConversationPane({
     ? lastMsg.fromEmail
     : lastMsg?.to.split(",")[0].trim();
 
+  const fileToBase64 = (file: globalThis.File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Strip data URL prefix: "data:...;base64,"
+        resolve(result.split(",")[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
   const handleSend = async () => {
     if (!lastMsg) return;
     setSending(true);
@@ -108,6 +124,16 @@ export function ConversationPane({
       const subject = lastMsg.subject.startsWith("Re:")
         ? lastMsg.subject
         : `Re: ${lastMsg.subject}`;
+
+      // Convert files to base64
+      const attachmentPayloads = await Promise.all(
+        replyAttachments.map(async (file) => ({
+          filename: file.name,
+          mimeType: file.type || "application/octet-stream",
+          content: await fileToBase64(file),
+        }))
+      );
+
       const res = await fetch("/api/gmail/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -122,6 +148,7 @@ export function ConversationPane({
             : lastMsg.messageId,
           cc: replyCc || undefined,
           bcc: replyBcc || undefined,
+          attachments: attachmentPayloads.length > 0 ? attachmentPayloads : undefined,
         }),
       });
       if (res.ok) {
@@ -129,6 +156,7 @@ export function ConversationPane({
         setReplyHtml("");
         setReplyCc("");
         setReplyBcc("");
+        setReplyAttachments([]);
         setShowCc(false);
         setShowBcc(false);
         onSent();
@@ -206,6 +234,31 @@ export function ConversationPane({
                     msg.body.html || msg.body.text.replace(/\n/g, "<br>"),
                 }}
               />
+              {/* Attachments */}
+              {msg.attachments && msg.attachments.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {msg.attachments.map((att, i) => {
+                    const isImage = att.mimeType.startsWith("image/");
+                    const isPdf = att.mimeType === "application/pdf";
+                    const Icon = isImage ? Image : isPdf ? FileText : File;
+                    const sizeKb = Math.round(att.size / 1024);
+                    const sizeLabel = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
+                    return (
+                      <a
+                        key={i}
+                        href={`/api/gmail/attachments?messageId=${msg.id}&attachmentId=${encodeURIComponent(att.attachmentId)}&filename=${encodeURIComponent(att.filename)}&mimeType=${encodeURIComponent(att.mimeType)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs text-gray-700 transition-colors border border-gray-200"
+                      >
+                        <Icon className="h-3.5 w-3.5 text-gray-500 flex-shrink-0" />
+                        <span className="truncate max-w-[180px]">{att.filename}</span>
+                        <span className="text-gray-400 flex-shrink-0">{sizeLabel}</span>
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ))
         )}
@@ -328,7 +381,57 @@ export function ConversationPane({
               placeholder="Deine Antwort..."
               autoFocus
             />
-            <div className="flex justify-end">
+
+            {/* Attachment chips */}
+            {replyAttachments.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {replyAttachments.map((file, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-700"
+                  >
+                    <Paperclip className="h-3 w-3 text-gray-400" />
+                    <span className="truncate max-w-[150px]">{file.name}</span>
+                    <span className="text-gray-400">
+                      {Math.round(file.size / 1024)} KB
+                    </span>
+                    <button
+                      onClick={() =>
+                        setReplyAttachments((prev) =>
+                          prev.filter((_, idx) => idx !== i)
+                        )
+                      }
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    setReplyAttachments((prev) => [...prev, ...files]);
+                    e.target.value = "";
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+                  title="Anhang hinzufügen"
+                >
+                  <Paperclip className="h-4 w-4" />
+                </button>
+              </div>
               <Button
                 onClick={handleSend}
                 disabled={sending || !replyHtml.trim()}

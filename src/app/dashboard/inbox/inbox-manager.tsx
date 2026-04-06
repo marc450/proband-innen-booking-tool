@@ -41,6 +41,7 @@ export function InboxManager() {
   const [composeBody, setComposeBody] = useState("");
   const [composeCc, setComposeCc] = useState("");
   const [composeBcc, setComposeBcc] = useState("");
+  const [composeAttachments, setComposeAttachments] = useState<File[]>([]);
   const [composeSending, setComposeSending] = useState(false);
 
   // Translate our filter tabs into a Gmail query. "Beantwortet" is handled
@@ -191,9 +192,28 @@ export function InboxManager() {
     return threads.find((t) => t.id === selectedThread)?.contactName;
   }, [composing, selectedThread, threads]);
 
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve(result.split(",")[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
   const handleComposeSend = async () => {
     setComposeSending(true);
     try {
+      const attachmentPayloads = await Promise.all(
+        composeAttachments.map(async (file) => ({
+          filename: file.name,
+          mimeType: file.type || "application/octet-stream",
+          content: await fileToBase64(file),
+        }))
+      );
+
       const res = await fetch("/api/gmail/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -203,6 +223,7 @@ export function InboxManager() {
           htmlBody: `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;">${composeBody}</div>`,
           cc: composeCc || undefined,
           bcc: composeBcc || undefined,
+          attachments: attachmentPayloads.length > 0 ? attachmentPayloads : undefined,
         }),
       });
       if (res.ok) {
@@ -212,6 +233,7 @@ export function InboxManager() {
         setComposeBody("");
         setComposeCc("");
         setComposeBcc("");
+        setComposeAttachments([]);
         fetchThreads();
       }
     } finally {
@@ -226,6 +248,7 @@ export function InboxManager() {
     setComposeBody("");
     setComposeCc("");
     setComposeBcc("");
+    setComposeAttachments([]);
   };
 
   const openCompose = () => {
@@ -235,6 +258,7 @@ export function InboxManager() {
     setComposeSubject("");
     setComposeCc("");
     setComposeBcc("");
+    setComposeAttachments([]);
     setComposing(true);
     setSelectedThread(null);
     setThreadMessages([]);
@@ -312,6 +336,8 @@ export function InboxManager() {
               onBodyChange={setComposeBody}
               onCcChange={setComposeCc}
               onBccChange={setComposeBcc}
+              attachments={composeAttachments}
+              onAttachmentsChange={setComposeAttachments}
               onSend={handleComposeSend}
               onCancel={cancelCompose}
             />

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listThreads, getThread, getHeader, extractEmailAddress, extractName, getBody, isInbound } from "@/lib/gmail";
+import { listThreads, getThread, getHeader, extractEmailAddress, extractName, getBody, getAttachments, isInbound } from "@/lib/gmail";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
         labels: msg.labelIds || [],
         messageId: getHeader(msg, "Message-ID"),
         references: getHeader(msg, "References"),
+        attachments: getAttachments(msg),
       }));
       return NextResponse.json({ thread: { id: thread.id, messages } });
     }
