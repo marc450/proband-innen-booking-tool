@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Upload } from "lucide-react";
+import { Upload, ChevronRight } from "lucide-react";
 import { TableHeaderBar } from "@/components/table/table-header-bar";
 import { SortableHead } from "@/components/table/sortable-head";
 import { useTableSort } from "@/hooks/use-table-sort";
@@ -60,7 +60,7 @@ type ImportResult = {
   error?: string;
 };
 
-type SortKey = "name" | "email" | "bookings" | "status" | "created_at";
+type SortKey = "name" | "email" | "status" | "created_at";
 
 const typeLabel = (t: Auszubildende["contact_type"]): string => {
   switch (t) {
@@ -263,8 +263,6 @@ export function AuszubildendeManager({
           return nameOf(a).localeCompare(nameOf(b)) * dir;
         case "email":
           return (a.email || "").localeCompare(b.email || "") * dir;
-        case "bookings":
-          return ((bookingCounts[a.id] || 0) - (bookingCounts[b.id] || 0)) * dir;
         case "status":
           return (a.status || "").localeCompare(b.status || "") * dir;
         case "created_at":
@@ -455,43 +453,19 @@ export function AuszubildendeManager({
       <Table>
         <TableHeader>
           <TableRow>
-            <SortableHead
-              label="Name"
-              sortKey="name"
-              currentKey={sortKey}
-              direction={sortDir}
-              onSort={handleSort as (key: string) => void}
-            />
-            <TableHead>Typ</TableHead>
-            <SortableHead
-              label="E-Mail"
-              sortKey="email"
-              currentKey={sortKey}
-              direction={sortDir}
-              onSort={handleSort as (key: string) => void}
-            />
+            <SortableHead label="Name" sortKey="name" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+            <SortableHead label="E-Mail" sortKey="email" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
             <TableHead>Telefon</TableHead>
-            <SortableHead
-              label="Buchungen"
-              sortKey="bookings"
-              currentKey={sortKey}
-              direction={sortDir}
-              onSort={handleSort as (key: string) => void}
-              className="text-center"
-            />
-            <SortableHead
-              label="Status"
-              sortKey="status"
-              currentKey={sortKey}
-              direction={sortDir}
-              onSort={handleSort as (key: string) => void}
-            />
+            <TableHead>Ort</TableHead>
+            <SortableHead label="Status" sortKey="status" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+            <SortableHead label="Erstellt am" sortKey="created_at" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+            <TableHead></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filtered.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                 {search ? "Keine Einträge gefunden." : "Noch keine Einträge vorhanden."}
               </TableCell>
             </TableRow>
@@ -502,35 +476,28 @@ export function AuszubildendeManager({
               const displayName = isCompany
                 ? azubi.company_name || personName || "–"
                 : personName || azubi.company_name || "–";
-              const count = bookingCounts[azubi.id] || 0;
+              const ort = [azubi.address_postal_code, azubi.address_city].filter(Boolean).join(" ");
+              const createdAt = new Date(azubi.created_at).toLocaleDateString("de-DE", {
+                day: "2-digit", month: "2-digit", year: "numeric",
+              });
               return (
                 <TableRow
                   key={azubi.id}
-                  // Fixed height keeps every row identical whether or not a
-                  // Firma sub-label is shown underneath the name.
-                  className="h-16 cursor-pointer hover:bg-muted/50"
+                  className="cursor-pointer hover:bg-muted/50"
                   onClick={() => router.push(`/dashboard/auszubildende/personen/${azubi.id}`)}
                 >
-                  <TableCell className="font-medium align-middle">
+                  <TableCell className="font-medium">
                     <Link
                       href={`/dashboard/auszubildende/personen/${azubi.id}`}
                       className="text-primary hover:underline"
                     >
                       {displayName}
                     </Link>
-                    {!isCompany && azubi.company_name && (
-                      <div className="text-xs text-muted-foreground">{azubi.company_name}</div>
-                    )}
                   </TableCell>
-                  <TableCell className="align-middle">
-                    <Badge variant="outline" className="text-xs">
-                      {typeLabel(azubi.contact_type)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="align-middle">{azubi.email}</TableCell>
-                  <TableCell className="align-middle">{azubi.phone || "–"}</TableCell>
-                  <TableCell className="text-center align-middle">{count}</TableCell>
-                  <TableCell className="align-middle">
+                  <TableCell>{azubi.email}</TableCell>
+                  <TableCell>{azubi.phone || "–"}</TableCell>
+                  <TableCell>{ort || "–"}</TableCell>
+                  <TableCell>
                     <Badge
                       variant="secondary"
                       className={`text-xs ${
@@ -541,6 +508,10 @@ export function AuszubildendeManager({
                     >
                       {azubi.status === "active" ? "Aktiv" : "Inaktiv"}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{createdAt}</TableCell>
+                  <TableCell>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </TableCell>
                 </TableRow>
               );
