@@ -132,7 +132,7 @@ export function CampaignsManager({ campaigns }: Props) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Name oder Betreff..."
-            className="pl-9 h-9"
+            className="!pl-9 h-9"
           />
         </div>
         <div className="flex gap-1">
