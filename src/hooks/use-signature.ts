@@ -4,14 +4,12 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 // Builds an HTML email signature for the logged-in staff member from
-// their `profiles` row (title + first_name + last_name). Shared by every
-// composer in the admin panel so the inbox reply box, the inbox "Neue
-// E-Mail" pane, and the inline composer on the Ärzt:in/Patient:in
-// profile cards all sign off the same way.
-//
-// Returns null while the fetch is in flight or if the user has no
-// profile row (e.g. first deploy before profile is created) — callers
-// should fall back to an empty string in that case.
+// their `profiles` row (title + first_name + last_name). Matches the
+// branded footer used in transactional emails (email-template.ts):
+// closing line, EPHIA logo, company details.
+
+const LOGO_URL =
+  "https://lwfiles.mycourse.app/6638baeec5c56514e03ec360-public/f64a1ea1eb5346a171fe9ea36e8615ca.png";
 
 export interface Signature {
   html: string;
@@ -38,9 +36,19 @@ export function useSignature(): Signature | null {
         const name = [profile.title, profile.first_name, profile.last_name]
           .filter(Boolean)
           .join(" ");
-        const html = `<div style="color:#6b7280;font-size:13px;">Viele Grüße<br>${
-          name || "Dein EPHIA Team"
-        }<br>EPHIA · customerlove@ephia.de</div>`;
+
+        const html = `<div style="font-family:Arial,sans-serif;">
+  <p style="margin:0 0 16px; font-size:14px; color:#333;">Herzliche Grüße,<br>${name || "Dein EPHIA-Team"}</p>
+  <div style="padding-top:16px; border-top:1px solid #f0f0f0;">
+    <img src="${LOGO_URL}" alt="EPHIA" style="width:160px; height:auto; display:block; margin:0 0 8px;">
+    <div style="color:#9e9e9e; font-size:12px; line-height:1.5;">
+      EPHIA Medical GmbH<br>
+      Dorfstraße 30, 15913 Märkische Heide, Deutschland<br>
+      Geschäftsführerin: Dr. Sophia Wilk-Vollmann
+    </div>
+  </div>
+</div>`;
+
         setSignature({ html });
       } catch {
         // Silently skip — signature is a nice-to-have.
