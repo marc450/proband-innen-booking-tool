@@ -224,15 +224,26 @@ export function ContactSidebar({ email, displayName }: Props) {
             <p className="text-xs text-muted-foreground mb-2">
               Dieser Kontakt ist noch nicht im System hinterlegt.
             </p>
-            <Link
-              href={`/dashboard/auszubildende/personen?type=auszubildende&newEmail=${encodeURIComponent(
-                contact.email
-              )}`}
-              className="inline-flex items-center gap-1.5 text-xs text-[#0066FF] hover:underline"
-            >
-              <UserPlus className="h-3 w-3" />
-              Als Ärzt:in anlegen
-            </Link>
+            <div className="flex flex-col gap-1.5">
+              <Link
+                href={`/dashboard/auszubildende/personen?type=auszubildende&newEmail=${encodeURIComponent(
+                  contact.email
+                )}`}
+                className="inline-flex items-center gap-1.5 text-xs text-[#0066FF] hover:underline"
+              >
+                <UserPlus className="h-3 w-3" />
+                Als Ärzt:in anlegen
+              </Link>
+              <Link
+                href={`/dashboard/patients?newEmail=${encodeURIComponent(
+                  contact.email
+                )}`}
+                className="inline-flex items-center gap-1.5 text-xs text-[#0066FF] hover:underline"
+              >
+                <UserPlus className="h-3 w-3" />
+                Als Proband:in anlegen
+              </Link>
+            </div>
           </div>
         )}
       </div>
