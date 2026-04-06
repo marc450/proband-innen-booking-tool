@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -297,9 +296,7 @@ export function DiscountCodesManager() {
         }
       />
 
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
+      {loading ? (
             <div className="py-12 text-center text-muted-foreground text-sm">Lade Rabattcodes...</div>
           ) : codes.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground text-sm">
@@ -366,8 +363,6 @@ export function DiscountCodesManager() {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
     </div>
   );
 }

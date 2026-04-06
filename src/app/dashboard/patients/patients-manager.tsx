@@ -6,7 +6,6 @@ import { read, utils } from "xlsx";
 import { createClient } from "@/lib/supabase/client";
 import { Patient, PatientStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -284,8 +283,7 @@ export function PatientsManager({ initialPatients }: Props) {
         </DialogContent>
       </Dialog>
 
-      <Card>
-        <CardContent className="p-0">
+      <div>
           {filteredPatients.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground">
               Keine Proband:innen gefunden
@@ -369,8 +367,7 @@ export function PatientsManager({ initialPatients }: Props) {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }

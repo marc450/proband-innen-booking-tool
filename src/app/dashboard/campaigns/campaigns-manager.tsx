@@ -6,7 +6,6 @@ import Link from "next/link";
 import { EmailCampaign, CampaignStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -137,9 +136,7 @@ export function CampaignsManager({ campaigns }: Props) {
         }
       />
 
-      <Card>
-        <CardContent className="p-0">
-          {filtered.length === 0 ? (
+      {filtered.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground">
               {campaigns.length === 0
                 ? "Noch keine Kampagnen erstellt"
@@ -228,8 +225,6 @@ export function CampaignsManager({ campaigns }: Props) {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
