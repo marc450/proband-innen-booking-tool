@@ -214,9 +214,7 @@ export function ConversationPane({
                   </div>
                 )}
               <div
-                className={`rounded-[10px] shadow-sm border border-gray-100 ${
-                  msg.isInbound ? "bg-white" : "bg-blue-50/30"
-                }`}
+                className="rounded-[10px] shadow-sm border border-gray-100 bg-white"
               >
                 {/* Message header */}
                 <div className="px-5 py-3 border-b border-gray-50 flex items-start justify-between gap-3">
