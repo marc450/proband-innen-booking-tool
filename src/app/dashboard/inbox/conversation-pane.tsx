@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Send, X, Reply, Paperclip, FileText, Image, File } from "lucide-react";
+import { Loader2, Send, X, Reply, Paperclip, FileText, Image, File, UserCircle, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "./rich-text-editor";
@@ -35,12 +35,26 @@ interface Signature {
   userName: string;
 }
 
+interface TeamMember {
+  id: string;
+  name: string;
+  initials: string;
+}
+
+interface Assignment {
+  assignedTo: string;
+  assignedToName: string;
+}
+
 interface Props {
   threadId: string | null;
   messages: ThreadMessage[];
   loading: boolean;
   signature: Signature | null;
   onSent: () => void;
+  assignment?: Assignment | null;
+  teamMembers?: TeamMember[];
+  onAssign?: (assignedTo: string | null) => void;
 }
 
 function formatFullDate(dateStr: string) {
@@ -60,6 +74,9 @@ export function ConversationPane({
   loading,
   signature,
   onSent,
+  assignment,
+  teamMembers = [],
+  onAssign,
 }: Props) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyHtml, setReplyHtml] = useState("");
@@ -69,7 +86,21 @@ export function ConversationPane({
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
   const [sending, setSending] = useState(false);
+  const [assignDropdownOpen, setAssignDropdownOpen] = useState(false);
+  const assignDropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Close assign dropdown on outside click
+  useEffect(() => {
+    if (!assignDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (assignDropdownRef.current && !assignDropdownRef.current.contains(e.target as Node)) {
+        setAssignDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [assignDropdownOpen]);
 
   // Reset composer when switching threads.
   useEffect(() => {
@@ -185,9 +216,63 @@ export function ConversationPane({
         <h2 className="text-base font-bold truncate">
           {threadSubject || "(kein Betreff)"}
         </h2>
-        <span className="text-xs text-muted-foreground ml-4 flex-shrink-0">
-          {messages.length} Nachricht{messages.length !== 1 && "en"}
-        </span>
+        <div className="flex items-center gap-3 ml-4 flex-shrink-0">
+          <span className="text-xs text-muted-foreground">
+            {messages.length} Nachricht{messages.length !== 1 && "en"}
+          </span>
+
+          {/* Assignment dropdown */}
+          {onAssign && (
+            <div className="relative" ref={assignDropdownRef}>
+              <button
+                onClick={() => setAssignDropdownOpen(!assignDropdownOpen)}
+                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                {assignment ? (
+                  <>
+                    <span className="w-4 h-4 rounded-full bg-[#0066FF]/15 text-[#0066FF] text-[8px] font-bold flex items-center justify-center">
+                      {assignment.assignedToName.split(" ").map((w) => w[0]).slice(-2).join("").toUpperCase()}
+                    </span>
+                    <span className="text-gray-700">{assignment.assignedToName.split(" ").pop()}</span>
+                  </>
+                ) : (
+                  <>
+                    <UserCircle className="h-3.5 w-3.5 text-gray-400" />
+                    <span className="text-gray-500">Zuweisen</span>
+                  </>
+                )}
+                <ChevronDown className="h-3 w-3 text-gray-400" />
+              </button>
+
+              {assignDropdownOpen && (
+                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px] z-50">
+                  {assignment && (
+                    <button
+                      onClick={() => { onAssign(null); setAssignDropdownOpen(false); }}
+                      className="w-full text-left px-3 py-2 text-xs text-gray-500 hover:bg-gray-50 transition-colors"
+                    >
+                      Zuweisung entfernen
+                    </button>
+                  )}
+                  {teamMembers.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => { onAssign(m.id); setAssignDropdownOpen(false); }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors flex items-center gap-2 ${
+                        assignment?.assignedTo === m.id ? "bg-blue-50 text-[#0066FF]" : "text-gray-700"
+                      }`}
+                    >
+                      <span className="w-6 h-6 rounded-full bg-[#0066FF]/10 text-[#0066FF] text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                        {m.initials}
+                      </span>
+                      {m.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Messages */}

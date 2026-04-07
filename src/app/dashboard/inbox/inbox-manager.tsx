@@ -13,7 +13,24 @@ import { ComposePane } from "./compose-pane";
 // active filter/search, selected thread, and compose modal. Each pane is
 // a pure view component that receives props + callbacks.
 
-export function InboxManager() {
+export interface TeamMember {
+  id: string;
+  name: string;
+  initials: string;
+}
+
+interface Assignment {
+  assignedTo: string;
+  assignedToName: string;
+}
+
+export function InboxManager({
+  teamMembers = [],
+  currentUserId = "",
+}: {
+  teamMembers?: TeamMember[];
+  currentUserId?: string;
+}) {
   const searchParams = useSearchParams();
   const initialThread = searchParams.get("thread");
 
@@ -43,6 +60,39 @@ export function InboxManager() {
   const [composeBcc, setComposeBcc] = useState("");
   const [composeAttachments, setComposeAttachments] = useState<File[]>([]);
   const [composeSending, setComposeSending] = useState(false);
+
+  // Thread assignments
+  const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
+
+  const fetchAssignments = useCallback(async () => {
+    try {
+      const res = await fetch("/api/gmail/assignments");
+      if (res.ok) setAssignments(await res.json());
+    } catch { /* ignore */ }
+  }, []);
+
+  const handleAssign = useCallback(async (threadId: string, assignedTo: string | null) => {
+    // Optimistic update
+    if (assignedTo) {
+      const member = teamMembers.find((m) => m.id === assignedTo);
+      setAssignments((prev) => ({
+        ...prev,
+        [threadId]: { assignedTo, assignedToName: member?.name || "Unbekannt" },
+      }));
+    } else {
+      setAssignments((prev) => {
+        const next = { ...prev };
+        delete next[threadId];
+        return next;
+      });
+    }
+
+    await fetch("/api/gmail/assignments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ threadId, assignedTo }),
+    });
+  }, [teamMembers]);
 
   // Translate our filter tabs into a Gmail query. "Beantwortet" is handled
   // client-side since it's a simple !lastMessageInbound check and Gmail has
@@ -102,6 +152,7 @@ export function InboxManager() {
 
   useEffect(() => {
     fetchThreads();
+    fetchAssignments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -111,8 +162,11 @@ export function InboxManager() {
     if (filter === "answered") {
       return threads.filter((t) => !t.lastMessageInbound);
     }
+    if (filter === "mine") {
+      return threads.filter((t) => assignments[t.id]?.assignedTo === currentUserId);
+    }
     return threads;
-  }, [threads, filter]);
+  }, [threads, filter, assignments, currentUserId]);
 
   const openThread = useCallback(async (threadId: string) => {
     setComposing(false);
@@ -313,6 +367,7 @@ export function InboxManager() {
             onRefresh={handleRefresh}
             nextPageToken={nextPageToken}
             onLoadMore={handleLoadMore}
+            assignments={assignments}
             composing={composing}
             composeSubject={composeSubject}
             composeTo={composeTo}
@@ -349,6 +404,9 @@ export function InboxManager() {
               loading={threadLoading}
               signature={signature}
               onSent={handleReplySent}
+              assignment={selectedThread ? assignments[selectedThread] || null : null}
+              teamMembers={teamMembers}
+              onAssign={(assignedTo) => selectedThread && handleAssign(selectedThread, assignedTo)}
             />
           )}
         </div>

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 // tab UI but not the data: the parent (InboxManager) controls the query
 // and filter state so it can drive the Gmail fetch.
 
-export type InboxFilter = "all" | "unread" | "answered" | "spam";
+export type InboxFilter = "all" | "unread" | "answered" | "mine" | "spam";
 
 export interface ThreadSummary {
   id: string;
@@ -41,11 +41,13 @@ interface Props {
   composeSubject: string;
   composeTo: string;
   onSelectDraft: () => void;
+  assignments: Record<string, { assignedTo: string; assignedToName: string }>;
 }
 
 const FILTERS: { key: InboxFilter; label: string }[] = [
   { key: "all", label: "Alle" },
   { key: "unread", label: "Ungelesen" },
+  { key: "mine", label: "Meine" },
   { key: "answered", label: "Beantwortet" },
   { key: "spam", label: "Spam" },
 ];
@@ -79,6 +81,7 @@ export function ThreadListPane({
   composeSubject,
   composeTo,
   onSelectDraft,
+  assignments,
 }: Props) {
   return (
     <div className="flex flex-col h-full bg-white border-r border-gray-100">
@@ -199,9 +202,24 @@ export function ThreadListPane({
                           {t.contactName || t.contactEmail || "Unbekannt"}
                         </span>
                       </div>
-                      <span className="text-[11px] text-muted-foreground flex-shrink-0">
-                        {formatDate(t.lastDate)}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {assignments[t.id] && (
+                          <span
+                            className="w-5 h-5 rounded-full bg-[#0066FF]/15 text-[#0066FF] text-[9px] font-bold flex items-center justify-center flex-shrink-0"
+                            title={assignments[t.id].assignedToName}
+                          >
+                            {assignments[t.id].assignedToName
+                              .split(" ")
+                              .map((w) => w[0])
+                              .slice(-2)
+                              .join("")
+                              .toUpperCase()}
+                          </span>
+                        )}
+                        <span className="text-[11px] text-muted-foreground">
+                          {formatDate(t.lastDate)}
+                        </span>
+                      </div>
                     </div>
                     <p
                       className={`text-xs truncate ${
