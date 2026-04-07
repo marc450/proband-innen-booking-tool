@@ -213,10 +213,8 @@ export function ConversationPane({
                   </div>
                 )}
               <div
-                className={`bg-white rounded-[10px] shadow-sm ${
-                  msg.isInbound
-                    ? "border border-gray-100"
-                    : "border-l-4 border-[#0066FF] border-y border-r border-y-gray-100 border-r-gray-100"
+                className={`rounded-[10px] shadow-sm border border-gray-100 ${
+                  msg.isInbound ? "bg-white" : "bg-blue-50/30"
                 }`}
               >
                 {/* Message header */}
