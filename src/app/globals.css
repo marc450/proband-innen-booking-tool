@@ -276,6 +276,20 @@ main > div > h1.text-2xl.font-bold:first-child {
 .dark .text-purple-700 {
   color: #c084fc !important;
 }
+/* Rose (assignment avatars) */
+.dark .bg-rose-100 {
+  background-color: rgba(244, 63, 94, 0.18) !important;
+}
+.dark .text-rose-700 {
+  color: #fb7185 !important;
+}
+/* Cyan (assignment avatars) */
+.dark .bg-cyan-100 {
+  background-color: rgba(34, 211, 238, 0.18) !important;
+}
+.dark .text-cyan-700 {
+  color: #22d3ee !important;
+}
 /* Slate (misc badges) */
 .dark .bg-slate-100 {
   background-color: rgba(255, 255, 255, 0.08) !important;

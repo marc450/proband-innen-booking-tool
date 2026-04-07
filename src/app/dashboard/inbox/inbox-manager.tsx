@@ -368,6 +368,7 @@ export function InboxManager({
             nextPageToken={nextPageToken}
             onLoadMore={handleLoadMore}
             assignments={assignments}
+            teamMembers={teamMembers}
             composing={composing}
             composeSubject={composeSubject}
             composeTo={composeTo}

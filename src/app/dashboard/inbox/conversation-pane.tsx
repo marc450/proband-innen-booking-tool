@@ -230,9 +230,23 @@ export function ConversationPane({
               >
                 {assignment ? (
                   <>
-                    <span className="w-4 h-4 rounded-full bg-[#0066FF]/15 text-[#0066FF] text-[8px] font-bold flex items-center justify-center">
-                      {assignment.assignedToName.split(" ").map((w) => w[0]).slice(-2).join("").toUpperCase()}
-                    </span>
+                    {(() => {
+                      const idx = teamMembers.findIndex((m) => m.id === assignment.assignedTo);
+                      const colors = [
+                        { bg: "bg-blue-100", text: "text-blue-700" },
+                        { bg: "bg-emerald-100", text: "text-emerald-700" },
+                        { bg: "bg-purple-100", text: "text-purple-700" },
+                        { bg: "bg-amber-100", text: "text-amber-700" },
+                        { bg: "bg-rose-100", text: "text-rose-700" },
+                        { bg: "bg-cyan-100", text: "text-cyan-700" },
+                      ];
+                      const color = colors[Math.max(0, idx) % colors.length];
+                      return (
+                        <span className={`w-4 h-4 rounded-full ${color.bg} ${color.text} text-[8px] font-bold flex items-center justify-center`}>
+                          {assignment.assignedToName.split(" ").map((w) => w[0]).slice(-2).join("").toUpperCase()}
+                        </span>
+                      );
+                    })()}
                     <span className="text-gray-700">{assignment.assignedToName.split(" ").pop()}</span>
                   </>
                 ) : (
@@ -254,20 +268,31 @@ export function ConversationPane({
                       Zuweisung entfernen
                     </button>
                   )}
-                  {teamMembers.map((m) => (
-                    <button
-                      key={m.id}
-                      onClick={() => { onAssign(m.id); setAssignDropdownOpen(false); }}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors flex items-center gap-2 ${
-                        assignment?.assignedTo === m.id ? "bg-blue-50 text-[#0066FF]" : "text-gray-700"
-                      }`}
-                    >
-                      <span className="w-6 h-6 rounded-full bg-[#0066FF]/10 text-[#0066FF] text-[10px] font-bold flex items-center justify-center flex-shrink-0">
-                        {m.initials}
-                      </span>
-                      {m.name}
-                    </button>
-                  ))}
+                  {teamMembers.map((m, idx) => {
+                    const colors = [
+                      { bg: "bg-blue-100", text: "text-blue-700" },
+                      { bg: "bg-emerald-100", text: "text-emerald-700" },
+                      { bg: "bg-purple-100", text: "text-purple-700" },
+                      { bg: "bg-amber-100", text: "text-amber-700" },
+                      { bg: "bg-rose-100", text: "text-rose-700" },
+                      { bg: "bg-cyan-100", text: "text-cyan-700" },
+                    ];
+                    const color = colors[idx % colors.length];
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => { onAssign(m.id); setAssignDropdownOpen(false); }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors flex items-center gap-2 ${
+                          assignment?.assignedTo === m.id ? "bg-gray-50 font-medium" : "text-gray-700"
+                        }`}
+                      >
+                        <span className={`w-6 h-6 rounded-full ${color.bg} ${color.text} text-[10px] font-bold flex items-center justify-center flex-shrink-0`}>
+                          {m.initials}
+                        </span>
+                        {m.name}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

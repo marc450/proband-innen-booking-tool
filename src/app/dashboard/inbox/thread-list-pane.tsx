@@ -42,6 +42,7 @@ interface Props {
   composeTo: string;
   onSelectDraft: () => void;
   assignments: Record<string, { assignedTo: string; assignedToName: string }>;
+  teamMembers: { id: string; name: string; initials: string }[];
 }
 
 const FILTERS: { key: InboxFilter; label: string }[] = [
@@ -82,7 +83,20 @@ export function ThreadListPane({
   composeTo,
   onSelectDraft,
   assignments,
+  teamMembers,
 }: Props) {
+  const AVATAR_COLORS = [
+    { bg: "bg-blue-100", text: "text-blue-700" },
+    { bg: "bg-emerald-100", text: "text-emerald-700" },
+    { bg: "bg-purple-100", text: "text-purple-700" },
+    { bg: "bg-amber-100", text: "text-amber-700" },
+    { bg: "bg-rose-100", text: "text-rose-700" },
+    { bg: "bg-cyan-100", text: "text-cyan-700" },
+  ];
+  const getAvatarColor = (userId: string) => {
+    const idx = teamMembers.findIndex((m) => m.id === userId);
+    return AVATAR_COLORS[Math.max(0, idx) % AVATAR_COLORS.length];
+  };
   return (
     <div className="flex flex-col h-full bg-white border-r border-gray-100">
       {/* Header */}
@@ -203,19 +217,22 @@ export function ThreadListPane({
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
-                        {assignments[t.id] && (
-                          <span
-                            className="w-5 h-5 rounded-full bg-[#0066FF]/15 text-[#0066FF] text-[9px] font-bold flex items-center justify-center flex-shrink-0"
-                            title={assignments[t.id].assignedToName}
-                          >
-                            {assignments[t.id].assignedToName
-                              .split(" ")
-                              .map((w) => w[0])
-                              .slice(-2)
-                              .join("")
-                              .toUpperCase()}
-                          </span>
-                        )}
+                        {assignments[t.id] && (() => {
+                          const color = getAvatarColor(assignments[t.id].assignedTo);
+                          return (
+                            <span
+                              className={`w-5 h-5 rounded-full ${color.bg} ${color.text} text-[9px] font-bold flex items-center justify-center flex-shrink-0`}
+                              title={assignments[t.id].assignedToName}
+                            >
+                              {assignments[t.id].assignedToName
+                                .split(" ")
+                                .map((w) => w[0])
+                                .slice(-2)
+                                .join("")
+                                .toUpperCase()}
+                            </span>
+                          );
+                        })()}
                         <span className="text-[11px] text-muted-foreground">
                           {formatDate(t.lastDate)}
                         </span>
