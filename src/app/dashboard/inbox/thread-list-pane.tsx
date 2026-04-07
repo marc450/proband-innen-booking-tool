@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Loader2, MailOpen, PenSquare, RefreshCw, Trash2 } from "lucide-react";
+import { Search, Loader2, MailOpen, PenSquare, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { ConfirmDialog } from "@/components/confirm-dialog";
 
 // Left pane of the HubSpot-style inbox. Owns the search input and filter
 // tab UI but not the data: the parent (InboxManager) controls the query
@@ -43,7 +41,6 @@ interface Props {
   composeSubject: string;
   composeTo: string;
   onSelectDraft: () => void;
-  onDeleteThread: (threadId: string) => void;
 }
 
 const FILTERS: { key: InboxFilter; label: string }[] = [
@@ -82,10 +79,7 @@ export function ThreadListPane({
   composeSubject,
   composeTo,
   onSelectDraft,
-  onDeleteThread,
 }: Props) {
-  const [deleteThreadId, setDeleteThreadId] = useState<string | null>(null);
-
   return (
     <div className="flex flex-col h-full bg-white border-r border-gray-100">
       {/* Header */}
@@ -181,7 +175,7 @@ export function ThreadListPane({
             {threads.map((t) => {
               const selected = t.id === selectedThreadId;
               return (
-                <li key={t.id} className="group relative">
+                <li key={t.id}>
                   <button
                     onClick={() => onSelectThread(t.id)}
                     className={`w-full text-left px-4 py-3 border-b border-gray-50 transition-colors ${
@@ -225,16 +219,6 @@ export function ThreadListPane({
                       {t.snippet}
                     </p>
                   </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteThreadId(t.id);
-                    }}
-                    className="absolute right-2 top-2 p-1.5 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                    title="Löschen"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
                 </li>
               );
             })}
@@ -253,18 +237,6 @@ export function ThreadListPane({
           </div>
         )}
       </div>
-      <ConfirmDialog
-        open={!!deleteThreadId}
-        onCancel={() => setDeleteThreadId(null)}
-        title="Konversation löschen"
-        description="Diese Konversation wird in den Papierkorb verschoben."
-        confirmLabel="Löschen"
-        variant="destructive"
-        onConfirm={() => {
-          if (deleteThreadId) onDeleteThread(deleteThreadId);
-          setDeleteThreadId(null);
-        }}
-      />
     </div>
   );
 }

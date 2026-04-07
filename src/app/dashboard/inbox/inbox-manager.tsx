@@ -320,27 +320,6 @@ export function InboxManager() {
               // pane open. Kept as a prop so we can wire focus-the-editor
               // behaviour later without another API change.
             }}
-            onDeleteThread={async (threadId) => {
-              try {
-                // Fetch thread messages to trash each one
-                const res = await fetch(`/api/gmail/threads?threadId=${threadId}`);
-                if (res.ok) {
-                  const data = await res.json();
-                  for (const msg of data.thread.messages) {
-                    await fetch("/api/gmail/labels", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ messageId: msg.id, addLabels: ["TRASH"] }),
-                    });
-                  }
-                }
-              } catch { /* best effort */ }
-              if (selectedThread === threadId) {
-                setSelectedThread(null);
-                setThreadMessages([]);
-              }
-              fetchThreads();
-            }}
           />
         </div>
         <div className="min-h-0 overflow-hidden">
@@ -369,6 +348,11 @@ export function InboxManager() {
               loading={threadLoading}
               signature={signature}
               onSent={handleReplySent}
+              onDelete={() => {
+                setSelectedThread(null);
+                setThreadMessages([]);
+                fetchThreads();
+              }}
             />
           )}
         </div>
