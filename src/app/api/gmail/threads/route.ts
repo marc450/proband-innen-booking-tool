@@ -12,23 +12,25 @@ export async function GET(request: NextRequest) {
     // Single thread detail
     if (threadId) {
       const thread = await getThread(threadId);
-      const messages = thread.messages.map((msg) => ({
-        id: msg.id,
-        threadId: msg.threadId,
-        from: getHeader(msg, "From"),
-        fromEmail: extractEmailAddress(getHeader(msg, "From")),
-        fromName: extractName(getHeader(msg, "From")) || extractEmailAddress(getHeader(msg, "From")),
-        to: getHeader(msg, "To"),
-        cc: getHeader(msg, "Cc"),
-        subject: getHeader(msg, "Subject"),
-        date: new Date(Number(msg.internalDate)).toISOString(),
-        body: getBody(msg),
-        isInbound: isInbound(msg),
-        labels: msg.labelIds || [],
-        messageId: getHeader(msg, "Message-ID"),
-        references: getHeader(msg, "References"),
-        attachments: getAttachments(msg),
-      }));
+      const messages = thread.messages
+        .map((msg) => ({
+          id: msg.id,
+          threadId: msg.threadId,
+          from: getHeader(msg, "From"),
+          fromEmail: extractEmailAddress(getHeader(msg, "From")),
+          fromName: extractName(getHeader(msg, "From")) || extractEmailAddress(getHeader(msg, "From")),
+          to: getHeader(msg, "To"),
+          cc: getHeader(msg, "Cc"),
+          subject: getHeader(msg, "Subject"),
+          date: new Date(Number(msg.internalDate)).toISOString(),
+          body: getBody(msg),
+          isInbound: isInbound(msg),
+          labels: msg.labelIds || [],
+          messageId: getHeader(msg, "Message-ID"),
+          references: getHeader(msg, "References"),
+          attachments: getAttachments(msg),
+        }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       return NextResponse.json({ thread: { id: thread.id, messages } });
     }
 

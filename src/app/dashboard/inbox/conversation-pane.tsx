@@ -187,78 +187,110 @@ export function ConversationPane({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-3">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {loading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`bg-white rounded-[10px] p-5 ${
-                msg.isInbound ? "" : "border-l-4 border-[#0066FF]"
-              }`}
-            >
-              <div className="flex items-start justify-between mb-3 gap-3">
-                <div className="min-w-0">
-                  <span className="font-semibold text-sm">{msg.fromName}</span>
-                  <span className="text-xs text-muted-foreground ml-2">
-                    &lt;{msg.fromEmail}&gt;
-                  </span>
-                  {!msg.isInbound && (
-                    <span className="ml-2 text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">
-                      Gesendet
+          messages.map((msg, idx) => (
+            <div key={msg.id}>
+              {/* Date separator between messages on different days */}
+              {idx > 0 &&
+                new Date(msg.date).toDateString() !==
+                  new Date(messages[idx - 1].date).toDateString() && (
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="flex-1 h-px bg-gray-200" />
+                    <span className="text-[11px] text-muted-foreground font-medium">
+                      {new Date(msg.date).toLocaleDateString("de-DE", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
                     </span>
-                  )}
-                </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {formatFullDate(msg.date)}
-                </span>
-              </div>
-              {msg.to && (
-                <p className="text-xs text-muted-foreground mb-1 truncate">
-                  An: {msg.to}
-                </p>
-              )}
-              {msg.cc && (
-                <p className="text-xs text-muted-foreground mb-3 truncate">
-                  CC: {msg.cc}
-                </p>
-              )}
-              {!msg.cc && msg.to && <div className="mb-2" />}
+                    <div className="flex-1 h-px bg-gray-200" />
+                  </div>
+                )}
               <div
-                className="prose prose-sm max-w-none text-sm [&_img]:max-w-full [&_table]:text-sm"
-                dangerouslySetInnerHTML={{
-                  __html:
-                    msg.body.html || msg.body.text.replace(/\n/g, "<br>"),
-                }}
-              />
-              {/* Attachments */}
-              {msg.attachments && msg.attachments.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {msg.attachments.map((att, i) => {
-                    const isImage = att.mimeType.startsWith("image/");
-                    const isPdf = att.mimeType === "application/pdf";
-                    const Icon = isImage ? Image : isPdf ? FileText : File;
-                    const sizeKb = Math.round(att.size / 1024);
-                    const sizeLabel = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
-                    return (
-                      <a
-                        key={i}
-                        href={`/api/gmail/attachments?messageId=${msg.id}&attachmentId=${encodeURIComponent(att.attachmentId)}&filename=${encodeURIComponent(att.filename)}&mimeType=${encodeURIComponent(att.mimeType)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs text-gray-700 transition-colors border border-gray-200"
-                      >
-                        <Icon className="h-3.5 w-3.5 text-gray-500 flex-shrink-0" />
-                        <span className="truncate max-w-[180px]">{att.filename}</span>
-                        <span className="text-gray-400 flex-shrink-0">{sizeLabel}</span>
-                      </a>
-                    );
-                  })}
+                className={`bg-white rounded-[10px] shadow-sm ${
+                  msg.isInbound
+                    ? "border border-gray-100"
+                    : "border-l-4 border-[#0066FF] border-y border-r border-y-gray-100 border-r-gray-100"
+                }`}
+              >
+                {/* Message header */}
+                <div className="px-5 py-3 border-b border-gray-50 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-full bg-[#0066FF]/10 text-[#0066FF] flex items-center justify-center text-[10px] font-semibold flex-shrink-0">
+                        {(msg.fromName?.[0] || "?").toUpperCase()}
+                      </div>
+                      <div>
+                        <span className="font-semibold text-sm">{msg.fromName}</span>
+                        <span className="text-xs text-muted-foreground ml-1.5">
+                          &lt;{msg.fromEmail}&gt;
+                        </span>
+                        {!msg.isInbound && (
+                          <span className="ml-2 text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-medium">
+                            Gesendet
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {msg.to && (
+                      <p className="text-[11px] text-muted-foreground mt-1 ml-9 truncate">
+                        An: {msg.to}
+                      </p>
+                    )}
+                    {msg.cc && (
+                      <p className="text-[11px] text-muted-foreground ml-9 truncate">
+                        CC: {msg.cc}
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-[11px] text-muted-foreground whitespace-nowrap pt-1">
+                    {formatFullDate(msg.date)}
+                  </span>
                 </div>
-              )}
+
+                {/* Message body */}
+                <div className="px-5 py-4">
+                  <div
+                    className="prose prose-sm max-w-none text-sm [&_img]:max-w-full [&_table]:text-sm"
+                    dangerouslySetInnerHTML={{
+                      __html:
+                        msg.body.html || msg.body.text.replace(/\n/g, "<br>"),
+                    }}
+                  />
+                </div>
+
+                {/* Attachments */}
+                {msg.attachments && msg.attachments.length > 0 && (
+                  <div className="px-5 pb-4 flex flex-wrap gap-2">
+                    {msg.attachments.map((att, i) => {
+                      const isImg = att.mimeType.startsWith("image/");
+                      const isPdf = att.mimeType === "application/pdf";
+                      const Icon = isImg ? Image : isPdf ? FileText : File;
+                      const sizeKb = Math.round(att.size / 1024);
+                      const sizeLabel = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
+                      return (
+                        <a
+                          key={i}
+                          href={`/api/gmail/attachments?messageId=${msg.id}&attachmentId=${encodeURIComponent(att.attachmentId)}&filename=${encodeURIComponent(att.filename)}&mimeType=${encodeURIComponent(att.mimeType)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs text-gray-700 transition-colors border border-gray-200"
+                        >
+                          <Icon className="h-3.5 w-3.5 text-gray-500 flex-shrink-0" />
+                          <span className="truncate max-w-[180px]">{att.filename}</span>
+                          <span className="text-gray-400 flex-shrink-0">{sizeLabel}</span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           ))
         )}
