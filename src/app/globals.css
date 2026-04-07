@@ -303,6 +303,39 @@ main > div > h1.text-2xl.font-bold:first-child {
   color: #ff8b8b !important;
 }
 
+/* Email body content: Gmail HTML has inline styles (color:#000, background:#fff)
+   that override dark mode. Force readable colors on the prose container used
+   to render email bodies in the inbox conversation view. */
+.dark .prose {
+  color: var(--foreground) !important;
+}
+.dark .prose * {
+  color: inherit !important;
+  background-color: transparent !important;
+}
+.dark .prose a {
+  color: #7fa8ff !important;
+}
+.dark .prose img {
+  /* Don't invert actual images */
+  background-color: transparent !important;
+}
+.dark .prose blockquote,
+.dark .prose pre {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: var(--border) !important;
+}
+/* Preserve badge/chip backgrounds inside email cards */
+.dark [class*="bg-emerald-"] *,
+.dark [class*="bg-amber-"] *,
+.dark [class*="bg-red-"] *,
+.dark [class*="bg-blue-"] *,
+.dark [class*="bg-sky-"] *,
+.dark [class*="bg-purple-"] * {
+  color: inherit !important;
+  background-color: inherit !important;
+}
+
 /* Admin dialogs: match page background, drop the footer panel so the modal
    feels like a floating surface continuous with the canvas. */
 [data-dashboard-root] [data-slot="dialog-content"],
