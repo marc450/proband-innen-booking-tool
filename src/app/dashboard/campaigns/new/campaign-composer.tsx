@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { buildEmailHtml, type ContentBlock } from "@/lib/email-template";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { ArrowLeft, Send, Clock, ChevronDown, ChevronRight, Search, Plus, X, Link as LinkIcon, Type, Save } from "lucide-react";
+import { ArrowLeft, Send, Clock, ChevronDown, ChevronRight, Search, Plus, X, Link as LinkIcon, Type, Save, ImageIcon, Paperclip } from "lucide-react";
 import Link from "next/link";
 
 interface PatientOption {
@@ -73,6 +73,10 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
   const [scheduledAt, setScheduledAt] = useState("");
   const [recipientSearch, setRecipientSearch] = useState("");
   const [showRecipients, setShowRecipients] = useState(false);
+
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // UI state
   const [sending, setSending] = useState(false);
@@ -162,6 +166,28 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
     ]);
   };
 
+  // Track which block index the image should be inserted after
+  const [imageInsertAfter, setImageInsertAfter] = useState(0);
+
+  const handleImageUpload = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      insertBlock(imageInsertAfter, { type: "image", src: dataUrl, alt: file.name });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string).split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
   const hasContent = contentBlocks.some(
     (b) => (b.type === "text" && b.text.trim()) || (b.type === "button" && b.label && b.url)
   );
@@ -202,6 +228,14 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
     setError(null);
 
     try {
+      // Convert attachments to base64
+      const attachmentPayloads = await Promise.all(
+        attachments.map(async (file) => ({
+          filename: file.name,
+          content: await fileToBase64(file),
+        }))
+      );
+
       const res = await fetch("/api/send-campaign", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -213,6 +247,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
           excludedIds: Array.from(manuallyExcluded),
           excludeBlacklisted,
           scheduledAt: scheduleMode === "later" ? new Date(scheduledAt).toISOString() : null,
+          attachments: attachmentPayloads.length > 0 ? attachmentPayloads : undefined,
         }),
       });
 
@@ -338,7 +373,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                           </button>
                         )}
                       </div>
-                    ) : (
+                    ) : block.type === "button" ? (
                       <div className="flex items-center gap-2 bg-blue-50 rounded-lg p-2">
                         <LinkIcon className="h-4 w-4 text-[#0066FF] flex-shrink-0" />
                         <Input
@@ -360,7 +395,21 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </div>
-                    )}
+                    ) : block.type === "image" ? (
+                      <div className="relative bg-gray-50 rounded-lg p-2">
+                        <img
+                          src={block.src}
+                          alt={block.alt || ""}
+                          className="max-w-full max-h-[200px] rounded-lg object-contain"
+                        />
+                        <button
+                          onClick={() => removeBlock(i)}
+                          className="absolute top-3 right-3 bg-white/80 hover:bg-white p-1 rounded-full text-gray-500 hover:text-gray-700 shadow-sm"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ) : null}
 
                     {/* Insert controls between blocks */}
                     <div className="flex items-center justify-center gap-2 py-1">
@@ -378,10 +427,76 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                         <Plus className="h-3 w-3" />
                         Button
                       </button>
+                      <button
+                        onClick={() => {
+                          setImageInsertAfter(i);
+                          imageInputRef.current?.click();
+                        }}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted transition-colors"
+                      >
+                        <ImageIcon className="h-3 w-3" />
+                        Bild
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Hidden file inputs */}
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              handleImageUpload(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          <input
+            ref={attachmentInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              setAttachments((prev) => [...prev, ...files]);
+              e.target.value = "";
+            }}
+          />
+
+          {/* Attachments */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Anhänge</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {attachments.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {attachments.map((file, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-700"
+                    >
+                      <Paperclip className="h-3 w-3 text-gray-400" />
+                      <span className="truncate max-w-[150px]">{file.name}</span>
+                      <span className="text-gray-400">{Math.round(file.size / 1024)} KB</span>
+                      <button
+                        onClick={() => setAttachments((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <Button variant="outline" size="sm" onClick={() => attachmentInputRef.current?.click()}>
+                <Paperclip className="h-3.5 w-3.5 mr-1" />
+                Anhang hinzufügen
+              </Button>
             </CardContent>
           </Card>
 

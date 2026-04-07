@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
     excludedIds,
     excludeBlacklisted,
     scheduledAt,
+    attachments: rawAttachments,
   } = await req.json() as {
     name: string;
     subject: string;
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
     excludedIds: string[];
     excludeBlacklisted: boolean;
     scheduledAt: string | null;
+    attachments?: { filename: string; content: string }[];
   };
 
   if (!subject || !contentBlocks?.length) {
@@ -113,16 +115,22 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
       const batch = recipients.slice(i, i + BATCH_SIZE);
 
-      const emails = batch.map((r) => ({
-        from: "EPHIA <customerlove@ephia.de>",
-        to: [r.email],
-        subject,
-        html: buildEmailHtml({
-          firstName: r.first_name || "Kolleg:in",
-          contentBlocks,
-        }),
-        ...(sendAtParam ? { send_at: sendAtParam } : {}),
-      }));
+      const emails = batch.map((r) => {
+        const email: Record<string, unknown> = {
+          from: "EPHIA <customerlove@ephia.de>",
+          to: [r.email],
+          subject,
+          html: buildEmailHtml({
+            firstName: r.first_name || "Kolleg:in",
+            contentBlocks,
+          }),
+          ...(sendAtParam ? { send_at: sendAtParam } : {}),
+        };
+        if (rawAttachments && rawAttachments.length > 0) {
+          email.attachments = rawAttachments;
+        }
+        return email;
+      });
 
       const res = await fetch("https://api.resend.com/emails/batch", {
         method: "POST",

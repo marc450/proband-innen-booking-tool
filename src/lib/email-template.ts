@@ -23,7 +23,8 @@ export interface EmailButton {
 
 export type ContentBlock =
   | { type: "text"; text: string }
-  | { type: "button"; label: string; url: string };
+  | { type: "button"; label: string; url: string }
+  | { type: "image"; src: string; alt?: string };
 
 function renderButton(b: EmailButton) {
   return `<a href="${b.url}" target="_blank" style="display:inline-block;background-color:#0066FF;color:#ffffff;font-weight:bold;font-size:16px;padding:12px 24px;border-radius:10px;text-decoration:none;margin:0 8px 8px 0;">${b.label}</a>`;
@@ -39,6 +40,9 @@ function renderContentBlocks(blocks: ContentBlock[]): string {
         return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
         <tr><td>${renderButton(block)}</td></tr>
       </table>`;
+      }
+      if (block.type === "image" && block.src) {
+        return `<img src="${block.src}" alt="${block.alt || ""}" style="max-width:100%;height:auto;border-radius:10px;margin:0 0 20px;display:block;" />`;
       }
       return "";
     })
