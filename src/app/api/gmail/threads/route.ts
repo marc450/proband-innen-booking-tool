@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
           labels: msg.labelIds || [],
           messageId: getHeader(msg, "Message-ID"),
           references: getHeader(msg, "References"),
+          sentBy: getHeader(msg, "X-EPHIA-Sent-By") || null,
           attachments: getAttachments(msg),
         }))
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

@@ -225,7 +225,8 @@ export async function sendEmail(
   threadId?: string,
   cc?: string,
   bcc?: string,
-  attachments?: EmailAttachment[]
+  attachments?: EmailAttachment[],
+  sentBy?: string,
 ) {
   const fromHeader = `EPHIA <${GMAIL_USER_EMAIL}>`;
   const hasAttachments = attachments && attachments.length > 0;
@@ -247,6 +248,7 @@ export async function sendEmail(
 
   if (cc) rawHeaders.push(`Cc: ${cc}`);
   if (bcc) rawHeaders.push(`Bcc: ${bcc}`);
+  if (sentBy) rawHeaders.push(`X-EPHIA-Sent-By: ${sentBy}`);
   if (inReplyTo) rawHeaders.push(`In-Reply-To: ${inReplyTo}`);
   if (references) rawHeaders.push(`References: ${references}`);
 

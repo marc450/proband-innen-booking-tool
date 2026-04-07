@@ -13,6 +13,7 @@ const LOGO_URL =
 
 export interface Signature {
   html: string;
+  userName: string;
 }
 
 export function useSignature(): Signature | null {
@@ -49,7 +50,7 @@ export function useSignature(): Signature | null {
   </div>
 </div>`;
 
-        setSignature({ html });
+        setSignature({ html, userName: name || "EPHIA" });
       } catch {
         // Silently skip — signature is a nice-to-have.
       }

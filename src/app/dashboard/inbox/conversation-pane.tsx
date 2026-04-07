@@ -26,11 +26,13 @@ export interface ThreadMessage {
   labels: string[];
   messageId: string;
   references: string;
+  sentBy?: string | null;
   attachments?: { filename: string; mimeType: string; size: number; attachmentId: string }[];
 }
 
 interface Signature {
   html: string;
+  userName: string;
 }
 
 interface Props {
@@ -150,6 +152,7 @@ export function ConversationPane({
           cc: replyCc || undefined,
           bcc: replyBcc || undefined,
           attachments: attachmentPayloads.length > 0 ? attachmentPayloads : undefined,
+          sentBy: signature?.userName || undefined,
         }),
       });
       if (res.ok) {
@@ -229,9 +232,16 @@ export function ConversationPane({
                           &lt;{msg.fromEmail}&gt;
                         </span>
                         {!msg.isInbound && (
-                          <span className="ml-2 text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-medium">
-                            Gesendet
-                          </span>
+                          <>
+                            <span className="ml-2 text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-medium">
+                              Gesendet
+                            </span>
+                            {msg.sentBy && (
+                              <span className="ml-1.5 text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">
+                                {msg.sentBy}
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>

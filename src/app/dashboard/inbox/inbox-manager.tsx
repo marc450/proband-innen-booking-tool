@@ -224,6 +224,7 @@ export function InboxManager() {
           cc: composeCc || undefined,
           bcc: composeBcc || undefined,
           attachments: attachmentPayloads.length > 0 ? attachmentPayloads : undefined,
+          sentBy: signature?.userName || undefined,
         }),
       });
       if (res.ok) {
