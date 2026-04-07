@@ -293,7 +293,7 @@ export function InboxManager() {
           {error}
         </div>
       )}
-      <div className="flex-1 grid grid-cols-[320px_1fr_360px] min-h-0">
+      <div className="flex-1 grid grid-cols-[320px_minmax(0,1fr)_360px] min-h-0">
         {/* Each grid child needs min-h-0 + overflow-hidden, otherwise the
             grid items default to min-height:auto and the inner
             overflow-y-auto containers can never scroll. */}
@@ -348,11 +348,6 @@ export function InboxManager() {
               loading={threadLoading}
               signature={signature}
               onSent={handleReplySent}
-              onDelete={() => {
-                setSelectedThread(null);
-                setThreadMessages([]);
-                fetchThreads();
-              }}
             />
           )}
         </div>
