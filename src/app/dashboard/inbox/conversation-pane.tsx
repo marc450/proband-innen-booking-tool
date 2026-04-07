@@ -80,7 +80,8 @@ export function ConversationPane({
     setShowBcc(false);
   }, [threadId]);
 
-  const lastMsg = messages[messages.length - 1];
+  // Messages are sorted newest-first; the most recent is at index 0
+  const lastMsg = messages[0];
 
   const openReply = () => {
     const sig = signature?.html ? `<br><br>${signature.html}` : "";

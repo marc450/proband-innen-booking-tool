@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
           references: getHeader(msg, "References"),
           attachments: getAttachments(msg),
         }))
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       return NextResponse.json({ thread: { id: thread.id, messages } });
     }
 
