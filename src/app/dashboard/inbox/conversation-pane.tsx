@@ -46,6 +46,14 @@ interface Assignment {
   assignedToName: string;
 }
 
+export interface ReplyDraft {
+  html: string;
+  cc: string;
+  bcc: string;
+  showCc: boolean;
+  showBcc: boolean;
+}
+
 interface Props {
   threadId: string | null;
   messages: ThreadMessage[];
@@ -55,6 +63,8 @@ interface Props {
   assignment?: Assignment | null;
   teamMembers?: TeamMember[];
   onAssign?: (assignedTo: string | null) => void;
+  replyDraft?: ReplyDraft | null;
+  onReplyDraftChange?: (draft: ReplyDraft | null) => void;
 }
 
 function formatFullDate(dateStr: string) {
@@ -77,6 +87,8 @@ export function ConversationPane({
   assignment,
   teamMembers = [],
   onAssign,
+  replyDraft,
+  onReplyDraftChange,
 }: Props) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyHtml, setReplyHtml] = useState("");
@@ -90,6 +102,10 @@ export function ConversationPane({
   const assignDropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Ref to capture current reply state for saving drafts (avoids stale closures)
+  const replyStateRef = useRef({ open: false, html: "", cc: "", bcc: "", showCc: false, showBcc: false });
+  replyStateRef.current = { open: replyOpen, html: replyHtml, cc: replyCc, bcc: replyBcc, showCc, showBcc };
+
   // Close assign dropdown on outside click
   useEffect(() => {
     if (!assignDropdownOpen) return;
@@ -102,15 +118,43 @@ export function ConversationPane({
     return () => document.removeEventListener("mousedown", handler);
   }, [assignDropdownOpen]);
 
-  // Reset composer when switching threads.
+  // Save reply draft when leaving a thread, restore when entering.
+  // The cleanup function fires with the *previous* threadId, so we can
+  // read the ref at that moment to save the draft.
+  const onReplyDraftChangeRef = useRef(onReplyDraftChange);
+  onReplyDraftChangeRef.current = onReplyDraftChange;
+
   useEffect(() => {
-    setReplyOpen(false);
-    setReplyHtml("");
-    setReplyCc("");
-    setReplyBcc("");
+    // Restore saved draft for this thread (or reset)
+    if (replyDraft) {
+      setReplyOpen(true);
+      setReplyHtml(replyDraft.html);
+      setReplyCc(replyDraft.cc);
+      setReplyBcc(replyDraft.bcc);
+      setShowCc(replyDraft.showCc);
+      setShowBcc(replyDraft.showBcc);
+    } else {
+      setReplyOpen(false);
+      setReplyHtml("");
+      setReplyCc("");
+      setReplyBcc("");
+      setShowCc(false);
+      setShowBcc(false);
+    }
     setReplyAttachments([]);
-    setShowCc(false);
-    setShowBcc(false);
+
+    // Cleanup: save draft when leaving this thread
+    return () => {
+      const s = replyStateRef.current;
+      const cb = onReplyDraftChangeRef.current;
+      if (!cb) return;
+      if (s.open && s.html) {
+        cb({ html: s.html, cc: s.cc, bcc: s.bcc, showCc: s.showCc, showBcc: s.showBcc });
+      } else {
+        cb(null);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threadId]);
 
   // Messages are sorted newest-first; the most recent is at index 0
@@ -194,6 +238,7 @@ export function ConversationPane({
         setReplyAttachments([]);
         setShowCc(false);
         setShowBcc(false);
+        onReplyDraftChange?.(null);
         onSent();
       }
     } finally {

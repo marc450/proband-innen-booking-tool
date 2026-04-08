@@ -40,7 +40,11 @@ interface Props {
   composing: boolean;
   composeSubject: string;
   composeTo: string;
+  /** True when there is an active compose OR a saved draft */
+  hasDraft?: boolean;
   onSelectDraft: () => void;
+  /** Thread IDs that have unsent reply drafts */
+  replyDraftThreadIds?: string[];
   assignments: Record<string, { assignedTo: string; assignedToName: string }>;
   teamMembers: { id: string; name: string; initials: string }[];
 }
@@ -81,7 +85,9 @@ export function ThreadListPane({
   composing,
   composeSubject,
   composeTo,
+  hasDraft,
   onSelectDraft,
+  replyDraftThreadIds = [],
   assignments,
   teamMembers,
 }: Props) {
@@ -157,16 +163,20 @@ export function ThreadListPane({
 
       {/* Thread list */}
       <div className="flex-1 overflow-y-auto">
-        {composing && (
+        {hasDraft && (
           <button
             onClick={onSelectDraft}
-            className="w-full text-left px-4 py-3 border-b border-gray-50 bg-[#0066FF]/5 border-l-2 border-l-[#0066FF] transition-colors"
+            className={`w-full text-left px-4 py-3 border-b border-gray-50 border-l-2 border-l-[#0066FF] transition-colors ${
+              composing ? "bg-[#0066FF]/5" : "bg-amber-50 hover:bg-amber-100/60"
+            }`}
           >
             <div className="flex items-center justify-between gap-2 mb-0.5">
               <span className="text-sm font-bold text-[#0066FF] truncate">
                 {composeTo || "Neue E-Mail"}
               </span>
-              <span className="text-[11px] text-[#0066FF] font-medium flex-shrink-0">
+              <span className={`text-[11px] font-medium flex-shrink-0 ${
+                composing ? "text-[#0066FF]" : "text-amber-600"
+              }`}>
                 Entwurf
               </span>
             </div>
@@ -174,7 +184,7 @@ export function ThreadListPane({
               {composeSubject || "(Betreff)"}
             </p>
             <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-              Wird gerade verfasst…
+              {composing ? "Wird gerade verfasst…" : "Klicken um fortzufahren"}
             </p>
           </button>
         )}
@@ -191,6 +201,7 @@ export function ThreadListPane({
           <ul>
             {threads.map((t) => {
               const selected = t.id === selectedThreadId;
+              const hasReplyDraft = replyDraftThreadIds.includes(t.id);
               return (
                 <li key={t.id}>
                   <button
@@ -233,6 +244,11 @@ export function ThreadListPane({
                             </span>
                           );
                         })()}
+                        {hasReplyDraft && (
+                          <span className="text-[10px] font-medium text-amber-600 bg-amber-50 rounded px-1.5 py-0.5">
+                            Entwurf
+                          </span>
+                        )}
                         <span className="text-[11px] text-muted-foreground">
                           {formatDate(t.lastDate)}
                         </span>

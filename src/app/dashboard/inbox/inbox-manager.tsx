@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Mail } from "lucide-react";
 import { useSignature } from "@/hooks/use-signature";
 import { ThreadListPane, type ThreadSummary, type InboxFilter } from "./thread-list-pane";
-import { ConversationPane, type ThreadMessage } from "./conversation-pane";
+import { ConversationPane, type ThreadMessage, type ReplyDraft } from "./conversation-pane";
 import { ContactSidebar } from "./contact-sidebar";
 import { ComposePane } from "./compose-pane";
 
@@ -60,6 +60,29 @@ export function InboxManager({
   const [composeBcc, setComposeBcc] = useState("");
   const [composeAttachments, setComposeAttachments] = useState<File[]>([]);
   const [composeSending, setComposeSending] = useState(false);
+
+  // Ref to capture current compose state for saving drafts (avoids stale closures)
+  const composeRef = useRef({ composing: false, to: "", subject: "", body: "", cc: "", bcc: "", attachments: [] as File[] });
+  composeRef.current = { composing, to: composeTo, subject: composeSubject, body: composeBody, cc: composeCc, bcc: composeBcc, attachments: composeAttachments };
+
+  // Saved compose draft (new email) — persisted while browsing threads
+  const [composeDraft, setComposeDraft] = useState<{
+    to: string; subject: string; body: string; cc: string; bcc: string; attachments: File[];
+  } | null>(null);
+
+  // Reply drafts per thread
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, ReplyDraft>>({});
+
+  const saveReplyDraft = useCallback((threadId: string, draft: ReplyDraft | null) => {
+    setReplyDrafts((prev) => {
+      if (!draft) {
+        const next = { ...prev };
+        delete next[threadId];
+        return next;
+      }
+      return { ...prev, [threadId]: draft };
+    });
+  }, []);
 
   // Thread assignments
   const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
@@ -169,6 +192,11 @@ export function InboxManager({
   }, [threads, filter, assignments, currentUserId]);
 
   const openThread = useCallback(async (threadId: string) => {
+    // Save compose draft if user was composing a new email
+    const c = composeRef.current;
+    if (c.composing && (c.to || c.subject || c.body)) {
+      setComposeDraft({ to: c.to, subject: c.subject, body: c.body, cc: c.cc, bcc: c.bcc, attachments: c.attachments });
+    }
     setComposing(false);
     setSelectedThread(threadId);
     setThreadLoading(true);
@@ -289,6 +317,7 @@ export function InboxManager({
         setComposeCc("");
         setComposeBcc("");
         setComposeAttachments([]);
+        setComposeDraft(null);
         fetchThreads();
       }
     } finally {
@@ -304,16 +333,28 @@ export function InboxManager({
     setComposeCc("");
     setComposeBcc("");
     setComposeAttachments([]);
+    setComposeDraft(null);
   };
 
   const openCompose = () => {
-    const sig = signature?.html ? `<br><br>${signature.html}` : "";
-    setComposeBody(sig);
-    setComposeTo("");
-    setComposeSubject("");
-    setComposeCc("");
-    setComposeBcc("");
-    setComposeAttachments([]);
+    if (composeDraft) {
+      // Restore saved draft
+      setComposeTo(composeDraft.to);
+      setComposeSubject(composeDraft.subject);
+      setComposeBody(composeDraft.body);
+      setComposeCc(composeDraft.cc);
+      setComposeBcc(composeDraft.bcc);
+      setComposeAttachments(composeDraft.attachments);
+      setComposeDraft(null);
+    } else {
+      const sig = signature?.html ? `<br><br>${signature.html}` : "";
+      setComposeBody(sig);
+      setComposeTo("");
+      setComposeSubject("");
+      setComposeCc("");
+      setComposeBcc("");
+      setComposeAttachments([]);
+    }
     setComposing(true);
     setSelectedThread(null);
     setThreadMessages([]);
@@ -370,13 +411,11 @@ export function InboxManager({
             assignments={assignments}
             teamMembers={teamMembers}
             composing={composing}
-            composeSubject={composeSubject}
-            composeTo={composeTo}
-            onSelectDraft={() => {
-              // No-op for now: clicking the draft just keeps the compose
-              // pane open. Kept as a prop so we can wire focus-the-editor
-              // behaviour later without another API change.
-            }}
+            composeSubject={composing ? composeSubject : composeDraft?.subject || ""}
+            composeTo={composing ? composeTo : composeDraft?.to || ""}
+            hasDraft={composing || !!composeDraft}
+            onSelectDraft={openCompose}
+            replyDraftThreadIds={Object.keys(replyDrafts)}
           />
         </div>
         <div className="min-h-0 overflow-hidden">
@@ -408,6 +447,8 @@ export function InboxManager({
               assignment={selectedThread ? assignments[selectedThread] || null : null}
               teamMembers={teamMembers}
               onAssign={(assignedTo) => selectedThread && handleAssign(selectedThread, assignedTo)}
+              replyDraft={selectedThread ? replyDrafts[selectedThread] || null : null}
+              onReplyDraftChange={(draft) => selectedThread && saveReplyDraft(selectedThread, draft)}
             />
           )}
         </div>
