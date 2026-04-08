@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Mail } from "lucide-react";
 import { useSignature } from "@/hooks/use-signature";
+import { useDrafts } from "@/hooks/use-drafts";
 import { ThreadListPane, type ThreadSummary, type InboxFilter } from "./thread-list-pane";
-import { ConversationPane, type ThreadMessage, type ReplyDraft } from "./conversation-pane";
+import { ConversationPane, type ThreadMessage } from "./conversation-pane";
 import { ContactSidebar } from "./contact-sidebar";
 import { ComposePane } from "./compose-pane";
 
@@ -48,6 +49,7 @@ export function InboxManager({
   const [threadLoading, setThreadLoading] = useState(false);
 
   const signature = useSignature();
+  const drafts = useDrafts();
 
   // In-place compose state. When `composing` is true the center column
   // renders <ComposePane/> instead of a thread, and the left column shows
@@ -61,73 +63,17 @@ export function InboxManager({
   const [composeAttachments, setComposeAttachments] = useState<File[]>([]);
   const [composeSending, setComposeSending] = useState(false);
 
-  // ── localStorage keys ──
-  const LS_COMPOSE_DRAFT = "inbox:composeDraft";
-  const LS_REPLY_DRAFTS = "inbox:replyDrafts";
-
   // Ref to capture current compose state for saving drafts (avoids stale closures)
-  const composeRef = useRef({ composing: false, to: "", subject: "", body: "", cc: "", bcc: "", attachments: [] as File[] });
-  composeRef.current = { composing, to: composeTo, subject: composeSubject, body: composeBody, cc: composeCc, bcc: composeBcc, attachments: composeAttachments };
+  const composeRef = useRef({ composing: false, to: "", subject: "", body: "", cc: "", bcc: "" });
+  composeRef.current = { composing, to: composeTo, subject: composeSubject, body: composeBody, cc: composeCc, bcc: composeBcc };
 
-  // Saved compose draft (new email) — persisted in localStorage
-  const [composeDraft, setComposeDraftRaw] = useState<{
-    to: string; subject: string; body: string; cc: string; bcc: string; attachments: File[];
-  } | null>(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const raw = localStorage.getItem(LS_COMPOSE_DRAFT);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      // Restore without attachments (Files can't be serialized)
-      return { ...parsed, attachments: [] };
-    } catch { return null; }
-  });
-
-  const setComposeDraft = useCallback((draft: typeof composeDraft) => {
-    setComposeDraftRaw(draft);
-    try {
-      if (draft) {
-        // Don't persist File objects
-        const { attachments: _, ...rest } = draft;
-        localStorage.setItem(LS_COMPOSE_DRAFT, JSON.stringify(rest));
-      } else {
-        localStorage.removeItem(LS_COMPOSE_DRAFT);
-      }
-    } catch { /* quota exceeded etc. */ }
-  }, []);
-
-  // Reply drafts per thread — persisted in localStorage
-  const [replyDrafts, setReplyDraftsRaw] = useState<Record<string, ReplyDraft>>(() => {
-    if (typeof window === "undefined") return {};
-    try {
-      const raw = localStorage.getItem(LS_REPLY_DRAFTS);
-      return raw ? JSON.parse(raw) : {};
-    } catch { return {}; }
-  });
-
-  const persistReplyDrafts = useCallback((drafts: Record<string, ReplyDraft>) => {
-    try {
-      if (Object.keys(drafts).length > 0) {
-        localStorage.setItem(LS_REPLY_DRAFTS, JSON.stringify(drafts));
-      } else {
-        localStorage.removeItem(LS_REPLY_DRAFTS);
-      }
-    } catch { /* quota exceeded etc. */ }
-  }, []);
-
-  const saveReplyDraft = useCallback((threadId: string, draft: ReplyDraft | null) => {
-    setReplyDraftsRaw((prev) => {
-      let next: Record<string, ReplyDraft>;
-      if (!draft) {
-        next = { ...prev };
-        delete next[threadId];
-      } else {
-        next = { ...prev, [threadId]: draft };
-      }
-      persistReplyDrafts(next);
-      return next;
-    });
-  }, [persistReplyDrafts]);
+  // Auto-save compose draft on field changes (debounce is inside the hook)
+  useEffect(() => {
+    if (!composing) return;
+    if (!composeTo && !composeSubject && !composeBody) return;
+    drafts.saveComposeDraft({ to: composeTo, subject: composeSubject, body: composeBody, cc: composeCc, bcc: composeBcc });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [composing, composeTo, composeSubject, composeBody, composeCc, composeBcc]);
 
   // Thread assignments
   const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
@@ -237,11 +183,7 @@ export function InboxManager({
   }, [threads, filter, assignments, currentUserId]);
 
   const openThread = useCallback(async (threadId: string) => {
-    // Save compose draft if user was composing a new email
-    const c = composeRef.current;
-    if (c.composing && (c.to || c.subject || c.body)) {
-      setComposeDraft({ to: c.to, subject: c.subject, body: c.body, cc: c.cc, bcc: c.bcc, attachments: c.attachments });
-    }
+    // Compose draft is auto-saved via the useEffect above; just close compose
     setComposing(false);
     setSelectedThread(threadId);
     setThreadLoading(true);
@@ -362,7 +304,7 @@ export function InboxManager({
         setComposeCc("");
         setComposeBcc("");
         setComposeAttachments([]);
-        setComposeDraft(null);
+        await drafts.deleteComposeDraft();
         fetchThreads();
       }
     } finally {
@@ -370,7 +312,7 @@ export function InboxManager({
     }
   };
 
-  const cancelCompose = () => {
+  const cancelCompose = async () => {
     setComposing(false);
     setComposeTo("");
     setComposeSubject("");
@@ -378,19 +320,18 @@ export function InboxManager({
     setComposeCc("");
     setComposeBcc("");
     setComposeAttachments([]);
-    setComposeDraft(null);
+    await drafts.deleteComposeDraft();
   };
 
   const openCompose = () => {
-    if (composeDraft) {
-      // Restore saved draft
-      setComposeTo(composeDraft.to);
-      setComposeSubject(composeDraft.subject);
-      setComposeBody(composeDraft.body);
-      setComposeCc(composeDraft.cc);
-      setComposeBcc(composeDraft.bcc);
-      setComposeAttachments(composeDraft.attachments);
-      setComposeDraft(null);
+    if (drafts.composeDraft) {
+      // Restore saved draft from Supabase
+      setComposeTo(drafts.composeDraft.to);
+      setComposeSubject(drafts.composeDraft.subject);
+      setComposeBody(drafts.composeDraft.body);
+      setComposeCc(drafts.composeDraft.cc);
+      setComposeBcc(drafts.composeDraft.bcc);
+      setComposeAttachments([]);
     } else {
       const sig = signature?.html ? `<br><br>${signature.html}` : "";
       setComposeBody(sig);
@@ -456,11 +397,11 @@ export function InboxManager({
             assignments={assignments}
             teamMembers={teamMembers}
             composing={composing}
-            composeSubject={composing ? composeSubject : composeDraft?.subject || ""}
-            composeTo={composing ? composeTo : composeDraft?.to || ""}
-            hasDraft={composing || !!composeDraft}
+            composeSubject={composing ? composeSubject : drafts.composeDraft?.subject || ""}
+            composeTo={composing ? composeTo : drafts.composeDraft?.to || ""}
+            hasDraft={composing || !!drafts.composeDraft}
             onSelectDraft={openCompose}
-            replyDraftThreadIds={Object.keys(replyDrafts)}
+            replyDraftThreadIds={Object.keys(drafts.replyDrafts)}
           />
         </div>
         <div className="min-h-0 overflow-hidden">
@@ -492,8 +433,12 @@ export function InboxManager({
               assignment={selectedThread ? assignments[selectedThread] || null : null}
               teamMembers={teamMembers}
               onAssign={(assignedTo) => selectedThread && handleAssign(selectedThread, assignedTo)}
-              replyDraft={selectedThread ? replyDrafts[selectedThread] || null : null}
-              onReplyDraftChange={(draft) => selectedThread && saveReplyDraft(selectedThread, draft)}
+              replyDraft={selectedThread ? drafts.replyDrafts[selectedThread] || null : null}
+              onReplyDraftChange={(draft) => {
+                if (!selectedThread) return;
+                if (draft) drafts.saveReplyDraft(selectedThread, draft);
+                else drafts.deleteReplyDraft(selectedThread);
+              }}
             />
           )}
         </div>

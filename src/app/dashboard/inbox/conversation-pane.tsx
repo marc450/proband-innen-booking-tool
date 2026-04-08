@@ -5,6 +5,7 @@ import { Loader2, Send, X, Reply, Paperclip, FileText, Image, File, UserCircle, 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "./rich-text-editor";
+import type { ReplyDraft } from "@/hooks/use-drafts";
 
 // Middle pane: renders the selected Gmail thread and a reply composer.
 // Signature is fetched from the authenticated user's profile row and
@@ -46,13 +47,7 @@ interface Assignment {
   assignedToName: string;
 }
 
-export interface ReplyDraft {
-  html: string;
-  cc: string;
-  bcc: string;
-  showCc: boolean;
-  showBcc: boolean;
-}
+export type { ReplyDraft } from "@/hooks/use-drafts";
 
 interface Props {
   threadId: string | null;
@@ -156,6 +151,13 @@ export function ConversationPane({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threadId]);
+
+  // Auto-save reply draft on content changes (debounce is inside the hook)
+  useEffect(() => {
+    if (!replyOpen || !replyHtml || !threadId) return;
+    onReplyDraftChange?.({ html: replyHtml, cc: replyCc, bcc: replyBcc, showCc, showBcc });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replyHtml, replyCc, replyBcc, showCc, showBcc]);
 
   // Messages are sorted newest-first; the most recent is at index 0
   const lastMsg = messages[0];
