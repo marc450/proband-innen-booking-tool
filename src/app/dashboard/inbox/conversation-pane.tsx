@@ -138,8 +138,9 @@ export function ConversationPane({
     }
     setReplyAttachments([]);
 
-    // Cleanup: save draft when leaving this thread
+    // Cleanup: save draft when leaving this thread (skip if draft was just deleted)
     return () => {
+      if (draftDeletedRef.current) { draftDeletedRef.current = false; return; }
       const s = replyStateRef.current;
       const cb = onReplyDraftChangeRef.current;
       if (!cb) return;
@@ -152,9 +153,32 @@ export function ConversationPane({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threadId]);
 
+  // Block auto-save briefly after an external draft deletion to prevent re-creation
+  const draftDeletedRef = useRef(false);
+
+  // Reset reply composer when draft is deleted externally (e.g. X button in thread list)
+  const prevReplyDraft = useRef(replyDraft);
+  useEffect(() => {
+    if (prevReplyDraft.current && !replyDraft && replyOpen) {
+      draftDeletedRef.current = true;
+      setReplyOpen(false);
+      setReplyHtml("");
+      setReplyCc("");
+      setReplyBcc("");
+      setShowCc(false);
+      setShowBcc(false);
+      setReplyAttachments([]);
+    }
+    prevReplyDraft.current = replyDraft;
+  }, [replyDraft, replyOpen]);
+
   // Auto-save reply draft on content changes (debounce is inside the hook)
   useEffect(() => {
     if (!replyOpen || !replyHtml || !threadId) return;
+    if (draftDeletedRef.current) {
+      draftDeletedRef.current = false;
+      return;
+    }
     onReplyDraftChange?.({ html: replyHtml, cc: replyCc, bcc: replyBcc, showCc, showBcc });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [replyHtml, replyCc, replyBcc, showCc, showBcc]);
