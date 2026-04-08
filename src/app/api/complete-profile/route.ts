@@ -88,7 +88,21 @@ export async function POST(req: NextRequest) {
       profileSpecialty: specialty,
     };
 
-    await runPostPurchaseFlow(postPurchaseData);
+    await runPostPurchaseFlow(postPurchaseData, { skipSlack: true });
+
+    // Send a short "profile completed" Slack message instead of the full booking notification
+    const SLACK_WEBHOOK_URL_COURSES = process.env.SLACK_WEBHOOK_URL_COURSES;
+    if (SLACK_WEBHOOK_URL_COURSES) {
+      try {
+        await fetch(SLACK_WEBHOOK_URL_COURSES, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: `✅ *Profil vervollständigt:* ${postPurchaseData.fullName} (${postPurchaseData.email})`,
+          }),
+        });
+      } catch { /* best effort */ }
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {

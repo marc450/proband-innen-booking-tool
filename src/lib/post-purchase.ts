@@ -130,7 +130,7 @@ export async function enrollInLearnWorlds(email: string, courseId: string, first
 }
 
 // ── Run the full post-purchase flow ──
-export async function runPostPurchaseFlow(data: PostPurchaseData) {
+export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { skipSlack?: boolean }) {
   const supabase = createAdminClient();
 
   // Fetch template
@@ -223,8 +223,8 @@ export async function runPostPurchaseFlow(data: PostPurchaseData) {
     }
   }
 
-  // 3. Slack notification
-  if (SLACK_WEBHOOK_URL_COURSES) {
+  // 3. Slack notification (skipped when called from profile completion)
+  if (SLACK_WEBHOOK_URL_COURSES && !options?.skipSlack) {
     try {
       let seatsInfo = "";
       if (data.sessionId) {
