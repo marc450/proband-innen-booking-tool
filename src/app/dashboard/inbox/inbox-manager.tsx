@@ -61,28 +61,73 @@ export function InboxManager({
   const [composeAttachments, setComposeAttachments] = useState<File[]>([]);
   const [composeSending, setComposeSending] = useState(false);
 
+  // ── localStorage keys ──
+  const LS_COMPOSE_DRAFT = "inbox:composeDraft";
+  const LS_REPLY_DRAFTS = "inbox:replyDrafts";
+
   // Ref to capture current compose state for saving drafts (avoids stale closures)
   const composeRef = useRef({ composing: false, to: "", subject: "", body: "", cc: "", bcc: "", attachments: [] as File[] });
   composeRef.current = { composing, to: composeTo, subject: composeSubject, body: composeBody, cc: composeCc, bcc: composeBcc, attachments: composeAttachments };
 
-  // Saved compose draft (new email) — persisted while browsing threads
-  const [composeDraft, setComposeDraft] = useState<{
+  // Saved compose draft (new email) — persisted in localStorage
+  const [composeDraft, setComposeDraftRaw] = useState<{
     to: string; subject: string; body: string; cc: string; bcc: string; attachments: File[];
-  } | null>(null);
+  } | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem(LS_COMPOSE_DRAFT);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      // Restore without attachments (Files can't be serialized)
+      return { ...parsed, attachments: [] };
+    } catch { return null; }
+  });
 
-  // Reply drafts per thread
-  const [replyDrafts, setReplyDrafts] = useState<Record<string, ReplyDraft>>({});
+  const setComposeDraft = useCallback((draft: typeof composeDraft) => {
+    setComposeDraftRaw(draft);
+    try {
+      if (draft) {
+        // Don't persist File objects
+        const { attachments: _, ...rest } = draft;
+        localStorage.setItem(LS_COMPOSE_DRAFT, JSON.stringify(rest));
+      } else {
+        localStorage.removeItem(LS_COMPOSE_DRAFT);
+      }
+    } catch { /* quota exceeded etc. */ }
+  }, []);
+
+  // Reply drafts per thread — persisted in localStorage
+  const [replyDrafts, setReplyDraftsRaw] = useState<Record<string, ReplyDraft>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = localStorage.getItem(LS_REPLY_DRAFTS);
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  });
+
+  const persistReplyDrafts = useCallback((drafts: Record<string, ReplyDraft>) => {
+    try {
+      if (Object.keys(drafts).length > 0) {
+        localStorage.setItem(LS_REPLY_DRAFTS, JSON.stringify(drafts));
+      } else {
+        localStorage.removeItem(LS_REPLY_DRAFTS);
+      }
+    } catch { /* quota exceeded etc. */ }
+  }, []);
 
   const saveReplyDraft = useCallback((threadId: string, draft: ReplyDraft | null) => {
-    setReplyDrafts((prev) => {
+    setReplyDraftsRaw((prev) => {
+      let next: Record<string, ReplyDraft>;
       if (!draft) {
-        const next = { ...prev };
+        next = { ...prev };
         delete next[threadId];
-        return next;
+      } else {
+        next = { ...prev, [threadId]: draft };
       }
-      return { ...prev, [threadId]: draft };
+      persistReplyDrafts(next);
+      return next;
     });
-  }, []);
+  }, [persistReplyDrafts]);
 
   // Thread assignments
   const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
