@@ -239,7 +239,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
             <SortableHead label="Kurs" sortKeyName="course" />
             <SortableHead label="Dozent:in" sortKeyName="instructor" />
             <SortableHead label="Kursbetreuung" sortKeyName="betreuer" />
-            <SortableHead label="Plätze" sortKeyName="seats" className="w-[80px]" />
+            <SortableHead label="Gebucht / Max" sortKeyName="seats" className="w-[100px]" />
             <TableHead>CME Beantragung</TableHead>
             <TableHead>Zahnmedizin</TableHead>
             <TableHead className="w-[80px]">Aktionen</TableHead>
