@@ -133,7 +133,7 @@ export function buildOnlinekursEmail(firstName: string, courseName: string): str
 </div>`;
 }
 
-export function buildPraxiskursEmail(firstName: string, courseName: string, praxis: PraxisInfo): string {
+export function buildPraxiskursEmail(firstName: string, courseName: string, praxis: PraxisInfo, opts?: { hasOnlineCourse?: boolean }): string {
   return `<div style="background-color:#fff; padding:0; font-family:Arial, sans-serif;">
   <div style="background-color:#fff; max-width:600px; margin:0 auto; padding:8px; text-align:left; line-height:1.5;">
     <p style="margin-top:0; margin-bottom:20px;">
@@ -153,7 +153,7 @@ export function buildPraxiskursEmail(firstName: string, courseName: string, prax
        Bitte plane ein, ein paar Minuten vor Kursstart vor Ort zu sein. Wir beginnen mit einer kurzen Vorstellungsrunde und der Möglichkeit, offene Fragen zum theoretischen Teil zu klären, bevor die ersten Proband:innen zur Behandlung eintreffen. Je nach Proband:innen-Anzahl und -Persönlichkeiten kann sich die Endzeit leicht verschieben.
     </p>
 
-    ${VORAUSSETZUNG_SECTION}
+    ${opts?.hasOnlineCourse !== false ? VORAUSSETZUNG_SECTION : ""}
     ${PROBANDINNEN_SECTION}
     ${RECHNUNG_SECTION}
 
@@ -174,7 +174,7 @@ export function buildPraxiskursEmail(firstName: string, courseName: string, prax
 </div>`;
 }
 
-export function buildKombikursEmail(firstName: string, courseName: string, praxis: PraxisInfo): string {
+export function buildKombikursEmail(firstName: string, courseName: string, praxis: PraxisInfo, opts?: { hasOnlineCourse?: boolean }): string {
   return `<div style="background-color:#fff; padding:0; font-family:Arial, sans-serif;">
   <div style="background-color:#fff; max-width:600px; margin:0 auto; padding:8px; text-align:left; line-height:1.5;">
     <p style="margin-top:0; margin-bottom:20px;">
@@ -183,12 +183,12 @@ export function buildKombikursEmail(firstName: string, courseName: string, praxi
       Wir freuen uns sehr darauf, Dich auf Deinem Weg in die minimal-invasive, ästhetische Medizin zu begleiten – mit einem Blick für Diversität, individuelle Bedürfnisse Deiner Patient:innen und sichere, evidenzbasierte Behandlungskonzepte.
     </p>
 
-    <h2 style="margin:16px 0 10px;font-size:20px;font-weight:bold;">Dein Onlinekurs</h2>
+    ${opts?.hasOnlineCourse !== false ? `<h2 style="margin:16px 0 10px;font-size:20px;font-weight:bold;">Dein Onlinekurs</h2>
     <p style="margin:0 0 20px;">
       Im ersten Schritt legst Du Deinen Zugang auf EPHIA an. Dafür bitten wir Dich, ein Passwort für Deinen EPHIA-Account zu erstellen. Den entsprechenden Link hast Du bereits per E-Mail erhalten.
       <br><br>
       Falls Du schon ein Konto bei uns hast, kannst Du Dich einfach direkt <a href="https://ephia.de/start" style="color:#0066FF; text-decoration:none;">hier einloggen</a> und mit dem Lernen starten.
-    </p>
+    </p>` : ""}
 
     <h2 style="margin:16px 0 10px;font-size:20px;font-weight:bold;">Dein Praxiskurs</h2>
     <p style="margin:0 0 20px;">Hier siehst Du alle wichtigen Daten zu Deinem Praxiskurs auf einen Blick:</p>
@@ -196,10 +196,10 @@ export function buildKombikursEmail(firstName: string, courseName: string, praxi
     ${praxiskursInfoBox(praxis)}
 
     <p style="margin:0 0 20px;">
-       Bitte plane ein, ein paar Minuten vor Kursstart vor Ort zu sein. Wir beginnen mit einer kurzen Vorstellungsrunde und der Möglichkeit, offene Fragen zum Onlinekurs zu klären, bevor die ersten Proband:innen zur Behandlung eintreffen. Je nach Proband:innen-Anzahl und -Persönlichkeiten kann sich die Endzeit leicht verschieben.
+       Bitte plane ein, ein paar Minuten vor Kursstart vor Ort zu sein. Wir beginnen mit einer kurzen Vorstellungsrunde und der Möglichkeit, offene Fragen zum ${opts?.hasOnlineCourse !== false ? "Onlinekurs" : "theoretischen Teil"} zu klären, bevor die ersten Proband:innen zur Behandlung eintreffen. Je nach Proband:innen-Anzahl und -Persönlichkeiten kann sich die Endzeit leicht verschieben.
     </p>
 
-    ${VORAUSSETZUNG_SECTION}
+    ${opts?.hasOnlineCourse !== false ? VORAUSSETZUNG_SECTION : ""}
     ${PROBANDINNEN_SECTION}
     ${RECHNUNG_SECTION}
 
@@ -208,7 +208,7 @@ export function buildKombikursEmail(firstName: string, courseName: string, praxi
     </p>
 
     <p style="margin:0 0 20px;">
-      Wir wünschen Dir viel Freude beim Lernen und freuen uns, Dich bald (online und in der Praxis) in der EPHIA-Community zu sehen.
+      Wir wünschen Dir viel Freude beim Lernen und freuen uns, Dich bald ${opts?.hasOnlineCourse !== false ? "(online und in der Praxis) " : ""}in der EPHIA-Community zu sehen.
     </p>
     <p style="margin:0 0 20px;">
       Herzliche Grüße,<br>

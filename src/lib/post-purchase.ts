@@ -168,7 +168,7 @@ export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { sk
             };
           }
         }
-        emailHtml = buildPraxiskursEmail(data.firstName, courseName, praxisInfo);
+        emailHtml = buildPraxiskursEmail(data.firstName, courseName, praxisInfo, { hasOnlineCourse: !!template?.online_course_id });
       } else {
         const courseName = data.courseType === "Premium" ? "Komplettpaket" : (template?.name_kombi || courseLabelDe);
         emailSubject = `Buchungsbestätigung: ${courseName}`;
@@ -185,7 +185,7 @@ export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { sk
             };
           }
         }
-        emailHtml = buildKombikursEmail(data.firstName, courseName, praxisInfo);
+        emailHtml = buildKombikursEmail(data.firstName, courseName, praxisInfo, { hasOnlineCourse: !!template?.online_course_id });
       }
 
       await sendEmailViaResend(data.email, emailSubject, emailHtml);
