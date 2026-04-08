@@ -63,7 +63,6 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   const [filterTemplate, setFilterTemplate] = useState("");
   const [filterStatus, setFilterStatus] = useState("live");
   const [filterDateFrom, setFilterDateFrom] = useState("");
-  const [filterDateTo, setFilterDateTo] = useState("");
   const [filterTime, setFilterTime] = useState("");
 
   // Counter to force-reset defaultValue inputs on cancel
@@ -123,7 +122,6 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
       if (filterStatus === "live" && !s.is_live) return false;
       if (filterStatus === "offline" && s.is_live) return false;
       if (filterDateFrom && s.date_iso < filterDateFrom) return false;
-      if (filterDateTo && s.date_iso > filterDateTo) return false;
       if (filterTime && s.start_time !== filterTime) return false;
       return true;
     });
@@ -152,7 +150,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
       }
     });
     return sorted;
-  }, [sessions, sortKey, sortDir, filterInstructor, filterTemplate, filterStatus, filterDateFrom, filterDateTo, filterTime]);
+  }, [sessions, sortKey, sortDir, filterInstructor, filterTemplate, filterStatus, filterDateFrom, filterTime]);
 
   const SortableHead = ({ label, sortKeyName, className }: { label: string; sortKeyName: SortKey; className?: string }) => (
     <TableHead className={className}>
@@ -315,24 +313,15 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 <option value="offline">Offline</option>
               </select>
             </TableHead>
-            {/* Von / Bis (above Datum) */}
+            {/* Ab Datum filter */}
             <TableHead className="py-1.5">
-              <div className="flex gap-1">
-                <input
-                  type="date"
-                  value={filterDateFrom}
-                  onChange={(e) => setFilterDateFrom(e.target.value)}
-                  className="w-1/2 rounded px-1 py-1 text-xs bg-gray-100 border-0 font-normal text-foreground"
-                  title="Von"
-                />
-                <input
-                  type="date"
-                  value={filterDateTo}
-                  onChange={(e) => setFilterDateTo(e.target.value)}
-                  className="w-1/2 rounded px-1 py-1 text-xs bg-gray-100 border-0 font-normal text-foreground"
-                  title="Bis"
-                />
-              </div>
+              <input
+                type="date"
+                value={filterDateFrom}
+                onChange={(e) => setFilterDateFrom(e.target.value)}
+                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 font-normal text-foreground"
+                title="Ab Datum"
+              />
             </TableHead>
             {/* Time filter (above Startzeit) */}
             <TableHead className="py-1.5 w-[90px]">
@@ -385,14 +374,13 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
             <TableHead className="py-1.5" />
             {/* Reset button */}
             <TableHead className="py-1.5">
-              {(filterInstructor || filterTemplate || filterStatus || filterDateFrom || filterDateTo || filterTime) && (
+              {(filterInstructor || filterTemplate || filterStatus || filterDateFrom || filterTime) && (
                 <button
                   onClick={() => {
                     setFilterInstructor("");
                     setFilterTemplate("");
                     setFilterStatus("");
                     setFilterDateFrom("");
-                    setFilterDateTo("");
                     setFilterTime("");
                   }}
                   className="text-xs text-muted-foreground hover:text-foreground underline whitespace-nowrap"
