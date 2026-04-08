@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Loader2, MailOpen, PenSquare, RefreshCw } from "lucide-react";
+import { Search, Loader2, MailOpen, PenSquare, RefreshCw, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 // Left pane of the HubSpot-style inbox. Owns the search input and filter
@@ -43,8 +43,10 @@ interface Props {
   /** True when there is an active compose OR a saved draft */
   hasDraft?: boolean;
   onSelectDraft: () => void;
+  onDeleteDraft?: () => void;
   /** Thread IDs that have unsent reply drafts */
   replyDraftThreadIds?: string[];
+  onDeleteReplyDraft?: (threadId: string) => void;
   assignments: Record<string, { assignedTo: string; assignedToName: string }>;
   teamMembers: { id: string; name: string; initials: string }[];
 }
@@ -87,7 +89,9 @@ export function ThreadListPane({
   composeTo,
   hasDraft,
   onSelectDraft,
+  onDeleteDraft,
   replyDraftThreadIds = [],
+  onDeleteReplyDraft,
   assignments,
   teamMembers,
 }: Props) {
@@ -164,29 +168,40 @@ export function ThreadListPane({
       {/* Thread list */}
       <div className="flex-1 overflow-y-auto">
         {hasDraft && (
-          <button
-            onClick={onSelectDraft}
-            className={`w-full text-left px-4 py-3 border-b border-gray-50 border-l-2 border-l-[#0066FF] transition-colors ${
-              composing ? "bg-[#0066FF]/5" : "bg-amber-50 hover:bg-amber-100/60"
-            }`}
-          >
-            <div className="flex items-center justify-between gap-2 mb-0.5">
-              <span className="text-sm font-bold text-[#0066FF] truncate">
-                {composeTo || "Neue E-Mail"}
-              </span>
-              <span className={`text-[11px] font-medium flex-shrink-0 ${
-                composing ? "text-[#0066FF]" : "text-amber-600"
-              }`}>
-                Entwurf
-              </span>
-            </div>
-            <p className="text-xs font-semibold text-gray-900 truncate">
-              {composeSubject || "(Betreff)"}
-            </p>
-            <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-              {composing ? "Wird gerade verfasst…" : "Klicken um fortzufahren"}
-            </p>
-          </button>
+          <div className={`relative border-b border-gray-50 border-l-2 border-l-[#0066FF] transition-colors ${
+            composing ? "bg-[#0066FF]/5" : "bg-amber-50 hover:bg-amber-100/60"
+          }`}>
+            <button
+              onClick={onSelectDraft}
+              className="w-full text-left px-4 py-3 pr-9"
+            >
+              <div className="flex items-center justify-between gap-2 mb-0.5">
+                <span className="text-sm font-bold text-[#0066FF] truncate">
+                  {composeTo || "Neue E-Mail"}
+                </span>
+                <span className={`text-[11px] font-medium flex-shrink-0 ${
+                  composing ? "text-[#0066FF]" : "text-amber-600"
+                }`}>
+                  Entwurf
+                </span>
+              </div>
+              <p className="text-xs font-semibold text-gray-900 truncate">
+                {composeSubject || "(Betreff)"}
+              </p>
+              <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                {composing ? "Wird gerade verfasst…" : "Klicken um fortzufahren"}
+              </p>
+            </button>
+            {onDeleteDraft && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onDeleteDraft(); }}
+                className="absolute top-2 right-2 p-1 rounded hover:bg-gray-200/60 text-gray-400 hover:text-gray-700 transition-colors"
+                title="Entwurf löschen"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         )}
         {loading && threads.length === 0 ? (
           <div className="flex justify-center py-12">
@@ -245,8 +260,17 @@ export function ThreadListPane({
                           );
                         })()}
                         {hasReplyDraft && (
-                          <span className="text-[10px] font-medium text-amber-600 bg-amber-50 rounded px-1.5 py-0.5">
+                          <span className="text-[10px] font-medium text-amber-600 bg-amber-50 rounded px-1.5 py-0.5 inline-flex items-center gap-1">
                             Entwurf
+                            {onDeleteReplyDraft && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); onDeleteReplyDraft(t.id); }}
+                                className="hover:text-amber-800 transition-colors"
+                                title="Entwurf löschen"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            )}
                           </span>
                         )}
                         <span className="text-[11px] text-muted-foreground">

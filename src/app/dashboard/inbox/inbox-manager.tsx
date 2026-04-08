@@ -401,7 +401,18 @@ export function InboxManager({
             composeTo={composing ? composeTo : drafts.composeDraft?.to || ""}
             hasDraft={composing || !!drafts.composeDraft}
             onSelectDraft={openCompose}
+            onDeleteDraft={async () => {
+              setComposing(false);
+              setComposeTo("");
+              setComposeSubject("");
+              setComposeBody("");
+              setComposeCc("");
+              setComposeBcc("");
+              setComposeAttachments([]);
+              await drafts.deleteComposeDraft();
+            }}
             replyDraftThreadIds={Object.keys(drafts.replyDrafts)}
+            onDeleteReplyDraft={(threadId) => drafts.deleteReplyDraft(threadId)}
           />
         </div>
         <div className="min-h-0 overflow-hidden">
