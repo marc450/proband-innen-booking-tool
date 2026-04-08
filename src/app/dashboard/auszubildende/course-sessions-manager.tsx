@@ -66,6 +66,9 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   const [filterDateTo, setFilterDateTo] = useState("");
   const [filterTime, setFilterTime] = useState("");
 
+  // Counter to force-reset defaultValue inputs on cancel
+  const [resetKey, setResetKey] = useState(0);
+
   // Pending change confirmation
   const [pendingChange, setPendingChange] = useState<{
     id: string;
@@ -436,7 +439,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                   <input
                     type="date"
                     defaultValue={session.date_iso}
-                    key={`date-${session.id}-${session.date_iso}`}
+                    key={`date-${session.id}-${session.date_iso}-${resetKey}`}
                     onChange={(e) => {
                       if (e.target.value && e.target.value !== session.date_iso) {
                         requestChange(session.id, "date_iso", e.target.value, true);
@@ -451,7 +454,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                   <input
                     type="text"
                     defaultValue={session.start_time || ""}
-                    key={`time-${session.id}-${session.start_time}`}
+                    key={`time-${session.id}-${session.start_time}-${resetKey}`}
                     onBlur={(e) => {
                       if (e.target.value !== (session.start_time || "")) {
                         requestChange(session.id, "start_time", e.target.value);
@@ -468,7 +471,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                     <input
                       type="number"
                       defaultValue={session.duration_minutes || ""}
-                      key={`dur-${session.id}-${session.duration_minutes}`}
+                      key={`dur-${session.id}-${session.duration_minutes}-${resetKey}`}
                       onBlur={(e) => {
                         const val = parseInt(e.target.value) || 0;
                         if (val !== (session.duration_minutes || 0)) {
@@ -543,7 +546,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                       type="number"
                       min={0}
                       defaultValue={session.booked_seats}
-                      key={`booked-${session.id}-${session.booked_seats}`}
+                      key={`booked-${session.id}-${session.booked_seats}-${resetKey}`}
                       onBlur={(e) => {
                         const val = parseInt(e.target.value) || 0;
                         if (val !== session.booked_seats) {
@@ -557,7 +560,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                       type="number"
                       min={0}
                       defaultValue={session.max_seats}
-                      key={`max-${session.id}-${session.max_seats}`}
+                      key={`max-${session.id}-${session.max_seats}-${resetKey}`}
                       onBlur={(e) => {
                         const val = parseInt(e.target.value) || 0;
                         if (val !== session.max_seats) {
@@ -635,7 +638,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
         description={pendingChange ? `${pendingChange.label} ändern zu: ${pendingChange.displayValue}` : ""}
         confirmLabel="Speichern"
         onConfirm={confirmChange}
-        onCancel={() => setPendingChange(null)}
+        onCancel={() => { setPendingChange(null); setResetKey((k) => k + 1); }}
       />
 
       {/* Create dialog */}
