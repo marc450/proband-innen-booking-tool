@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +23,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Copy, Trash2, ArrowUpDown } from "lucide-react";
-import { ConfirmDialog } from "@/components/confirm-dialog";
 import type { CourseTemplate, CourseSession, DozentUser } from "@/lib/types";
 
 interface Props {
@@ -64,6 +65,29 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
   const [filterTime, setFilterTime] = useState("");
+
+  // Pending change confirmation
+  const [pendingChange, setPendingChange] = useState<{
+    id: string;
+    field: string;
+    value: string | number | boolean;
+    label: string;
+    displayValue: string;
+    isDateChange?: boolean;
+  } | null>(null);
+
+  const fieldLabels: Record<string, string> = {
+    is_live: "Status",
+    date_iso: "Datum",
+    start_time: "Startzeit",
+    duration_minutes: "Dauer",
+    template_id: "Kurs",
+    instructor_name: "Dozent:in",
+    betreuer_name: "Kursbetreuung",
+    booked_seats: "Gebuchte Plätze",
+    max_seats: "Max. Plätze",
+    cme_status: "CME Beantragung",
+  };
 
   // Create form state
   const [formTemplateId, setFormTemplateId] = useState("");
@@ -139,31 +163,59 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
     </TableHead>
   );
 
-  // Inline field update
-  const updateField = async (id: string, field: string, value: string | number | boolean) => {
-    const { error } = await supabase
-      .from("course_sessions")
-      .update({ [field]: value })
-      .eq("id", id);
-    if (!error) {
-      setSessions((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, [field]: value } : s))
-      );
+  // Format display value for the confirmation dialog
+  const formatDisplayValue = useCallback((field: string, value: string | number | boolean): string => {
+    if (field === "is_live") return value ? "Live" : "Offline";
+    if (field === "template_id") {
+      const t = templates.find((t) => t.id === value);
+      return t?.course_label_de || t?.title || String(value);
     }
-  };
+    if (field === "duration_minutes") return `${value} min`;
+    if (value === "" || value === null) return "(leer)";
+    return String(value);
+  }, [templates]);
 
-  // Update date + auto-derive label
-  const updateDate = async (id: string, dateIso: string) => {
-    const label = dateToLabelDe(dateIso);
-    const { error } = await supabase
-      .from("course_sessions")
-      .update({ date_iso: dateIso, label_de: label })
-      .eq("id", id);
-    if (!error) {
-      setSessions((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, date_iso: dateIso, label_de: label } : s))
-      );
+  // Request a change — shows confirmation dialog instead of saving immediately
+  const requestChange = useCallback((id: string, field: string, value: string | number | boolean, isDateChange = false) => {
+    setPendingChange({
+      id,
+      field,
+      value,
+      label: fieldLabels[field] || field,
+      displayValue: formatDisplayValue(field, value),
+      isDateChange,
+    });
+  }, [formatDisplayValue]);
+
+  // Execute the confirmed change
+  const confirmChange = async () => {
+    if (!pendingChange) return;
+    const { id, field, value, isDateChange } = pendingChange;
+
+    if (isDateChange) {
+      const dateIso = String(value);
+      const label = dateToLabelDe(dateIso);
+      const { error } = await supabase
+        .from("course_sessions")
+        .update({ date_iso: dateIso, label_de: label })
+        .eq("id", id);
+      if (!error) {
+        setSessions((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, date_iso: dateIso, label_de: label } : s))
+        );
+      }
+    } else {
+      const { error } = await supabase
+        .from("course_sessions")
+        .update({ [field]: value })
+        .eq("id", id);
+      if (!error) {
+        setSessions((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, [field]: value } : s))
+        );
+      }
     }
+    setPendingChange(null);
   };
 
   // Duplicate
@@ -287,7 +339,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 font-normal text-foreground"
               >
                 <option value="">Alle</option>
-                {[...new Set(sessions.map((s) => s.start_time).filter(Boolean))].sort().map((t) => (
+                {[...new Set(sessions.map((s) => s.start_time).filter((t): t is string => !!t))].sort().map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
               </select>
@@ -367,7 +419,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 <TableCell>
                   <select
                     value={session.is_live ? "live" : "offline"}
-                    onChange={(e) => updateField(session.id, "is_live", e.target.value === "live")}
+                    onChange={(e) => requestChange(session.id, "is_live", e.target.value === "live")}
                     className={`text-xs font-medium rounded-full px-2.5 py-1 border-0 cursor-pointer ${
                       session.is_live
                         ? "bg-emerald-100 text-emerald-700"
@@ -383,8 +435,13 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 <TableCell>
                   <input
                     type="date"
-                    value={session.date_iso}
-                    onChange={(e) => updateDate(session.id, e.target.value)}
+                    defaultValue={session.date_iso}
+                    key={`date-${session.id}-${session.date_iso}`}
+                    onChange={(e) => {
+                      if (e.target.value && e.target.value !== session.date_iso) {
+                        requestChange(session.id, "date_iso", e.target.value, true);
+                      }
+                    }}
                     className="border-0 bg-transparent font-medium text-sm p-0 focus:outline-none focus:ring-0 w-[130px]"
                   />
                 </TableCell>
@@ -393,8 +450,13 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 <TableCell>
                   <input
                     type="text"
-                    value={session.start_time || ""}
-                    onChange={(e) => updateField(session.id, "start_time", e.target.value)}
+                    defaultValue={session.start_time || ""}
+                    key={`time-${session.id}-${session.start_time}`}
+                    onBlur={(e) => {
+                      if (e.target.value !== (session.start_time || "")) {
+                        requestChange(session.id, "start_time", e.target.value);
+                      }
+                    }}
                     placeholder="10:00"
                     className="border-0 bg-transparent text-sm p-0 focus:outline-none focus:ring-0 w-[60px]"
                   />
@@ -405,8 +467,14 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                   <div className="flex items-center gap-1">
                     <input
                       type="number"
-                      value={session.duration_minutes || ""}
-                      onChange={(e) => updateField(session.id, "duration_minutes", parseInt(e.target.value) || 0)}
+                      defaultValue={session.duration_minutes || ""}
+                      key={`dur-${session.id}-${session.duration_minutes}`}
+                      onBlur={(e) => {
+                        const val = parseInt(e.target.value) || 0;
+                        if (val !== (session.duration_minutes || 0)) {
+                          requestChange(session.id, "duration_minutes", val);
+                        }
+                      }}
                       className="border-0 bg-transparent text-sm p-0 focus:outline-none focus:ring-0 w-[45px]"
                     />
                     <span className="text-xs text-muted-foreground">min</span>
@@ -417,7 +485,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 <TableCell>
                   <select
                     value={session.template_id}
-                    onChange={(e) => updateField(session.id, "template_id", e.target.value)}
+                    onChange={(e) => requestChange(session.id, "template_id", e.target.value)}
                     className="border-0 bg-transparent text-sm p-0 focus:outline-none focus:ring-0 cursor-pointer max-w-[250px] truncate"
                   >
                     {templates.map((t) => (
@@ -432,7 +500,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 <TableCell>
                   <select
                     value={session.instructor_name || ""}
-                    onChange={(e) => updateField(session.id, "instructor_name", e.target.value)}
+                    onChange={(e) => requestChange(session.id, "instructor_name", e.target.value)}
                     className="border-0 bg-transparent text-sm p-0 focus:outline-none focus:ring-0 cursor-pointer max-w-[200px] truncate"
                   >
                     <option value="">–</option>
@@ -452,7 +520,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 <TableCell>
                   <select
                     value={session.betreuer_name || ""}
-                    onChange={(e) => updateField(session.id, "betreuer_name", e.target.value)}
+                    onChange={(e) => requestChange(session.id, "betreuer_name", e.target.value)}
                     className="border-0 bg-transparent text-sm p-0 focus:outline-none focus:ring-0 cursor-pointer max-w-[200px] truncate"
                   >
                     <option value="">–</option>
@@ -474,16 +542,28 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                     <input
                       type="number"
                       min={0}
-                      value={session.booked_seats}
-                      onChange={(e) => updateField(session.id, "booked_seats", parseInt(e.target.value) || 0)}
+                      defaultValue={session.booked_seats}
+                      key={`booked-${session.id}-${session.booked_seats}`}
+                      onBlur={(e) => {
+                        const val = parseInt(e.target.value) || 0;
+                        if (val !== session.booked_seats) {
+                          requestChange(session.id, "booked_seats", val);
+                        }
+                      }}
                       className={`w-8 text-center bg-transparent border-b border-transparent hover:border-gray-300 focus:border-primary focus:outline-none ${session.booked_seats >= session.max_seats ? "text-emerald-600 font-medium" : ""}`}
                     />
                     <span className="text-muted-foreground">/</span>
                     <input
                       type="number"
                       min={0}
-                      value={session.max_seats}
-                      onChange={(e) => updateField(session.id, "max_seats", parseInt(e.target.value) || 0)}
+                      defaultValue={session.max_seats}
+                      key={`max-${session.id}-${session.max_seats}`}
+                      onBlur={(e) => {
+                        const val = parseInt(e.target.value) || 0;
+                        if (val !== session.max_seats) {
+                          requestChange(session.id, "max_seats", val);
+                        }
+                      }}
                       className={`w-8 text-center bg-transparent border-b border-transparent hover:border-gray-300 focus:border-primary focus:outline-none ${session.booked_seats >= session.max_seats ? "text-emerald-600 font-medium" : ""}`}
                     />
                   </div>
@@ -493,7 +573,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 <TableCell>
                   <select
                     value={session.cme_status || "Nicht beantragt"}
-                    onChange={(e) => updateField(session.id, "cme_status", e.target.value)}
+                    onChange={(e) => requestChange(session.id, "cme_status", e.target.value)}
                     className="border-0 bg-transparent text-sm p-0 focus:outline-none focus:ring-0 cursor-pointer max-w-[200px]"
                   >
                     <option value="Nicht beantragt">Nicht beantragt</option>
@@ -546,6 +626,16 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
         variant="destructive"
         onConfirm={confirmDelete}
         onCancel={() => setDeleteId(null)}
+      />
+
+      {/* Change confirmation */}
+      <ConfirmDialog
+        open={!!pendingChange}
+        title="Änderung bestätigen"
+        description={pendingChange ? `${pendingChange.label} ändern zu: ${pendingChange.displayValue}` : ""}
+        confirmLabel="Speichern"
+        onConfirm={confirmChange}
+        onCancel={() => setPendingChange(null)}
       />
 
       {/* Create dialog */}
