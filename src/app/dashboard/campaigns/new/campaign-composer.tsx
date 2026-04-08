@@ -6,7 +6,7 @@ import { buildEmailHtml, type ContentBlock } from "@/lib/email-template";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/app/dashboard/inbox/rich-text-editor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -358,16 +358,16 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                   <div key={i} className="space-y-1">
                     {block.type === "text" ? (
                       <div className="relative">
-                        <Textarea
+                        <RichTextEditor
                           value={block.text}
-                          onChange={(e) => updateBlock(i, { text: e.target.value })}
+                          onChange={(html) => updateBlock(i, { text: html })}
                           placeholder="Text eingeben..."
-                          className="min-h-[100px] resize-y pr-8"
+                          className="min-h-[120px]"
                         />
                         {contentBlocks.length > 1 && (
                           <button
                             onClick={() => removeBlock(i)}
-                            className="absolute top-2 right-2 text-gray-300 hover:text-gray-500"
+                            className="absolute top-1 right-1 z-10 bg-white/80 hover:bg-white p-1 rounded-full text-gray-300 hover:text-gray-500 shadow-sm"
                           >
                             <X className="h-3.5 w-3.5" />
                           </button>
