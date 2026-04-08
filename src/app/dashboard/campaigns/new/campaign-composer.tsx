@@ -199,7 +199,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
       return b;
     });
     return buildEmailHtml({
-      firstName: "Max",
+      firstName: "{Vorname}",
       contentBlocks: previewBlocks,
     });
   }, [contentBlocks]);
