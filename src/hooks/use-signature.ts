@@ -37,10 +37,12 @@ export function useSignature(): Signature | null {
         const name = [profile.title, profile.first_name, profile.last_name]
           .filter(Boolean)
           .join(" ");
-        // Short name for the closing: "Dr. Sophia", "Jana", "Marc", etc.
-        const closingName = [profile.title, profile.first_name]
-          .filter(Boolean)
-          .join(" ") || "Dein EPHIA-Team";
+        // Closing name: "Dr. Sophia" (with title) or "Jana von EPHIA" (without)
+        const closingName = profile.title
+          ? `${profile.title} ${profile.first_name || ""}`.trim()
+          : profile.first_name
+            ? `${profile.first_name} von EPHIA`
+            : "Dein EPHIA-Team";
 
         const html = `<div style="font-family:Arial,sans-serif;">
   <p style="margin:0 0 16px; font-size:14px; color:#333;">Herzliche Grüße,<br>${closingName}</p>
