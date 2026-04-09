@@ -173,6 +173,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
 
 function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose: () => void }) {
   const [mounted, setMounted] = React.useState(false);
+  const modalRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     setMounted(true);
@@ -180,13 +181,25 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
     return () => { document.body.style.overflow = ""; };
   }, []);
 
+  // In a LearnWorlds iframe, the iframe is auto-sized (no internal scroll)
+  // and the parent page scrolls. position:fixed doesn't work because the
+  // iframe viewport IS the full document. Use scrollIntoView to ask the
+  // parent to scroll the modal into view.
+  React.useEffect(() => {
+    if (mounted && modalRef.current && window.parent !== window) {
+      requestAnimationFrame(() => {
+        modalRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+      });
+    }
+  }, [mounted]);
+
   const modal = (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
       style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-xl w-full max-w-2xl shadow-2xl relative my-auto overflow-y-auto" style={{ maxHeight: "min(80vh, 80dvh)" }}>
+      <div ref={modalRef} className="bg-white rounded-xl w-full max-w-2xl shadow-2xl relative my-auto overflow-y-auto" style={{ maxHeight: "min(80vh, 80dvh)" }}>
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"

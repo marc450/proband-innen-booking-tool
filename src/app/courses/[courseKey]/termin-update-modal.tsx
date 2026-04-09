@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import { X, Loader2, CheckCircle } from "lucide-react";
 
@@ -20,12 +20,21 @@ export function TerminUpdateModal({ onClose }: Props) {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
+
+  useEffect(() => {
+    if (mounted && modalRef.current && window.parent !== window) {
+      requestAnimationFrame(() => {
+        modalRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+      });
+    }
+  }, [mounted]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +70,7 @@ export function TerminUpdateModal({ onClose }: Props) {
       style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-xl w-full max-w-md shadow-2xl relative my-auto">
+      <div ref={modalRef} className="bg-white rounded-xl w-full max-w-md shadow-2xl relative my-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
