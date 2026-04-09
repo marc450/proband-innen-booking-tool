@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import ReactDOM from "react-dom";
 import { useRouter } from "next/navigation";
 import { buildEmailHtml, type ContentBlock } from "@/lib/email-template";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,123 @@ interface Props {
 }
 
 type AudienceType = "probandinnen" | "aerztinnen" | "alle";
+
+interface ContactItem {
+  id: string;
+  rawId: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  isBlacklisted: boolean;
+  source: "proband" | "azubi";
+}
+
+function RecipientSearch({
+  recipientSearch,
+  setRecipientSearch,
+  filteredRecipients,
+  manuallyExcluded,
+  excludeBlacklisted,
+  toggleExclude,
+}: {
+  recipientSearch: string;
+  setRecipientSearch: (v: string) => void;
+  filteredRecipients: ContactItem[];
+  manuallyExcluded: Set<string>;
+  excludeBlacklisted: boolean;
+  toggleExclude: (id: string) => void;
+}) {
+  const searchRef = useRef<HTMLDivElement>(null);
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const showDropdown = recipientSearch.length >= 2 && filteredRecipients.length > 0;
+
+  // Recalculate position when dropdown should show
+  useEffect(() => {
+    if (!showDropdown || !searchRef.current) {
+      setDropdownRect(null);
+      return;
+    }
+    const rect = searchRef.current.getBoundingClientRect();
+    setDropdownRect({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+  }, [showDropdown, recipientSearch]);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!showDropdown) return;
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        // Check if click is inside the portal dropdown
+        const dropdown = document.getElementById("recipient-search-dropdown");
+        if (dropdown && dropdown.contains(e.target as Node)) return;
+        setRecipientSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showDropdown, setRecipientSearch]);
+
+  return (
+    <div ref={searchRef}>
+      <div className="flex items-center gap-2">
+        <Search className="h-3 w-3 text-muted-foreground" />
+        <Input
+          value={recipientSearch}
+          onChange={(e) => setRecipientSearch(e.target.value)}
+          placeholder="Empfänger:in suchen..."
+          className="h-8 text-sm"
+        />
+      </div>
+      {showDropdown && dropdownRect && ReactDOM.createPortal(
+        <div
+          id="recipient-search-dropdown"
+          className="bg-white border rounded-md shadow-lg max-h-[240px] overflow-y-auto"
+          style={{
+            position: "fixed",
+            top: dropdownRect.top,
+            left: dropdownRect.left,
+            width: dropdownRect.width,
+            zIndex: 9999,
+          }}
+        >
+          {filteredRecipients.slice(0, 20).map((c) => {
+            const isExcluded = manuallyExcluded.has(c.id) || (excludeBlacklisted && c.isBlacklisted);
+            const displayName = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email;
+            const isBlacklistLocked = excludeBlacklisted && c.isBlacklisted;
+
+            return (
+              <button
+                key={c.id}
+                type="button"
+                disabled={isBlacklistLocked}
+                onClick={() => {
+                  if (!isBlacklistLocked) toggleExclude(c.id);
+                }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-gray-50 transition-colors ${isBlacklistLocked ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+              >
+                <Checkbox
+                  checked={!isExcluded}
+                  disabled={isBlacklistLocked}
+                  className="pointer-events-none"
+                />
+                <span className="flex-1 min-w-0 truncate font-medium">{displayName}</span>
+                <span className="text-xs text-gray-500 truncate max-w-[180px]">{c.email}</span>
+                {c.isBlacklisted && (
+                  <span className="text-xs text-red-500 shrink-0">Blacklist</span>
+                )}
+              </button>
+            );
+          })}
+          {filteredRecipients.length > 20 && (
+            <div className="px-3 py-1.5 text-xs text-gray-500 text-center">
+              +{filteredRecipients.length - 20} weitere Ergebnisse...
+            </div>
+          )}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
 
 export function CampaignComposer({ patients, auszubildende, existingCampaign }: Props) {
   const router = useRouter();
@@ -501,7 +619,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
           </Card>
 
           {/* Recipients */}
-          <Card style={{ overflow: "visible" }}>
+          <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">
                 Empfänger:innen ({eligibleContacts.length})
@@ -569,54 +687,14 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
               </div>
 
               {/* Autocomplete search to add specific recipients */}
-              <div className="relative">
-                <div className="flex items-center gap-2">
-                  <Search className="h-3 w-3 text-muted-foreground" />
-                  <Input
-                    value={recipientSearch}
-                    onChange={(e) => setRecipientSearch(e.target.value)}
-                    placeholder="Empfänger:in suchen..."
-                    className="h-8 text-sm"
-                  />
-                </div>
-                {recipientSearch.length >= 2 && filteredRecipients.length > 0 && (
-                  <div className="absolute z-20 left-0 right-0 mt-1 bg-white border rounded-md shadow-lg max-h-[200px] overflow-y-auto">
-                    {filteredRecipients.slice(0, 20).map((c) => {
-                      const isExcluded = manuallyExcluded.has(c.id) || (excludeBlacklisted && c.isBlacklisted);
-                      const displayName = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email;
-                      const isBlacklistLocked = excludeBlacklisted && c.isBlacklisted;
-
-                      return (
-                        <button
-                          key={c.id}
-                          type="button"
-                          disabled={isBlacklistLocked}
-                          onClick={() => {
-                            if (!isBlacklistLocked) toggleExclude(c.id);
-                          }}
-                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted/50 transition-colors ${isBlacklistLocked ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
-                        >
-                          <Checkbox
-                            checked={!isExcluded}
-                            disabled={isBlacklistLocked}
-                            className="pointer-events-none"
-                          />
-                          <span className="flex-1 min-w-0 truncate font-medium">{displayName}</span>
-                          <span className="text-xs text-muted-foreground truncate max-w-[180px]">{c.email}</span>
-                          {c.isBlacklisted && (
-                            <span className="text-xs text-red-500 shrink-0">Blacklist</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                    {filteredRecipients.length > 20 && (
-                      <div className="px-3 py-1.5 text-xs text-muted-foreground text-center">
-                        +{filteredRecipients.length - 20} weitere Ergebnisse...
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+              <RecipientSearch
+                recipientSearch={recipientSearch}
+                setRecipientSearch={setRecipientSearch}
+                filteredRecipients={filteredRecipients}
+                manuallyExcluded={manuallyExcluded}
+                excludeBlacklisted={excludeBlacklisted}
+                toggleExclude={toggleExclude}
+              />
 
               {/* Expandable full recipient list */}
               <button
