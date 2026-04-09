@@ -130,6 +130,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
   },
   {
     name: "Grundkurs Medizinische Hautpflege",
+    shortName: "Medizinische Hautpflege",
     type: "Onlinekurs",
     level: "Für alle Fachrichtungen",
     description: "In diesem Onlinekurs lernst Du als medizinische Fachperson die Grundkenntnisse in der Hautpflege, die in 19 Minuten in der Dermatologie und medizinischen Hautpflege vermittelt werden. Der Kurs bigt praxisrelevante Strategien in evidenzbasierter Weise, mit Fokus auf patientenorientierte Beratung.",
