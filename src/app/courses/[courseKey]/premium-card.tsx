@@ -17,10 +17,14 @@ interface IncludedCourse {
   name: string;
   shortName?: string;
   type: "Kombikurs" | "Onlinekurs";
+  level?: string;
   description: string;
   cmePoints: string;
   duration: string;
   features: string[];
+  lernziele?: string[];
+  kursinhalt?: string[];
+  inkludiert?: string[];
 }
 
 interface PremiumCardProps {
@@ -48,7 +52,8 @@ const INCLUDED_COURSES: IncludedCourse[] = [
     name: "Aufbaukurs Botulinum: Periorale Zone",
     shortName: "Periorale Zone",
     type: "Onlinekurs",
-    description: "Lerne mit diesem spezialisierten Onlinekurs die Behandlung der sensiblen perioralen Zone mit präzisen Techniken zu meistern.",
+    level: "Fortgeschrittenenkurs",
+    description: "Erweitere Dein Wissen in der Ästhetik des Mundbereichs mit dem EPHIA Onlinekurs zur Behandlung der perioralen Zone mit Botulinum. Du lernst die sichere, evidenzbasierte Behandlung mit präzisen Techniken, inklusive Anatomie, Indikationen, Patient:innenkommunikation und Komplikationsmanagement.",
     cmePoints: "10",
     duration: "~6 Stunden",
     features: [
@@ -56,29 +61,111 @@ const INCLUDED_COURSES: IncludedCourse[] = [
       "Lip Flip, Mundwinkel, Erdbeerkinn, Gummy Smile",
       "Schönheitsideale & Hintergründe",
     ],
+    lernziele: [
+      "Anatomie der perioralen Muskulatur",
+      "Indikationen für die periorale Behandlung",
+      "Produktvertrieb in der ästhetischen Praxis",
+      "Patient:innenkommunikation",
+      "Technik der perioralen Behandlung",
+      "Komplikationsmanagement",
+    ],
+    kursinhalt: [
+      "Begrüßung & Kursübersicht",
+      "Grundlagen",
+      "Schönheitsideale & Hintergründe",
+      "Anatomie in der Perioralen Zone",
+      "Behandlung der Lippe mit Lip Flip",
+      "Behandlung der Mundwinkel",
+      "Behandlung des Erdbeerkinns",
+      "Behandlung des Gummy Smile",
+      "Behandlung der Platysmas",
+      "Myth Buster & Stolpersteine & Fragen",
+    ],
+    inkludiert: [
+      "10 online Lernkapitel",
+      "Lehrvideos",
+      "Ärzt:innen-Community",
+      "CME-Punkte",
+      "1.5 Jahre Zugriff",
+      "Zertifikat",
+    ],
   },
   {
     name: "Aufbaukurs Botulinum: Therapeutische Indikationen",
     shortName: "Therapeutische Indikationen",
     type: "Onlinekurs",
-    description: "Erweitere Deine Kompetenz um therapeutische Anwendungen von Botulinum.",
+    level: "Fortgeschrittenenkurs",
+    description: "Erweitere Deine Kompetenz um therapeutische Anwendungen von Botulinum. Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen, die bereits eine Fortbildung in der therapeutischen Anwendung von Botulinum absolviert haben. Du lernst die sichere, evidenzbasierte Behandlung von Bruxismus, Migräne, Hyperhidrosis und muskulärem Hartspann.",
     cmePoints: "10",
     duration: "~6 Stunden",
     features: [
       "Anatomie, Techniken & Stolpersteine",
       "Bruxismus, Migräne, Hyperhidrosis, Muskulärer Hartspann",
     ],
+    lernziele: [
+      "Anatomie der therapeutischen Zielregionen",
+      "Indikationen für therapeutische Behandlungen",
+      "Produktvertrieb in der ästhetischen Praxis",
+      "Patient:innenkommunikation",
+      "Technik der therapeutischen Behandlung",
+      "Komplikationsmanagement",
+    ],
+    kursinhalt: [
+      "Hauptkurs",
+      "Botulinum in der therapeutischen Anwendung",
+      "Bruxismus",
+      "Migräne",
+      "Hyperhidrosis",
+      "Muskulärer Hartspann",
+      "Myth Buster",
+    ],
+    inkludiert: [
+      "7 online Lernkapitel",
+      "Behandlungsprotokolle",
+      "Ärzt:innen-Community",
+      "CME-Punkte",
+      "1.5 Jahre Zugriff",
+      "Zertifikat",
+    ],
   },
   {
     name: "Grundkurs Medizinische Hautpflege",
     type: "Onlinekurs",
-    description: "In diesem Onlinekurs lernst Du, medizinische Hautpflege fundiert anzuwenden, als ideale Ergänzung zu Botulinumbehandlungen für nachhaltige ästhetische Ergebnisse.",
+    level: "Für alle Fachrichtungen",
+    description: "In diesem Onlinekurs lernst Du als medizinische Fachperson die Grundkenntnisse in der Hautpflege, die in 19 Minuten in der Dermatologie und medizinischen Hautpflege vermittelt werden. Der Kurs bigt praxisrelevante Strategien in evidenzbasierter Weise, mit Fokus auf patientenorientierte Beratung.",
     cmePoints: "7",
     duration: "~4 Stunden",
     features: [
       "Grundlagen der Hautalterung",
       "Akne, Rosazea, periorale Dermatitis",
       "Aufbau einer nachhaltigen Pflegeroutine",
+    ],
+    lernziele: [
+      "Hautphysiologie",
+      "Skin of Color",
+      "Störungen (Akne, Rosazea, etc.)",
+      "Wirkstoffe",
+      "Behandlungsoptionen",
+      "Patient:innenkonsultation",
+    ],
+    kursinhalt: [
+      "Begrüßung",
+      "Grundlagen zur Haut",
+      "Skin of Color",
+      "Akne",
+      "Rosazea",
+      "Periorale Dermatitis",
+      "Hautalterung",
+      "Aufbau einer Pflegeroutine",
+      "Myth Buster",
+    ],
+    inkludiert: [
+      "9 online Lernkapitel",
+      "Lehrvideos",
+      "Ärzt:innen-Community",
+      "CME-Punkte",
+      "1.5 Jahre Zugriff",
+      "Zertifikat",
     ],
   },
 ];
@@ -98,42 +185,97 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
       style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-xl w-full max-w-md shadow-2xl relative my-auto">
+      <div className="bg-white rounded-xl w-full max-w-2xl shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
           aria-label="Schließen"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="p-6">
-          <h3 className="text-lg font-bold text-black mb-1">{course.name}</h3>
-          <p className="text-sm text-gray-500 mb-4">{course.type}</p>
-
-          <p className="text-sm text-gray-700 mb-4">{course.description}</p>
-
-          <div className="flex gap-6 mb-4">
-            <div>
-              <p className="text-sm font-bold text-[#0066FF]">CME-Punkte: {course.cmePoints}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Lernaufwand: {course.duration}</p>
-            </div>
+        {/* Header */}
+        <div className="p-6 pb-0">
+          <h3 className="text-xl font-bold text-black mb-1 pr-8">{course.name}</h3>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-sm text-gray-500">{course.type}</span>
+            {course.level && (
+              <span className="text-xs font-medium text-[#0066FF] bg-blue-50 rounded-full px-2.5 py-0.5">{course.level}</span>
+            )}
           </div>
 
-          <hr className="mb-4" />
+          <p className="text-sm text-gray-700 mb-4 leading-relaxed">{course.description}</p>
 
-          <p className="text-sm font-bold text-black mb-3">Das lernst Du:</p>
-          <ul className="space-y-2">
-            {course.features.map((feature, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-[#0066FF] flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-black">{feature}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="flex flex-wrap gap-4 mb-5">
+            <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2">
+              <Award className="w-4 h-4 text-[#0066FF]" />
+              <span className="text-sm font-bold text-[#0066FF]">{course.cmePoints} CME-Punkte</span>
+            </div>
+            <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+              <span className="text-sm text-gray-600">Lernaufwand: {course.duration}</span>
+            </div>
+          </div>
         </div>
+
+        {/* Lernziele */}
+        {course.lernziele && course.lernziele.length > 0 && (
+          <div className="px-6 pb-5">
+            <h4 className="text-sm font-bold text-black mb-3">Lernziele</h4>
+            <div className="grid grid-cols-2 gap-2">
+              {course.lernziele.map((ziel, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-[#0066FF] flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-black">{ziel}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Kursinhalt */}
+        {course.kursinhalt && course.kursinhalt.length > 0 && (
+          <div className="border-t border-gray-100 px-6 py-5">
+            <h4 className="text-sm font-bold text-black mb-3">Kursinhalt</h4>
+            <ol className="space-y-1.5">
+              {course.kursinhalt.map((kapitel, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                  <span className="text-gray-400 font-medium w-5 flex-shrink-0 text-right">{i + 1}.</span>
+                  {kapitel}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+
+        {/* Im Kurs inkludiert */}
+        {course.inkludiert && course.inkludiert.length > 0 && (
+          <div className="border-t border-gray-100 px-6 py-5">
+            <h4 className="text-sm font-bold text-black mb-3">Im Kurs inkludiert</h4>
+            <div className="grid grid-cols-2 gap-2">
+              {course.inkludiert.map((item, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-[#0066FF] flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-black">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Fallback: simple features list (for courses without detailed data) */}
+        {!course.lernziele && !course.kursinhalt && (
+          <div className="border-t border-gray-100 px-6 py-5">
+            <h4 className="text-sm font-bold text-black mb-3">Das lernst Du:</h4>
+            <ul className="space-y-2">
+              {course.features.map((feature, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-[#0066FF] flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-black">{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
