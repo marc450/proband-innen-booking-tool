@@ -45,15 +45,72 @@ export interface UseDraftsReturn {
 }
 
 const DEBOUNCE_MS = 1500;
+const STORAGE_BUCKET = "draft-images";
 
-// Strip large base64 data URLs from HTML to keep draft size within Supabase limits.
-// Pasted screenshots can be 2-3 MB+ as base64, causing silent save failures.
-// We replace them with a placeholder so the text content is preserved.
-function stripInlineImages(html: string): string {
-  return html.replace(
-    /<img\s+[^>]*src=["']data:image\/[^"']+["'][^>]*\/?>/gi,
-    '<span style="color:#999;font-style:italic">[Bild wird nicht im Entwurf gespeichert]</span>'
-  );
+// Upload base64 inline images to Supabase Storage and replace src with public URLs.
+// This prevents draft saves from failing due to Supabase's request size limits.
+async function uploadInlineImages(
+  html: string,
+  supabase: ReturnType<typeof createClient>,
+  draftId: string,
+): Promise<string> {
+  const imgRegex = /<img\s+([^>]*)src=["'](data:image\/([a-z+]+);base64,([^"']+))["']([^>]*)\/?\s*>/gi;
+  const matches = [...html.matchAll(imgRegex)];
+  if (matches.length === 0) return html;
+
+  let result = html;
+  for (let i = 0; i < matches.length; i++) {
+    const match = matches[i];
+    const fullMatch = match[0];
+    const ext = match[3] === "jpeg" ? "jpg" : (match[3] || "png").replace("+xml", "");
+    const base64Data = match[4];
+
+    try {
+      // Decode base64 to binary
+      const binaryStr = atob(base64Data);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let j = 0; j < binaryStr.length; j++) bytes[j] = binaryStr.charCodeAt(j);
+
+      const filePath = `${draftId}/${Date.now()}_${i}.${ext}`;
+      const { error } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(filePath, bytes, {
+          contentType: `image/${match[3]}`,
+          upsert: true,
+        });
+
+      if (error) continue; // Keep original if upload fails
+
+      const { data: urlData } = supabase.storage
+        .from(STORAGE_BUCKET)
+        .getPublicUrl(filePath);
+
+      if (urlData?.publicUrl) {
+        const attrs = (match[1] || "") + (match[5] || "");
+        const newImg = `<img ${attrs}src="${urlData.publicUrl}" />`;
+        result = result.replace(fullMatch, newImg);
+      }
+    } catch {
+      // Keep original image tag if anything fails
+    }
+  }
+  return result;
+}
+
+// Clean up uploaded draft images from storage
+async function cleanupDraftImages(
+  supabase: ReturnType<typeof createClient>,
+  draftId: string,
+) {
+  try {
+    const { data: files } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .list(draftId);
+    if (files && files.length > 0) {
+      const paths = files.map((f) => `${draftId}/${f.name}`);
+      await supabase.storage.from(STORAGE_BUCKET).remove(paths);
+    }
+  } catch { /* non-critical */ }
 }
 
 // ── Hook ──
@@ -143,38 +200,25 @@ export function useDrafts(): UseDraftsReturn {
 
   // ── Compose draft: persist to Supabase ──
   const flushCompose = async (draft: ComposeDraft) => {
-    const safeBody = stripInlineImages(draft.body);
     try {
-      if (composeRowId.current) {
-        await supabase
-          .from("email_drafts")
-          .update({
-            to: draft.to,
-            subject: draft.subject,
-            body: safeBody,
-            cc: draft.cc,
-            bcc: draft.bcc,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", composeRowId.current);
-      } else {
+      // Ensure we have a row ID (needed for image storage path)
+      if (!composeRowId.current) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
         const { data } = await supabase
           .from("email_drafts")
-          .insert({
-            user_id: user.id,
-            kind: "compose",
-            to: draft.to,
-            subject: draft.subject,
-            body: safeBody,
-            cc: draft.cc,
-            bcc: draft.bcc,
-          })
+          .insert({ user_id: user.id, kind: "compose", to: draft.to, subject: draft.subject, body: "", cc: draft.cc, bcc: draft.bcc })
           .select("id")
           .single();
         if (data) composeRowId.current = data.id;
+        else return;
       }
+      const rowId = composeRowId.current!;
+      const safeBody = await uploadInlineImages(draft.body, supabase, rowId);
+      await supabase
+        .from("email_drafts")
+        .update({ to: draft.to, subject: draft.subject, body: safeBody, cc: draft.cc, bcc: draft.bcc, updated_at: new Date().toISOString() })
+        .eq("id", rowId);
     } catch { /* non-critical */ }
     pendingCompose.current = null;
   };
@@ -192,49 +236,34 @@ export function useDrafts(): UseDraftsReturn {
     pendingCompose.current = null;
     setComposeDraft(null);
     if (composeRowId.current) {
+      cleanupDraftImages(supabase, composeRowId.current);
       await supabase.from("email_drafts").delete().eq("id", composeRowId.current);
       composeRowId.current = null;
     }
-    // Also clean up localStorage from the old implementation
     try { localStorage.removeItem("inbox:composeDraft"); } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Reply draft: persist to Supabase ──
   const flushReply = async (threadId: string, draft: ReplyDraft) => {
-    const safeHtml = stripInlineImages(draft.html);
     try {
-      if (replyRowIds.current[threadId]) {
-        await supabase
-          .from("email_drafts")
-          .update({
-            body: safeHtml,
-            cc: draft.cc,
-            bcc: draft.bcc,
-            show_cc: draft.showCc,
-            show_bcc: draft.showBcc,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", replyRowIds.current[threadId]);
-      } else {
+      // Ensure we have a row ID (needed for image storage path)
+      if (!replyRowIds.current[threadId]) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
         const { data } = await supabase
           .from("email_drafts")
-          .insert({
-            user_id: user.id,
-            kind: "reply",
-            thread_id: threadId,
-            body: safeHtml,
-            cc: draft.cc,
-            bcc: draft.bcc,
-            show_cc: draft.showCc,
-            show_bcc: draft.showBcc,
-          })
+          .insert({ user_id: user.id, kind: "reply", thread_id: threadId, body: "", cc: draft.cc, bcc: draft.bcc, show_cc: draft.showCc, show_bcc: draft.showBcc })
           .select("id")
           .single();
         if (data) replyRowIds.current[threadId] = data.id;
+        else return;
       }
+      const safeHtml = await uploadInlineImages(draft.html, supabase, replyRowIds.current[threadId]);
+      await supabase
+        .from("email_drafts")
+        .update({ body: safeHtml, cc: draft.cc, bcc: draft.bcc, show_cc: draft.showCc, show_bcc: draft.showBcc, updated_at: new Date().toISOString() })
+        .eq("id", replyRowIds.current[threadId]);
     } catch { /* non-critical */ }
     delete pendingReplies.current[threadId];
   };
@@ -256,6 +285,7 @@ export function useDrafts(): UseDraftsReturn {
       return next;
     });
     if (replyRowIds.current[threadId]) {
+      cleanupDraftImages(supabase, replyRowIds.current[threadId]);
       await supabase.from("email_drafts").delete().eq("id", replyRowIds.current[threadId]);
       delete replyRowIds.current[threadId];
     }
