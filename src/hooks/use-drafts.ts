@@ -46,6 +46,16 @@ export interface UseDraftsReturn {
 
 const DEBOUNCE_MS = 1500;
 
+// Strip large base64 data URLs from HTML to keep draft size within Supabase limits.
+// Pasted screenshots can be 2-3 MB+ as base64, causing silent save failures.
+// We replace them with a placeholder so the text content is preserved.
+function stripInlineImages(html: string): string {
+  return html.replace(
+    /<img\s+[^>]*src=["']data:image\/[^"']+["'][^>]*\/?>/gi,
+    '<span style="color:#999;font-style:italic">[Bild wird nicht im Entwurf gespeichert]</span>'
+  );
+}
+
 // ── Hook ──
 
 export function useDrafts(): UseDraftsReturn {
@@ -133,6 +143,7 @@ export function useDrafts(): UseDraftsReturn {
 
   // ── Compose draft: persist to Supabase ──
   const flushCompose = async (draft: ComposeDraft) => {
+    const safeBody = stripInlineImages(draft.body);
     try {
       if (composeRowId.current) {
         await supabase
@@ -140,7 +151,7 @@ export function useDrafts(): UseDraftsReturn {
           .update({
             to: draft.to,
             subject: draft.subject,
-            body: draft.body,
+            body: safeBody,
             cc: draft.cc,
             bcc: draft.bcc,
             updated_at: new Date().toISOString(),
@@ -156,7 +167,7 @@ export function useDrafts(): UseDraftsReturn {
             kind: "compose",
             to: draft.to,
             subject: draft.subject,
-            body: draft.body,
+            body: safeBody,
             cc: draft.cc,
             bcc: draft.bcc,
           })
@@ -191,12 +202,13 @@ export function useDrafts(): UseDraftsReturn {
 
   // ── Reply draft: persist to Supabase ──
   const flushReply = async (threadId: string, draft: ReplyDraft) => {
+    const safeHtml = stripInlineImages(draft.html);
     try {
       if (replyRowIds.current[threadId]) {
         await supabase
           .from("email_drafts")
           .update({
-            body: draft.html,
+            body: safeHtml,
             cc: draft.cc,
             bcc: draft.bcc,
             show_cc: draft.showCc,
@@ -213,7 +225,7 @@ export function useDrafts(): UseDraftsReturn {
             user_id: user.id,
             kind: "reply",
             thread_id: threadId,
-            body: draft.html,
+            body: safeHtml,
             cc: draft.cc,
             bcc: draft.bcc,
             show_cc: draft.showCc,
