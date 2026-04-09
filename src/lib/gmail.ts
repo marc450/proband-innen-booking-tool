@@ -228,6 +228,13 @@ export async function sendEmail(
   attachments?: EmailAttachment[],
   sentBy?: string,
 ) {
+  // RFC 2047: encode header values that contain non-ASCII characters
+  const encodeHeader = (value: string): string => {
+    // eslint-disable-next-line no-control-regex
+    if (/^[\x00-\x7F]*$/.test(value)) return value; // pure ASCII, no encoding needed
+    return `=?UTF-8?B?${Buffer.from(value, "utf-8").toString("base64")}?=`;
+  };
+
   const fromHeader = `EPHIA <${GMAIL_USER_EMAIL}>`;
   const hasAttachments = attachments && attachments.length > 0;
 
@@ -241,7 +248,7 @@ export async function sendEmail(
   let rawHeaders = [
     `From: ${fromHeader}`,
     `To: ${to}`,
-    `Subject: ${subject}`,
+    `Subject: ${encodeHeader(subject)}`,
     `MIME-Version: 1.0`,
     `Content-Type: ${contentType}`,
   ];
