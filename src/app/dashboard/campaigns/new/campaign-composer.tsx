@@ -546,51 +546,113 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                 </div>
               )}
 
+              {/* Select all / Deselect all */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setManuallyExcluded(new Set())}
+                  className="text-xs font-medium text-[#0066FF] hover:underline"
+                >
+                  Alle auswählen
+                </button>
+                <span className="text-xs text-muted-foreground">·</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allIds = new Set(allContacts.map((c) => c.id));
+                    setManuallyExcluded(allIds);
+                  }}
+                  className="text-xs font-medium text-[#0066FF] hover:underline"
+                >
+                  Alle abwählen
+                </button>
+              </div>
+
+              {/* Autocomplete search to add specific recipients */}
+              <div className="relative">
+                <div className="flex items-center gap-2">
+                  <Search className="h-3 w-3 text-muted-foreground" />
+                  <Input
+                    value={recipientSearch}
+                    onChange={(e) => setRecipientSearch(e.target.value)}
+                    placeholder="Empfänger:in suchen..."
+                    className="h-8 text-sm"
+                  />
+                </div>
+                {recipientSearch.length >= 2 && filteredRecipients.length > 0 && (
+                  <div className="absolute z-20 left-0 right-0 mt-1 bg-white border rounded-md shadow-lg max-h-[200px] overflow-y-auto">
+                    {filteredRecipients.slice(0, 20).map((c) => {
+                      const isExcluded = manuallyExcluded.has(c.id) || (excludeBlacklisted && c.isBlacklisted);
+                      const displayName = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email;
+                      const isBlacklistLocked = excludeBlacklisted && c.isBlacklisted;
+
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          disabled={isBlacklistLocked}
+                          onClick={() => {
+                            if (!isBlacklistLocked) toggleExclude(c.id);
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted/50 transition-colors ${isBlacklistLocked ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+                        >
+                          <Checkbox
+                            checked={!isExcluded}
+                            disabled={isBlacklistLocked}
+                            className="pointer-events-none"
+                          />
+                          <span className="flex-1 min-w-0 truncate font-medium">{displayName}</span>
+                          <span className="text-xs text-muted-foreground truncate max-w-[180px]">{c.email}</span>
+                          {c.isBlacklisted && (
+                            <span className="text-xs text-red-500 shrink-0">Blacklist</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                    {filteredRecipients.length > 20 && (
+                      <div className="px-3 py-1.5 text-xs text-muted-foreground text-center">
+                        +{filteredRecipients.length - 20} weitere Ergebnisse...
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Expandable full recipient list */}
               <button
                 className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
                 onClick={() => setShowRecipients(!showRecipients)}
               >
                 {showRecipients ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                Einzelne Empfänger:innen bearbeiten
+                Alle Empfänger:innen anzeigen
               </button>
 
               {showRecipients && (
-                <div className="space-y-2 pt-1">
-                  <div className="flex items-center gap-2">
-                    <Search className="h-3 w-3 text-muted-foreground" />
-                    <Input
-                      value={recipientSearch}
-                      onChange={(e) => setRecipientSearch(e.target.value)}
-                      placeholder="Suchen..."
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  <div className="max-h-[240px] overflow-y-auto border rounded-md divide-y">
-                    {filteredRecipients.map((c) => {
-                      const isExcluded = manuallyExcluded.has(c.id) || (excludeBlacklisted && c.isBlacklisted);
-                      const displayName = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email;
+                <div className="max-h-[300px] overflow-y-auto border rounded-md divide-y">
+                  {allContacts.map((c) => {
+                    const isExcluded = manuallyExcluded.has(c.id) || (excludeBlacklisted && c.isBlacklisted);
+                    const displayName = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email;
 
-                      return (
-                        <label
-                          key={c.id}
-                          className={`flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-muted/50 ${isExcluded ? "opacity-50" : ""}`}
-                        >
-                          <Checkbox
-                            checked={!isExcluded}
-                            disabled={excludeBlacklisted && c.isBlacklisted}
-                            onCheckedChange={() => {
-                              if (!(excludeBlacklisted && c.isBlacklisted)) toggleExclude(c.id);
-                            }}
-                          />
-                          <span className="flex-1 min-w-0 truncate">{displayName}</span>
-                          <span className="text-xs text-muted-foreground truncate">{c.email}</span>
-                          {c.isBlacklisted && (
-                            <span className="text-xs text-red-500 shrink-0">Blacklist</span>
-                          )}
-                        </label>
-                      );
-                    })}
-                  </div>
+                    return (
+                      <label
+                        key={c.id}
+                        className={`flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-muted/50 ${isExcluded ? "opacity-50" : ""}`}
+                      >
+                        <Checkbox
+                          checked={!isExcluded}
+                          disabled={excludeBlacklisted && c.isBlacklisted}
+                          onCheckedChange={() => {
+                            if (!(excludeBlacklisted && c.isBlacklisted)) toggleExclude(c.id);
+                          }}
+                        />
+                        <span className="flex-1 min-w-0 truncate">{displayName}</span>
+                        <span className="text-xs text-muted-foreground truncate">{c.email}</span>
+                        {c.isBlacklisted && (
+                          <span className="text-xs text-red-500 shrink-0">Blacklist</span>
+                        )}
+                      </label>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
