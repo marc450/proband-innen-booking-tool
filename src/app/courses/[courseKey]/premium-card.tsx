@@ -460,16 +460,18 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
             <span className="text-base text-black italic">Vollständiger Kombikurs</span>
           </li>
           {INCLUDED_COURSES.slice(1).map((course, index) => (
-            <li key={index} className="flex items-center gap-2">
-              <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" />
-              <button
-                type="button"
-                onClick={() => setInfoModal(course)}
-                className="text-base text-black hover:text-[#0066FF] transition-colors text-left underline underline-offset-2 decoration-gray-300 hover:decoration-[#0066FF] whitespace-nowrap"
-              >
-                {course.shortName || course.name}
-              </button>
-              <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 rounded px-1.5 py-0.5 flex-shrink-0 uppercase tracking-wide">Onlinekurs</span>
+            <li key={index} className="flex items-start gap-2">
+              <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+              <span className="text-base flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setInfoModal(course)}
+                  className="text-base text-black hover:text-[#0066FF] transition-colors text-left underline underline-offset-2 decoration-gray-300 hover:decoration-[#0066FF]"
+                >
+                  {course.shortName || course.name}
+                </button>
+                <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 rounded px-1.5 py-0.5 uppercase tracking-wide whitespace-nowrap">Onlinekurs</span>
+              </span>
             </li>
           ))}
         </ul>
