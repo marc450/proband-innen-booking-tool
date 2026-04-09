@@ -171,98 +171,35 @@ const INCLUDED_COURSES: IncludedCourse[] = [
   },
 ];
 
-// Inline accordion content for iframe contexts
-function CourseAccordion({ course }: { course: IncludedCourse }) {
-  return (
-    <div className="pt-3 pb-1 space-y-3 text-sm">
-      <p className="text-gray-700 leading-relaxed">{course.description}</p>
-
-      <div className="flex flex-wrap gap-2">
-        <span className="inline-flex items-center gap-1.5 bg-blue-50 rounded-lg px-2.5 py-1">
-          <Award className="w-3.5 h-3.5 text-[#0066FF]" />
-          <span className="font-bold text-[#0066FF]">{course.cmePoints} CME-Punkte</span>
-        </span>
-        <span className="inline-flex items-center bg-gray-100 rounded-lg px-2.5 py-1 text-gray-600">
-          {course.duration}
-        </span>
-      </div>
-
-      {course.lernziele && course.lernziele.length > 0 && (
-        <div>
-          <h4 className="font-bold text-black mb-1.5">Lernziele</h4>
-          <ul className="space-y-1">
-            {course.lernziele.map((ziel, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <Check className="w-3.5 h-3.5 text-[#0066FF] flex-shrink-0 mt-0.5" />
-                <span className="text-black">{ziel}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {course.kursinhalt && course.kursinhalt.length > 0 && (
-        <div>
-          <h4 className="font-bold text-black mb-1.5">Kursinhalt</h4>
-          <ol className="space-y-0.5">
-            {course.kursinhalt.map((kapitel, i) => (
-              <li key={i} className="flex items-start gap-2 text-gray-700">
-                <span className="text-gray-400 font-medium w-4 flex-shrink-0 text-right">{i + 1}.</span>
-                <span>{kapitel}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
-
-      {course.inkludiert && course.inkludiert.length > 0 && (
-        <div>
-          <h4 className="font-bold text-black mb-1.5">Im Kurs inkludiert</h4>
-          <ul className="space-y-1">
-            {course.inkludiert.map((item, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <Check className="w-3.5 h-3.5 text-[#0066FF] flex-shrink-0 mt-0.5" />
-                <span className="text-black">{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {!course.lernziele && !course.kursinhalt && (
-        <div>
-          <h4 className="font-bold text-black mb-1.5">Das lernst Du:</h4>
-          <ul className="space-y-1">
-            {course.features.map((feature, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <Check className="w-3.5 h-3.5 text-[#0066FF] flex-shrink-0 mt-0.5" />
-                <span className="text-black">{feature}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Full-screen modal for non-iframe contexts (desktop, standalone page)
 function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose: () => void }) {
   const [mounted, setMounted] = React.useState(false);
+  const [scrollTop, setScrollTop] = React.useState(0);
+  const isIframe = typeof window !== "undefined" && window.parent !== window;
 
   React.useEffect(() => {
     setMounted(true);
+    // Capture scroll position at open time
+    setScrollTop(window.scrollY || document.documentElement.scrollTop);
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
 
+  // In an iframe, use absolute positioning anchored to current scroll position
+  // so the modal appears in the user's visible viewport, not the iframe's top
+  const overlayStyle: React.CSSProperties = isIframe
+    ? { position: "absolute", top: scrollTop, left: 0, right: 0, height: window.innerHeight, backgroundColor: "rgba(0,0,0,0.5)" }
+    : { backgroundColor: "rgba(0,0,0,0.5)" };
+  const overlayClass = isIframe
+    ? "z-[9999] flex items-center justify-center p-4"
+    : "fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto";
+
   const modal = (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
-      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      className={overlayClass}
+      style={overlayStyle}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-xl w-full max-w-2xl shadow-2xl relative my-auto overflow-y-auto" style={{ maxHeight: "min(80vh, 80dvh)" }}>
+      <div className="bg-white rounded-xl w-full max-w-2xl shadow-2xl relative my-auto max-h-[80vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
@@ -271,6 +208,7 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
           <X className="w-5 h-5" />
         </button>
 
+        {/* Header */}
         <div className="p-6 pb-0">
           <h3 className="text-xl font-bold text-black mb-1 pr-8">{course.name}</h3>
           <div className="flex items-center gap-3 mb-4">
@@ -279,7 +217,9 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
               <span className="text-xs font-medium text-[#0066FF] bg-blue-50 rounded-full px-2.5 py-0.5">{course.level}</span>
             )}
           </div>
+
           <p className="text-sm text-gray-700 mb-4 leading-relaxed">{course.description}</p>
+
           <div className="flex flex-wrap gap-4 mb-5">
             <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2">
               <Award className="w-4 h-4 text-[#0066FF]" />
@@ -291,6 +231,7 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
           </div>
         </div>
 
+        {/* Lernziele */}
         {course.lernziele && course.lernziele.length > 0 && (
           <div className="px-6 pb-5">
             <h4 className="text-sm font-bold text-black mb-3">Lernziele</h4>
@@ -305,6 +246,7 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
           </div>
         )}
 
+        {/* Kursinhalt */}
         {course.kursinhalt && course.kursinhalt.length > 0 && (
           <div className="border-t border-gray-100 px-6 py-5">
             <h4 className="text-sm font-bold text-black mb-3">Kursinhalt</h4>
@@ -319,6 +261,7 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
           </div>
         )}
 
+        {/* Im Kurs inkludiert */}
         {course.inkludiert && course.inkludiert.length > 0 && (
           <div className="border-t border-gray-100 px-6 py-5">
             <h4 className="text-sm font-bold text-black mb-3">Im Kurs inkludiert</h4>
@@ -333,6 +276,7 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
           </div>
         )}
 
+        {/* Fallback: simple features list (for courses without detailed data) */}
         {!course.lernziele && !course.kursinhalt && (
           <div className="border-t border-gray-100 px-6 py-5">
             <h4 className="text-sm font-bold text-black mb-3">Das lernst Du:</h4>
@@ -358,10 +302,8 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
   const [selectedDate, setSelectedDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [infoModal, setInfoModal] = useState<IncludedCourse | null>(null);
-  const [expandedCourse, setExpandedCourse] = useState<IncludedCourse | null>(null);
   const [showTerminModal, setShowTerminModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const isIframe = typeof window !== "undefined" && window.parent !== window;
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -518,42 +460,21 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
             <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" />
             <span className="text-base text-black italic">Vollständiger Kombikurs</span>
           </li>
-          {INCLUDED_COURSES.slice(1).map((course, index) => {
-            const isExpanded = isIframe && expandedCourse?.name === course.name;
-            return (
-              <li key={index}>
+          {INCLUDED_COURSES.slice(1).map((course, index) => (
+            <li key={index} className="flex items-start gap-2">
+              <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+              <span className="text-base flex flex-wrap items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={() => {
-                    if (isIframe) {
-                      setExpandedCourse(isExpanded ? null : course);
-                    } else {
-                      setInfoModal(course);
-                    }
-                  }}
-                  className="flex items-start gap-2 w-full text-left group"
+                  onClick={() => setInfoModal(course)}
+                  className="text-base text-black hover:text-[#0066FF] transition-colors text-left underline underline-offset-2 decoration-gray-300 hover:decoration-[#0066FF]"
                 >
-                  <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <span className="text-base text-black group-hover:text-[#0066FF] transition-colors underline underline-offset-2 decoration-gray-300 group-hover:decoration-[#0066FF]">
-                      {course.shortName || course.name}
-                    </span>
-                    <div className="mt-0.5">
-                      <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 rounded px-1.5 py-0.5 uppercase tracking-wide">Onlinekurs</span>
-                    </div>
-                  </div>
-                  {isIframe && (
-                    <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 mt-1 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                  )}
+                  {course.shortName || course.name}
                 </button>
-                {isExpanded && (
-                  <div className="mt-2 border-l-2 border-[#0066FF] pl-3 ml-3.5 max-h-[300px] overflow-y-auto">
-                    <CourseAccordion course={course} />
-                  </div>
-                )}
-              </li>
-            );
-          })}
+                <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 rounded px-1.5 py-0.5 uppercase tracking-wide whitespace-nowrap">Onlinekurs</span>
+              </span>
+            </li>
+          ))}
         </ul>
       </div>
 
