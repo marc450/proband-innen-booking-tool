@@ -547,7 +547,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
                   )}
                 </button>
                 {isExpanded && (
-                  <div className="mt-2 border-l-2 border-[#0066FF] pl-3 ml-3.5">
+                  <div className="mt-2 border-l-2 border-[#0066FF] pl-3 ml-3.5 max-h-[300px] overflow-y-auto">
                     <CourseAccordion course={course} />
                   </div>
                 )}
