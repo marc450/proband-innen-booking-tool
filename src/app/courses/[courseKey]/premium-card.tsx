@@ -171,62 +171,44 @@ const INCLUDED_COURSES: IncludedCourse[] = [
   },
 ];
 
-// Shared course info content (used by both modal and inline expansion)
-function CourseInfoContent({ course, onClose }: { course: IncludedCourse; onClose: () => void }) {
+// Inline accordion content for iframe contexts
+function CourseAccordion({ course }: { course: IncludedCourse }) {
   return (
-    <>
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
-        aria-label="Schließen"
-      >
-        <X className="w-5 h-5" />
-      </button>
+    <div className="pt-3 pb-1 space-y-3 text-sm">
+      <p className="text-gray-700 leading-relaxed">{course.description}</p>
 
-      <div className="p-5 pb-0">
-        <h3 className="text-lg font-bold text-black mb-1 pr-8">{course.name}</h3>
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-sm text-gray-500">{course.type}</span>
-          {course.level && (
-            <span className="text-xs font-medium text-[#0066FF] bg-blue-50 rounded-full px-2.5 py-0.5">{course.level}</span>
-          )}
-        </div>
-
-        <p className="text-sm text-gray-700 mb-3 leading-relaxed">{course.description}</p>
-
-        <div className="flex flex-wrap gap-3 mb-4">
-          <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-1.5">
-            <Award className="w-4 h-4 text-[#0066FF]" />
-            <span className="text-sm font-bold text-[#0066FF]">{course.cmePoints} CME-Punkte</span>
-          </div>
-          <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5">
-            <span className="text-sm text-gray-600">Lernaufwand: {course.duration}</span>
-          </div>
-        </div>
+      <div className="flex flex-wrap gap-2">
+        <span className="inline-flex items-center gap-1.5 bg-blue-50 rounded-lg px-2.5 py-1">
+          <Award className="w-3.5 h-3.5 text-[#0066FF]" />
+          <span className="font-bold text-[#0066FF]">{course.cmePoints} CME-Punkte</span>
+        </span>
+        <span className="inline-flex items-center bg-gray-100 rounded-lg px-2.5 py-1 text-gray-600">
+          {course.duration}
+        </span>
       </div>
 
       {course.lernziele && course.lernziele.length > 0 && (
-        <div className="px-5 pb-4">
-          <h4 className="text-sm font-bold text-black mb-2">Lernziele</h4>
-          <div className="grid grid-cols-2 gap-1.5">
+        <div>
+          <h4 className="font-bold text-black mb-1.5">Lernziele</h4>
+          <ul className="space-y-1">
             {course.lernziele.map((ziel, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-[#0066FF] flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-black">{ziel}</span>
-              </div>
+              <li key={i} className="flex items-start gap-2">
+                <Check className="w-3.5 h-3.5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+                <span className="text-black">{ziel}</span>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )}
 
       {course.kursinhalt && course.kursinhalt.length > 0 && (
-        <div className="border-t border-gray-100 px-5 py-4">
-          <h4 className="text-sm font-bold text-black mb-2">Kursinhalt</h4>
-          <ol className="space-y-1">
+        <div>
+          <h4 className="font-bold text-black mb-1.5">Kursinhalt</h4>
+          <ol className="space-y-0.5">
             {course.kursinhalt.map((kapitel, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                <span className="text-gray-400 font-medium w-5 flex-shrink-0 text-right">{i + 1}.</span>
-                {kapitel}
+              <li key={i} className="flex items-start gap-2 text-gray-700">
+                <span className="text-gray-400 font-medium w-4 flex-shrink-0 text-right">{i + 1}.</span>
+                <span>{kapitel}</span>
               </li>
             ))}
           </ol>
@@ -234,37 +216,37 @@ function CourseInfoContent({ course, onClose }: { course: IncludedCourse; onClos
       )}
 
       {course.inkludiert && course.inkludiert.length > 0 && (
-        <div className="border-t border-gray-100 px-5 py-4">
-          <h4 className="text-sm font-bold text-black mb-2">Im Kurs inkludiert</h4>
-          <div className="grid grid-cols-2 gap-1.5">
+        <div>
+          <h4 className="font-bold text-black mb-1.5">Im Kurs inkludiert</h4>
+          <ul className="space-y-1">
             {course.inkludiert.map((item, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-[#0066FF] flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-black">{item}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {!course.lernziele && !course.kursinhalt && (
-        <div className="border-t border-gray-100 px-5 py-4">
-          <h4 className="text-sm font-bold text-black mb-2">Das lernst Du:</h4>
-          <ul className="space-y-1.5">
-            {course.features.map((feature, i) => (
               <li key={i} className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-[#0066FF] flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-black">{feature}</span>
+                <Check className="w-3.5 h-3.5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+                <span className="text-black">{item}</span>
               </li>
             ))}
           </ul>
         </div>
       )}
-    </>
+
+      {!course.lernziele && !course.kursinhalt && (
+        <div>
+          <h4 className="font-bold text-black mb-1.5">Das lernst Du:</h4>
+          <ul className="space-y-1">
+            {course.features.map((feature, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <Check className="w-3.5 h-3.5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+                <span className="text-black">{feature}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
 
-// Full-screen modal for non-iframe contexts (desktop dashboard, standalone page)
+// Full-screen modal for non-iframe contexts (desktop, standalone page)
 function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose: () => void }) {
   const [mounted, setMounted] = React.useState(false);
 
@@ -281,7 +263,89 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white rounded-xl w-full max-w-2xl shadow-2xl relative my-auto overflow-y-auto" style={{ maxHeight: "min(80vh, 80dvh)" }}>
-        <CourseInfoContent course={course} onClose={onClose} />
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
+          aria-label="Schließen"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="p-6 pb-0">
+          <h3 className="text-xl font-bold text-black mb-1 pr-8">{course.name}</h3>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-sm text-gray-500">{course.type}</span>
+            {course.level && (
+              <span className="text-xs font-medium text-[#0066FF] bg-blue-50 rounded-full px-2.5 py-0.5">{course.level}</span>
+            )}
+          </div>
+          <p className="text-sm text-gray-700 mb-4 leading-relaxed">{course.description}</p>
+          <div className="flex flex-wrap gap-4 mb-5">
+            <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2">
+              <Award className="w-4 h-4 text-[#0066FF]" />
+              <span className="text-sm font-bold text-[#0066FF]">{course.cmePoints} CME-Punkte</span>
+            </div>
+            <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+              <span className="text-sm text-gray-600">Lernaufwand: {course.duration}</span>
+            </div>
+          </div>
+        </div>
+
+        {course.lernziele && course.lernziele.length > 0 && (
+          <div className="px-6 pb-5">
+            <h4 className="text-sm font-bold text-black mb-3">Lernziele</h4>
+            <div className="grid grid-cols-2 gap-2">
+              {course.lernziele.map((ziel, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-[#0066FF] flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-black">{ziel}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {course.kursinhalt && course.kursinhalt.length > 0 && (
+          <div className="border-t border-gray-100 px-6 py-5">
+            <h4 className="text-sm font-bold text-black mb-3">Kursinhalt</h4>
+            <ol className="space-y-1.5">
+              {course.kursinhalt.map((kapitel, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                  <span className="text-gray-400 font-medium w-5 flex-shrink-0 text-right">{i + 1}.</span>
+                  {kapitel}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+
+        {course.inkludiert && course.inkludiert.length > 0 && (
+          <div className="border-t border-gray-100 px-6 py-5">
+            <h4 className="text-sm font-bold text-black mb-3">Im Kurs inkludiert</h4>
+            <div className="grid grid-cols-2 gap-2">
+              {course.inkludiert.map((item, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-[#0066FF] flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-black">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!course.lernziele && !course.kursinhalt && (
+          <div className="border-t border-gray-100 px-6 py-5">
+            <h4 className="text-sm font-bold text-black mb-3">Das lernst Du:</h4>
+            <ul className="space-y-2">
+              {course.features.map((feature, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-[#0066FF] flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-black">{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -454,35 +518,38 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
             <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" />
             <span className="text-base text-black italic">Vollständiger Kombikurs</span>
           </li>
-          {INCLUDED_COURSES.slice(1).map((course, index) => (
-            <li key={index}>
-              <div className="flex items-start gap-2">
-                <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
-                <span className="text-base flex flex-wrap items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (isIframe) {
-                        setExpandedCourse(expandedCourse?.name === course.name ? null : course);
-                      } else {
-                        setInfoModal(course);
-                      }
-                    }}
-                    className="text-base text-black hover:text-[#0066FF] transition-colors text-left underline underline-offset-2 decoration-gray-300 hover:decoration-[#0066FF]"
-                  >
+          {INCLUDED_COURSES.slice(1).map((course, index) => {
+            const isExpanded = isIframe && expandedCourse?.name === course.name;
+            return (
+              <li key={index}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isIframe) {
+                      setExpandedCourse(isExpanded ? null : course);
+                    } else {
+                      setInfoModal(course);
+                    }
+                  }}
+                  className="flex items-center gap-2 w-full text-left group"
+                >
+                  <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" />
+                  <span className="text-base text-black group-hover:text-[#0066FF] transition-colors underline underline-offset-2 decoration-gray-300 group-hover:decoration-[#0066FF]">
                     {course.shortName || course.name}
-                  </button>
+                  </span>
                   <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 rounded px-1.5 py-0.5 uppercase tracking-wide whitespace-nowrap">Onlinekurs</span>
-                </span>
-              </div>
-              {/* Inline expansion for iframe (modal positioning doesn't work) */}
-              {isIframe && expandedCourse?.name === course.name && (
-                <div className="mt-3 bg-gray-50 rounded-xl relative shadow-inner">
-                  <CourseInfoContent course={course} onClose={() => setExpandedCourse(null)} />
-                </div>
-              )}
-            </li>
-          ))}
+                  {isIframe && (
+                    <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 ml-auto transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                  )}
+                </button>
+                {isExpanded && (
+                  <div className="mt-1 border-l-2 border-[#0066FF] pl-3 ml-3.5">
+                    <CourseAccordion course={course} />
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </div>
 
