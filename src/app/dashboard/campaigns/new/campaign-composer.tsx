@@ -501,7 +501,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
           </Card>
 
           {/* Recipients */}
-          <Card>
+          <Card className="overflow-visible">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">
                 Empfänger:innen ({eligibleContacts.length})
