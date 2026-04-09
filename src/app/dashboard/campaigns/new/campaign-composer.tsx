@@ -696,6 +696,36 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                 toggleExclude={toggleExclude}
               />
 
+              {/* Selected recipients list */}
+              {eligibleContacts.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    {eligibleContacts.length} Empfänger:innen ausgewählt
+                  </div>
+                  <div className="max-h-[180px] overflow-y-auto border rounded-md p-2 flex flex-wrap gap-1.5">
+                    {eligibleContacts.map((c) => {
+                      const displayName = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email;
+                      return (
+                        <span
+                          key={c.id}
+                          className="inline-flex items-center gap-1 bg-blue-50 text-[#0066FF] rounded-full pl-2.5 pr-1 py-0.5 text-xs font-medium"
+                        >
+                          {displayName}
+                          <button
+                            type="button"
+                            onClick={() => toggleExclude(c.id)}
+                            className="hover:bg-blue-100 rounded-full p-0.5 transition-colors"
+                            aria-label={`${displayName} entfernen`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Expandable full recipient list */}
               <button
                 className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
