@@ -531,19 +531,23 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
                       setInfoModal(course);
                     }
                   }}
-                  className="flex items-center gap-2 w-full text-left group"
+                  className="flex items-start gap-2 w-full text-left group"
                 >
-                  <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" />
-                  <span className="text-base text-black group-hover:text-[#0066FF] transition-colors underline underline-offset-2 decoration-gray-300 group-hover:decoration-[#0066FF]">
-                    {course.shortName || course.name}
-                  </span>
-                  <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 rounded px-1.5 py-0.5 uppercase tracking-wide whitespace-nowrap">Onlinekurs</span>
+                  <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-base text-black group-hover:text-[#0066FF] transition-colors underline underline-offset-2 decoration-gray-300 group-hover:decoration-[#0066FF]">
+                      {course.shortName || course.name}
+                    </span>
+                    <div className="mt-0.5">
+                      <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 rounded px-1.5 py-0.5 uppercase tracking-wide">Onlinekurs</span>
+                    </div>
+                  </div>
                   {isIframe && (
-                    <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 ml-auto transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 mt-1 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                   )}
                 </button>
                 {isExpanded && (
-                  <div className="mt-1 border-l-2 border-[#0066FF] pl-3 ml-3.5">
+                  <div className="mt-2 border-l-2 border-[#0066FF] pl-3 ml-3.5">
                     <CourseAccordion course={course} />
                   </div>
                 )}
