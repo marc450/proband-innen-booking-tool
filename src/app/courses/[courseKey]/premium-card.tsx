@@ -38,7 +38,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
     cmePoints: "22",
     duration: "Online ~6h + Praxistag ~6h",
     features: [
-      "Vollständiger Onlinekurs inkludiert",
+      "Vollständiger Onlinekurs",
       "Vollständiger Praxiskurs inkludiert",
       "Üben an echten Proband:innen unter Aufsicht",
       "Glabella, Stirn, Krähenfüße",
@@ -302,7 +302,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
           </li>
           <li className="flex items-center gap-2">
             <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" />
-            <span className="text-base text-black italic">Vollständiger Kombikurs inkludiert</span>
+            <span className="text-base text-black italic">Vollständiger Kombikurs</span>
           </li>
           {INCLUDED_COURSES.slice(1).map((course, index) => (
             <li key={index} className="flex items-center gap-2">

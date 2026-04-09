@@ -40,7 +40,7 @@ const defaultPraxiskursFeatures = [
 
 const defaultKombikursFeatures = [
   { text: "Akkreditiert mit 22 CME-Punkten" },
-  { text: "Vollständiger Onlinekurs inkludiert" },
+  { text: "Vollständiger Onlinekurs" },
   { text: "Vollständiger Praxiskurs inkludiert" },
   { text: "EPHIA-Zertifikat nach Abschluss" },
 ];
