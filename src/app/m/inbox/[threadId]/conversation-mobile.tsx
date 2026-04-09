@@ -1,14 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Send, ChevronDown } from "lucide-react";
+import { ArrowLeft, Loader2, Send, ChevronDown, UserCircle } from "lucide-react";
 import { useSignature } from "@/hooks/use-signature";
 import { RichTextEditor } from "@/app/dashboard/inbox/rich-text-editor";
 import type { ThreadMessage } from "@/app/dashboard/inbox/conversation-pane";
 
+interface TeamMember { id: string; name: string; initials: string; }
+interface Assignment { assignedTo: string; assignedToName: string; }
+
 interface Props {
   threadId: string;
+  teamMembers?: TeamMember[];
 }
 
 function formatDate(dateStr: string) {
@@ -21,7 +25,16 @@ function formatDate(dateStr: string) {
   });
 }
 
-export function ConversationMobile({ threadId }: Props) {
+const AVATAR_COLORS = [
+  { bg: "bg-blue-100", text: "text-blue-700" },
+  { bg: "bg-emerald-100", text: "text-emerald-700" },
+  { bg: "bg-purple-100", text: "text-purple-700" },
+  { bg: "bg-amber-100", text: "text-amber-700" },
+  { bg: "bg-rose-100", text: "text-rose-700" },
+  { bg: "bg-cyan-100", text: "text-cyan-700" },
+];
+
+export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
   const router = useRouter();
   const signature = useSignature();
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
@@ -30,6 +43,51 @@ export function ConversationMobile({ threadId }: Props) {
   const [replyHtml, setReplyHtml] = useState("");
   const [sending, setSending] = useState(false);
   const [expandedMsgs, setExpandedMsgs] = useState<Set<string>>(new Set());
+
+  // Assignment state
+  const [assignment, setAssignment] = useState<Assignment | null>(null);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const assignRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!assignOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (assignRef.current && !assignRef.current.contains(e.target as Node)) {
+        setAssignOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [assignOpen]);
+
+  // Fetch assignment for this thread
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/gmail/assignments");
+        if (res.ok) {
+          const data = await res.json();
+          if (data[threadId]) setAssignment(data[threadId]);
+        }
+      } catch { /* ignore */ }
+    })();
+  }, [threadId]);
+
+  const handleAssign = useCallback(async (assignedTo: string | null) => {
+    if (assignedTo) {
+      const member = teamMembers.find((m) => m.id === assignedTo);
+      setAssignment({ assignedTo, assignedToName: member?.name || "Unbekannt" });
+    } else {
+      setAssignment(null);
+    }
+    setAssignOpen(false);
+    await fetch("/api/gmail/assignments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ threadId, assignedTo }),
+    });
+  }, [threadId, teamMembers]);
 
   useEffect(() => {
     (async () => {
@@ -133,6 +191,67 @@ export function ConversationMobile({ threadId }: Props) {
             {lastMsg?.fromName || lastMsg?.fromEmail || ""}
           </p>
         </div>
+
+        {/* Assignment dropdown */}
+        {teamMembers.length > 0 && (
+          <div className="relative flex-shrink-0" ref={assignRef}>
+            <button
+              onClick={() => setAssignOpen(!assignOpen)}
+              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full border border-gray-200 active:bg-gray-50"
+            >
+              {assignment ? (
+                <>
+                  {(() => {
+                    const idx = teamMembers.findIndex((m) => m.id === assignment.assignedTo);
+                    const color = AVATAR_COLORS[Math.max(0, idx) % AVATAR_COLORS.length];
+                    return (
+                      <span className={`w-4 h-4 rounded-full ${color.bg} ${color.text} text-[8px] font-bold flex items-center justify-center`}>
+                        {assignment.assignedToName.split(" ").map((w) => w[0]).slice(-2).join("").toUpperCase()}
+                      </span>
+                    );
+                  })()}
+                  <span className="text-gray-700 max-w-[60px] truncate">{assignment.assignedToName.split(" ").pop()}</span>
+                </>
+              ) : (
+                <>
+                  <UserCircle className="h-3.5 w-3.5 text-gray-400" />
+                  <span className="text-gray-500">Zuweisen</span>
+                </>
+              )}
+              <ChevronDown className="h-3 w-3 text-gray-400" />
+            </button>
+
+            {assignOpen && (
+              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px] z-50">
+                {assignment && (
+                  <button
+                    onClick={() => handleAssign(null)}
+                    className="w-full text-left px-3 py-2.5 text-xs text-gray-500 active:bg-gray-50"
+                  >
+                    Zuweisung entfernen
+                  </button>
+                )}
+                {teamMembers.map((m, idx) => {
+                  const color = AVATAR_COLORS[idx % AVATAR_COLORS.length];
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => handleAssign(m.id)}
+                      className={`w-full text-left px-3 py-2.5 text-sm active:bg-gray-50 flex items-center gap-2 ${
+                        assignment?.assignedTo === m.id ? "bg-gray-50 font-medium" : "text-gray-700"
+                      }`}
+                    >
+                      <span className={`w-6 h-6 rounded-full ${color.bg} ${color.text} text-[10px] font-bold flex items-center justify-center flex-shrink-0`}>
+                        {m.initials}
+                      </span>
+                      {m.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Messages */}
