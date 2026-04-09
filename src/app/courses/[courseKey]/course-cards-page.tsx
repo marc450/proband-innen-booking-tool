@@ -239,7 +239,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                 {hasKombi && (
                   <CourseCard
                     title="Kombikurs"
-                    description="Ideal für Einsteiger:innen: Lerne die Theorie online und die Praxis vor Ort."
+                    description="Lerne die theoretischen Grundlagen online und die Praxis vor Ort an Proband:innen."
                     price={formatPrice(template.price_gross_kombi)}
                     features={kombiFeatures}
                     bookingType="dropdown"
@@ -308,7 +308,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
               {hasKombi && (
                 <CourseCard
                   title="Kombikurs"
-                  description="Ideal für Einsteiger:innen: Lerne die Theorie online und die Praxis vor Ort."
+                  description="Lerne die theoretischen Grundlagen online und die Praxis vor Ort an Proband:innen."
                   price={formatPrice(template.price_gross_kombi)}
                   features={kombiFeatures}
                   bookingType="dropdown"

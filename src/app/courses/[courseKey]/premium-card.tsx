@@ -15,6 +15,8 @@ interface CourseDate {
 
 interface IncludedCourse {
   name: string;
+  shortName?: string;
+  type: "Kombikurs" | "Onlinekurs";
   description: string;
   cmePoints: string;
   duration: string;
@@ -31,7 +33,8 @@ interface PremiumCardProps {
 const INCLUDED_COURSES: IncludedCourse[] = [
   {
     name: "Kombikurs Botulinum",
-    description: "Ideal für Einsteiger:innen: Lerne die Theorie online und die Praxis vor Ort. Onlinekurs + Praxiskurs in einem Paket.",
+    type: "Kombikurs",
+    description: "Ideal für Einsteiger:innen: Lerne die theoretischen Grundlagen online und die Praxis vor Ort an Proband:innen. Onlinekurs + Praxiskurs in einem Paket.",
     cmePoints: "22",
     duration: "Online ~6h + Praxistag ~6h",
     features: [
@@ -43,6 +46,8 @@ const INCLUDED_COURSES: IncludedCourse[] = [
   },
   {
     name: "Aufbaukurs Botulinum: Periorale Zone",
+    shortName: "Periorale Zone",
+    type: "Onlinekurs",
     description: "Lerne mit diesem spezialisierten Onlinekurs die Behandlung der sensiblen perioralen Zone mit präzisen Techniken zu meistern.",
     cmePoints: "10",
     duration: "~6 Stunden",
@@ -54,6 +59,8 @@ const INCLUDED_COURSES: IncludedCourse[] = [
   },
   {
     name: "Aufbaukurs Botulinum: Therapeutische Indikationen",
+    shortName: "Therapeutische Indikationen",
+    type: "Onlinekurs",
     description: "Erweitere Deine Kompetenz um therapeutische Anwendungen von Botulinum.",
     cmePoints: "10",
     duration: "~6 Stunden",
@@ -64,6 +71,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
   },
   {
     name: "Grundkurs Medizinische Hautpflege",
+    type: "Onlinekurs",
     description: "In diesem Onlinekurs lernst Du, medizinische Hautpflege fundiert anzuwenden, als ideale Ergänzung zu Botulinumbehandlungen für nachhaltige ästhetische Ergebnisse.",
     cmePoints: "7",
     duration: "~4 Stunden",
@@ -101,7 +109,7 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
 
         <div className="p-6">
           <h3 className="text-lg font-bold text-black mb-1">{course.name}</h3>
-          <p className="text-sm text-gray-500 mb-4">Onlinekurs</p>
+          <p className="text-sm text-gray-500 mb-4">{course.type}</p>
 
           <p className="text-sm text-gray-700 mb-4">{course.description}</p>
 
@@ -287,25 +295,26 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
       {/* Included courses */}
       <div className="border-t border-gray-200 pt-6 mt-auto px-5 pb-8">
         <h3 className="font-bold text-black mb-4">Im Komplettpaket inkludiert:</h3>
-        <ul className="space-y-2">
-          <li className="flex items-start gap-2">
-            <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+        <ul className="space-y-3">
+          <li className="flex items-center gap-2">
+            <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" />
             <span className="text-base text-[#0066FF] font-bold">Akkreditiert mit 49 CME-Punkten</span>
           </li>
-          {INCLUDED_COURSES.map((course, index) => (
-            <li key={index} className="flex items-start gap-2">
-              <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
-              <span className="text-base text-black">
-                {course.name}
-                <button
-                  type="button"
-                  onClick={() => setInfoModal(course)}
-                  className="text-[#0066FF] hover:text-[#0055DD] transition-colors inline-flex align-middle ml-1.5"
-                  aria-label={`Info zu ${course.name}`}
-                >
-                  <Info className="w-4 h-4" />
-                </button>
-              </span>
+          <li className="flex items-center gap-2">
+            <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" />
+            <span className="text-base text-black italic">Vollständiger Kombikurs inkludiert</span>
+          </li>
+          {INCLUDED_COURSES.slice(1).map((course, index) => (
+            <li key={index} className="flex items-center gap-2">
+              <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" />
+              <button
+                type="button"
+                onClick={() => setInfoModal(course)}
+                className="text-base text-black hover:text-[#0066FF] transition-colors text-left underline underline-offset-2 decoration-gray-300 hover:decoration-[#0066FF] whitespace-nowrap"
+              >
+                {course.shortName || course.name}
+              </button>
+              <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 rounded px-1.5 py-0.5 flex-shrink-0 uppercase tracking-wide">Onlinekurs</span>
             </li>
           ))}
         </ul>
