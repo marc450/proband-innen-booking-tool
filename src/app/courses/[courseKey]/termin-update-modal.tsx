@@ -21,11 +21,13 @@ export function TerminUpdateModal({ onClose }: Props) {
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
 
+  const [scrollTop, setScrollTop] = useState(0);
+  const isIframe = typeof window !== "undefined" && window.parent !== window;
+
   useEffect(() => {
     setMounted(true);
+    setScrollTop(window.scrollY || document.documentElement.scrollTop);
     document.body.style.overflow = "hidden";
-    // Scroll to top so the modal is visible in the iframe viewport
-    window.scrollTo({ top: 0, behavior: "smooth" });
     return () => { document.body.style.overflow = ""; };
   }, []);
 
@@ -57,10 +59,17 @@ export function TerminUpdateModal({ onClose }: Props) {
     }
   };
 
+  const overlayStyle: React.CSSProperties = isIframe
+    ? { position: "absolute", top: scrollTop, left: 0, right: 0, height: window.innerHeight, backgroundColor: "rgba(0,0,0,0.5)" }
+    : { backgroundColor: "rgba(0,0,0,0.5)" };
+  const overlayClass = isIframe
+    ? "z-[9999] flex items-center justify-center p-4"
+    : "fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto";
+
   const modal = (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
-      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      className={overlayClass}
+      style={overlayStyle}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white rounded-xl w-full max-w-md shadow-2xl relative my-auto">

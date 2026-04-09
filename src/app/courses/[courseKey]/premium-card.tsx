@@ -172,20 +172,33 @@ const INCLUDED_COURSES: IncludedCourse[] = [
 
 function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose: () => void }) {
   const [mounted, setMounted] = React.useState(false);
+  const [scrollTop, setScrollTop] = React.useState(0);
+  const isIframe = typeof window !== "undefined" && window.parent !== window;
 
   React.useEffect(() => {
     setMounted(true);
+    // Capture scroll position at open time
+    setScrollTop(window.scrollY || document.documentElement.scrollTop);
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
 
+  // In an iframe, use absolute positioning anchored to current scroll position
+  // so the modal appears in the user's visible viewport, not the iframe's top
+  const overlayStyle: React.CSSProperties = isIframe
+    ? { position: "absolute", top: scrollTop, left: 0, right: 0, height: window.innerHeight, backgroundColor: "rgba(0,0,0,0.5)" }
+    : { backgroundColor: "rgba(0,0,0,0.5)" };
+  const overlayClass = isIframe
+    ? "z-[9999] flex items-center justify-center p-4"
+    : "fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto";
+
   const modal = (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
-      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      className={overlayClass}
+      style={overlayStyle}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-xl w-full max-w-2xl shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-xl w-full max-w-2xl shadow-2xl relative my-auto max-h-[80vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
