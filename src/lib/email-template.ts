@@ -34,7 +34,10 @@ function renderContentBlocks(blocks: ContentBlock[]): string {
   return blocks
     .map((block) => {
       if (block.type === "text") {
-        return `<p style="margin:0 0 20px;">${block.text}</p>`;
+        // Use a <div> wrapper — the text already contains <p>/<div>/<br> from
+        // the rich text editor. Wrapping in <p> would create invalid nested
+        // paragraphs with inconsistent spacing between editor and preview.
+        return `<div style="margin:0 0 20px;font-size:14px;line-height:1.5;">${block.text}</div>`;
       }
       if (block.type === "button" && block.label && block.url) {
         return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
