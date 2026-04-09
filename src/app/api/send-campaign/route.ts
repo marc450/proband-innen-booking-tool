@@ -99,6 +99,7 @@ export async function POST(req: NextRequest) {
       name: name || null,
       subject,
       body_text: bodyTextSummary,
+      content_blocks: contentBlocks,
       recipient_count: recipients.length,
       excluded_patient_ids: Array.from(excludedSet),
       status,

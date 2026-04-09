@@ -45,6 +45,7 @@ interface ExistingCampaign {
   name: string | null;
   subject: string;
   body_text: string;
+  content_blocks?: ContentBlock[] | null;
 }
 
 interface Props {
@@ -179,11 +180,17 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
   const [campaignId, setCampaignId] = useState(existingCampaign?.id || "");
   const [name, setName] = useState(existingCampaign?.name || "");
   const [subject, setSubject] = useState(existingCampaign?.subject || "");
-  const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>(
-    existingCampaign?.body_text
-      ? [{ type: "text", text: existingCampaign.body_text }]
-      : [{ type: "text", text: "" }]
-  );
+  const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>(() => {
+    // Prefer structured content_blocks (preserves images/buttons)
+    if (existingCampaign?.content_blocks?.length) {
+      return existingCampaign.content_blocks;
+    }
+    // Fallback to body_text for older drafts
+    if (existingCampaign?.body_text) {
+      return [{ type: "text", text: existingCampaign.body_text }];
+    }
+    return [{ type: "text", text: "" }];
+  });
   const [audienceType, setAudienceType] = useState<AudienceType>("probandinnen");
   const [excludeBlacklisted, setExcludeBlacklisted] = useState(true);
   const [manuallyExcluded, setManuallyExcluded] = useState<Set<string>>(new Set());

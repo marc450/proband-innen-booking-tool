@@ -60,6 +60,7 @@ export default async function EditCampaignPage({
         name: campaign.name,
         subject: campaign.subject,
         body_text: campaign.body_text,
+        content_blocks: campaign.content_blocks,
       }}
     />
   );
