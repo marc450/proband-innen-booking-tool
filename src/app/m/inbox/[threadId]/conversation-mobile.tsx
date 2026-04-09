@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Send, ChevronDown, UserCircle } from "lucide-react";
 import { useSignature } from "@/hooks/use-signature";
+import { useDrafts } from "@/hooks/use-drafts";
 import { RichTextEditor } from "@/app/dashboard/inbox/rich-text-editor";
 import type { ThreadMessage } from "@/app/dashboard/inbox/conversation-pane";
 
@@ -37,12 +38,16 @@ const AVATAR_COLORS = [
 export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
   const router = useRouter();
   const signature = useSignature();
+  const drafts = useDrafts();
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyHtml, setReplyHtml] = useState("");
   const [sending, setSending] = useState(false);
   const [expandedMsgs, setExpandedMsgs] = useState<Set<string>>(new Set());
+
+  // Track whether reply draft was explicitly deleted (prevents auto-save from re-creating it)
+  const draftDeletedRef = useRef(false);
 
   // Assignment state
   const [assignment, setAssignment] = useState<Assignment | null>(null);
@@ -118,6 +123,52 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
     })();
   }, [threadId]);
 
+  // Restore reply draft on mount (if one exists for this thread)
+  useEffect(() => {
+    const saved = drafts.replyDrafts[threadId];
+    if (saved && saved.html) {
+      setReplyHtml(saved.html);
+      setReplyOpen(true);
+    }
+    // Only run once drafts are loaded
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [threadId, drafts.loading]);
+
+  // Auto-save reply draft on content change (debounced inside the hook)
+  useEffect(() => {
+    if (!replyOpen || !replyHtml.trim() || draftDeletedRef.current) return;
+    drafts.saveReplyDraft(threadId, {
+      html: replyHtml,
+      cc: "",
+      bcc: "",
+      showCc: false,
+      showBcc: false,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replyHtml, replyOpen]);
+
+  // Save reply draft on unmount / navigation away
+  useEffect(() => {
+    return () => {
+      if (draftDeletedRef.current) return;
+      const html = replyHtmlRef.current;
+      if (html && html.trim()) {
+        drafts.saveReplyDraft(threadId, {
+          html,
+          cc: "",
+          bcc: "",
+          showCc: false,
+          showBcc: false,
+        });
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [threadId]);
+
+  // Keep a ref to replyHtml for the cleanup effect
+  const replyHtmlRef = useRef(replyHtml);
+  replyHtmlRef.current = replyHtml;
+
   const lastMsg = messages[messages.length - 1];
   const subject = messages[0]?.subject || "(kein Betreff)";
 
@@ -152,8 +203,10 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
         }),
       });
       if (res.ok) {
+        draftDeletedRef.current = true;
         setReplyOpen(false);
         setReplyHtml("");
+        await drafts.deleteReplyDraft(threadId);
         // Refetch thread
         const refreshRes = await fetch(
           `/api/gmail/threads?threadId=${threadId}`

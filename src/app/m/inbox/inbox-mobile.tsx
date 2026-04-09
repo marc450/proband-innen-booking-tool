@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Mail, Pencil, Search, RefreshCw } from "lucide-react";
+import { Loader2, Mail, Pencil, Search, RefreshCw, X } from "lucide-react";
 import { useSignature } from "@/hooks/use-signature";
+import { useDrafts } from "@/hooks/use-drafts";
 import { RichTextEditor } from "@/app/dashboard/inbox/rich-text-editor";
 import { Input } from "@/components/ui/input";
 
@@ -50,6 +51,7 @@ export function InboxMobile() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const signature = useSignature();
+  const drafts = useDrafts();
 
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,6 +136,14 @@ export function InboxMobile() {
     }
   }, [searchParams, signature]);
 
+  // Auto-save compose draft on field changes
+  useEffect(() => {
+    if (!composing) return;
+    if (!composeTo && !composeSubject && !composeBody) return;
+    drafts.saveComposeDraft({ to: composeTo, subject: composeSubject, body: composeBody, cc: "", bcc: "" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [composing, composeTo, composeSubject, composeBody]);
+
   const visibleThreads = useMemo(() => {
     if (filter === "answered") {
       return threads.filter((t) => !t.lastMessageInbound);
@@ -174,6 +184,7 @@ export function InboxMobile() {
         setComposeTo("");
         setComposeSubject("");
         setComposeBody("");
+        await drafts.deleteComposeDraft();
         fetchThreads();
       }
     } finally {
@@ -206,11 +217,12 @@ export function InboxMobile() {
       <div className="-mx-4 -mt-4 min-h-dvh bg-white flex flex-col">
         <div className="px-4 py-3 flex items-center justify-between border-b border-gray-100">
           <button
-            onClick={() => {
+            onClick={async () => {
               setComposing(false);
               setComposeTo("");
               setComposeSubject("");
               setComposeBody("");
+              await drafts.deleteComposeDraft();
             }}
             className="text-sm text-[#0066FF] font-medium"
           >
@@ -306,6 +318,36 @@ export function InboxMobile() {
         <p className="text-sm text-red-500 text-center py-4">{error}</p>
       )}
 
+      {/* Saved compose draft banner */}
+      {!composing && drafts.composeDraft && (
+        <div className="bg-amber-50 rounded-[10px] p-3 mb-2 flex items-center justify-between">
+          <button
+            onClick={() => {
+              setComposeTo(drafts.composeDraft!.to);
+              setComposeSubject(drafts.composeDraft!.subject);
+              setComposeBody(drafts.composeDraft!.body);
+              setComposing(true);
+            }}
+            className="flex-1 min-w-0 text-left"
+          >
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="text-xs font-bold text-[#0066FF] truncate">
+                {drafts.composeDraft.to || "Neue E-Mail"}
+              </span>
+              <span className="text-[10px] font-medium text-amber-600 flex-shrink-0">Entwurf</span>
+            </div>
+            <p className="text-xs text-gray-700 truncate">{drafts.composeDraft.subject || "(Betreff)"}</p>
+          </button>
+          <button
+            onClick={() => drafts.deleteComposeDraft()}
+            className="p-1.5 text-gray-400 active:text-gray-700 flex-shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Reply draft badges on threads */}
       {/* Thread list */}
       {loading ? (
         <div className="flex justify-center py-12">
@@ -337,9 +379,16 @@ export function InboxMobile() {
                     >
                       {thread.contactName || thread.contactEmail}
                     </span>
-                    <span className="text-[10px] text-gray-400 flex-shrink-0">
-                      {formatDate(thread.date)}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {drafts.replyDrafts[thread.id] && (
+                        <span className="text-[9px] font-medium text-amber-600 bg-amber-50 rounded px-1 py-0.5">
+                          Entwurf
+                        </span>
+                      )}
+                      <span className="text-[10px] text-gray-400">
+                        {formatDate(thread.date)}
+                      </span>
+                    </div>
                   </div>
                   <p
                     className={`text-xs truncate mt-0.5 ${
@@ -382,7 +431,15 @@ export function InboxMobile() {
       {/* Compose FAB */}
       <button
         onClick={() => {
-          setComposeBody(signature?.html ? `<br><br>${signature.html}` : "");
+          if (drafts.composeDraft) {
+            setComposeTo(drafts.composeDraft.to);
+            setComposeSubject(drafts.composeDraft.subject);
+            setComposeBody(drafts.composeDraft.body);
+          } else {
+            setComposeTo("");
+            setComposeSubject("");
+            setComposeBody(signature?.html ? `<br><br>${signature.html}` : "");
+          }
           setComposing(true);
         }}
         className="fixed bottom-24 right-5 z-40 w-14 h-14 bg-[#0066FF] text-white rounded-full shadow-lg flex items-center justify-center active:bg-[#0055DD] transition-colors"
