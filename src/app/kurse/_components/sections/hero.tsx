@@ -52,7 +52,7 @@ export function Hero({ content }: { content: CourseHeroContent }) {
             )}
 
             {content.stats && content.stats.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-7 pb-7 border-b border-black/10">
+              <div className="grid grid-cols-3 gap-4 mb-7 pb-7 border-b border-black/10">
                 {content.stats.map((stat) => {
                   const Icon = STAT_ICON_MAP[stat.icon] || Sparkles;
                   return (

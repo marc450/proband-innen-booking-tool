@@ -23,8 +23,7 @@ export const grundkursBotulinum: CourseLandingContent = {
     subheadline:
       "Dein sicherer Einstieg in die ästhetische Medizin — praxisnah, fundiert und mit echten Proband:innen.",
     stats: [
-      { icon: "Blend", label: "Format", value: "Online + Präsenz" },
-      { icon: "Clock", label: "Dauer", value: "10h + 5h" },
+      { icon: "Blend", label: "Format", value: "10h Online + 5h Präsenz" },
       { icon: "Award", label: "Akkreditiert", value: "22 CME-Punkte" },
       { icon: "GraduationCap", label: "Abschluss", value: "Zertifikat" },
     ],
