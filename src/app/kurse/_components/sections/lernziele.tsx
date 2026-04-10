@@ -1,5 +1,6 @@
 import {
   Activity,
+  BicepsFlexed,
   ClipboardCheck,
   Syringe,
   MessageCircleHeart,
@@ -12,6 +13,7 @@ import type { CourseLernzieleContent } from "@/content/kurse/types";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Activity,
+  BicepsFlexed,
   ClipboardCheck,
   Syringe,
   MessageCircleHeart,

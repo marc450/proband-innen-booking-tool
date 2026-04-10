@@ -40,7 +40,7 @@ export const grundkursBotulinum: CourseLandingContent = {
     items: [
       {
         label: "Anatomie",
-        icon: "Activity",
+        icon: "BicepsFlexed",
         description:
           "Botulinum wirkt modulierend auf die Muskulatur. Daher lernst Du bei uns wichtige anatomische Grundlagen.",
       },
