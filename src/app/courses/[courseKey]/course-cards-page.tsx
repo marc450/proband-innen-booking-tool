@@ -41,7 +41,7 @@ const defaultPraxiskursFeatures = [
 const defaultKombikursFeatures = [
   { text: "Akkreditiert mit 22 CME-Punkten" },
   { text: "Vollständiger Onlinekurs" },
-  { text: "Vollständiger Praxiskurs" },
+  { text: "Vollständiger Praxiskurs inkludiert" },
   { text: "EPHIA-Zertifikat nach Abschluss" },
 ];
 
@@ -238,13 +238,13 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
 
                 {hasKombi && (
                   <CourseCard
-                    title="Praxiskurs"
+                    title="Kombikurs"
                     description="Lerne die theoretischen Grundlagen online und die Praxis vor Ort an Proband:innen."
                     price={formatPrice(template.price_gross_kombi)}
                     features={kombiFeatures}
                     bookingType="dropdown"
                     dates={dynamicDates}
-                    buttonText="Praxiskurs buchen"
+                    buttonText="Kombikurs buchen"
                     additionalInfo="Praxiskurs-Standort: Berlin-Mitte"
                     onBook={(sessionId) => handleBooking("Kombikurs", sessionId)}
                     isLoading={loadingCheckout?.startsWith("Kombikurs-") || false}
