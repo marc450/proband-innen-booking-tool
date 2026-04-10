@@ -1,0 +1,65 @@
+"use client";
+
+import { useRef, useState } from "react";
+import { Volume2, VolumeX } from "lucide-react";
+
+interface HeroVideoProps {
+  videoPath: string;
+  videoPoster?: string;
+}
+
+export function HeroVideo({ videoPath, videoPoster }: HeroVideoProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [muted, setMuted] = useState(true);
+
+  const toggleMute = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    const next = !muted;
+    video.muted = next;
+    if (!next) {
+      // Best-effort: some browsers require a play() call after unmute
+      void video.play().catch(() => {});
+    }
+    setMuted(next);
+  };
+
+  return (
+    <div className="relative rounded-[10px] overflow-hidden bg-black/5 aspect-[4/5] md:aspect-[4/3] lg:aspect-[4/5]">
+      <video
+        ref={videoRef}
+        className="absolute inset-0 w-full h-full object-cover"
+        poster={videoPoster}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+      >
+        <source src={videoPath} type="video/mp4" />
+      </video>
+
+      {/* Unmute button — visible only while muted, fades out once audio is on */}
+      <button
+        type="button"
+        onClick={toggleMute}
+        aria-label={muted ? "Ton einschalten" : "Ton ausschalten"}
+        className={`absolute bottom-4 right-4 flex items-center gap-2 rounded-full bg-black/70 hover:bg-black/85 text-white backdrop-blur-sm px-4 py-2.5 text-sm font-semibold shadow-lg transition-all duration-300 ${
+          muted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
+        }`}
+      >
+        {muted ? (
+          <>
+            <VolumeX className="w-4 h-4" />
+            <span>Ton einschalten</span>
+          </>
+        ) : (
+          <>
+            <Volume2 className="w-4 h-4" />
+            <span>Ton aus</span>
+          </>
+        )}
+      </button>
+    </div>
+  );
+}

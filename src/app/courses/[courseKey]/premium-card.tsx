@@ -25,7 +25,14 @@ interface IncludedCourse {
   lernziele?: string[];
   kursinhalt?: string[];
   inkludiert?: string[];
+  badgeClasses: string;
 }
+
+// Color coding per course — matched bg + text + hover
+const KOMBIKURS_BADGE = "bg-blue-100 text-blue-700 hover:bg-blue-200";
+const PERIORAL_BADGE = "bg-purple-100 text-purple-700 hover:bg-purple-200";
+const THERAPEUTISCH_BADGE = "bg-emerald-100 text-emerald-700 hover:bg-emerald-200";
+const HAUTPFLEGE_BADGE = "bg-rose-100 text-rose-700 hover:bg-rose-200";
 
 interface PremiumCardProps {
   dates: CourseDate[];
@@ -37,6 +44,7 @@ interface PremiumCardProps {
 const INCLUDED_COURSES: IncludedCourse[] = [
   {
     name: "Kombikurs Botulinum",
+    shortName: "Kombikurs Botulinum",
     type: "Kombikurs",
     description: "Ideal für Einsteiger:innen: Lerne die theoretischen Grundlagen online und die Praxis vor Ort an Proband:innen. Onlinekurs + Praxiskurs in einem Paket.",
     cmePoints: "22",
@@ -47,6 +55,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
       "Üben an echten Proband:innen unter Aufsicht",
       "Glabella, Stirn, Krähenfüße",
     ],
+    badgeClasses: KOMBIKURS_BADGE,
   },
   {
     name: "Aufbaukurs Botulinum: Periorale Zone",
@@ -89,6 +98,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
       "1.5 Jahre Zugriff",
       "Zertifikat",
     ],
+    badgeClasses: PERIORAL_BADGE,
   },
   {
     name: "Aufbaukurs Botulinum: Therapeutische Indikationen",
@@ -127,6 +137,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
       "1.5 Jahre Zugriff",
       "Zertifikat",
     ],
+    badgeClasses: THERAPEUTISCH_BADGE,
   },
   {
     name: "Grundkurs Medizinische Hautpflege",
@@ -168,6 +179,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
       "1.5 Jahre Zugriff",
       "Zertifikat",
     ],
+    badgeClasses: HAUTPFLEGE_BADGE,
   },
 ];
 
@@ -456,23 +468,16 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
             <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" />
             <span className="text-base text-[#0066FF] font-bold">Akkreditiert mit 49 CME-Punkten</span>
           </li>
-          <li className="flex items-center gap-2">
-            <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" />
-            <span className="text-base text-black italic">Vollständiger Kombikurs</span>
-          </li>
-          {INCLUDED_COURSES.slice(1).map((course, index) => (
+          {INCLUDED_COURSES.map((course, index) => (
             <li key={index} className="flex items-start gap-2">
               <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
-              <span className="text-base flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setInfoModal(course)}
-                  className="text-base text-black hover:text-[#0066FF] transition-colors text-left underline underline-offset-2 decoration-gray-300 hover:decoration-[#0066FF]"
-                >
-                  {course.shortName || course.name}
-                </button>
-                <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 rounded px-1.5 py-0.5 uppercase tracking-wide whitespace-nowrap">Onlinekurs</span>
-              </span>
+              <button
+                type="button"
+                onClick={() => setInfoModal(course)}
+                className={`inline-flex items-center text-sm font-semibold rounded-full px-3 py-1 transition-colors cursor-pointer ${course.badgeClasses}`}
+              >
+                {course.shortName || course.name}
+              </button>
             </li>
           ))}
         </ul>

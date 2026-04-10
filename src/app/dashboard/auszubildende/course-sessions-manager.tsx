@@ -641,7 +641,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
               <select
                 value={formTemplateId}
                 onChange={(e) => setFormTemplateId(e.target.value)}
-                className="w-full border rounded-md px-3 py-2 text-sm"
+                className="h-10 w-full border border-input rounded-lg px-2.5 text-sm bg-transparent"
               >
                 <option value="">Kurs wählen...</option>
                 {templates.map((t) => (
@@ -653,7 +653,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
             </div>
             <div className="space-y-1.5">
               <Label>Datum</Label>
-              <Input type="date" value={formDateIso} onChange={(e) => setFormDateIso(e.target.value)} />
+              <Input className="h-10" type="date" value={formDateIso} onChange={(e) => setFormDateIso(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -661,7 +661,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 <select
                   value={formInstructor}
                   onChange={(e) => setFormInstructor(e.target.value)}
-                  className="w-full border rounded-md px-3 py-2 text-sm"
+                  className="h-10 w-full border border-input rounded-lg px-2.5 text-sm bg-transparent"
                 >
                   <option value="">Dozent:in wählen...</option>
                   {dozentUsers.map((d) => {
@@ -674,21 +674,21 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
               </div>
               <div className="space-y-1.5">
                 <Label>Max. Plätze</Label>
-                <Input type="number" value={formMaxSeats} onChange={(e) => setFormMaxSeats(e.target.value)} />
+                <Input className="h-10" type="number" value={formMaxSeats} onChange={(e) => setFormMaxSeats(e.target.value)} />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label>Adresse</Label>
-              <Input value={formAddress} onChange={(e) => setFormAddress(e.target.value)} />
+              <Input className="h-10" value={formAddress} onChange={(e) => setFormAddress(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Startzeit</Label>
-                <Input type="time" value={formStartTime} onChange={(e) => setFormStartTime(e.target.value)} />
+                <Input className="h-10" type="time" value={formStartTime} onChange={(e) => setFormStartTime(e.target.value)} />
               </div>
               <div className="space-y-1.5">
                 <Label>Dauer (Minuten)</Label>
-                <Input type="number" value={formDuration} onChange={(e) => setFormDuration(e.target.value)} />
+                <Input className="h-10" type="number" value={formDuration} onChange={(e) => setFormDuration(e.target.value)} />
               </div>
             </div>
           </div>
