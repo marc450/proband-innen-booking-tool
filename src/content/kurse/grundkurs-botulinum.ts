@@ -36,7 +36,7 @@ export const grundkursBotulinum: CourseLandingContent = {
   lernziele: {
     heading: "LERNZIELE",
     intro:
-      "Dieser Onlinekurs richtet sich ausschließlich an approbierte Ärzt:innen, die erste Schritte in der Behandlung von Patient:innen mit Botulinum gehen möchten oder ihr Basiswissen auffrischen wollen. In unserem Grundkurs konzentrieren wir uns auf folgende Lernziele:",
+      "Dieser Grundkurs richtet sich ausschließlich an approbierte Ärzt:innen, die erste Schritte in der Behandlung von Patient:innen mit Botulinum gehen möchten oder ihr Basiswissen auffrischen wollen. Dabei konzentrieren wir uns auf die folgenden Lernziele:",
     items: [
       {
         label: "Anatomie",
