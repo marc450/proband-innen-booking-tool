@@ -27,6 +27,7 @@ interface CourseCardProps {
   selectedDateForLoading?: string;
   cmePoints?: string;
   inclusionHeading?: string;
+  titleClassName?: string;
 }
 
 export function CourseCard({
@@ -44,6 +45,7 @@ export function CourseCard({
   selectedDateForLoading,
   cmePoints,
   inclusionHeading,
+  titleClassName,
 }: CourseCardProps) {
   const [selectedDate, setSelectedDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -105,7 +107,7 @@ export function CourseCard({
             <span className="text-sm font-bold">{cmePoints}</span>
           </div>
         )}
-        <h2 className="text-3xl font-bold text-black mb-4 pr-24">{title}</h2>
+        <h2 className={`font-bold text-black mb-4 pr-24 ${titleClassName || "text-3xl"}`}>{title}</h2>
         <p className="text-black mb-3 mt-3 lg:min-h-[3.5rem]">{description}</p>
       </div>
 

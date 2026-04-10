@@ -264,6 +264,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
                     cmePoints={template.cme_kombi || undefined}
                     inclusionHeading="Im Online- & Praxiskurs inkludiert:"
+                    titleClassName="text-2xl whitespace-nowrap"
                   />
                 )}
 
