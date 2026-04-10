@@ -24,8 +24,8 @@ export const grundkursBotulinum: CourseLandingContent = {
       "Dein sicherer Einstieg in die ästhetische Medizin — praxisnah, fundiert und mit echten Proband:innen.",
     stats: [
       { icon: "Blend", label: "Format", value: "10h Online + 5h Präsenz" },
-      { icon: "Award", label: "Akkreditiert", value: "22 CME-Punkte" },
-      { icon: "GraduationCap", label: "Abschluss", value: "Zertifikat" },
+      { icon: "Award", label: "Akkreditiert", value: "22 CME-Punkte + Zertifikat" },
+      { icon: "GraduationCap", label: "Level", value: "Einsteigerkurs" },
     ],
     description:
       "Lerne die Grundlagen der ästhetischen Botulinum-Anwendung mit unserem Online-, Praxis- oder Kombikurs, speziell für approbierte Ärzt:innen. Tauche in praxisnahe Inhalte ein, die Dir den Einstieg in die Behandlung von Patient:innen erleichtern oder Dein Basiswissen auffrischen. Mit uns lernst Du patient:innenzentrierte Ansätze kennen und behandelst bewusst und diskriminierungssensibel.",
