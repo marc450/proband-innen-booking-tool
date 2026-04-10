@@ -7,13 +7,24 @@
  * comes from this typed content file.
  */
 
+export interface CourseHeroStat {
+  /** Lucide icon name, e.g. "Clock" */
+  icon: string;
+  /** Small label above the value, e.g. "Dauer" */
+  label: string;
+  /** Bold value, e.g. "10h + 5h" */
+  value: string;
+}
+
 export interface CourseHeroContent {
-  /** Small tagline / kicker shown above the main heading, e.g. "ANFÄNGER:INNENKURS" */
+  /** Small tagline / kicker shown above the main heading, e.g. "ANFÄNGER:INNENKURS". Optional. */
   kicker?: string;
   /** Main heading, e.g. "GRUNDKURS BOTULINUM" */
   heading: string;
-  /** Short feature tags shown as pills below the heading */
-  featureTags: string[];
+  /** Benefit-led sub-headline shown directly below the heading, e.g. "Dein sicherer Einstieg..." */
+  subheadline?: string;
+  /** Structured fact row shown below the sub-headline */
+  stats?: CourseHeroStat[];
   /** Long description paragraph(s) */
   description: string;
   /** Path (relative to /public) to the hero video */

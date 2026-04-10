@@ -1,5 +1,26 @@
+import {
+  Clock,
+  Award,
+  GraduationCap,
+  Blend,
+  Users,
+  MapPin,
+  Calendar,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react";
 import type { CourseHeroContent } from "@/content/kurse/types";
 import { HeroVideo } from "./hero-video";
+
+const STAT_ICON_MAP: Record<string, LucideIcon> = {
+  Clock,
+  Award,
+  GraduationCap,
+  Blend,
+  Users,
+  MapPin,
+  Calendar,
+};
 
 export function Hero({ content }: { content: CourseHeroContent }) {
   return (
@@ -19,24 +40,40 @@ export function Hero({ content }: { content: CourseHeroContent }) {
                 {content.kicker}
               </p>
             )}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-[1.05]">
+
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-5 leading-[1.05]">
               {content.heading}
             </h1>
 
-            {content.featureTags.length > 0 && (
-              <ul className="flex flex-wrap gap-2 mb-6">
-                {content.featureTags.map((tag) => (
-                  <li
-                    key={tag}
-                    className="text-xs md:text-sm font-semibold text-[#0066FF] bg-white/70 rounded-full px-3 py-1.5"
-                  >
-                    {tag}
-                  </li>
-                ))}
-              </ul>
+            {content.subheadline && (
+              <p className="text-lg md:text-xl text-black/85 leading-snug font-medium mb-7 max-w-xl">
+                {content.subheadline}
+              </p>
             )}
 
-            <p className="text-base md:text-lg leading-relaxed text-black/80">
+            {content.stats && content.stats.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-7 pb-7 border-b border-black/10">
+                {content.stats.map((stat) => {
+                  const Icon = STAT_ICON_MAP[stat.icon] || Sparkles;
+                  return (
+                    <div key={stat.label} className="flex flex-col items-start">
+                      <Icon
+                        className="w-5 h-5 text-[#0066FF] mb-2"
+                        strokeWidth={2.25}
+                      />
+                      <span className="text-[11px] uppercase tracking-wider text-black/55 font-semibold mb-0.5">
+                        {stat.label}
+                      </span>
+                      <span className="text-sm md:text-[15px] font-bold text-black leading-tight">
+                        {stat.value}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <p className="text-base md:text-[17px] leading-relaxed text-black/75">
               {content.description}
             </p>
 

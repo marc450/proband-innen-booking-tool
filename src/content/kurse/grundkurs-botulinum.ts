@@ -19,16 +19,17 @@ export const grundkursBotulinum: CourseLandingContent = {
   },
 
   hero: {
-    kicker: "ANFÄNGER:INNENKURS",
     heading: "GRUNDKURS BOTULINUM",
-    featureTags: [
-      "Online- & Präsenz-Teil",
-      "10h Theorie + 5h Praxis",
-      "22 CME-Punkte",
-      "Mit Abschlusszertifikat",
+    subheadline:
+      "Dein sicherer Einstieg in die ästhetische Medizin — praxisnah, fundiert und mit echten Proband:innen.",
+    stats: [
+      { icon: "Blend", label: "Format", value: "Online + Präsenz" },
+      { icon: "Clock", label: "Dauer", value: "10h + 5h" },
+      { icon: "Award", label: "Akkreditiert", value: "22 CME-Punkte" },
+      { icon: "GraduationCap", label: "Abschluss", value: "Zertifikat" },
     ],
     description:
-      "Lerne die Grundlagen der ästhetischen Botulinum-Anwendung mit unserem Online-, Praxis- oder Kombikurs, speziell für approbierte Ärzt:innen. Tauche in praxisnahe Inhalte ein, die Dir den Einstieg in die Behandlung von Patient:innen erleichtern oder Dein Basiswissen auffrischen. Erweitere Deine Fähigkeiten und gewinne wertvolle Einblicke, die Deine Sicherheit und Kompetenz stärken. Mit uns lernst Du patient:innenzentrierte Ansätze kennen, um individuell Deine Patient:innen zu behandeln. Wir zeigen Dir, wie Du sicher behandelst und beschäftigen uns dabei bewusst und diskriminierungssensibel mit den Patient:innengeschichten.",
+      "Lerne die Grundlagen der ästhetischen Botulinum-Anwendung mit unserem Online-, Praxis- oder Kombikurs, speziell für approbierte Ärzt:innen. Tauche in praxisnahe Inhalte ein, die Dir den Einstieg in die Behandlung von Patient:innen erleichtern oder Dein Basiswissen auffrischen. Mit uns lernst Du patient:innenzentrierte Ansätze kennen und behandelst bewusst und diskriminierungssensibel.",
     videoPath: "/kurse/grundkurs_botulinum/hero-video.mp4",
     videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
   },
