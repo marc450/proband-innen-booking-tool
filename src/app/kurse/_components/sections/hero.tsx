@@ -45,31 +45,7 @@ export function Hero({ content }: { content: CourseHeroContent }) {
               {content.heading}
             </h1>
 
-            <div className="h-px bg-black/10 mb-6" />
-
-            {content.stats && content.stats.length > 0 && (
-              <div className="grid grid-cols-3 gap-4 mb-7 items-start">
-                {content.stats.map((stat) => {
-                  const Icon = STAT_ICON_MAP[stat.icon] || Sparkles;
-                  return (
-                    <div key={stat.label} className="flex flex-col items-start">
-                      <Icon
-                        className="w-5 h-5 text-[#0066FF] mb-2"
-                        strokeWidth={2.25}
-                      />
-                      <span className="text-[11px] uppercase tracking-wider text-black/55 font-semibold mb-0.5">
-                        {stat.label}
-                      </span>
-                      <span className="text-sm md:text-[15px] font-bold text-black leading-tight">
-                        {stat.value}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            <p className="text-base md:text-[17px] leading-relaxed text-black/75">
+            <p className="text-base md:text-[17px] leading-relaxed text-black/75 mb-8">
               {content.subheadline && (
                 <strong className="font-bold text-black">
                   {content.subheadline}
@@ -78,6 +54,33 @@ export function Hero({ content }: { content: CourseHeroContent }) {
               {content.subheadline && " "}
               {content.description}
             </p>
+
+            {content.stats && content.stats.length > 0 && (
+              <div className="grid grid-cols-3 gap-3 md:gap-4">
+                {content.stats.map((stat) => {
+                  const Icon = STAT_ICON_MAP[stat.icon] || Sparkles;
+                  return (
+                    <div
+                      key={stat.label}
+                      className="flex flex-col items-center text-center bg-white/60 rounded-[12px] px-3 py-4"
+                    >
+                      <div className="w-11 h-11 rounded-full bg-[#0066FF]/10 flex items-center justify-center mb-2.5">
+                        <Icon
+                          className="w-5 h-5 text-[#0066FF]"
+                          strokeWidth={2.25}
+                        />
+                      </div>
+                      <span className="text-[10px] uppercase tracking-wider text-black/55 font-semibold mb-1">
+                        {stat.label}
+                      </span>
+                      <span className="text-[13px] md:text-sm font-bold text-black leading-tight">
+                        {stat.value}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             <div className="mt-8">
               <a
