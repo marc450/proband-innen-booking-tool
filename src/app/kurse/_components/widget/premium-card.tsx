@@ -231,11 +231,11 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
         {course.lernziele && course.lernziele.length > 0 && (
           <div className="px-6 pb-5">
             <h4 className="text-sm font-bold text-black mb-3">Lernziele</h4>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {course.lernziele.map((ziel, i) => (
-                <div key={i} className="flex items-start gap-2">
+                <div key={i} className="flex items-start gap-2 min-w-0">
                   <Check className="w-4 h-4 text-[#0066FF] flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-black">{ziel}</span>
+                  <span className="text-sm text-black break-words min-w-0">{ziel}</span>
                 </div>
               ))}
             </div>
@@ -261,11 +261,11 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
         {course.inkludiert && course.inkludiert.length > 0 && (
           <div className="border-t border-gray-100 px-6 py-5">
             <h4 className="text-sm font-bold text-black mb-3">Im Kurs inkludiert</h4>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {course.inkludiert.map((item, i) => (
-                <div key={i} className="flex items-start gap-2">
+                <div key={i} className="flex items-start gap-2 min-w-0">
                   <Check className="w-4 h-4 text-[#0066FF] flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-black">{item}</span>
+                  <span className="text-sm text-black break-words min-w-0">{item}</span>
                 </div>
               ))}
             </div>
