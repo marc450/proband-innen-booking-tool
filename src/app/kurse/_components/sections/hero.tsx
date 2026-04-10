@@ -45,18 +45,8 @@ export function Hero({ content }: { content: CourseHeroContent }) {
               {content.heading}
             </h1>
 
-            <p className="text-base md:text-[17px] leading-relaxed text-black/75 mb-8">
-              {content.subheadline && (
-                <strong className="font-bold text-black">
-                  {content.subheadline}
-                </strong>
-              )}
-              {content.subheadline && " "}
-              {content.description}
-            </p>
-
             {content.stats && content.stats.length > 0 && (
-              <div className="grid grid-cols-3 gap-3 md:gap-4">
+              <div className="grid grid-cols-3 gap-3 md:gap-4 mb-8">
                 {content.stats.map((stat) => {
                   const Icon = STAT_ICON_MAP[stat.icon] || Sparkles;
                   return (
@@ -81,6 +71,16 @@ export function Hero({ content }: { content: CourseHeroContent }) {
                 })}
               </div>
             )}
+
+            <p className="text-base md:text-[17px] leading-relaxed text-black/75">
+              {content.subheadline && (
+                <strong className="font-bold text-black">
+                  {content.subheadline}
+                </strong>
+              )}
+              {content.subheadline && " "}
+              {content.description}
+            </p>
 
             <div className="mt-8">
               <a
