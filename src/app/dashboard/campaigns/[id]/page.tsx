@@ -3,10 +3,11 @@ export const dynamic = "force-dynamic";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptPatient } from "@/lib/encryption";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { CampaignComposer } from "../new/campaign-composer";
+import { CampaignView } from "./campaign-view";
 
-export default async function EditCampaignPage({
+export default async function CampaignDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -15,7 +16,7 @@ export default async function EditCampaignPage({
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
 
-  // Fetch the campaign — only drafts are editable
+  // Fetch the campaign
   const { data: campaign } = await supabase
     .from("email_campaigns")
     .select("*")
@@ -23,7 +24,11 @@ export default async function EditCampaignPage({
     .single();
 
   if (!campaign) notFound();
-  if (campaign.status !== "draft") redirect("/dashboard/campaigns");
+
+  // Non-draft campaigns render in a read-only view
+  if (campaign.status !== "draft") {
+    return <CampaignView campaign={campaign} />;
+  }
 
   const [{ data: patients }, { data: auszubildende }] = await Promise.all([
     supabase.from("patients").select("*").order("created_at"),

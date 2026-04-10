@@ -21,7 +21,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Plus, Pencil, Copy, Trash2 } from "lucide-react";
+import { Plus, Pencil, Copy, Trash2, Eye } from "lucide-react";
 
 const statusLabels: Record<CampaignStatus, string> = {
   draft: "In Bearbeitung",
@@ -196,16 +196,12 @@ export function CampaignsManager({ campaigns: initialCampaigns }: Props) {
               return (
                 <TableRow key={c.id}>
                   <TableCell className="font-medium">
-                    {isDraft ? (
-                      <Link
-                        href={`/dashboard/campaigns/${c.id}`}
-                        className="text-primary hover:underline"
-                      >
-                        {c.name || "—"}
-                      </Link>
-                    ) : (
-                      c.name || "—"
-                    )}
+                    <Link
+                      href={`/dashboard/campaigns/${c.id}`}
+                      className="text-primary hover:underline"
+                    >
+                      {c.name || "—"}
+                    </Link>
                   </TableCell>
                   <TableCell className="text-muted-foreground max-w-[200px] truncate">
                     {c.subject || "—"}
@@ -228,15 +224,17 @@ export function CampaignsManager({ campaigns: initialCampaigns }: Props) {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      {isDraft && (
-                        <button
-                          onClick={() => router.push(`/dashboard/campaigns/${c.id}`)}
-                          className="p-1.5 rounded hover:bg-gray-100 text-muted-foreground hover:text-foreground transition-colors"
-                          title="Bearbeiten"
-                        >
+                      <button
+                        onClick={() => router.push(`/dashboard/campaigns/${c.id}`)}
+                        className="p-1.5 rounded hover:bg-gray-100 text-muted-foreground hover:text-foreground transition-colors"
+                        title={isDraft ? "Bearbeiten" : "Ansehen"}
+                      >
+                        {isDraft ? (
                           <Pencil className="h-4 w-4" />
-                        </button>
-                      )}
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
