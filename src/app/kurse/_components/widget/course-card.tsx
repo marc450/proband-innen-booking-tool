@@ -250,7 +250,7 @@ export function CourseCard({
             return (
               <li key={index} className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
-                <span className={`text-base text-black ${isInkludiert ? "italic" : ""}`}>
+                <span className={`text-base ${isInkludiert ? "text-[#0066FF] font-bold" : "text-black"}`}>
                   {feature.text}
                 </span>
               </li>
