@@ -40,8 +40,8 @@ const defaultPraxiskursFeatures = [
 
 const defaultKombikursFeatures = [
   { text: "Akkreditiert mit 22 CME-Punkten" },
-  { text: "Vollständiger Onlinekurs" },
-  { text: "Vollständiger Praxiskurs" },
+  { text: "Vollständiger Onlinekurs inkludiert" },
+  { text: "Vollständiger Praxiskurs inkludiert" },
   { text: "EPHIA-Zertifikat nach Abschluss" },
 ];
 
@@ -219,6 +219,19 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
           const kombiFeatures = toFeatures(template.features_kombi, defaultKombikursFeatures);
 
           if (isPremiumLayout) {
+            // grundkurs_botulinum only: hardcoded override so the Praxiskurs card
+            // shows "Vollständiger Onlinekurs inkludiert" / "Vollständiger Praxiskurs inkludiert"
+            // regardless of what's stored in course_templates.features_kombi.
+            const premiumKombiFeatures = kombiFeatures.map((f) => {
+              if (f.text === "Vollständiger Onlinekurs" || f.text === "Vollständiger Onlinekurs inkludiert") {
+                return { text: "Vollständiger Onlinekurs inkludiert" };
+              }
+              if (f.text === "Vollständiger Praxiskurs" || f.text === "Vollständiger Praxiskurs inkludiert") {
+                return { text: "Vollständiger Praxiskurs inkludiert" };
+              }
+              return f;
+            });
+
             // Grundkurs Botulinum: Onlinekurs, Kombikurs, Premium Starterpaket
             return (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -241,7 +254,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     title="Praxiskurs"
                     description="Lerne die theoretischen Grundlagen online und die Praxis vor Ort an Proband:innen."
                     price={formatPrice(template.price_gross_kombi)}
-                    features={kombiFeatures}
+                    features={premiumKombiFeatures}
                     bookingType="dropdown"
                     dates={dynamicDates}
                     buttonText="Praxiskurs buchen"
