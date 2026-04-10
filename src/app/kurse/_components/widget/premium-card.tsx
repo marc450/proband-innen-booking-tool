@@ -452,11 +452,11 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
           </li>
           <li className="flex items-start gap-2">
             <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
-            <span className="text-base text-black italic">Vollständiger Onlinekurs</span>
+            <span className="text-base text-black italic">Vollständiger Onlinekurs inkludiert</span>
           </li>
           <li className="flex items-start gap-2">
             <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
-            <span className="text-base text-black italic">Vollständiger Praxiskurs</span>
+            <span className="text-base text-black italic">Vollständiger Praxiskurs inkludiert</span>
           </li>
           {INCLUDED_COURSES.map((course, index) => (
             <li key={index} className="flex items-start gap-2">
