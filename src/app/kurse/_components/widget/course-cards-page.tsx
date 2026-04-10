@@ -246,7 +246,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     onBook={() => handleBooking("Onlinekurs")}
                     isLoading={loadingCheckout === "Onlinekurs-direct"}
                     cmePoints={template.cme_online || undefined}
-                    titleClassName="text-2xl"
+                    titleClassName="text-[1.75rem]"
                   />
                 )}
 
@@ -265,7 +265,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
                     cmePoints={template.cme_kombi || undefined}
                     inclusionHeading="Im Online- & Praxiskurs inkludiert:"
-                    titleClassName="text-2xl whitespace-nowrap"
+                    titleClassName="text-[1.75rem] whitespace-nowrap"
                   />
                 )}
 
