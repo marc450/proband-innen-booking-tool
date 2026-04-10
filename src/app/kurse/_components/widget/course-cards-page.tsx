@@ -198,7 +198,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
   const onlineDescription = overrides.onlineDesc || "Erlerne die praxisnahe Theorie zur professionellen Behandlung von Patient:innen.";
 
   return (
-    <section id="kursangebote" className="py-16 md:py-24 px-4 scroll-mt-20" style={{ backgroundColor: "#0066FF" }}>
+    <section id="kursangebote" className="py-16 md:py-24 px-4 scroll-mt-24 md:scroll-mt-28" style={{ backgroundColor: "#0066FF" }}>
       <div className="max-w-7xl mx-auto">
         <h2
           className="text-3xl md:text-4xl font-bold text-center mb-14 tracking-wide"
@@ -222,15 +222,20 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
             // grundkurs_botulinum only: hardcoded override so the Praxiskurs card
             // shows "Vollständiger Onlinekurs inkludiert" / "Vollständiger Praxiskurs inkludiert"
             // regardless of what's stored in course_templates.features_kombi.
-            const premiumKombiFeatures = kombiFeatures.map((f) => {
-              if (f.text === "Vollständiger Onlinekurs" || f.text === "Vollständiger Onlinekurs inkludiert") {
-                return { text: "Vollständiger Onlinekurs inkludiert" };
-              }
-              if (f.text === "Vollständiger Praxiskurs" || f.text === "Vollständiger Praxiskurs inkludiert") {
-                return { text: "Vollständiger Praxiskurs inkludiert" };
-              }
-              return f;
-            });
+            const premiumKombiFeatures = kombiFeatures
+              .map((f) => {
+                if (f.text === "Vollständiger Onlinekurs" || f.text === "Vollständiger Onlinekurs inkludiert") {
+                  return { text: "Vollständiger Onlinekurs inkludiert" };
+                }
+                if (f.text === "Vollständiger Praxiskurs" || f.text === "Vollständiger Praxiskurs inkludiert") {
+                  return { text: "Vollständiger Praxiskurs inkludiert" };
+                }
+                return f;
+              })
+              // Drop the Zertifikat line — the Online- & Praxiskurs card already
+              // implies it via the two "Vollständiger ... inkludiert" rows, and
+              // the Onlinekurs card to the left lists it explicitly.
+              .filter((f) => f.text !== "EPHIA-Zertifikat nach Abschluss");
 
             // Grundkurs Botulinum: Onlinekurs, Kombikurs, Premium Starterpaket
             return (

@@ -7,6 +7,7 @@ import {
   MapPin,
   Calendar,
   Sparkles,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import type { CourseHeroContent } from "@/content/kurse/types";
@@ -31,6 +32,7 @@ export function Hero({ content }: { content: CourseHeroContent }) {
           <HeroVideo
             videoPath={content.videoPath}
             videoPoster={content.videoPoster}
+            videoCaptionsPath={content.videoCaptionsPath}
           />
 
           {/* Text */}
@@ -39,6 +41,19 @@ export function Hero({ content }: { content: CourseHeroContent }) {
               <p className="text-xs md:text-sm font-semibold tracking-[0.2em] text-[#0066FF] mb-4">
                 {content.kicker}
               </p>
+            )}
+
+            {content.socialProof && (
+              <div className="inline-flex items-center gap-2 bg-white/70 backdrop-blur-sm rounded-full px-3.5 py-1.5 mb-4 shadow-sm">
+                <ShieldCheck
+                  className="w-4 h-4 text-[#0066FF] flex-shrink-0"
+                  strokeWidth={2.5}
+                  aria-hidden="true"
+                />
+                <span className="text-xs md:text-sm font-semibold text-black">
+                  {content.socialProof}
+                </span>
+              </div>
             )}
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-[1.05]">
@@ -59,6 +74,7 @@ export function Hero({ content }: { content: CourseHeroContent }) {
                       <Icon
                         className="w-4 h-4 text-[#0066FF] flex-shrink-0"
                         strokeWidth={2.5}
+                        aria-hidden="true"
                       />
                       <span className="font-semibold text-black">
                         {stat.value}

@@ -47,10 +47,21 @@ export function CourseCard({
   inclusionHeading,
   titleClassName,
 }: CourseCardProps) {
-  const [selectedDate, setSelectedDate] = useState("");
+  const firstAvailableId = dates.find((d) => d.available)?.id ?? "";
+  const [selectedDate, setSelectedDate] = useState(firstAvailableId);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showTerminModal, setShowTerminModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Keep selected date in sync when sessions are refreshed (polling) and the
+  // previously selected one is no longer available.
+  useEffect(() => {
+    if (bookingType !== "dropdown") return;
+    const stillValid = dates.some((d) => d.id === selectedDate && d.available);
+    if (!stillValid) {
+      setSelectedDate(dates.find((d) => d.available)?.id ?? "");
+    }
+  }, [dates, selectedDate, bookingType]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -103,7 +114,7 @@ export function CourseCard({
       <div className="rounded-t-lg p-5 relative" style={{ backgroundColor: "hsl(24, 71%, 93%)" }}>
         {cmePoints && (
           <div className="absolute top-4 right-4 bg-[#0066FF] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
-            <Award className="w-4 h-4" />
+            <Award className="w-4 h-4" aria-hidden="true" />
             <span className="text-sm font-bold">{cmePoints}</span>
           </div>
         )}
@@ -167,7 +178,7 @@ export function CourseCard({
                       <span className={getBadgeClasses(selectedDateObj)}>{selectedDateObj.availabilityTag}</span>
                     )}
                   </span>
-                  <ChevronDown className={`w-5 h-5 flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown className={`w-5 h-5 flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} aria-hidden="true" />
                 </button>
 
                 {dropdownOpen && (
@@ -242,14 +253,14 @@ export function CourseCard({
       </div>
 
       {/* Features */}
-      <div className="border-t border-gray-200 pt-6 mt-auto px-5 pb-8">
+      <div className="border-t border-gray-200 pt-6 mt-auto px-5 pb-8 lg:min-h-[20rem]">
         <h3 className="font-bold text-black mb-4">{inclusionHeading || `Im ${title.split(" ")[0]} inkludiert:`}</h3>
         <ul className="space-y-2">
           {features.map((feature, index) => {
             const isInkludiert = feature.text.startsWith("Vollständiger");
             return (
               <li key={index} className="flex items-start gap-2">
-                <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+                <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <span className={`text-base ${isInkludiert ? "text-[#0066FF] font-bold" : "text-black"}`}>
                   {feature.text}
                 </span>

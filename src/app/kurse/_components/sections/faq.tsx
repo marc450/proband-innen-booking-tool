@@ -33,6 +33,7 @@ export function Faq({ content }: { content: CourseFaqContent }) {
                   </span>
                   <ChevronDown
                     className={`w-5 h-5 text-black/50 shrink-0 mt-1 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                    aria-hidden="true"
                   />
                 </button>
                 {isOpen && (

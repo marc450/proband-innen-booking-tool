@@ -11,6 +11,7 @@ import { Lernplattform } from "../_components/sections/lernplattform";
 import { CtaBanner } from "../_components/sections/cta-banner";
 import { Testimonials } from "../_components/sections/testimonials";
 import { Faq } from "../_components/sections/faq";
+import { StickyMobileCta } from "../_components/sections/sticky-mobile-cta";
 import { CourseCardsPage } from "../_components/widget/course-cards-page";
 
 export const dynamic = "force-dynamic";
@@ -80,8 +81,77 @@ export default async function KursPage({
     .eq("is_live", true)
     .order("date_iso", { ascending: true });
 
+  // JSON-LD Course schema (+ hasCourseInstance per session) for Google Search
+  // https://developers.google.com/search/docs/appearance/structured-data/course
+  const siteUrl = "https://proband-innen.ephia.de";
+  const courseUrl = `${siteUrl}/kurse/${content.slug}`;
+  const priceCurrency = "EUR";
+  const liveSessions = (sessions ?? []).filter((s) => s.is_live);
+
+  const hasCourseInstance = [
+    // An evergreen online instance (uses the Onlinekurs price if set)
+    ...(template.price_gross_online
+      ? [
+          {
+            "@type": "CourseInstance",
+            courseMode: "Online",
+            courseWorkload: "PT10H",
+            inLanguage: "de",
+            offers: {
+              "@type": "Offer",
+              price: String(template.price_gross_online),
+              priceCurrency,
+              availability: "https://schema.org/InStock",
+              url: courseUrl,
+            },
+          },
+        ]
+      : []),
+    // One instance per live Praxiskurs session
+    ...liveSessions.map((s) => ({
+      "@type": "CourseInstance",
+      courseMode: "Onsite",
+      startDate: s.date_iso,
+      ...(s.address ? { location: { "@type": "Place", name: s.address } } : {}),
+      inLanguage: "de",
+      ...(template.price_gross_praxis || template.price_gross_kombi
+        ? {
+            offers: {
+              "@type": "Offer",
+              price: String(template.price_gross_kombi ?? template.price_gross_praxis),
+              priceCurrency,
+              availability:
+                s.booked_seats < s.max_seats
+                  ? "https://schema.org/InStock"
+                  : "https://schema.org/SoldOut",
+              url: courseUrl,
+            },
+          }
+        : {}),
+    })),
+  ];
+
+  const courseJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    name: content.meta.title,
+    description: content.meta.description,
+    url: courseUrl,
+    provider: {
+      "@type": "Organization",
+      name: "EPHIA",
+      url: "https://ephia.de",
+    },
+    ...(hasCourseInstance.length > 0 ? { hasCourseInstance } : {}),
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        // JSON.stringify output is trusted — no user input flows in here
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(courseJsonLd) }}
+      />
       <Hero content={content.hero} />
       <Lernziele content={content.lernziele} />
       <CourseCardsPage template={template} sessions={sessions ?? []} />
@@ -94,6 +164,7 @@ export default async function KursPage({
       <CtaBanner content={content.ctaBanner} />
       <Testimonials content={content.testimonials} />
       <Faq content={content.faq} />
+      <StickyMobileCta label={content.hero.heading} targetId="kursangebote" />
     </>
   );
 }

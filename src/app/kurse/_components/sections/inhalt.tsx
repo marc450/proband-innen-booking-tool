@@ -41,6 +41,7 @@ export function Inhalt({ content }: { content: CourseInhaltContent }) {
                   {hasDetails && (
                     <ChevronDown
                       className={`w-5 h-5 text-black/50 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                      aria-hidden="true"
                     />
                   )}
                 </button>

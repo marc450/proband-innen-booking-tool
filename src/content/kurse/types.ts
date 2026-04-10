@@ -31,6 +31,10 @@ export interface CourseHeroContent {
   videoPath: string;
   /** Path (relative to /public) to the hero video poster image (shown before play) */
   videoPoster: string;
+  /** Optional path to a WebVTT captions file (relative to /public) */
+  videoCaptionsPath?: string;
+  /** Optional social proof pill shown above the heading, e.g. "300+ zertifizierte Ärzt:innen" */
+  socialProof?: string;
 }
 
 export interface CourseLernziel {

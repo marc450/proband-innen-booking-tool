@@ -36,7 +36,7 @@ export function Lernplattform({
                   <ul className="space-y-2.5">
                     {feature.bullets.map((b) => (
                       <li key={b} className="flex items-start gap-3">
-                        <Check className="w-5 h-5 text-[#0066FF] shrink-0 mt-0.5" />
+                        <Check className="w-5 h-5 text-[#0066FF] shrink-0 mt-0.5" aria-hidden="true" />
                         <span className="text-sm md:text-base text-black/80 leading-relaxed">
                           {b}
                         </span>

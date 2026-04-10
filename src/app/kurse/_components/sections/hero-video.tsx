@@ -6,9 +6,14 @@ import { Volume2, VolumeX } from "lucide-react";
 interface HeroVideoProps {
   videoPath: string;
   videoPoster?: string;
+  videoCaptionsPath?: string;
 }
 
-export function HeroVideo({ videoPath, videoPoster }: HeroVideoProps) {
+export function HeroVideo({
+  videoPath,
+  videoPoster,
+  videoCaptionsPath,
+}: HeroVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
 
@@ -35,8 +40,20 @@ export function HeroVideo({ videoPath, videoPoster }: HeroVideoProps) {
         loop
         playsInline
         preload="metadata"
+        disableRemotePlayback
+        // @ts-expect-error fetchpriority is valid HTML but not yet in React types
+        fetchpriority="high"
       >
         <source src={videoPath} type="video/mp4" />
+        {videoCaptionsPath && (
+          <track
+            kind="captions"
+            src={videoCaptionsPath}
+            srcLang="de"
+            label="Deutsch"
+            default
+          />
+        )}
       </video>
 
       {/* Mute toggle — prominent "Ton einschalten" pill while muted,

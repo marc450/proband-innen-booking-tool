@@ -293,11 +293,20 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
 }
 
 export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }: PremiumCardProps) {
-  const [selectedDate, setSelectedDate] = useState("");
+  const firstAvailableId = dates.find((d) => d.available)?.id ?? "";
+  const [selectedDate, setSelectedDate] = useState(firstAvailableId);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [infoModal, setInfoModal] = useState<IncludedCourse | null>(null);
   const [showTerminModal, setShowTerminModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Keep selected date in sync with polled session data — clear if no longer available
+  useEffect(() => {
+    const stillValid = dates.some((d) => d.id === selectedDate && d.available);
+    if (!stillValid) {
+      setSelectedDate(dates.find((d) => d.available)?.id ?? "");
+    }
+  }, [dates, selectedDate]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -340,7 +349,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
       {/* Header */}
       <div className="rounded-t-lg p-5 relative" style={{ backgroundColor: "hsl(24, 71%, 93%)" }}>
         <div className="absolute top-4 right-4 bg-[#0066FF] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
-          <Award className="w-4 h-4" />
+          <Award className="w-4 h-4" aria-hidden="true" />
           <span className="text-sm font-bold">49 CME</span>
         </div>
         <h2 className="text-[1.75rem] font-bold text-black mb-4 pr-24">Komplettpaket</h2>
@@ -378,7 +387,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
                     <span className={getBadgeClasses(selectedDateObj)}>{selectedDateObj.availabilityTag}</span>
                   )}
                 </span>
-                <ChevronDown className={`w-5 h-5 flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+                <ChevronDown className={`w-5 h-5 flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} aria-hidden="true" />
               </button>
 
               {dropdownOpen && (
@@ -443,24 +452,24 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
       </div>
 
       {/* Included courses */}
-      <div className="border-t border-gray-200 pt-6 mt-auto px-5 pb-8">
+      <div className="border-t border-gray-200 pt-6 mt-auto px-5 pb-8 lg:min-h-[20rem]">
         <h3 className="font-bold text-black mb-4">Im Komplettpaket inkludiert:</h3>
         <ul className="space-y-3">
           <li className="flex items-center gap-2">
-            <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" />
+            <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" aria-hidden="true" />
             <span className="text-base text-black">Akkreditiert mit 49 CME-Punkten</span>
           </li>
           <li className="flex items-start gap-2">
-            <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+            <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" aria-hidden="true" />
             <span className="text-base text-[#0066FF] font-bold">Vollständiger Onlinekurs inkludiert</span>
           </li>
           <li className="flex items-start gap-2">
-            <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+            <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" aria-hidden="true" />
             <span className="text-base text-[#0066FF] font-bold">Vollständiger Praxiskurs inkludiert</span>
           </li>
           {INCLUDED_COURSES.map((course, index) => (
             <li key={index} className="flex items-start gap-2">
-              <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+              <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" aria-hidden="true" />
               <button
                 type="button"
                 onClick={() => setInfoModal(course)}

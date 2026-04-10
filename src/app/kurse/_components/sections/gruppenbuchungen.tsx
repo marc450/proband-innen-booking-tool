@@ -15,7 +15,7 @@ export function Gruppenbuchungen({
 
   return (
     <>
-      <section className="py-16 md:py-20" style={{ backgroundColor: "#BF785E" }}>
+      <section className="py-24 md:py-32" style={{ backgroundColor: "#BF785E" }}>
         <div className="max-w-4xl mx-auto px-5 md:px-8 text-center text-white">
           <h2 className="text-3xl md:text-4xl font-bold tracking-wide mb-6">
             {content.heading}

@@ -14,12 +14,13 @@ export const grundkursBotulinum: CourseLandingContent = {
   meta: {
     title: "Grundkurs Botulinum | EPHIA",
     description:
-      "Der EPHIA Grundkurs Botulinum vermittelt ärztlich fundiert und diskriminierungssensibel die Grundlagen für einen sicheren, verantwortungsvollen Einsatz von Botulinum.",
+      "Grundkurs Botulinum für approbierte Ärzt:innen: Behandle Stirn, Glabella, Lachfalten und mehr unter Aufsicht an echten Proband:innen. 22 CME-Punkte, praxisnah und diskriminierungssensibel.",
     ogImage: "/kurse/grundkurs_botulinum/og-image.jpg",
   },
 
   hero: {
     heading: "GRUNDKURS BOTULINUM",
+    socialProof: "Über 300 zertifizierte Ärzt:innen",
     subheadline:
       "Dein sicherer Einstieg in die ästhetische Medizin: Praxisnah, fundiert und mit echten Proband:innen.",
     stats: [
@@ -36,7 +37,7 @@ export const grundkursBotulinum: CourseLandingContent = {
   lernziele: {
     heading: "LERNZIELE",
     intro:
-      "Dieser Grundkurs richtet sich ausschließlich an approbierte Ärzt:innen, die erste Schritte in der Behandlung von Patient:innen mit Botulinum gehen möchten oder ihr Basiswissen auffrischen wollen. Dabei konzentrieren wir uns auf die folgenden Lernziele:",
+      "Nach dem Kurs kannst Du Deine ersten Patient:innen sicher, fundiert und diskriminierungssensibel mit Botulinum behandeln. Dabei konzentrieren wir uns auf die folgenden Lernziele:",
     items: [
       {
         label: "Anatomie",
