@@ -230,16 +230,13 @@ export function CourseCard({
         <h3 className="font-bold text-black mb-4">Im {title.split(" ")[0]} inkludiert:</h3>
         <ul className="space-y-2">
           {features.map((feature, index) => {
-            const isCME = feature.text.includes("CME");
             const isInkludiert = feature.text.startsWith("Vollständiger");
             return (
               <li key={index} className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
-                <span className={[
-                  "text-base",
-                  isCME ? "text-[#0066FF] font-bold" : "text-black",
-                  isInkludiert ? "italic" : "",
-                ].filter(Boolean).join(" ")}>
+                <span
+                  className={`text-base text-black ${isInkludiert ? "italic" : ""}`}
+                >
                   {feature.text}
                 </span>
               </li>
