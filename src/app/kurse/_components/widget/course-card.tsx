@@ -104,24 +104,33 @@ export function CourseCard({
           </div>
         )}
         <h2 className="text-3xl font-bold text-black mb-4 pr-24">{title}</h2>
-        <p className="text-black mb-3 mt-3 min-h-[3.5rem]">{description}</p>
+        <p className="text-black mb-3 mt-3 lg:min-h-[3.5rem]">{description}</p>
       </div>
 
       {/* Body */}
       <div className="px-5 pt-6 pb-4">
-        {/* Price row — fixed height so it aligns across cards */}
-        <div className="mb-6 min-h-[4.5rem]">
+        {/* Price row — fixed height so it aligns across cards on desktop */}
+        <div className="mb-6 lg:min-h-[4.5rem]">
           <div className="text-4xl font-bold text-[#0066FF] mb-1">{price}</div>
           <p className="text-sm text-black">Ratenzahlungen sind möglich mit Klarna.</p>
         </div>
 
-        {/* Location row — fixed height */}
-        <div className="mb-6 min-h-[1.5rem] font-semibold text-black">
-          {additionalInfo || "\u00A0"}
-        </div>
+        {/* Location row — placeholder on desktop for alignment, hidden on mobile if empty */}
+        {additionalInfo ? (
+          <div className="mb-6 lg:min-h-[1.5rem] font-semibold text-black">
+            {additionalInfo}
+          </div>
+        ) : (
+          <div
+            className="hidden lg:block mb-6 lg:min-h-[1.5rem] font-semibold text-black"
+            aria-hidden="true"
+          >
+            &nbsp;
+          </div>
+        )}
 
-        {/* Action area — fixed height so buttons/dropdowns align */}
-        <div className="mb-6 min-h-[7.5rem]">
+        {/* Action area — fixed height so buttons/dropdowns align on desktop */}
+        <div className="mb-6 lg:min-h-[7.5rem]">
           {bookingType === "direct" ? (
             <div className="flex flex-col justify-end h-full">
               <button
@@ -206,23 +215,26 @@ export function CourseCard({
           )}
         </div>
 
-        {/* Termin-Updates link — always rendered for dropdown cards, invisible spacer for direct */}
-        <div className="min-h-[1.25rem] mb-2">
-          {bookingType === "dropdown" && (
-            <>
-              <button
-                type="button"
-                onClick={() => setShowTerminModal(true)}
-                className="block w-full text-center text-sm text-gray-500 hover:text-[#0066FF] underline-offset-4 hover:underline font-normal transition-colors cursor-pointer"
-              >
-                Schickt mir Termin-Updates
-              </button>
-              {showTerminModal && (
-                <TerminUpdateModal onClose={() => setShowTerminModal(false)} />
-              )}
-            </>
-          )}
-        </div>
+        {/* Termin-Updates link — shown for dropdown cards; spacer for direct cards only on desktop */}
+        {bookingType === "dropdown" ? (
+          <div className="lg:min-h-[1.25rem] mb-2">
+            <button
+              type="button"
+              onClick={() => setShowTerminModal(true)}
+              className="block w-full text-center text-sm text-gray-500 hover:text-[#0066FF] underline-offset-4 hover:underline font-normal transition-colors cursor-pointer"
+            >
+              Schickt mir Termin-Updates
+            </button>
+            {showTerminModal && (
+              <TerminUpdateModal onClose={() => setShowTerminModal(false)} />
+            )}
+          </div>
+        ) : (
+          <div
+            className="hidden lg:block lg:min-h-[1.25rem] mb-2"
+            aria-hidden="true"
+          />
+        )}
       </div>
 
       {/* Features */}

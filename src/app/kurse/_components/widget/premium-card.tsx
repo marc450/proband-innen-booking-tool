@@ -346,15 +346,15 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
           <span className="text-sm font-bold">49 CME</span>
         </div>
         <h2 className="text-3xl font-bold text-black mb-4 pr-24">Komplettpaket</h2>
-        <p className="text-black mb-3 mt-3 min-h-[3.5rem]">
+        <p className="text-black mb-3 mt-3 lg:min-h-[3.5rem]">
           Das Paket für Deinen selbstbewussten Start in die Ästhetik: 1 Praxiskurs + 4 begleitende Onlinekurse.
         </p>
       </div>
 
       {/* Body */}
       <div className="px-5 pt-6 pb-4">
-        {/* Price row — fixed height to align with other cards */}
-        <div className="mb-6 min-h-[4.5rem]">
+        {/* Price row — fixed height to align with other cards on desktop */}
+        <div className="mb-6 lg:min-h-[4.5rem]">
           <div className="flex items-baseline gap-3 mb-1">
             <div className="text-4xl font-bold text-[#0066FF]">EUR 1.998</div>
             <div className="text-lg text-gray-400 line-through">EUR 2.220</div>
@@ -362,11 +362,11 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
           <p className="text-sm text-[#0066FF] font-semibold">10% Rabatt auf alle Einzelkurse</p>
         </div>
 
-        {/* Location row — fixed height */}
-        <div className="mb-6 min-h-[1.5rem] font-semibold text-black">Praxiskurs-Standort: Berlin-Mitte</div>
+        {/* Location row */}
+        <div className="mb-6 lg:min-h-[1.5rem] font-semibold text-black">Praxiskurs-Standort: Berlin-Mitte</div>
 
-        {/* Action area — fixed height to align with other cards */}
-        <div className="mb-6 min-h-[7.5rem]">
+        {/* Action area — fixed height to align with other cards on desktop */}
+        <div className="mb-6 lg:min-h-[7.5rem]">
           <div className="space-y-4">
             <div ref={dropdownRef} className="relative">
               <button
@@ -430,7 +430,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
         </div>
 
         {/* Termin-Updates link */}
-        <div className="min-h-[1.25rem] mb-2">
+        <div className="lg:min-h-[1.25rem] mb-2">
           <button
             type="button"
             onClick={() => setShowTerminModal(true)}
