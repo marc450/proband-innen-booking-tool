@@ -26,6 +26,7 @@ interface CourseCardProps {
   isLoading?: boolean;
   selectedDateForLoading?: string;
   cmePoints?: string;
+  inclusionHeading?: string;
 }
 
 export function CourseCard({
@@ -42,6 +43,7 @@ export function CourseCard({
   isLoading = false,
   selectedDateForLoading,
   cmePoints,
+  inclusionHeading,
 }: CourseCardProps) {
   const [selectedDate, setSelectedDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -239,7 +241,7 @@ export function CourseCard({
 
       {/* Features */}
       <div className="border-t border-gray-200 pt-6 mt-auto px-5 pb-8">
-        <h3 className="font-bold text-black mb-4">Im {title.split(" ")[0]} inkludiert:</h3>
+        <h3 className="font-bold text-black mb-4">{inclusionHeading || `Im ${title.split(" ")[0]} inkludiert:`}</h3>
         <ul className="space-y-2">
           {features.map((feature, index) => {
             const isInkludiert = feature.text.startsWith("Vollständiger");

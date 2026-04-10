@@ -251,18 +251,19 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
 
                 {hasKombi && (
                   <CourseCard
-                    title="Praxiskurs"
+                    title="Online- & Praxiskurs"
                     description="Lerne die theoretischen Grundlagen online und die Praxis vor Ort an Proband:innen."
                     price={formatPrice(template.price_gross_kombi)}
                     features={premiumKombiFeatures}
                     bookingType="dropdown"
                     dates={dynamicDates}
-                    buttonText="Praxiskurs buchen"
+                    buttonText="Online- & Praxiskurs buchen"
                     additionalInfo="Praxiskurs-Standort: Berlin-Mitte"
                     onBook={(sessionId) => handleBooking("Kombikurs", sessionId)}
                     isLoading={loadingCheckout?.startsWith("Kombikurs-") || false}
                     selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
                     cmePoints={template.cme_kombi || undefined}
+                    inclusionHeading="Im Online- & Praxiskurs inkludiert:"
                   />
                 )}
 
