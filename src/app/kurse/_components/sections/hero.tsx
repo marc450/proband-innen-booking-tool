@@ -41,12 +41,14 @@ export function Hero({ content }: { content: CourseHeroContent }) {
               </p>
             )}
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-5 leading-[1.05]">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-[1.05]">
               {content.heading}
             </h1>
 
+            <div className="h-px bg-black/10 mb-6" />
+
             {content.stats && content.stats.length > 0 && (
-              <div className="grid grid-cols-3 gap-4 mb-7 pb-7 border-b border-black/10">
+              <div className="grid grid-cols-3 gap-4 mb-7 items-start">
                 {content.stats.map((stat) => {
                   const Icon = STAT_ICON_MAP[stat.icon] || Sparkles;
                   return (
