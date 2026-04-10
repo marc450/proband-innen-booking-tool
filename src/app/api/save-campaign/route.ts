@@ -53,11 +53,19 @@ async function uploadBlockImages(
 }
 
 export async function POST(req: NextRequest) {
-  const { id, name, subject, contentBlocks, audienceType } = await req.json();
+  const { id, name, subject, contentBlocks, audienceType, excludedIds } = await req.json();
 
   if (!name && !subject) {
     return NextResponse.json({ error: "Name oder Betreff erforderlich." }, { status: 400 });
   }
+
+  const safeAudience =
+    audienceType === "probandinnen" || audienceType === "aerztinnen" || audienceType === "alle"
+      ? audienceType
+      : null;
+  const safeExcluded = Array.isArray(excludedIds)
+    ? (excludedIds as unknown[]).filter((v): v is string => typeof v === "string")
+    : [];
 
   const supabase = createAdminClient();
 
@@ -78,6 +86,8 @@ export async function POST(req: NextRequest) {
         subject: subject || "",
         body_text: textSummary,
         content_blocks: safeBlocks,
+        audience_type: safeAudience,
+        excluded_patient_ids: safeExcluded,
         status: "draft",
       })
       .eq("id", id)
@@ -96,6 +106,8 @@ export async function POST(req: NextRequest) {
         subject: subject || "",
         body_text: textSummary,
         content_blocks: contentBlocks || [],
+        audience_type: safeAudience,
+        excluded_patient_ids: safeExcluded,
         status: "draft",
       })
       .select("id")

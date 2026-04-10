@@ -102,6 +102,7 @@ export async function POST(req: NextRequest) {
       content_blocks: contentBlocks,
       recipient_count: recipients.length,
       excluded_patient_ids: Array.from(excludedSet),
+      audience_type: audienceType,
       status,
       scheduled_at: scheduledAt || null,
     })

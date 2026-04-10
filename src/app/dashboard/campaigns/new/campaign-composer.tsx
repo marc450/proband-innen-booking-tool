@@ -46,6 +46,8 @@ interface ExistingCampaign {
   subject: string;
   body_text: string;
   content_blocks?: ContentBlock[] | null;
+  audience_type?: AudienceType | null;
+  excluded_patient_ids?: string[] | null;
 }
 
 interface Props {
@@ -191,9 +193,13 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
     }
     return [{ type: "text", text: "" }];
   });
-  const [audienceType, setAudienceType] = useState<AudienceType>("probandinnen");
+  const [audienceType, setAudienceType] = useState<AudienceType>(
+    existingCampaign?.audience_type || "probandinnen",
+  );
   const [excludeBlacklisted, setExcludeBlacklisted] = useState(true);
-  const [manuallyExcluded, setManuallyExcluded] = useState<Set<string>>(new Set());
+  const [manuallyExcluded, setManuallyExcluded] = useState<Set<string>>(
+    () => new Set(existingCampaign?.excluded_patient_ids || []),
+  );
   const [scheduleMode, setScheduleMode] = useState<"now" | "later">("now");
   const [scheduledAt, setScheduledAt] = useState("");
   const [recipientSearch, setRecipientSearch] = useState("");
@@ -404,6 +410,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
           subject,
           contentBlocks,
           audienceType,
+          excludedIds: Array.from(manuallyExcluded),
         }),
       });
       const result = await res.json();
