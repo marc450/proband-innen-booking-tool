@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buildEmailHtml, type ContentBlock } from "@/lib/email-template";
 import type { CampaignStatus } from "@/lib/types";
+import { EmailPreview } from "../email-preview";
 
 const statusLabels: Record<CampaignStatus, string> = {
   draft: "In Bearbeitung",
@@ -182,10 +183,9 @@ export function CampaignView({ campaign }: Props) {
             <CardTitle className="text-base">E-Mail Vorschau</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div
-              className="border-t p-4"
-              dangerouslySetInnerHTML={{ __html: previewHtml }}
-            />
+            <div className="border-t">
+              <EmailPreview html={previewHtml} />
+            </div>
           </CardContent>
         </Card>
       </div>

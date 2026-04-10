@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/app/dashboard/inbox/rich-text-editor";
+import { EmailPreview } from "../email-preview";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -868,10 +869,9 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
               <CardTitle className="text-base">Vorschau</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div
-                className="border-t p-4"
-                dangerouslySetInnerHTML={{ __html: previewHtml }}
-              />
+              <div className="border-t">
+                <EmailPreview html={previewHtml} />
+              </div>
             </CardContent>
           </Card>
         </div>
