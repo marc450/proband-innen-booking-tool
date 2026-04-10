@@ -206,7 +206,9 @@ export interface EmailCampaign {
   subject: string;
   body_text: string;
   recipient_count: number;
+  recipient_emails: string[] | null;
   excluded_patient_ids: string[];
+  audience_type: string | null;
   status: CampaignStatus;
   scheduled_at: string | null;
   sent_at: string | null;

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Calendar, Clock, Users } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, Mail, Users } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buildEmailHtml, type ContentBlock } from "@/lib/email-template";
 import type { CampaignStatus } from "@/lib/types";
 import { EmailPreview } from "../email-preview";
+import { RecipientList } from "./recipient-list";
 
 const statusLabels: Record<CampaignStatus, string> = {
   draft: "In Bearbeitung",
@@ -43,6 +44,7 @@ interface Props {
     status: CampaignStatus;
     audience_type: string | null;
     recipient_count: number | null;
+    recipient_emails: string[] | null;
     created_at: string;
     sent_at: string | null;
     scheduled_at: string | null;
@@ -51,7 +53,7 @@ interface Props {
 }
 
 function formatDate(dateStr: string) {
-  return format(new Date(dateStr), "dd.MM.yyyy 'um' HH:mm", { locale: de });
+  return format(new Date(dateStr), "dd.MM.yyyy 'um' HH:mm:ss", { locale: de });
 }
 
 export function CampaignView({ campaign }: Props) {
@@ -175,6 +177,20 @@ export function CampaignView({ campaign }: Props) {
               )}
             </CardContent>
           </Card>
+
+          {campaign.recipient_emails && campaign.recipient_emails.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Gesendet an ({campaign.recipient_emails.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <RecipientList emails={campaign.recipient_emails} />
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Email preview */}

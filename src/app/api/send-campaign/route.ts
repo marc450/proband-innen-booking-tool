@@ -15,6 +15,7 @@ interface Recipient {
 
 export async function POST(req: NextRequest) {
   const {
+    id: draftId,
     name,
     subject,
     contentBlocks,
@@ -24,6 +25,7 @@ export async function POST(req: NextRequest) {
     scheduledAt,
     attachments: rawAttachments,
   } = await req.json() as {
+    id?: string;
     name: string;
     subject: string;
     contentBlocks: ContentBlock[];
@@ -92,25 +94,62 @@ export async function POST(req: NextRequest) {
     .map((b) => b.text)
     .join("\n\n");
 
-  // Save campaign to DB
-  const { data: campaign, error: insertErr } = await supabase
-    .from("email_campaigns")
-    .insert({
-      name: name || null,
-      subject,
-      body_text: bodyTextSummary,
-      content_blocks: contentBlocks,
-      recipient_count: recipients.length,
-      excluded_patient_ids: Array.from(excludedSet),
-      audience_type: audienceType,
-      status,
-      scheduled_at: scheduledAt || null,
-    })
-    .select("id")
-    .single();
+  const recipientEmails = recipients.map((r) => r.email);
 
-  if (insertErr || !campaign) {
-    return NextResponse.json({ error: insertErr?.message || "Kampagne konnte nicht gespeichert werden." }, { status: 500 });
+  // If the user sends an existing draft, UPDATE that row so `created_at`
+  // reflects the original draft creation time (not the send time).
+  let campaignId: string | null = null;
+  if (draftId) {
+    const { data: existing } = await supabase
+      .from("email_campaigns")
+      .select("id, status")
+      .eq("id", draftId)
+      .maybeSingle();
+    if (existing && existing.status === "draft") {
+      const { error: updErr } = await supabase
+        .from("email_campaigns")
+        .update({
+          name: name || null,
+          subject,
+          body_text: bodyTextSummary,
+          content_blocks: contentBlocks,
+          recipient_count: recipients.length,
+          recipient_emails: recipientEmails,
+          excluded_patient_ids: Array.from(excludedSet),
+          audience_type: audienceType,
+          status,
+          scheduled_at: scheduledAt || null,
+        })
+        .eq("id", draftId);
+      if (updErr) {
+        return NextResponse.json({ error: updErr.message }, { status: 500 });
+      }
+      campaignId = draftId;
+    }
+  }
+
+  if (!campaignId) {
+    const { data: campaign, error: insertErr } = await supabase
+      .from("email_campaigns")
+      .insert({
+        name: name || null,
+        subject,
+        body_text: bodyTextSummary,
+        content_blocks: contentBlocks,
+        recipient_count: recipients.length,
+        recipient_emails: recipientEmails,
+        excluded_patient_ids: Array.from(excludedSet),
+        audience_type: audienceType,
+        status,
+        scheduled_at: scheduledAt || null,
+      })
+      .select("id")
+      .single();
+
+    if (insertErr || !campaign) {
+      return NextResponse.json({ error: insertErr?.message || "Kampagne konnte nicht gespeichert werden." }, { status: 500 });
+    }
+    campaignId = campaign.id;
   }
 
   try {
@@ -161,15 +200,15 @@ export async function POST(req: NextRequest) {
         status: scheduledAt ? "scheduled" : "sent",
         sent_at: scheduledAt ? null : new Date().toISOString(),
       })
-      .eq("id", campaign.id);
+      .eq("id", campaignId);
 
-    return NextResponse.json({ ok: true, campaignId: campaign.id, recipientCount: recipients.length });
+    return NextResponse.json({ ok: true, campaignId, recipientCount: recipients.length });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unbekannter Fehler";
     await supabase
       .from("email_campaigns")
       .update({ status: "failed", error_message: message })
-      .eq("id", campaign.id);
+      .eq("id", campaignId);
 
     return NextResponse.json({ error: message }, { status: 500 });
   }

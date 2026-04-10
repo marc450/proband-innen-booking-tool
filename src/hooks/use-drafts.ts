@@ -44,7 +44,7 @@ export interface UseDraftsReturn {
   deleteReplyDraft: (threadId: string) => Promise<void>;
 }
 
-const DEBOUNCE_MS = 1500;
+const DEBOUNCE_MS = 500;
 const STORAGE_BUCKET = "draft-images";
 
 // Upload base64 inline images to Supabase Storage and replace src with public URLs.
@@ -122,6 +122,10 @@ export function useDrafts(): UseDraftsReturn {
   const [replyDrafts, setReplyDrafts] = useState<Record<string, ReplyDraft>>({});
   const [loading, setLoading] = useState(true);
 
+  // Loaded flag — until the initial fetch completes, we must NOT allow saves to
+  // fire (they could race against the fetch and overwrite the user's typing).
+  const loadedRef = useRef(false);
+
   // Track existing DB row IDs to decide insert vs update
   const composeRowId = useRef<string | null>(null);
   const replyRowIds = useRef<Record<string, string>>({});
@@ -130,9 +134,13 @@ export function useDrafts(): UseDraftsReturn {
   const composeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const replyTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
-  // Refs for latest draft data (for flush-on-unmount)
+  // Refs for latest draft data (for flush-on-unmount and pagehide)
   const pendingCompose = useRef<ComposeDraft | null>(null);
   const pendingReplies = useRef<Record<string, ReplyDraft>>({});
+
+  // In-flight flush promises — serialize flushes per key so we never double-insert
+  const composeFlushChain = useRef<Promise<void>>(Promise.resolve());
+  const replyFlushChains = useRef<Record<string, Promise<void>>>({});
 
   // ── Fetch all drafts on mount ──
   useEffect(() => {
@@ -143,7 +151,11 @@ export function useDrafts(): UseDraftsReturn {
           .from("email_drafts")
           .select("id, kind, thread_id, to, subject, body, cc, bcc, show_cc, show_bcc");
 
-        if (cancelled || !data) { setLoading(false); return; }
+        if (cancelled || !data) {
+          loadedRef.current = true;
+          setLoading(false);
+          return;
+        }
 
         const rows = data as DbRow[];
         for (const row of rows) {
@@ -173,68 +185,114 @@ export function useDrafts(): UseDraftsReturn {
       } catch {
         // Non-critical — drafts are a nice-to-have
       }
+      loadedRef.current = true;
       setLoading(false);
+      // If the user already started typing while loading, flush it now so we
+      // don't sit on unsaved state indefinitely.
+      if (pendingCompose.current) {
+        flushCompose(pendingCompose.current);
+      }
+      for (const [threadId, draft] of Object.entries(pendingReplies.current)) {
+        flushReply(threadId, draft);
+      }
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Flush pending saves on unmount ──
-  useEffect(() => {
-    return () => {
-      if (composeTimer.current) {
-        clearTimeout(composeTimer.current);
+  // ── Compose draft: persist to Supabase (serialized) ──
+  const flushCompose = useCallback(
+    (draft: ComposeDraft) => {
+      const run = async () => {
+        try {
+          // Resolve the target row (SELECT-then-INSERT/UPDATE) — we don't rely
+          // on a partial unique index for upsert because ON CONFLICT with
+          // partial indexes is fragile via PostgREST.
+          if (!composeRowId.current) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            // Look up any existing compose row for this user first
+            const { data: existing } = await supabase
+              .from("email_drafts")
+              .select("id")
+              .eq("user_id", user.id)
+              .eq("kind", "compose")
+              .maybeSingle();
+            if (existing?.id) {
+              composeRowId.current = existing.id;
+            } else {
+              // Upload images to a user-scoped namespace (no row id yet)
+              const safeBodyPre = await uploadInlineImages(draft.body, supabase, `compose-${user.id}`);
+              const { data: inserted } = await supabase
+                .from("email_drafts")
+                .insert({
+                  user_id: user.id,
+                  kind: "compose",
+                  to: draft.to,
+                  subject: draft.subject,
+                  body: safeBodyPre,
+                  cc: draft.cc,
+                  bcc: draft.bcc,
+                })
+                .select("id")
+                .single();
+              if (inserted?.id) {
+                composeRowId.current = inserted.id;
+                return; // Insert already persisted the latest draft body
+              }
+              return; // Insert failed — bail out, try again next flush
+            }
+          }
+
+          const rowId = composeRowId.current;
+          if (!rowId) return;
+          const safeBody = await uploadInlineImages(draft.body, supabase, rowId);
+          await supabase
+            .from("email_drafts")
+            .update({
+              to: draft.to,
+              subject: draft.subject,
+              body: safeBody,
+              cc: draft.cc,
+              bcc: draft.bcc,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", rowId);
+        } catch { /* non-critical */ }
+      };
+      // Chain onto any in-flight flush so we never run two at once
+      const next = composeFlushChain.current.then(run, run);
+      composeFlushChain.current = next;
+      return next;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const saveComposeDraft = useCallback(
+    (draft: ComposeDraft) => {
+      setComposeDraft(draft);
+      pendingCompose.current = draft;
+      // Never fire saves before the initial fetch has finished — otherwise the
+      // fetch result (which may overwrite composeRowId) could clobber the save.
+      if (!loadedRef.current) return;
+      if (composeTimer.current) clearTimeout(composeTimer.current);
+      composeTimer.current = setTimeout(() => {
+        composeTimer.current = null;
         if (pendingCompose.current) {
           flushCompose(pendingCompose.current);
         }
-      }
-      for (const [threadId, timer] of Object.entries(replyTimers.current)) {
-        clearTimeout(timer);
-        if (pendingReplies.current[threadId]) {
-          flushReply(threadId, pendingReplies.current[threadId]);
-        }
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ── Compose draft: persist to Supabase ──
-  const flushCompose = async (draft: ComposeDraft) => {
-    try {
-      // Ensure we have a row ID (needed for image storage path)
-      if (!composeRowId.current) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        const { data } = await supabase
-          .from("email_drafts")
-          .insert({ user_id: user.id, kind: "compose", to: draft.to, subject: draft.subject, body: "", cc: draft.cc, bcc: draft.bcc })
-          .select("id")
-          .single();
-        if (data) composeRowId.current = data.id;
-        else return;
-      }
-      const rowId = composeRowId.current!;
-      const safeBody = await uploadInlineImages(draft.body, supabase, rowId);
-      await supabase
-        .from("email_drafts")
-        .update({ to: draft.to, subject: draft.subject, body: safeBody, cc: draft.cc, bcc: draft.bcc, updated_at: new Date().toISOString() })
-        .eq("id", rowId);
-    } catch { /* non-critical */ }
-    pendingCompose.current = null;
-  };
-
-  const saveComposeDraft = useCallback((draft: ComposeDraft) => {
-    setComposeDraft(draft);
-    pendingCompose.current = draft;
-    if (composeTimer.current) clearTimeout(composeTimer.current);
-    composeTimer.current = setTimeout(() => flushCompose(draft), DEBOUNCE_MS);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      }, DEBOUNCE_MS);
+    },
+    [flushCompose],
+  );
 
   const deleteComposeDraft = useCallback(async () => {
     if (composeTimer.current) clearTimeout(composeTimer.current);
     pendingCompose.current = null;
     setComposeDraft(null);
+    // Wait for any in-flight flush so we don't delete before it has created the row
+    try { await composeFlushChain.current; } catch { /* ignore */ }
     if (composeRowId.current) {
       cleanupDraftImages(supabase, composeRowId.current);
       await supabase.from("email_drafts").delete().eq("id", composeRowId.current);
@@ -244,37 +302,90 @@ export function useDrafts(): UseDraftsReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Reply draft: persist to Supabase ──
-  const flushReply = async (threadId: string, draft: ReplyDraft) => {
-    try {
-      // Ensure we have a row ID (needed for image storage path)
-      if (!replyRowIds.current[threadId]) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        const { data } = await supabase
-          .from("email_drafts")
-          .insert({ user_id: user.id, kind: "reply", thread_id: threadId, body: "", cc: draft.cc, bcc: draft.bcc, show_cc: draft.showCc, show_bcc: draft.showBcc })
-          .select("id")
-          .single();
-        if (data) replyRowIds.current[threadId] = data.id;
-        else return;
-      }
-      const safeHtml = await uploadInlineImages(draft.html, supabase, replyRowIds.current[threadId]);
-      await supabase
-        .from("email_drafts")
-        .update({ body: safeHtml, cc: draft.cc, bcc: draft.bcc, show_cc: draft.showCc, show_bcc: draft.showBcc, updated_at: new Date().toISOString() })
-        .eq("id", replyRowIds.current[threadId]);
-    } catch { /* non-critical */ }
-    delete pendingReplies.current[threadId];
-  };
+  // ── Reply draft: persist to Supabase (serialized) ──
+  const flushReply = useCallback(
+    (threadId: string, draft: ReplyDraft) => {
+      const run = async () => {
+        try {
+          if (!replyRowIds.current[threadId]) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { data: existing } = await supabase
+              .from("email_drafts")
+              .select("id")
+              .eq("user_id", user.id)
+              .eq("kind", "reply")
+              .eq("thread_id", threadId)
+              .maybeSingle();
+            if (existing?.id) {
+              replyRowIds.current[threadId] = existing.id;
+            } else {
+              const safeHtmlPre = await uploadInlineImages(
+                draft.html,
+                supabase,
+                `reply-${user.id}-${threadId}`,
+              );
+              const { data: inserted } = await supabase
+                .from("email_drafts")
+                .insert({
+                  user_id: user.id,
+                  kind: "reply",
+                  thread_id: threadId,
+                  body: safeHtmlPre,
+                  cc: draft.cc,
+                  bcc: draft.bcc,
+                  show_cc: draft.showCc,
+                  show_bcc: draft.showBcc,
+                })
+                .select("id")
+                .single();
+              if (inserted?.id) {
+                replyRowIds.current[threadId] = inserted.id;
+                return; // Insert already persisted the latest draft body
+              }
+              return;
+            }
+          }
 
-  const saveReplyDraft = useCallback((threadId: string, draft: ReplyDraft) => {
-    setReplyDrafts((prev) => ({ ...prev, [threadId]: draft }));
-    pendingReplies.current[threadId] = draft;
-    if (replyTimers.current[threadId]) clearTimeout(replyTimers.current[threadId]);
-    replyTimers.current[threadId] = setTimeout(() => flushReply(threadId, draft), DEBOUNCE_MS);
+          const rowId = replyRowIds.current[threadId];
+          const safeHtml = await uploadInlineImages(draft.html, supabase, rowId);
+          await supabase
+            .from("email_drafts")
+            .update({
+              body: safeHtml,
+              cc: draft.cc,
+              bcc: draft.bcc,
+              show_cc: draft.showCc,
+              show_bcc: draft.showBcc,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", rowId);
+        } catch { /* non-critical */ }
+      };
+      const prev = replyFlushChains.current[threadId] || Promise.resolve();
+      const next = prev.then(run, run);
+      replyFlushChains.current[threadId] = next;
+      return next;
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    [],
+  );
+
+  const saveReplyDraft = useCallback(
+    (threadId: string, draft: ReplyDraft) => {
+      setReplyDrafts((prev) => ({ ...prev, [threadId]: draft }));
+      pendingReplies.current[threadId] = draft;
+      if (!loadedRef.current) return;
+      if (replyTimers.current[threadId]) clearTimeout(replyTimers.current[threadId]);
+      replyTimers.current[threadId] = setTimeout(() => {
+        delete replyTimers.current[threadId];
+        if (pendingReplies.current[threadId]) {
+          flushReply(threadId, pendingReplies.current[threadId]);
+        }
+      }, DEBOUNCE_MS);
+    },
+    [flushReply],
+  );
 
   const deleteReplyDraft = useCallback(async (threadId: string) => {
     if (replyTimers.current[threadId]) clearTimeout(replyTimers.current[threadId]);
@@ -284,6 +395,7 @@ export function useDrafts(): UseDraftsReturn {
       delete next[threadId];
       return next;
     });
+    try { await (replyFlushChains.current[threadId] || Promise.resolve()); } catch { /* ignore */ }
     if (replyRowIds.current[threadId]) {
       cleanupDraftImages(supabase, replyRowIds.current[threadId]);
       await supabase.from("email_drafts").delete().eq("id", replyRowIds.current[threadId]);
@@ -291,6 +403,43 @@ export function useDrafts(): UseDraftsReturn {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Flush pending saves when the page is hidden or unmounts ──
+  // Runs BOTH on React unmount and on browser pagehide / visibilitychange so
+  // drafts survive tab-close and hard reloads.
+  useEffect(() => {
+    const flushAllPending = () => {
+      if (composeTimer.current) {
+        clearTimeout(composeTimer.current);
+        composeTimer.current = null;
+      }
+      if (pendingCompose.current) {
+        flushCompose(pendingCompose.current);
+      }
+      for (const [threadId, timer] of Object.entries(replyTimers.current)) {
+        clearTimeout(timer);
+        if (pendingReplies.current[threadId]) {
+          flushReply(threadId, pendingReplies.current[threadId]);
+        }
+      }
+      replyTimers.current = {};
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flushAllPending();
+    };
+    const onPageHide = () => flushAllPending();
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", onPageHide);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onPageHide);
+      // Final flush on React unmount
+      flushAllPending();
+    };
+  }, [flushCompose, flushReply]);
 
   // Clean up old localStorage on mount
   useEffect(() => {

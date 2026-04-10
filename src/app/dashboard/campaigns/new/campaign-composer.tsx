@@ -372,6 +372,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          id: campaignId || undefined,
           name,
           subject,
           contentBlocks,
