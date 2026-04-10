@@ -46,24 +46,21 @@ export function Hero({ content }: { content: CourseHeroContent }) {
             </h1>
 
             {content.stats && content.stats.length > 0 && (
-              <div className="grid grid-cols-3 gap-3 md:gap-4 mb-8">
-                {content.stats.map((stat) => {
+              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-y-2 mb-8">
+                {content.stats.map((stat, i) => {
                   const Icon = STAT_ICON_MAP[stat.icon] || Sparkles;
                   return (
                     <div
                       key={stat.label}
-                      className="flex flex-col items-center text-center bg-white/60 rounded-[12px] px-3 py-4"
+                      className={`flex items-center gap-2 text-[13px] md:text-sm ${
+                        i > 0 ? "sm:pl-4 sm:ml-4 sm:border-l sm:border-black/15" : ""
+                      }`}
                     >
-                      <div className="w-11 h-11 rounded-full bg-[#0066FF]/10 flex items-center justify-center mb-2.5">
-                        <Icon
-                          className="w-5 h-5 text-[#0066FF]"
-                          strokeWidth={2.25}
-                        />
-                      </div>
-                      <span className="text-[10px] uppercase tracking-wider text-black/55 font-semibold mb-1">
-                        {stat.label}
-                      </span>
-                      <span className="text-[13px] md:text-sm font-bold text-black leading-tight">
+                      <Icon
+                        className="w-4 h-4 text-[#0066FF] flex-shrink-0"
+                        strokeWidth={2.5}
+                      />
+                      <span className="font-semibold text-black">
                         {stat.value}
                       </span>
                     </div>
