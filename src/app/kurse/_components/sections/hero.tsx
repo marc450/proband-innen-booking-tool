@@ -7,7 +7,6 @@ import {
   MapPin,
   Calendar,
   Sparkles,
-  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import type { CourseHeroContent } from "@/content/kurse/types";
@@ -41,19 +40,6 @@ export function Hero({ content }: { content: CourseHeroContent }) {
               <p className="text-xs md:text-sm font-semibold tracking-[0.2em] text-[#0066FF] mb-4">
                 {content.kicker}
               </p>
-            )}
-
-            {content.socialProof && (
-              <div className="inline-flex items-center gap-2 bg-white/70 backdrop-blur-sm rounded-full px-3.5 py-1.5 mb-4 shadow-sm">
-                <ShieldCheck
-                  className="w-4 h-4 text-[#0066FF] flex-shrink-0"
-                  strokeWidth={2.5}
-                  aria-hidden="true"
-                />
-                <span className="text-xs md:text-sm font-semibold text-black">
-                  {content.socialProof}
-                </span>
-              </div>
             )}
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-[1.05]">
@@ -95,13 +81,23 @@ export function Hero({ content }: { content: CourseHeroContent }) {
               {content.description}
             </p>
 
-            <div className="mt-8">
+            <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
               <a
                 href="#kursangebote"
-                className="inline-block text-[1.1rem] font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-6 py-3.5 transition-colors"
+                className="inline-block text-[1.1rem] font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-6 py-3.5 transition-colors text-center sm:text-left"
               >
                 Zu den Kursangeboten
               </a>
+              {content.socialProof && (
+                <div className="flex items-center gap-2 text-sm text-black/70">
+                  <Users
+                    className="w-4 h-4 text-[#0066FF] flex-shrink-0"
+                    strokeWidth={2.5}
+                    aria-hidden="true"
+                  />
+                  <span className="font-semibold">{content.socialProof}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
