@@ -39,13 +39,16 @@ export function HeroVideo({ videoPath, videoPoster }: HeroVideoProps) {
         <source src={videoPath} type="video/mp4" />
       </video>
 
-      {/* Unmute button — visible only while muted, fades out once audio is on */}
+      {/* Mute toggle — prominent "Ton einschalten" pill while muted,
+          compact icon-only toggle after unmuting so viewers can mute again. */}
       <button
         type="button"
         onClick={toggleMute}
         aria-label={muted ? "Ton einschalten" : "Ton ausschalten"}
-        className={`absolute bottom-4 right-4 flex items-center gap-2 rounded-full bg-black/70 hover:bg-black/85 text-white backdrop-blur-sm px-4 py-2.5 text-sm font-semibold shadow-lg transition-all duration-300 ${
-          muted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
+        className={`absolute bottom-4 right-4 flex items-center gap-2 rounded-full bg-black/70 hover:bg-black/85 text-white backdrop-blur-sm shadow-lg transition-all duration-300 ${
+          muted
+            ? "px-4 py-2.5 text-sm font-semibold"
+            : "p-2.5"
         }`}
       >
         {muted ? (
@@ -54,10 +57,7 @@ export function HeroVideo({ videoPath, videoPoster }: HeroVideoProps) {
             <span>Ton einschalten</span>
           </>
         ) : (
-          <>
-            <Volume2 className="w-4 h-4" />
-            <span>Ton aus</span>
-          </>
+          <Volume2 className="w-4 h-4" />
         )}
       </button>
     </div>
