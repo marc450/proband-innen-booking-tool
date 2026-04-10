@@ -246,6 +246,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     onBook={() => handleBooking("Onlinekurs")}
                     isLoading={loadingCheckout === "Onlinekurs-direct"}
                     cmePoints={template.cme_online || undefined}
+                    titleClassName="text-2xl"
                   />
                 )}
 
