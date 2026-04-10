@@ -1,5 +1,11 @@
 @AGENTS.md
 
+## LearnWorlds Embed (DO NOT EDIT without explicit permission)
+- `src/app/courses/[courseKey]/**` is the LearnWorlds iframe embed page
+- NEVER modify any file under `src/app/courses/[courseKey]/` (including `course-card.tsx`, `course-cards-page.tsx`, `premium-card.tsx`, `termin-update-modal.tsx`, etc.) unless the user explicitly asks you to touch the embed
+- The standalone landing page at `https://proband-innen.ephia.de/kurse/[slug]` lives under `src/app/kurse/[slug]/` and uses components from `src/app/kurse/_components/` — edit those files when changing the `/kurse/...` page, NOT the embed files
+- Note: `src/app/kurse/_components/widget/` is NOT the embed despite the folder name — it is the card component set used by the `/kurse/[slug]` landing page
+
 ## Language & Tone (User-facing text)
 - Always use informal German with "Du" (capital D), e.g. "Deine Buchung", "Dein Termin"
 - Gender correctly: "Proband:innen", "Patient:innen", "Ärzt:innen"

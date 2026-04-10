@@ -28,10 +28,8 @@ interface IncludedCourse {
   badgeClasses: string;
 }
 
-// Color coding per course — matched bg + text + hover
-const PERIORAL_BADGE = "bg-purple-100 text-purple-700 hover:bg-purple-200";
-const THERAPEUTISCH_BADGE = "bg-emerald-100 text-emerald-700 hover:bg-emerald-200";
-const HAUTPFLEGE_BADGE = "bg-rose-100 text-rose-700 hover:bg-rose-200";
+// All included courses use the same blue badge style
+const INCLUDED_BADGE = "bg-blue-100 text-blue-700 hover:bg-blue-200";
 
 interface PremiumCardProps {
   dates: CourseDate[];
@@ -82,7 +80,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
       "1.5 Jahre Zugriff",
       "Zertifikat",
     ],
-    badgeClasses: PERIORAL_BADGE,
+    badgeClasses: INCLUDED_BADGE,
   },
   {
     name: "Aufbaukurs Botulinum: Therapeutische Indikationen",
@@ -121,7 +119,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
       "1.5 Jahre Zugriff",
       "Zertifikat",
     ],
-    badgeClasses: THERAPEUTISCH_BADGE,
+    badgeClasses: INCLUDED_BADGE,
   },
   {
     name: "Grundkurs Medizinische Hautpflege",
@@ -163,7 +161,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
       "1.5 Jahre Zugriff",
       "Zertifikat",
     ],
-    badgeClasses: HAUTPFLEGE_BADGE,
+    badgeClasses: INCLUDED_BADGE,
   },
 ];
 
@@ -450,11 +448,15 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
         <ul className="space-y-3">
           <li className="flex items-center gap-2">
             <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" />
-            <span className="text-base text-[#0066FF] font-bold">Akkreditiert mit 49 CME-Punkten</span>
+            <span className="text-base text-black">Akkreditiert mit 49 CME-Punkten</span>
           </li>
-          <li className="flex items-center gap-2">
-            <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" />
-            <span className="text-base text-black italic">Vollständiger Kombikurs</span>
+          <li className="flex items-start gap-2">
+            <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+            <span className="text-base text-black italic">Vollständiger Onlinekurs</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" />
+            <span className="text-base text-black italic">Vollständiger Praxiskurs</span>
           </li>
           {INCLUDED_COURSES.map((course, index) => (
             <li key={index} className="flex items-start gap-2">
