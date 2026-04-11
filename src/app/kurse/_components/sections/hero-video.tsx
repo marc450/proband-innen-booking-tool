@@ -12,6 +12,11 @@ interface HeroVideoProps {
    * aspect used on the course hero; override for landscape contexts.
    */
   aspectClassName?: string;
+  /**
+   * When false, the mute/unmute toggle is hidden and the video stays
+   * permanently muted. Defaults to true (toggle visible).
+   */
+  allowUnmute?: boolean;
 }
 
 export function HeroVideo({
@@ -19,6 +24,7 @@ export function HeroVideo({
   videoPoster,
   videoCaptionsPath,
   aspectClassName = "aspect-[4/5] md:aspect-[4/3] lg:aspect-[4/5]",
+  allowUnmute = true,
 }: HeroVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
@@ -101,26 +107,29 @@ export function HeroVideo({
       </video>
 
       {/* Mute toggle — prominent "Ton einschalten" pill while muted,
-          compact icon-only toggle after unmuting so viewers can mute again. */}
-      <button
-        type="button"
-        onClick={toggleMute}
-        aria-label={muted ? "Ton einschalten" : "Ton ausschalten"}
-        className={`absolute bottom-4 right-4 flex items-center gap-2 rounded-full bg-black/70 hover:bg-black/85 text-white backdrop-blur-sm shadow-lg transition-all duration-300 ${
-          muted
-            ? "px-4 py-2.5 text-sm font-semibold"
-            : "p-2.5"
-        }`}
-      >
-        {muted ? (
-          <>
-            <VolumeX className="w-4 h-4" />
-            <span>Ton einschalten</span>
-          </>
-        ) : (
-          <Volume2 className="w-4 h-4" />
-        )}
-      </button>
+          compact icon-only toggle after unmuting so viewers can mute again.
+          Hidden entirely when `allowUnmute` is false. */}
+      {allowUnmute && (
+        <button
+          type="button"
+          onClick={toggleMute}
+          aria-label={muted ? "Ton einschalten" : "Ton ausschalten"}
+          className={`absolute bottom-4 right-4 flex items-center gap-2 rounded-full bg-black/70 hover:bg-black/85 text-white backdrop-blur-sm shadow-lg transition-all duration-300 ${
+            muted
+              ? "px-4 py-2.5 text-sm font-semibold"
+              : "p-2.5"
+          }`}
+        >
+          {muted ? (
+            <>
+              <VolumeX className="w-4 h-4" />
+              <span>Ton einschalten</span>
+            </>
+          ) : (
+            <Volume2 className="w-4 h-4" />
+          )}
+        </button>
+      )}
     </div>
   );
 }

@@ -145,6 +145,7 @@ export default function WerdeProbandInPage() {
               <HeroVideo
                 videoPath={hero.videoPath}
                 aspectClassName="aspect-[4/5] md:aspect-[4/5]"
+                allowUnmute={false}
               />
             </div>
           </div>
