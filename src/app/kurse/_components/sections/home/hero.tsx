@@ -18,7 +18,7 @@ export function HomeHero({ content }: { content: HomeHeroContent }) {
         />
 
         <div className="relative max-w-3xl mx-auto px-5 pt-16 pb-20 sm:pt-24 sm:pb-28 flex flex-col items-center text-center">
-          <h1 className="text-[2.5rem] sm:text-[3rem] font-bold tracking-tight leading-[1.05] text-black mb-8">
+          <h1 className="text-[2.5rem] sm:text-[3rem] font-bold tracking-tight leading-[1.2] text-black mb-8">
             {content.heading}
           </h1>
 
@@ -63,7 +63,7 @@ export function HomeHero({ content }: { content: HomeHeroContent }) {
           </div>
 
           <div>
-            <h1 className="text-5xl lg:text-6xl font-bold tracking-tight mb-8 leading-[1.05]">
+            <h1 className="text-5xl lg:text-6xl font-bold tracking-tight mb-8 leading-[1.2]">
               {content.heading}
             </h1>
 
