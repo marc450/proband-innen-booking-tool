@@ -192,7 +192,7 @@ export const homeContent: HomeContent = {
   },
 
   instagram: {
-    eyebrow: "Folge uns · @ephia.de auf Instagram",
+    eyebrow: "Folge uns · @ephia.academy auf Instagram",
     heading: "NEWSLETTER SIND VON GESTERN",
     subheading: "Folge uns einfach auf Insta!",
     widgetId: "6fbfcc53812a55ec9db620f1a9d278b6",
