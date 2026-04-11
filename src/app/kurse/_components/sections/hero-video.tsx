@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 
 interface HeroVideoProps {
@@ -22,6 +22,44 @@ export function HeroVideo({
 }: HeroVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
+
+  // Force-kick autoplay after mount. The `autoPlay` attribute alone is not
+  // reliable across mobile browsers (iOS Safari in particular sometimes
+  // ignores it on initial load), so we explicitly call play() once the
+  // element is in the DOM. Must stay muted + playsInline for autoplay
+  // policies to allow it.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const tryPlay = () => {
+      video.muted = true;
+      const p = video.play();
+      if (p && typeof p.catch === "function") {
+        p.catch(() => {
+          // Some browsers still refuse — fall back to play-on-first-interaction
+          const onInteract = () => {
+            void video.play().catch(() => {});
+            window.removeEventListener("touchstart", onInteract);
+            window.removeEventListener("click", onInteract);
+          };
+          window.addEventListener("touchstart", onInteract, { passive: true });
+          window.addEventListener("click", onInteract);
+        });
+      }
+    };
+
+    if (video.readyState >= 2) {
+      tryPlay();
+    } else {
+      const onReady = () => {
+        tryPlay();
+        video.removeEventListener("loadeddata", onReady);
+      };
+      video.addEventListener("loadeddata", onReady);
+      return () => video.removeEventListener("loadeddata", onReady);
+    }
+  }, []);
 
   const toggleMute = () => {
     const video = videoRef.current;
@@ -45,7 +83,7 @@ export function HeroVideo({
         muted
         loop
         playsInline
-        preload="metadata"
+        preload="auto"
         disableRemotePlayback
         // @ts-expect-error fetchpriority is valid HTML but not yet in React types
         fetchpriority="high"

@@ -20,7 +20,7 @@ export function SectionEyebrow({
   const color = tone === "light" ? "text-white/60" : "text-[#0066FF]/70";
   return (
     <p
-      className={`text-xs font-semibold tracking-[0.3em] uppercase ${color} mb-3 ${className}`}
+      className={`hidden md:block text-xs font-semibold tracking-[0.3em] uppercase ${color} mb-3 ${className}`}
     >
       {children}
     </p>
