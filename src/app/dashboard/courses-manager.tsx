@@ -77,6 +77,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
   // Duplicate dialog
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [duplicatingCourse, setDuplicatingCourse] = useState<Course | null>(null);
+  const [duplicateTemplateId, setDuplicateTemplateId] = useState("");
   const [duplicateDate, setDuplicateDate] = useState("");
   const [duplicateInstructor, setDuplicateInstructor] = useState("");
   const [duplicateLocation, setDuplicateLocation] = useState("");
@@ -280,6 +281,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
 
   const openDuplicate = (course: Course) => {
     setDuplicatingCourse(course);
+    setDuplicateTemplateId(course.template_id || "");
     setDuplicateDate("");
     setDuplicateInstructor(course.instructor || "");
     setDuplicateLocation(course.location || "");
@@ -288,25 +290,29 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
 
   const resetDuplicateForm = () => {
     setDuplicatingCourse(null);
+    setDuplicateTemplateId("");
     setDuplicateDate("");
     setDuplicateInstructor("");
     setDuplicateLocation("");
   };
 
   const handleDuplicate = async () => {
-    if (!duplicatingCourse || !duplicateDate || !duplicateInstructor || !duplicateLocation.trim()) return;
+    if (!duplicatingCourse || !duplicateTemplateId || !duplicateDate || !duplicateInstructor || !duplicateLocation.trim()) return;
+
+    const template = templates.find((t) => t.id === duplicateTemplateId);
+    if (!template) return;
 
     const { data: newCourse, error: courseError } = await supabase
       .from("courses")
       .insert({
-        template_id: duplicatingCourse.template_id,
-        title: duplicatingCourse.title,
-        treatment_title: duplicatingCourse.treatment_title,
-        description: duplicatingCourse.description,
-        service_description: duplicatingCourse.service_description,
-        guide_price: duplicatingCourse.guide_price,
+        template_id: template.id,
+        title: template.title,
+        treatment_title: template.treatment_title || null,
+        description: template.description,
+        service_description: template.service_description,
+        guide_price: template.guide_price,
         instructor: duplicateInstructor,
-        image_url: duplicatingCourse.image_url,
+        image_url: template.image_url,
         course_date: duplicateDate,
         location: duplicateLocation,
       })
@@ -588,8 +594,29 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
 
           <div className="space-y-4 py-1">
             <p className="text-sm text-muted-foreground">
-              Kopiert <strong>{duplicatingCourse?.title}</strong> mit allen Zeitfenstern auf ein neues Datum.
+              Kopiert <strong>{duplicatingCourse?.title}</strong> mit allen Zeitfenstern. Du kannst Kurstyp, Datum, Dozent:in und Ort vor dem Duplizieren anpassen.
             </p>
+
+            <div className="space-y-1.5">
+              <Label>Kursvorlage *</Label>
+              <Select value={duplicateTemplateId} onValueChange={(v) => setDuplicateTemplateId(v || "")}>
+                <SelectTrigger className="h-10 w-full">
+                  <span className="flex flex-1 text-left line-clamp-1">
+                    {duplicateTemplateId
+                      ? templates.find((t) => t.id === duplicateTemplateId)?.title ?? "Vorlage auswählen..."
+                      : <span className="text-muted-foreground">Vorlage auswählen...</span>
+                    }
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  {templates.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="dup_date">Neues Datum *</Label>
@@ -641,7 +668,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
             </Button>
             <Button
               onClick={handleDuplicate}
-              disabled={!duplicateDate || !duplicateInstructor || !duplicateLocation.trim()}
+              disabled={!duplicateTemplateId || !duplicateDate || !duplicateInstructor || !duplicateLocation.trim()}
             >
               Duplizieren
             </Button>
