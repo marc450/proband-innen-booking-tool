@@ -6,7 +6,7 @@ import { Faq } from "../_components/sections/faq";
 import { TYPO } from "../_components/typography";
 
 export const metadata: Metadata = {
-  title: "Werde Proband:in — EPHIA",
+  title: "Werde Proband:in | EPHIA",
   description:
     "Werde Proband:in bei EPHIA: Profitiere von günstigen ästhetischen Behandlungen durch approbierte Ärzt:innen und unterstütze gleichzeitig deren praktische Ausbildung.",
   alternates: { canonical: "https://kurse.ephia.de/kurse/werde-proband-in" },
@@ -31,17 +31,17 @@ const usps = [
   {
     icon: ShieldCheck,
     title: "Behandlungen auf höchstem Niveau",
-    body: "Alle Behandlungen erfolgen durch approbierte Ärzt:innen, begleitet von erfahrenen Fachdozent:innen — für maximale Sicherheit und Transparenz während Deiner gesamten Behandlung.",
+    body: "Alle Behandlungen erfolgen durch approbierte Ärzt:innen, begleitet von erfahrenen Fachdozent:innen. So hast Du maximale Sicherheit und Transparenz während Deiner gesamten Behandlung.",
   },
   {
     icon: Sparkles,
     title: "Moderne Produkte & Techniken",
-    body: "Wir arbeiten ausschließlich mit hochwertigen, zugelassenen Präparaten und den aktuellen Methoden der ästhetischen Medizin — dieselben Standards wie in einer Privatpraxis.",
+    body: "Wir arbeiten ausschließlich mit hochwertigen, zugelassenen Präparaten und den aktuellen Methoden der ästhetischen Medizin. Dieselben Standards wie in einer Privatpraxis.",
   },
   {
     icon: HeartHandshake,
     title: "Diskriminierungssensible Ausbildung",
-    body: "Als Proband:in unterstützt Du eine werteorientierte medizinische Weiterbildung. Wir setzen uns für eine ästhetische Medizin ein, die Vielfalt sichtbar macht und alle Menschen mitdenkt — unabhängig von Alter, Geschlecht, Herkunft oder Körperform.",
+    body: "Als Proband:in unterstützt Du eine werteorientierte medizinische Weiterbildung. Wir setzen uns für eine ästhetische Medizin ein, die Vielfalt sichtbar macht und alle Menschen mitdenkt, unabhängig von Alter, Geschlecht, Herkunft oder Körperform.",
   },
 ];
 
@@ -54,7 +54,7 @@ const steps = [
   {
     number: "2",
     title: "Buchung bestätigen",
-    body: "Du hinterlegst ein Zahlungsmittel und bestätigst Deine Buchung. Der Richtpreis wird erst am Behandlungstag in der Praxis abgerechnet — nicht vorab.",
+    body: "Du hinterlegst ein Zahlungsmittel und bestätigst Deine Buchung. Der Richtpreis wird erst am Behandlungstag in der Praxis abgerechnet, nicht vorab.",
   },
   {
     number: "3",
@@ -74,7 +74,7 @@ const faq = {
     {
       question: "Wer kann eine Behandlung als Proband:in buchen?",
       answer:
-        "Grundsätzlich jede erwachsene Person, die sich für eine ästhetische Behandlung interessiert und bereit ist, diese im Rahmen eines Ausbildungskurses zu erhalten. Für manche Behandlungen gelten medizinische Voraussetzungen — diese findest Du in der jeweiligen Kursbeschreibung.",
+        "Grundsätzlich jede erwachsene Person, die sich für eine ästhetische Behandlung interessiert und bereit ist, diese im Rahmen eines Ausbildungskurses zu erhalten. Für manche Behandlungen gelten medizinische Voraussetzungen. Diese findest Du in der jeweiligen Kursbeschreibung.",
     },
     {
       question: "Was kostet mich die Behandlung?",
@@ -84,7 +84,7 @@ const faq = {
     {
       question: "Wird bei der Buchung sofort Geld abgebucht?",
       answer:
-        "Nein. Bei der Buchung wird nur Dein Zahlungsmittel hinterlegt. Bezahlt wird am Kurstag direkt in der Praxis. Eine Ausnahme gibt es nur beim No-Show (siehe unten).",
+        "Nein. Bei der Buchung wird nur Dein Zahlungsmittel hinterlegt. Bezahlt wird am Kurstag direkt in der Praxis. Eine Ausnahme gibt es nur, wenn Du unentschuldigt nicht zum Termin erscheinst (siehe unten).",
     },
     {
       question: "Wer führt die Behandlung durch?",
@@ -99,7 +99,7 @@ const faq = {
     {
       question: "Was passiert, wenn ich meinen Termin absagen muss?",
       answer:
-        "Wir bitten Dich, uns so früh wie möglich Bescheid zu geben, damit wir den Platz neu vergeben können. Bis 48 Stunden vor dem Termin kannst Du kostenfrei absagen. Wer unentschuldigt nicht erscheint (No-Show), dem berechnen wir eine Ausfallgebühr von 50 € — aus Fairness gegenüber den Ärzt:innen, Dozent:innen und anderen Proband:innen, die auf den Platz gewartet hätten.",
+        "Wir bitten Dich, uns so früh wie möglich Bescheid zu geben, damit wir den Platz neu vergeben können. Bis 48 Stunden vor dem Termin kannst Du kostenfrei absagen. Wer unentschuldigt nicht erscheint, dem berechnen wir eine Ausfallgebühr von 50 €, aus Fairness gegenüber den Ärzt:innen, Dozent:innen und anderen Proband:innen, die auf den Platz gewartet hätten.",
     },
     {
       question: "Ist die Behandlung sicher?",
@@ -195,7 +195,7 @@ export default function WerdeProbandInPage() {
           <div className="text-center mb-12 md:mb-14 max-w-2xl mx-auto">
             <h2 className={`${TYPO.h2} text-black`}>So läuft&apos;s ab</h2>
             <p className={`${TYPO.bodyLead} mt-4`}>
-              Von der Buchung bis zur Behandlung — transparent und ohne böse
+              Von der Buchung bis zur Behandlung, transparent und ohne böse
               Überraschungen.
             </p>
           </div>

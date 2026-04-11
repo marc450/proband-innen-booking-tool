@@ -9,7 +9,8 @@
 ## Language & Tone (User-facing text)
 - Always use informal German with "Du" (capital D), e.g. "Deine Buchung", "Dein Termin"
 - Gender correctly: "Proband:innen", "Patient:innen", "Ärzt:innen"
-- NEVER use any form of dash "–" in user-facing communication
+- NEVER use any form of dash as punctuation in user-facing communication. This includes em-dash "—", en-dash "–", and hyphen-as-separator " - ". Use commas, periods, or rephrase the sentence instead. Hyphens inside compound words (e.g. "E-Mail", "Follow-up") are fine.
+- This rule also applies to Claude's own chat responses: never use "—", "–", or " - " as sentence punctuation when writing to Marc.
 - Keep text friendly, clear, and direct
 
 ## Database Changes
