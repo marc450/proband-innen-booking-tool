@@ -7,6 +7,7 @@ import {
   MapPin,
   Calendar,
   Sparkles,
+  Heart,
   type LucideIcon,
 } from "lucide-react";
 import type { CourseHeroContent } from "@/content/kurse/types";
@@ -90,8 +91,8 @@ export function Hero({ content }: { content: CourseHeroContent }) {
               </a>
               {content.socialProof && (
                 <div className="flex items-center gap-2 text-sm text-black/70">
-                  <Users
-                    className="w-4 h-4 text-[#0066FF] flex-shrink-0"
+                  <Heart
+                    className="w-4 h-4 text-[#0066FF] flex-shrink-0 fill-[#0066FF]"
                     strokeWidth={2.5}
                     aria-hidden="true"
                   />
