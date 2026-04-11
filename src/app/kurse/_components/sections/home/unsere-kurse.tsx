@@ -66,21 +66,6 @@ export function UnsereKurse({
   );
 }
 
-/** The subtitle shown under the title when audience text adds real variant
- *  info (e.g. "Periorale Zone"). The generic "Für … mediziner:innen" /
- *  "Für Kurseinsteiger:innen" texts are redundant with the pills so we hide
- *  them. */
-function variantSubtitle(audience: string): string | null {
-  const redundant = [
-    "Für Humanmediziner:innen",
-    "Für Zahnmediziner:innen",
-    "Für Kurseinsteiger:innen",
-    "Für fortgeschrittene Ärzt:innen",
-    "Für private Kurse",
-  ];
-  return redundant.includes(audience) ? null : audience;
-}
-
 type CourseLevel = "grundkurs" | "aufbaukurs" | null;
 
 function getLevel(kicker: string): CourseLevel {
@@ -99,7 +84,6 @@ function CourseTile({
 }) {
   const isGroup = tile.type === "group-inquiry";
   const isExternal = tile.href?.startsWith("http");
-  const subtitle = variantSubtitle(tile.audience);
 
   // Title resolution order:
   //   1. `dbTitle` — when set, it comes from `course_templates.title`
@@ -180,10 +164,6 @@ function CourseTile({
       {/* Body */}
       <div className="flex flex-col flex-1 p-6 md:p-8">
         <h3 className={`${TYPO.h3} text-black`}>{fullTitle}</h3>
-
-        {subtitle && (
-          <p className={`${TYPO.bodySmall} mt-2`}>{subtitle}</p>
-        )}
 
         {/* Audience + level pills */}
         {(audiencePill || levelPill) && (
