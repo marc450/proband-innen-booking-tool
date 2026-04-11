@@ -24,7 +24,8 @@ export const homeContent: HomeContent = {
     ],
     ctaLabel: "Zu unseren Kursen ↓",
     ctaHref: "#unsere-kurse",
-    imagePath: "/kurse/home/hero.jpg",
+    imagePath:
+      "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/home/hero.png",
     imageAlt: "Drei Ärzt:innen im warmen Sonnenlicht",
   },
 
