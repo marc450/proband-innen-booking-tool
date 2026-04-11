@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     let productName: string;
     let description: string;
     let grossPrice: number;
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen-booking-tool-production-1269.up.railway.app";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen.ephia.de";
     const successUrl = `${baseUrl}/courses/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = "https://www.ephia.de";
 

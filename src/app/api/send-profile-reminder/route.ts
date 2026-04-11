@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, skipped: true });
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen-booking-tool-production-1269.up.railway.app";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen.ephia.de";
 
     await sendProfileReminderEmail(email, booking.first_name || "dort", bookingId, baseUrl);
 

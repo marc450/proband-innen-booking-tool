@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
       .lt("created_at", thirtyMinAgo);
 
     if (incompleteBookings && incompleteBookings.length > 0) {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen-booking-tool-production-1269.up.railway.app";
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen.ephia.de";
       for (const b of incompleteBookings) {
         try {
           await sendProfileReminderEmail(b.email, b.first_name || "Du", b.id, baseUrl);

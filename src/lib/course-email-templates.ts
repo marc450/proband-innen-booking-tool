@@ -66,7 +66,7 @@ function praxiskursInfoBox({
 const PROBANDINNEN_SECTION = `
     <h3 style="margin:16px 0 10px;font-size:16px;font-weight:bold;">Proband:innen-Organisation</h3>
     <p style="margin:0 0 20px;">
-      Für den Praxiskurs sollten alle Teilnehmer:innen eine:n eigene:n Proband:in mitbringen. Dein:e Proband:in registriert sich bitte spätestens zwei Wochen vor Kursbeginn über <a href="https://proband-innen-booking-tool-production-1269.up.railway.app/book" style="color:#0066FF;text-decoration:none;">diesen Link</a>.
+      Für den Praxiskurs sollten alle Teilnehmer:innen eine:n eigene:n Proband:in mitbringen. Dein:e Proband:in registriert sich bitte spätestens zwei Wochen vor Kursbeginn über <a href="https://proband-innen.ephia.de/book" style="color:#0066FF;text-decoration:none;">diesen Link</a>.
       <br><br>
       Solltest Du keine:n Proband:in mitbringen können, ist das kein Ausschlusskriterium: Melde Dich einfach unter <a href="mailto:customerlove@ephia.de" style="color:#0066FF;text-decoration:none;">customerlove@ephia.de</a>, wir greifen dann auf unseren Proband:innen-Pool zurück und versuchen, eine passende Person für Dich zu organisieren. Bitte beachte, dass Anmeldungen von Proband:innen nach einer Woche vor Kursstart nicht mehr beachtet werden können.
     </p>

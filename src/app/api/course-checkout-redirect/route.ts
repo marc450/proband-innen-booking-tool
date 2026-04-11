@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
       : template.name_online || template.title;
     const description = template.description_online || "";
     const grossPrice = template.price_gross_online || 0;
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen-booking-tool-production-1269.up.railway.app";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen.ephia.de";
     const successUrl = `${baseUrl}/courses/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = "https://www.ephia.de";
 
