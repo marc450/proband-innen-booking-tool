@@ -67,7 +67,7 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
         ) : (
           <div>
             <Link
-              href="/book"
+              href="/"
               className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-1"
             >
               &larr; Zurück zur Kursübersicht
