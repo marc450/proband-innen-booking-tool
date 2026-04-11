@@ -34,7 +34,7 @@ export interface HomeWerWirSindContent {
   heading: string;
   subheading: string;
   videoPath: string;
-  videoPoster: string;
+  videoPoster?: string;
   videoCaptionsPath?: string;
   personName: string;
   personTitle: string;

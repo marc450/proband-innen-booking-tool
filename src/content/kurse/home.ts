@@ -31,8 +31,8 @@ export const homeContent: HomeContent = {
   werWirSind: {
     heading: "WER WIR SIND",
     subheading: "„Ästhetische Medizin neu denken.\"",
-    videoPath: "/home/wer-wir-sind.mp4",
-    videoPoster: "/home/wer-wir-sind-poster.jpg",
+    videoPath:
+      "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/home/wer-wir-sind-web.mp4",
     personName: "Dr. Sophia Wilk-Vollmann",
     personTitle: "Gründerin von EPHIA",
   },
