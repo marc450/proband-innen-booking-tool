@@ -8,24 +8,37 @@ import { TYPO, titleCase } from "../../typography";
 import { SectionEyebrow } from "../../section-eyebrow";
 
 const BLUE = "#0066FF";
+const CREAM = "#FAEBE1";
 const CORAL = "#BF785E";
 
-export function UnsereKurse({ content }: { content: HomeCoursesContent }) {
+export function UnsereKurse({
+  content,
+  tone = "blue",
+}: {
+  content: HomeCoursesContent;
+  /** `blue` = blue section on the home page, `cream` = standalone page on rose bg. */
+  tone?: "blue" | "cream";
+}) {
   const [groupOpen, setGroupOpen] = useState(false);
+
+  const isCream = tone === "cream";
+  const sectionBg = isCream ? CREAM : BLUE;
+  const headingClass = isCream ? "text-black" : "text-white";
+  const eyebrowTone = isCream ? "dark" : "light";
 
   return (
     <>
       <section
         id="unsere-kurse"
         className="py-20 md:py-28 scroll-mt-24 md:scroll-mt-28"
-        style={{ backgroundColor: BLUE }}
+        style={{ backgroundColor: sectionBg }}
       >
         <div className="max-w-6xl mx-auto px-5 md:px-8">
           <div className="text-center mb-14">
             {content.eyebrow && (
-              <SectionEyebrow tone="light">{content.eyebrow}</SectionEyebrow>
+              <SectionEyebrow tone={eyebrowTone}>{content.eyebrow}</SectionEyebrow>
             )}
-            <h2 className={`${TYPO.h2} text-white`}>{content.heading}</h2>
+            <h2 className={`${TYPO.h2} ${headingClass}`}>{content.heading}</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14">

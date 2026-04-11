@@ -19,7 +19,7 @@ type NavLink = {
 const NAV_LINKS: NavLink[] = [
   {
     label: "Unsere Kurse",
-    href: "https://www.ephia.de/unsere-kurse",
+    href: "/kurse/unsere-kurse",
   },
   {
     label: "Über EPHIA",
