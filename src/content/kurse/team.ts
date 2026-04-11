@@ -44,7 +44,7 @@ export const teamContent: TeamPageContent = {
         name: "Dr. Sophia Wilk-Vollmann",
         role: "EPHIA Mitgründerin & Dozentin",
         imagePath:
-          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sophia.jpg",
+          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sophia.png",
         imageAlt: "Porträt von Dr. Sophia Wilk-Vollmann",
         shortBio:
           "Fachärztin für Anästhesie mit eigener Praxis für ästhetische Medizin. Sophia hat EPHIA gegründet, um ästhetische Medizin inklusiver, evidenzbasierter und patient:innenzentrierter zu machen.",
@@ -126,37 +126,17 @@ export const teamContent: TeamPageContent = {
         name: "Christina-Julia Bellinghausen",
         role: "Dozentin",
         imagePath:
-          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/tina.jpg",
+          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/tina.png",
         imageAlt: "Porträt von Christina-Julia Bellinghausen",
         shortBio:
           "Approbierte Ärztin mit Schwerpunkt auf ästhetischer Medizin. Tina unterstützt unsere Kurse als Dozentin und teilt ihre Erfahrung aus der täglichen Praxis.",
-      },
-      {
-        id: "sarah-bechstein",
-        name: "Dr. Sarah Bechstein",
-        role: "Dozentin",
-        imagePath:
-          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sarah-bechstein.jpg",
-        imageAlt: "Porträt von Dr. Sarah Bechstein",
-        shortBio:
-          "Dr. Sarah Bechstein ist Fachärztin und erfahrene Dozentin im Bereich ästhetische Medizin. Ihre Schwerpunkte umfassen Botulinum- und Fillerbehandlungen.",
-      },
-      {
-        id: "sarah-stannek",
-        name: "Dr. Sarah Stannek",
-        role: "Dozentin",
-        imagePath:
-          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sarah-stannek.jpg",
-        imageAlt: "Porträt von Dr. Sarah Stannek",
-        shortBio:
-          "Dr. Sarah Stannek begleitet unsere Kurse mit klinischer Expertise und hohem didaktischem Anspruch. Schwerpunkt: evidenzbasierte Injektionstechniken.",
       },
       {
         id: "pauline-freidl",
         name: "Pauline Freidl",
         role: "Dozentin",
         imagePath:
-          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/pauline.jpg",
+          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/pauline.png",
         imageAlt: "Porträt von Pauline Freidl",
         shortBio:
           "Approbierte Ärztin und Dozentin bei EPHIA. Pauline bringt eine ruhige, strukturierte Art in ihre Kurse und begleitet Teilnehmer:innen eng bei den praktischen Übungen.",
@@ -192,7 +172,7 @@ export const teamContent: TeamPageContent = {
         name: "Kathrin Schiebler",
         role: "Brand Consulting",
         imagePath:
-          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/kathrin.jpg",
+          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/kathrin.png",
         imageAlt: "Porträt von Kathrin Schiebler",
         shortBio:
           "Kathrin begleitet EPHIA strategisch bei allem rund um Brand, Kommunikation und Visual Identity.",
@@ -210,7 +190,7 @@ export const teamContent: TeamPageContent = {
         name: "Prof. Dr. Yawen Wang",
         role: "Review-Board",
         imagePath:
-          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/yawen.jpg",
+          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/yawen.png",
         imageAlt: "Porträt von Prof. Dr. Yawen Wang",
         shortBio:
           "Prof. Dr. Yawen Wang bringt ihre wissenschaftliche Expertise in unsere Kurskurierung ein und achtet auf Evidenzbasierung.",
@@ -219,7 +199,7 @@ export const teamContent: TeamPageContent = {
         name: "Caméa Jamet",
         role: "Review-Board",
         imagePath:
-          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/camea.jpg",
+          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/camea.png",
         imageAlt: "Porträt von Caméa Jamet",
         shortBio:
           "Caméa Jamet begleitet EPHIA fachlich und achtet besonders auf Inklusivität und Diversität in unseren Kursinhalten.",
@@ -228,7 +208,7 @@ export const teamContent: TeamPageContent = {
         name: "Dr. Ephsona Shencoru",
         role: "Review-Board",
         imagePath:
-          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/ephsona.jpg",
+          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/ephsona.png",
         imageAlt: "Porträt von Dr. Ephsona Shencoru",
         shortBio:
           "Dr. Ephsona Shencoru unterstützt das Review-Board mit ihrer klinischen und wissenschaftlichen Erfahrung.",
