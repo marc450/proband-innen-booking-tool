@@ -111,6 +111,8 @@ export interface CourseTestimonial {
 
 export interface CourseTestimonialsContent {
   heading: string;
+  /** Optional subheading under the main title (used on the home page) */
+  subheading?: string;
   items: CourseTestimonial[];
 }
 

@@ -11,7 +11,6 @@ import { Lernplattform } from "../_components/sections/lernplattform";
 import { CtaBanner } from "../_components/sections/cta-banner";
 import { Testimonials } from "../_components/sections/testimonials";
 import { Faq } from "../_components/sections/faq";
-import { StickyMobileCta } from "../_components/sections/sticky-mobile-cta";
 import { CourseCardsPage } from "../_components/widget/course-cards-page";
 
 export const dynamic = "force-dynamic";
@@ -164,7 +163,6 @@ export default async function KursPage({
       <CtaBanner content={content.ctaBanner} />
       <Testimonials content={content.testimonials} />
       <Faq content={content.faq} />
-      <StickyMobileCta label={content.hero.heading} targetId="kursangebote" />
     </>
   );
 }

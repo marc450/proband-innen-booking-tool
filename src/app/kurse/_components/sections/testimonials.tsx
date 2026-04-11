@@ -10,9 +10,16 @@ export function Testimonials({
   return (
     <section className="bg-[#FAEBE1] py-16 md:py-24">
       <div className="max-w-7xl mx-auto px-5 md:px-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-center tracking-wide mb-14">
+        <h2
+          className={`text-3xl md:text-4xl font-bold text-center tracking-wide ${
+            content.subheading ? "mb-3" : "mb-14"
+          }`}
+        >
           {content.heading}
         </h2>
+        {content.subheading && (
+          <p className="text-center text-black/70 mb-14">{content.subheading}</p>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {content.items.map((t, idx) => (

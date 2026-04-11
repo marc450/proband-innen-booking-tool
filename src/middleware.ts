@@ -74,15 +74,15 @@ export async function middleware(request: NextRequest) {
   }
 
   // On kurse.ephia.de: shadow marketing site.
-  //  - Root "/" → /kurse/grundkurs-botulinum (the only live page today)
+  //  - Root "/" → rewrite to /kurse (the shadow home page)
   //  - /{slug} → rewrite to /kurse/{slug} so clean URLs work
   //  - /kurse/* paths are passed through as-is
   //  - All responses are tagged noindex, nofollow so Google never indexes it
   if (hostname === KURSE_DOMAIN) {
     if (pathname === "/") {
       const url = request.nextUrl.clone();
-      url.pathname = "/kurse/grundkurs-botulinum";
-      return withNoindex(NextResponse.redirect(url));
+      url.pathname = "/kurse";
+      return withNoindex(NextResponse.rewrite(url));
     }
 
     if (!KURSE_PASSTHROUGH_RE.test(pathname)) {
