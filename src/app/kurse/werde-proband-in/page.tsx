@@ -82,12 +82,7 @@ const faq = {
     {
       question: "Was kostet mich die Behandlung?",
       answer:
-        "Die Behandlungen sind nicht kostenlos, aber deutlich günstiger als bei einer klassischen Privatpraxis. Den Richtpreis findest Du direkt bei jedem Kurs. Diesen reduzierten Preis verstehen wir als fairen Ausgleich dafür, dass Du uns dabei unterstützt, die nächste Generation von Ärzt:innen in ästhetischer Medizin auszubilden.",
-    },
-    {
-      question: "Wird bei der Buchung sofort Geld abgebucht?",
-      answer:
-        "Nein. Bei der Buchung wird nur Dein Zahlungsmittel hinterlegt. Bezahlt wird am Kurstag direkt in der Praxis. Eine Ausnahme gibt es nur, wenn Du unentschuldigt nicht zum Termin erscheinst (siehe unten).",
+        "Die Behandlungen sind nicht kostenlos, aber deutlich günstiger als bei einer klassischen Privatpraxis. Den Richtpreis findest Du direkt bei jedem Kurs. Die Abrechnung erfolgt gemäß GOÄ und wird am Kurstag vor Ort in der Praxis beglichen. Diesen reduzierten Preis verstehen wir als fairen Ausgleich dafür, dass Du uns dabei unterstützt, die nächste Generation von Ärzt:innen in ästhetischer Medizin auszubilden.",
     },
     {
       question: "Wer führt die Behandlung durch?",
