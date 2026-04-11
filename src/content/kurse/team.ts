@@ -121,11 +121,11 @@ export const teamContent: TeamPageContent = {
       },
       {
         id: "tina-bellinghausen",
-        name: "Christina-Julia Bellinghausen",
+        name: "Tina Bellinghausen",
         role: "Dozentin",
         imagePath:
           "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/tina.png",
-        imageAlt: "Porträt von Christina-Julia Bellinghausen",
+        imageAlt: "Porträt von Tina Bellinghausen",
         shortBio:
           "Approbierte Ärztin mit Schwerpunkt auf ästhetischer Medizin. Tina unterstützt unsere Kurse als Dozentin und teilt ihre Erfahrung aus der täglichen Praxis.",
       },
