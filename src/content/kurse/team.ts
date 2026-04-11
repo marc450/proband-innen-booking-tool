@@ -132,6 +132,26 @@ export const teamContent: TeamPageContent = {
           "Approbierte Ärztin mit Schwerpunkt auf ästhetischer Medizin. Tina unterstützt unsere Kurse als Dozentin und teilt ihre Erfahrung aus der täglichen Praxis.",
       },
       {
+        id: "sarah-bechstein",
+        name: "Dr. Sarah Bechstein",
+        role: "Dozentin",
+        imagePath:
+          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sarah-bechstein.png",
+        imageAlt: "Porträt von Dr. Sarah Bechstein",
+        shortBio:
+          "Dr. Sarah Bechstein ist Fachärztin und erfahrene Dozentin im Bereich ästhetische Medizin. Ihre Schwerpunkte umfassen Botulinum- und Fillerbehandlungen.",
+      },
+      {
+        id: "sarah-stannek",
+        name: "Dr. Sarah Stannek",
+        role: "Dozentin",
+        imagePath:
+          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sarah-stannek.png",
+        imageAlt: "Porträt von Dr. Sarah Stannek",
+        shortBio:
+          "Dr. Sarah Stannek begleitet unsere Kurse mit klinischer Expertise und hohem didaktischem Anspruch. Schwerpunkt: evidenzbasierte Injektionstechniken.",
+      },
+      {
         id: "pauline-freidl",
         name: "Pauline Freidl",
         role: "Dozentin",
