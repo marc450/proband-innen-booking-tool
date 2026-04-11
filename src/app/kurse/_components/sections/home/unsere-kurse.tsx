@@ -31,9 +31,18 @@ export function UnsereKurse({
         className="py-20 md:py-28 scroll-mt-24 md:scroll-mt-28"
         style={{ backgroundColor: sectionBg }}
       >
-        <div className="max-w-6xl mx-auto px-5 md:px-8">
-          <div className="text-center mb-14">
+        <div className="max-w-7xl mx-auto px-5 md:px-8">
+          <div className="text-center mb-14 max-w-3xl mx-auto">
             <h2 className={`${TYPO.h2} ${headingClass}`}>{content.heading}</h2>
+            {content.intro && (
+              <p
+                className={`${TYPO.bodyLead} mt-5 ${
+                  isCream ? "text-black/75" : "text-white/85"
+                }`}
+              >
+                {content.intro}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14">
