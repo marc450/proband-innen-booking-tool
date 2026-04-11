@@ -66,20 +66,23 @@ export function PersonCard({
       }`}
     >
       {imagePath ? (
-        <div className="relative aspect-square bg-black/5 overflow-hidden">
+        <div
+          className="relative w-full bg-black/5 overflow-hidden"
+          style={{ aspectRatio: "1 / 1" }}
+        >
           <Image
             src={imagePath}
             alt={imageAlt ?? name}
             fill
             quality={85}
             sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            className="object-cover object-[center_30%] transition-transform duration-500 group-hover:scale-[1.03]"
           />
         </div>
       ) : (
         <div
-          className="aspect-square flex items-center justify-center"
-          style={{ backgroundColor: CORAL }}
+          className="w-full flex items-center justify-center"
+          style={{ aspectRatio: "1 / 1", backgroundColor: CORAL }}
           aria-hidden="true"
         >
           <span className="text-white/90 text-xs font-semibold tracking-[0.2em]">
