@@ -40,7 +40,7 @@ export const homeContent: HomeContent = {
   },
 
   courses: {
-    eyebrow: "LÄK-zertifiziert · Für approbierte Ärzt:innen",
+    eyebrow: "LÄK-zertifiziert · Für approbierte Ärzt:innen und Zahnärzt:innen",
     heading: "UNSERE KURSE",
     intro:
       "Grundkurse sind Einstiegskurse für Einsteiger:innen. Für Aufbaukurse empfehlen wir ein solides medizinisches Basiswissen vor der Kursteilnahme.",
