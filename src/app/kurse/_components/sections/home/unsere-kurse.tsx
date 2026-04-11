@@ -163,10 +163,9 @@ function CourseTile({
 
       {/* Body */}
       <div className="flex flex-col flex-1 p-6 md:p-8">
-        {/* Title: slightly smaller than TYPO.h3 so more titles fit on one
-            line, and min-h of 2 lines so pills/body/CTA stay aligned across
-            tiles even when a title wraps. */}
-        <h3 className="text-xl md:text-2xl font-bold tracking-wide leading-tight text-black min-h-[2lh] text-balance">
+        {/* Title: slightly smaller than TYPO.h3 so all current course
+            titles fit comfortably on one line. */}
+        <h3 className="text-xl md:text-2xl font-bold tracking-wide leading-tight text-black text-balance">
           {fullTitle}
         </h3>
 
