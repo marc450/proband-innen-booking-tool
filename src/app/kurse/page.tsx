@@ -4,11 +4,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import { HomeHero } from "./_components/sections/home/hero";
 import { WerWirSind } from "./_components/sections/home/wer-wir-sind";
-import { UnsereKurse } from "./_components/sections/home/unsere-kurse";
 import {
-  UnsereKurseV2,
+  UnsereKurse,
   type CourseFormats,
-} from "./_components/sections/home/unsere-kurse-v2";
+} from "./_components/sections/home/unsere-kurse";
 import { InstagramFeed } from "./_components/sections/home/instagram-feed";
 import { Testimonials } from "./_components/sections/testimonials";
 
@@ -77,10 +76,6 @@ export default async function HomePage() {
       const fromDb = tile.courseKey ? imageMap.get(tile.courseKey) : null;
       return fromDb ? { ...tile, imagePath: fromDb } : tile;
     }),
-  };
-
-  const mergedCoursesV2 = {
-    ...mergedCourses,
     formatsByKey,
   };
 
@@ -89,7 +84,6 @@ export default async function HomePage() {
       <HomeHero content={homeContent.hero} />
       <WerWirSind content={homeContent.werWirSind} />
       <UnsereKurse content={mergedCourses} />
-      <UnsereKurseV2 content={mergedCoursesV2} />
       <Testimonials content={homeContent.testimonials} />
       <InstagramFeed content={homeContent.instagram} />
     </>
