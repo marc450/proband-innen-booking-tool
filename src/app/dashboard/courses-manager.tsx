@@ -62,10 +62,9 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [courseDate, setCourseDate] = useState("");
   const [courseLocation, setCourseLocation] = useState("HY STUDIO, Rosa-Luxemburg-Straße 20, 10178 Berlin");
-  const [slotStartTime, setSlotStartTime] = useState("10:00");
-  const [slotInterval, setSlotInterval] = useState("30");
-  const [slotCount, setSlotCount] = useState("5");
-  const [slotCapacityNew, setSlotCapacityNew] = useState("1");
+  type SlotRow = { time: string; capacity: string };
+  const emptySlotRow = (): SlotRow => ({ time: "", capacity: "1" });
+  const [slotRows, setSlotRows] = useState<SlotRow[]>([emptySlotRow()]);
   const [selectedInstructor, setSelectedInstructor] = useState("");
 
   // Slot dialog
@@ -110,26 +109,24 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
     setSelectedTemplateId("");
     setCourseDate("");
     setCourseLocation("HY STUDIO, Rosa-Luxemburg-Straße 20, 10178 Berlin");
-    setSlotStartTime("10:00");
-    setSlotInterval("30");
-    setSlotCount("5");
-    setSlotCapacityNew("1");
+    setSlotRows([emptySlotRow()]);
     setSelectedInstructor("");
   };
 
-  const generateSlotTimes = (): string[] => {
-    const count = parseInt(slotCount) || 0;
-    const interval = parseInt(slotInterval) || 30;
-    const [h, m] = slotStartTime.split(":").map(Number);
-    const times: string[] = [];
-    for (let i = 0; i < count; i++) {
-      const totalMinutes = h * 60 + m + i * interval;
-      const hh = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
-      const mm = String(totalMinutes % 60).padStart(2, "0");
-      times.push(`${hh}:${mm}`);
-    }
-    return times;
+  const updateSlotRow = (index: number, patch: Partial<SlotRow>) => {
+    setSlotRows((prev) => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   };
+
+  const addSlotRow = () => {
+    setSlotRows((prev) => [...prev, emptySlotRow()]);
+  };
+
+  const removeSlotRow = (index: number) => {
+    setSlotRows((prev) => (prev.length === 1 ? [emptySlotRow()] : prev.filter((_, i) => i !== index)));
+  };
+
+  const validSlotRows = (): SlotRow[] =>
+    slotRows.filter((row) => /^\d{2}:\d{2}$/.test(row.time) && (parseInt(row.capacity) || 0) >= 1);
 
   const handleCreateCourse = async () => {
     const template = templates.find((t) => t.id === selectedTemplateId);
@@ -148,8 +145,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
       location: courseLocation || null,
     };
 
-    const slotTimes = generateSlotTimes();
-    const cap = parseInt(slotCapacityNew) || 1;
+    const rows = validSlotRows();
 
     setCourseDialogOpen(false);
     resetCourseForm();
@@ -167,13 +163,13 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
     if (data) {
       setCourses((prev) => [data, ...prev]);
 
-      // Auto-create slots
-      if (slotTimes.length > 0) {
-        const newSlots = slotTimes.map((time) => ({
+      // Create slots from manually entered rows
+      if (rows.length > 0) {
+        const newSlots = rows.map((row) => ({
           course_id: data.id,
-          start_time: buildStartTime(courseDate, time),
+          start_time: buildStartTime(courseDate, row.time),
           end_time: null,
-          capacity: cap,
+          capacity: parseInt(row.capacity) || 1,
         }));
 
         const { data: insertedSlots, error: slotsError } = await supabase
@@ -492,71 +488,61 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
 
                 <div className="border-t" />
 
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Zeitfenster</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="slot_start">Startzeit *</Label>
-                    <Input
-                      id="slot_start"
-                      type="time"
-                      value={slotStartTime}
-                      onChange={(e) => setSlotStartTime(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="slot_interval">Intervall (Min.)</Label>
-                    <Input
-                      id="slot_interval"
-                      type="number"
-                      min="5"
-                      value={slotInterval}
-                      onChange={(e) => setSlotInterval(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="slot_count">Anzahl Slots</Label>
-                    <Input
-                      id="slot_count"
-                      type="number"
-                      min="1"
-                      value={slotCount}
-                      onChange={(e) => setSlotCount(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="slot_cap">Kapazität pro Slot</Label>
-                    <Input
-                      id="slot_cap"
-                      type="number"
-                      min="1"
-                      value={slotCapacityNew}
-                      onChange={(e) => setSlotCapacityNew(e.target.value)}
-                    />
-                  </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Zeitfenster</h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Gib jedes Zeitfenster einzeln mit seiner Startzeit ein. Du kannst bequem aus Deiner Excel-Planung kopieren.
+                  </p>
                 </div>
 
-                {/* Slot preview */}
-                {slotStartTime && parseInt(slotCount) > 0 && (
-                  <div className="bg-muted/50 rounded-md p-3">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                      Vorschau ({generateSlotTimes().length} Slots)
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {generateSlotTimes().map((time) => (
-                        <span key={time} className="text-sm bg-white border rounded px-2 py-0.5">
-                          {time} Uhr
-                        </span>
-                      ))}
-                    </div>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-[1fr_110px_40px] gap-2 px-1">
+                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Startzeit</span>
+                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Kapazität</span>
+                    <span />
                   </div>
-                )}
+                  {slotRows.map((row, i) => (
+                    <div key={i} className="grid grid-cols-[1fr_110px_40px] gap-2 items-center">
+                      <Input
+                        type="time"
+                        value={row.time}
+                        onChange={(e) => updateSlotRow(i, { time: e.target.value })}
+                        placeholder="HH:MM"
+                      />
+                      <Input
+                        type="number"
+                        min="1"
+                        value={row.capacity}
+                        onChange={(e) => updateSlotRow(i, { capacity: e.target.value })}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeSlotRow(i)}
+                        aria-label="Zeitfenster entfernen"
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addSlotRow}
+                    className="w-full mt-1"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Zeitfenster hinzufügen
+                  </Button>
+                </div>
 
                 <Button
                   onClick={handleCreateCourse}
                   className="w-full"
-                  disabled={!selectedTemplateId || !selectedInstructor || !courseDate || !courseLocation.trim() || !slotStartTime || parseInt(slotCount) < 1}
+                  disabled={!selectedTemplateId || !selectedInstructor || !courseDate || !courseLocation.trim() || validSlotRows().length < 1}
                 >
                   Kurs anlegen
                 </Button>
