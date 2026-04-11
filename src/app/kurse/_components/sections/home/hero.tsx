@@ -4,42 +4,35 @@ import type { HomeHeroContent } from "@/content/kurse/home-types";
 
 export function HomeHero({ content }: { content: HomeHeroContent }) {
   return (
-    <section className="bg-[#FAEBE1] lg:pt-20 lg:pb-24">
-      {/* Mobile + tablet: edge-to-edge cinematic hero */}
-      <div className="lg:hidden relative h-[78vh] min-h-[560px] max-h-[780px] w-full overflow-hidden">
-        <Image
-          src={content.imagePath}
-          alt={content.imageAlt}
-          fill
-          priority
-          quality={90}
-          sizes="100vw"
-          className="object-cover"
-        />
-
-        {/* Dark gradient overlay for legibility */}
+    <section className="relative bg-[#FAEBE1] lg:pt-20 lg:pb-24 overflow-hidden">
+      {/* Mobile + tablet: text-only hero with subtle gradient backdrop */}
+      <div className="lg:hidden relative">
+        {/* Soft radial accent behind the headline for a little depth */}
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/55 to-black/10"
+          className="absolute -top-24 -right-20 w-[420px] h-[420px] rounded-full bg-[#0066FF]/5 blur-3xl pointer-events-none"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute bottom-0 -left-24 w-[360px] h-[360px] rounded-full bg-[#BF785E]/10 blur-3xl pointer-events-none"
         />
 
-        {/* Foreground content anchored to bottom */}
-        <div className="absolute inset-x-0 bottom-0 px-5 pt-20 pb-8">
-          <h1 className="text-[2.1rem] sm:text-[2.5rem] font-bold tracking-tight leading-[1.08] text-white mb-5">
+        <div className="relative max-w-3xl mx-auto px-5 pt-14 pb-20 sm:pt-20 sm:pb-24">
+          <h1 className="text-[2.5rem] sm:text-[3rem] font-bold tracking-tight leading-[1.05] text-black mb-8">
             {content.heading}
           </h1>
 
-          <ul className="flex flex-col gap-2.5 mb-7">
+          <ul className="flex flex-col gap-4 mb-10">
             {content.checklist.map((item) => (
-              <li key={item.text} className="flex items-center gap-3">
-                <span className="flex items-center justify-center w-7 h-7 rounded-full bg-white/15 backdrop-blur-sm flex-shrink-0">
+              <li key={item.text} className="flex items-center gap-4">
+                <span className="flex items-center justify-center w-10 h-10 rounded-full bg-[#0066FF]/10 flex-shrink-0">
                   <Check
-                    className="w-4 h-4 text-white"
+                    className="w-6 h-6 text-[#0066FF]"
                     strokeWidth={3}
                     aria-hidden="true"
                   />
                 </span>
-                <span className="text-base font-semibold text-white">
+                <span className="text-lg font-semibold text-black">
                   {item.text}
                 </span>
               </li>
