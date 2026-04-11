@@ -25,7 +25,7 @@ const NAV_LINKS: NavLink[] = [
     label: "Über EPHIA",
     href: "https://www.ephia.de/ueber-ephia",
     subLinks: [
-      { label: "Unsere Vision", href: "https://www.ephia.de/unsere-vision" },
+      { label: "Unsere Vision", href: "/kurse/vision" },
       { label: "Unser Team", href: "/kurse/team" },
       { label: "Unsere Community", href: "https://www.ephia.de/community" },
       { label: "Unsere Didaktik", href: "https://www.ephia.de/unsere-didaktik" },
