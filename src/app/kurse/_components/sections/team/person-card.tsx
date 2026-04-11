@@ -89,7 +89,9 @@ export function PersonCard({
       )}
 
       <div className="flex flex-col flex-1 p-6 md:p-7">
-        <h3 className={`${TYPO.h3} text-black`}>{name}</h3>
+        <h3 className={`${TYPO.h3} text-black text-balance hyphens-manual`}>
+          {name}
+        </h3>
         <p className="mt-1 text-sm md:text-base font-semibold text-[#0066FF]">
           {role}
         </p>

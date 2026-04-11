@@ -28,7 +28,9 @@ export const teamContent: TeamPageContent = {
     items: [
       {
         id: "sophia-wilk-vollmann",
-        name: "Dr. Sophia Wilk-Vollmann",
+        // U+2011 non-breaking hyphen keeps "Wilk‑Vollmann" together on
+        // narrow card widths so the surname never splits across lines.
+        name: "Dr. Sophia Wilk\u2011Vollmann",
         role: "Mitgründerin & Dozentin",
         imagePath:
           "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sophia.png",
@@ -121,7 +123,7 @@ export const teamContent: TeamPageContent = {
       {
         id: "tina-bellinghausen",
         name: "Tina Bellinghausen",
-        role: "EPHIA Dozentin",
+        role: "Dozentin",
         imagePath:
           "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/tina.png",
         imageAlt: "Porträt von Tina Bellinghausen",
@@ -186,7 +188,7 @@ export const teamContent: TeamPageContent = {
       {
         id: "sarah-stannek",
         name: "Dr. Sarah Stannek",
-        role: "EPHIA Dozentin",
+        role: "Dozentin",
         imagePath:
           "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sarah-stannek.jpg",
         imageAlt: "Porträt von Dr. Sarah Stannek",
@@ -250,7 +252,7 @@ export const teamContent: TeamPageContent = {
       {
         id: "pauline-freidl",
         name: "Pauline Freidl",
-        role: "EPHIA Dozentin",
+        role: "Dozentin",
         imagePath:
           "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/pauline.png",
         imageAlt: "Porträt von Pauline Freidl",
