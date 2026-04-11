@@ -42,7 +42,7 @@ export function HomeHero({ content }: { content: HomeHeroContent }) {
 
           <a
             href={content.ctaHref}
-            className="inline-block text-base font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-6 py-3.5 transition-colors"
+            className="block w-full text-center text-base font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-6 py-4 transition-colors"
           >
             {content.ctaLabel}
           </a>
@@ -89,7 +89,7 @@ export function HomeHero({ content }: { content: HomeHeroContent }) {
 
             <a
               href={content.ctaHref}
-              className="inline-block text-[1.1rem] font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-6 py-3.5 transition-colors"
+              className="inline-block text-lg lg:text-xl font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-9 py-5 transition-colors"
             >
               {content.ctaLabel}
             </a>
