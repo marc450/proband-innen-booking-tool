@@ -77,15 +77,18 @@ const whatsappScreenshots: Array<{
   imageAlt: string;
 }> = [
   {
-    imagePath: null,
+    imagePath:
+      "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/community/image-1.png",
     imageAlt: "WhatsApp-Screenshot einer Frage aus der Community",
   },
   {
-    imagePath: null,
+    imagePath:
+      "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/community/image-2.png",
     imageAlt: "WhatsApp-Screenshot einer Antwort aus der Community",
   },
   {
-    imagePath: null,
+    imagePath:
+      "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/community/image-3.png",
     imageAlt: "WhatsApp-Screenshot einer Diskussion aus der Community",
   },
 ];

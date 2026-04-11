@@ -385,6 +385,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
             <TableHead className="w-[60px]">Bild</TableHead>
             <SortableHead label="Status" sortKey="status" currentKey={sortKey} direction={sortDir} onSort={handleSort} className="w-[100px]" />
             <SortableHead label="Kursname" sortKey="name" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+            <TableHead className="w-[200px]">Badges</TableHead>
             <SortableHead label="Online" sortKey="online" currentKey={sortKey} direction={sortDir} onSort={handleSort} className="w-[100px]" />
             <SortableHead label="Praxis" sortKey="praxis" currentKey={sortKey} direction={sortDir} onSort={handleSort} className="w-[100px]" />
             <SortableHead label="Kombi" sortKey="kombi" currentKey={sortKey} direction={sortDir} onSort={handleSort} className="w-[100px]" />
@@ -394,7 +395,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
         <TableBody>
           {sortedOfferings.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                 Noch keine Kurse erstellt.
               </TableCell>
             </TableRow>
@@ -430,34 +431,34 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
                   </Badge>
                 </TableCell>
 
-                {/* Name + audience/level indicators */}
+                {/* Name */}
                 <TableCell className="font-medium">
-                  <div className="flex flex-col gap-1">
-                    <span>{o.title}</span>
-                    {(o.audience || o.level) && (
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {o.audience && o.audience !== "alle" && (
-                          <span
-                            className={`text-[10px] font-semibold tracking-wide rounded-full px-2 py-0.5 ${
-                              o.audience === "zahnmediziner"
-                                ? "bg-[#BF785E]/15 text-[#8F4B30]"
-                                : "bg-[#0066FF]/10 text-[#0055DD]"
-                            }`}
-                          >
-                            {o.audience === "zahnmediziner" ? "Zahnmed." : "Humanmed."}
-                          </span>
-                        )}
-                        {o.audience === "alle" && (
-                          <span className="text-[10px] font-semibold tracking-wide rounded-full px-2 py-0.5 bg-black/5 text-black/60">
-                            Alle
-                          </span>
-                        )}
-                        {o.level && (
-                          <span className="text-[10px] font-semibold tracking-wide rounded-full px-2 py-0.5 bg-black/5 text-black/60">
-                            {o.level === "einsteiger" ? "Einsteiger:innen" : "Fortgeschrittene"}
-                          </span>
-                        )}
-                      </div>
+                  {o.title}
+                </TableCell>
+
+                {/* Badges — audience + level indicators */}
+                <TableCell>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {o.audience && o.audience !== "alle" && (
+                      <span
+                        className={`text-[10px] font-semibold tracking-wide rounded-full px-2 py-0.5 ${
+                          o.audience === "zahnmediziner"
+                            ? "bg-[#BF785E]/15 text-[#8F4B30]"
+                            : "bg-[#0066FF]/10 text-[#0055DD]"
+                        }`}
+                      >
+                        {o.audience === "zahnmediziner" ? "Zahnmed." : "Humanmed."}
+                      </span>
+                    )}
+                    {o.audience === "alle" && (
+                      <span className="text-[10px] font-semibold tracking-wide rounded-full px-2 py-0.5 bg-black/5 text-black/60">
+                        Alle
+                      </span>
+                    )}
+                    {o.level && (
+                      <span className="text-[10px] font-semibold tracking-wide rounded-full px-2 py-0.5 bg-black/5 text-black/60">
+                        {o.level === "einsteiger" ? "Einsteiger:innen" : "Fortgeschrittene"}
+                      </span>
                     )}
                   </div>
                 </TableCell>
