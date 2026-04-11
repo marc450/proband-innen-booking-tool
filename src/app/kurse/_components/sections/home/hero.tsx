@@ -46,7 +46,7 @@ export function HomeHero({ content }: { content: HomeHeroContent }) {
           </a>
 
           <a
-            href="/kurse/werde-proband-in"
+            href="https://proband-innen.ephia.de/"
             className="mt-4 inline-block text-sm font-semibold text-black/70 hover:text-[#0066FF] underline underline-offset-4 decoration-black/20 hover:decoration-[#0066FF] transition-colors"
           >
             Werde Proband:in
@@ -99,7 +99,7 @@ export function HomeHero({ content }: { content: HomeHeroContent }) {
                 {content.ctaLabel}
               </a>
               <a
-                href="/kurse/werde-proband-in"
+                href="https://proband-innen.ephia.de/"
                 className="text-sm lg:text-base font-semibold text-black/70 hover:text-[#0066FF] underline underline-offset-4 decoration-black/20 hover:decoration-[#0066FF] transition-colors"
               >
                 Werde Proband:in

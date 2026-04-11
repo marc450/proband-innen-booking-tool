@@ -77,8 +77,15 @@ export async function middleware(request: NextRequest) {
   //  - Root "/" → rewrite to /kurse (the shadow home page)
   //  - /{slug} → rewrite to /kurse/{slug} so clean URLs work
   //  - /kurse/* paths are passed through as-is
+  //  - The Proband:innen funnel lives on the booking domain — redirect
+  //    /werde-proband-in and /kurse/werde-proband-in over to the root of
+  //    proband-innen.ephia.de so the /book/* deep links resolve correctly.
   //  - All responses are tagged noindex, nofollow so Google never indexes it
   if (hostname === KURSE_DOMAIN) {
+    if (pathname === "/werde-proband-in" || pathname === "/kurse/werde-proband-in") {
+      return NextResponse.redirect(`https://${BOOKING_DOMAIN}/`, 308);
+    }
+
     if (pathname === "/") {
       const url = request.nextUrl.clone();
       url.pathname = "/kurse";
@@ -94,11 +101,22 @@ export async function middleware(request: NextRequest) {
     return withNoindex(NextResponse.next());
   }
 
-  // On proband-innen.ephia.de: block admin-only paths.
+  // On proband-innen.ephia.de: booking domain.
+  //  - Root "/" → rewrite to the Werde Proband:in landing page so the bare
+  //    domain serves the marketing + booking funnel.
+  //  - "/werde-proband-in" → same rewrite so the clean URL works.
+  //  - Block admin-only paths.
+  //  - Everything else (/book, /courses, …) passes through untouched.
   if (hostname === BOOKING_DOMAIN) {
     const isAdminPath = ADMIN_ONLY_PATHS.some((p) => pathname.startsWith(p));
     if (isAdminPath) {
       return NextResponse.rewrite(new URL("/not-found", request.url));
+    }
+
+    if (pathname === "/" || pathname === "/werde-proband-in") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/kurse/werde-proband-in";
+      return NextResponse.rewrite(url);
     }
   }
 

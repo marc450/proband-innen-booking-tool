@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, HeartHandshake, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowDown, HeartHandshake, ShieldCheck, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { AvailableSlot, Course } from "@/lib/types";
 import { HeroVideo } from "../_components/sections/hero-video";
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   title: "Werde Proband:in | EPHIA",
   description:
     "Werde Proband:in bei EPHIA: Profitiere von günstigen ästhetischen Behandlungen durch approbierte Ärzt:innen und unterstütze gleichzeitig deren praktische Ausbildung.",
-  alternates: { canonical: "https://kurse.ephia.de/kurse/werde-proband-in" },
+  alternates: { canonical: "https://proband-innen.ephia.de/" },
 };
 
 // ---------------------------------------------------------------------
@@ -26,8 +26,6 @@ const hero = {
   lead: "Im Rahmen unserer Ausbildungskurse suchen wir regelmäßig Proband:innen für Behandlungen durch unsere Ärzt:innen in Ausbildung. Du bekommst eine hochwertige Behandlung zum fairen Richtpreis und unterstützt gleichzeitig die praktische Ausbildung der nächsten Generation ästhetischer Mediziner:innen.",
   ctaLabel: "Jetzt Behandlung buchen",
   ctaHref: "#behandlungen",
-  secondaryLabel: "So läuft's ab ↓",
-  secondaryHref: "#so-laeufts-ab",
   videoPath:
     "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/proband:innen/IMG_9363.MP4",
 };
@@ -154,20 +152,14 @@ export default async function WerdeProbandInPage() {
               <h1 className={`${TYPO.h1} text-black`}>{hero.heading}</h1>
               <p className={`${TYPO.bodyLead} mt-6`}>{hero.lead}</p>
 
-              <div className="mt-8 flex flex-wrap items-center gap-4">
+              <div className="mt-8">
                 <Link
                   href={hero.ctaHref}
                   className="inline-flex items-center gap-2 text-base md:text-lg font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-7 py-4 transition-colors"
                 >
                   <span>{hero.ctaLabel}</span>
-                  <ArrowRight className="w-5 h-5" strokeWidth={2.25} />
+                  <ArrowDown className="w-5 h-5" strokeWidth={2.25} />
                 </Link>
-                <a
-                  href={hero.secondaryHref}
-                  className="text-base md:text-lg font-semibold text-black/70 hover:text-[#0066FF] transition-colors"
-                >
-                  {hero.secondaryLabel}
-                </a>
               </div>
             </div>
 
@@ -215,16 +207,6 @@ export default async function WerdeProbandInPage() {
                 </p>
               </article>
             ))}
-          </div>
-
-          <div className="mt-12 md:mt-14 text-center">
-            <Link
-              href="#behandlungen"
-              className="inline-flex items-center gap-2 text-base md:text-lg font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-7 py-4 transition-colors"
-            >
-              <span>Jetzt Behandlung buchen</span>
-              <ArrowRight className="w-5 h-5" strokeWidth={2.25} />
-            </Link>
           </div>
         </div>
       </section>
