@@ -5,6 +5,7 @@ import Image from "next/image";
 import type { HomeCoursesContent, HomeCourseTile } from "@/content/kurse/home-types";
 import { GroupInquiryDialog } from "../group-inquiry-dialog";
 import { TYPO, titleCase } from "../../typography";
+import { SectionEyebrow } from "../../section-eyebrow";
 
 const BLUE = "#0066FF";
 const CORAL = "#BF785E";
@@ -21,6 +22,9 @@ export function UnsereKurse({ content }: { content: HomeCoursesContent }) {
       >
         <div className="max-w-6xl mx-auto px-5 md:px-8">
           <div className="text-center mb-14">
+            {content.eyebrow && (
+              <SectionEyebrow tone="light">{content.eyebrow}</SectionEyebrow>
+            )}
             <h2 className={`${TYPO.h2} text-white`}>{content.heading}</h2>
           </div>
 

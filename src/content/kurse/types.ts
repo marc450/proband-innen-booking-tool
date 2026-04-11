@@ -110,6 +110,8 @@ export interface CourseTestimonial {
 }
 
 export interface CourseTestimonialsContent {
+  /** Optional small uppercase kicker shown above the heading (home page only). */
+  eyebrow?: string;
   heading: string;
   /** Optional subheading under the main title (used on the home page) */
   subheading?: string;

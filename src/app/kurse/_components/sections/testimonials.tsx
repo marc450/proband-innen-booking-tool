@@ -1,4 +1,5 @@
 import type { CourseTestimonialsContent } from "@/content/kurse/types";
+import { SectionEyebrow } from "../section-eyebrow";
 
 export function Testimonials({
   content,
@@ -10,6 +11,11 @@ export function Testimonials({
   return (
     <section className="bg-[#FAEBE1] py-16 md:py-24">
       <div className="max-w-7xl mx-auto px-5 md:px-8">
+        {content.eyebrow && (
+          <div className="text-center">
+            <SectionEyebrow>{content.eyebrow}</SectionEyebrow>
+          </div>
+        )}
         <h2
           className={`text-3xl md:text-4xl font-bold text-center tracking-wide ${
             content.subheading ? "mb-3" : "mb-14"

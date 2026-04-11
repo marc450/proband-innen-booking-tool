@@ -16,6 +16,7 @@ export const homeContent: HomeContent = {
   },
 
   hero: {
+    eyebrow: "EPHIA Akademie · Für approbierte Ärzt:innen",
     heading: "Deine Lernplattform für inklusive ästhetische Medizin",
     checklist: [
       { text: "LÄK-zertifizierte Lehrgänge" },
@@ -30,6 +31,7 @@ export const homeContent: HomeContent = {
   },
 
   werWirSind: {
+    eyebrow: "Hinter EPHIA · Dr. Sophia Wilk-Vollmann",
     heading: "WER WIR SIND",
     subheading: "„Ästhetische Medizin neu denken.\"",
     videoPath:
@@ -39,6 +41,7 @@ export const homeContent: HomeContent = {
   },
 
   courses: {
+    eyebrow: "LÄK-zertifiziert · Für approbierte Ärzt:innen",
     heading: "UNSERE KURSE",
     intro:
       "Grundkurse sind Einstiegskurse für Einsteiger:innen. Für Aufbaukurse empfehlen wir ein solides medizinisches Basiswissen vor der Kursteilnahme.",
@@ -48,7 +51,7 @@ export const homeContent: HomeContent = {
         title: "BOTULINUM",
         audience: "Für Humanmediziner:innen",
         description:
-          "Dein Grundkurs rund um das approbierte Humanmedizinwissen: In erster Linie in der Behandlung von Patient:innen mit Botulinum. Behandelt werden die Grundlagen der ästhetischen Botulinum-Behandlung und fundamentale Lernziele, die jede:r Ärzt:in in der Facharztausbildung erlernen sollte.",
+          "Dieser Grundkurs richtet sich an approbierte Humanmediziner:innen, die erste Schritte in der Behandlung von Patient:innen mit Botulinum („Botox\") gehen möchten oder ihr Basiswissen auffrischen wollen. Du lernst die Grundlagen der ästhetischen Anwendung von Botulinum und erhältst praxisorientierte Einblicke.",
         courseKey: "grundkurs_botulinum",
         imageAlt: "Grundkurs Botulinum für Humanmediziner:innen",
         ctaLabel: "Zu den Kursdetails",
@@ -59,7 +62,7 @@ export const homeContent: HomeContent = {
         title: "BOTULINUM",
         audience: "Für Zahnmediziner:innen",
         description:
-          "Dein Grundkurs rund um das approbierte Zahnmedizinwissen: In erster Linie in der Behandlung von Patient:innen mit Botulinum. Lerne die Grundlagen der ästhetischen Botulinum-Behandlung kennen, speziell zugeschnitten auf Zahnärzt:innen.",
+          "Dieser Grundkurs richtet sich an approbierte Zahnärzt:innen, die erste Schritte in der Behandlung von Patient:innen mit Botulinum („Botox\") gehen möchten oder ihr Basiswissen auffrischen wollen. Du lernst die Grundlagen der zahnärztlichen Anwendung von Botulinum und erhältst praxisorientierte Einblicke.",
         courseKey: "grundkurs_botulinum_zahnmedizin",
         imageAlt: "Grundkurs Botulinum für Zahnmediziner:innen",
         ctaLabel: "Zu den Kursdetails",
@@ -70,7 +73,7 @@ export const homeContent: HomeContent = {
         title: "DERMALFILLER",
         audience: "Für Kurseinsteiger:innen",
         description:
-          "Dieser Grundkurs richtet sich an approbierte Ärzt:innen, die eine Einführung in die Behandlung von Patient:innen mit dermalen Fillern suchen. Wir konzentrieren uns auf die Grundlagen der Dermalfiller-Behandlung, die Behandlungsmöglichkeiten und die Sicherheit in der Gesichtsanatomie.",
+          "Dieser Grundkurs richtet sich an approbierte Ärzt:innen, die erste Schritte in der Behandlung von Patient:innen mit Dermalfillern gehen möchten oder ihr Basiswissen auffrischen wollen. Du lernst die Anatomie des Alterns, die Behandlungsmöglichkeiten für das Mittelgesicht und erste Schritte in die Gesichtskonturierung kennen.",
         courseKey: "grundkurs_dermalfiller",
         imageAlt: "Grundkurs Dermalfiller",
         ctaLabel: "Zu den Kursdetails",
@@ -81,7 +84,7 @@ export const homeContent: HomeContent = {
         title: "Skulptra & Skinbooster",
         audience: "Für fortgeschrittene Ärzt:innen",
         description:
-          "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen, die Ihre Kenntnisse in der Behandlung mit Skulptra und Skinboostern ausbauen möchten. Wir bauen auf die Grundkurse auf und vertiefen die praktische Anwendung moderner Injektionsverfahren sowie den Einsatz bei biomedizinischen Indikationen.",
+          "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen, die ihre Kenntnisse in der ästhetischen Medizin erweitern und moderne Methoden der Biostimulation mit Poly-Milchsäure und Skinboostern kennenlernen möchten. Du lernst Grundlagen der Kollagenstimulation und Behandlungsmöglichkeiten für Gesicht und Dekolleté kennen.",
         courseKey: "aufbaukurs_skulptra",
         imageAlt: "Aufbaukurs Skulptra & Skinbooster",
         ctaLabel: "Zu den Kursdetails",
@@ -92,7 +95,7 @@ export const homeContent: HomeContent = {
         title: "MED. HAUTPFLEGE",
         audience: "Für Kurseinsteiger:innen",
         description:
-          "Der Grundkurs Medizinische Hautpflege vermittelt Dir das approbierte Ärzt:innenwissen für die richtige Beratung und Verordnung von ärztlich unterstützter Hautpflege. Lerne die Grundlagen der dermatologisch relevanten Hautdiagnostik, den Aufbau der Haut und den individuellen Pflegeanspruch Deiner Patient:innen kennen.",
+          "Der Grundkurs Medizinische Hautpflege richtet sich an approbierte Ärzt:innen, die ihr Wissen in medizinischer Hautpflege vertiefen möchten. Du lernst, Hautzustände wie Akne, Rosazea und Periorale Dermatitis sicher zu erkennen und zu behandeln. Denn nur auf gesunder Haut können ästhetische Behandlungen ihr volles Potenzial entfalten.",
         courseKey: "grundkurs_medizinische_hautpflege",
         imageAlt: "Grundkurs Medizinische Hautpflege",
         ctaLabel: "Zu den Kursdetails",
@@ -103,7 +106,7 @@ export const homeContent: HomeContent = {
         title: "BOTULINUM",
         audience: "Therapeutische Indikationen",
         description:
-          "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen, die Ihre Kenntnisse in der therapeutischen Behandlung mit Botulinum ausbauen möchten. Wir bauen auf die Grundkurse auf und vertiefen die medizinisch-therapeutischen Anwendungsgebiete und spezielle Behandlungstechniken für Funktionsstörungen und Schmerzsyndrome.",
+          "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen, die ihre Kenntnisse in der ästhetischen Medizin erweitern und moderne Methoden der Biostimulation mit Poly-Milchsäure und Skinboostern kennenlernen möchten. Du lernst Grundlagen der Kollagenstimulation und Behandlungsmöglichkeiten für Gesicht und Dekolleté kennen.",
         courseKey: "aufbaukurs_therapeutische_indikationen_botulinum",
         imageAlt: "Aufbaukurs Botulinum Therapeutische Indikationen",
         ctaLabel: "Zu den Kursdetails",
@@ -114,7 +117,7 @@ export const homeContent: HomeContent = {
         title: "BOTULINUM",
         audience: "Periorale Zone",
         description:
-          "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen, die Ihre Kenntnisse in der Behandlung der perioralen Zone mit Botulinum vertiefen möchten. Du lernst die sichere, evidenzbasierte Behandlung des Mundbereichs mit präzisen Techniken, inklusive Anatomie, Indikationen und Komplikationsmanagement.",
+          "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen, die bereits über Grundkenntnisse in der Myomodulation verfügen und sie gezielt vertiefen möchten. Du lernst die sichere, evidenzbasierte Behandlung der perioralen Zone, inklusive Gummy Smile, Lip Flip, Erdbeerkinn und Behandlung der Mundwinkel.",
         courseKey: "aufbaukurs_botulinum_periorale_zone",
         imageAlt: "Aufbaukurs Botulinum Periorale Zone",
         ctaLabel: "Zu den Kursdetails",
@@ -125,7 +128,7 @@ export const homeContent: HomeContent = {
         title: "GRUPPENBUCHUNGEN",
         audience: "Für private Kurse",
         description:
-          "Wir erstellen Dir gerne maßgeschneiderte Kursprogramme speziell für Dein Praxisteam oder Dein Netzwerk. Beantworte ein paar Fragen zu Gruppengröße, Wunschkursinhalt und Zeitraum, und wir schicken Dir umgehend ein Angebot für Eure Weiterbildung zu.",
+          "Du möchtest mit Kolleg:innen und/oder Freund:innen gemeinsam lernen? Kein Problem! Auf Deinen Wunsch organisieren wir exklusive Gruppenkurse für Teams und Praxen ab vier Teilnehmer:innen und stimmen Inhalte sowie Termine individuell auf Eure Bedürfnisse und Euren Wissensstand ab.",
         imagePath:
           "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/home/gruppenbuchungen.png",
         imageAlt: "Gruppenbuchungen für private Kurse",
@@ -160,6 +163,7 @@ export const homeContent: HomeContent = {
   },
 
   testimonials: {
+    eyebrow: "Stimmen · Aus unserer Community",
     heading: "#wearetogether",
     subheading: "Was durch uns ausgebildete Ärzt:innen sagen",
     items: [
@@ -188,6 +192,7 @@ export const homeContent: HomeContent = {
   },
 
   instagram: {
+    eyebrow: "Folge uns · @ephia.de auf Instagram",
     heading: "NEWSLETTER SIND VON GESTERN",
     subheading: "Folge uns einfach auf Insta!",
     widgetId: "6fbfcc53812a55ec9db620f1a9d278b6",

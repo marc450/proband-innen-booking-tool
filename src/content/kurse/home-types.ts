@@ -18,6 +18,8 @@ export interface HomeHeroChecklistItem {
 }
 
 export interface HomeHeroContent {
+  /** Small uppercase kicker shown above the H1. */
+  eyebrow?: string;
   /** Main H1, may contain line breaks. */
   heading: string;
   /** Short checklist shown below the heading (✓ items). */
@@ -31,6 +33,8 @@ export interface HomeHeroContent {
 }
 
 export interface HomeWerWirSindContent {
+  /** Small uppercase kicker shown above the heading. */
+  eyebrow?: string;
   heading: string;
   subheading: string;
   videoPath: string;
@@ -88,12 +92,16 @@ export interface HomeCourseTile {
 }
 
 export interface HomeCoursesContent {
+  /** Small uppercase kicker shown above the heading. */
+  eyebrow?: string;
   heading: string;
   intro: string;
   tiles: HomeCourseTile[];
 }
 
 export interface HomeInstagramContent {
+  /** Small uppercase kicker shown above the heading. */
+  eyebrow?: string;
   heading: string;
   subheading: string;
   /** LightWidget widget ID (the hash in the iframe src URL). */
