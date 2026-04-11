@@ -49,7 +49,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 bg-[#FAEBE1]/95 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-5 md:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
+        <div className="flex items-center justify-between h-20 md:h-24">
           {/* Logo */}
           <Link href="/" className="flex items-center shrink-0" aria-label="EPHIA">
             <Image
@@ -59,8 +59,8 @@ export function Header() {
               height={589}
               priority
               quality={95}
-              sizes="200px"
-              className="h-8 md:h-9 w-auto"
+              sizes="260px"
+              className="h-11 md:h-12 w-auto"
             />
           </Link>
 
@@ -71,7 +71,7 @@ export function Header() {
                 <div key={link.label} className="relative group">
                   <a
                     href={link.href}
-                    className="flex items-center gap-1 text-sm font-medium text-black hover:text-[#0066FF] transition-colors py-2"
+                    className="flex items-center gap-1 text-base font-normal text-black hover:text-[#0066FF] transition-colors py-2"
                   >
                     <span>{link.label}</span>
                     <ChevronDown
@@ -97,7 +97,7 @@ export function Header() {
                 <a
                   key={link.label}
                   href={link.href}
-                  className="flex items-center gap-1 text-sm font-medium text-black hover:text-[#0066FF] transition-colors"
+                  className="flex items-center gap-1 text-base font-normal text-black hover:text-[#0066FF] transition-colors"
                 >
                   <span>{link.label}</span>
                 </a>

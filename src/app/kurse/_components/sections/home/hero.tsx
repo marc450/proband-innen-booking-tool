@@ -26,17 +26,17 @@ export function HomeHero({ content }: { content: HomeHeroContent }) {
               {content.heading}
             </h1>
 
-            <ul className="flex flex-col gap-3 mb-10">
+            <ul className="flex flex-col gap-4 mb-10">
               {content.checklist.map((item) => (
-                <li key={item.text} className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#0066FF]/10 flex-shrink-0">
+                <li key={item.text} className="flex items-center gap-4">
+                  <span className="flex items-center justify-center w-10 h-10 rounded-full bg-[#0066FF]/10 flex-shrink-0">
                     <Check
-                      className="w-4 h-4 text-[#0066FF]"
+                      className="w-6 h-6 text-[#0066FF]"
                       strokeWidth={3}
                       aria-hidden="true"
                     />
                   </span>
-                  <span className="text-base md:text-lg font-semibold text-black">
+                  <span className="text-lg md:text-xl font-semibold text-black">
                     {item.text}
                   </span>
                 </li>
