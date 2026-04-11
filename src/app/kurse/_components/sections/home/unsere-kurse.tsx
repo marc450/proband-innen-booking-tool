@@ -188,10 +188,11 @@ function CourseTile({
           </div>
         )}
 
-        {/* Description — matches the body text size used across the course page
-            (Lernziele cards, FAQ answers, Inhalt chapters). */}
+        {/* Description — prefer the admin-edited `card_description` from
+            course_templates; fall back to the static content string so the
+            card isn't empty while Marc fills in each course. */}
         <p className={`${TYPO.bodyCard} mt-4 mb-6 flex-1`}>
-          {tile.description}
+          {tile.dbCardDescription || tile.description}
         </p>
 
         {/* CTA */}

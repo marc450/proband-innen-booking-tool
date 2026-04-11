@@ -120,6 +120,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       status: "draft",
       audience: "humanmediziner",
       level: "",
+      card_description: "",
     });
     setImageUploadError(null);
     setShowDialog(true);
@@ -158,6 +159,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       status: o.status || "draft",
       audience: o.audience || "humanmediziner",
       level: o.level || "",
+      card_description: o.card_description || "",
     });
     setImageUploadError(null);
     setShowDialog(true);
@@ -197,6 +199,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       status: form.status || "draft",
       audience: form.audience || null,
       level: form.level || null,
+      card_description: form.card_description || null,
     };
 
     if (editing) {
@@ -574,6 +577,16 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
                     </Select>
                     <p className="text-[11px] text-muted-foreground">Zweiter Badge neben der Zielgruppe (optional)</p>
                   </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Beschreibung (Kurskachel)</Label>
+                  <Textarea
+                    value={form.card_description}
+                    onChange={(e) => updateField("card_description", e.target.value)}
+                    placeholder="Kurzer Beschreibungstext, der auf der Kurskachel unter dem Titel erscheint (kurse.ephia.de)"
+                    rows={4}
+                  />
+                  <p className="text-[11px] text-muted-foreground">Steuert den Text auf der Kurskachel unter Titel und Badges</p>
                 </div>
               </div>
             </div>

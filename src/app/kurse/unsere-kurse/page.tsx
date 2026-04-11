@@ -27,13 +27,14 @@ export default async function UnsereKursePage() {
       title: string | null;
       audience: string | null;
       level: string | null;
+      card_description: string | null;
     }
   >();
   if (courseKeys.length > 0) {
     const supabase = createAdminClient();
     const { data: templates } = await supabase
       .from("course_templates")
-      .select("course_key, image_url, title, audience, level")
+      .select("course_key, image_url, title, audience, level, card_description")
       .in("course_key", courseKeys);
     for (const t of templates ?? []) {
       templateMap.set(t.course_key as string, {
@@ -41,6 +42,7 @@ export default async function UnsereKursePage() {
         title: (t.title as string | null) ?? null,
         audience: (t.audience as string | null) ?? null,
         level: (t.level as string | null) ?? null,
+        card_description: (t.card_description as string | null) ?? null,
       });
     }
   }
@@ -56,6 +58,7 @@ export default async function UnsereKursePage() {
         ...(fromDb.title ? { dbTitle: fromDb.title } : {}),
         ...(fromDb.audience ? { dbAudience: fromDb.audience } : {}),
         ...(fromDb.level ? { dbLevel: fromDb.level } : {}),
+        ...(fromDb.card_description ? { dbCardDescription: fromDb.card_description } : {}),
       };
     }),
   };

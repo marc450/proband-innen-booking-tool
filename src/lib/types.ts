@@ -42,6 +42,9 @@ export interface CourseTemplate {
   // level:    'einsteiger'     | 'fortgeschritten' | null
   audience: string | null;
   level: string | null;
+  // Marketing card blurb shown below the title on /kurse course tiles.
+  // Separate from `description` (Proband:innen booking page copy).
+  card_description: string | null;
 }
 
 export type CourseType = "Onlinekurs" | "Praxiskurs" | "Kombikurs" | "Premium";

@@ -79,6 +79,13 @@ export interface HomeCourseTile {
    * on the card. Falls back to kicker-based detection if unset.
    */
   dbLevel?: string;
+  /**
+   * Runtime-only override populated from `course_templates.card_description`.
+   * When set, replaces the hardcoded static `description` body text on
+   * the tile. Empty string is treated as "use static fallback" so Marc
+   * can leave the column NULL until he fills each course in.
+   */
+  dbCardDescription?: string;
   /** Second-line subtitle, e.g. "Für Humanmediziner:innen" */
   audience: string;
   /** Longer body text shown inside the card */
