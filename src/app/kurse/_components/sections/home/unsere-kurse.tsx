@@ -32,12 +32,9 @@ export function UnsereKurse({ content }: { content: HomeCoursesResolvedContent }
       >
         <div className="max-w-7xl mx-auto px-5 md:px-8">
           <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-wide text-white mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-wide text-white">
               {content.heading}
             </h2>
-            <p className="text-white/90 max-w-2xl mx-auto text-base md:text-lg">
-              {content.intro}
-            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
@@ -108,22 +105,20 @@ function CourseTile({
   const level = getLevel(tile.kicker);
   const isZahn = tile.courseKey?.includes("zahnmedizin") ?? false;
 
-  const kickerBg = level === "aufbaukurs" ? CORAL : level === "grundkurs" ? BLUE : "rgba(0,0,0,0.6)";
-
   // Audience pill (Human/Zahn). Skip for the group-inquiry tile.
   const audiencePill = isGroup
     ? null
     : isZahn
-    ? { label: "Zahnmediziner:innen", bg: CORAL, text: "#FFFFFF" }
-    : { label: "Humanmediziner:innen", bg: BLUE, text: "#FFFFFF" };
+    ? { label: "Für Zahnmediziner:innen", bg: CORAL, text: "#FFFFFF" }
+    : { label: "Für Humanmediziner:innen", bg: BLUE, text: "#FFFFFF" };
 
   // Level pill (Einsteiger/Fortgeschritten).
   const levelPill = isGroup
     ? null
     : level === "grundkurs"
-    ? { label: "Einsteiger:innen" }
+    ? { label: "Für Einsteiger:innen" }
     : level === "aufbaukurs"
-    ? { label: "Fortgeschrittene" }
+    ? { label: "Für Fortgeschrittene" }
     : null;
 
   return (
@@ -139,14 +134,6 @@ function CourseTile({
             sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
             className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
-          <div className="absolute top-3 left-3">
-            <span
-              className="inline-block text-[10px] md:text-xs font-semibold tracking-[0.18em] text-white rounded-full px-2.5 py-1 uppercase"
-              style={{ backgroundColor: kickerBg }}
-            >
-              {tile.kicker}
-            </span>
-          </div>
         </div>
       ) : (
         <div
@@ -162,6 +149,13 @@ function CourseTile({
 
       {/* Body */}
       <div className="flex flex-col flex-1 p-5 md:p-6">
+        {/* Kicker (Grundkurs / Aufbaukurs) */}
+        {tile.kicker && !isGroup && (
+          <div className="text-xs md:text-sm font-semibold tracking-[0.2em] text-[#0066FF] mb-1">
+            {tile.kicker}
+          </div>
+        )}
+
         {/* Title row: title + ab price */}
         <div className="flex items-baseline justify-between gap-3">
           <h3 className="text-xl md:text-2xl font-bold tracking-wide text-black leading-tight">
