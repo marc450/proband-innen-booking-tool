@@ -17,12 +17,16 @@ const SECTIONS: Section[] = [
     title: "1. Allgemeines",
     paragraphs: [
       "Diese Allgemeinen Geschäftsbedingungen (AGB) regeln das Vertragsverhältnis zwischen der EPHIA Medical GmbH i.G., Dorfstraße 30, 15913 Märkische Heide, Deutschland (im Folgenden „EPHIA\", „wir\", „uns\") und den jeweiligen Kund:innen unserer digitalen und praktischen Fortbildungsangebote im Bereich der minimalinvasiven ästhetischen Medizin. Die EPHIA Medical GmbH i.G. befindet sich seit dem 21.05.2025 in Gründung.",
+      "Unsere Leistungen richten sich ausschließlich an medizinisches Fachpersonal mit Approbation, insbesondere approbierte Ärzt:innen und Zahnmediziner:innen.",
+      "Durch die Buchung eines Kurses akzeptierst Du diese AGB in der jeweils zum Zeitpunkt des Vertragsschlusses gültigen Fassung. Der Vertrag kommt zustande mit unserer schriftlichen Bestätigung der Kursbuchung (per E-Mail oder automatisierter Bestätigung auf unserer Lernplattform). Jegliche Abweichungen von diesen AGB bedürfen der Schriftform.",
     ],
   },
   {
     title: "2. Leistungen & Nutzung der Plattform",
     paragraphs: [
       "EPHIA bietet eine Kombination aus Online- und Praxis-Fortbildungen (Kombikurse), reine Online-Kurse sowie reine Praxisformate an. Die theoretischen Module werden über unsere digitale Lernplattform bereitgestellt. Die Nutzung dieser Inhalte ist personalisiert und darf ausschließlich durch die buchende Person erfolgen.",
+      "Darüber hinaus bieten wir ergänzende Schulungen zur Existenzgründung und Selbstständigkeit im Bereich der ästhetischen Medizin an.",
+      "Die gebuchten Leistungen umfassen den Zugriff auf Lerninhalte für den vereinbarten Zeitraum, ggf. den Zugang zu einer betreuten Community sowie, je nach Kursart, die praktische Ausbildung mit Proband:innen.",
     ],
   },
   {
@@ -35,12 +39,14 @@ const SECTIONS: Section[] = [
     title: "4. Urheberrecht & Nutzungsrechte",
     paragraphs: [
       "Alle digitalen Inhalte, Unterlagen, Videos, Texte, Bilder und sonstige Materialien sind urheberrechtlich geschützt und dürfen ohne unsere ausdrückliche schriftliche Genehmigung weder vervielfältigt, veröffentlicht, bearbeitet noch an Dritte weitergegeben werden.",
+      "Das Nutzungsrecht ist ausschließlich auf die Dauer des vertraglich vereinbarten Zugriffs beschränkt. Eine gewerbliche oder schulungsartige Weiterverwendung, auch auszugsweise, ist untersagt. Verstöße gegen das Urheberrecht führen zur sofortigen Sperrung des Zugangs und ggf. zu rechtlichen Schritten.",
     ],
   },
   {
     title: "5. Preise & Zahlung",
     paragraphs: [
       "Die jeweils gültigen Preise sind auf unserer Website oder im Kursangebot einsehbar. Maßgeblich ist der Preis zum Zeitpunkt der Buchung.",
+      "Im Falle eines Zahlungsverzugs sind wir berechtigt, Verzugszinsen in Höhe von 8 % p.a. über dem Basiszinssatz zu berechnen sowie entstandene Mahn- und Rechtsverfolgungskosten in Rechnung zu stellen. Wir behalten uns vor, bei wiederholtem Zahlungsverzug oder Zahlungsunfähigkeit vom Vertrag zurückzutreten.",
     ],
   },
   {
@@ -54,6 +60,8 @@ const SECTIONS: Section[] = [
     title: "7. Durchführung & Haftung",
     paragraphs: [
       "Unsere Inhalte werden mit größtmöglicher Sorgfalt von erfahrenen Fachpersonen erstellt. Dennoch übernehmen wir keine Gewähr für die Aktualität, Vollständigkeit oder Richtigkeit der vermittelten Informationen. Die praktische Umsetzung des Gelernten liegt in Deiner Eigenverantwortung.",
+      "Bei Kursen mit praktischer Übungseinheit erfolgt die Behandlung an Proband:innen durch approbierte Ärzt:innen oder Zahnärzt:innen, die durch EPHIA geschult wurden. Diese Personen handeln eigenverantwortlich und unter medizinischer Aufsicht durch fachärztlich qualifizierte Dozent:innen. Die behandelnde Person ist stets diejenige Ärzt:in oder Zahnärzt:in, die die Maßnahme durchführt, nicht EPHIA.",
+      "EPHIA übernimmt keine medizinische Verantwortung oder Haftung für durchgeführte Behandlungen im Rahmen der praktischen Ausbildung.",
     ],
   },
   {
@@ -64,6 +72,7 @@ const SECTIONS: Section[] = [
         "vollständig gegen Hepatitis B geimpft bist,",
         "eine Berufshaftpflichtversicherung abgeschlossen hast, die ästhetische Indikationen (z. B. Botulinum- und Dermalfillerbehandlungen) abdeckt.",
       ],
+      "Der entsprechende Nachweis ist auf Verlangen vorzulegen.",
     ],
   },
   {
