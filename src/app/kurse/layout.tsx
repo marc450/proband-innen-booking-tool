@@ -4,7 +4,7 @@ import { Footer } from "./_components/footer";
 
 export default function KurseLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col bg-[#FAEBE1] text-black overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-[#FAEBE1] text-black">
       <Header />
       <main className="flex-1">{children}</main>
       <Footer />
