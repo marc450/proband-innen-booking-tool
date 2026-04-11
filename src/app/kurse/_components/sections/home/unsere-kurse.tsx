@@ -92,9 +92,16 @@ function CourseTile({
   const isExternal = tile.href?.startsWith("http");
   const subtitle = variantSubtitle(tile.audience);
 
-  // Merge kicker ("GRUNDKURS") and title ("BOTULINUM") into one title line
-  // with unified styling — e.g. "Grundkurs Botulinum".
-  const fullTitle = isGroup
+  // Title resolution order:
+  //   1. `dbTitle` — when set, it comes from `course_templates.title`
+  //      and the admin is the source of truth. Render verbatim (no
+  //      titleCase — respect Marc's capitalisation), skipping the
+  //      hardcoded kicker prepend.
+  //   2. Otherwise merge kicker ("GRUNDKURS") + title ("BOTULINUM") into
+  //      one line — e.g. "Grundkurs Botulinum".
+  const fullTitle = tile.dbTitle
+    ? tile.dbTitle
+    : isGroup
     ? titleCase(tile.title)
     : tile.kicker
     ? `${titleCase(tile.kicker)} ${titleCase(tile.title)}`

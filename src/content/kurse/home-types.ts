@@ -58,14 +58,23 @@ export interface HomeCourseTile {
   kicker: string;
   /** Main title, e.g. "BOTULINUM" */
   title: string;
+  /**
+   * Runtime-only override: when the page loader resolves a matching
+   * `course_templates.title` from the DB via `courseKey`, it populates
+   * this field so the component can use the admin-edited title verbatim
+   * instead of the hardcoded `kicker + title` merge. NOT written by hand
+   * in content files — always populated server-side.
+   */
+  dbTitle?: string;
   /** Second-line subtitle, e.g. "Für Humanmediziner:innen" */
   audience: string;
   /** Longer body text shown inside the card */
   description: string;
   /**
-   * Matches `course_templates.course_key`. When set, the tile image is
-   * resolved server-side from `course_templates.image_url` so marketing
-   * stays in sync with whatever Marc uploads via the admin.
+   * Matches `course_templates.course_key`. When set, the tile image +
+   * title are resolved server-side from `course_templates.image_url` /
+   * `course_templates.title` so marketing stays in sync with whatever
+   * Marc edits via the admin.
    */
   courseKey?: string;
   /**
