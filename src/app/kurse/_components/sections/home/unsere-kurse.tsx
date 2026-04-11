@@ -37,6 +37,34 @@ export function UnsereKurse({ content }: { content: HomeCoursesContent }) {
         </div>
       </section>
 
+      {/* Alternative layout: 2-column grid with more breathing room */}
+      <section
+        id="unsere-kurse-v2"
+        className="py-20 md:py-28"
+        style={{ backgroundColor: BLUE }}
+      >
+        <div className="max-w-6xl mx-auto px-5 md:px-8">
+          <div className="text-center mb-14">
+            <p className="text-xs font-semibold tracking-[0.3em] text-white/60 mb-3">
+              ALTERNATIVE · 2-SPALTEN
+            </p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-wide text-white">
+              {content.heading}
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14">
+            {content.tiles.map((tile, i) => (
+              <CourseTile
+                key={`v2-${tile.title}-${tile.audience}-${i}`}
+                tile={tile}
+                onGroupInquiry={() => setGroupOpen(true)}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
       <GroupInquiryDialog
         open={groupOpen}
         onClose={() => setGroupOpen(false)}
