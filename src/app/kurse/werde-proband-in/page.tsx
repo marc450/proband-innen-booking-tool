@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 const hero = {
   heading: "Werde Proband:in",
   lead: "Im Rahmen unserer Ausbildungskurse suchen wir regelmäßig Proband:innen für Behandlungen durch unsere Ärzt:innen in Ausbildung. Du bekommst eine hochwertige Behandlung zum fairen Richtpreis und unterstützt gleichzeitig die praktische Ausbildung der nächsten Generation ästhetischer Mediziner:innen.",
-  ctaLabel: "Jetzt Behandlung buchen",
+  ctaLabel: "Jetzt Platz reservieren",
   ctaHref: "#behandlungen",
   videoPath:
     "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/proband:innen/IMG_9363.MP4",

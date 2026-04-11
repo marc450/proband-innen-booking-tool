@@ -178,7 +178,7 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                                 </div>
                               </div>
                               <Badge variant="outline" className="text-xs border-primary/30 text-primary shrink-0">
-                                Buchen
+                                Platz reservieren
                               </Badge>
                             </button>
                           ))}
