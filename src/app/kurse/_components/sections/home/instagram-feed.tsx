@@ -13,12 +13,18 @@ export function InstagramFeed({ content }: { content: HomeInstagramContent }) {
             <SectionEyebrow>{content.eyebrow}</SectionEyebrow>
           </div>
         )}
-        <h2 className="text-3xl md:text-4xl font-bold text-center tracking-wide mb-3">
+        <h2
+          className={`text-3xl md:text-4xl font-bold text-center tracking-wide ${
+            content.subheading ? "mb-3" : "mb-10 md:mb-14"
+          }`}
+        >
           {content.heading}
         </h2>
-        <p className="text-center text-black/70 mb-10 md:mb-14">
-          {content.subheading}
-        </p>
+        {content.subheading && (
+          <p className="text-center text-black/70 mb-10 md:mb-14">
+            {content.subheading}
+          </p>
+        )}
 
         <div className="rounded-[10px] overflow-hidden">
           <iframe

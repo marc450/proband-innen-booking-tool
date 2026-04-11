@@ -21,11 +21,6 @@ export function WerWirSind({ content }: { content: HomeWerWirSindContent }) {
           aspectClassName="aspect-[4/5] md:aspect-video"
         />
       </div>
-
-      <div className="max-w-3xl mx-auto px-5 md:px-8 text-center mt-6">
-        <p className="font-bold text-black">{content.personName}</p>
-        <p className="text-sm text-black/60">{content.personTitle}</p>
-      </div>
     </section>
   );
 }

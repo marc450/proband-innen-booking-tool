@@ -103,7 +103,7 @@ export interface HomeInstagramContent {
   /** Small uppercase kicker shown above the heading. */
   eyebrow?: string;
   heading: string;
-  subheading: string;
+  subheading?: string;
   /** LightWidget widget ID (the hash in the iframe src URL). */
   widgetId: string;
 }

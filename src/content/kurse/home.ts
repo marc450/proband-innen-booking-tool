@@ -16,7 +16,6 @@ export const homeContent: HomeContent = {
   },
 
   hero: {
-    eyebrow: "EPHIA Akademie · Für approbierte Ärzt:innen",
     heading: "Deine Lernplattform für inklusive ästhetische Medizin",
     checklist: [
       { text: "LÄK-zertifizierte Lehrgänge" },
@@ -165,7 +164,6 @@ export const homeContent: HomeContent = {
   testimonials: {
     eyebrow: "Stimmen · Aus unserer Community",
     heading: "#wearetogether",
-    subheading: "Was durch uns ausgebildete Ärzt:innen sagen",
     items: [
       {
         quote:
@@ -194,7 +192,6 @@ export const homeContent: HomeContent = {
   instagram: {
     eyebrow: "Folge uns · @ephia.academy auf Instagram",
     heading: "NEWSLETTER SIND VON GESTERN",
-    subheading: "Folge uns einfach auf Insta!",
     widgetId: "6fbfcc53812a55ec9db620f1a9d278b6",
   },
 };
