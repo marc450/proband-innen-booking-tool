@@ -17,6 +17,7 @@ interface FormState {
   attendees: string;
   topic: string;
   timeframe: string;
+  knowledgeLevel: string;
   message: string;
 }
 
@@ -27,6 +28,7 @@ const EMPTY_FORM: FormState = {
   attendees: "",
   topic: "",
   timeframe: "",
+  knowledgeLevel: "",
   message: "",
 };
 
@@ -199,7 +201,7 @@ export function GroupInquiryDialog({
               <Field
                 label="Teilnehmer:innen"
                 required
-                placeholder="z. B. 6 Personen"
+                placeholder="mind. 4 Personen"
                 value={form.attendees}
                 onChange={update("attendees")}
               />
@@ -218,6 +220,14 @@ export function GroupInquiryDialog({
                 value={form.timeframe}
                 onChange={update("timeframe")}
                 className="md:col-span-2"
+              />
+              <TextAreaField
+                label="Aktueller Kenntnisstand der Teilnehmer:innen"
+                value={form.knowledgeLevel}
+                onChange={update("knowledgeLevel")}
+                className="md:col-span-2"
+                rows={3}
+                placeholder="z. B. komplette Einsteiger:innen, erste Erfahrung mit Botulinum, gemischte Vorkenntnisse ..."
               />
               <TextAreaField
                 label="Nachricht (optional)"

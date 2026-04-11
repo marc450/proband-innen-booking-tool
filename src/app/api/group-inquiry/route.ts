@@ -10,6 +10,7 @@ interface GroupInquiryPayload {
   attendees: string;
   topic: string;
   timeframe: string;
+  knowledgeLevel?: string;
   message?: string;
   courseTitle?: string;
   sourceUrl?: string;
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
     const attendees = (body.attendees ?? "").trim();
     const topic = (body.topic ?? "").trim();
     const timeframe = (body.timeframe ?? "").trim();
+    const knowledgeLevel = (body.knowledgeLevel ?? "").trim();
     const message = (body.message ?? "").trim();
     const courseTitle = (body.courseTitle ?? "").trim();
     const sourceUrl = (body.sourceUrl ?? "").trim();
@@ -76,6 +78,7 @@ export async function POST(req: NextRequest) {
     rows.push(["Teilnehmer:innen", attendees]);
     rows.push(["Gewünschter Kursinhalt", topic]);
     rows.push(["Gewünschter Zeitraum", timeframe]);
+    if (knowledgeLevel) rows.push(["Aktueller Kenntnisstand", knowledgeLevel]);
     if (message) rows.push(["Nachricht", message]);
     if (sourceUrl) rows.push(["Quelle", sourceUrl]);
 
@@ -149,6 +152,7 @@ export async function POST(req: NextRequest) {
               `*Teilnehmer:innen:* ${attendees}`,
               `*Kursinhalt:* ${topic}`,
               `*Zeitraum:* ${timeframe}`,
+              knowledgeLevel ? `*Kenntnisstand:* ${knowledgeLevel}` : null,
               message ? `*Nachricht:* ${message}` : null,
             ]
               .filter(Boolean)
