@@ -121,12 +121,57 @@ export const teamContent: TeamPageContent = {
       {
         id: "tina-bellinghausen",
         name: "Tina Bellinghausen",
-        role: "Dozentin",
+        role: "EPHIA Dozentin",
         imagePath:
           "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/tina.png",
         imageAlt: "Porträt von Tina Bellinghausen",
         shortBio:
           "Approbierte Ärztin mit Schwerpunkt auf ästhetischer Medizin. Tina unterstützt unsere Kurse als Dozentin und teilt ihre Erfahrung aus der täglichen Praxis.",
+        curriculum: {
+          tagline:
+            "Praxistätigkeit seit 2020, spezialisiert auf minimal invasive Verfahren.",
+          sections: [
+            {
+              heading: "Ästhetische Medizin",
+              intro:
+                "Praxistätigkeit seit 2020, spezialisiert auf minimal invasive Verfahren.",
+              items: [
+                {
+                  label: "Ausbildung unter anderem bei:",
+                  items: [
+                    "Merita Schojai-Schultz (Lieb Dein Gesicht)",
+                    "diverse Galderma Fortbildungen",
+                    "HyStudio",
+                    "Fortbildungen und mehrere Hospitationen bei Dr. Sophia Bethge",
+                    "Fortbildung bei Irina Myssak",
+                    "Fortbildung im HLP (Haut- und Laserzentrum Berlin)",
+                    "Fortbildung bei Dr. Flavia Radke",
+                  ],
+                },
+              ],
+            },
+            {
+              heading: "Klinische Medizin",
+              items: ["Fachärztin für Neurochirurgie"],
+            },
+            {
+              heading: "Klinische Tätigkeit",
+              items: [
+                "Seit 2012: Neurochirurgie im Sankt Gertrauden-Krankenhaus",
+              ],
+            },
+            {
+              heading: "Auslandstätigkeit",
+              items: [
+                "12th Istanbul Yasargil Microneurosurgery Course (Istanbul)",
+              ],
+            },
+            {
+              heading: "Fachgesellschaftsmitgliedschaften",
+              items: ["Ärztekammer Berlin"],
+            },
+          ],
+        },
       },
       {
         id: "sarah-bechstein",
@@ -141,22 +186,118 @@ export const teamContent: TeamPageContent = {
       {
         id: "sarah-stannek",
         name: "Dr. Sarah Stannek",
-        role: "Dozentin",
+        role: "EPHIA Dozentin",
         imagePath:
           "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sarah-stannek.jpg",
         imageAlt: "Porträt von Dr. Sarah Stannek",
         shortBio:
           "Dr. Sarah Stannek begleitet unsere Kurse mit klinischer Expertise und hohem didaktischem Anspruch. Schwerpunkt: evidenzbasierte Injektionstechniken.",
+        curriculum: {
+          tagline:
+            "Praxistätigkeit seit 2021, spezialisiert auf minimal invasive Verfahren und Lasermedizin.",
+          sections: [
+            {
+              heading: "Ästhetische Medizin",
+              intro:
+                "Praxistätigkeit seit 2021, spezialisiert auf minimal invasive Verfahren und Lasermedizin.",
+              items: [
+                {
+                  label: "Ausbildung unter anderem bei:",
+                  items: [
+                    "M1",
+                    "HY Studio",
+                    "Kalialab",
+                    "DGBT Fortbildung",
+                    "Produktschulungen (Galderma, Merz, Nordberg Medical, InMode, Croma, Evolus)",
+                  ],
+                },
+              ],
+            },
+            {
+              heading: "Klinische Medizin",
+              items: ["Fachärztin für HNO und Kopf-Hals-Chirurgie"],
+            },
+            {
+              heading: "Klinische Tätigkeit",
+              intro: "Seit 2024:",
+              items: [
+                "Praxistätigkeit in der plastischen Chirurgie im Rahmen der Weiterbildung zur plastischen Gesichtschirurgin",
+                "Fachärztin bei Plastethics by Dr. Juliane Bodo",
+                "Rhino- und Blepharoplastik Fortbildungen im In- und Ausland",
+                "Hospitation bei Prof. Dr. Frank Riedel, Mannheim",
+              ],
+            },
+            {
+              heading: "Auslandstätigkeit",
+              items: [
+                "Fellowship ENT Clinic, Rambam Hospital, Haifa, Israel",
+              ],
+            },
+            {
+              heading: "Fachgesellschaftsmitgliedschaften",
+              items: [
+                "DGBT (Deutsche Gesellschaft für ästhetische Botulinumtoxin-Therapie)",
+                "GÄCD (Gesellschaft für Ästhetische Chirurgie Deutschland)",
+                "EAFPS (European Academy of Facial Plastic Surgery)",
+                "DGHNO (Deutsche Gesellschaft für Hals-Nasen-Ohren-Heilkunde)",
+                "HNO Berufsverband",
+                "Ärztekammer Berlin",
+              ],
+            },
+          ],
+        },
       },
       {
         id: "pauline-freidl",
         name: "Pauline Freidl",
-        role: "Dozentin",
+        role: "EPHIA Dozentin",
         imagePath:
           "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/pauline.png",
         imageAlt: "Porträt von Pauline Freidl",
         shortBio:
           "Approbierte Ärztin und Dozentin bei EPHIA. Pauline bringt eine ruhige, strukturierte Art in ihre Kurse und begleitet Teilnehmer:innen eng bei den praktischen Übungen.",
+        curriculum: {
+          tagline:
+            "Praxistätigkeit seit 2021, spezialisiert auf minimal invasive Verfahren.",
+          sections: [
+            {
+              heading: "Ästhetische Medizin",
+              intro:
+                "Praxistätigkeit seit 2021, spezialisiert auf minimal invasive Verfahren.",
+              items: [
+                {
+                  label: "Ausbildung unter anderem bei:",
+                  items: [
+                    "Maja Waibel",
+                    "diverse Merz Fortbildungen",
+                    "diverse Galderma Fortbildungen",
+                    "HYSTUDIO",
+                    "Lara Pfahl",
+                    "MIA Akademie",
+                    "DERMA MEDICAL",
+                    "EPHIA Academy",
+                  ],
+                },
+              ],
+            },
+            {
+              heading: "Klinische Tätigkeit",
+              items: [
+                "HYSTUDIO",
+                "2023 bis 2025: angioclinic® Berlin",
+                "2021: KMG Klinikum Luckenwalde",
+                "2021: Evangelisches Waldkrankenhaus Spandau",
+              ],
+            },
+            {
+              heading: "Fachgesellschaftsmitgliedschaften",
+              items: [
+                "Ärztekammer Berlin",
+                "DGPL (Deutsche Gesellschaft für Phlebologie und Lymphologie)",
+              ],
+            },
+          ],
+        },
       },
       {
         id: "jana-steyer",
