@@ -78,6 +78,8 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [duplicatingCourse, setDuplicatingCourse] = useState<Course | null>(null);
   const [duplicateDate, setDuplicateDate] = useState("");
+  const [duplicateInstructor, setDuplicateInstructor] = useState("");
+  const [duplicateLocation, setDuplicateLocation] = useState("");
 
   // Confirm delete dialogs
   const [deleteCourseConfirm, setDeleteCourseConfirm] = useState<string | null>(null);
@@ -276,8 +278,23 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
     setDeleteSlotConfirm(null);
   };
 
+  const openDuplicate = (course: Course) => {
+    setDuplicatingCourse(course);
+    setDuplicateDate("");
+    setDuplicateInstructor(course.instructor || "");
+    setDuplicateLocation(course.location || "");
+    setDuplicateDialogOpen(true);
+  };
+
+  const resetDuplicateForm = () => {
+    setDuplicatingCourse(null);
+    setDuplicateDate("");
+    setDuplicateInstructor("");
+    setDuplicateLocation("");
+  };
+
   const handleDuplicate = async () => {
-    if (!duplicatingCourse || !duplicateDate) return;
+    if (!duplicatingCourse || !duplicateDate || !duplicateInstructor || !duplicateLocation.trim()) return;
 
     const { data: newCourse, error: courseError } = await supabase
       .from("courses")
@@ -288,10 +305,10 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
         description: duplicatingCourse.description,
         service_description: duplicatingCourse.service_description,
         guide_price: duplicatingCourse.guide_price,
-        instructor: duplicatingCourse.instructor,
+        instructor: duplicateInstructor,
         image_url: duplicatingCourse.image_url,
         course_date: duplicateDate,
-        location: duplicatingCourse.location,
+        location: duplicateLocation,
       })
       .select()
       .single();
@@ -299,8 +316,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
     if (courseError || !newCourse) return;
 
     setDuplicateDialogOpen(false);
-    setDuplicatingCourse(null);
-    setDuplicateDate("");
+    resetDuplicateForm();
     setCourses((prev) => [newCourse, ...prev]);
 
     const originalSlots = slots.filter((s) => s.course_id === duplicatingCourse.id);
@@ -563,29 +579,73 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
       {/* Duplicate dialog */}
       <Dialog open={duplicateDialogOpen} onOpenChange={(open) => {
         setDuplicateDialogOpen(open);
-        if (!open) { setDuplicatingCourse(null); setDuplicateDate(""); }
+        if (!open) resetDuplicateForm();
       }}>
-        <DialogContent>
+        <DialogContent className="bg-card sm:max-w-[520px]">
           <DialogHeader>
             <DialogTitle>Kurs duplizieren</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
+
+          <div className="space-y-4 py-1">
             <p className="text-sm text-muted-foreground">
-              Kopiert <strong>{duplicatingCourse?.title}</strong> mit allen Slots auf ein neues Datum.
+              Kopiert <strong>{duplicatingCourse?.title}</strong> mit allen Zeitfenstern auf ein neues Datum.
             </p>
-            <div>
-              <Label htmlFor="dup_date">Neues Datum</Label>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="dup_date">Neues Datum *</Label>
               <Input
                 id="dup_date"
                 type="date"
+                className="h-10"
                 value={duplicateDate}
                 onChange={(e) => setDuplicateDate(e.target.value)}
               />
             </div>
-            <Button onClick={handleDuplicate} className="w-full" disabled={!duplicateDate}>
+
+            <div className="space-y-1.5">
+              <Label>Kursleitende:r Ärzt:in *</Label>
+              <Select value={duplicateInstructor} onValueChange={(v) => setDuplicateInstructor(v || "")}>
+                <SelectTrigger className="h-10 w-full">
+                  <span className="flex flex-1 text-left line-clamp-1">
+                    {duplicateInstructor
+                      ? duplicateInstructor
+                      : <span className="text-muted-foreground">Dozent:in auswählen...</span>
+                    }
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  {dozentUsers.map((d) => (
+                    <SelectItem key={d.id} value={formatDozentName(d)}>
+                      {formatDozentName(d)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="dup_location">Ort *</Label>
+              <Input
+                id="dup_location"
+                className="h-10"
+                value={duplicateLocation}
+                onChange={(e) => setDuplicateLocation(e.target.value)}
+                placeholder="z.B. HY STUDIO, Rosa-Luxemburg-Straße 20, 10178 Berlin"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDuplicateDialogOpen(false)}>
+              Abbrechen
+            </Button>
+            <Button
+              onClick={handleDuplicate}
+              disabled={!duplicateDate || !duplicateInstructor || !duplicateLocation.trim()}
+            >
               Duplizieren
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -778,7 +838,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="sm" title="Kurs duplizieren"
-                      onClick={(e) => { e.stopPropagation(); setDuplicatingCourse(course); setDuplicateDialogOpen(true); }}>
+                      onClick={(e) => { e.stopPropagation(); openDuplicate(course); }}>
                       <Copy className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="sm"
