@@ -3,11 +3,24 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const ADMIN_DOMAIN = "admin.ephia.de";
 const BOOKING_DOMAIN = "proband-innen.ephia.de";
+// Shadow marketing domain — staging ground for the future ephia.de marketing
+// site. Serves the /kurse tree with clean URLs and is blocked from search
+// indexing until we cut over.
+const KURSE_DOMAIN = "kurse.ephia.de";
 
 // Routes that belong to the admin domain only
 const ADMIN_ONLY_PATHS = ["/dashboard", "/login", "/m"];
 // Routes that belong to the booking domain only
 const BOOKING_ONLY_PATHS = ["/book", "/courses"];
+
+// Paths that kurse.ephia.de should pass through untouched (framework assets,
+// API routes, etc). Everything else on that host is treated as a /kurse slug.
+const KURSE_PASSTHROUGH_RE = /^\/(api|_next|kurse|favicon\.ico|robots\.txt|sitemap\.xml)(\/|$)/;
+
+function withNoindex(response: NextResponse): NextResponse {
+  response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  return response;
+}
 
 // Phone-only UA regex. Deliberately excludes iPad (it handles the 3-pane
 // desktop layout fine on its larger viewport).
@@ -58,6 +71,27 @@ export async function middleware(request: NextRequest) {
     if (isBookingPath) {
       return NextResponse.rewrite(new URL("/not-found", request.url));
     }
+  }
+
+  // On kurse.ephia.de: shadow marketing site.
+  //  - Root "/" → /kurse/grundkurs-botulinum (the only live page today)
+  //  - /{slug} → rewrite to /kurse/{slug} so clean URLs work
+  //  - /kurse/* paths are passed through as-is
+  //  - All responses are tagged noindex, nofollow so Google never indexes it
+  if (hostname === KURSE_DOMAIN) {
+    if (pathname === "/") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/kurse/grundkurs-botulinum";
+      return withNoindex(NextResponse.redirect(url));
+    }
+
+    if (!KURSE_PASSTHROUGH_RE.test(pathname)) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/kurse${pathname}`;
+      return withNoindex(NextResponse.rewrite(url));
+    }
+
+    return withNoindex(NextResponse.next());
   }
 
   // On proband-innen.ephia.de: block admin-only paths.
