@@ -1,9 +1,9 @@
 import Image from "next/image";
 
 const FOOTER_LINKS = [
-  { label: "Impressum", href: "https://www.ephia.de/impressum" },
-  { label: "AGB", href: "https://www.ephia.de/terms" },
-  { label: "Datenschutz", href: "https://www.ephia.de/privacy" },
+  { label: "Impressum", href: "/kurse/impressum" },
+  { label: "AGB", href: "/kurse/agb" },
+  { label: "Datenschutz", href: "/kurse/datenschutz" },
 ];
 
 export function Footer() {
