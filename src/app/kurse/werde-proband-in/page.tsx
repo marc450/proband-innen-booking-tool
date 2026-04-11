@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, HeartHandshake, ShieldCheck, Sparkles } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import type { AvailableSlot, Course } from "@/lib/types";
 import { HeroVideo } from "../_components/sections/hero-video";
 import { Faq } from "../_components/sections/faq";
+import { TreatmentList } from "../_components/sections/treatment-list";
 import { TYPO } from "../_components/typography";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Werde Proband:in | EPHIA",
@@ -20,7 +25,7 @@ const hero = {
   heading: "Werde Proband:in",
   lead: "Im Rahmen unserer Ausbildungskurse suchen wir regelmäßig Proband:innen für Behandlungen durch unsere Ärzt:innen in Ausbildung. Du bekommst eine hochwertige Behandlung zum fairen Richtpreis und unterstützt gleichzeitig die praktische Ausbildung der nächsten Generation ästhetischer Mediziner:innen.",
   ctaLabel: "Jetzt Behandlung buchen",
-  ctaHref: "/book",
+  ctaHref: "#behandlungen",
   secondaryLabel: "So läuft's ab ↓",
   secondaryHref: "#so-laeufts-ab",
   videoPath:
@@ -113,7 +118,32 @@ const faq = {
 // Page
 // ---------------------------------------------------------------------
 
-export default function WerdeProbandInPage() {
+export default async function WerdeProbandInPage() {
+  // Spiegeln dieselbe Abfrage wie /book, damit die Behandlungsliste weiter
+  // unten auf dieser Seite dieselben Kurse + Slots zeigt wie der bestehende
+  // Buchungs-Funnel. Die CTA der Kacheln verlinkt weiterhin auf
+  // /book/{courseId}, sodass Slot-Auswahl und Stripe-Flow unverändert sind.
+  const supabase = await createClient();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [{ data: coursesData }, { data: slotsData }] = await Promise.all([
+    supabase
+      .from("courses")
+      .select("*")
+      .eq("status", "online")
+      .gte("course_date", today)
+      .order("course_date", { ascending: true }),
+    supabase
+      .from("available_slots")
+      .select("*")
+      .gt("remaining_capacity", 0)
+      .gt("start_time", new Date(Date.now() + 30 * 60 * 1000).toISOString())
+      .order("start_time", { ascending: true }),
+  ]);
+
+  const courses = (coursesData as Course[] | null) ?? [];
+  const slots = (slotsData as AvailableSlot[] | null) ?? [];
+
   return (
     <>
       {/* Hero — mirrors the home hero two-column split on desktop. */}
@@ -148,40 +178,6 @@ export default function WerdeProbandInPage() {
                 allowUnmute={false}
               />
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* USPs — three value pillars. */}
-      <section className="bg-[#FAEBE1] py-16 md:py-20">
-        <div className="max-w-6xl mx-auto px-5 md:px-8">
-          <div className="text-center mb-12 md:mb-14">
-            <h2 className={`${TYPO.h2} text-black`}>Darum zu EPHIA</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-            {usps.map((u) => {
-              const Icon = u.icon;
-              return (
-                <article
-                  key={u.title}
-                  className="bg-white rounded-[10px] p-7 md:p-8 flex flex-col"
-                >
-                  <div className="w-12 h-12 rounded-full bg-[#0066FF]/10 flex items-center justify-center mb-5">
-                    <Icon
-                      className="w-6 h-6 text-[#0066FF]"
-                      strokeWidth={2}
-                      aria-hidden="true"
-                    />
-                  </div>
-                  <h3 className="text-lg md:text-xl font-bold text-black tracking-wide leading-tight">
-                    {u.title}
-                  </h3>
-                  <p className="text-sm md:text-base text-black/75 leading-relaxed mt-3">
-                    {u.body}
-                  </p>
-                </article>
-              );
-            })}
           </div>
         </div>
       </section>
@@ -223,38 +219,55 @@ export default function WerdeProbandInPage() {
 
           <div className="mt-12 md:mt-14 text-center">
             <Link
-              href="/book"
+              href="#behandlungen"
               className="inline-flex items-center gap-2 text-base md:text-lg font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-7 py-4 transition-colors"
             >
               <span>Jetzt Behandlung buchen</span>
               <ArrowRight className="w-5 h-5" strokeWidth={2.25} />
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Behandlungsangebote — synchronisiert mit /book. */}
+      <TreatmentList courses={courses} slots={slots} />
+
+      {/* USPs — three value pillars. */}
+      <section className="bg-[#FAEBE1] py-16 md:py-20">
+        <div className="max-w-6xl mx-auto px-5 md:px-8">
+          <div className="text-center mb-12 md:mb-14">
+            <h2 className={`${TYPO.h2} text-black`}>Darum zu EPHIA</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            {usps.map((u) => {
+              const Icon = u.icon;
+              return (
+                <article
+                  key={u.title}
+                  className="bg-white rounded-[10px] p-7 md:p-8 flex flex-col"
+                >
+                  <div className="w-12 h-12 rounded-full bg-[#0066FF]/10 flex items-center justify-center mb-5">
+                    <Icon
+                      className="w-6 h-6 text-[#0066FF]"
+                      strokeWidth={2}
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <h3 className="text-lg md:text-xl font-bold text-black tracking-wide leading-tight">
+                    {u.title}
+                  </h3>
+                  <p className="text-sm md:text-base text-black/75 leading-relaxed mt-3">
+                    {u.body}
+                  </p>
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* FAQ — reuses the shared /kurse Faq section. */}
       <Faq content={faq} />
-
-      {/* Final CTA breather. */}
-      <section className="bg-[#FAEBE1] pt-16 md:pt-20 pb-24 md:pb-32">
-        <div className="max-w-3xl mx-auto px-5 md:px-8 text-center">
-          <h2 className={`${TYPO.h2} text-black`}>Bereit?</h2>
-          <p className={`${TYPO.bodyLead} mt-5`}>
-            Sichere Dir jetzt Deinen Platz in einem unserer nächsten
-            Ausbildungskurse.
-          </p>
-          <div className="mt-10">
-            <Link
-              href="/book"
-              className="inline-flex items-center gap-2 text-base md:text-lg font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-7 py-4 transition-colors"
-            >
-              <span>Jetzt Behandlung buchen</span>
-              <ArrowRight className="w-5 h-5" strokeWidth={2.25} />
-            </Link>
-          </div>
-        </div>
-      </section>
     </>
   );
 }

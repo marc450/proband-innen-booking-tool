@@ -44,6 +44,13 @@ export function HomeHero({ content }: { content: HomeHeroContent }) {
           >
             {content.ctaLabel}
           </a>
+
+          <a
+            href="/kurse/werde-proband-in"
+            className="mt-4 inline-block text-sm font-semibold text-black/70 hover:text-[#0066FF] underline underline-offset-4 decoration-black/20 hover:decoration-[#0066FF] transition-colors"
+          >
+            Werde Proband:in →
+          </a>
         </div>
       </div>
 
@@ -84,12 +91,20 @@ export function HomeHero({ content }: { content: HomeHeroContent }) {
               ))}
             </ul>
 
-            <a
-              href={content.ctaHref}
-              className="inline-block text-base lg:text-lg font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-12 py-3.5 transition-colors"
-            >
-              {content.ctaLabel}
-            </a>
+            <div className="flex flex-col items-start gap-4">
+              <a
+                href={content.ctaHref}
+                className="inline-block text-base lg:text-lg font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-12 py-3.5 transition-colors"
+              >
+                {content.ctaLabel}
+              </a>
+              <a
+                href="/kurse/werde-proband-in"
+                className="text-sm lg:text-base font-semibold text-black/70 hover:text-[#0066FF] underline underline-offset-4 decoration-black/20 hover:decoration-[#0066FF] transition-colors"
+              >
+                Werde Proband:in →
+              </a>
+            </div>
           </div>
         </div>
       </div>
