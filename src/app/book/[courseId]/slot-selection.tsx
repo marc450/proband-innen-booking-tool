@@ -75,7 +75,7 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
 
             <h2 className="text-lg font-semibold mt-4 mb-1">{course.treatment_title || course.title}</h2>
             <p className="text-sm text-muted-foreground mb-4">
-              Wähle einen Termin und ein Zeitfenster
+              Tippe auf ein Datum, um die verfügbaren Zeitfenster zu sehen.
             </p>
 
             {dateEntries.length === 0 ? (
@@ -94,40 +94,59 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                   const totalCapacity = dateSlots.reduce((s, sl) => s + sl.remaining_capacity, 0);
 
                   return (
-                    <Card key={dateCourse.id} className="shadow-sm overflow-hidden">
-                      {/* Date row - clickable */}
+                    <Card
+                      key={dateCourse.id}
+                      className={`shadow-sm overflow-hidden transition-all ${
+                        isExpanded
+                          ? "ring-2 ring-primary/50 shadow-md"
+                          : "hover:shadow-md hover:ring-1 hover:ring-primary/30"
+                      }`}
+                    >
+                      {/* Entire card header is a single clickable button so
+                          the date row + instructor/location area all trigger
+                          the expand. */}
                       <button
                         onClick={() => setExpandedCourseId(isExpanded ? null : dateCourse.id)}
-                        className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-accent/30 transition-colors text-left"
+                        className="w-full text-left hover:bg-accent/30 transition-colors"
+                        aria-expanded={isExpanded}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <div>
-                            <p className="text-sm font-semibold">{dateLabel}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {dateSlots.length} Zeitfenster · {totalCapacity} {totalCapacity === 1 ? "Platz" : "Plätze"} frei
-                            </p>
+                        <div className="flex items-center justify-between px-4 py-3.5">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <div>
+                              <p className="text-sm font-semibold">{dateLabel}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {dateSlots.length} Zeitfenster · {totalCapacity} {totalCapacity === 1 ? "Platz" : "Plätze"} frei
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-primary shrink-0">
+                            <span className="text-xs font-semibold">
+                              {isExpanded ? "Zeitfenster ausblenden" : "Zeitfenster anzeigen"}
+                            </span>
+                            <ChevronDown
+                              className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                            />
                           </div>
                         </div>
-                        <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                      </button>
 
-                      {(dateCourse.instructor || dateCourse.location) && (
-                        <div className="grid grid-cols-2 gap-x-4 px-4 py-3 border-t border-border/40">
-                          {dateCourse.instructor && (
-                            <div>
-                              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Dozent:in</p>
-                              <p className="text-xs font-medium">{dateCourse.instructor}</p>
-                            </div>
-                          )}
-                          {dateCourse.location && (
-                            <div>
-                              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Ort</p>
-                              <p className="text-xs">{dateCourse.location}</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                        {(dateCourse.instructor || dateCourse.location) && (
+                          <div className="grid grid-cols-2 gap-x-4 px-4 py-3 border-t border-border/40">
+                            {dateCourse.instructor && (
+                              <div>
+                                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Dozent:in</p>
+                                <p className="text-xs font-medium">{dateCourse.instructor}</p>
+                              </div>
+                            )}
+                            {dateCourse.location && (
+                              <div>
+                                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Ort</p>
+                                <p className="text-xs">{dateCourse.location}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </button>
 
                       {/* Expanded time slots */}
                       {isExpanded && (
