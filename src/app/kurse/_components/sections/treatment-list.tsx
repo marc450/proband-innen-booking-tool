@@ -100,7 +100,7 @@ export function TreatmentList({ courses, slots }: TreatmentListProps) {
                 )}
 
                 <div className="flex flex-col flex-1 p-6 md:p-8">
-                  <h3 className="text-xl md:text-2xl font-bold tracking-wide leading-tight text-black text-balance">
+                  <h3 className="text-lg md:text-xl font-bold tracking-wide leading-tight text-black whitespace-nowrap overflow-hidden text-ellipsis">
                     {group.firstCourse.treatment_title || group.firstCourse.title}
                   </h3>
 

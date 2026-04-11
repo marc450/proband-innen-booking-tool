@@ -25,7 +25,7 @@ import {
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
-import { Plus, Trash2, Copy, ChevronDown, ChevronRight, Edit } from "lucide-react";
+import { Plus, Trash2, Copy, ChevronDown, ChevronRight, Edit, Upload } from "lucide-react";
 
 export interface SlotBooking {
   id: string;
@@ -67,6 +67,11 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
   const emptySlotRow = (): SlotRow => ({ time: "", capacity: "1" });
   const [slotRows, setSlotRows] = useState<SlotRow[]>([emptySlotRow()]);
   const [selectedInstructor, setSelectedInstructor] = useState("");
+  // Optional image override. Empty string means "use the template's image".
+  const [courseImageUrl, setCourseImageUrl] = useState("");
+  const [uploadingCourseImage, setUploadingCourseImage] = useState(false);
+  const [courseImageError, setCourseImageError] = useState<string | null>(null);
+  const [isDraggingCourseImage, setIsDraggingCourseImage] = useState(false);
 
   // Slot dialog
   const [slotDialogOpen, setSlotDialogOpen] = useState(false);
@@ -115,6 +120,79 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
     setCourseLocation("HY STUDIO, Rosa-Luxemburg-Straße 20, 10178 Berlin");
     setSlotRows([emptySlotRow()]);
     setSelectedInstructor("");
+    setCourseImageUrl("");
+    setCourseImageError(null);
+    setIsDraggingCourseImage(false);
+  };
+
+  // Resize a chosen image down to max 1200px wide and re-encode as WebP
+  // before uploading. Mirrors the helper in templates-manager.tsx so course
+  // image overrides land in the same shape as template images.
+  const resizeImage = (file: File, maxWidth = 1200): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = document.createElement("img");
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas not supported"));
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => (blob ? resolve(blob) : reject(new Error("Blob failed"))),
+          "image/webp",
+          0.82
+        );
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const uploadCourseImage = async (file: File) => {
+    setUploadingCourseImage(true);
+    setCourseImageError(null);
+    try {
+      const resized = await resizeImage(file);
+      const fileName = `course-${Date.now()}.webp`;
+      const { error } = await supabase.storage
+        .from("course-images")
+        .upload(fileName, resized, { upsert: true, contentType: "image/webp" });
+      if (error) {
+        setCourseImageError(error.message || "Upload fehlgeschlagen");
+        return;
+      }
+      const { data: urlData } = supabase.storage
+        .from("course-images")
+        .getPublicUrl(fileName);
+      setCourseImageUrl(urlData.publicUrl);
+    } catch {
+      setCourseImageError("Upload fehlgeschlagen");
+    } finally {
+      setUploadingCourseImage(false);
+    }
+  };
+
+  const handleCourseImageInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadCourseImage(file);
+    e.target.value = "";
+  };
+
+  const handleCourseImageDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingCourseImage(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      await uploadCourseImage(file);
+    }
   };
 
   const updateSlotRow = (index: number, patch: Partial<SlotRow>) => {
@@ -144,7 +222,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
       service_description: template.service_description,
       guide_price: template.guide_price,
       instructor: selectedInstructor || template.instructor || null,
-      image_url: template.image_url,
+      image_url: courseImageUrl || template.image_url,
       course_date: courseDate,
       location: courseLocation || null,
     };
@@ -510,6 +588,97 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                       />
                     </div>
                   </div>
+
+                  {/* Optional image override. Falls back to the template's
+                      image when left empty. */}
+                  {(() => {
+                    const tpl = templates.find((t) => t.id === selectedTemplateId);
+                    const previewUrl = courseImageUrl || tpl?.image_url || "";
+                    const usingOverride = Boolean(courseImageUrl);
+                    return (
+                      <div className="space-y-1.5">
+                        <Label>Kursbild</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Optional. Standardmäßig wird das Bild der gewählten Kursvorlage verwendet.
+                        </p>
+                        {previewUrl ? (
+                          <div className="space-y-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={previewUrl}
+                              alt="Kursbild Vorschau"
+                              className="w-full aspect-video object-cover rounded-md"
+                            />
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs text-muted-foreground">
+                                {usingOverride ? "Eigenes Bild für diesen Kurs" : "Bild aus der Kursvorlage"}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                {usingOverride && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setCourseImageUrl("")}
+                                  >
+                                    Auf Vorlage zurücksetzen
+                                  </Button>
+                                )}
+                                <label className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline cursor-pointer">
+                                  <Upload className="h-3.5 w-3.5" />
+                                  {usingOverride ? "Bild ersetzen" : "Eigenes Bild hochladen"}
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleCourseImageInput}
+                                    disabled={uploadingCourseImage}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <label
+                            className={`flex flex-col items-center justify-center h-28 border-2 border-dashed rounded-md cursor-pointer transition-colors ${
+                              isDraggingCourseImage
+                                ? "border-primary bg-primary/10"
+                                : "hover:border-primary/50 hover:bg-muted/50"
+                            }`}
+                            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDraggingCourseImage(true); }}
+                            onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDraggingCourseImage(true); }}
+                            onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDraggingCourseImage(false); }}
+                            onDrop={handleCourseImageDrop}
+                          >
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleCourseImageInput}
+                              disabled={uploadingCourseImage}
+                            />
+                            {uploadingCourseImage ? (
+                              <div className="flex flex-col items-center gap-2">
+                                <svg className="animate-spin h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                </svg>
+                                <span className="text-xs text-muted-foreground">Wird hochgeladen...</span>
+                              </div>
+                            ) : (
+                              <>
+                                <Upload className="h-5 w-5 text-muted-foreground mb-1" />
+                                <span className="text-xs text-muted-foreground">Bild hochladen oder hierher ziehen</span>
+                              </>
+                            )}
+                          </label>
+                        )}
+                        {courseImageError && (
+                          <p className="text-xs text-red-600">{courseImageError}</p>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Zeitfenster */}
