@@ -8,19 +8,7 @@ import { GroupInquiryDialog } from "../group-inquiry-dialog";
 const BLUE = "#0066FF";
 const CORAL = "#BF785E";
 
-export type CourseFormats = {
-  online: boolean;
-  praxis: boolean;
-  kombi: boolean;
-  /** Lowest gross price across the available formats, in EUR */
-  fromPrice: number | null;
-};
-
-export type HomeCoursesResolvedContent = HomeCoursesContent & {
-  formatsByKey?: Record<string, CourseFormats>;
-};
-
-export function UnsereKurse({ content }: { content: HomeCoursesResolvedContent }) {
+export function UnsereKurse({ content }: { content: HomeCoursesContent }) {
   const [groupOpen, setGroupOpen] = useState(false);
 
   return (
@@ -38,19 +26,13 @@ export function UnsereKurse({ content }: { content: HomeCoursesResolvedContent }
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-            {content.tiles.map((tile, i) => {
-              const formats = tile.courseKey
-                ? content.formatsByKey?.[tile.courseKey]
-                : undefined;
-              return (
-                <CourseTile
-                  key={`${tile.title}-${tile.audience}-${i}`}
-                  tile={tile}
-                  formats={formats}
-                  onGroupInquiry={() => setGroupOpen(true)}
-                />
-              );
-            })}
+            {content.tiles.map((tile, i) => (
+              <CourseTile
+                key={`${tile.title}-${tile.audience}-${i}`}
+                tile={tile}
+                onGroupInquiry={() => setGroupOpen(true)}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -90,11 +72,9 @@ function getLevel(kicker: string): CourseLevel {
 
 function CourseTile({
   tile,
-  formats,
   onGroupInquiry,
 }: {
   tile: HomeCourseTile;
-  formats?: CourseFormats;
   onGroupInquiry: () => void;
 }) {
   const isGroup = tile.type === "group-inquiry";
@@ -156,17 +136,9 @@ function CourseTile({
           </div>
         )}
 
-        {/* Title row: title + ab price */}
-        <div className="flex items-baseline justify-between gap-3">
-          <h3 className="text-xl md:text-2xl font-bold tracking-wide text-black leading-tight">
-            {uppercaseTitle}
-          </h3>
-          {formats?.fromPrice ? (
-            <div className="text-sm md:text-base font-bold text-black whitespace-nowrap">
-              ab {formats.fromPrice} €
-            </div>
-          ) : null}
-        </div>
+        <h3 className="text-xl md:text-2xl font-bold tracking-wide text-black leading-tight">
+          {uppercaseTitle}
+        </h3>
 
         {/* Variant subtitle (e.g. "Periorale Zone") */}
         {subtitle && (
