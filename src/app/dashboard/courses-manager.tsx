@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -404,151 +405,158 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
         onCancel={() => setDeleteSlotConfirm(null)}
       />
 
-      {/* New course dialog — simplified: pick template + date */}
+      {/* New course dialog */}
       <Dialog open={courseDialogOpen} onOpenChange={(open) => {
         setCourseDialogOpen(open);
         if (!open) resetCourseForm();
       }}>
-        <DialogContent size="wide">
+        <DialogContent size="wide" className="bg-card sm:max-w-[640px]">
           <DialogHeader>
             <DialogTitle>Neuen Kurs anlegen</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
-            {templates.length === 0 ? (
-              <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-md">
-                Bitte erstelle zuerst eine Kursvorlage unter &quot;Kursvorlagen&quot;.
-              </div>
-            ) : (
-              <>
-                <div>
-                  <Label>Kursvorlage *</Label>
-                  <Select value={selectedTemplateId} onValueChange={(v) => setSelectedTemplateId(v || "")}>
-                    <SelectTrigger className="mt-1 w-full">
-                      <span className="flex flex-1 text-left line-clamp-1">
-                        {selectedTemplateId
-                          ? templates.find((t) => t.id === selectedTemplateId)?.title ?? "Vorlage auswählen..."
-                          : <span className="text-muted-foreground">Vorlage auswählen...</span>
-                        }
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {templates.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          {t.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
 
-
-                <div className="border-t" />
-
-                <div>
-                  <Label>Kursleitende:r Ärzt:in *</Label>
-                  <Select value={selectedInstructor} onValueChange={(v) => setSelectedInstructor(v || "")}>
-                    <SelectTrigger className="mt-1 w-full">
-                      <span className="flex flex-1 text-left line-clamp-1">
-                        {selectedInstructor && selectedInstructor !== "__none"
-                          ? selectedInstructor
-                          : <span className="text-muted-foreground">Dozent:in auswählen...</span>
-                        }
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {dozentUsers.map((d) => (
-                        <SelectItem key={d.id} value={formatDozentName(d)}>
-                          {formatDozentName(d)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="new_course_date">Datum *</Label>
-                    <Input
-                      id="new_course_date"
-                      type="date"
-                      value={courseDate}
-                      onChange={(e) => setCourseDate(e.target.value)}
-                    />
+          {templates.length === 0 ? (
+            <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">
+              Bitte erstelle zuerst eine Kursvorlage unter &quot;Kursvorlagen&quot;.
+            </div>
+          ) : (
+            <>
+              <div className="space-y-5 py-1">
+                {/* Kursdaten */}
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label>Kursvorlage *</Label>
+                    <Select value={selectedTemplateId} onValueChange={(v) => setSelectedTemplateId(v || "")}>
+                      <SelectTrigger className="h-10 w-full">
+                        <span className="flex flex-1 text-left line-clamp-1">
+                          {selectedTemplateId
+                            ? templates.find((t) => t.id === selectedTemplateId)?.title ?? "Vorlage auswählen..."
+                            : <span className="text-muted-foreground">Vorlage auswählen...</span>
+                          }
+                        </span>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templates.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div>
-                    <Label htmlFor="new_course_location">Ort *</Label>
-                    <Input
-                      id="new_course_location"
-                      value={courseLocation}
-                      onChange={(e) => setCourseLocation(e.target.value)}
-                      placeholder="z.B. HY STUDIO, Rosa-Luxemburg-Straße 20, 10178 Berlin"
-                    />
+
+                  <div className="space-y-1.5">
+                    <Label>Kursleitende:r Ärzt:in *</Label>
+                    <Select value={selectedInstructor} onValueChange={(v) => setSelectedInstructor(v || "")}>
+                      <SelectTrigger className="h-10 w-full">
+                        <span className="flex flex-1 text-left line-clamp-1">
+                          {selectedInstructor && selectedInstructor !== "__none"
+                            ? selectedInstructor
+                            : <span className="text-muted-foreground">Dozent:in auswählen...</span>
+                          }
+                        </span>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {dozentUsers.map((d) => (
+                          <SelectItem key={d.id} value={formatDozentName(d)}>
+                            {formatDozentName(d)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
 
-                <div className="border-t" />
-
-                <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Zeitfenster</h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Gib jedes Zeitfenster einzeln mit seiner Startzeit ein. Du kannst bequem aus Deiner Excel-Planung kopieren.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="grid grid-cols-[1fr_110px_40px] gap-2 px-1">
-                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Startzeit</span>
-                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Kapazität</span>
-                    <span />
-                  </div>
-                  {slotRows.map((row, i) => (
-                    <div key={i} className="grid grid-cols-[1fr_110px_40px] gap-2 items-center">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="new_course_date">Datum *</Label>
                       <Input
-                        type="time"
-                        value={row.time}
-                        onChange={(e) => updateSlotRow(i, { time: e.target.value })}
-                        placeholder="HH:MM"
+                        id="new_course_date"
+                        type="date"
+                        className="h-10"
+                        value={courseDate}
+                        onChange={(e) => setCourseDate(e.target.value)}
                       />
-                      <Input
-                        type="number"
-                        min="1"
-                        value={row.capacity}
-                        onChange={(e) => updateSlotRow(i, { capacity: e.target.value })}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeSlotRow(i)}
-                        aria-label="Zeitfenster entfernen"
-                        className="text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addSlotRow}
-                    className="w-full mt-1"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Zeitfenster hinzufügen
-                  </Button>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="new_course_location">Ort *</Label>
+                      <Input
+                        id="new_course_location"
+                        className="h-10"
+                        value={courseLocation}
+                        onChange={(e) => setCourseLocation(e.target.value)}
+                        placeholder="z.B. HY STUDIO, Rosa-Luxemburg-Straße 20, 10178 Berlin"
+                      />
+                    </div>
+                  </div>
                 </div>
 
+                {/* Zeitfenster */}
+                <div className="space-y-2">
+                  <Label>Zeitfenster *</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Gib jedes Zeitfenster mit seiner Startzeit ein. Du kannst bequem aus Deiner Excel-Planung kopieren.
+                  </p>
+
+                  <div className="rounded-lg bg-muted/40 p-3 space-y-2 mt-2">
+                    <div className="grid grid-cols-[1fr_110px_36px] gap-2 px-1">
+                      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Startzeit</span>
+                      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Plätze</span>
+                      <span />
+                    </div>
+                    {slotRows.map((row, i) => (
+                      <div key={i} className="grid grid-cols-[1fr_110px_36px] gap-2 items-center">
+                        <Input
+                          type="time"
+                          className="h-10 bg-card"
+                          value={row.time}
+                          onChange={(e) => updateSlotRow(i, { time: e.target.value })}
+                        />
+                        <Input
+                          type="number"
+                          min="1"
+                          className="h-10 bg-card"
+                          value={row.capacity}
+                          onChange={(e) => updateSlotRow(i, { capacity: e.target.value })}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => removeSlotRow(i)}
+                          aria-label="Zeitfenster entfernen"
+                          className="text-muted-foreground hover:text-destructive justify-self-center"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={addSlotRow}
+                      className="w-full mt-1 text-primary hover:text-primary"
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" />
+                      Zeitfenster hinzufügen
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setCourseDialogOpen(false)}>
+                  Abbrechen
+                </Button>
                 <Button
                   onClick={handleCreateCourse}
-                  className="w-full"
                   disabled={!selectedTemplateId || !selectedInstructor || !courseDate || !courseLocation.trim() || validSlotRows().length < 1}
                 >
                   Kurs anlegen
                 </Button>
-              </>
-            )}
-          </div>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
