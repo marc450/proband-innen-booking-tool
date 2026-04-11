@@ -66,6 +66,19 @@ export interface HomeCourseTile {
    * in content files — always populated server-side.
    */
   dbTitle?: string;
+  /**
+   * Runtime-only override populated from `course_templates.audience`.
+   * One of 'humanmediziner' | 'zahnmediziner' | 'alle'. Drives the
+   * "Für …:innen" pill on the card. Falls back to courseKey-based
+   * detection if unset.
+   */
+  dbAudience?: string;
+  /**
+   * Runtime-only override populated from `course_templates.level`.
+   * One of 'einsteiger' | 'fortgeschritten'. Drives the level pill
+   * on the card. Falls back to kicker-based detection if unset.
+   */
+  dbLevel?: string;
   /** Second-line subtitle, e.g. "Für Humanmediziner:innen" */
   audience: string;
   /** Longer body text shown inside the card */

@@ -37,6 +37,11 @@ export interface CourseTemplate {
   cme_online: string | null;
   cme_praxis: string | null;
   cme_kombi: string | null;
+  // Marketing card badges — drive the audience + level pills on /kurse tiles.
+  // audience: 'humanmediziner' | 'zahnmediziner' | 'alle' | null
+  // level:    'einsteiger'     | 'fortgeschritten' | null
+  audience: string | null;
+  level: string | null;
 }
 
 export type CourseType = "Onlinekurs" | "Praxiskurs" | "Kombikurs" | "Premium";

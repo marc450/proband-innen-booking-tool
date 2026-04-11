@@ -107,22 +107,38 @@ function CourseTile({
     ? `${titleCase(tile.kicker)} ${titleCase(tile.title)}`
     : titleCase(tile.title);
 
-  const level = getLevel(tile.kicker);
-  const isZahn = tile.courseKey?.includes("zahnmedizin") ?? false;
+  // Audience resolution order:
+  //   1. `dbAudience` from course_templates.audience (source of truth).
+  //   2. Fallback: courseKey string-match on "zahnmedizin" (legacy).
+  // "alle" renders no pill at all (course is relevant for everyone).
+  const audienceValue =
+    tile.dbAudience ??
+    (tile.courseKey?.includes("zahnmedizin") ? "zahnmediziner" : "humanmediziner");
 
-  // Audience pill (Human/Zahn). Skip for the group-inquiry tile.
   const audiencePill = isGroup
     ? null
-    : isZahn
+    : audienceValue === "alle"
+    ? null
+    : audienceValue === "zahnmediziner"
     ? { label: "Für Zahnmediziner:innen", bg: CORAL, text: "#FFFFFF" }
     : { label: "Für Humanmediziner:innen", bg: BLUE, text: "#FFFFFF" };
 
-  // Level pill (Einsteiger/Fortgeschritten).
+  // Level resolution order:
+  //   1. `dbLevel` from course_templates.level (source of truth).
+  //   2. Fallback: derive from the static kicker ("GRUNDKURS" etc.).
+  const levelValue: "einsteiger" | "fortgeschritten" | null = tile.dbLevel === "einsteiger" || tile.dbLevel === "fortgeschritten"
+    ? tile.dbLevel
+    : getLevel(tile.kicker) === "grundkurs"
+    ? "einsteiger"
+    : getLevel(tile.kicker) === "aufbaukurs"
+    ? "fortgeschritten"
+    : null;
+
   const levelPill = isGroup
     ? null
-    : level === "grundkurs"
+    : levelValue === "einsteiger"
     ? { label: "Für Einsteiger:innen" }
-    : level === "aufbaukurs"
+    : levelValue === "fortgeschritten"
     ? { label: "Für Fortgeschrittene" }
     : null;
 

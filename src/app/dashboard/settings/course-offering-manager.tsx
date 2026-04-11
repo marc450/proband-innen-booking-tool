@@ -22,6 +22,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
 import { Pencil, Trash2, Upload, ImageIcon } from "lucide-react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { TableHeaderBar } from "@/components/table/table-header-bar";
@@ -38,6 +44,29 @@ type SortKey = "status" | "name" | "online" | "praxis" | "kombi";
 function formatPrice(p: number | null | undefined) {
   if (!p) return "–";
   return `€${p.toLocaleString("de-DE")}`;
+}
+
+// Labels for the audience + level selects AND for the small indicators
+// rendered in the Kursangebot table so both sides stay in sync.
+const AUDIENCE_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "humanmediziner", label: "Humanmediziner:innen" },
+  { value: "zahnmediziner", label: "Zahnmediziner:innen" },
+  { value: "alle", label: "Alle" },
+];
+
+const LEVEL_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "", label: "—" },
+  { value: "einsteiger", label: "Einsteiger:innen" },
+  { value: "fortgeschritten", label: "Fortgeschrittene" },
+];
+
+function audienceLabel(value: string | null | undefined): string {
+  return AUDIENCE_OPTIONS.find((o) => o.value === value)?.label ?? "—";
+}
+
+function levelLabel(value: string | null | undefined): string {
+  if (!value) return "";
+  return LEVEL_OPTIONS.find((o) => o.value === value)?.label ?? "";
 }
 
 export function CourseOfferingManager({ initialOfferings }: Props) {
@@ -89,6 +118,8 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       cancel_url_kombi: "",
       online_course_id: "",
       status: "draft",
+      audience: "humanmediziner",
+      level: "",
     });
     setImageUploadError(null);
     setShowDialog(true);
@@ -125,6 +156,8 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       cancel_url_kombi: o.cancel_url_kombi || "",
       online_course_id: o.online_course_id || "",
       status: o.status || "draft",
+      audience: o.audience || "humanmediziner",
+      level: o.level || "",
     });
     setImageUploadError(null);
     setShowDialog(true);
@@ -162,6 +195,8 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       cancel_url_kombi: form.cancel_url_kombi || null,
       online_course_id: form.online_course_id || null,
       status: form.status || "draft",
+      audience: form.audience || null,
+      level: form.level || null,
     };
 
     if (editing) {
@@ -395,9 +430,36 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
                   </Badge>
                 </TableCell>
 
-                {/* Name */}
+                {/* Name + audience/level indicators */}
                 <TableCell className="font-medium">
-                  {o.title}
+                  <div className="flex flex-col gap-1">
+                    <span>{o.title}</span>
+                    {(o.audience || o.level) && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {o.audience && o.audience !== "alle" && (
+                          <span
+                            className={`text-[10px] font-semibold tracking-wide rounded-full px-2 py-0.5 ${
+                              o.audience === "zahnmediziner"
+                                ? "bg-[#BF785E]/15 text-[#8F4B30]"
+                                : "bg-[#0066FF]/10 text-[#0055DD]"
+                            }`}
+                          >
+                            {o.audience === "zahnmediziner" ? "Zahnmed." : "Humanmed."}
+                          </span>
+                        )}
+                        {o.audience === "alle" && (
+                          <span className="text-[10px] font-semibold tracking-wide rounded-full px-2 py-0.5 bg-black/5 text-black/60">
+                            Alle
+                          </span>
+                        )}
+                        {o.level && (
+                          <span className="text-[10px] font-semibold tracking-wide rounded-full px-2 py-0.5 bg-black/5 text-black/60">
+                            {o.level === "einsteiger" ? "Einsteiger:innen" : "Fortgeschrittene"}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </TableCell>
 
                 {/* Prices */}
@@ -472,6 +534,44 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
                   <div className="space-y-1.5">
                     <Label>LearnWorlds Course ID</Label>
                     <Input value={form.online_course_id} onChange={(e) => updateField("online_course_id", e.target.value)} placeholder="grundkurs-botulinum-online" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Zielgruppe</Label>
+                    <Select
+                      value={form.audience || "humanmediziner"}
+                      onValueChange={(val) => updateField("audience", val ?? "humanmediziner")}
+                    >
+                      <SelectTrigger>
+                        <span>{audienceLabel(form.audience)}</span>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {AUDIENCE_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>
+                            {o.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground">Steuert den &quot;Für …&quot;-Badge auf der Kurskachel</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Niveau</Label>
+                    <Select
+                      value={form.level || "__none__"}
+                      onValueChange={(val) => updateField("level", !val || val === "__none__" ? "" : val)}
+                    >
+                      <SelectTrigger>
+                        <span>{form.level ? levelLabel(form.level) : "—"}</span>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">—</SelectItem>
+                        <SelectItem value="einsteiger">Einsteiger:innen</SelectItem>
+                        <SelectItem value="fortgeschritten">Fortgeschrittene</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground">Zweiter Badge neben der Zielgruppe (optional)</p>
                   </div>
                 </div>
               </div>
