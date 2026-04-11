@@ -25,14 +25,20 @@ export function PeopleSection({
 
   return (
     <>
-      <section className="bg-[#FAEBE1] py-20 md:py-28">
+      <section
+        className={`bg-[#FAEBE1] ${
+          content.heading ? "py-20 md:py-28" : "pt-6 md:pt-10 pb-20 md:pb-28"
+        }`}
+      >
         <div className="max-w-6xl mx-auto px-5 md:px-8">
-          <div className="text-center mb-14 max-w-3xl mx-auto">
-            <h2 className={`${TYPO.h2} text-black`}>{content.heading}</h2>
-            {content.intro && (
-              <p className={`${TYPO.bodyLead} mt-4`}>{content.intro}</p>
-            )}
-          </div>
+          {content.heading && (
+            <div className="text-center mb-14 max-w-3xl mx-auto">
+              <h2 className={`${TYPO.h2} text-black`}>{content.heading}</h2>
+              {content.intro && (
+                <p className={`${TYPO.bodyLead} mt-4`}>{content.intro}</p>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
             {content.items.map((person) => {

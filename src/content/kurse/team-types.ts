@@ -57,7 +57,10 @@ export interface Person {
 }
 
 export interface PeopleSectionContent {
-  heading: string;
+  /** Optional section heading. Omit to render the grid without a header block
+   *  (e.g. the main combined team section, where the page hero already says
+   *  "Unser Team"). */
+  heading?: string;
   intro?: string;
   items: Person[];
 }

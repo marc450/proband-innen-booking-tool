@@ -22,9 +22,8 @@ export const teamContent: TeamPageContent = {
   },
 
   team: {
-    heading: "Unser Team",
-    intro:
-      "Dozent:innen, Gründer:innen und Operations — alle, die EPHIA täglich möglich machen. Klick auf eine Person mit Vita, um mehr über ihre Ausbildung und Schwerpunkte zu erfahren.",
+    // No heading/intro here — the page hero already says "Unser Team".
+    // The grid renders straight below the hero without a duplicate header.
     vitaLinkLabel: "Vita ansehen",
     items: [
       {
