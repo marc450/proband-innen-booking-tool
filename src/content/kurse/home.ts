@@ -126,6 +126,9 @@ export const homeContent: HomeContent = {
         audience: "Für private Kurse",
         description:
           "Wir erstellen Dir gerne maßgeschneiderte Kursprogramme speziell für Dein Praxisteam oder Dein Netzwerk. Beantworte ein paar Fragen zu Gruppengröße, Wunschkursinhalt und Zeitraum, und wir schicken Dir umgehend ein Angebot für Eure Weiterbildung zu.",
+        imagePath:
+          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/home/gruppenbuchungen.png",
+        imageAlt: "Gruppenbuchungen für private Kurse",
         ctaLabel: "Jetzt Anfrage senden",
         type: "group-inquiry",
       },
