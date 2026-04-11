@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import type { HomeCoursesContent, HomeCourseTile } from "@/content/kurse/home-types";
 import { GroupInquiryDialog } from "../group-inquiry-dialog";
+import { TYPO, titleCase } from "../../typography";
 
 const BLUE = "#0066FF";
 const CORAL = "#BF785E";
@@ -18,45 +19,15 @@ export function UnsereKurse({ content }: { content: HomeCoursesContent }) {
         className="py-20 md:py-28 scroll-mt-24 md:scroll-mt-28"
         style={{ backgroundColor: BLUE }}
       >
-        <div className="max-w-7xl mx-auto px-5 md:px-8">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-wide text-white">
-              {content.heading}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-            {content.tiles.map((tile, i) => (
-              <CourseTile
-                key={`${tile.title}-${tile.audience}-${i}`}
-                tile={tile}
-                onGroupInquiry={() => setGroupOpen(true)}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Alternative layout: 2-column grid with more breathing room */}
-      <section
-        id="unsere-kurse-v2"
-        className="py-20 md:py-28"
-        style={{ backgroundColor: BLUE }}
-      >
         <div className="max-w-6xl mx-auto px-5 md:px-8">
           <div className="text-center mb-14">
-            <p className="text-xs font-semibold tracking-[0.3em] text-white/60 mb-3">
-              ALTERNATIVE · 2-SPALTEN
-            </p>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-wide text-white">
-              {content.heading}
-            </h2>
+            <h2 className={`${TYPO.h2} text-white`}>{content.heading}</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14">
             {content.tiles.map((tile, i) => (
               <CourseTile
-                key={`v2-${tile.title}-${tile.audience}-${i}`}
+                key={`${tile.title}-${tile.audience}-${i}`}
                 tile={tile}
                 onGroupInquiry={() => setGroupOpen(true)}
               />
@@ -107,8 +78,15 @@ function CourseTile({
 }) {
   const isGroup = tile.type === "group-inquiry";
   const isExternal = tile.href?.startsWith("http");
-  const uppercaseTitle = tile.title.toUpperCase();
   const subtitle = variantSubtitle(tile.audience);
+
+  // Merge kicker ("GRUNDKURS") and title ("BOTULINUM") into one title line
+  // with unified styling — e.g. "Grundkurs Botulinum".
+  const fullTitle = isGroup
+    ? titleCase(tile.title)
+    : tile.kicker
+    ? `${titleCase(tile.kicker)} ${titleCase(tile.title)}`
+    : titleCase(tile.title);
 
   const level = getLevel(tile.kicker);
   const isZahn = tile.courseKey?.includes("zahnmedizin") ?? false;
@@ -139,7 +117,7 @@ function CourseTile({
             alt={tile.imageAlt ?? `${tile.title} ${tile.audience}`}
             fill
             quality={85}
-            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            sizes="(min-width: 768px) 50vw, 100vw"
             className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
         </div>
@@ -156,26 +134,16 @@ function CourseTile({
       )}
 
       {/* Body */}
-      <div className="flex flex-col flex-1 p-5 md:p-6">
-        {/* Kicker (Grundkurs / Aufbaukurs) */}
-        {tile.kicker && !isGroup && (
-          <div className="text-xs md:text-sm font-semibold tracking-[0.2em] text-[#0066FF] mb-1">
-            {tile.kicker}
-          </div>
-        )}
+      <div className="flex flex-col flex-1 p-6 md:p-8">
+        <h3 className={`${TYPO.h3} text-black`}>{fullTitle}</h3>
 
-        <h3 className="flex flex-wrap items-baseline gap-x-2 gap-y-1 tracking-wide text-black leading-tight">
-          <span className="text-xl md:text-2xl font-bold">{uppercaseTitle}</span>
-          {subtitle && (
-            <span className="text-[13px] font-semibold text-black/60">
-              {subtitle}
-            </span>
-          )}
-        </h3>
+        {subtitle && (
+          <p className={`${TYPO.bodySmall} mt-2`}>{subtitle}</p>
+        )}
 
         {/* Audience + level pills */}
         {(audiencePill || levelPill) && (
-          <div className="flex flex-wrap items-center gap-1.5 mt-3">
+          <div className="flex flex-wrap items-center gap-1.5 mt-4">
             {audiencePill && (
               <span
                 className="text-[11px] font-semibold tracking-wide rounded-full px-2.5 py-1"
@@ -192,8 +160,9 @@ function CourseTile({
           </div>
         )}
 
-        {/* Description (max 5 lines) */}
-        <p className="text-sm text-black/70 leading-relaxed mt-3 mb-5 flex-1 line-clamp-5">
+        {/* Description — matches the body text size used across the course page
+            (Lernziele cards, FAQ answers, Inhalt chapters). */}
+        <p className={`${TYPO.bodyCard} mt-4 mb-6 flex-1`}>
           {tile.description}
         </p>
 
