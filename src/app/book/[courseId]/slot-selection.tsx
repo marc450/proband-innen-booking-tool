@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { AvailableSlot, Course } from "@/lib/types";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { Calendar, ChevronDown, Clock, Info, Users } from "lucide-react";
@@ -31,61 +29,63 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-black/10 bg-background h-[55px] flex items-center">
-        <div className="max-w-lg mx-auto px-4 w-full">
+        <div className="max-w-2xl mx-auto px-5 md:px-8 w-full">
           <a href="https://ephia.de" target="_blank" rel="noopener noreferrer" className="inline-block">
             <img src="/logo.svg" alt="EPHIA" style={{ width: "203px", height: "auto" }} />
           </a>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-8">
+      <main className="max-w-2xl mx-auto px-5 md:px-8 py-10 md:py-14">
         {selectedSlot ? (
           <div>
             <button
               onClick={() => setSelectedSlot(null)}
-              className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-1"
+              className="text-sm text-black/60 hover:text-black mb-6 inline-flex items-center gap-1"
             >
               &larr; Zurück zur Terminauswahl
             </button>
-            <Card className="mb-6 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base">{course.treatment_title || course.title}</CardTitle>
-                <CardDescription className="flex items-center gap-4 mt-1">
-                  <span className="flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {format(new Date(selectedSlot.start_time), "dd. MMMM yyyy", { locale: de })}
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5" />
-                    {format(new Date(selectedSlot.start_time), "HH:mm")} Uhr
-                  </span>
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <div className="bg-white rounded-[10px] p-6 md:p-7 mb-6">
+              <h2 className="text-xl md:text-2xl font-bold tracking-wide leading-tight text-black text-balance">
+                {course.treatment_title || course.title}
+              </h2>
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-3 text-sm text-black/70">
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4" />
+                  {format(new Date(selectedSlot.start_time), "dd. MMMM yyyy", { locale: de })}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Clock className="h-4 w-4" />
+                  {format(new Date(selectedSlot.start_time), "HH:mm")} Uhr
+                </span>
+              </div>
+            </div>
             <BookingForm slot={selectedSlot} guidePrice={course.guide_price} />
           </div>
         ) : (
           <div>
             <Link
               href="/"
-              className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-1"
+              className="text-sm text-black/60 hover:text-black mb-6 inline-flex items-center gap-1"
             >
               &larr; Zurück zur Kursübersicht
             </Link>
 
-            <h2 className="text-lg font-semibold mt-4 mb-1">{course.treatment_title || course.title}</h2>
-            <p className="text-sm text-muted-foreground mb-4">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-wide leading-tight text-black text-balance">
+              {course.treatment_title || course.title}
+            </h1>
+            <p className="text-sm md:text-base text-black/70 leading-relaxed mt-3 mb-8">
               Tippe auf ein Datum, um die verfügbaren Zeitfenster zu sehen.
             </p>
 
             {dateEntries.length === 0 ? (
-              <Card className="shadow-sm">
-                <CardContent className="py-8 text-center text-muted-foreground">
+              <div className="bg-white rounded-[10px] p-10 text-center">
+                <p className="text-base text-black/70">
                   Für diesen Kurs sind leider keine Termine mehr verfügbar.
-                </CardContent>
-              </Card>
+                </p>
+              </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {dateEntries.map(({ course: dateCourse, slots: dateSlots }) => {
                   const isExpanded = expandedCourseId === dateCourse.id;
                   const dateLabel = dateCourse.course_date
@@ -94,54 +94,56 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                   const totalCapacity = dateSlots.reduce((s, sl) => s + sl.remaining_capacity, 0);
 
                   return (
-                    <Card
+                    <article
                       key={dateCourse.id}
-                      className={`shadow-sm overflow-hidden transition-all ${
-                        isExpanded
-                          ? "ring-2 ring-primary/50 shadow-md"
-                          : "hover:shadow-md hover:ring-1 hover:ring-primary/30"
-                      }`}
+                      className="bg-white rounded-[10px] overflow-hidden"
                     >
-                      {/* Entire card header is a single clickable button so
-                          the date row + instructor/location area all trigger
-                          the expand. */}
+                      {/* Entire card header is a single clickable button so the
+                          date row + Dozent:in/Ort area all trigger the expand. */}
                       <button
                         onClick={() => setExpandedCourseId(isExpanded ? null : dateCourse.id)}
-                        className="w-full text-left hover:bg-accent/30 transition-colors"
+                        className="w-full text-left hover:bg-black/[0.02] transition-colors"
                         aria-expanded={isExpanded}
                       >
-                        <div className="flex items-center justify-between px-4 py-3.5">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                            <div>
-                              <p className="text-sm font-semibold">{dateLabel}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">
+                        <div className="flex items-center justify-between gap-4 px-5 md:px-6 py-5">
+                          <div className="flex items-start gap-3 min-w-0">
+                            <Calendar className="h-5 w-5 text-black/55 shrink-0 mt-0.5" />
+                            <div className="min-w-0">
+                              <p className="text-base md:text-lg font-bold text-black leading-tight">
+                                {dateLabel}
+                              </p>
+                              <p className="text-xs md:text-sm text-black/60 mt-1">
                                 {dateSlots.length} Zeitfenster · {totalCapacity} {totalCapacity === 1 ? "Platz" : "Plätze"} frei
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1.5 text-primary shrink-0">
-                            <span className="text-xs font-semibold">
-                              {isExpanded ? "Zeitfenster ausblenden" : "Zeitfenster anzeigen"}
+                          <div className="flex items-center gap-1.5 text-[#0066FF] shrink-0">
+                            <span className="text-xs md:text-sm font-bold hidden sm:inline">
+                              {isExpanded ? "Schließen" : "Anzeigen"}
                             </span>
                             <ChevronDown
-                              className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                              className={`h-5 w-5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                              strokeWidth={2.25}
                             />
                           </div>
                         </div>
 
                         {(dateCourse.instructor || dateCourse.location) && (
-                          <div className="grid grid-cols-2 gap-x-4 px-4 py-3 border-t border-border/40">
+                          <div className="grid grid-cols-2 gap-x-5 px-5 md:px-6 pb-5 -mt-1">
                             {dateCourse.instructor && (
                               <div>
-                                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Dozent:in</p>
-                                <p className="text-xs font-medium">{dateCourse.instructor}</p>
+                                <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-black/55">
+                                  Dozent:in
+                                </p>
+                                <p className="text-sm text-black mt-1">{dateCourse.instructor}</p>
                               </div>
                             )}
                             {dateCourse.location && (
                               <div>
-                                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Ort</p>
-                                <p className="text-xs">{dateCourse.location}</p>
+                                <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-black/55">
+                                  Ort
+                                </p>
+                                <p className="text-sm text-black mt-1">{dateCourse.location}</p>
                               </div>
                             )}
                           </div>
@@ -150,41 +152,43 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
 
                       {/* Expanded time slots */}
                       {isExpanded && (
-                        <div className="divide-y">
-                          <div className="flex items-start gap-2 px-4 py-3 bg-blue-50/50">
-                            <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-                            <p className="text-xs text-blue-900">
-                              Bitte wähle das <strong>früheste verfügbare Zeitfenster</strong>, damit keine Behandlungslücken in unserem Kurs auftreten.
+                        <div className="border-t border-black/[0.06]">
+                          <div className="flex items-start gap-2.5 px-5 md:px-6 py-4 bg-[#0066FF]/[0.06]">
+                            <Info className="h-4 w-4 text-[#0066FF] mt-0.5 shrink-0" />
+                            <p className="text-xs md:text-sm text-black/80 leading-relaxed">
+                              Bitte wähle das <strong className="font-bold">früheste verfügbare Zeitfenster</strong>, damit keine Behandlungslücken in unserem Kurs auftreten.
                             </p>
                           </div>
-                          {dateSlots.map((slot) => (
-                            <button
-                              key={slot.id}
-                              onClick={() => setSelectedSlot(slot)}
-                              className="w-full flex items-center justify-between px-5 py-3 hover:bg-accent/30 transition-colors text-left"
-                            >
-                              <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-1.5">
-                                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                                  <span className="text-sm font-medium">
-                                    {format(new Date(slot.start_time), "HH:mm")} Uhr
-                                  </span>
+                          <div className="divide-y divide-black/[0.06]">
+                            {dateSlots.map((slot) => (
+                              <button
+                                key={slot.id}
+                                onClick={() => setSelectedSlot(slot)}
+                                className="group w-full flex items-center justify-between gap-4 px-5 md:px-6 py-4 hover:bg-black/[0.02] transition-colors text-left"
+                              >
+                                <div className="flex items-center gap-5">
+                                  <div className="flex items-center gap-1.5">
+                                    <Clock className="h-4 w-4 text-black/55" />
+                                    <span className="text-sm md:text-base font-bold text-black">
+                                      {format(new Date(slot.start_time), "HH:mm")} Uhr
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <Users className="h-4 w-4 text-black/55" />
+                                    <span className="text-xs md:text-sm text-black/60">
+                                      {slot.remaining_capacity} {slot.remaining_capacity === 1 ? "Platz" : "Plätze"} frei
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                                  <span className="text-xs text-muted-foreground">
-                                    {slot.remaining_capacity} {slot.remaining_capacity === 1 ? "Platz" : "Plätze"} frei
-                                  </span>
-                                </div>
-                              </div>
-                              <Badge variant="outline" className="text-xs border-primary/30 text-primary shrink-0">
-                                Platz reservieren
-                              </Badge>
-                            </button>
-                          ))}
+                                <span className="text-xs md:text-sm font-bold text-[#0066FF] shrink-0 group-hover:underline">
+                                  Platz reservieren &rarr;
+                                </span>
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       )}
-                    </Card>
+                    </article>
                   );
                 })}
               </div>
