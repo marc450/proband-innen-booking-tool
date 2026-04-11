@@ -86,7 +86,7 @@ export function Header() {
                       <a
                         key={sub.label}
                         href={sub.href}
-                        className="block px-5 py-2.5 text-sm font-medium text-black hover:text-[#0066FF] hover:bg-[#FAEBE1]/60 transition-colors"
+                        className="block px-5 py-2.5 text-base font-normal text-black hover:text-[#0066FF] hover:bg-[#FAEBE1]/60 transition-colors"
                       >
                         {sub.label}
                       </a>
