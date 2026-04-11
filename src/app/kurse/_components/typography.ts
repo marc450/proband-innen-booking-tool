@@ -14,8 +14,11 @@ export const TYPO = {
   /** Hero H1 — only used on homepage / landing heroes. */
   h1: "text-5xl lg:text-6xl font-bold tracking-tight leading-[1.2]",
 
-  /** Section heading (e.g. "Unsere Kurse", "Lernziele", "FAQ"). */
-  h2: "text-3xl md:text-4xl font-bold tracking-wide",
+  /** Section heading (e.g. "Unsere Kurse", "Lernziele", "FAQ").
+   *  The entire /kurse surface uses ALL CAPS for section headings —
+   *  we enforce that here via `uppercase` so content files can stay
+   *  written in normal case. */
+  h2: "text-3xl md:text-4xl font-bold tracking-wide uppercase",
 
   /** Large subsection heading (e.g. Lernplattform feature titles, card titles). */
   h3: "text-2xl md:text-3xl font-bold tracking-wide leading-tight",

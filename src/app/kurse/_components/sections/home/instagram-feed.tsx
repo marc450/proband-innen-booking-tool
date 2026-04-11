@@ -2,19 +2,14 @@
 
 import Script from "next/script";
 import type { HomeInstagramContent } from "@/content/kurse/home-types";
-import { SectionEyebrow } from "../../section-eyebrow";
+import { TYPO } from "../../typography";
 
 export function InstagramFeed({ content }: { content: HomeInstagramContent }) {
   return (
     <section className="bg-[#FAEBE1] py-16 md:py-24">
       <div className="max-w-6xl mx-auto px-5 md:px-8">
-        {content.eyebrow && (
-          <div className="text-center">
-            <SectionEyebrow>{content.eyebrow}</SectionEyebrow>
-          </div>
-        )}
         <h2
-          className={`text-3xl md:text-4xl font-bold text-center tracking-wide ${
+          className={`${TYPO.h2} text-center ${
             content.subheading ? "mb-3" : "mb-10 md:mb-14"
           }`}
         >

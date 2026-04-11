@@ -26,14 +26,12 @@ export const teamContent: TeamPageContent = {
   },
 
   hero: {
-    eyebrow: "Menschen hinter EPHIA",
     heading: "Unser Team & unsere Dozent:innen",
     intro:
       "Bei EPHIA lernst Du von einem Team aus praktizierenden Ärzt:innen, die täglich selbst am Patient:innenbett stehen. Wir bringen klinische Erfahrung, didaktische Sorgfalt und eine inklusive Haltung in jeden unserer Kurse.",
   },
 
   dozenten: {
-    eyebrow: "Lehrteam · LÄK-zertifiziert",
     heading: "Unsere Dozent:innen",
     intro:
       "Alle unsere Dozent:innen sind approbierte Ärzt:innen mit eigener Praxiserfahrung in der ästhetischen Medizin. Wirf einen Blick auf ihre Vita, um mehr über ihre Ausbildung und Schwerpunkte zu erfahren.",
@@ -165,7 +163,6 @@ export const teamContent: TeamPageContent = {
   },
 
   team: {
-    eyebrow: "Operations · Brand · Founders",
     heading: "Unser Team",
     intro:
       "Hinter den Kulissen sorgt ein kleines, engagiertes Team dafür, dass unsere Kurse reibungslos laufen und EPHIA weiterwächst.",
@@ -201,7 +198,6 @@ export const teamContent: TeamPageContent = {
   },
 
   reviewBoard: {
-    eyebrow: "Wissenschaftlich begleitet",
     heading: "Unser Review-Board",
     intro:
       "Unser Review-Board stellt sicher, dass unsere Kursinhalte wissenschaftlich fundiert, aktuell und inklusiv bleiben.",
@@ -237,7 +233,7 @@ export const teamContent: TeamPageContent = {
   },
 
   cta: {
-    heading: "Du möchtest Teil von EPHIA werden?",
+    heading: "Werde Teil von EPHIA",
     body: "Wir freuen uns über Initiativbewerbungen von Ärzt:innen und Menschen, die unsere Mission teilen. Schick uns einfach Deine Unterlagen per E-Mail.",
     email: "marc@ephia.de",
     bullets: [

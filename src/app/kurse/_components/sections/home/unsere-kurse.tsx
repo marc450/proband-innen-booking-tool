@@ -5,7 +5,6 @@ import Image from "next/image";
 import type { HomeCoursesContent, HomeCourseTile } from "@/content/kurse/home-types";
 import { GroupInquiryDialog } from "../group-inquiry-dialog";
 import { TYPO, titleCase } from "../../typography";
-import { SectionEyebrow } from "../../section-eyebrow";
 
 const BLUE = "#0066FF";
 const CREAM = "#FAEBE1";
@@ -24,7 +23,6 @@ export function UnsereKurse({
   const isCream = tone === "cream";
   const sectionBg = isCream ? CREAM : BLUE;
   const headingClass = isCream ? "text-black" : "text-white";
-  const eyebrowTone = isCream ? "dark" : "light";
 
   return (
     <>
@@ -35,9 +33,6 @@ export function UnsereKurse({
       >
         <div className="max-w-6xl mx-auto px-5 md:px-8">
           <div className="text-center mb-14">
-            {content.eyebrow && (
-              <SectionEyebrow tone={eyebrowTone}>{content.eyebrow}</SectionEyebrow>
-            )}
             <h2 className={`${TYPO.h2} ${headingClass}`}>{content.heading}</h2>
           </div>
 

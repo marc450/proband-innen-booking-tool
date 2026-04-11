@@ -30,7 +30,6 @@ export const homeContent: HomeContent = {
   },
 
   werWirSind: {
-    eyebrow: "Hinter EPHIA · Dr. Sophia Wilk-Vollmann",
     heading: "WER WIR SIND",
     subheading: "„Ästhetische Medizin neu denken.\"",
     videoPath:
@@ -40,7 +39,6 @@ export const homeContent: HomeContent = {
   },
 
   courses: {
-    eyebrow: "LÄK-zertifiziert · Für approbierte Ärzt:innen und Zahnärzt:innen",
     heading: "UNSERE KURSE",
     intro:
       "Grundkurse sind Einstiegskurse für Einsteiger:innen. Für Aufbaukurse empfehlen wir ein solides medizinisches Basiswissen vor der Kursteilnahme.",
@@ -162,7 +160,6 @@ export const homeContent: HomeContent = {
   },
 
   testimonials: {
-    eyebrow: "Stimmen · Aus unserer Community",
     heading: "#wearetogether",
     items: [
       {
@@ -190,7 +187,6 @@ export const homeContent: HomeContent = {
   },
 
   instagram: {
-    eyebrow: "Folge uns · @ephia.academy auf Instagram",
     heading: "NEWSLETTER SIND VON GESTERN",
     widgetId: "6fbfcc53812a55ec9db620f1a9d278b6",
   },

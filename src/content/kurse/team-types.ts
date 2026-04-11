@@ -59,7 +59,6 @@ export interface TeamMember {
 }
 
 export interface TeamSectionContent {
-  eyebrow?: string;
   heading: string;
   intro?: string;
   items: TeamMember[];
@@ -71,12 +70,10 @@ export interface TeamPageContent {
     description: string;
   };
   hero: {
-    eyebrow?: string;
     heading: string;
     intro: string;
   };
   dozenten: {
-    eyebrow?: string;
     heading: string;
     intro?: string;
     items: Dozent[];
