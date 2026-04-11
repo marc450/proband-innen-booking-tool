@@ -134,7 +134,7 @@ export const teamContent: TeamPageContent = {
         name: "Dr. Sarah Bechstein",
         role: "Dozentin",
         imagePath:
-          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sarah-bechstein.png",
+          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sarah.jpg",
         imageAlt: "Porträt von Dr. Sarah Bechstein",
         shortBio:
           "Dr. Sarah Bechstein ist Fachärztin und erfahrene Dozentin im Bereich ästhetische Medizin. Ihre Schwerpunkte umfassen Botulinum- und Fillerbehandlungen.",
@@ -144,7 +144,7 @@ export const teamContent: TeamPageContent = {
         name: "Dr. Sarah Stannek",
         role: "Dozentin",
         imagePath:
-          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sarah-stannek.png",
+          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sarah-stannek.jpg",
         imageAlt: "Porträt von Dr. Sarah Stannek",
         shortBio:
           "Dr. Sarah Stannek begleitet unsere Kurse mit klinischer Expertise und hohem didaktischem Anspruch. Schwerpunkt: evidenzbasierte Injektionstechniken.",
