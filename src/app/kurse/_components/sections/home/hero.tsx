@@ -17,24 +17,23 @@ export function HomeHero({ content }: { content: HomeHeroContent }) {
           className="absolute bottom-0 -left-24 w-[360px] h-[360px] rounded-full bg-[#BF785E]/10 blur-3xl pointer-events-none"
         />
 
-        <div className="relative max-w-3xl mx-auto px-5 pt-14 pb-20 sm:pt-20 sm:pb-24">
+        <div className="relative max-w-3xl mx-auto px-5 pt-16 pb-20 sm:pt-24 sm:pb-28 flex flex-col items-center text-center">
           <h1 className="text-[2.5rem] sm:text-[3rem] font-bold tracking-tight leading-[1.05] text-black mb-8">
             {content.heading}
           </h1>
 
-          <ul className="flex flex-col gap-4 mb-10">
+          <ul className="flex flex-col items-center gap-3 mb-10">
             {content.checklist.map((item) => (
-              <li key={item.text} className="flex items-center gap-4">
-                <span className="flex items-center justify-center w-10 h-10 rounded-full bg-[#0066FF]/10 flex-shrink-0">
-                  <Check
-                    className="w-6 h-6 text-[#0066FF]"
-                    strokeWidth={3}
-                    aria-hidden="true"
-                  />
-                </span>
-                <span className="text-lg font-semibold text-black">
-                  {item.text}
-                </span>
+              <li
+                key={item.text}
+                className="inline-flex items-center gap-2.5 text-base sm:text-lg font-semibold text-black/80"
+              >
+                <Check
+                  className="w-5 h-5 text-[#0066FF] flex-shrink-0"
+                  strokeWidth={3}
+                  aria-hidden="true"
+                />
+                <span>{item.text}</span>
               </li>
             ))}
           </ul>
