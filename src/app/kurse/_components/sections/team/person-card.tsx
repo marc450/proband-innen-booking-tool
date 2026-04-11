@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
-import { TYPO } from "../../typography";
 
 const CORAL = "#BF785E";
 
@@ -92,7 +91,12 @@ export function PersonCard({
       )}
 
       <div className="flex flex-col flex-1 p-6 md:p-7">
-        <h3 className={`${TYPO.h3} text-black text-balance hyphens-manual`}>
+        {/* Name is intentionally NOT using TYPO.h3 here — card width is
+            ~260px after padding and even the widest name (Dr. Sophia
+            Wilk‑Vollmann) must fit on one line. whitespace-nowrap forces
+            single-line rendering; the font size below is tuned so that
+            widest name still fits. */}
+        <h3 className="text-lg md:text-xl font-bold tracking-wide leading-tight text-black whitespace-nowrap">
           {name}
         </h3>
         <p className="mt-1 text-sm md:text-base font-semibold text-[#0066FF]">
@@ -100,7 +104,9 @@ export function PersonCard({
         </p>
 
         {shortBio && (
-          <p className={`${TYPO.bodyCard} mt-4 flex-1`}>{shortBio}</p>
+          <p className="text-sm md:text-base text-black/75 leading-relaxed mt-4 flex-1">
+            {shortBio}
+          </p>
         )}
 
         {vita && (
