@@ -59,47 +59,47 @@ export function PersonCard({
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
       aria-label={clickable ? `Vita von ${name} ansehen` : undefined}
-      className={`bg-white rounded-[10px] overflow-hidden flex flex-col group outline-none transition-shadow ${
+      className={`bg-white rounded-[10px] flex flex-col items-center text-center p-6 md:p-7 group outline-none transition-shadow ${
         clickable
           ? "cursor-pointer hover:shadow-lg focus-visible:ring-2 focus-visible:ring-[#0066FF]"
           : ""
       }`}
     >
       {imagePath ? (
-        <div className="relative aspect-[4/5] bg-black/5 overflow-hidden">
+        <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden bg-black/5 shrink-0">
           <Image
             src={imagePath}
             alt={imageAlt ?? name}
             fill
             quality={85}
-            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            sizes="112px"
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.05]"
           />
         </div>
       ) : (
         <div
-          className="aspect-[4/5] flex items-center justify-center"
+          className="w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center shrink-0"
           style={{ backgroundColor: CORAL }}
           aria-hidden="true"
         >
-          <span className="text-white/90 text-xs font-semibold tracking-[0.2em]">
+          <span className="text-white/90 text-[0.6rem] font-semibold tracking-[0.2em]">
             EPHIA
           </span>
         </div>
       )}
 
-      <div className="flex flex-col flex-1 p-6 md:p-7">
+      <div className="flex flex-col flex-1 items-center mt-4 w-full">
         <h3 className={`${TYPO.h3} text-black`}>{name}</h3>
-        <p className="mt-1 text-sm md:text-base font-semibold text-[#0066FF]">
+        <p className="mt-1 text-sm font-semibold text-[#0066FF]">
           {role}
         </p>
 
         {shortBio && (
-          <p className={`${TYPO.bodyCard} mt-4 flex-1`}>{shortBio}</p>
+          <p className={`${TYPO.bodyCard} mt-3 flex-1`}>{shortBio}</p>
         )}
 
         {vita && (
-          <div className={`${shortBio ? "mt-5" : "mt-6"} flex items-center gap-1.5 text-sm font-semibold text-[#0066FF] group-hover:text-[#0055DD] transition-colors`}>
+          <div className={`${shortBio ? "mt-4" : "mt-5"} flex items-center gap-1.5 text-sm font-semibold text-[#0066FF] group-hover:text-[#0055DD] transition-colors`}>
             <span className="underline underline-offset-4 decoration-[#0066FF]/30 group-hover:decoration-[#0055DD]">
               {vita.label}
             </span>
