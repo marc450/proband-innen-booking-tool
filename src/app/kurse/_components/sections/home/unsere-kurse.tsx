@@ -136,16 +136,14 @@ function CourseTile({
           </div>
         )}
 
-        <h3 className="text-xl md:text-2xl font-bold tracking-wide text-black leading-tight">
-          {uppercaseTitle}
+        <h3 className="flex flex-wrap items-baseline gap-x-2 gap-y-1 tracking-wide text-black leading-tight">
+          <span className="text-xl md:text-2xl font-bold">{uppercaseTitle}</span>
+          {subtitle && (
+            <span className="text-[13px] font-semibold text-black/60">
+              {subtitle}
+            </span>
+          )}
         </h3>
-
-        {/* Variant subtitle (e.g. "Periorale Zone") */}
-        {subtitle && (
-          <div className="text-sm font-semibold text-black/60 mt-1">
-            {subtitle}
-          </div>
-        )}
 
         {/* Audience + level pills */}
         {(audiencePill || levelPill) && (
