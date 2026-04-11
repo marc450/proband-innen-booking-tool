@@ -49,7 +49,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 bg-[#FAEBE1]/95 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-5 md:px-8">
-        <div className="flex items-center justify-between h-20 md:h-24">
+        <div className="flex items-center justify-between h-14 md:h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center shrink-0" aria-label="EPHIA">
             <Image
@@ -59,8 +59,8 @@ export function Header() {
               height={589}
               priority
               quality={95}
-              sizes="260px"
-              className="h-11 md:h-12 w-auto"
+              sizes="220px"
+              className="h-8 md:h-9 w-auto"
             />
           </Link>
 
