@@ -7,12 +7,18 @@ interface HeroVideoProps {
   videoPath: string;
   videoPoster?: string;
   videoCaptionsPath?: string;
+  /**
+   * Tailwind aspect classes for the video frame. Defaults to the portrait
+   * aspect used on the course hero; override for landscape contexts.
+   */
+  aspectClassName?: string;
 }
 
 export function HeroVideo({
   videoPath,
   videoPoster,
   videoCaptionsPath,
+  aspectClassName = "aspect-[4/5] md:aspect-[4/3] lg:aspect-[4/5]",
 }: HeroVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
@@ -30,7 +36,7 @@ export function HeroVideo({
   };
 
   return (
-    <div className="relative rounded-[10px] overflow-hidden bg-black/5 aspect-[4/5] md:aspect-[4/3] lg:aspect-[4/5]">
+    <div className={`relative rounded-[10px] overflow-hidden bg-black/5 ${aspectClassName}`}>
       <video
         ref={videoRef}
         className="absolute inset-0 w-full h-full object-cover"
