@@ -3,8 +3,7 @@
 import { useEffect } from "react";
 import { AvailableSlot, Course } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ImageIcon, MapPin } from "lucide-react";
+import { ArrowRight, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -84,64 +83,72 @@ export function CoursesOverview({ courses, slots }: CoursesOverviewProps) {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
             {groups.map((group) => (
-              <Card key={group.title} className="shadow-sm overflow-hidden pt-0 gap-0 flex flex-col">
-                {/* Course image */}
+              <article
+                key={group.title}
+                className="bg-white rounded-[10px] overflow-hidden flex flex-col group"
+              >
                 {group.firstCourse.image_url ? (
-                  <Image
-                    src={group.firstCourse.image_url}
-                    alt={group.title}
-                    width={800}
-                    height={450}
-                    className="w-full aspect-video object-cover"
-                    sizes="(max-width: 640px) 100vw, 50vw"
-                    priority
-                  />
+                  <div className="relative aspect-[4/3] bg-black/5 overflow-hidden">
+                    <Image
+                      src={group.firstCourse.image_url}
+                      alt={group.firstCourse.treatment_title || group.title}
+                      fill
+                      quality={85}
+                      sizes="(min-width: 640px) 50vw, 100vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                      priority
+                    />
+                  </div>
                 ) : (
-                  <div className="w-full aspect-video bg-muted flex items-center justify-center">
-                    <div className="text-center text-muted-foreground">
-                      <ImageIcon className="h-10 w-10 mx-auto mb-1 opacity-40" />
-                      <span className="text-xs opacity-40">Kursbild</span>
-                    </div>
+                  <div
+                    className="aspect-[4/3] flex items-center justify-center bg-black/5"
+                    aria-hidden="true"
+                  >
+                    <ImageIcon className="w-12 h-12 text-black/20" />
                   </div>
                 )}
 
-                <CardContent className="p-5 flex flex-col flex-1 gap-3">
-                  {/* Title + description — grows to push everything else down */}
-                  <div className="flex-1">
-                    <h2 className="text-lg font-bold leading-tight">{group.firstCourse.treatment_title || group.title}</h2>
-                    {group.firstCourse.service_description && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {group.firstCourse.service_description}
-                      </p>
-                    )}
-                  </div>
+                <div className="flex flex-col flex-1 p-6 md:p-8">
+                  <h2 className="text-xl md:text-2xl font-bold tracking-wide leading-tight text-black text-balance">
+                    {group.firstCourse.treatment_title || group.title}
+                  </h2>
 
-                  <hr className="border-border/40" />
+                  {group.firstCourse.service_description && (
+                    <p className="text-sm md:text-base text-black/75 leading-relaxed mt-4 flex-1">
+                      {group.firstCourse.service_description}
+                    </p>
+                  )}
 
-                  {/* Price */}
                   {group.firstCourse.guide_price && (
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Richtpreis</p>
-                      <p className="text-lg font-bold">EUR {group.firstCourse.guide_price.replace(/[€\s]/g, "")}</p>
+                    <div className="mt-5 mb-6">
+                      <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-black/55">
+                        Richtpreis
+                      </p>
+                      <p className="text-2xl font-bold text-black mt-0.5">
+                        EUR {group.firstCourse.guide_price.replace(/[€\s]/g, "")}
+                      </p>
                     </div>
                   )}
 
-                  {/* CTA */}
-                  <div className="pt-3 pb-1">
-                    <Link href={`/book/${group.firstCourse.id}`}>
-                      <Button className="w-full">Termine anschauen</Button>
+                  <div>
+                    <Link
+                      href={`/book/${group.firstCourse.id}`}
+                      className="inline-flex items-center justify-center gap-2 w-full text-sm md:text-base font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-5 py-3 transition-colors"
+                    >
+                      <span>Termine anschauen</span>
+                      <ArrowRight className="w-4 h-4" strokeWidth={2.25} />
                     </Link>
-                  </div>
 
-                  {group.firstCourse.guide_price && (
-                    <p className="text-[11px] text-muted-foreground/60 text-center">
-                      *Bezahlung nach der Behandlung vor Ort. Abrechnung nach GOÄ.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+                    {group.firstCourse.guide_price && (
+                      <p className="text-[11px] text-black/50 text-center mt-3">
+                        *Bezahlung nach der Behandlung vor Ort. Abrechnung nach GOÄ.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </article>
             ))}
           </div>
         )}
