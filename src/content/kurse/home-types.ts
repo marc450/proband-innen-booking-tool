@@ -62,7 +62,16 @@ export interface HomeCourseTile {
   audience: string;
   /** Longer body text shown inside the card */
   description: string;
-  /** Image path (relative to /public). Omit for the Gruppenbuchungen tile. */
+  /**
+   * Matches `course_templates.course_key`. When set, the tile image is
+   * resolved server-side from `course_templates.image_url` so marketing
+   * stays in sync with whatever Marc uploads via the admin.
+   */
+  courseKey?: string;
+  /**
+   * Static fallback image path (used if `courseKey` is not set or the
+   * DB has no image for it). Omit for the Gruppenbuchungen tile.
+   */
   imagePath?: string;
   imageAlt?: string;
   /** CTA button label */

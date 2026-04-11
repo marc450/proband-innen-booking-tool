@@ -49,7 +49,7 @@ export const homeContent: HomeContent = {
         audience: "Für Humanmediziner:innen",
         description:
           "Dein Grundkurs rund um das approbierte Humanmedizinwissen: In erster Linie in der Behandlung von Patient:innen mit Botulinum. Behandelt werden die Grundlagen der ästhetischen Botulinum-Behandlung und fundamentale Lernziele, die jede:r Ärzt:in in der Facharztausbildung erlernen sollte.",
-        imagePath: "/kurse/grundkurs_botulinum/og-image.jpg",
+        courseKey: "grundkurs_botulinum",
         imageAlt: "Grundkurs Botulinum für Humanmediziner:innen",
         ctaLabel: "Zu den Kursdetails",
         href: "/grundkurs-botulinum",
@@ -60,7 +60,7 @@ export const homeContent: HomeContent = {
         audience: "Für Zahnmediziner:innen",
         description:
           "Dein Grundkurs rund um das approbierte Zahnmedizinwissen: In erster Linie in der Behandlung von Patient:innen mit Botulinum. Lerne die Grundlagen der ästhetischen Botulinum-Behandlung kennen, speziell zugeschnitten auf Zahnärzt:innen.",
-        imagePath: "/kurse/grundkurs_botulinum/og-image.jpg",
+        courseKey: "grundkurs_botulinum_zahnmedizin",
         imageAlt: "Grundkurs Botulinum für Zahnmediziner:innen",
         ctaLabel: "Zu den Kursdetails",
         href: "https://www.ephia.de/grundkurs-botulinum-zahnmedizin",
@@ -71,19 +71,19 @@ export const homeContent: HomeContent = {
         audience: "Für Kurseinsteiger:innen",
         description:
           "Dieser Grundkurs richtet sich an approbierte Ärzt:innen, die eine Einführung in die Behandlung von Patient:innen mit dermalen Fillern suchen. Wir konzentrieren uns auf die Grundlagen der Dermalfiller-Behandlung, die Behandlungsmöglichkeiten und die Sicherheit in der Gesichtsanatomie.",
-        imagePath: "/kurse/home/grundkurs-dermalfiller.jpg",
+        courseKey: "grundkurs_dermalfiller",
         imageAlt: "Grundkurs Dermalfiller",
         ctaLabel: "Zu den Kursdetails",
         href: "https://www.ephia.de/grundkurs-dermalfiller",
       },
       {
         kicker: "AUFBAUKURS",
-        title: "Sculptra & Skinbooster",
+        title: "Skulptra & Skinbooster",
         audience: "Für fortgeschrittene Ärzt:innen",
         description:
-          "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen, die Ihre Kenntnisse in der Behandlung mit Sculptra und Skinboostern ausbauen möchten. Wir bauen auf die Grundkurse auf und vertiefen die praktische Anwendung moderner Injektionsverfahren sowie den Einsatz bei biomedizinischen Indikationen.",
-        imagePath: "/kurse/home/aufbaukurs-sculptra-skinbooster.jpg",
-        imageAlt: "Aufbaukurs Sculptra & Skinbooster",
+          "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen, die Ihre Kenntnisse in der Behandlung mit Skulptra und Skinboostern ausbauen möchten. Wir bauen auf die Grundkurse auf und vertiefen die praktische Anwendung moderner Injektionsverfahren sowie den Einsatz bei biomedizinischen Indikationen.",
+        courseKey: "aufbaukurs_skulptra",
+        imageAlt: "Aufbaukurs Skulptra & Skinbooster",
         ctaLabel: "Zu den Kursdetails",
         href: "https://www.ephia.de/aufbaukurs-sculptra-skinbooster",
       },
@@ -93,7 +93,7 @@ export const homeContent: HomeContent = {
         audience: "Für Kurseinsteiger:innen",
         description:
           "Der Grundkurs Medizinische Hautpflege vermittelt Dir das approbierte Ärzt:innenwissen für die richtige Beratung und Verordnung von ärztlich unterstützter Hautpflege. Lerne die Grundlagen der dermatologisch relevanten Hautdiagnostik, den Aufbau der Haut und den individuellen Pflegeanspruch Deiner Patient:innen kennen.",
-        imagePath: "/kurse/home/grundkurs-medizinische-hautpflege.jpg",
+        courseKey: "grundkurs_medizinische_hautpflege",
         imageAlt: "Grundkurs Medizinische Hautpflege",
         ctaLabel: "Zu den Kursdetails",
         href: "https://www.ephia.de/grundkurs-medizinische-hautpflege",
@@ -104,7 +104,7 @@ export const homeContent: HomeContent = {
         audience: "Therapeutische Indikationen",
         description:
           "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen, die Ihre Kenntnisse in der therapeutischen Behandlung mit Botulinum ausbauen möchten. Wir bauen auf die Grundkurse auf und vertiefen die medizinisch-therapeutischen Anwendungsgebiete und spezielle Behandlungstechniken für Funktionsstörungen und Schmerzsyndrome.",
-        imagePath: "/kurse/home/aufbaukurs-botulinum-therapeutisch.jpg",
+        courseKey: "aufbaukurs_therapeutische_indikationen_botulinum",
         imageAlt: "Aufbaukurs Botulinum Therapeutische Indikationen",
         ctaLabel: "Zu den Kursdetails",
         href: "https://www.ephia.de/aufbaukurs-botulinum-therapeutische-indikationen",
@@ -115,7 +115,7 @@ export const homeContent: HomeContent = {
         audience: "Periorale Zone",
         description:
           "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen, die Ihre Kenntnisse in der Behandlung der perioralen Zone mit Botulinum vertiefen möchten. Du lernst die sichere, evidenzbasierte Behandlung des Mundbereichs mit präzisen Techniken, inklusive Anatomie, Indikationen und Komplikationsmanagement.",
-        imagePath: "/kurse/home/aufbaukurs-botulinum-periorale-zone.jpg",
+        courseKey: "aufbaukurs_botulinum_periorale_zone",
         imageAlt: "Aufbaukurs Botulinum Periorale Zone",
         ctaLabel: "Zu den Kursdetails",
         href: "https://www.ephia.de/aufbaukurs-botulinum-periorale-zone",
