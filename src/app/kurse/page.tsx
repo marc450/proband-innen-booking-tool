@@ -5,7 +5,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { HomeHero } from "./_components/sections/home/hero";
 import { WerWirSind } from "./_components/sections/home/wer-wir-sind";
 import { UnsereKurse } from "./_components/sections/home/unsere-kurse";
-import { UnserFokus } from "./_components/sections/home/unser-fokus";
 import { InstagramFeed } from "./_components/sections/home/instagram-feed";
 import { Testimonials } from "./_components/sections/testimonials";
 
@@ -65,7 +64,6 @@ export default async function HomePage() {
       <HomeHero content={homeContent.hero} />
       <WerWirSind content={homeContent.werWirSind} />
       <UnsereKurse content={mergedCourses} />
-      <UnserFokus content={homeContent.fokus} />
       <Testimonials content={homeContent.testimonials} />
       <InstagramFeed content={homeContent.instagram} />
     </>
