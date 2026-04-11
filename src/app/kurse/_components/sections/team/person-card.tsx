@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { ArrowRight } from "lucide-react";
 import { TYPO } from "../../typography";
 
 const CORAL = "#BF785E";
@@ -9,20 +12,23 @@ export interface PersonCardProps {
   imagePath?: string;
   imageAlt?: string;
   shortBio?: string;
-  /** CTA button at the bottom of the card. Omit to render a card without a CTA. */
-  cta?: {
+  /**
+   * Optional vita trigger. When set, the entire card becomes clickable
+   * (role="button") and renders a subtle "Vita ansehen →" link at the
+   * bottom of the body. Omit for people without a curriculum — the card
+   * renders as a static article with no interaction.
+   */
+  vita?: {
     label: string;
     onClick: () => void;
-    disabled?: boolean;
-    disabledLabel?: string;
   };
 }
 
 /**
- * Unified person card used across the `/kurse/team` page for
- * Dozent:innen, the operations team, and the review board.
- * Same visual treatment everywhere — the only difference is
- * whether a CTA button sits at the bottom to open a vita modal.
+ * Unified person card used for both Dozent:innen and operations team
+ * on `/kurse/team`. The only visual difference between a Dozent:in card
+ * and a regular team card is a subtle inline "Vita ansehen →" hint at
+ * the bottom (plus a cursor-pointer on hover). No giant CTA buttons.
  */
 export function PersonCard({
   name,
@@ -30,12 +36,35 @@ export function PersonCard({
   imagePath,
   imageAlt,
   shortBio,
-  cta,
+  vita,
 }: PersonCardProps) {
-  const disabled = cta?.disabled ?? false;
+  const clickable = Boolean(vita);
+
+  const handleClick = () => {
+    vita?.onClick();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (!vita) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      vita.onClick();
+    }
+  };
 
   return (
-    <article className="bg-white rounded-[10px] overflow-hidden flex flex-col group">
+    <article
+      onClick={clickable ? handleClick : undefined}
+      onKeyDown={clickable ? handleKeyDown : undefined}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      aria-label={clickable ? `Vita von ${name} ansehen` : undefined}
+      className={`bg-white rounded-[10px] overflow-hidden flex flex-col group outline-none transition-shadow ${
+        clickable
+          ? "cursor-pointer hover:shadow-lg focus-visible:ring-2 focus-visible:ring-[#0066FF]"
+          : ""
+      }`}
+    >
       {imagePath ? (
         <div className="relative aspect-[4/5] bg-black/5 overflow-hidden">
           <Image
@@ -66,19 +95,19 @@ export function PersonCard({
         </p>
 
         {shortBio && (
-          <p className={`${TYPO.bodyCard} mt-4 mb-6 flex-1`}>{shortBio}</p>
+          <p className={`${TYPO.bodyCard} mt-4 flex-1`}>{shortBio}</p>
         )}
 
-        {cta && (
-          <div className={shortBio ? "" : "mt-6"}>
-            <button
-              type="button"
-              onClick={cta.onClick}
-              disabled={disabled}
-              className="w-full text-sm md:text-base font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-5 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {disabled ? cta.disabledLabel ?? cta.label : cta.label}
-            </button>
+        {vita && (
+          <div className={`${shortBio ? "mt-5" : "mt-6"} flex items-center gap-1.5 text-sm font-semibold text-[#0066FF] group-hover:text-[#0055DD] transition-colors`}>
+            <span className="underline underline-offset-4 decoration-[#0066FF]/30 group-hover:decoration-[#0055DD]">
+              {vita.label}
+            </span>
+            <ArrowRight
+              className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5"
+              strokeWidth={2.5}
+              aria-hidden="true"
+            />
           </div>
         )}
       </div>

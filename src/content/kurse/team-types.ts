@@ -1,15 +1,17 @@
 /**
- * Content schema for the combined `/kurse/team` page (Team + Dozent:innen).
+ * Content schema for the `/kurse/team` page.
  *
  * The page lives at `src/app/kurse/team/page.tsx` and is driven by the
  * typed content object in `src/content/kurse/team.ts`.
  *
  * Sections:
  *   1. Hero / intro
- *   2. Unsere Dozent:innen (cards with curriculum modal)
- *   3. Unser Team (operations / brand / founders)
- *   4. Unser Review-Board (scientific board)
- *   5. Initiativbewerbung CTA
+ *   2. Unser Team — one combined grid with Dozent:innen and
+ *      operations / founders / brand all mixed together. Cards for
+ *      people who have a curriculum show a subtle "Vita ansehen →"
+ *      link that opens a modal.
+ *   3. Unser Review-Board (scientific board, separate section)
+ *   4. Initiativbewerbung CTA
  */
 
 /** A single curriculum line. Either a plain bullet or a labelled sub-list. */
@@ -36,32 +38,28 @@ export interface Curriculum {
   sections: CurriculumSection[];
 }
 
-export interface Dozent {
+/**
+ * A single person on the team page. Covers both Dozent:innen
+ * (optional `curriculum`) and operations / founders / brand.
+ */
+export interface Person {
   id: string;
   name: string;
   /** Role label shown under the name, e.g. "Mitgründerin & Dozentin". */
   role: string;
-  /** Optional path to a portrait photo (relative to /public). */
+  /** Optional path to a portrait photo (absolute URL or /public path). */
   imagePath?: string;
   imageAlt?: string;
-  /** Short bio shown on the card (2-4 sentences). */
-  shortBio: string;
-  /** Detailed curriculum shown in the modal. Optional. */
+  /** Short bio shown on the card. */
+  shortBio?: string;
+  /** Detailed curriculum shown in the modal. Only Dozent:innen have this. */
   curriculum?: Curriculum;
 }
 
-export interface TeamMember {
-  name: string;
-  role: string;
-  imagePath?: string;
-  imageAlt?: string;
-  shortBio?: string;
-}
-
-export interface TeamSectionContent {
+export interface PeopleSectionContent {
   heading: string;
   intro?: string;
-  items: TeamMember[];
+  items: Person[];
 }
 
 export interface TeamPageContent {
@@ -73,15 +71,13 @@ export interface TeamPageContent {
     heading: string;
     intro: string;
   };
-  dozenten: {
-    heading: string;
-    intro?: string;
-    items: Dozent[];
-    /** Label for the modal trigger button on each card. */
-    ctaLabel: string;
+  /** Combined Dozent:innen + operations team (one big grid). */
+  team: PeopleSectionContent & {
+    /** Label for the subtle vita link shown on Dozent:innen cards. */
+    vitaLinkLabel: string;
   };
-  team: TeamSectionContent;
-  reviewBoard: TeamSectionContent;
+  /** Scientific review board — always rendered as its own section. */
+  reviewBoard: PeopleSectionContent;
   cta: {
     heading: string;
     body: string;

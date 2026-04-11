@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { teamContent } from "@/content/kurse/team";
 import { TYPO } from "../_components/typography";
-import { DozentenSection } from "../_components/sections/team/dozenten-section";
-import { TeamSection } from "../_components/sections/team/team-section";
+import { PeopleSection } from "../_components/sections/team/people-section";
 import { TeamCTA } from "../_components/sections/team/team-cta";
 
 export const metadata: Metadata = {
@@ -24,14 +23,16 @@ export default function TeamPage() {
         </div>
       </section>
 
-      {/* Dozent:innen — with "Vita ansehen" curriculum modal */}
-      <DozentenSection content={teamContent.dozenten} />
+      {/* Combined team (Dozent:innen + Operations).
+          Cards of people with a curriculum get a subtle "Vita ansehen →"
+          link that opens the curriculum modal. */}
+      <PeopleSection
+        content={teamContent.team}
+        vitaLinkLabel={teamContent.team.vitaLinkLabel}
+      />
 
-      {/* Operations team (Marc, Jana, Kathrin) */}
-      <TeamSection content={teamContent.team} />
-
-      {/* Scientific review board */}
-      <TeamSection content={teamContent.reviewBoard} />
+      {/* Scientific review board — always its own section. */}
+      <PeopleSection content={teamContent.reviewBoard} />
 
       {/* Initiativbewerbung */}
       <TeamCTA content={teamContent.cta} />

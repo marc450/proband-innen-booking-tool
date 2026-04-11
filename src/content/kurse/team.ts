@@ -1,46 +1,36 @@
 import type { TeamPageContent } from "./team-types";
 
 /**
- * Content for the combined `/kurse/team` page.
+ * Content for the `/kurse/team` page.
  *
- * This page merges the old `/team` and `/dozent-innen` pages from the
- * LearnWorlds site into one surface:
- *
- *   1. Hero
- *   2. Unsere Dozent:innen — full cards with a "Vita ansehen" modal
- *      showing each doctor's detailed curriculum.
- *   3. Unser Team — operations / brand / founders (smaller cards).
- *   4. Unser Review-Board — scientific advisors (smaller cards).
- *   5. Initiativbewerbung CTA.
- *
- * Dr. Sophia Wilk-Vollmann's curriculum is fully wired up as the
- * working example. Other Dozent:innen have shortBio only for now —
- * we can extend their `curriculum` object as Sophia sends the
- * content over.
+ * One combined grid shows Dozent:innen and operations / founders /
+ * brand together. People with a `curriculum` get a subtle "Vita
+ * ansehen →" link on their card that opens the detailed modal.
+ * Review-Board gets its own dedicated section below.
  */
 export const teamContent: TeamPageContent = {
   meta: {
     title: "Team & Dozent:innen — EPHIA",
     description:
-      "Lerne die Menschen hinter EPHIA kennen: unsere Dozent:innen, unser Operations-Team und unser wissenschaftliches Review-Board.",
+      "Lerne die Menschen hinter EPHIA kennen: unser Team aus Dozent:innen, Operations und unser wissenschaftliches Review-Board.",
   },
 
   hero: {
-    heading: "Unser Team & unsere Dozent:innen",
+    heading: "Unser Team",
     intro:
-      "Bei EPHIA lernst Du von einem Team aus praktizierenden Ärzt:innen, die täglich selbst am Patient:innenbett stehen. Wir bringen klinische Erfahrung, didaktische Sorgfalt und eine inklusive Haltung in jeden unserer Kurse.",
+      "Bei EPHIA lernst Du von einem Team aus praktizierenden Ärzt:innen, die täglich selbst am Patient:innenbett stehen. Gemeinsam mit unserem Operations- und Brand-Team sorgen sie dafür, dass jeder Kurs fachlich und didaktisch auf höchstem Niveau abläuft.",
   },
 
-  dozenten: {
-    heading: "Unsere Dozent:innen",
+  team: {
+    heading: "Unser Team",
     intro:
-      "Alle unsere Dozent:innen sind approbierte Ärzt:innen mit eigener Praxiserfahrung in der ästhetischen Medizin. Wirf einen Blick auf ihre Vita, um mehr über ihre Ausbildung und Schwerpunkte zu erfahren.",
-    ctaLabel: "Vita ansehen",
+      "Dozent:innen, Gründer:innen und Operations — alle, die EPHIA täglich möglich machen. Klick auf eine Person mit Vita, um mehr über ihre Ausbildung und Schwerpunkte zu erfahren.",
+    vitaLinkLabel: "Vita ansehen",
     items: [
       {
         id: "sophia-wilk-vollmann",
         name: "Dr. Sophia Wilk-Vollmann",
-        role: "EPHIA Mitgründerin & Dozentin",
+        role: "Mitgründerin & Dozentin",
         imagePath:
           "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sophia.png",
         imageAlt: "Porträt von Dr. Sophia Wilk-Vollmann",
@@ -120,6 +110,16 @@ export const teamContent: TeamPageContent = {
         },
       },
       {
+        id: "marc-wyss",
+        name: "Marc Wyss",
+        role: "Mitgründer",
+        imagePath:
+          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/marc.jpg",
+        imageAlt: "Porträt von Marc Wyss",
+        shortBio:
+          "Marc kümmert sich um Technologie, Produkt und Operations. Er hat EPHIA gemeinsam mit Sophia gegründet und baut die Plattform, mit der wir täglich arbeiten.",
+      },
+      {
         id: "tina-bellinghausen",
         name: "Tina Bellinghausen",
         role: "Dozentin",
@@ -159,24 +159,8 @@ export const teamContent: TeamPageContent = {
         shortBio:
           "Approbierte Ärztin und Dozentin bei EPHIA. Pauline bringt eine ruhige, strukturierte Art in ihre Kurse und begleitet Teilnehmer:innen eng bei den praktischen Übungen.",
       },
-    ],
-  },
-
-  team: {
-    heading: "Unser Team",
-    intro:
-      "Hinter den Kulissen sorgt ein kleines, engagiertes Team dafür, dass unsere Kurse reibungslos laufen und EPHIA weiterwächst.",
-    items: [
       {
-        name: "Marc Wyss",
-        role: "Mitgründer",
-        imagePath:
-          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/marc.jpg",
-        imageAlt: "Porträt von Marc Wyss",
-        shortBio:
-          "Marc kümmert sich um Technologie, Produkt und Operations. Er hat EPHIA gemeinsam mit Sophia gegründet und baut die Plattform, mit der wir täglich arbeiten.",
-      },
-      {
+        id: "jana-steyer",
         name: "Jana Steyer",
         role: "Kurskoordinatorin",
         imagePath:
@@ -186,6 +170,7 @@ export const teamContent: TeamPageContent = {
           "Jana ist Deine erste Ansprechpartnerin rund um unsere Kurse — von der Buchung über die Organisation bis hin zu Proband:innen-Fragen.",
       },
       {
+        id: "kathrin-schiebler",
         name: "Kathrin Schiebler",
         role: "Brand Consulting",
         imagePath:
@@ -203,6 +188,7 @@ export const teamContent: TeamPageContent = {
       "Unser Review-Board stellt sicher, dass unsere Kursinhalte wissenschaftlich fundiert, aktuell und inklusiv bleiben.",
     items: [
       {
+        id: "yawen-wang",
         name: "Prof. Dr. Yawen Wang",
         role: "Review-Board",
         imagePath:
@@ -212,6 +198,7 @@ export const teamContent: TeamPageContent = {
           "Prof. Dr. Yawen Wang bringt ihre wissenschaftliche Expertise in unsere Kurskurierung ein und achtet auf Evidenzbasierung.",
       },
       {
+        id: "camea-jamet",
         name: "Caméa Jamet",
         role: "Review-Board",
         imagePath:
@@ -221,6 +208,7 @@ export const teamContent: TeamPageContent = {
           "Caméa Jamet begleitet EPHIA fachlich und achtet besonders auf Inklusivität und Diversität in unseren Kursinhalten.",
       },
       {
+        id: "ephsona-shencoru",
         name: "Dr. Ephsona Shencoru",
         role: "Review-Board",
         imagePath:
@@ -236,9 +224,6 @@ export const teamContent: TeamPageContent = {
     heading: "Werde Teil von EPHIA",
     body: "Wir freuen uns über Initiativbewerbungen von Ärzt:innen und Menschen, die unsere Mission teilen. Schick uns einfach Deine Unterlagen per E-Mail.",
     email: "marc@ephia.de",
-    bullets: [
-      "Motivationsschreiben",
-      "Lebenslauf (ohne Foto)",
-    ],
+    bullets: ["Motivationsschreiben", "Lebenslauf (ohne Foto)"],
   },
 };

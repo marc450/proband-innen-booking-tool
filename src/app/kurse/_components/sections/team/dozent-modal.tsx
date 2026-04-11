@@ -3,11 +3,11 @@
 import { useEffect } from "react";
 import Image from "next/image";
 import { X } from "lucide-react";
-import type { Dozent, CurriculumItem } from "@/content/kurse/team-types";
+import type { Person, CurriculumItem } from "@/content/kurse/team-types";
 import { TYPO } from "../../typography";
 
 interface DozentModalProps {
-  dozent: Dozent | null;
+  dozent: Person | null;
   onClose: () => void;
 }
 
@@ -108,9 +108,9 @@ export function DozentModal({ dozent, onClose }: DozentModalProps) {
                 </section>
               ))}
             </div>
-          ) : (
+          ) : dozent.shortBio ? (
             <p className={`${TYPO.bodyCard} mt-2`}>{dozent.shortBio}</p>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
