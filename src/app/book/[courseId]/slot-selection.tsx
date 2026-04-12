@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AvailableSlot, Course } from "@/lib/types";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Calendar, ChevronDown, Clock, Info, Users } from "lucide-react";
+import { Calendar, ChevronDown, Clock, Info, MapPin, Users } from "lucide-react";
 import Link from "next/link";
 import { BookingForm } from "../booking-form";
 
@@ -105,29 +105,39 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                         className="w-full text-left hover:bg-black/[0.02] transition-colors"
                         aria-expanded={isExpanded}
                       >
-                        <div className="flex items-center justify-between gap-4 px-5 md:px-6 py-5">
-                          <div className="min-w-0">
+                        <div className="px-5 md:px-6 py-5">
+                          <div className="flex items-center justify-between gap-4">
                             <p className="text-base md:text-lg font-bold text-black leading-tight">
                               {dateLabel}
                             </p>
-                            <p className="text-xs md:text-sm text-black/55 mt-1.5 leading-relaxed">
-                              {dateSlots.length} Zeitfenster · {totalCapacity} {totalCapacity === 1 ? "Platz" : "Plätze"} frei
-                              {dateCourse.instructor && (
-                                <span> · {dateCourse.instructor}</span>
-                              )}
-                              {dateCourse.location && (
-                                <span className="hidden sm:inline"> · {dateCourse.location}</span>
-                              )}
-                            </p>
+                            <div className="flex items-center gap-1.5 text-[#0066FF] shrink-0">
+                              <span className="text-xs md:text-sm font-bold hidden sm:inline">
+                                {isExpanded ? "Schließen" : "Anzeigen"}
+                              </span>
+                              <ChevronDown
+                                className={`h-5 w-5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                strokeWidth={2.25}
+                              />
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1.5 text-[#0066FF] shrink-0">
-                            <span className="text-xs md:text-sm font-bold hidden sm:inline">
-                              {isExpanded ? "Schließen" : "Anzeigen"}
-                            </span>
-                            <ChevronDown
-                              className={`h-5 w-5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                              strokeWidth={2.25}
-                            />
+
+                          <div className="mt-3 space-y-1.5 text-sm text-black/70">
+                            <div className="flex items-center gap-2">
+                              <Users className="h-3.5 w-3.5 shrink-0" />
+                              <span>{totalCapacity} {totalCapacity === 1 ? "Platz" : "Plätze"} frei ({dateSlots.length} Zeitfenster)</span>
+                            </div>
+                            {dateCourse.instructor && (
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-3.5 w-3.5 shrink-0" />
+                                <span>Dozent:in: {dateCourse.instructor}</span>
+                              </div>
+                            )}
+                            {dateCourse.location && (
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-3.5 w-3.5 shrink-0" />
+                                <span>{dateCourse.location}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </button>
