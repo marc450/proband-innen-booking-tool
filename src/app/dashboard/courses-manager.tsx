@@ -25,7 +25,7 @@ import {
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
-import { Plus, Trash2, Copy, ChevronDown, ChevronRight, Edit, Upload } from "lucide-react";
+import { Plus, Trash2, Copy, ChevronDown, ChevronRight, Edit, Upload, Ban, CheckCircle2 } from "lucide-react";
 
 export interface SlotBooking {
   id: string;
@@ -355,6 +355,19 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
       setSlots(slots.filter((s) => s.id !== deleteSlotConfirm));
     }
     setDeleteSlotConfirm(null);
+  };
+
+  const handleToggleBlocked = async (slotId: string, currentlyBlocked: boolean) => {
+    const newBlocked = !currentlyBlocked;
+    const { error } = await supabase
+      .from("slots")
+      .update({ blocked: newBlocked })
+      .eq("id", slotId);
+    if (!error) {
+      setSlots((prev) =>
+        prev.map((s) => (s.id === slotId ? { ...s, blocked: newBlocked } : s))
+      );
+    }
   };
 
   const openDuplicate = (course: Course) => {
@@ -981,8 +994,10 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
             .filter((s) => s.course_id === course.id)
             .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
-          const totalCapacity = courseSlots.reduce((sum, s) => sum + s.capacity, 0);
-          const bookedCount = courseSlots.reduce((sum, s) => {
+          const activeSlots = courseSlots.filter((s) => !s.blocked);
+          const blockedCount = courseSlots.length - activeSlots.length;
+          const totalCapacity = activeSlots.reduce((sum, s) => sum + s.capacity, 0);
+          const bookedCount = activeSlots.reduce((sum, s) => {
             return sum + bookings.filter((b) => b.slot_id === s.id).length;
           }, 0);
 
@@ -1024,6 +1039,11 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                   </span>
                   <span className={`[flex:1_1_0%] text-sm font-semibold text-center whitespace-nowrap ${bookedCount === totalCapacity && totalCapacity > 0 ? "text-green-600" : "text-red-500"}`}>
                     {bookedCount}/{totalCapacity}
+                    {blockedCount > 0 && (
+                      <span className="text-xs font-normal text-muted-foreground ml-1" title={`${blockedCount} Slot(s) gesperrt`}>
+                        (+{blockedCount} <Ban className="inline h-3 w-3 -mt-0.5" />)
+                      </span>
+                    )}
                   </span>
                 </button>
 
@@ -1087,21 +1107,25 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                           return (
                             <div
                               key={slot.id}
-                              className="flex items-center gap-4 py-2 px-2 rounded-md bg-muted/40"
+                              className={`flex items-center gap-4 py-2 px-2 rounded-md ${slot.blocked ? "bg-red-50/60" : "bg-muted/40"}`}
                             >
-                              <span className="w-28 shrink-0 text-sm font-medium">
+                              <span className={`w-28 shrink-0 text-sm font-medium ${slot.blocked ? "line-through text-muted-foreground" : ""}`}>
                                 {format(new Date(slot.start_time), "HH:mm")} Uhr
                               </span>
 
                               <div className="w-24 shrink-0">
-                                {slotBooked > 0
-                                  ? <Badge variant="default" className="text-xs">Gebucht</Badge>
-                                  : <span className="text-sm text-muted-foreground">Frei</span>
+                                {slot.blocked
+                                  ? <Badge variant="destructive" className="text-xs">Gesperrt</Badge>
+                                  : slotBooked > 0
+                                    ? <Badge variant="default" className="text-xs">Gebucht</Badge>
+                                    : <span className="text-sm text-muted-foreground">Frei</span>
                                 }
                               </div>
 
                               <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                                {slotBookings.length > 0 ? slotBookings.map((b) => (
+                                {slot.blocked ? (
+                                  <span className="text-sm text-muted-foreground italic">Für externe Buchung gesperrt</span>
+                                ) : slotBookings.length > 0 ? slotBookings.map((b) => (
                                   b.patient_id ? (
                                     <Link
                                       key={b.id}
@@ -1123,14 +1147,25 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                                 {slot.capacity}
                               </span>
 
-                              <span className={`w-24 shrink-0 text-sm font-semibold text-center ${slotBooked === slot.capacity ? "text-green-600" : "text-red-500"}`}>
-                                {slotBooked}/{slot.capacity}
+                              <span className={`w-24 shrink-0 text-sm font-semibold text-center ${slot.blocked ? "text-muted-foreground" : slotBooked === slot.capacity ? "text-green-600" : "text-red-500"}`}>
+                                {slot.blocked ? "—" : `${slotBooked}/${slot.capacity}`}
                               </span>
 
                               {isAdmin && (
-                                <Button variant="ghost" size="sm" className="w-8 shrink-0 p-0" onClick={() => setDeleteSlotConfirm(slot.id)}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className={`w-8 p-0 ${slot.blocked ? "text-green-600 hover:text-green-700" : "text-muted-foreground hover:text-destructive"}`}
+                                    onClick={() => handleToggleBlocked(slot.id, slot.blocked)}
+                                    title={slot.blocked ? "Slot freigeben" : "Slot sperren"}
+                                  >
+                                    {slot.blocked ? <CheckCircle2 className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="w-8 p-0" onClick={() => setDeleteSlotConfirm(slot.id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               )}
                             </div>
                           );
