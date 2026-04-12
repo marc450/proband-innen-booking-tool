@@ -105,6 +105,30 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
     return t?.course_label_de || t?.title || "Unbekannt";
   };
 
+  // Stable color mapping for course type badges
+  const COURSE_COLORS: { bg: string; text: string }[] = [
+    { bg: "bg-blue-100", text: "text-blue-800" },
+    { bg: "bg-emerald-100", text: "text-emerald-800" },
+    { bg: "bg-amber-100", text: "text-amber-800" },
+    { bg: "bg-purple-100", text: "text-purple-800" },
+    { bg: "bg-rose-100", text: "text-rose-800" },
+    { bg: "bg-cyan-100", text: "text-cyan-800" },
+    { bg: "bg-orange-100", text: "text-orange-800" },
+    { bg: "bg-indigo-100", text: "text-indigo-800" },
+    { bg: "bg-lime-100", text: "text-lime-800" },
+    { bg: "bg-pink-100", text: "text-pink-800" },
+  ];
+
+  const courseColorMap = useMemo(() => {
+    const uniqueIds = [...new Set(sessions.map((s) => s.template_id))];
+    // Sort alphabetically by name so colors stay stable
+    uniqueIds.sort((a, b) => getTemplateName(a).localeCompare(getTemplateName(b)));
+    const map = new Map<string, { bg: string; text: string }>();
+    uniqueIds.forEach((id, i) => map.set(id, COURSE_COLORS[i % COURSE_COLORS.length]));
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessions, templates]);
+
   // Sorting
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -474,17 +498,22 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
 
                 {/* Course */}
                 <TableCell>
-                  <select
-                    value={session.template_id}
-                    onChange={(e) => requestChange(session.id, "template_id", e.target.value)}
-                    className="border-0 bg-transparent text-sm p-0 focus:outline-none focus:ring-0 cursor-pointer max-w-[250px] truncate"
-                  >
-                    {templates.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.course_label_de || t.title}
-                      </option>
-                    ))}
-                  </select>
+                  {(() => {
+                    const color = courseColorMap.get(session.template_id) || COURSE_COLORS[0];
+                    return (
+                      <select
+                        value={session.template_id}
+                        onChange={(e) => requestChange(session.id, "template_id", e.target.value)}
+                        className={`${color.bg} ${color.text} font-medium text-xs rounded-full px-2.5 py-1 border-0 focus:outline-none focus:ring-0 cursor-pointer max-w-[250px] truncate`}
+                      >
+                        {templates.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.course_label_de || t.title}
+                          </option>
+                        ))}
+                      </select>
+                    );
+                  })()}
                 </TableCell>
 
                 {/* Instructor */}
