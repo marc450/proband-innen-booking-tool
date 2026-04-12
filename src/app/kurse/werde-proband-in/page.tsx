@@ -158,7 +158,7 @@ export default async function WerdeProbandInPage() {
               </div>
             </div>
 
-            <div>
+            <div className="hidden lg:block">
               <HeroVideo
                 videoPath={hero.videoPath}
                 aspectClassName="aspect-[4/5] md:aspect-[4/5]"
