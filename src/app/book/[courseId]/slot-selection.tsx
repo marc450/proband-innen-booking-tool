@@ -164,24 +164,23 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                               <button
                                 key={slot.id}
                                 onClick={() => setSelectedSlot(slot)}
-                                className="group w-full flex items-center justify-between gap-4 px-5 md:px-6 py-4 hover:bg-black/[0.02] transition-colors text-left"
+                                className="group w-full flex items-center justify-between gap-3 md:gap-4 px-5 md:px-6 py-4 hover:bg-black/[0.02] transition-colors text-left"
                               >
-                                <div className="flex items-center gap-5">
-                                  <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-3 md:gap-5 min-w-0">
+                                  <div className="flex items-center gap-1.5 shrink-0">
                                     <Clock className="h-4 w-4 text-black/55" />
-                                    <span className="text-sm md:text-base font-bold text-black">
+                                    <span className="text-sm md:text-base font-bold text-black whitespace-nowrap">
                                       {format(new Date(slot.start_time), "HH:mm")} Uhr
                                     </span>
                                   </div>
-                                  <div className="flex items-center gap-1.5">
-                                    <Users className="h-4 w-4 text-black/55" />
-                                    <span className="text-xs md:text-sm text-black/60">
-                                      {slot.remaining_capacity} {slot.remaining_capacity === 1 ? "Platz" : "Plätze"} frei
-                                    </span>
-                                  </div>
+                                  <span className="text-xs md:text-sm text-black/60 whitespace-nowrap">
+                                    {slot.remaining_capacity} {slot.remaining_capacity === 1 ? "Platz" : "Plätze"} frei
+                                  </span>
                                 </div>
-                                <span className="text-xs md:text-sm font-bold text-[#0066FF] shrink-0 group-hover:underline">
-                                  Platz reservieren &rarr;
+                                <span className="text-xs md:text-sm font-bold text-[#0066FF] shrink-0 group-hover:underline whitespace-nowrap">
+                                  <span className="hidden sm:inline">Platz reservieren</span>
+                                  <span className="sm:hidden">Reservieren</span>
+                                  {" "}&rarr;
                                 </span>
                               </button>
                             ))}
