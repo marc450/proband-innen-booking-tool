@@ -127,6 +127,7 @@ export interface Slot {
   end_time: string | null;
   capacity: number;
   blocked: boolean;
+  blocked_note: string | null;
   created_at: string;
 }
 

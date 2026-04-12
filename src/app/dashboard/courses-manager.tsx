@@ -91,6 +91,10 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
   const [deleteCourseConfirm, setDeleteCourseConfirm] = useState<string | null>(null);
   const [deleteSlotConfirm, setDeleteSlotConfirm] = useState<string | null>(null);
 
+  // Block slot dialog
+  const [blockSlotId, setBlockSlotId] = useState<string | null>(null);
+  const [blockNote, setBlockNote] = useState("");
+
   // Edit course dialog
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
@@ -357,15 +361,29 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
     setDeleteSlotConfirm(null);
   };
 
-  const handleToggleBlocked = async (slotId: string, currentlyBlocked: boolean) => {
-    const newBlocked = !currentlyBlocked;
+  const handleBlockSlot = async () => {
+    if (!blockSlotId) return;
     const { error } = await supabase
       .from("slots")
-      .update({ blocked: newBlocked })
+      .update({ blocked: true, blocked_note: blockNote || null })
+      .eq("id", blockSlotId);
+    if (!error) {
+      setSlots((prev) =>
+        prev.map((s) => (s.id === blockSlotId ? { ...s, blocked: true, blocked_note: blockNote || null } : s))
+      );
+    }
+    setBlockSlotId(null);
+    setBlockNote("");
+  };
+
+  const handleUnblockSlot = async (slotId: string) => {
+    const { error } = await supabase
+      .from("slots")
+      .update({ blocked: false, blocked_note: null })
       .eq("id", slotId);
     if (!error) {
       setSlots((prev) =>
-        prev.map((s) => (s.id === slotId ? { ...s, blocked: newBlocked } : s))
+        prev.map((s) => (s.id === slotId ? { ...s, blocked: false, blocked_note: null } : s))
       );
     }
   };
@@ -517,6 +535,29 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
         onConfirm={handleDeleteSlot}
         onCancel={() => setDeleteSlotConfirm(null)}
       />
+
+      {/* Block slot dialog */}
+      <Dialog open={!!blockSlotId} onOpenChange={(open) => { if (!open) { setBlockSlotId(null); setBlockNote(""); } }}>
+        <DialogContent className="bg-card sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Slot sperren</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="block-note">Notiz (optional)</Label>
+            <Input
+              id="block-note"
+              placeholder="z.B. Bereits extern gebucht"
+              value={blockNote}
+              onChange={(e) => setBlockNote(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleBlockSlot(); }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setBlockSlotId(null); setBlockNote(""); }}>Abbrechen</Button>
+            <Button variant="destructive" onClick={handleBlockSlot}>Sperren</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* New course dialog */}
       <Dialog open={courseDialogOpen} onOpenChange={(open) => {
@@ -1124,7 +1165,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
 
                               <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                                 {slot.blocked ? (
-                                  <span className="text-sm text-muted-foreground italic">Für externe Buchung gesperrt</span>
+                                  <span className="text-sm text-muted-foreground italic">{slot.blocked_note || "Gesperrt"}</span>
                                 ) : slotBookings.length > 0 ? slotBookings.map((b) => (
                                   b.patient_id ? (
                                     <Link
@@ -1157,7 +1198,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                                     variant="ghost"
                                     size="sm"
                                     className={`w-8 p-0 ${slot.blocked ? "text-green-600 hover:text-green-700" : "text-muted-foreground hover:text-destructive"}`}
-                                    onClick={() => handleToggleBlocked(slot.id, slot.blocked)}
+                                    onClick={() => slot.blocked ? handleUnblockSlot(slot.id) : setBlockSlotId(slot.id)}
                                     title={slot.blocked ? "Slot freigeben" : "Slot sperren"}
                                   >
                                     {slot.blocked ? <CheckCircle2 className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
