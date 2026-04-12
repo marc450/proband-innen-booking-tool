@@ -88,10 +88,12 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
     }
     setAssignOpen(false);
     const threadSubject = messages[0]?.subject || "";
+    const inbound = messages.find((m) => !m.fromEmail?.includes("ephia.de"));
+    const senderEmail = inbound?.fromEmail || messages[0]?.fromEmail || "";
     await fetch("/api/gmail/assignments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ threadId, assignedTo, threadSubject }),
+      body: JSON.stringify({ threadId, assignedTo, threadSubject, senderEmail }),
     });
   }, [threadId, teamMembers, messages]);
 

@@ -105,7 +105,7 @@ export function InboxManager({
     await fetch("/api/gmail/assignments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ threadId, assignedTo, threadSubject: thread?.subject }),
+      body: JSON.stringify({ threadId, assignedTo, threadSubject: thread?.subject, senderEmail: thread?.contactEmail }),
     });
   }, [teamMembers, threads]);
 

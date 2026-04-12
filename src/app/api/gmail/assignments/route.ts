@@ -63,6 +63,7 @@ async function notifyAssigneeOnSlack(
   assigneeEmail: string,
   assignerName: string,
   threadSubject: string,
+  senderEmail: string,
 ) {
   const token = process.env.SLACK_BOT_TOKEN;
   if (!token) return;
@@ -87,7 +88,7 @@ async function notifyAssigneeOnSlack(
       },
       body: JSON.stringify({
         channel: slackUserId,
-        text: `📩 *${assignerName}* hat Dir eine Konversation zugewiesen:\n„${threadSubject || "Kein Betreff"}"`,
+        text: `📩 *${assignerName}* hat Dir eine Konversation zugewiesen:\n„${threadSubject || "Kein Betreff"}"${senderEmail ? `\nVon: ${senderEmail}` : ""}`,
       }),
     });
   } catch {
@@ -97,7 +98,7 @@ async function notifyAssigneeOnSlack(
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const { threadId, assignedTo, threadSubject } = await request.json();
+  const { threadId, assignedTo, threadSubject, senderEmail } = await request.json();
 
   if (!threadId) {
     return NextResponse.json({ error: "threadId required" }, { status: 400 });
@@ -144,7 +145,7 @@ export async function POST(request: NextRequest) {
     // Get assignee email from auth.users (requires admin client)
     const { data: { user: assigneeUser } } = await admin.auth.admin.getUserById(assignedTo);
     if (assigneeUser?.email) {
-      notifyAssigneeOnSlack(assigneeUser.email, assignerName, threadSubject || "");
+      notifyAssigneeOnSlack(assigneeUser.email, assignerName, threadSubject || "", senderEmail || "");
     }
   }
 
