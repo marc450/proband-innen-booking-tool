@@ -463,18 +463,26 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
 
                 {/* Start time - simple text input */}
                 <TableCell>
-                  <input
-                    type="text"
-                    defaultValue={session.start_time || ""}
-                    key={`time-${session.id}-${session.start_time}-${resetKey}`}
-                    onBlur={(e) => {
-                      if (e.target.value !== (session.start_time || "")) {
-                        requestChange(session.id, "start_time", e.target.value);
-                      }
-                    }}
-                    placeholder="10:00"
-                    className="border-0 bg-transparent text-sm p-0 focus:outline-none focus:ring-0 w-[60px]"
-                  />
+                  {(() => {
+                    const t = session.start_time || "";
+                    const timeBadge = t === "10:00" ? "bg-sky-100 text-sky-800"
+                      : t === "15:30" ? "bg-violet-100 text-violet-800"
+                      : "";
+                    return (
+                      <input
+                        type="text"
+                        defaultValue={t}
+                        key={`time-${session.id}-${t}-${resetKey}`}
+                        onBlur={(e) => {
+                          if (e.target.value !== t) {
+                            requestChange(session.id, "start_time", e.target.value);
+                          }
+                        }}
+                        placeholder="10:00"
+                        className={`border-0 text-sm p-0 focus:outline-none focus:ring-0 w-[60px] ${timeBadge ? `${timeBadge} font-medium rounded-full px-2.5 py-1 w-[70px] text-center text-xs` : "bg-transparent"}`}
+                      />
+                    );
+                  })()}
                 </TableCell>
 
                 {/* Duration */}
