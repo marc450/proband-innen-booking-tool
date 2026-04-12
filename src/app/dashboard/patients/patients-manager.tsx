@@ -61,7 +61,7 @@ const statusColors: Record<PatientStatus, string> = {
 
 const allStatuses: PatientStatus[] = ["active", "warning", "blacklist"];
 
-type SortKey = "name" | "email" | "city" | "status" | "created_at";
+type SortKey = "last_name" | "first_name" | "email" | "city" | "status" | "created_at";
 
 export function PatientsManager({ initialPatients }: Props) {
   const [patients, setPatients] = useState(initialPatients);
@@ -169,9 +169,12 @@ export function PatientsManager({ initialPatients }: Props) {
     })
     .sort((a, b) => {
       let aVal: string, bVal: string;
-      if (sortKey === "name") {
-        aVal = `${a.first_name || ""} ${a.last_name || ""}`.trim().toLowerCase();
-        bVal = `${b.first_name || ""} ${b.last_name || ""}`.trim().toLowerCase();
+      if (sortKey === "last_name") {
+        aVal = (a.last_name || "").toLowerCase();
+        bVal = (b.last_name || "").toLowerCase();
+      } else if (sortKey === "first_name") {
+        aVal = (a.first_name || "").toLowerCase();
+        bVal = (b.first_name || "").toLowerCase();
       } else if (sortKey === "email") {
         aVal = a.email.toLowerCase();
         bVal = b.email.toLowerCase();
@@ -292,7 +295,8 @@ export function PatientsManager({ initialPatients }: Props) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableHead label="Name" sortKey="name" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
+                  <SortableHead label="Nachname" sortKey="last_name" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
+                  <SortableHead label="Vorname" sortKey="first_name" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
                   <SortableHead label="E-Mail" sortKey="email" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
                   <TableHead>Telefon</TableHead>
                   <SortableHead label="Ort" sortKey="city" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
@@ -309,9 +313,10 @@ export function PatientsManager({ initialPatients }: Props) {
                     onClick={() => router.push(`/dashboard/patients/${patient.id}`)}
                   >
                     <TableCell className="font-medium">
-                      {patient.first_name || patient.last_name
-                        ? `${patient.first_name || ""} ${patient.last_name || ""}`.trim()
-                        : patient.email}
+                      {patient.last_name || "–"}
+                    </TableCell>
+                    <TableCell>
+                      {patient.first_name || "–"}
                     </TableCell>
                     <TableCell>{patient.email}</TableCell>
                     <TableCell>{patient.phone || ""}</TableCell>
