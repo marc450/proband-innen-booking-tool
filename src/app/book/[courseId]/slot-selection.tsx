@@ -29,14 +29,14 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-black/10 bg-background h-[55px] flex items-center">
-        <div className="max-w-2xl mx-auto px-5 md:px-8 w-full">
+        <div className="max-w-3xl mx-auto px-5 md:px-8 w-full">
           <a href="https://ephia.de" target="_blank" rel="noopener noreferrer" className="inline-block">
             <img src="/logo.svg" alt="EPHIA" style={{ width: "203px", height: "auto" }} />
           </a>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-5 md:px-8 py-10 md:py-14">
+      <main className="max-w-3xl mx-auto px-5 md:px-8 py-10 md:py-14">
         {selectedSlot ? (
           <div>
             <button
@@ -71,7 +71,7 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
               &larr; Zurück zur Kursübersicht
             </Link>
 
-            <h1 className="text-2xl md:text-3xl font-bold tracking-wide leading-tight text-black text-balance">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-wide leading-tight text-black whitespace-nowrap overflow-hidden text-ellipsis">
               {course.treatment_title || course.title}
             </h1>
             <p className="text-sm md:text-base text-black/70 leading-relaxed mt-3 mb-8">
@@ -106,16 +106,19 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                         aria-expanded={isExpanded}
                       >
                         <div className="flex items-center justify-between gap-4 px-5 md:px-6 py-5">
-                          <div className="flex items-start gap-3 min-w-0">
-                            <Calendar className="h-5 w-5 text-black/55 shrink-0 mt-0.5" />
-                            <div className="min-w-0">
-                              <p className="text-base md:text-lg font-bold text-black leading-tight">
-                                {dateLabel}
-                              </p>
-                              <p className="text-xs md:text-sm text-black/60 mt-1">
-                                {dateSlots.length} Zeitfenster · {totalCapacity} {totalCapacity === 1 ? "Platz" : "Plätze"} frei
-                              </p>
-                            </div>
+                          <div className="min-w-0">
+                            <p className="text-base md:text-lg font-bold text-black leading-tight">
+                              {dateLabel}
+                            </p>
+                            <p className="text-xs md:text-sm text-black/55 mt-1.5 leading-relaxed">
+                              {dateSlots.length} Zeitfenster · {totalCapacity} {totalCapacity === 1 ? "Platz" : "Plätze"} frei
+                              {dateCourse.instructor && (
+                                <span> · {dateCourse.instructor}</span>
+                              )}
+                              {dateCourse.location && (
+                                <span className="hidden sm:inline"> · {dateCourse.location}</span>
+                              )}
+                            </p>
                           </div>
                           <div className="flex items-center gap-1.5 text-[#0066FF] shrink-0">
                             <span className="text-xs md:text-sm font-bold hidden sm:inline">
@@ -127,27 +130,6 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                             />
                           </div>
                         </div>
-
-                        {(dateCourse.instructor || dateCourse.location) && (
-                          <div className="grid grid-cols-2 gap-x-5 px-5 md:px-6 pb-5 -mt-1">
-                            {dateCourse.instructor && (
-                              <div>
-                                <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-black/55">
-                                  Dozent:in
-                                </p>
-                                <p className="text-sm text-black mt-1">{dateCourse.instructor}</p>
-                              </div>
-                            )}
-                            {dateCourse.location && (
-                              <div>
-                                <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-black/55">
-                                  Ort
-                                </p>
-                                <p className="text-sm text-black mt-1">{dateCourse.location}</p>
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </button>
 
                       {/* Expanded time slots */}
