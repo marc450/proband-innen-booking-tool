@@ -465,8 +465,8 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 <TableCell>
                   {(() => {
                     const t = session.start_time || "";
-                    const timeBadge = t === "10:00" ? "bg-sky-100 text-sky-800"
-                      : t === "15:30" ? "bg-violet-100 text-violet-800"
+                    const timeBadge = t === "10:00" ? "bg-emerald-100 text-emerald-800"
+                      : t === "15:30" ? "bg-rose-100 text-rose-800"
                       : "";
                     return (
                       <input
