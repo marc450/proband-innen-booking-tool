@@ -36,6 +36,29 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
     return t?.course_label_de || t?.title || "Unbekannt";
   };
 
+  // Stable color mapping for course type badges
+  const COURSE_COLORS: { bg: string; text: string }[] = [
+    { bg: "bg-blue-100", text: "text-blue-800" },
+    { bg: "bg-emerald-100", text: "text-emerald-800" },
+    { bg: "bg-amber-100", text: "text-amber-800" },
+    { bg: "bg-purple-100", text: "text-purple-800" },
+    { bg: "bg-rose-100", text: "text-rose-800" },
+    { bg: "bg-cyan-100", text: "text-cyan-800" },
+    { bg: "bg-orange-100", text: "text-orange-800" },
+    { bg: "bg-indigo-100", text: "text-indigo-800" },
+    { bg: "bg-lime-100", text: "text-lime-800" },
+    { bg: "bg-pink-100", text: "text-pink-800" },
+  ];
+
+  const courseColorMap = useMemo(() => {
+    const uniqueIds = [...new Set(sessions.map((s) => s.template_id))];
+    uniqueIds.sort((a, b) => getTemplateName(a).localeCompare(getTemplateName(b)));
+    const map = new Map<string, { bg: string; text: string }>();
+    uniqueIds.forEach((id, i) => map.set(id, COURSE_COLORS[i % COURSE_COLORS.length]));
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessions, templates]);
+
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
@@ -238,13 +261,28 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
                   {formatDate(session.date_iso)}
                 </TableCell>
                 <TableCell className="text-sm">
-                  {session.start_time || "–"}
+                  {(() => {
+                    const t = session.start_time || "";
+                    const timeBadge = t === "10:00" ? "bg-sky-100 text-sky-800"
+                      : t === "15:30" ? "bg-violet-100 text-violet-800"
+                      : "";
+                    return timeBadge
+                      ? <span className={`${timeBadge} font-medium text-xs rounded-full px-2.5 py-1`}>{t}</span>
+                      : <span>{t || "–"}</span>;
+                  })()}
                 </TableCell>
                 <TableCell className="text-sm">
                   {session.duration_minutes ? `${session.duration_minutes} min` : "–"}
                 </TableCell>
                 <TableCell className="text-sm">
-                  {getTemplateName(session.template_id)}
+                  {(() => {
+                    const color = courseColorMap.get(session.template_id) || COURSE_COLORS[0];
+                    return (
+                      <span className={`${color.bg} ${color.text} font-medium text-xs rounded-full px-2.5 py-1`}>
+                        {getTemplateName(session.template_id)}
+                      </span>
+                    );
+                  })()}
                 </TableCell>
                 <TableCell className="text-sm">
                   {session.instructor_name || "–"}
