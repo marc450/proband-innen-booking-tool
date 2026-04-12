@@ -101,12 +101,13 @@ export function InboxManager({
       });
     }
 
+    const thread = threads.find((t) => t.id === threadId);
     await fetch("/api/gmail/assignments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ threadId, assignedTo }),
+      body: JSON.stringify({ threadId, assignedTo, threadSubject: thread?.subject }),
     });
-  }, [teamMembers]);
+  }, [teamMembers, threads]);
 
   // Translate our filter tabs into a Gmail query. "Beantwortet" is handled
   // client-side since it's a simple !lastMessageInbound check and Gmail has

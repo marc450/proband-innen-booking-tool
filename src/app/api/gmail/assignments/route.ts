@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET() {
   const supabase = await createClient();
@@ -55,9 +56,48 @@ export async function GET() {
   return NextResponse.json(assignments);
 }
 
+// ---------------------------------------------------------------------------
+// Slack DM helper — looks up assignee by email, sends a direct message
+// ---------------------------------------------------------------------------
+async function notifyAssigneeOnSlack(
+  assigneeEmail: string,
+  assignerName: string,
+  threadSubject: string,
+) {
+  const token = process.env.SLACK_BOT_TOKEN;
+  if (!token) return;
+
+  try {
+    // 1. Look up Slack user by email
+    const lookupRes = await fetch(
+      `https://slack.com/api/users.lookupByEmail?email=${encodeURIComponent(assigneeEmail)}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    const lookupData = await lookupRes.json();
+    if (!lookupData.ok || !lookupData.user?.id) return;
+
+    const slackUserId = lookupData.user.id;
+
+    // 2. Send DM (using user ID as channel works with chat:write)
+    await fetch("https://slack.com/api/chat.postMessage", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        channel: slackUserId,
+        text: `📩 *${assignerName}* hat Dir eine Konversation zugewiesen:\n„${threadSubject || "Kein Betreff"}"`,
+      }),
+    });
+  } catch {
+    // Slack notification is best-effort, never block the response
+  }
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const { threadId, assignedTo } = await request.json();
+  const { threadId, assignedTo, threadSubject } = await request.json();
 
   if (!threadId) {
     return NextResponse.json({ error: "threadId required" }, { status: 400 });
@@ -85,6 +125,27 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Send Slack DM to assignee (fire-and-forget, don't block response)
+  if (assignedTo !== user.id) {
+    const admin = createAdminClient();
+
+    // Get assigner name
+    const { data: assignerProfile } = await supabase
+      .from("profiles")
+      .select("title, first_name, last_name")
+      .eq("id", user.id)
+      .single();
+    const assignerName = assignerProfile
+      ? [assignerProfile.title, assignerProfile.first_name, assignerProfile.last_name].filter(Boolean).join(" ")
+      : "Jemand";
+
+    // Get assignee email from auth.users (requires admin client)
+    const { data: { user: assigneeUser } } = await admin.auth.admin.getUserById(assignedTo);
+    if (assigneeUser?.email) {
+      notifyAssigneeOnSlack(assigneeUser.email, assignerName, threadSubject || "");
+    }
   }
 
   return NextResponse.json({ ok: true });

@@ -87,12 +87,13 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
       setAssignment(null);
     }
     setAssignOpen(false);
+    const threadSubject = messages[0]?.subject || "";
     await fetch("/api/gmail/assignments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ threadId, assignedTo }),
+      body: JSON.stringify({ threadId, assignedTo, threadSubject }),
     });
-  }, [threadId, teamMembers]);
+  }, [threadId, teamMembers, messages]);
 
   useEffect(() => {
     (async () => {
