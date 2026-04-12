@@ -124,7 +124,7 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                           <div className="mt-3 space-y-1.5 text-sm text-black/70">
                             <div className="flex items-center gap-2">
                               <Users className="h-3.5 w-3.5 shrink-0" />
-                              <span>{totalCapacity} {totalCapacity === 1 ? "Platz" : "Plätze"} frei ({dateSlots.length} Zeitfenster)</span>
+                              <span>{totalCapacity} {totalCapacity === 1 ? "Platz" : "Plätze"} frei</span>
                             </div>
                             {dateCourse.instructor && (
                               <div className="flex items-center gap-2">
