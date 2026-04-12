@@ -60,7 +60,7 @@ type ImportResult = {
   error?: string;
 };
 
-type SortKey = "name" | "email" | "status" | "created_at";
+type SortKey = "last_name" | "first_name" | "email" | "status" | "created_at";
 
 const typeLabel = (t: Auszubildende["contact_type"]): string => {
   switch (t) {
@@ -96,7 +96,7 @@ export function AuszubildendeManager({
   // lets the user split them. In the auszubildende scope it's always
   // auszubildende so we hide the filter there.
   const [typeFilter, setTypeFilter] = useState<"all" | "company" | "other">("all");
-  const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("name", "asc");
+  const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("last_name", "asc");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importRows, setImportRows] = useState<ImportRow[] | null>(null);
   const [importing, setImporting] = useState(false);
@@ -259,8 +259,10 @@ export function AuszubildendeManager({
         ).toLowerCase();
       };
       switch (sortKey) {
-        case "name":
-          return nameOf(a).localeCompare(nameOf(b)) * dir;
+        case "last_name":
+          return (a.last_name || "").localeCompare(b.last_name || "") * dir;
+        case "first_name":
+          return (a.first_name || "").localeCompare(b.first_name || "") * dir;
         case "email":
           return (a.email || "").localeCompare(b.email || "") * dir;
         case "status":
@@ -453,7 +455,8 @@ export function AuszubildendeManager({
       <Table>
         <TableHeader>
           <TableRow>
-            <SortableHead label="Name" sortKey="name" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+            <SortableHead label="Nachname" sortKey="last_name" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+            <SortableHead label="Vorname" sortKey="first_name" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
             <SortableHead label="E-Mail" sortKey="email" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
             <TableHead>Telefon</TableHead>
             <TableHead>Ort</TableHead>
@@ -465,7 +468,7 @@ export function AuszubildendeManager({
         <TableBody>
           {filtered.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                 {search ? "Keine Einträge gefunden." : "Noch keine Einträge vorhanden."}
               </TableCell>
             </TableRow>
@@ -491,8 +494,11 @@ export function AuszubildendeManager({
                       href={`/dashboard/auszubildende/personen/${azubi.id}`}
                       className="text-primary hover:underline"
                     >
-                      {displayName}
+                      {isCompany ? (azubi.company_name || azubi.last_name || "–") : (azubi.last_name || "–")}
                     </Link>
+                  </TableCell>
+                  <TableCell>
+                    {isCompany ? (personName || "–") : (azubi.first_name || "–")}
                   </TableCell>
                   <TableCell>{azubi.email}</TableCell>
                   <TableCell>{azubi.phone || "–"}</TableCell>
