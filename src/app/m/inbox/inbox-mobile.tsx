@@ -10,6 +10,27 @@ import { Input } from "@/components/ui/input";
 
 type InboxFilter = "all" | "unread" | "answered" | "spam";
 
+interface Assignment {
+  assignedTo: string;
+  assignedToName: string;
+}
+
+const AVATAR_COLORS = [
+  { bg: "bg-blue-100", text: "text-blue-700" },
+  { bg: "bg-emerald-100", text: "text-emerald-700" },
+  { bg: "bg-purple-100", text: "text-purple-700" },
+  { bg: "bg-amber-100", text: "text-amber-700" },
+  { bg: "bg-rose-100", text: "text-rose-700" },
+  { bg: "bg-cyan-100", text: "text-cyan-700" },
+];
+
+function getAvatarColor(userId: string) {
+  // Simple hash so the same user always gets the same color
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) hash = ((hash << 5) - hash + userId.charCodeAt(i)) | 0;
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
 interface ThreadSummary {
   id: string;
   subject: string;
@@ -61,6 +82,7 @@ export function InboxMobile() {
   const [filter, setFilter] = useState<InboxFilter>("all");
   const [nextPageToken, setNextPageToken] = useState<string | undefined>();
   const [refreshing, setRefreshing] = useState(false);
+  const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
 
   // Compose overlay state
   const [composing, setComposing] = useState(false);
@@ -120,8 +142,19 @@ export function InboxMobile() {
     [buildQuery, searchQuery, filter]
   );
 
+  const fetchAssignments = useCallback(async () => {
+    try {
+      const res = await fetch("/api/gmail/assignments");
+      if (res.ok) {
+        const data = await res.json();
+        setAssignments(data);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   useEffect(() => {
     fetchThreads();
+    fetchAssignments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -380,6 +413,22 @@ export function InboxMobile() {
                       {thread.contactName || thread.contactEmail}
                     </span>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {assignments[thread.id] && (() => {
+                        const a = assignments[thread.id];
+                        const color = getAvatarColor(a.assignedTo);
+                        return (
+                          <span
+                            className={`w-5 h-5 rounded-full ${color.bg} ${color.text} text-[9px] font-bold flex items-center justify-center flex-shrink-0`}
+                          >
+                            {a.assignedToName
+                              .split(" ")
+                              .map((w: string) => w[0])
+                              .slice(-2)
+                              .join("")
+                              .toUpperCase()}
+                          </span>
+                        );
+                      })()}
                       {drafts.replyDrafts[thread.id] && (
                         <span className="text-[9px] font-medium text-amber-600 bg-amber-50 rounded px-1 py-0.5">
                           Entwurf
