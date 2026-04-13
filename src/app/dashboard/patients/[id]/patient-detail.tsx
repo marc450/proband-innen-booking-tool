@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { EmailHistory } from "@/components/email-history";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, Pencil, AlertTriangle, Ban, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
@@ -46,19 +46,26 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
   const [namePopoverOpen, setNamePopoverOpen] = useState(false);
   const namePopoverRef = useRef<HTMLDivElement>(null);
 
+  // Status dropdown
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+
   const personName = [patient.first_name, patient.last_name].filter(Boolean).join(" ");
 
-  // Close popover on outside click
+  // Close popovers on outside click
   useEffect(() => {
-    if (!namePopoverOpen) return;
+    if (!namePopoverOpen && !statusDropdownOpen) return;
     const handler = (e: MouseEvent) => {
-      if (namePopoverRef.current && !namePopoverRef.current.contains(e.target as Node)) {
+      if (namePopoverOpen && namePopoverRef.current && !namePopoverRef.current.contains(e.target as Node)) {
         setNamePopoverOpen(false);
+      }
+      if (statusDropdownOpen && statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+        setStatusDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [namePopoverOpen]);
+  }, [namePopoverOpen, statusDropdownOpen]);
 
   // Autosave encrypted patient fields via API
   const autosave = async (field: string, value: string) => {
@@ -162,11 +169,10 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
                   </div>
                 )}
               </div>
-              <div className="mt-2">
-                <select
-                  value={patient.patient_status}
-                  onChange={(e) => handleStatusChange(e.target.value as PatientStatus)}
-                  className={`text-xs font-medium rounded-full px-2.5 py-1 border-0 cursor-pointer ${
+              <div className="mt-2 relative" ref={statusDropdownRef}>
+                <button
+                  onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
+                  className={`inline-flex items-center gap-1.5 text-xs font-medium rounded-full px-2.5 py-1 cursor-pointer ${
                     patient.patient_status === "active"
                       ? "bg-emerald-100 text-emerald-700"
                       : patient.patient_status === "warning"
@@ -176,10 +182,27 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
                       : "bg-gray-100 text-gray-600"
                   }`}
                 >
-                  <option value="active">Aktiv</option>
-                  <option value="warning">Warnung</option>
-                  <option value="blacklist">Blacklist</option>
-                </select>
+                  {patient.patient_status === "active" && <CheckCircle2 className="h-3 w-3" />}
+                  {patient.patient_status === "warning" && <AlertTriangle className="h-3 w-3" />}
+                  {patient.patient_status === "blacklist" && <Ban className="h-3 w-3" />}
+                  {patient.patient_status === "active" ? "Aktiv" : patient.patient_status === "warning" ? "Warnung" : "Blacklist"}
+                </button>
+                {statusDropdownOpen && (
+                  <div className="absolute z-50 mt-1 left-0 bg-popover border rounded-md shadow-md py-1 min-w-[140px]">
+                    {(["active", "warning", "blacklist"] as PatientStatus[]).map((s) => (
+                      <button
+                        key={s}
+                        className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-muted text-left"
+                        onClick={() => { handleStatusChange(s); setStatusDropdownOpen(false); }}
+                      >
+                        {s === "active" && <CheckCircle2 className="h-3 w-3 text-emerald-600" />}
+                        {s === "warning" && <AlertTriangle className="h-3 w-3 text-amber-600" />}
+                        {s === "blacklist" && <Ban className="h-3 w-3 text-red-600" />}
+                        {s === "active" ? "Aktiv" : s === "warning" ? "Warnung" : "Blacklist"}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
