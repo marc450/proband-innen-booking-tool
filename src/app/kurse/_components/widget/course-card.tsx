@@ -47,19 +47,19 @@ export function CourseCard({
   inclusionHeading,
   titleClassName,
 }: CourseCardProps) {
-  const firstAvailableId = dates.find((d) => d.available)?.id ?? "";
-  const [selectedDate, setSelectedDate] = useState(firstAvailableId);
+  const [selectedDate, setSelectedDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showTerminModal, setShowTerminModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Keep selected date in sync when sessions are refreshed (polling) and the
-  // previously selected one is no longer available.
+  // previously selected one is no longer available. Only reset if user had
+  // actually selected something (don't auto-fill on initial load).
   useEffect(() => {
-    if (bookingType !== "dropdown") return;
+    if (bookingType !== "dropdown" || !selectedDate) return;
     const stillValid = dates.some((d) => d.id === selectedDate && d.available);
     if (!stillValid) {
-      setSelectedDate(dates.find((d) => d.available)?.id ?? "");
+      setSelectedDate("");
     }
   }, [dates, selectedDate, bookingType]);
 

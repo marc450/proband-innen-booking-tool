@@ -293,8 +293,7 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
 }
 
 export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }: PremiumCardProps) {
-  const firstAvailableId = dates.find((d) => d.available)?.id ?? "";
-  const [selectedDate, setSelectedDate] = useState(firstAvailableId);
+  const [selectedDate, setSelectedDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [infoModal, setInfoModal] = useState<IncludedCourse | null>(null);
   const [showTerminModal, setShowTerminModal] = useState(false);
@@ -302,9 +301,10 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
 
   // Keep selected date in sync with polled session data — clear if no longer available
   useEffect(() => {
+    if (!selectedDate) return;
     const stillValid = dates.some((d) => d.id === selectedDate && d.available);
     if (!stillValid) {
-      setSelectedDate(dates.find((d) => d.available)?.id ?? "");
+      setSelectedDate("");
     }
   }, [dates, selectedDate]);
 
