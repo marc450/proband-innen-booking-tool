@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Link from "next/link";
+
 import { Badge } from "@/components/ui/badge";
 import { Upload, ChevronRight } from "lucide-react";
 import { TableHeaderBar } from "@/components/table/table-header-bar";
@@ -96,7 +96,7 @@ export function AuszubildendeManager({
   // lets the user split them. In the auszubildende scope it's always
   // auszubildende so we hide the filter there.
   const [typeFilter, setTypeFilter] = useState<"all" | "company" | "other">("all");
-  const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("last_name", "asc");
+  const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("first_name", "asc");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importRows, setImportRows] = useState<ImportRow[] | null>(null);
   const [importing, setImporting] = useState(false);
@@ -455,8 +455,8 @@ export function AuszubildendeManager({
       <Table>
         <TableHeader>
           <TableRow>
-            <SortableHead label="Nachname" sortKey="last_name" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
             <SortableHead label="Vorname" sortKey="first_name" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+            <SortableHead label="Nachname" sortKey="last_name" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
             <SortableHead label="E-Mail" sortKey="email" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
             <TableHead>Telefon</TableHead>
             <TableHead>Ort</TableHead>
@@ -490,15 +490,10 @@ export function AuszubildendeManager({
                   onClick={() => router.push(`/dashboard/auszubildende/personen/${azubi.id}`)}
                 >
                   <TableCell className="font-medium">
-                    <Link
-                      href={`/dashboard/auszubildende/personen/${azubi.id}`}
-                      className="text-primary hover:underline"
-                    >
-                      {isCompany ? (azubi.company_name || azubi.last_name || "–") : (azubi.last_name || "–")}
-                    </Link>
+                    {isCompany ? (personName || azubi.company_name || "–") : (azubi.first_name || "–")}
                   </TableCell>
                   <TableCell>
-                    {isCompany ? (personName || "–") : (azubi.first_name || "–")}
+                    {isCompany ? (azubi.company_name || azubi.last_name || "–") : (azubi.last_name || "–")}
                   </TableCell>
                   <TableCell>{azubi.email}</TableCell>
                   <TableCell>{azubi.phone || "–"}</TableCell>

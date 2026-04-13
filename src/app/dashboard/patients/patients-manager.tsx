@@ -295,8 +295,8 @@ export function PatientsManager({ initialPatients }: Props) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableHead label="Nachname" sortKey="last_name" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
                   <SortableHead label="Vorname" sortKey="first_name" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
+                  <SortableHead label="Nachname" sortKey="last_name" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
                   <SortableHead label="E-Mail" sortKey="email" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
                   <TableHead>Telefon</TableHead>
                   <SortableHead label="Ort" sortKey="city" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
@@ -313,10 +313,10 @@ export function PatientsManager({ initialPatients }: Props) {
                     onClick={() => router.push(`/dashboard/patients/${patient.id}`)}
                   >
                     <TableCell className="font-medium">
-                      {patient.last_name || "–"}
+                      {patient.first_name || "–"}
                     </TableCell>
                     <TableCell>
-                      {patient.first_name || "–"}
+                      {patient.last_name || "–"}
                     </TableCell>
                     <TableCell>{patient.email}</TableCell>
                     <TableCell>{patient.phone || ""}</TableCell>
