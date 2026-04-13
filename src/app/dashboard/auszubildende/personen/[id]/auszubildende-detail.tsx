@@ -124,50 +124,56 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
 
   return (
     <div className="space-y-4">
-      {/* Back link + name header */}
-      <div className="flex items-center justify-between">
-        <Link
-          href="/dashboard/auszubildende/personen"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Alle Ärzt:innen
-        </Link>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{displayName}</h1>
-        <select
-          value={azubi.status}
-          onChange={(e) => handleStatusChange(e.target.value)}
-          className={`text-xs font-medium rounded-full px-2.5 py-1 border-0 cursor-pointer shrink-0 ${
-            azubi.status === "active"
-              ? "bg-emerald-100 text-emerald-700"
-              : "bg-gray-100 text-gray-600"
-          }`}
-        >
-          <option value="active">Aktiv</option>
-          <option value="inactive">Inaktiv</option>
-        </select>
-      </div>
+      {/* Back link */}
+      <Link
+        href="/dashboard/auszubildende/personen"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Alle Ärzt:innen
+      </Link>
 
       {/* 3-column HubSpot-style layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_320px] gap-5">
 
         {/* ===== LEFT: Contact info ===== */}
         <div className="space-y-5">
-          {/* Person */}
+          {/* Name + Status card */}
+          <Card>
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-baseline gap-1">
+                <input defaultValue={azubi.first_name || ""} placeholder="Vorname" onBlur={(e) => autosave("first_name", e.target.value)} className="bg-transparent border-0 p-0 text-xl font-semibold text-foreground focus:outline-none focus:ring-0 placeholder:text-muted-foreground/40 min-w-0 w-auto" style={{ width: `${Math.max((azubi.first_name || "Vorname").length, 5)}ch` }} />
+                <input defaultValue={azubi.last_name || ""} placeholder="Nachname" onBlur={(e) => autosave("last_name", e.target.value)} className="bg-transparent border-0 p-0 text-xl font-semibold text-foreground focus:outline-none focus:ring-0 placeholder:text-muted-foreground/40 min-w-0 flex-1" />
+                {azubi.title && <span className="text-sm text-muted-foreground shrink-0">{azubi.title}</span>}
+              </div>
+              <div className="mt-2">
+                <select
+                  value={azubi.status}
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                  className={`text-xs font-medium rounded-full px-2.5 py-1 border-0 cursor-pointer ${
+                    azubi.status === "active"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : azubi.status === "warning"
+                      ? "bg-amber-100 text-amber-700"
+                      : azubi.status === "blacklist"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  <option value="active">Aktiv</option>
+                  <option value="warning">Warnung</option>
+                  <option value="blacklist">Blacklist</option>
+                </select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Kontakt */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Kontakt</CardTitle>
             </CardHeader>
             <CardContent className="text-sm">
-              {/* Editable full name, bold and larger */}
-              <div className="flex gap-1.5 mb-4">
-                <input defaultValue={azubi.first_name || ""} placeholder="Vorname" onBlur={(e) => autosave("first_name", e.target.value)} className="bg-transparent border-0 p-0 text-base font-bold text-foreground focus:outline-none focus:ring-0 placeholder:text-muted-foreground/40 w-full" />
-                <input defaultValue={azubi.last_name || ""} placeholder="Nachname" onBlur={(e) => autosave("last_name", e.target.value)} className="bg-transparent border-0 p-0 text-base font-bold text-foreground focus:outline-none focus:ring-0 placeholder:text-muted-foreground/40 w-full" />
-              </div>
-
               <div className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-2 items-center">
                 <span className="text-xs text-muted-foreground">Titel</span>
                 <input defaultValue={azubi.title || ""} placeholder="–" onBlur={(e) => autosave("title", e.target.value)} className={fieldClass} />
