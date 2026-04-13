@@ -1,32 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Patient, BookingWithDetails, BookingStatus, PatientStatus } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
-import { ArrowLeft, Mail, Phone, MapPin, AlertTriangle, Ban, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Check, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { EmailHistory } from "@/components/email-history";
+import { ArrowLeft, Pencil } from "lucide-react";
+import { format } from "date-fns";
+import { de } from "date-fns/locale";
 
 const bookingStatusLabels: Record<BookingStatus, string> = {
   booked: "Gebucht",
@@ -42,71 +27,55 @@ const bookingStatusVariants: Record<BookingStatus, "default" | "secondary" | "de
   cancelled: "outline",
 };
 
-const patientStatusLabels: Record<PatientStatus, string> = {
-  active: "Aktiv",
-  warning: "Warnung",
-  blacklist: "Blacklist",
-};
-
 interface Props {
   patient: Patient;
   bookings: BookingWithDetails[];
-  // Nutzer:innen can view the profile but not send emails from here.
   isAdmin?: boolean;
 }
 
-type SortKey = "course" | "date" | "status" | "booked_at";
-type SortDir = "asc" | "desc";
+const fieldClass = "bg-transparent border-0 p-0 text-sm text-foreground focus:outline-none focus:ring-0 placeholder:text-muted-foreground/50 w-full";
 
-export function PatientDetail({ patient, bookings, isAdmin = true }: Props) {
-  const [status, setStatus] = useState<PatientStatus>(patient.patient_status);
-  const [sortKey, setSortKey] = useState<SortKey>("date");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const [notes, setNotes] = useState(patient.notes || "");
-  const [editingNotes, setEditingNotes] = useState(false);
-  const [notesDraft, setNotesDraft] = useState(patient.notes || "");
-  const [savingNotes, setSavingNotes] = useState(false);
+export function PatientDetail({ patient: initialPatient, bookings, isAdmin = true }: Props) {
   const supabase = createClient();
+  const [patient, setPatient] = useState(initialPatient);
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notes, setNotes] = useState(patient.notes || "");
+  const [savingNotes, setSavingNotes] = useState(false);
 
-  function handleSort(key: SortKey) {
-    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else { setSortKey(key); setSortDir("asc"); }
-  }
+  // Name edit popover
+  const [namePopoverOpen, setNamePopoverOpen] = useState(false);
+  const namePopoverRef = useRef<HTMLDivElement>(null);
 
-  function SortIcon({ col }: { col: SortKey }) {
-    if (sortKey !== col) return <ArrowUpDown className="ml-1 h-3 w-3 opacity-40 inline" />;
-    return sortDir === "asc"
-      ? <ArrowUp className="ml-1 h-3 w-3 inline" />
-      : <ArrowDown className="ml-1 h-3 w-3 inline" />;
-  }
+  const personName = [patient.first_name, patient.last_name].filter(Boolean).join(" ");
 
-  const sortedBookings = [...bookings].sort((a, b) => {
-    let aVal: string, bVal: string;
-    if (sortKey === "course") {
-      aVal = a.slots?.courses?.title || "";
-      bVal = b.slots?.courses?.title || "";
-    } else if (sortKey === "date") {
-      aVal = a.slots?.start_time || "";
-      bVal = b.slots?.start_time || "";
-    } else if (sortKey === "status") {
-      aVal = a.status;
-      bVal = b.status;
-    } else {
-      aVal = a.created_at;
-      bVal = b.created_at;
+  // Close popover on outside click
+  useEffect(() => {
+    if (!namePopoverOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (namePopoverRef.current && !namePopoverRef.current.contains(e.target as Node)) {
+        setNamePopoverOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [namePopoverOpen]);
+
+  // Autosave encrypted patient fields via API
+  const autosave = async (field: string, value: string) => {
+    const trimmed = value.trim() || null;
+    if (trimmed === (patient[field as keyof typeof patient] ?? null)) return;
+    const res = await fetch("/api/update-patient-fields", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ patientId: patient.id, fields: { [field]: trimmed } }),
+    });
+    if (res.ok) {
+      setPatient((prev) => ({ ...prev, [field]: trimmed }));
     }
-    return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-  });
-
-  const fullName = [patient.first_name, patient.last_name].filter(Boolean).join(" ") || patient.email;
-  const address = [patient.address_street, [patient.address_zip, patient.address_city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
-
-  const totalBookings = bookings.length;
-  const attended = bookings.filter((b) => b.status === "attended").length;
-  const noShows = bookings.filter((b) => b.status === "no_show").length;
+  };
 
   const handleStatusChange = async (newStatus: PatientStatus) => {
-    setStatus(newStatus);
+    setPatient((prev) => ({ ...prev, patient_status: newStatus }));
     await supabase
       .from("patients")
       .update({ patient_status: newStatus })
@@ -115,237 +84,263 @@ export function PatientDetail({ patient, bookings, isAdmin = true }: Props) {
 
   const handleSaveNotes = async () => {
     setSavingNotes(true);
-    await fetch("/api/update-patient-notes", {
+    const res = await fetch("/api/update-patient-notes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ patientId: patient.id, notes: notesDraft }),
+      body: JSON.stringify({ patientId: patient.id, notes }),
     });
-    setNotes(notesDraft);
-    setEditingNotes(false);
+    if (res.ok) {
+      setPatient((prev) => ({ ...prev, notes }));
+      setEditingNotes(false);
+    }
     setSavingNotes(false);
   };
 
-  const handleCancelNotes = () => {
-    setNotesDraft(notes);
-    setEditingNotes(false);
+  const formatDate = (iso: string) => {
+    return format(new Date(iso), "dd.MM.yyyy", { locale: de });
   };
 
+  const formatDateTime = (iso: string) => {
+    return format(new Date(iso), "dd.MM.yyyy HH:mm", { locale: de });
+  };
+
+  const totalBookings = bookings.length;
+  const attended = bookings.filter((b) => b.status === "attended").length;
+  const noShows = bookings.filter((b) => b.status === "no_show").length;
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/dashboard/patients">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Alle Proband:innen
-          </Button>
-        </Link>
-      </div>
+    <div className="space-y-4">
+      {/* Back link */}
+      <Link
+        href="/dashboard/patients"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Alle Proband:innen
+      </Link>
 
-      {/* Warning/Blacklist banner */}
-      {status === "warning" && (
-        <div className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <AlertTriangle className="h-4 w-4" />
-          Diese:r Proband:in wurde mit einer Warnung markiert.
-        </div>
-      )}
-      {status === "blacklist" && (
-        <div className="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
-          <Ban className="h-4 w-4" />
-          Diese:r Proband:in befindet sich auf der Blacklist.
-        </div>
-      )}
+      {/* 3-column HubSpot-style layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_320px] gap-5">
 
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Patient info */}
-        <Card className="md:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-xl">{fullName}</CardTitle>
-            <Select value={status} onValueChange={(val) => handleStatusChange(val as PatientStatus)}>
-              <SelectTrigger className="w-[140px] h-8">
-                <span>{patientStatusLabels[status]}</span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Aktiv</SelectItem>
-                <SelectItem value="warning">
-                  <span className="flex items-center gap-1.5">
-                    <AlertTriangle className="h-3 w-3 text-amber-600" />
-                    Warnung
-                  </span>
-                </SelectItem>
-                <SelectItem value="blacklist">
-                  <span className="flex items-center gap-1.5">
-                    <Ban className="h-3 w-3 text-red-600" />
-                    Blacklist
-                  </span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center gap-2 text-sm">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              <a href={`mailto:${patient.email}`} className="hover:underline">
-                {patient.email}
-              </a>
-            </div>
-            {patient.phone && (
-              <div className="flex items-center gap-2 text-sm">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <a href={`tel:${patient.phone}`} className="hover:underline">
-                  {patient.phone}
-                </a>
-              </div>
-            )}
-            <div className="flex items-start gap-2 text-sm">
-              <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-              <div>
-                {patient.address_street ? (
-                  <>
-                    <div>{patient.address_street}</div>
-                    <div>{[patient.address_zip, patient.address_city].filter(Boolean).join(" ")}</div>
-                  </>
-                ) : (
-                  <span className="text-muted-foreground">Keine Adresse hinterlegt</span>
+        {/* ===== LEFT: Contact info ===== */}
+        <div className="space-y-5">
+          {/* Name + Status card */}
+          <Card className="overflow-visible">
+            <CardContent className="pt-5 pb-4">
+              <div className="relative">
+                <div className="flex items-center gap-1.5 group">
+                  <h1 className="text-xl font-semibold">
+                    {personName || "Unbekannt"}
+                  </h1>
+                  <button
+                    onClick={() => setNamePopoverOpen(!namePopoverOpen)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted shrink-0"
+                    title="Name bearbeiten"
+                  >
+                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                </div>
+                {namePopoverOpen && (
+                  <div ref={namePopoverRef} className="absolute top-full left-0 mt-2 bg-popover border rounded-lg shadow-lg p-4 space-y-3 z-10 w-[240px]">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Vorname</label>
+                      <input
+                        defaultValue={patient.first_name || ""}
+                        onBlur={(e) => autosave("first_name", e.target.value)}
+                        autoFocus
+                        className="w-full mt-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Nachname</label>
+                      <input
+                        defaultValue={patient.last_name || ""}
+                        onBlur={(e) => autosave("last_name", e.target.value)}
+                        className="w-full mt-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
-            <div className="text-xs text-muted-foreground pt-2">
-              Erstellt am {format(new Date(patient.created_at), "dd.MM.yyyy HH:mm", { locale: de })}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Stats */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Statistik</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Buchungen gesamt</span>
-              <span className="font-medium">{totalBookings}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Erschienen</span>
-              <span className="font-medium text-green-600">{attended}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">No-Shows</span>
-              <span className="font-medium text-red-600">{noShows}</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Emails */}
-      {patient.email && (
-        <EmailHistory
-          email={patient.email}
-          displayName={
-            [patient.first_name, patient.last_name].filter(Boolean).join(" ") ||
-            undefined
-          }
-          canCompose={isAdmin}
-        />
-      )}
-
-      {/* Notes */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <CardTitle className="text-base">Notizen</CardTitle>
-          {!editingNotes && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => { setNotesDraft(notes); setEditingNotes(true); }}
-            >
-              <Pencil className="h-4 w-4 mr-1" />
-              {notes ? "Bearbeiten" : "Notiz hinzufügen"}
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent>
-          {editingNotes ? (
-            <div className="space-y-2">
-              <Textarea
-                value={notesDraft}
-                onChange={(e) => setNotesDraft(e.target.value)}
-                placeholder="Notizen zu diesem:r Proband:in..."
-                className="min-h-[120px] resize-y"
-                autoFocus
-              />
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleSaveNotes} disabled={savingNotes}>
-                  <Check className="h-4 w-4 mr-1" />
-                  {savingNotes ? "Speichern..." : "Speichern"}
-                </Button>
-                <Button size="sm" variant="ghost" onClick={handleCancelNotes} disabled={savingNotes}>
-                  <X className="h-4 w-4 mr-1" />
-                  Abbrechen
-                </Button>
+              <div className="mt-2">
+                <select
+                  value={patient.patient_status}
+                  onChange={(e) => handleStatusChange(e.target.value as PatientStatus)}
+                  className={`text-xs font-medium rounded-full px-2.5 py-1 border-0 cursor-pointer ${
+                    patient.patient_status === "active"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : patient.patient_status === "warning"
+                      ? "bg-amber-100 text-amber-700"
+                      : patient.patient_status === "blacklist"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  <option value="active">Aktiv</option>
+                  <option value="warning">Warnung</option>
+                  <option value="blacklist">Blacklist</option>
+                </select>
               </div>
-            </div>
-          ) : notes ? (
-            <p className="text-sm whitespace-pre-wrap">{notes}</p>
-          ) : (
-            <p className="text-sm text-muted-foreground">Noch keine Notizen vorhanden.</p>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      {/* Booking history */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Buchungsverlauf</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {bookings.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground">
-              Noch keine Buchungen vorhanden
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("course")}>Kurs<SortIcon col="course" /></TableHead>
-                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("date")}>Datum<SortIcon col="date" /></TableHead>
-                  <TableHead>Uhrzeit</TableHead>
-                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("status")}>Status<SortIcon col="status" /></TableHead>
-                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort("booked_at")}>Gebucht am<SortIcon col="booked_at" /></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedBookings.map((booking) => (
-                  <TableRow key={booking.id}>
-                    <TableCell className="font-medium">
-                      {booking.slots?.courses?.title || ""}
-                    </TableCell>
-                    <TableCell>
-                      {booking.slots?.start_time
-                        ? format(new Date(booking.slots.start_time), "dd.MM.yyyy", { locale: de })
-                        : ""}
-                    </TableCell>
-                    <TableCell>
-                      {booking.slots?.start_time
-                        ? format(new Date(booking.slots.start_time), "HH:mm", { locale: de }) + " Uhr"
-                        : ""}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={bookingStatusVariants[booking.status]}>
-                        {bookingStatusLabels[booking.status]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(booking.created_at), "dd.MM.yyyy", { locale: de })}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+          {/* Kontakt */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Kontakt</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm">
+              <div className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-2 items-center">
+                <span className="text-xs text-muted-foreground">E-Mail</span>
+                <a href={`mailto:${patient.email}`} className="text-primary hover:underline truncate text-sm">{patient.email}</a>
 
+                <span className="text-xs text-muted-foreground">Telefon</span>
+                <input defaultValue={patient.phone || ""} placeholder="–" onBlur={(e) => autosave("phone", e.target.value)} className={fieldClass} />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Adresse */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Adresse</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm">
+              <div className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-2 items-center">
+                <span className="text-xs text-muted-foreground">Straße</span>
+                <input defaultValue={patient.address_street || ""} placeholder="–" onBlur={(e) => autosave("address_street", e.target.value)} className={fieldClass} />
+
+                <span className="text-xs text-muted-foreground">PLZ</span>
+                <input defaultValue={patient.address_zip || ""} placeholder="–" onBlur={(e) => autosave("address_zip", e.target.value)} className={fieldClass} />
+
+                <span className="text-xs text-muted-foreground">Stadt</span>
+                <input defaultValue={patient.address_city || ""} placeholder="–" onBlur={(e) => autosave("address_city", e.target.value)} className={fieldClass} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="text-xs text-muted-foreground px-1">
+            Erstellt am {formatDateTime(patient.created_at)}
+          </div>
+        </div>
+
+        {/* ===== CENTER: Notes + Emails ===== */}
+        <div className="space-y-5">
+          {/* Notes */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notizen</CardTitle>
+                {!editingNotes && (
+                  <button
+                    onClick={() => { setNotes(patient.notes || ""); setEditingNotes(true); }}
+                    className="p-1 rounded hover:bg-gray-100 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {editingNotes ? (
+                <div className="space-y-3">
+                  <Textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="min-h-[100px]"
+                    placeholder="Notizen hinzufügen..."
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleSaveNotes} disabled={savingNotes}>
+                      {savingNotes ? "Speichern..." : "Speichern"}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditingNotes(false)}>
+                      Abbrechen
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {patient.notes || "Keine Notizen vorhanden."}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Emails */}
+          {patient.email && (
+            <EmailHistory
+              email={patient.email}
+              displayName={personName || undefined}
+              canCompose={isAdmin}
+            />
+          )}
+        </div>
+
+        {/* ===== RIGHT: Stats + Buchungsverlauf ===== */}
+        <div className="space-y-5">
+          {/* Stats */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Statistik</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm">Buchungen</span>
+                <span className="text-sm font-semibold">{totalBookings}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm">Erschienen</span>
+                <span className="text-sm font-semibold text-green-600">{attended}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm">No-Shows</span>
+                <span className="text-sm font-semibold text-red-600">{noShows}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Booking history */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Buchungsverlauf</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {bookings.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6 px-4">
+                  Noch keine Buchungen vorhanden.
+                </p>
+              ) : (
+                <div className="divide-y">
+                  {bookings.map((booking) => (
+                    <div key={booking.id} className="px-4 py-3 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium truncate">
+                          {booking.slots?.courses?.title || "–"}
+                        </span>
+                        <Badge variant={bookingStatusVariants[booking.status]} className="shrink-0 text-[10px]">
+                          {bookingStatusLabels[booking.status]}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {booking.slots?.start_time && (
+                          <>
+                            <span>{format(new Date(booking.slots.start_time), "dd.MM.yyyy", { locale: de })}</span>
+                            <span>{format(new Date(booking.slots.start_time), "HH:mm", { locale: de })} Uhr</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Gebucht am {formatDate(booking.created_at)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
