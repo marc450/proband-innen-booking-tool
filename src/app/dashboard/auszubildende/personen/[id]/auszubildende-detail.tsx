@@ -159,7 +159,7 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
         {/* ===== LEFT: Contact info ===== */}
         <div className="space-y-5">
           {/* Name + Status card */}
-          <Card>
+          <Card className="overflow-visible">
             <CardContent className="pt-5 pb-4">
               <div className="relative">
                 <div className="flex items-center gap-1.5 group">
