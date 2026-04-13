@@ -162,12 +162,18 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
               <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Kontakt</CardTitle>
             </CardHeader>
             <CardContent className="text-sm">
-              <div className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-2 items-center">
-                <span className="text-xs text-muted-foreground">Vorname</span>
-                <input defaultValue={azubi.first_name || ""} placeholder="–" onBlur={(e) => autosave("first_name", e.target.value)} className={fieldClass} />
+              {/* Editable full name, bold and larger */}
+              <div className="flex gap-1.5 mb-4">
+                <input defaultValue={azubi.first_name || ""} placeholder="Vorname" onBlur={(e) => autosave("first_name", e.target.value)} className="bg-transparent border-0 p-0 text-base font-bold text-foreground focus:outline-none focus:ring-0 placeholder:text-muted-foreground/40 w-full" />
+                <input defaultValue={azubi.last_name || ""} placeholder="Nachname" onBlur={(e) => autosave("last_name", e.target.value)} className="bg-transparent border-0 p-0 text-base font-bold text-foreground focus:outline-none focus:ring-0 placeholder:text-muted-foreground/40 w-full" />
+              </div>
 
-                <span className="text-xs text-muted-foreground">Nachname</span>
-                <input defaultValue={azubi.last_name || ""} placeholder="–" onBlur={(e) => autosave("last_name", e.target.value)} className={fieldClass} />
+              <div className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-2 items-center">
+                <span className="text-xs text-muted-foreground">Titel</span>
+                <input defaultValue={azubi.title || ""} placeholder="–" onBlur={(e) => autosave("title", e.target.value)} className={fieldClass} />
+
+                <span className="text-xs text-muted-foreground">Geschlecht</span>
+                <input defaultValue={azubi.gender || ""} placeholder="–" onBlur={(e) => autosave("gender", e.target.value)} className={fieldClass} />
 
                 <span className="text-xs text-muted-foreground">E-Mail</span>
                 <a href={`mailto:${azubi.email}`} className="text-primary hover:underline truncate text-sm">{azubi.email}</a>
@@ -175,11 +181,8 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
                 <span className="text-xs text-muted-foreground">Telefon</span>
                 <input defaultValue={azubi.phone || ""} placeholder="–" onBlur={(e) => autosave("phone", e.target.value)} className={fieldClass} />
 
-                <span className="text-xs text-muted-foreground">Titel</span>
-                <input defaultValue={azubi.title || ""} placeholder="–" onBlur={(e) => autosave("title", e.target.value)} className={fieldClass} />
-
-                <span className="text-xs text-muted-foreground">Geschlecht</span>
-                <input defaultValue={azubi.gender || ""} placeholder="–" onBlur={(e) => autosave("gender", e.target.value)} className={fieldClass} />
+                <span className="text-xs text-muted-foreground">Geburtstag</span>
+                <input type="date" defaultValue={azubi.birthdate || ""} onBlur={(e) => autosave("birthdate", e.target.value)} className={`${fieldClass} w-fit`} />
               </div>
             </CardContent>
           </Card>
@@ -193,9 +196,6 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
               <div className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-2 items-center">
                 <span className="text-xs text-muted-foreground">Fachrichtung</span>
                 <input defaultValue={azubi.specialty || ""} placeholder="–" onBlur={(e) => autosave("specialty", e.target.value)} className={fieldClass} />
-
-                <span className="text-xs text-muted-foreground">Geburtstag</span>
-                <input type="date" defaultValue={azubi.birthdate || ""} onBlur={(e) => autosave("birthdate", e.target.value)} className={`${fieldClass} w-fit`} />
 
                 <span className="text-xs text-muted-foreground">EFN</span>
                 <input defaultValue={azubi.efn || ""} placeholder="–" onBlur={(e) => autosave("efn", e.target.value)} className={`${fieldClass} font-mono`} />
