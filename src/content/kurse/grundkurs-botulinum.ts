@@ -399,7 +399,7 @@ export const grundkursBotulinum: CourseLandingContent = {
           "danach die Behandlungsschritte live an Patient:innen, fachlich kommentiert und anschaulich erklärt.",
           "So kannst Du den Ablauf sicher nachvollziehen und in Deinen Praxisalltag übertragen.",
         ],
-        mediaPath: "/kurse/grundkurs_botulinum/plattform/behandlung.mp4",
+        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_botulinum/Grundkurs%20Botulinum_compressed.mp4",
         mediaPoster: "/kurse/grundkurs_botulinum/plattform/behandlung-poster.jpg",
       },
       {
