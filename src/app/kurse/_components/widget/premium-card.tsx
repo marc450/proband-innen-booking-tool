@@ -347,7 +347,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
   return (
     <div className="bg-white rounded-lg flex flex-col h-full shadow-lg relative overflow-visible ring-2 ring-[#0066FF] shadow-2xl">
       {/* CME badge — sits on the top edge of the card */}
-      <div className="absolute -top-3.5 right-4 z-10 bg-[#0066FF] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+      <div className="absolute -top-4 right-5 z-10 bg-[#0066FF] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5" style={{ boxShadow: "0 0 0 3px rgba(255,255,255,0.9), 0 2px 8px rgba(0,0,0,0.15)" }}>
         <Award className="w-4 h-4" aria-hidden="true" />
         <span className="text-sm font-bold">49 CME</span>
       </div>
