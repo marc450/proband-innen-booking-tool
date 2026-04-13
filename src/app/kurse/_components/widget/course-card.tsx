@@ -106,19 +106,21 @@ export function CourseCard({
 
   return (
     <div
-      className={`bg-white rounded-lg flex flex-col h-full shadow-lg relative ${
+      className={`bg-white rounded-lg flex flex-col h-full shadow-lg relative overflow-visible ${
         highlighted ? "ring-2 ring-[#0066FF] shadow-2xl" : ""
       }`}
     >
+      {/* CME badge — sits on the top edge of the card */}
+      {cmePoints && (
+        <div className="absolute -top-4 right-5 z-10 bg-[#0066FF] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+          <Award className="w-4 h-4" aria-hidden="true" />
+          <span className="text-sm font-bold">{cmePoints}</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="rounded-t-lg p-5 relative" style={{ backgroundColor: "hsl(24, 71%, 93%)" }}>
-        {cmePoints && (
-          <div className="absolute top-4 right-4 bg-[#0066FF] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
-            <Award className="w-4 h-4" aria-hidden="true" />
-            <span className="text-sm font-bold">{cmePoints}</span>
-          </div>
-        )}
-        <h2 className={`font-bold text-black mb-4 pr-24 ${titleClassName || "text-3xl"}`}>{title}</h2>
+        <h2 className={`font-bold text-black mb-4 ${titleClassName || "text-3xl"}`}>{title}</h2>
         <p className="text-black mb-3 mt-3 lg:min-h-[3.5rem]">{description}</p>
       </div>
 
