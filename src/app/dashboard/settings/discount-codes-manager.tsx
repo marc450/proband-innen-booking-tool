@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
-import { TableHeaderBar } from "@/components/table/table-header-bar";
+
 import { SortableHead } from "@/components/table/sortable-head";
 import { useTableSort } from "@/hooks/use-table-sort";
 import { Plus, Power, PowerOff, Trash2, Shuffle } from "lucide-react";
@@ -56,6 +56,7 @@ interface DiscountCode {
   max_redemptions: number | null;
   percent_off: number | null;
   created: number;
+  created_by: string | null;
 }
 
 type SortKey = "code" | "discount" | "redemptions" | "status" | "created";
@@ -74,7 +75,7 @@ export function DiscountCodesManager() {
   const [createError, setCreateError] = useState<string | null>(null);
 
   // Sorting
-  const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("code", "asc");
+  const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("created", "desc");
 
   const sortedCodes = useMemo(() => {
     const sorted = [...codes];
@@ -285,16 +286,13 @@ export function DiscountCodesManager() {
         </DialogContent>
       </Dialog>
 
-      <TableHeaderBar
-        title="Rabattcodes"
-        count={codes.length}
-        actions={
-          <Button onClick={() => setShowCreate(true)}>
-            <Plus className="h-4 w-4 mr-1.5" />
-            Rabattcode anlegen
-          </Button>
-        }
-      />
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <span className="text-sm text-muted-foreground">{codes.length} Einträge</span>
+        <Button onClick={() => setShowCreate(true)}>
+          <Plus className="h-4 w-4 mr-1.5" />
+          Rabattcode anlegen
+        </Button>
+      </div>
 
       {loading ? (
             <div className="py-12 text-center text-muted-foreground text-sm">Lade Rabattcodes...</div>
@@ -311,6 +309,7 @@ export function DiscountCodesManager() {
                   <SortableHead label="Einlösungen" sortKey="redemptions" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
                   <SortableHead label="Status" sortKey="status" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
                   <SortableHead label="Erstellt" sortKey="created" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+                  <TableHead>Erstellt von</TableHead>
                   <TableHead />
                 </TableRow>
               </TableHeader>
@@ -331,7 +330,10 @@ export function DiscountCodesManager() {
                       )}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                      {format(new Date(c.created * 1000), "dd.MM.yyyy", { locale: de })}
+                      {format(new Date(c.created * 1000), "dd.MM.yyyy, HH:mm", { locale: de })}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {c.created_by || "–"}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 justify-end">

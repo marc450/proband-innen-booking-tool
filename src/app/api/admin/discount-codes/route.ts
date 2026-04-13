@@ -82,6 +82,7 @@ export async function GET() {
         max_redemptions: p.max_redemptions,
         percent_off: p.coupon?.percent_off ?? null,
         created: p.created,
+        created_by: p.metadata?.created_by || null,
       }));
     return NextResponse.json(codes);
   } catch (err) {
@@ -93,6 +94,17 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const user = await assertAdmin();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+
+  // Get creator name for metadata
+  const supabase = await createClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("first_name, last_name")
+    .eq("id", user.id)
+    .single();
+  const creatorName = profile
+    ? [profile.first_name, profile.last_name].filter(Boolean).join(" ")
+    : user.email || "Unbekannt";
 
   const { code, percentOff, maxRedemptions } = await req.json();
 
@@ -146,6 +158,7 @@ export async function POST(req: NextRequest) {
     const promoBody: Record<string, string> = {
       coupon: coupon.id,
       code: normalizedCode,
+      "metadata[created_by]": creatorName,
     };
     if (max !== null) promoBody.max_redemptions = String(max);
 
@@ -162,6 +175,7 @@ export async function POST(req: NextRequest) {
       max_redemptions: promo.max_redemptions,
       percent_off: pct,
       created: promo.created,
+      created_by: creatorName,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Fehler beim Erstellen";
