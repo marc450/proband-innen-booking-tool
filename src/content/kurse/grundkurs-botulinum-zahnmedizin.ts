@@ -3,12 +3,18 @@ import type { CourseLandingContent } from "./types";
 /**
  * Grundkurs Botulinum für Zahnmediziner:innen — landing page content.
  *
- * Based on the Grundkurs Botulinum (Humanmedizin) but tailored for
- * approbierte Zahnärzt:innen. Shares the same Praxiskurs sessions
- * as the Humanmedizin variant (session sharing via course_key mapping).
+ * Different online course curriculum than the Humanmedizin variant:
+ * includes Bruxismus and Migräne chapters, excludes Lachfalten,
+ * Brow-Lifting, Platysma, and billing chapters.
+ *
+ * Shares the same Praxiskurs sessions as the Humanmedizin variant
+ * (session sharing via course_key mapping in the slug page).
  *
  * Prices, sessions, and availability are pulled dynamically from Supabase
  * via the booking widget — do NOT hardcode them here.
+ *
+ * TODO: Replace all placeholder media paths (hero video/poster,
+ * lernplattform images, testimonial photos) with actual assets.
  */
 export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
   slug: "grundkurs-botulinum-zahnmedizin",
@@ -17,8 +23,8 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
   meta: {
     title: "Grundkurs Botulinum für Zahnmediziner:innen | EPHIA",
     description:
-      "Grundkurs Botulinum für approbierte Zahnärzt:innen: Behandle Stirn, Glabella, Lachfalten und mehr unter Aufsicht an echten Proband:innen. 22 CME-Punkte, praxisnah und diskriminierungssensibel.",
-    ogImage: "/kurse/grundkurs_botulinum/og-image.jpg",
+      "Grundkurs Botulinum für approbierte Zahnärzt:innen: Lerne Bruxismus, Migräne, Stirn- und Glabellabehandlung unter Aufsicht an echten Proband:innen. Praxisnah und diskriminierungssensibel.",
+    ogImage: "/kurse/grundkurs_botulinum_zahnmedizin/og-image.jpg",
   },
 
   hero: {
@@ -33,9 +39,10 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
       { icon: "GraduationCap", label: "Level", value: "Einsteigerkurs" },
     ],
     description:
-      "Lerne die Grundlagen der ästhetischen Botulinum-Anwendung mit unserem Online-, Praxis- oder Kombikurs, speziell für approbierte Zahnärzt:innen. Tauche in praxisnahe Inhalte ein, die Dir den Einstieg in die Behandlung von Patient:innen erleichtern oder Dein Basiswissen auffrischen. Mit uns lernst Du patient:innenzentrierte Ansätze kennen und behandelst bewusst und diskriminierungssensibel mit Botulinum und nicht NaCl.",
-    videoPath: "/kurse/grundkurs_botulinum/hero-video.mp4",
-    videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
+      "Lerne die Grundlagen der zahnärztlichen Botulinum-Anwendung mit unserem Online-, Praxis- oder Kombikurs, speziell für approbierte Zahnärzt:innen. Neben ästhetischen Indikationen wie Stirn und Glabella behandeln wir auch therapeutische Anwendungen wie Bruxismus und Migräne. Mit uns lernst Du patient:innenzentrierte Ansätze kennen und behandelst bewusst und diskriminierungssensibel mit Botulinum und nicht NaCl.",
+    // TODO: Replace with Zahnmedizin-specific hero video + poster
+    videoPath: "/kurse/grundkurs_botulinum_zahnmedizin/hero-video.mp4",
+    videoPoster: "/kurse/grundkurs_botulinum_zahnmedizin/hero-poster.jpg",
   },
 
   lernziele: {
@@ -228,9 +235,29 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
       },
       {
         number: 7,
-        title: "Mythen & andere Halbwahrheiten",
-        summary:
-          "Diskussion verschiedenster Ideen, Mythen und Geschichten, die in den richtigen Kontext gerückt und korrigiert werden müssen.",
+        title: "Bruxismus",
+        subsections: [
+          {
+            title: "Anatomie des M. masseter",
+            description:
+              "Aufbau, Faserschichten und Funktion des Kaumuskels, Abgrenzung zum M. temporalis.",
+          },
+          {
+            title: "Diagnostik & Indikation",
+            description:
+              "Klinische Zeichen, Differenzialdiagnosen, Schlaf- vs. Wachbruxismus, Indikationsstellung für Botulinum.",
+          },
+          {
+            title: "Behandlungsansatz & Dosierung",
+            description:
+              "Injektionspunkte im M. masseter, empfohlene Dosierungen, Anpassung an individuelle Muskelausprägung.",
+          },
+          {
+            title: "Anzeichnen & Injektion",
+            description:
+              "Praktische Demonstration am Beispiel von Patient:innen.",
+          },
+        ],
       },
       {
         number: 8,
@@ -286,96 +313,30 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
       },
       {
         number: 10,
-        title: "Behandlung der Lachfalten",
+        title: "Migräne",
         subsections: [
           {
-            title: "Anatomie & Zone",
+            title: "Grundlagen & Pathophysiologie",
             description:
-              "Behandlung des seitlichen Anteils des M. orbicularis oculi, Berücksichtigung individueller Faltenmuster.",
+              "Migräneformen, Rolle der Muskelspannung, Wirkmechanismus von Botulinum bei chronischer Migräne.",
           },
           {
-            title: "Ansatz & Technik",
+            title: "Indikation & Patient:innenauswahl",
             description:
-              "Oberflächliche, flächige Behandlung statt tiefer Punktinjektionen, Orientierung am natürlichen Muskelzug.",
+              "Kriterien für die Behandlung, Abgrenzung zu Spannungskopfschmerz, interdisziplinäre Zusammenarbeit.",
           },
           {
-            title: "Wichtige Hinweise",
+            title: "Behandlungsprotokoll & Dosierung",
             description:
-              "Häufige Neigung zu Hämatomen. Unterlidfalten sind oft nur eingeschränkt mit Botulinum behandelbar.",
-          },
-          {
-            title: "Anzeichnen & Injektion",
-            description: "Am Beispiel eines Patienten.",
+              "Injektionspunkte nach PREEMPT-Protokoll, empfohlene Dosierungen, Behandlungsintervalle.",
           },
         ],
       },
       {
         number: 11,
-        title: "Behandlung der Augenbraue (\"Brow-Lifting\")",
-        subsections: [
-          {
-            title: "Relevante Muskeln",
-            description:
-              "Zusammenspiel von Glabella-Gruppe, M. frontalis und M. orbicularis oculi. Unterschiedliche Anteile beeinflussen medialen und lateralen Brauenverlauf.",
-          },
-          {
-            title: "Behandlungsansatz",
-            description:
-              "Senkende Muskelanteile gezielt entspannen, um eine Hebung zu erzielen. Berücksichtigung individueller anatomischer und ästhetischer Unterschiede.",
-          },
-          {
-            title: "Besonderheiten",
-            description:
-              "Geschlechtsspezifische Unterschiede in Form und Höhe der Braue, begrenzte Wirkung bei ausgeprägter Lidptosis.",
-          },
-          {
-            title: "Anzeichnen & Injektion",
-            description:
-              "Am Beispiel von drei unterschiedlichen Patient:innen.",
-          },
-        ],
-      },
-      {
-        number: 12,
-        title: "Behandlung des Platysmas",
-        subsections: [
-          {
-            title: "Anatomie & Zone",
-            description:
-              "Behandlung der vertikalen Platysmastränge am Hals, Beachtung individueller Ausprägung und Muskelzug.",
-          },
-          {
-            title: "Behandlungsansatz",
-            description:
-              "Gleichmäßige Entspannung sichtbarer Stränge, Anpassung der Punktverteilung an Länge und Verlauf.",
-          },
-          {
-            title: "Wichtige Hinweise",
-            description:
-              "Risiko benachbarter Strukturen beachten, Wirkung auf Kontur und Halsprofil realistisch kommunizieren.",
-          },
-          {
-            title: "Anzeichnen & Injektion",
-            description:
-              "Am Beispiel von drei unterschiedlichen Patient:innen.",
-          },
-        ],
-      },
-      {
-        number: 13,
-        title: "Rechnung, Honorarvereinbarung & Patient:innen-Information",
-        subsections: [
-          {
-            title: "Vorlagen für Rechnung & Honorarvereinbarung",
-            description:
-              "Inklusive Erläuterungen zur GOÄ-konformen Abrechnung, Preisgestaltung und Mehrwertsteuer.",
-          },
-          {
-            title: "Patient:innen-Informationen",
-            description:
-              "Für Verhaltensempfehlungen vor und nach der Behandlung.",
-          },
-        ],
+        title: "Myth Buster & Stolpersteine",
+        summary:
+          "Diskussion verschiedenster Ideen, Mythen und Geschichten rund um Botulinum, die in den richtigen Kontext gerückt und korrigiert werden müssen. Dokumentation und rechtliche Grundlagen.",
       },
     ],
   },
@@ -392,7 +353,8 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
           "Inhalte können jederzeit pausiert und wieder aufgenommen werden.",
           "Im Reiter \u201eAustausch\" kannst Du Fragen stellen und Dich mit der Community und Dozierenden austauschen.",
         ],
-        mediaPath: "/kurse/grundkurs_botulinum/plattform/navigation.png",
+        // TODO: Replace with Zahnmedizin-specific screenshot
+        mediaPath: "/kurse/grundkurs_botulinum_zahnmedizin/plattform/navigation.png",
       },
       {
         title: "Realitätsnahe Behandlungen",
@@ -403,8 +365,9 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
           "danach die Behandlungsschritte live an Patient:innen, fachlich kommentiert und anschaulich erklärt.",
           "So kannst Du den Ablauf sicher nachvollziehen und in Deinen Praxisalltag übertragen.",
         ],
-        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_botulinum/Grundkurs%20Botulinum_compressed.mp4",
-        mediaPoster: "/kurse/grundkurs_botulinum/plattform/behandlung-poster.jpg",
+        // TODO: Replace with Zahnmedizin-specific video
+        mediaPath: "/kurse/grundkurs_botulinum_zahnmedizin/plattform/behandlung.mp4",
+        mediaPoster: "/kurse/grundkurs_botulinum_zahnmedizin/plattform/behandlung-poster.jpg",
       },
       {
         title: "Fachlich hochstehende Inhalte",
@@ -415,7 +378,8 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
           "Auch nach dem Kurs sind unsere Dozierenden in der Community für Fragen erreichbar.",
           "Für ein nachhaltiges Lernen, weit über das Kursende hinaus.",
         ],
-        mediaPath: "/kurse/grundkurs_botulinum/plattform/inhalte.png",
+        // TODO: Replace with Zahnmedizin-specific screenshot
+        mediaPath: "/kurse/grundkurs_botulinum_zahnmedizin/plattform/inhalte.png",
       },
       {
         title: "Klare Lernziele & Tests",
@@ -426,7 +390,8 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
           "Alle Inhalte wurden so ausgewählt, dass sie direkt für Deine praktische Arbeit relevant sind.",
           "So lernst Du nicht einfach nur mit, sondern gezielt für Deine Patient:innen.",
         ],
-        mediaPath: "/kurse/grundkurs_botulinum/plattform/tests.png",
+        // TODO: Replace with Zahnmedizin-specific screenshot
+        mediaPath: "/kurse/grundkurs_botulinum_zahnmedizin/plattform/tests.png",
       },
     ],
   },
@@ -438,28 +403,29 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
   },
 
   testimonials: {
-    heading: "PRAXISSTIMMEN",
+    heading: "#WESTERTOGETHER",
     items: [
       {
+        // TODO: Replace with Zahnmedizin-specific testimonials + photos
         quote:
           "Der Grundkurs Botulinum war der erste Kurs der Dr. Sophia Academy, den ich besucht habe und er hat mich sehr überzeugt! Besonders gut fand ich die praktischen Übungen an Proband:innen und die 1:1 Begleitung durch Dr. Sophia! Auch die Erklärung der MD-Codes fand ich sehr aufschlussreich. Ich fühle mich wirklich bestens vorbereitet, meine ersten Patient:innen zu behandeln. In meinen Augen ist der Kurs ein absolutes Muss für Mediziner:innen, die im ästhetischen Bereich tätig werden wollen.",
         name: "Dr. Laura Bergeest",
         title: "Ärztin in der Inneren Medizin",
-        photoPath: "/kurse/grundkurs_botulinum/testimonials/testimonial-1.png",
+        photoPath: "/kurse/grundkurs_botulinum_zahnmedizin/testimonials/testimonial-1.png",
       },
       {
         quote:
           "Ich liebe Sophias diversen und individuellen Ansatz an die ästhetische Medizin. Bei ihr steht der Mensch mit seinen ganz eigenen Vorstellungen und Wünschen im Zentrum der Behandlung, keine vorgefertigten \u201eSchemata\". Ihre Kurse waren eine perfekte Kombination aus Theorie und Praxis und sie wurden mit großer fachlicher Kompetenz und viel Herzblut kuratiert. Wir kamen im Rahmen der Kurse alle dazu, das soeben Erlernte auch praktisch anzuwenden. Aus den Kursen bin ich mit dem selbstbewussten Gefühl gegangen, meine neu erworbenen Kenntnisse in die Tat umsetzen zu können.",
         name: "Nadja Geuther",
         title: "Ärztin in der Dermatologie",
-        photoPath: "/kurse/grundkurs_botulinum/testimonials/testimonial-2.jpg",
+        photoPath: "/kurse/grundkurs_botulinum_zahnmedizin/testimonials/testimonial-2.jpg",
       },
       {
         quote:
           "Sophias Kurs war sehr aufschlussreich für mich. Die detaillierte Erklärung der anatomischen Grundlagen und die praktischen Übungen haben meine Fähigkeiten deutlich verbessert. Besonders hilfreich fand ich die persönliche Betreuung und das Feedback während der Hands-on-Trainingseinheiten. Der Kurs hat mir das Vertrauen gegeben, meine neuen Fähigkeiten in der Praxis anzuwenden. Ich habe selten einen Kurs erlebt, der so gut strukturiert und praxisorientiert war.",
         name: "Lawik Revend",
         title: "Arzt in der Chirurgie",
-        photoPath: "/kurse/grundkurs_botulinum/testimonials/testimonial-3.png",
+        photoPath: "/kurse/grundkurs_botulinum_zahnmedizin/testimonials/testimonial-3.png",
       },
     ],
   },
