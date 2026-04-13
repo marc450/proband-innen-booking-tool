@@ -64,6 +64,7 @@ async function notifyAssigneeOnSlack(
   assignerName: string,
   threadSubject: string,
   senderEmail: string,
+  threadId: string,
 ) {
   const token = process.env.SLACK_BOT_TOKEN;
   if (!token) return;
@@ -88,7 +89,7 @@ async function notifyAssigneeOnSlack(
       },
       body: JSON.stringify({
         channel: slackUserId,
-        text: `📩 *${assignerName}* hat Dir eine Konversation zugewiesen:\n„${threadSubject || "Kein Betreff"}"${senderEmail ? `\nVon: ${senderEmail}` : ""}`,
+        text: `📩 *${assignerName}* hat Dir eine Konversation zugewiesen:\n„${threadSubject || "Kein Betreff"}"${senderEmail ? `\nVon: ${senderEmail}` : ""}\n<https://proband-innen.ephia.de/dashboard/inbox?thread=${threadId}|Zur Konversation>`,
       }),
     });
   } catch {
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest) {
     // Get assignee email from auth.users (requires admin client)
     const { data: { user: assigneeUser } } = await admin.auth.admin.getUserById(assignedTo);
     if (assigneeUser?.email) {
-      notifyAssigneeOnSlack(assigneeUser.email, assignerName, threadSubject || "", senderEmail || "");
+      notifyAssigneeOnSlack(assigneeUser.email, assignerName, threadSubject || "", senderEmail || "", threadId);
     }
   }
 
