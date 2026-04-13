@@ -59,11 +59,31 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
   const [notes, setNotes] = useState(azubi.notes || "");
   const [savingNotes, setSavingNotes] = useState(false);
 
+  // Name edit popover
+  const [namePopoverOpen, setNamePopoverOpen] = useState(false);
+  const [editFirstName, setEditFirstName] = useState(azubi.first_name || "");
+  const [editLastName, setEditLastName] = useState(azubi.last_name || "");
+
   const personName = [azubi.first_name, azubi.last_name].filter(Boolean).join(" ");
   const isCompany = azubi.contact_type === "company";
   const displayName = isCompany
     ? azubi.company_name || "Firma"
     : personName || azubi.company_name || "Unbekannt";
+
+  const handleSaveName = async () => {
+    const patch = {
+      first_name: editFirstName.trim() || null,
+      last_name: editLastName.trim() || null,
+    };
+    const { error } = await supabase
+      .from("auszubildende")
+      .update(patch)
+      .eq("id", azubi.id);
+    if (!error) {
+      setAzubi((prev) => ({ ...prev, ...patch }));
+      setNamePopoverOpen(false);
+    }
+  };
 
   const autosave = async (field: string, value: string) => {
     const trimmed = value.trim() || null;
@@ -141,10 +161,50 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
           {/* Name + Status card */}
           <Card>
             <CardContent className="pt-5 pb-4">
-              <div className="flex items-baseline">
-                {azubi.title && <span className="text-sm text-muted-foreground shrink-0 mr-1.5">{azubi.title}</span>}
-                <input defaultValue={azubi.first_name || ""} placeholder="Vorname" onBlur={(e) => autosave("first_name", e.target.value)} className="bg-transparent border-0 p-0 text-xl font-semibold text-foreground focus:outline-none focus:ring-0 placeholder:text-muted-foreground/40 min-w-0" style={{ width: `${Math.max((azubi.first_name || "Vorname").length + 1, 4)}ch` }} />
-                <input defaultValue={azubi.last_name || ""} placeholder="Nachname" onBlur={(e) => autosave("last_name", e.target.value)} className="bg-transparent border-0 p-0 text-xl font-semibold text-foreground focus:outline-none focus:ring-0 placeholder:text-muted-foreground/40 min-w-0 flex-1" />
+              <div className="relative">
+                <div className="flex items-center gap-1.5 group">
+                  <h1 className="text-xl font-semibold">
+                    {[azubi.title, azubi.first_name, azubi.last_name].filter(Boolean).join(" ") || "Unbekannt"}
+                  </h1>
+                  <button
+                    onClick={() => {
+                      setEditFirstName(azubi.first_name || "");
+                      setEditLastName(azubi.last_name || "");
+                      setNamePopoverOpen(!namePopoverOpen);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted shrink-0"
+                    title="Name bearbeiten"
+                  >
+                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                </div>
+                {namePopoverOpen && (
+                  <div className="absolute top-full left-0 mt-2 bg-popover border rounded-lg shadow-lg p-4 space-y-3 z-10 w-[240px]">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Vorname</label>
+                      <input
+                        value={editFirstName}
+                        onChange={(e) => setEditFirstName(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); }}
+                        autoFocus
+                        className="w-full mt-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Nachname</label>
+                      <input
+                        value={editLastName}
+                        onChange={(e) => setEditLastName(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); }}
+                        className="w-full mt-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleSaveName}>Speichern</Button>
+                      <Button size="sm" variant="outline" onClick={() => setNamePopoverOpen(false)}>Abbrechen</Button>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="mt-2">
                 <select
