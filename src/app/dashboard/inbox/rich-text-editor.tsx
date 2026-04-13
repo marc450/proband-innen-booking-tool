@@ -230,7 +230,7 @@ export function RichTextEditor({
         </ToolbarButton>
         <div className="w-px h-4 bg-gray-200 mx-1" />
         <div ref={linkRef} className="relative">
-          <ToolbarButton onClick={handleLinkOpen} title="Link einfügen">
+          <ToolbarButton onClick={handleLinkOpen} title="Link einfügen (⌘K)">
             <LinkIcon className="h-3.5 w-3.5" />
           </ToolbarButton>
           {showLinkInput && (
@@ -264,6 +264,12 @@ export function RichTextEditor({
         suppressContentEditableWarning
         onInput={handleInput}
         onPaste={handlePaste}
+        onKeyDown={(e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+            e.preventDefault();
+            handleLinkOpen();
+          }
+        }}
         data-placeholder={placeholder}
         className="flex-1 px-4 py-3 text-sm outline-none overflow-y-auto min-h-[120px] max-h-[320px] [&_p]:mb-2 [&_ul]:list-disc [&_ul]:ml-5 [&_ol]:list-decimal [&_ol]:ml-5 [&_blockquote]:ml-6 [&_blockquote]:border-l-2 [&_blockquote]:border-gray-200 [&_blockquote]:pl-3 [&_a]:text-[#0066FF] [&_a]:underline empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none"
       />
