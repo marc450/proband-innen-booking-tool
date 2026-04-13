@@ -211,10 +211,20 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
           const hasPraxis = !!template.price_gross_praxis;
           const hasKombi = !!template.price_gross_kombi;
 
-          // Resolve features from DB, falling back to defaults
-          const onlineFeatures = toFeatures(template.features_online, defaultOnlinekursFeatures);
-          const praxisFeatures = toFeatures(template.features_praxis, defaultPraxiskursFeatures);
-          const kombiFeatures = toFeatures(template.features_kombi, defaultKombikursFeatures);
+          // Resolve features from DB, falling back to defaults.
+          // Strip "EPHIA-Zertifikat nach Abschluss" everywhere (mentioned in
+          // none of the cards now) and add "Ärzt:innen-Community" to online
+          // if it was removed.
+          const rawOnline = toFeatures(template.features_online, defaultOnlinekursFeatures);
+          const hadZertifikat = rawOnline.some((f) => f.text === "EPHIA-Zertifikat nach Abschluss");
+          const onlineFeatures = rawOnline.filter((f) => f.text !== "EPHIA-Zertifikat nach Abschluss");
+          if (hadZertifikat && !onlineFeatures.some((f) => f.text === "Ärzt:innen-Community")) {
+            onlineFeatures.push({ text: "Ärzt:innen-Community" });
+          }
+          const praxisFeatures = toFeatures(template.features_praxis, defaultPraxiskursFeatures)
+            .filter((f) => f.text !== "EPHIA-Zertifikat nach Abschluss");
+          const kombiFeatures = toFeatures(template.features_kombi, defaultKombikursFeatures)
+            .filter((f) => f.text !== "EPHIA-Zertifikat nach Abschluss");
 
           if (isPremiumLayout) {
             // grundkurs_botulinum only: hardcoded override so the Praxiskurs card
@@ -229,8 +239,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   return { text: "Vollständiger Praxiskurs inkludiert" };
                 }
                 return f;
-              })
-              .filter((f) => f.text !== "EPHIA-Zertifikat nach Abschluss");
+              });
 
             // Grundkurs Botulinum: Onlinekurs, Kombikurs, Premium Starterpaket
             return (
