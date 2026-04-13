@@ -173,6 +173,15 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
                 {namePopoverOpen && (
                   <div ref={namePopoverRef} className="absolute top-full left-0 mt-2 bg-popover border rounded-lg shadow-lg p-4 space-y-3 z-10 w-[240px]">
                     <div>
+                      <label className="text-xs text-muted-foreground">Titel</label>
+                      <input
+                        defaultValue={azubi.title || ""}
+                        onBlur={(e) => autosave("title", e.target.value)}
+                        placeholder="z.B. Dr."
+                        className="w-full mt-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
                       <label className="text-xs text-muted-foreground">Vorname</label>
                       <input
                         defaultValue={azubi.first_name || ""}
@@ -221,9 +230,6 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
             </CardHeader>
             <CardContent className="text-sm">
               <div className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-2 items-center">
-                <span className="text-xs text-muted-foreground">Titel</span>
-                <input defaultValue={azubi.title || ""} placeholder="–" onBlur={(e) => autosave("title", e.target.value)} className={fieldClass} />
-
                 <span className="text-xs text-muted-foreground">Geschlecht</span>
                 <input defaultValue={azubi.gender || ""} placeholder="–" onBlur={(e) => autosave("gender", e.target.value)} className={fieldClass} />
 
