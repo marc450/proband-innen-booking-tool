@@ -1,5 +1,6 @@
 import type { CourseLandingContent } from "./types";
 import { grundkursBotulinum } from "./grundkurs-botulinum";
+import { grundkursBotulinumZahnmedizin } from "./grundkurs-botulinum-zahnmedizin";
 
 /**
  * Registry of all course landing page content, keyed by URL slug.
@@ -12,6 +13,7 @@ import { grundkursBotulinum } from "./grundkurs-botulinum";
  */
 const registry: Record<string, CourseLandingContent> = {
   [grundkursBotulinum.slug]: grundkursBotulinum,
+  [grundkursBotulinumZahnmedizin.slug]: grundkursBotulinumZahnmedizin,
 };
 
 export function getCourseContent(slug: string): CourseLandingContent | null {

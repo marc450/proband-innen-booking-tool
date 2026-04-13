@@ -72,11 +72,28 @@ export default async function KursPage({
 
   if (!template) return notFound();
 
+  // Some courses share Praxiskurs sessions with another template
+  // (e.g. Zahnmedizin uses the same dates as Humanmedizin Botulinum).
+  const SESSION_SHARING: Record<string, string> = {
+    grundkurs_botulinum_zahnmedizin: "grundkurs_botulinum",
+  };
+
+  let sessionTemplateId = template.id;
+  const sharedKey = SESSION_SHARING[content.courseKey];
+  if (sharedKey) {
+    const { data: sharedTemplate } = await supabase
+      .from("course_templates")
+      .select("id")
+      .eq("course_key", sharedKey)
+      .single();
+    if (sharedTemplate) sessionTemplateId = sharedTemplate.id;
+  }
+
   // Fetch live sessions
   const { data: sessions } = await supabase
     .from("course_sessions")
     .select("*")
-    .eq("template_id", template.id)
+    .eq("template_id", sessionTemplateId)
     .eq("is_live", true)
     .order("date_iso", { ascending: true });
 
