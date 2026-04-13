@@ -26,7 +26,7 @@ const defaultOnlinekursFeatures = [
   { text: "Vorlagen für Rechnungen" },
   { text: "Vorlagen für Patient:innen-Infos" },
   { text: "1.5 Jahre Zugriff (inkl. Updates)" },
-  { text: "EPHIA-Zertifikat nach Abschluss" },
+  { text: "Ärzt:innen-Community" },
 ];
 
 const defaultPraxiskursFeatures = [
@@ -35,14 +35,12 @@ const defaultPraxiskursFeatures = [
   { text: "Üben an echten Proband:innen" },
   { text: "Erfahrene Dozent:innen-Aufsicht" },
   { text: "Max. 7 Teilnehmer:innen" },
-  { text: "EPHIA-Zertifikat nach Abschluss" },
 ];
 
 const defaultKombikursFeatures = [
   { text: "Akkreditiert mit 22 CME-Punkten" },
   { text: "Vollständiger Onlinekurs inkludiert" },
   { text: "Vollständiger Praxiskurs inkludiert" },
-  { text: "EPHIA-Zertifikat nach Abschluss" },
 ];
 
 function formatSessionLabel(session: CourseSession): string {
@@ -232,13 +230,9 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                 }
                 return f;
               })
-              // Drop the Zertifikat line — the Online- & Praxiskurs card already
-              // implies it via the two "Vollständiger ... inkludiert" rows, and
-              // the Onlinekurs card to the left lists it explicitly.
               .filter((f) => f.text !== "EPHIA-Zertifikat nach Abschluss");
 
-            // Grundkurs Botulinum: Onlinekurs, Kombikurs, Premium Starterpaket
-            return (
+            const renderCards = (spacious: boolean) => (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {hasOnline && (
                   <CourseCard
@@ -252,6 +246,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     isLoading={loadingCheckout === "Onlinekurs-direct"}
                     cmePoints={template.cme_online || undefined}
                     titleClassName="text-[1.75rem]"
+                    spacious={spacious}
                   />
                 )}
 
@@ -271,6 +266,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     cmePoints={template.cme_kombi || undefined}
                     inclusionHeading="Im Online- & Praxiskurs inkludiert:"
                     titleClassName="text-[1.75rem] whitespace-nowrap"
+                    spacious={spacious}
                   />
                 )}
 
@@ -279,8 +275,22 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   onBook={(sessionId) => handleBooking("Premium", sessionId)}
                   isLoading={loadingCheckout?.startsWith("Premium-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Premium-", "")}
+                  spacious={spacious}
                 />
               </div>
+            );
+
+            // Grundkurs Botulinum: Onlinekurs, Kombikurs, Premium Starterpaket
+            // Two versions for comparison — V1 (compact) and V2 (spacious)
+            return (
+              <>
+                <p className="text-center text-white/60 text-sm font-semibold uppercase tracking-widest mb-6">V1 (aktuell)</p>
+                {renderCards(false)}
+                <div className="mt-20 pt-16 border-t border-white/20">
+                  <p className="text-center text-white/60 text-sm font-semibold uppercase tracking-widest mb-6">V2 (mehr Luft)</p>
+                  {renderCards(true)}
+                </div>
+              </>
             );
           }
 
