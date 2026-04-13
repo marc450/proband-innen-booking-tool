@@ -175,7 +175,7 @@ export function CourseCard({
                   className="w-full bg-white border-2 border-[#0066FF] text-[#0066FF] font-semibold text-sm py-3 px-4 rounded-md cursor-pointer flex items-center justify-between gap-2"
                 >
                   <span className={`flex items-center gap-2 whitespace-nowrap ${selectedDateObj ? "" : "opacity-70"}`}>
-                    {selectedDateObj ? selectedDateObj.label : "Termine anschauen"}
+                    {selectedDateObj ? selectedDateObj.label : "Praxiskurs-Termin wählen"}
                     {selectedDateObj?.availabilityTag && (
                       <span className={getBadgeClasses(selectedDateObj)}>{selectedDateObj.availabilityTag}</span>
                     )}
