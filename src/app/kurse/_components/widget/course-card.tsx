@@ -28,7 +28,6 @@ interface CourseCardProps {
   cmePoints?: string;
   inclusionHeading?: string;
   titleClassName?: string;
-  spacious?: boolean;
 }
 
 export function CourseCard({
@@ -47,7 +46,6 @@ export function CourseCard({
   cmePoints,
   inclusionHeading,
   titleClassName,
-  spacious = false,
 }: CourseCardProps) {
   const [selectedDate, setSelectedDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -113,33 +111,33 @@ export function CourseCard({
       }`}
     >
       {/* Header */}
-      <div className={`rounded-t-lg relative ${spacious ? "p-7" : "p-5"}`} style={{ backgroundColor: "hsl(24, 71%, 93%)" }}>
+      <div className="rounded-t-lg p-5 relative" style={{ backgroundColor: "hsl(24, 71%, 93%)" }}>
         {cmePoints && (
-          <div className={`absolute ${spacious ? "top-6 right-6" : "top-4 right-4"} bg-[#0066FF] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg`}>
+          <div className="absolute top-4 right-4 bg-[#0066FF] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
             <Award className="w-4 h-4" aria-hidden="true" />
             <span className="text-sm font-bold">{cmePoints}</span>
           </div>
         )}
-        <h2 className={`font-bold text-black ${spacious ? "mb-5" : "mb-4"} pr-24 ${titleClassName || "text-3xl"}`}>{title}</h2>
-        <p className={`text-black ${spacious ? "mb-4 mt-4" : "mb-3 mt-3"} lg:min-h-[3.5rem]`}>{description}</p>
+        <h2 className={`font-bold text-black mb-4 pr-24 ${titleClassName || "text-3xl"}`}>{title}</h2>
+        <p className="text-black mb-3 mt-3 lg:min-h-[3.5rem]">{description}</p>
       </div>
 
       {/* Body */}
-      <div className={spacious ? "px-7 pt-8 pb-5" : "px-5 pt-6 pb-4"}>
+      <div className="px-7 pt-8 pb-5">
         {/* Price row — fixed height so it aligns across cards on desktop */}
-        <div className={`${spacious ? "mb-8" : "mb-6"} lg:min-h-[4.5rem]`}>
+        <div className="mb-8 lg:min-h-[4.5rem]">
           <div className="text-4xl font-bold text-[#0066FF] mb-1">{price}</div>
           <p className="text-sm text-black">Ratenzahlungen sind möglich mit Klarna.</p>
         </div>
 
         {/* Location row — placeholder on desktop for alignment, hidden on mobile if empty */}
         {additionalInfo ? (
-          <div className={`${spacious ? "mb-8" : "mb-6"} lg:min-h-[1.5rem] font-semibold text-black`}>
+          <div className="mb-8 lg:min-h-[1.5rem] font-semibold text-black">
             {additionalInfo}
           </div>
         ) : (
           <div
-            className={`hidden lg:block ${spacious ? "mb-8" : "mb-6"} lg:min-h-[1.5rem] font-semibold text-black`}
+            className="hidden lg:block mb-8 lg:min-h-[1.5rem] font-semibold text-black"
             aria-hidden="true"
           >
             &nbsp;
@@ -147,7 +145,7 @@ export function CourseCard({
         )}
 
         {/* Action area — fixed height so buttons/dropdowns align on desktop */}
-        <div className={`${spacious ? "mb-8" : "mb-6"} lg:min-h-[7.5rem]`}>
+        <div className="mb-8 lg:min-h-[7.5rem]">
           {bookingType === "direct" ? (
             <div className="flex flex-col justify-end h-full">
               <button
@@ -234,7 +232,7 @@ export function CourseCard({
 
         {/* Termin-Updates link — shown for dropdown cards; spacer for direct cards only on desktop */}
         {bookingType === "dropdown" ? (
-          <div className={`lg:min-h-[1.25rem] ${spacious ? "mb-3" : "mb-2"}`}>
+          <div className="lg:min-h-[1.25rem] mb-3">
             <button
               type="button"
               onClick={() => setShowTerminModal(true)}
@@ -248,16 +246,16 @@ export function CourseCard({
           </div>
         ) : (
           <div
-            className={`hidden lg:block lg:min-h-[1.25rem] ${spacious ? "mb-3" : "mb-2"}`}
+            className="hidden lg:block lg:min-h-[1.25rem] mb-3"
             aria-hidden="true"
           />
         )}
       </div>
 
       {/* Features */}
-      <div className={`border-t border-gray-200 ${spacious ? "pt-8 px-7 pb-10" : "pt-6 px-5 pb-8"} mt-auto lg:min-h-[20rem]`}>
-        <h3 className={`font-bold text-black ${spacious ? "mb-5" : "mb-4"}`}>{inclusionHeading || `Im ${title.split(" ")[0]} inkludiert:`}</h3>
-        <ul className={spacious ? "space-y-3" : "space-y-2"}>
+      <div className="border-t border-gray-200 pt-8 px-7 pb-10 mt-auto lg:min-h-[20rem]">
+        <h3 className="font-bold text-black mb-5">{inclusionHeading || `Im ${title.split(" ")[0]} inkludiert:`}</h3>
+        <ul className="space-y-3">
           {features.map((feature, index) => {
             const isInkludiert = feature.text.startsWith("Vollständiger");
             return (

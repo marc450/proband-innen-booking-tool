@@ -36,7 +36,6 @@ interface PremiumCardProps {
   onBook: (selectedDateId: string) => void;
   isLoading: boolean;
   selectedDateForLoading?: string;
-  spacious?: boolean;
 }
 
 const INCLUDED_COURSES: IncludedCourse[] = [
@@ -293,7 +292,7 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
   return ReactDOM.createPortal(modal, document.body);
 }
 
-export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading, spacious = false }: PremiumCardProps) {
+export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }: PremiumCardProps) {
   const [selectedDate, setSelectedDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [infoModal, setInfoModal] = useState<IncludedCourse | null>(null);
@@ -348,21 +347,21 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading, 
   return (
     <div className="bg-white rounded-lg flex flex-col h-full shadow-lg relative ring-2 ring-[#0066FF] shadow-2xl">
       {/* Header */}
-      <div className={`rounded-t-lg relative ${spacious ? "p-7" : "p-5"}`} style={{ backgroundColor: "hsl(24, 71%, 93%)" }}>
-        <div className={`absolute ${spacious ? "top-6 right-6" : "top-4 right-4"} bg-[#0066FF] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg`}>
+      <div className="rounded-t-lg p-5 relative" style={{ backgroundColor: "hsl(24, 71%, 93%)" }}>
+        <div className="absolute top-4 right-4 bg-[#0066FF] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
           <Award className="w-4 h-4" aria-hidden="true" />
           <span className="text-sm font-bold">49 CME</span>
         </div>
-        <h2 className={`text-[1.75rem] font-bold text-black ${spacious ? "mb-5" : "mb-4"} pr-24`}>Komplettpaket</h2>
-        <p className={`text-black ${spacious ? "mb-4 mt-4" : "mb-3 mt-3"} lg:min-h-[3.5rem]`}>
+        <h2 className="text-[1.75rem] font-bold text-black mb-4 pr-24">Komplettpaket</h2>
+        <p className="text-black mb-3 mt-3 lg:min-h-[3.5rem]">
           Das Paket für Deinen selbstbewussten Start in die Ästhetik: 1 Praxiskurs + 4 begleitende Onlinekurse.
         </p>
       </div>
 
       {/* Body */}
-      <div className={spacious ? "px-7 pt-8 pb-5" : "px-5 pt-6 pb-4"}>
+      <div className="px-7 pt-8 pb-5">
         {/* Price row — fixed height to align with other cards on desktop */}
-        <div className={`${spacious ? "mb-8" : "mb-6"} lg:min-h-[4.5rem]`}>
+        <div className="mb-8 lg:min-h-[4.5rem]">
           <div className="flex items-baseline gap-3 mb-1">
             <div className="text-4xl font-bold text-[#0066FF]">EUR 1.998</div>
             <div className="text-lg text-gray-400 line-through">EUR 2.220</div>
@@ -371,10 +370,10 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading, 
         </div>
 
         {/* Location row */}
-        <div className={`${spacious ? "mb-8" : "mb-6"} lg:min-h-[1.5rem] font-semibold text-black`}>Praxiskurs-Standort: Berlin-Mitte</div>
+        <div className="mb-8 lg:min-h-[1.5rem] font-semibold text-black">Praxiskurs-Standort: Berlin-Mitte</div>
 
         {/* Action area — fixed height to align with other cards on desktop */}
-        <div className={`${spacious ? "mb-8" : "mb-6"} lg:min-h-[7.5rem]`}>
+        <div className="mb-8 lg:min-h-[7.5rem]">
           <div className="space-y-4">
             <div ref={dropdownRef} className="relative">
               <button
@@ -438,7 +437,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading, 
         </div>
 
         {/* Termin-Updates link */}
-        <div className={`lg:min-h-[1.25rem] ${spacious ? "mb-3" : "mb-2"}`}>
+        <div className="lg:min-h-[1.25rem] mb-3">
           <button
             type="button"
             onClick={() => setShowTerminModal(true)}
@@ -453,9 +452,9 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading, 
       </div>
 
       {/* Included courses */}
-      <div className={`border-t border-gray-200 ${spacious ? "pt-8 px-7 pb-10" : "pt-6 px-5 pb-8"} mt-auto lg:min-h-[20rem]`}>
-        <h3 className={`font-bold text-black ${spacious ? "mb-5" : "mb-4"}`}>Im Komplettpaket inkludiert:</h3>
-        <ul className={spacious ? "space-y-4" : "space-y-3"}>
+      <div className="border-t border-gray-200 pt-8 px-7 pb-10 mt-auto lg:min-h-[20rem]">
+        <h3 className="font-bold text-black mb-5">Im Komplettpaket inkludiert:</h3>
+        <ul className="space-y-4">
           <li className="flex items-center gap-2">
             <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" aria-hidden="true" />
             <span className="text-base text-black">Akkreditiert mit 49 CME-Punkten</span>

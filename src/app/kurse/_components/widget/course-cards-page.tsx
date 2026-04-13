@@ -232,7 +232,8 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
               })
               .filter((f) => f.text !== "EPHIA-Zertifikat nach Abschluss");
 
-            const renderCards = (spacious: boolean) => (
+            // Grundkurs Botulinum: Onlinekurs, Kombikurs, Premium Starterpaket
+            return (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {hasOnline && (
                   <CourseCard
@@ -246,7 +247,6 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     isLoading={loadingCheckout === "Onlinekurs-direct"}
                     cmePoints={template.cme_online || undefined}
                     titleClassName="text-[1.75rem]"
-                    spacious={spacious}
                   />
                 )}
 
@@ -266,7 +266,6 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     cmePoints={template.cme_kombi || undefined}
                     inclusionHeading="Im Online- & Praxiskurs inkludiert:"
                     titleClassName="text-[1.75rem] whitespace-nowrap"
-                    spacious={spacious}
                   />
                 )}
 
@@ -275,22 +274,8 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   onBook={(sessionId) => handleBooking("Premium", sessionId)}
                   isLoading={loadingCheckout?.startsWith("Premium-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Premium-", "")}
-                  spacious={spacious}
                 />
               </div>
-            );
-
-            // Grundkurs Botulinum: Onlinekurs, Kombikurs, Premium Starterpaket
-            // Two versions for comparison — V1 (compact) and V2 (spacious)
-            return (
-              <>
-                <p className="text-center text-white/60 text-sm font-semibold uppercase tracking-widest mb-6">V1 (aktuell)</p>
-                {renderCards(false)}
-                <div className="mt-20 pt-16 border-t border-white/20">
-                  <p className="text-center text-white/60 text-sm font-semibold uppercase tracking-widest mb-6">V2 (mehr Luft)</p>
-                  {renderCards(true)}
-                </div>
-              </>
             );
           }
 
