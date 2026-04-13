@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -61,8 +61,7 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
 
   // Name edit popover
   const [namePopoverOpen, setNamePopoverOpen] = useState(false);
-  const [editFirstName, setEditFirstName] = useState(azubi.first_name || "");
-  const [editLastName, setEditLastName] = useState(azubi.last_name || "");
+  const namePopoverRef = useRef<HTMLDivElement>(null);
 
   const personName = [azubi.first_name, azubi.last_name].filter(Boolean).join(" ");
   const isCompany = azubi.contact_type === "company";
@@ -70,20 +69,17 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
     ? azubi.company_name || "Firma"
     : personName || azubi.company_name || "Unbekannt";
 
-  const handleSaveName = async () => {
-    const patch = {
-      first_name: editFirstName.trim() || null,
-      last_name: editLastName.trim() || null,
+  // Close popover on outside click
+  useEffect(() => {
+    if (!namePopoverOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (namePopoverRef.current && !namePopoverRef.current.contains(e.target as Node)) {
+        setNamePopoverOpen(false);
+      }
     };
-    const { error } = await supabase
-      .from("auszubildende")
-      .update(patch)
-      .eq("id", azubi.id);
-    if (!error) {
-      setAzubi((prev) => ({ ...prev, ...patch }));
-      setNamePopoverOpen(false);
-    }
-  };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [namePopoverOpen]);
 
   const autosave = async (field: string, value: string) => {
     const trimmed = value.trim() || null;
@@ -167,11 +163,7 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
                     {[azubi.title, azubi.first_name, azubi.last_name].filter(Boolean).join(" ") || "Unbekannt"}
                   </h1>
                   <button
-                    onClick={() => {
-                      setEditFirstName(azubi.first_name || "");
-                      setEditLastName(azubi.last_name || "");
-                      setNamePopoverOpen(!namePopoverOpen);
-                    }}
+                    onClick={() => setNamePopoverOpen(!namePopoverOpen)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted shrink-0"
                     title="Name bearbeiten"
                   >
@@ -179,13 +171,12 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
                   </button>
                 </div>
                 {namePopoverOpen && (
-                  <div className="absolute top-full left-0 mt-2 bg-popover border rounded-lg shadow-lg p-4 space-y-3 z-10 w-[240px]">
+                  <div ref={namePopoverRef} className="absolute top-full left-0 mt-2 bg-popover border rounded-lg shadow-lg p-4 space-y-3 z-10 w-[240px]">
                     <div>
                       <label className="text-xs text-muted-foreground">Vorname</label>
                       <input
-                        value={editFirstName}
-                        onChange={(e) => setEditFirstName(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); }}
+                        defaultValue={azubi.first_name || ""}
+                        onBlur={(e) => autosave("first_name", e.target.value)}
                         autoFocus
                         className="w-full mt-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                       />
@@ -193,15 +184,10 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
                     <div>
                       <label className="text-xs text-muted-foreground">Nachname</label>
                       <input
-                        value={editLastName}
-                        onChange={(e) => setEditLastName(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); }}
+                        defaultValue={azubi.last_name || ""}
+                        onBlur={(e) => autosave("last_name", e.target.value)}
                         className="w-full mt-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                       />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={handleSaveName}>Speichern</Button>
-                      <Button size="sm" variant="outline" onClick={() => setNamePopoverOpen(false)}>Abbrechen</Button>
                     </div>
                   </div>
                 )}
