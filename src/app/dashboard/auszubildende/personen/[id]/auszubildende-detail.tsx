@@ -60,6 +60,12 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
   const [notes, setNotes] = useState(azubi.notes || "");
   const [savingNotes, setSavingNotes] = useState(false);
 
+  // Name editor state
+  const [editingName, setEditingName] = useState(false);
+  const [editFirstName, setEditFirstName] = useState(azubi.first_name || "");
+  const [editLastName, setEditLastName] = useState(azubi.last_name || "");
+  const [savingName, setSavingName] = useState(false);
+
   // Address editor state
   const [editingAddress, setEditingAddress] = useState(false);
   const [addrLine1, setAddrLine1] = useState(azubi.address_line1 || "");
@@ -99,6 +105,23 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
       setEditingAddress(false);
     }
     setSavingAddress(false);
+  };
+
+  const handleSaveName = async () => {
+    setSavingName(true);
+    const patch = {
+      first_name: editFirstName.trim() || null,
+      last_name: editLastName.trim() || null,
+    };
+    const { error } = await supabase
+      .from("auszubildende")
+      .update(patch)
+      .eq("id", azubi.id);
+    if (!error) {
+      setAzubi((prev) => ({ ...prev, ...patch }));
+      setEditingName(false);
+    }
+    setSavingName(false);
   };
 
   const personName = [azubi.first_name, azubi.last_name].filter(Boolean).join(" ");
@@ -168,8 +191,47 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
         {/* Person info */}
         <Card className="md:col-span-2">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xl">{name}</CardTitle>
+            <div className="flex items-center justify-between gap-4">
+              {editingName ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <Input
+                    placeholder="Vorname"
+                    value={editFirstName}
+                    onChange={(e) => setEditFirstName(e.target.value)}
+                    className="max-w-[160px]"
+                    autoFocus
+                    onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); }}
+                  />
+                  <Input
+                    placeholder="Nachname"
+                    value={editLastName}
+                    onChange={(e) => setEditLastName(e.target.value)}
+                    className="max-w-[160px]"
+                    onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); }}
+                  />
+                  <Button size="sm" onClick={handleSaveName} disabled={savingName}>
+                    {savingName ? "..." : "Speichern"}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setEditingName(false)} disabled={savingName}>
+                    Abbrechen
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 group">
+                  <CardTitle className="text-xl">{name}</CardTitle>
+                  <button
+                    onClick={() => {
+                      setEditFirstName(azubi.first_name || "");
+                      setEditLastName(azubi.last_name || "");
+                      setEditingName(true);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted"
+                    title="Name bearbeiten"
+                  >
+                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                </div>
+              )}
               <select
                 value={azubi.status}
                 onChange={(e) => handleStatusChange(e.target.value)}
