@@ -63,7 +63,7 @@ export const homeContent: HomeContent = {
         courseKey: "grundkurs_botulinum_zahnmedizin",
         imageAlt: "Grundkurs Botulinum für Zahnmediziner:innen",
         ctaLabel: "Zu den Kursdetails",
-        href: "/grundkurs-botulinum-zahnmedizin",
+        href: "/kurse/grundkurs-botulinum-zahnmedizin",
       },
       {
         kicker: "GRUNDKURS",
