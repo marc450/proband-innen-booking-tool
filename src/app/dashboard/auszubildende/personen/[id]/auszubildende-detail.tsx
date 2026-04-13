@@ -141,10 +141,10 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
           {/* Name + Status card */}
           <Card>
             <CardContent className="pt-5 pb-4">
-              <div className="flex items-baseline gap-1">
-                <input defaultValue={azubi.first_name || ""} placeholder="Vorname" onBlur={(e) => autosave("first_name", e.target.value)} className="bg-transparent border-0 p-0 text-xl font-semibold text-foreground focus:outline-none focus:ring-0 placeholder:text-muted-foreground/40 min-w-0 w-auto" style={{ width: `${Math.max((azubi.first_name || "Vorname").length, 5)}ch` }} />
+              <div className="flex items-baseline">
+                {azubi.title && <span className="text-sm text-muted-foreground shrink-0 mr-1.5">{azubi.title}</span>}
+                <input defaultValue={azubi.first_name || ""} placeholder="Vorname" onBlur={(e) => autosave("first_name", e.target.value)} className="bg-transparent border-0 p-0 text-xl font-semibold text-foreground focus:outline-none focus:ring-0 placeholder:text-muted-foreground/40 min-w-0" style={{ width: `${Math.max((azubi.first_name || "Vorname").length + 1, 4)}ch` }} />
                 <input defaultValue={azubi.last_name || ""} placeholder="Nachname" onBlur={(e) => autosave("last_name", e.target.value)} className="bg-transparent border-0 p-0 text-xl font-semibold text-foreground focus:outline-none focus:ring-0 placeholder:text-muted-foreground/40 min-w-0 flex-1" />
-                {azubi.title && <span className="text-sm text-muted-foreground shrink-0">{azubi.title}</span>}
               </div>
               <div className="mt-2">
                 <select
