@@ -63,6 +63,10 @@ export function RichTextEditor({
   const latestHtmlRef = useRef<string | null>(null);
   const [showFontSize, setShowFontSize] = useState(false);
   const fontSizeRef = useRef<HTMLDivElement>(null);
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const linkRef = useRef<HTMLDivElement>(null);
+  const savedSelectionRef = useRef<Range | null>(null);
 
   useEffect(() => {
     if (ref.current && value !== latestHtmlRef.current) {
@@ -83,17 +87,20 @@ export function RichTextEditor({
     }
   }, [autoFocus]);
 
-  // Close font size dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
-    if (!showFontSize) return;
+    if (!showFontSize && !showLinkInput) return;
     const handler = (e: MouseEvent) => {
-      if (fontSizeRef.current && !fontSizeRef.current.contains(e.target as Node)) {
+      if (showFontSize && fontSizeRef.current && !fontSizeRef.current.contains(e.target as Node)) {
         setShowFontSize(false);
+      }
+      if (showLinkInput && linkRef.current && !linkRef.current.contains(e.target as Node)) {
+        setShowLinkInput(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [showFontSize]);
+  }, [showFontSize, showLinkInput]);
 
   const handleInput = () => {
     if (!ref.current) return;
@@ -118,9 +125,28 @@ export function RichTextEditor({
     handleInput();
   };
 
-  const handleLink = () => {
-    const url = prompt("Link-URL:");
-    if (url) exec("createLink", url);
+  const handleLinkOpen = () => {
+    // Save the current selection so we can restore it when inserting the link
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      savedSelectionRef.current = sel.getRangeAt(0).cloneRange();
+    }
+    setLinkUrl("");
+    setShowLinkInput(true);
+  };
+
+  const handleLinkInsert = () => {
+    const url = linkUrl.trim();
+    if (!url) { setShowLinkInput(false); return; }
+    // Restore selection
+    const sel = window.getSelection();
+    if (savedSelectionRef.current && sel) {
+      sel.removeAllRanges();
+      sel.addRange(savedSelectionRef.current);
+    }
+    exec("createLink", url);
+    setShowLinkInput(false);
+    handleInput();
   };
 
   const handleFontSize = (size: string) => {
@@ -203,9 +229,34 @@ export function RichTextEditor({
           <Indent className="h-3.5 w-3.5" />
         </ToolbarButton>
         <div className="w-px h-4 bg-gray-200 mx-1" />
-        <ToolbarButton onClick={handleLink} title="Link einfügen">
-          <LinkIcon className="h-3.5 w-3.5" />
-        </ToolbarButton>
+        <div ref={linkRef} className="relative">
+          <ToolbarButton onClick={handleLinkOpen} title="Link einfügen">
+            <LinkIcon className="h-3.5 w-3.5" />
+          </ToolbarButton>
+          {showLinkInput && (
+            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-3 min-w-[280px]">
+              <label className="text-xs text-gray-500 mb-1 block">Link-URL</label>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleLinkInsert(); } if (e.key === "Escape") setShowLinkInput(false); }}
+                  placeholder="https://..."
+                  autoFocus
+                  className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#0066FF]"
+                />
+                <button
+                  type="button"
+                  onClick={handleLinkInsert}
+                  className="px-3 py-1.5 bg-[#0066FF] text-white text-sm rounded font-medium hover:bg-[#0055DD] transition-colors"
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       <div
         ref={ref}
