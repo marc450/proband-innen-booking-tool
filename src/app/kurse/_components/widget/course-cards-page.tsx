@@ -14,7 +14,7 @@ const ZAHNMEDIZIN_INCLUDED_COURSES: IncludedCourse[] = [
     type: "Onlinekurs",
     level: "Für alle Fachrichtungen",
     description: "In diesem Onlinekurs lernst Du als medizinische Fachperson die Grundkenntnisse in der Hautpflege, die in 19 Minuten in der Dermatologie und medizinischen Hautpflege vermittelt werden. Der Kurs bietet praxisrelevante Strategien in evidenzbasierter Weise, mit Fokus auf patientenorientierte Beratung.",
-    cmePoints: "7",
+    cmePoints: "",
     duration: "~4 Stunden",
     features: [
       "Grundlagen der Hautalterung",
@@ -44,7 +44,6 @@ const ZAHNMEDIZIN_INCLUDED_COURSES: IncludedCourse[] = [
       "9 online Lernkapitel",
       "Lehrvideos",
       "Ärzt:innen-Community",
-      "CME-Punkte",
       "1.5 Jahre Zugriff",
       "Zertifikat",
     ],
@@ -238,12 +237,12 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
     onlineFeatures?: { text: string }[];
     kombiFeatures?: { text: string }[];
     hasKomplettpaket?: boolean;
+    hideCme?: boolean;
   }> = {
     grundkurs_botulinum_zahnmedizin: {
       header: "UNSERE KURSANGEBOTE FÜR ZAHNÄRZT:INNEN",
       onlineDesc: "Erlerne die Theorie zur Behandlung von Patient:innen mit Botulinum.",
       onlineFeatures: [
-        { text: "Akkreditiert mit 10 CME-Punkten" },
         { text: "13 Lernkapitel" },
         { text: "2+ Stunden Behandlungsvideos" },
         { text: "Vorlagen für Rechnungen" },
@@ -261,6 +260,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
         { text: "Ärzt:innen-Community" },
       ],
       hasKomplettpaket: true,
+      hideCme: true,
     },
   };
 
@@ -415,7 +415,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   buttonText="Onlinekurs buchen"
                   onBook={() => handleBooking("Onlinekurs")}
                   isLoading={loadingCheckout === "Onlinekurs-direct"}
-                  cmePoints={template.cme_online || undefined}
+                  cmePoints={overrides.hideCme ? undefined : (template.cme_online || undefined)}
                 />
               )}
 
@@ -437,7 +437,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   onBook={(sessionId) => handleBooking("Praxiskurs", sessionId)}
                   isLoading={loadingCheckout?.startsWith("Praxiskurs-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Praxiskurs-", "")}
-                  cmePoints={template.cme_praxis || undefined}
+                  cmePoints={overrides.hideCme ? undefined : (template.cme_praxis || undefined)}
                 />
               )}
 
@@ -455,7 +455,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   highlighted={!hasKomplettpaket}
                   isLoading={loadingCheckout?.startsWith("Kombikurs-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
-                  cmePoints={template.cme_kombi || undefined}
+                  cmePoints={overrides.hideCme ? undefined : (template.cme_kombi || undefined)}
                   inclusionHeading="Im Online- & Praxiskurs inkludiert:"
                   titleClassName="text-[1.75rem] whitespace-nowrap"
                 />

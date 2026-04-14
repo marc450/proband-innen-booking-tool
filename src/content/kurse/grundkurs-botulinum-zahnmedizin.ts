@@ -35,7 +35,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
       "Dein sicherer Einstieg in die ästhetische Medizin: Praxisnah, fundiert und mit echten Proband:innen.",
     stats: [
       { icon: "Clock", label: "Format", value: "10h Online + 6h Präsenz" },
-      { icon: "Award", label: "Akkreditiert", value: "22 CME-Punkte + Zertifikat" },
+      { icon: "Award", label: "Zertifiziert", value: "EPHIA-Zertifikat" },
       { icon: "GraduationCap", label: "Level", value: "Einsteigerkurs" },
     ],
     description:
@@ -382,7 +382,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
         description:
           "Jedes Kapitel startet mit präzise formulierten Lernzielen, die Dir helfen, den Fokus zu setzen:",
         bullets: [
-          "Die Lernziele sind abgestimmt auf die CME-Testfragen am Kapitelende.",
+          "Die Lernziele sind abgestimmt auf die Testfragen am Kapitelende.",
           "Alle Inhalte wurden so ausgewählt, dass sie direkt für Deine praktische Arbeit relevant sind.",
           "So lernst Du nicht einfach nur mit, sondern gezielt für Deine Patient:innen.",
         ],
