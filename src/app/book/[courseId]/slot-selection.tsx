@@ -145,9 +145,9 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                       {/* Expanded time slots */}
                       {isExpanded && (
                         <div className="border-t border-black/[0.06]">
-                          <div className="flex items-start gap-2.5 px-5 md:px-6 py-4 bg-[#0066FF]/[0.06]">
-                            <Info className="h-4 w-4 text-[#0066FF] mt-0.5 shrink-0" />
-                            <p className="text-xs md:text-sm text-black/80 leading-relaxed">
+                          <div className="flex items-start gap-2.5 px-5 md:px-6 py-4 bg-amber-50 border-b border-amber-200">
+                            <span className="text-base shrink-0" aria-hidden="true">⚠️</span>
+                            <p className="text-sm md:text-base font-medium text-amber-900 leading-relaxed">
                               Bitte wähle das <strong className="font-bold">früheste verfügbare Zeitfenster</strong>, damit keine Behandlungslücken in unserem Kurs auftreten.
                             </p>
                           </div>

@@ -129,10 +129,10 @@ export function PrivatSlotSelection({ course, allCourses, slots }: Props) {
 
                       {isExpanded && (
                         <div className="divide-y">
-                          <div className="flex items-start gap-2 px-4 py-3 bg-blue-50/50">
-                            <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-                            <p className="text-xs text-blue-900">
-                              Bitte wähle das <strong>früheste verfügbare Zeitfenster</strong>, damit keine Behandlungslücken in unserem Kurs auftreten.
+                          <div className="flex items-start gap-2.5 px-5 py-4 bg-amber-50 border-b border-amber-200">
+                            <span className="text-base shrink-0" aria-hidden="true">⚠️</span>
+                            <p className="text-sm font-medium text-amber-900 leading-relaxed">
+                              Bitte wähle das <strong className="font-bold">früheste verfügbare Zeitfenster</strong>, damit keine Behandlungslücken in unserem Kurs auftreten.
                             </p>
                           </div>
                           {dateSlots.map((slot) => (
