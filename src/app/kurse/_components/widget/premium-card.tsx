@@ -317,7 +317,7 @@ export function PremiumCard({
   description = "Das Paket für Deinen selbstbewussten Start in die Ästhetik: 1 Praxiskurs + 4 begleitende Onlinekurse.",
   price = "EUR 1.998",
   originalPrice = "EUR 2.220",
-  discountLabel = "10% Rabatt auf alle Einzelkurse",
+  discountLabel = "",
   cmeTotal = "49",
   buttonText = "Komplettpaket buchen",
   includedCourses = DEFAULT_INCLUDED_COURSES,
