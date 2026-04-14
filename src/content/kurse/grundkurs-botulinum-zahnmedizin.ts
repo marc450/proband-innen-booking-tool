@@ -13,8 +13,8 @@ import type { CourseLandingContent } from "./types";
  * Prices, sessions, and availability are pulled dynamically from Supabase
  * via the booking widget — do NOT hardcode them here.
  *
- * TODO: Replace all placeholder media paths (hero video/poster,
- * lernplattform images, testimonial photos) with actual assets.
+ * TODO: Replace remaining placeholder media (lernplattform behandlung
+ * video, testimonial photos) with actual assets.
  */
 export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
   slug: "grundkurs-botulinum-zahnmedizin",
@@ -40,7 +40,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
     ],
     description:
       "Lerne die Grundlagen der zahnärztlichen Botulinum-Anwendung mit unserem Online-, Praxis- oder Kombikurs, speziell für approbierte Zahnärzt:innen. Neben ästhetischen Indikationen wie Stirn und Glabella behandeln wir auch therapeutische Anwendungen wie Bruxismus und Migräne. Mit uns lernst Du patient:innenzentrierte Ansätze kennen und behandelst bewusst und diskriminierungssensibel mit Botulinum und nicht NaCl.",
-    videoPath: "/kurse/grundkurs_botulinum/hero-video.mp4",
+    videoPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_botulinum-fZ/My%20Movie_compressed.mp4",
     videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
   },
 
@@ -353,8 +353,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
           "Inhalte können jederzeit pausiert und wieder aufgenommen werden.",
           "Im Reiter \u201eAustausch\" kannst Du Fragen stellen und Dich mit der Community und Dozierenden austauschen.",
         ],
-        // TODO: Replace with Zahnmedizin-specific screenshot
-        mediaPath: "/kurse/grundkurs_botulinum_zahnmedizin/plattform/navigation.png",
+        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_botulinum-fZ/Screenshot%202026-04-14%20at%2020.29.03.png",
       },
       {
         title: "Realitätsnahe Behandlungen",
@@ -378,8 +377,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
           "Auch nach dem Kurs sind unsere Dozierenden in der Community für Fragen erreichbar.",
           "Für ein nachhaltiges Lernen, weit über das Kursende hinaus.",
         ],
-        // TODO: Replace with Zahnmedizin-specific screenshot
-        mediaPath: "/kurse/grundkurs_botulinum_zahnmedizin/plattform/inhalte.png",
+        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_botulinum-fZ/Screenshot%202026-04-14%20at%2020.29.48.png",
       },
       {
         title: "Klare Lernziele & Tests",
@@ -390,8 +388,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
           "Alle Inhalte wurden so ausgewählt, dass sie direkt für Deine praktische Arbeit relevant sind.",
           "So lernst Du nicht einfach nur mit, sondern gezielt für Deine Patient:innen.",
         ],
-        // TODO: Replace with Zahnmedizin-specific screenshot
-        mediaPath: "/kurse/grundkurs_botulinum_zahnmedizin/plattform/tests.png",
+        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_botulinum-fZ/Screenshot%202026-04-14%20at%2020.30.16.png",
       },
     ],
   },
