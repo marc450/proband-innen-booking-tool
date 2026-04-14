@@ -45,7 +45,7 @@ interface PremiumCardProps {
 const INCLUDED_COURSES: IncludedCourse[] = [
   {
     name: "Aufbaukurs Botulinum: Periorale Zone",
-    shortName: "Onlinekurs Periorale Zone",
+    shortName: "Periorale Zone",
     type: "Onlinekurs",
     level: "Fortgeschrittenenkurs",
     description: "Erweitere Dein Wissen in der Ästhetik des Mundbereichs mit dem EPHIA Onlinekurs zur Behandlung der perioralen Zone mit Botulinum. Du lernst die sichere, evidenzbasierte Behandlung mit präzisen Techniken, inklusive Anatomie, Indikationen, Patient:innenkommunikation und Komplikationsmanagement.",
@@ -88,7 +88,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
   },
   {
     name: "Aufbaukurs Botulinum: Therapeutische Indikationen",
-    shortName: "Onlinekurs Therapeutische Indikationen",
+    shortName: "Therapeutische Indikationen",
     type: "Onlinekurs",
     level: "Fortgeschrittenenkurs",
     description: "Erweitere Deine Kompetenz um therapeutische Anwendungen von Botulinum. Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen, die bereits eine Fortbildung in der therapeutischen Anwendung von Botulinum absolviert haben. Du lernst die sichere, evidenzbasierte Behandlung von Bruxismus, Migräne, Hyperhidrosis und muskulärem Hartspann.",
@@ -127,7 +127,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
   },
   {
     name: "Grundkurs Medizinische Hautpflege",
-    shortName: "Onlinekurs Medizinische Hautpflege",
+    shortName: "Medizinische Hautpflege",
     type: "Onlinekurs",
     level: "Für alle Fachrichtungen",
     description: "In diesem Onlinekurs lernst Du als medizinische Fachperson die Grundkenntnisse in der Hautpflege, die in 19 Minuten in der Dermatologie und medizinischen Hautpflege vermittelt werden. Der Kurs bigt praxisrelevante Strategien in evidenzbasierter Weise, mit Fokus auf patientenorientierte Beratung.",
