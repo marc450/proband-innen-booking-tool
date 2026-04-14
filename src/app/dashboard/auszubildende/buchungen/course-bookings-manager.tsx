@@ -496,7 +496,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                           title="Link zur Profilvervollständigung kopieren"
                           onClick={(e) => {
                             e.stopPropagation();
-                            const url = `${window.location.origin}/courses/success?booking_id=${booking.id}&email=${encodeURIComponent(booking.email || "")}`;
+                            const url = `https://proband-innen.ephia.de/courses/success?booking_id=${booking.id}&email=${encodeURIComponent(booking.email || "")}`;
                             navigator.clipboard.writeText(url);
                             setCopiedProfileLink(booking.id);
                             setTimeout(() => setCopiedProfileLink(null), 2000);
