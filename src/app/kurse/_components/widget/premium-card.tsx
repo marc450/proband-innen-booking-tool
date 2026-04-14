@@ -359,7 +359,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
       {/* Header */}
       <div className="rounded-t-lg p-5 relative" style={{ backgroundColor: "hsl(24, 71%, 93%)" }}>
         <h2 className="text-[1.75rem] font-bold text-black mb-4">Komplettpaket</h2>
-        <p className="text-black mb-3 mt-3 lg:min-h-[3.5rem]">
+        <p className="text-black mb-3 mt-3 lg:min-h-[4.5rem]">
           Das Paket für Deinen selbstbewussten Start in die Ästhetik: 1 Praxiskurs + 4 begleitende Onlinekurse.
         </p>
       </div>
