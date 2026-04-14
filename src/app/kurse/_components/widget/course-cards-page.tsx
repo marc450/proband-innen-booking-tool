@@ -212,19 +212,37 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
           const hasKombi = !!template.price_gross_kombi;
 
           // Resolve features from DB, falling back to defaults.
-          // Strip "EPHIA-Zertifikat nach Abschluss" everywhere (mentioned in
-          // none of the cards now) and add "Ärzt:innen-Community" to online
-          // if it was removed.
+          // For grundkurs_botulinum (Humanmedizin): strip "EPHIA-Zertifikat nach Abschluss"
+          // and replace with "Ärzt:innen-Community". All other courses keep Zertifikat.
           const rawOnline = toFeatures(template.features_online, defaultOnlinekursFeatures);
-          const hadZertifikat = rawOnline.some((f) => f.text === "EPHIA-Zertifikat nach Abschluss");
-          const onlineFeatures = rawOnline.filter((f) => f.text !== "EPHIA-Zertifikat nach Abschluss");
-          if (hadZertifikat && !onlineFeatures.some((f) => f.text === "Ärzt:innen-Community")) {
-            onlineFeatures.push({ text: "Ärzt:innen-Community" });
+          const rawPraxis = toFeatures(template.features_praxis, defaultPraxiskursFeatures);
+          const rawKombi = toFeatures(template.features_kombi, defaultKombikursFeatures);
+
+          let onlineFeatures: { text: string }[];
+          let praxisFeatures: { text: string }[];
+          let kombiFeatures: { text: string }[];
+
+          if (isPremiumLayout) {
+            // Humanmedizin: strip Zertifikat, add Community as replacement
+            const hadZertifikat = rawOnline.some((f) => f.text === "EPHIA-Zertifikat nach Abschluss");
+            onlineFeatures = rawOnline.filter((f) => f.text !== "EPHIA-Zertifikat nach Abschluss");
+            if (hadZertifikat && !onlineFeatures.some((f) => f.text === "Ärzt:innen-Community")) {
+              onlineFeatures.push({ text: "Ärzt:innen-Community" });
+            }
+            praxisFeatures = rawPraxis.filter((f) => f.text !== "EPHIA-Zertifikat nach Abschluss");
+            kombiFeatures = rawKombi.filter((f) => f.text !== "EPHIA-Zertifikat nach Abschluss");
+          } else {
+            // All other courses: keep features as-is, ensure Zertifikat is present
+            onlineFeatures = rawOnline;
+            if (!onlineFeatures.some((f) => f.text === "EPHIA-Zertifikat nach Abschluss")) {
+              onlineFeatures.push({ text: "EPHIA-Zertifikat nach Abschluss" });
+            }
+            praxisFeatures = rawPraxis;
+            kombiFeatures = rawKombi;
+            if (!kombiFeatures.some((f) => f.text === "EPHIA-Zertifikat nach Abschluss")) {
+              kombiFeatures.push({ text: "EPHIA-Zertifikat nach Abschluss" });
+            }
           }
-          const praxisFeatures = toFeatures(template.features_praxis, defaultPraxiskursFeatures)
-            .filter((f) => f.text !== "EPHIA-Zertifikat nach Abschluss");
-          const kombiFeatures = toFeatures(template.features_kombi, defaultKombikursFeatures)
-            .filter((f) => f.text !== "EPHIA-Zertifikat nach Abschluss");
 
           if (isPremiumLayout) {
             // grundkurs_botulinum only: hardcoded override so the Praxiskurs card
@@ -292,12 +310,23 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
           const cardCount = [hasOnline, hasPraxis, hasKombi].filter(Boolean).length;
           const gridCols = cardCount === 1 ? "lg:grid-cols-1 max-w-lg mx-auto" : cardCount === 2 ? "lg:grid-cols-2 max-w-4xl mx-auto" : "lg:grid-cols-3";
 
+          // Ensure kombi features show "inkludiert" suffix consistently
+          const defaultKombi = kombiFeatures.map((f) => {
+            if (f.text === "Vollständiger Onlinekurs" || f.text === "Vollständiger Onlinekurs inkludiert") {
+              return { text: "Vollständiger Onlinekurs inkludiert" };
+            }
+            if (f.text === "Vollständiger Praxiskurs" || f.text === "Vollständiger Praxiskurs inkludiert") {
+              return { text: "Vollständiger Praxiskurs inkludiert" };
+            }
+            return f;
+          });
+
           return (
             <div className={`grid grid-cols-1 ${gridCols} gap-8`}>
               {hasOnline && (
                 <CourseCard
                   title="Onlinekurs"
-                  description="Erlerne die praxisnahe Theorie zur professionellen Behandlung von Patient:innen."
+                  description={onlineDescription}
                   price={formatPrice(template.price_gross_online)}
                   features={onlineFeatures}
                   bookingType="direct"
@@ -332,19 +361,21 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
 
               {hasKombi && (
                 <CourseCard
-                  title="Kombikurs"
+                  title="Online- & Praxiskurs"
                   description="Lerne die theoretischen Grundlagen online und die Praxis vor Ort an Proband:innen."
                   price={formatPrice(template.price_gross_kombi)}
-                  features={kombiFeatures}
+                  features={defaultKombi}
                   bookingType="dropdown"
                   dates={dynamicDates}
-                  buttonText="Kombikurs buchen"
+                  buttonText="Online- & Praxiskurs buchen"
                   additionalInfo="Praxiskurs-Standort: Berlin-Mitte"
                   onBook={(sessionId) => handleBooking("Kombikurs", sessionId)}
                   highlighted={true}
                   isLoading={loadingCheckout?.startsWith("Kombikurs-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
                   cmePoints={template.cme_kombi || undefined}
+                  inclusionHeading="Im Online- & Praxiskurs inkludiert:"
+                  titleClassName="text-[1.75rem] whitespace-nowrap"
                 />
               )}
             </div>
