@@ -398,29 +398,28 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
   },
 
   testimonials: {
-    heading: "#WESTERTOGETHER",
+    heading: "Was durch uns ausgebildete Ärzt:innen sagen",
     items: [
       {
-        // TODO: Replace with Zahnmedizin-specific testimonials + photos
         quote:
           "Der Grundkurs Botulinum war der erste Kurs der Dr. Sophia Academy, den ich besucht habe und er hat mich sehr überzeugt! Besonders gut fand ich die praktischen Übungen an Proband:innen und die 1:1 Begleitung durch Dr. Sophia! Auch die Erklärung der MD-Codes fand ich sehr aufschlussreich. Ich fühle mich wirklich bestens vorbereitet, meine ersten Patient:innen zu behandeln. In meinen Augen ist der Kurs ein absolutes Muss für Mediziner:innen, die im ästhetischen Bereich tätig werden wollen.",
         name: "Dr. Laura Bergeest",
         title: "Ärztin in der Inneren Medizin",
-        photoPath: "/kurse/grundkurs_botulinum_zahnmedizin/testimonials/testimonial-1.png",
+        photoPath: "/kurse/grundkurs_botulinum/testimonials/testimonial-1.png",
       },
       {
         quote:
           "Ich liebe Sophias diversen und individuellen Ansatz an die ästhetische Medizin. Bei ihr steht der Mensch mit seinen ganz eigenen Vorstellungen und Wünschen im Zentrum der Behandlung, keine vorgefertigten \u201eSchemata\". Ihre Kurse waren eine perfekte Kombination aus Theorie und Praxis und sie wurden mit großer fachlicher Kompetenz und viel Herzblut kuratiert. Wir kamen im Rahmen der Kurse alle dazu, das soeben Erlernte auch praktisch anzuwenden. Aus den Kursen bin ich mit dem selbstbewussten Gefühl gegangen, meine neu erworbenen Kenntnisse in die Tat umsetzen zu können.",
         name: "Nadja Geuther",
         title: "Ärztin in der Dermatologie",
-        photoPath: "/kurse/grundkurs_botulinum_zahnmedizin/testimonials/testimonial-2.jpg",
+        photoPath: "/kurse/grundkurs_botulinum/testimonials/testimonial-2.jpg",
       },
       {
         quote:
           "Sophias Kurs war sehr aufschlussreich für mich. Die detaillierte Erklärung der anatomischen Grundlagen und die praktischen Übungen haben meine Fähigkeiten deutlich verbessert. Besonders hilfreich fand ich die persönliche Betreuung und das Feedback während der Hands-on-Trainingseinheiten. Der Kurs hat mir das Vertrauen gegeben, meine neuen Fähigkeiten in der Praxis anzuwenden. Ich habe selten einen Kurs erlebt, der so gut strukturiert und praxisorientiert war.",
         name: "Lawik Revend",
         title: "Arzt in der Chirurgie",
-        photoPath: "/kurse/grundkurs_botulinum_zahnmedizin/testimonials/testimonial-3.png",
+        photoPath: "/kurse/grundkurs_botulinum/testimonials/testimonial-3.png",
       },
     ],
   },
