@@ -470,7 +470,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   description="Dein Komplettpaket: Online- & Praxiskurs Botulinum plus Onlinekurs Medizinische Hautpflege."
                   price="EUR 1.490"
                   originalPrice="EUR 1.540"
-                  discountLabel="Spare EUR 50 im Komplettpaket"
+                  discountLabel=""
                   cmeTotal=""
                   includedCourses={ZAHNMEDIZIN_INCLUDED_COURSES}
                 />
