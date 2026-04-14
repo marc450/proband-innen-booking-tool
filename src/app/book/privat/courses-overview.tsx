@@ -58,13 +58,13 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
         </div>
       </header>
 
-      <main className="bg-[#0066FF] py-16 md:py-20">
+      <main className="bg-[#FAEBE1] py-16 md:py-20">
         <div className="max-w-6xl mx-auto px-5 md:px-8">
           <div className="text-center mb-12 md:mb-14 max-w-2xl mx-auto">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-wide uppercase text-white">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-wide uppercase text-black">
               Behandlungstermin buchen
             </h1>
-            <p className="text-base md:text-lg mt-4 text-white/85 leading-relaxed">
+            <p className="text-base md:text-lg mt-4 text-black/70 leading-relaxed">
               Bitte wähle den Behandlungstermin in dem Kurs, an dem Deine behandelnde Ärzt:in teilnimmt.
             </p>
           </div>
