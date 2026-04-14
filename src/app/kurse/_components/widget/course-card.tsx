@@ -120,7 +120,7 @@ export function CourseCard({
 
       {/* Header */}
       <div className="rounded-t-lg p-5 relative" style={{ backgroundColor: "hsl(24, 71%, 93%)" }}>
-        <h2 className={`font-bold text-black mb-4 ${titleClassName || "text-3xl"}`}>{title}</h2>
+        <h2 className={`font-bold text-black mb-4 lg:min-h-[2.5rem] ${titleClassName || "text-3xl"}`}>{title}</h2>
         <p className="text-black mb-3 mt-3 lg:min-h-[4.5rem]">{description}</p>
       </div>
 
