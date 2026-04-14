@@ -13,7 +13,7 @@ interface CourseDate {
   availabilityLevel?: "low" | "medium" | "ok" | "none";
 }
 
-interface IncludedCourse {
+export interface IncludedCourse {
   name: string;
   shortName?: string;
   type: "Kombikurs" | "Onlinekurs";
@@ -29,7 +29,7 @@ interface IncludedCourse {
 }
 
 // Each included course gets a distinct pill color
-const BADGE_COLORS = [
+export const BADGE_COLORS = [
   "bg-emerald-100 text-emerald-700 hover:bg-emerald-200",
   "bg-purple-100 text-purple-700 hover:bg-purple-200",
   "bg-pink-100 text-pink-700 hover:bg-pink-200",
@@ -40,9 +40,19 @@ interface PremiumCardProps {
   onBook: (selectedDateId: string) => void;
   isLoading: boolean;
   selectedDateForLoading?: string;
+  // Configurable content (defaults to Humanmedizin values)
+  title?: string;
+  description?: string;
+  price?: string;
+  originalPrice?: string;
+  discountLabel?: string;
+  cmeTotal?: string;
+  buttonText?: string;
+  includedCourses?: IncludedCourse[];
+  inclusionHeading?: string;
 }
 
-const INCLUDED_COURSES: IncludedCourse[] = [
+const DEFAULT_INCLUDED_COURSES: IncludedCourse[] = [
   {
     name: "Aufbaukurs Botulinum: Periorale Zone",
     shortName: "Periorale Zone",
@@ -296,7 +306,21 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
   return ReactDOM.createPortal(modal, document.body);
 }
 
-export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }: PremiumCardProps) {
+export function PremiumCard({
+  dates,
+  onBook,
+  isLoading,
+  selectedDateForLoading,
+  title = "Komplettpaket",
+  description = "Das Paket für Deinen selbstbewussten Start in die Ästhetik: 1 Praxiskurs + 4 begleitende Onlinekurse.",
+  price = "EUR 1.998",
+  originalPrice = "EUR 2.220",
+  discountLabel = "10% Rabatt auf alle Einzelkurse",
+  cmeTotal = "49",
+  buttonText = "Komplettpaket buchen",
+  includedCourses = DEFAULT_INCLUDED_COURSES,
+  inclusionHeading = "Im Komplettpaket inkludiert:",
+}: PremiumCardProps) {
   const [selectedDate, setSelectedDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [infoModal, setInfoModal] = useState<IncludedCourse | null>(null);
@@ -351,16 +375,18 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
   return (
     <div className="bg-white rounded-lg flex flex-col h-full shadow-lg relative overflow-visible ring-2 ring-[#0066FF] shadow-2xl">
       {/* CME badge — sits on the top edge of the card */}
-      <div className="absolute -top-4 right-5 z-10 bg-[#0066FF] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5" style={{ boxShadow: "0 0 0 3px rgba(255,255,255,0.9), 0 2px 8px rgba(0,0,0,0.15)" }}>
-        <Award className="w-4 h-4" aria-hidden="true" />
-        <span className="text-sm font-bold">49 CME</span>
-      </div>
+      {cmeTotal && (
+        <div className="absolute -top-4 right-5 z-10 bg-[#0066FF] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5" style={{ boxShadow: "0 0 0 3px rgba(255,255,255,0.9), 0 2px 8px rgba(0,0,0,0.15)" }}>
+          <Award className="w-4 h-4" aria-hidden="true" />
+          <span className="text-sm font-bold">{cmeTotal} CME</span>
+        </div>
+      )}
 
       {/* Header */}
       <div className="rounded-t-lg p-5 relative" style={{ backgroundColor: "hsl(24, 71%, 93%)" }}>
-        <h2 className="text-[1.75rem] font-bold text-black mb-4">Komplettpaket</h2>
+        <h2 className="text-[1.75rem] font-bold text-black mb-4 lg:min-h-[2.5rem]">{title}</h2>
         <p className="text-black mb-3 mt-3 lg:min-h-[4.5rem]">
-          Das Paket für Deinen selbstbewussten Start in die Ästhetik: 1 Praxiskurs + 4 begleitende Onlinekurse.
+          {description}
         </p>
       </div>
 
@@ -369,10 +395,10 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
         {/* Price row — fixed height to align with other cards on desktop */}
         <div className="mb-8 lg:min-h-[4.5rem]">
           <div className="flex items-baseline gap-3 mb-1">
-            <div className="text-4xl font-bold text-[#0066FF]">EUR 1.998</div>
-            <div className="text-lg text-gray-400 line-through">EUR 2.220</div>
+            <div className="text-4xl font-bold text-[#0066FF]">{price}</div>
+            {originalPrice && <div className="text-lg text-gray-400 line-through">{originalPrice}</div>}
           </div>
-          <p className="text-sm text-[#0066FF] font-semibold">10% Rabatt auf alle Einzelkurse</p>
+          {discountLabel && <p className="text-sm text-[#0066FF] font-semibold">{discountLabel}</p>}
         </div>
 
         {/* Location row */}
@@ -436,7 +462,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
                   Wird geladen...
                 </>
               ) : (
-                "Komplettpaket buchen"
+                buttonText
               )}
             </button>
           </div>
@@ -459,12 +485,14 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
 
       {/* Included courses */}
       <div className="border-t border-gray-200 pt-8 px-7 pb-10 mt-auto lg:min-h-[20rem]">
-        <h3 className="font-bold text-black mb-5">Im Komplettpaket inkludiert:</h3>
+        <h3 className="font-bold text-black mb-5">{inclusionHeading}</h3>
         <ul className="space-y-4">
-          <li className="flex items-center gap-2">
-            <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" aria-hidden="true" />
-            <span className="text-base text-black">Akkreditiert mit 49 CME-Punkten</span>
-          </li>
+          {cmeTotal && (
+            <li className="flex items-center gap-2">
+              <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" aria-hidden="true" />
+              <span className="text-base text-black">Akkreditiert mit {cmeTotal} CME-Punkten</span>
+            </li>
+          )}
           <li className="flex items-start gap-2">
             <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" aria-hidden="true" />
             <span className="text-base text-[#0066FF] font-bold">Vollständiger Onlinekurs inkludiert</span>
@@ -473,7 +501,7 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
             <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" aria-hidden="true" />
             <span className="text-base text-[#0066FF] font-bold">Vollständiger Praxiskurs inkludiert</span>
           </li>
-          {INCLUDED_COURSES.map((course, index) => (
+          {includedCourses.map((course, index) => (
             <li key={index} className="flex items-start gap-2">
               <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-1" aria-hidden="true" />
               <button
