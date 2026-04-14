@@ -74,7 +74,7 @@ export const homeContent: HomeContent = {
         courseKey: "grundkurs_dermalfiller",
         imageAlt: "Grundkurs Dermalfiller",
         ctaLabel: "Zu den Kursdetails",
-        href: "/kurse/grundkurs-dermalfiller",
+        href: "/grundkurs-dermalfiller",
       },
       {
         kicker: "AUFBAUKURS",
