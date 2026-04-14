@@ -210,6 +210,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
         { text: "Üben mit Botulinum anstelle NaCl" },
         { text: "Erfahrene Dozent:innen-Aufsicht" },
         { text: "Max. 7 Teilnehmer:innen" },
+        { text: "Ärzt:innen-Community" },
       ],
     },
   };
