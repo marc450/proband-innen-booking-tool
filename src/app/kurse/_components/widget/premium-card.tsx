@@ -401,6 +401,7 @@ export function PremiumCard({
             {originalPrice && <div className="text-lg text-gray-400 line-through">{originalPrice}</div>}
           </div>
           {discountLabel && <p className="text-sm text-[#0066FF] font-semibold">{discountLabel}</p>}
+          <p className="text-sm text-black">Ratenzahlungen sind möglich mit Klarna.</p>
         </div>
 
         {/* Location row */}
