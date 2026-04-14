@@ -2,9 +2,7 @@
 
 import { useEffect } from "react";
 import { AvailableSlot, Course } from "@/lib/types";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ImageIcon } from "lucide-react";
+import { ArrowRight, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -15,7 +13,6 @@ interface Props {
 
 interface CourseGroup {
   title: string;
-  description: string | null;
   firstCourse: Course;
 }
 
@@ -39,7 +36,6 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
     if (!groupedMap.has(course.title)) {
       groupedMap.set(course.title, {
         title: course.title,
-        description: course.description,
         firstCourse: course,
       });
     } else {
@@ -53,8 +49,8 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
   const groups = Array.from(groupedMap.values());
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-black/10 bg-background h-[55px] flex items-center">
+    <div className="min-h-screen bg-[#FAEBE1]">
+      <header className="border-b border-black/10 bg-[#FAEBE1] h-[55px] flex items-center">
         <div className="max-w-5xl mx-auto px-4 w-full">
           <a href="https://ephia.de" target="_blank" rel="noopener noreferrer" className="inline-block">
             <img src="/logo.svg" alt="EPHIA" style={{ width: "203px", height: "auto" }} />
@@ -62,69 +58,76 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-16">
-        <div className="text-center mb-14">
-          <h1 className="font-bold mb-4" style={{ fontFamily: "Roboto", fontSize: "3rem", fontWeight: "bold", letterSpacing: "0rem", lineHeight: 1.25, textTransform: "uppercase", color: "#000000" }}>
-            Behandlungstermin buchen
-          </h1>
-          <p className="max-w-xl mx-auto" style={{ fontFamily: "Roboto", fontWeight: "normal", fontSize: "1.0625rem", letterSpacing: "0rem", lineHeight: 1.65, color: "#000000" }}>
-            Bitte wähle den Behandlungstermin in dem Kurs, an dem Deine behandelnde Ärzt:in teilnimmt.
-          </p>
-        </div>
+      <main className="bg-[#0066FF] py-16 md:py-20">
+        <div className="max-w-6xl mx-auto px-5 md:px-8">
+          <div className="text-center mb-12 md:mb-14 max-w-2xl mx-auto">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-wide uppercase text-white">
+              Behandlungstermin buchen
+            </h1>
+            <p className="text-base md:text-lg mt-4 text-white/85 leading-relaxed">
+              Bitte wähle den Behandlungstermin in dem Kurs, an dem Deine behandelnde Ärzt:in teilnimmt.
+            </p>
+          </div>
 
-        {groups.length === 0 ? (
-          <Card className="shadow-sm">
-            <CardContent className="py-12 text-center text-muted-foreground">
-              Derzeit sind keine Kurse mit verfügbaren Terminen vorhanden.
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {groups.map((group) => (
-              <Card key={group.title} className="shadow-sm overflow-hidden pt-0 gap-0">
-                {group.firstCourse.image_url ? (
-                  <Image
-                    src={group.firstCourse.image_url}
-                    alt={group.title}
-                    width={800}
-                    height={450}
-                    className="w-full aspect-video object-cover"
-                    sizes="(max-width: 640px) 100vw, 50vw"
-                    priority
-                  />
-                ) : (
-                  <div className="w-full aspect-video bg-muted flex items-center justify-center">
-                    <div className="text-center text-muted-foreground">
-                      <ImageIcon className="h-10 w-10 mx-auto mb-1 opacity-40" />
-                      <span className="text-xs opacity-40">Kursbild</span>
+          {groups.length === 0 ? (
+            <div className="bg-white rounded-[10px] p-10 md:p-12 text-center">
+              <p className="text-base md:text-lg text-black/70">
+                Derzeit sind keine Kurse mit verfügbaren Terminen vorhanden.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+              {groups.map((group) => (
+                <article
+                  key={group.title}
+                  className="bg-white rounded-[10px] overflow-hidden flex flex-col group"
+                >
+                  {group.firstCourse.image_url ? (
+                    <div className="relative aspect-[4/3] bg-black/5 overflow-hidden">
+                      <Image
+                        src={group.firstCourse.image_url}
+                        alt={group.firstCourse.treatment_title || group.title}
+                        fill
+                        quality={85}
+                        sizes="(min-width: 768px) 50vw, 100vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                      />
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div
+                      className="aspect-[4/3] flex items-center justify-center bg-black/5"
+                      aria-hidden="true"
+                    >
+                      <ImageIcon className="w-12 h-12 text-black/20" />
+                    </div>
+                  )}
 
-                <CardContent className="p-5 flex flex-col gap-3">
-                  <div>
-                    <h2 className="text-lg font-bold leading-tight">{group.firstCourse.treatment_title || group.title}</h2>
+                  <div className="flex flex-col flex-1 p-6 md:p-8">
+                    <h3 className="text-lg md:text-xl font-bold tracking-wide leading-tight text-black">
+                      {group.firstCourse.treatment_title || group.title}
+                    </h3>
+
                     {group.firstCourse.service_description && (
-                      <p className="text-sm text-muted-foreground mt-1">
+                      <p className="text-sm md:text-base text-black/75 leading-relaxed mt-4 flex-1">
                         {group.firstCourse.service_description}
                       </p>
                     )}
+
+                    <div className="mt-6">
+                      <Link
+                        href={`/book/privat/${group.firstCourse.id}`}
+                        className="inline-flex items-center justify-center gap-2 w-full text-sm md:text-base font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-5 py-3 transition-colors"
+                      >
+                        <span>Termine anschauen</span>
+                        <ArrowRight className="w-4 h-4" strokeWidth={2.25} />
+                      </Link>
+                    </div>
                   </div>
-
-                  <hr className="border-border/40" />
-
-
-                  <div className="pt-3 pb-1">
-                    <Link href={`/book/privat/${group.firstCourse.id}`}>
-                      <Button className="w-full">Termine anschauen</Button>
-                    </Link>
-                  </div>
-
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );
