@@ -30,7 +30,7 @@ export const grundkursDermalfiller: CourseLandingContent = {
     ],
     description:
       "Lerne die Grundlagen der ästhetischen Dermalfiller-Anwendung mit unserem Online-, Praxis- oder Kombikurs, speziell für approbierte Ärzt:innen. Tauche in praxisnahe Inhalte ein, die Dir den Einstieg in die Behandlung von Patient:innen mit Dermalfillern erleichtern oder Dein Basiswissen auffrischen. Du lernst die Anatomie des Alterns, die Behandlungsmöglichkeiten für das Mittelgesicht und erste Schritte in die Gesichtskonturierung kennen.",
-    videoPath: "/kurse/grundkurs_botulinum/hero-video.mp4",
+    videoPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_dermalfiller/dermalfiller-hero-web.mp4",
     videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
   },
 
