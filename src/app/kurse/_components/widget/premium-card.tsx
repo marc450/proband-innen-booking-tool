@@ -28,8 +28,12 @@ interface IncludedCourse {
   badgeClasses: string;
 }
 
-// All included courses use the same blue badge style
-const INCLUDED_BADGE = "bg-blue-100 text-blue-700 hover:bg-blue-200";
+// Each included course gets a distinct pill color
+const BADGE_COLORS = [
+  "bg-emerald-100 text-emerald-700 hover:bg-emerald-200",
+  "bg-purple-100 text-purple-700 hover:bg-purple-200",
+  "bg-pink-100 text-pink-700 hover:bg-pink-200",
+];
 
 interface PremiumCardProps {
   dates: CourseDate[];
@@ -80,7 +84,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
       "1.5 Jahre Zugriff",
       "Zertifikat",
     ],
-    badgeClasses: INCLUDED_BADGE,
+    badgeClasses: BADGE_COLORS[0],
   },
   {
     name: "Aufbaukurs Botulinum: Therapeutische Indikationen",
@@ -119,7 +123,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
       "1.5 Jahre Zugriff",
       "Zertifikat",
     ],
-    badgeClasses: INCLUDED_BADGE,
+    badgeClasses: BADGE_COLORS[1],
   },
   {
     name: "Grundkurs Medizinische Hautpflege",
@@ -161,7 +165,7 @@ const INCLUDED_COURSES: IncludedCourse[] = [
       "1.5 Jahre Zugriff",
       "Zertifikat",
     ],
-    badgeClasses: INCLUDED_BADGE,
+    badgeClasses: BADGE_COLORS[2],
   },
 ];
 
@@ -471,11 +475,11 @@ export function PremiumCard({ dates, onBook, isLoading, selectedDateForLoading }
           </li>
           {INCLUDED_COURSES.map((course, index) => (
             <li key={index} className="flex items-start gap-2">
-              <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" aria-hidden="true" />
+              <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-1" aria-hidden="true" />
               <button
                 type="button"
                 onClick={() => setInfoModal(course)}
-                className="text-sm font-semibold text-[#0066FF] underline underline-offset-2 decoration-[#0066FF]/30 hover:decoration-[#0066FF] transition-colors cursor-pointer text-left"
+                className={`text-sm font-semibold rounded-full px-3 py-1 transition-colors cursor-pointer text-left ${course.badgeClasses}`}
               >
                 {course.shortName || course.name}
               </button>

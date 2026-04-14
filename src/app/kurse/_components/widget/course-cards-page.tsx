@@ -183,11 +183,24 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
     return `EUR ${amount.toLocaleString("de-DE")}`;
   };
 
-  // Course-specific overrides for header and card descriptions
-  const COURSE_OVERRIDES: Record<string, { header?: string; onlineDesc?: string | React.ReactNode; praxisDesc?: string | React.ReactNode }> = {
+  // Course-specific overrides for header, descriptions and features
+  const COURSE_OVERRIDES: Record<string, {
+    header?: string;
+    onlineDesc?: string | React.ReactNode;
+    praxisDesc?: string | React.ReactNode;
+    kombiFeatures?: { text: string }[];
+  }> = {
     grundkurs_botulinum_zahnmedizin: {
       header: "UNSERE KURSANGEBOTE FÜR ZAHNÄRZT:INNEN",
       onlineDesc: "Erlerne die Theorie zur Behandlung von Patient:innen mit Botulinum.",
+      kombiFeatures: [
+        { text: "Vollständiger Onlinekurs inkludiert" },
+        { text: "6+ Stunden gemeinsames Behandeln" },
+        { text: "Üben an echten Proband:innen" },
+        { text: "Üben mit Botulinum anstelle NaCl" },
+        { text: "Erfahrene Dozent:innen-Aufsicht" },
+        { text: "Max. 7 Teilnehmer:innen" },
+      ],
     },
   };
 
@@ -364,7 +377,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   title="Online- & Praxiskurs"
                   description="Lerne die theoretischen Grundlagen online und die Praxis vor Ort an Proband:innen."
                   price={formatPrice(template.price_gross_kombi)}
-                  features={defaultKombi}
+                  features={overrides.kombiFeatures || defaultKombi}
                   bookingType="dropdown"
                   dates={dynamicDates}
                   buttonText="Online- & Praxiskurs buchen"
