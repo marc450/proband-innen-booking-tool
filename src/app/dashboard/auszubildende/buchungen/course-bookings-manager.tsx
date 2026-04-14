@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Download, ArrowRightLeft, Trash2, Loader2 } from "lucide-react";
+import { Search, Download, ArrowRightLeft, Trash2, Loader2, LinkIcon, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -132,6 +132,9 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
   const [cancelBooking, setCancelBooking] = useState<BookingRow | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState("");
+
+  // Profile link copied feedback
+  const [copiedProfileLink, setCopiedProfileLink] = useState<string | null>(null);
 
   // Status dropdown state
   const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null);
@@ -486,6 +489,26 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                         <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full whitespace-nowrap">
                           Profil unvollständig
                         </span>
+                      )}
+                      {!booking.profile_complete && booking.status === "booked" && (
+                        <button
+                          type="button"
+                          title="Link zur Profilvervollständigung kopieren"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const url = `${window.location.origin}/courses/success?booking_id=${booking.id}&email=${encodeURIComponent(booking.email || "")}`;
+                            navigator.clipboard.writeText(url);
+                            setCopiedProfileLink(booking.id);
+                            setTimeout(() => setCopiedProfileLink(null), 2000);
+                          }}
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 hover:text-amber-900 transition-colors cursor-pointer"
+                        >
+                          {copiedProfileLink === booking.id ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          ) : (
+                            <LinkIcon className="w-3.5 h-3.5" />
+                          )}
+                        </button>
                       )}
                     </div>
                   </TableCell>
