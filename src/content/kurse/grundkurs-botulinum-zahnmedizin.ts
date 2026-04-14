@@ -47,6 +47,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
 
   lernziele: {
     heading: "LERNZIELE",
+    audienceLabel: "Nur für approbierte Zahnmediziner:innen",
     intro:
       "Nach dem Kurs kannst Du Deine ersten Patient:innen sicher, fundiert und diskriminierungssensibel mit Botulinum behandeln. Dabei konzentrieren wir uns auf die folgenden Lernziele:",
     items: [

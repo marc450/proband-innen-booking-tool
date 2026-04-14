@@ -34,7 +34,7 @@ export function Lernziele({ content }: { content: CourseLernzieleContent }) {
               aria-hidden="true"
             />
             <span className="text-xs md:text-sm font-semibold text-black">
-              Nur für approbierte Ärzt:innen
+              {content.audienceLabel || "Nur für approbierte Ärzt:innen"}
             </span>
           </div>
         </div>

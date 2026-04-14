@@ -49,6 +49,8 @@ export interface CourseLernziel {
 export interface CourseLernzieleContent {
   heading: string;
   intro?: string;
+  /** Override for the audience badge, defaults to "Nur für approbierte Ärzt:innen" */
+  audienceLabel?: string;
   items: CourseLernziel[];
 }
 
