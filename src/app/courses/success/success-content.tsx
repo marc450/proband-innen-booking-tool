@@ -74,6 +74,23 @@ export function SuccessContent({ booking, profileComplete }: Props) {
     };
   }, [booking, profileComplete, done]);
 
+  // Auto-reload when booking hasn't arrived yet (webhook race condition).
+  // Tries every 3s for up to 30s, then stops and shows manual reload.
+  // Uses sessionStorage to persist retry count across page reloads.
+  useEffect(() => {
+    if (booking) {
+      sessionStorage.removeItem("profile_retry_count");
+      return;
+    }
+    const retries = parseInt(sessionStorage.getItem("profile_retry_count") || "0", 10);
+    if (retries >= 10) return;
+    const timer = setTimeout(() => {
+      sessionStorage.setItem("profile_retry_count", String(retries + 1));
+      window.location.reload();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [booking]);
+
   // Booking not found yet (webhook may not have fired)
   if (!booking) {
     return (
@@ -81,7 +98,7 @@ export function SuccessContent({ booking, profileComplete }: Props) {
         <Loader2 className="w-10 h-10 text-[#0066FF] animate-spin mx-auto mb-4" />
         <h2 className="text-xl font-bold text-black mb-2">Deine Buchung wird verarbeitet...</h2>
         <p className="text-gray-600 text-sm mb-4">
-          Bitte warte einen Moment. Falls diese Seite sich nicht aktualisiert, lade sie bitte neu.
+          Bitte warte einen Moment, die Seite aktualisiert sich automatisch.
         </p>
         <button
           onClick={() => window.location.reload()}
