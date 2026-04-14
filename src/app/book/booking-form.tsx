@@ -251,7 +251,13 @@ export function BookingForm({ slot, guidePrice }: BookingFormProps) {
                 </div>
 
                 <div>
-                  <h4 className="font-semibold">§6 Vorbereitung auf die Behandlung</h4>
+                  <h4 className="font-semibold">§6 Terminänderung durch EPHIA</h4>
+                  <p className="mt-1">Um einen lückenlosen Behandlungsablauf innerhalb der Kurse sicherzustellen, ist EPHIA berechtigt, gebuchte Zeitfenster auf einen anderen verfügbaren Termin innerhalb desselben Kurstages umzulegen oder die Buchung ersatzlos zu stornieren, sofern das gewählte Zeitfenster zu Behandlungslücken im Kursablauf führen würde.</p>
+                  <p className="mt-1">EPHIA wird die Proband:in in einem solchen Fall rechtzeitig per E-Mail über die Änderung oder Stornierung informieren.</p>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold">§7 Vorbereitung auf die Behandlung</h4>
                   <p className="mt-1">Zur Gewährleistung eines sicheren und reibungslosen Ablaufs verpflichten sich Proband:innen, folgende Vorbereitungshinweise einzuhalten:</p>
                   <ul className="list-disc list-inside mt-1 space-y-0.5">
                     <li>Kein Konsum von Alkohol oder Drogen innerhalb von 24 Stunden vor dem Termin</li>
@@ -264,14 +270,14 @@ export function BookingForm({ slot, guidePrice }: BookingFormProps) {
                 </div>
 
                 <div>
-                  <h4 className="font-semibold">§7 Behandlungskosten und Abrechnung</h4>
+                  <h4 className="font-semibold">§8 Behandlungskosten und Abrechnung</h4>
                   <p className="mt-1">Die auf der Buchungsseite angegebenen Richtpreise dienen ausschließlich der Orientierung und stellen kein verbindliches Angebot dar.</p>
                   <p className="mt-1">Der genaue Behandlungsumfang und die endgültigen Kosten werden im persönlichen Aufklärungsgespräch mit der behandelnden Ärzt:in vor der Behandlung festgelegt. Die Abrechnung erfolgt nach der Gebührenordnung für Ärzte (GOÄ).</p>
                   <p className="mt-1">Die Bezahlung der Behandlung erfolgt nach der Behandlung vor Ort. Eine Vorauszahlung findet nicht statt. Die im Rahmen der Buchung hinterlegte Bezahlmethode dient ausschließlich zur Absicherung der Ausfallgebühr gemäß §5 dieser Teilnahmebedingungen.</p>
                 </div>
 
                 <div>
-                  <h4 className="font-semibold">§8 Gesundheitlicher Zustand und Mitwirkungspflichten</h4>
+                  <h4 className="font-semibold">§9 Gesundheitlicher Zustand und Mitwirkungspflichten</h4>
                   <p className="mt-1">Proband:innen sind verpflichtet, die behandelnde Ärzt:in vor der Behandlung vollständig und wahrheitsgemäß über ihren Gesundheitszustand zu informieren.</p>
                   <p className="mt-1">Dies umfasst insbesondere:</p>
                   <ul className="list-disc list-inside mt-1 space-y-0.5">
