@@ -188,11 +188,21 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
     header?: string;
     onlineDesc?: string | React.ReactNode;
     praxisDesc?: string | React.ReactNode;
+    onlineFeatures?: { text: string }[];
     kombiFeatures?: { text: string }[];
   }> = {
     grundkurs_botulinum_zahnmedizin: {
       header: "UNSERE KURSANGEBOTE FÜR ZAHNÄRZT:INNEN",
       onlineDesc: "Erlerne die Theorie zur Behandlung von Patient:innen mit Botulinum.",
+      onlineFeatures: [
+        { text: "Akkreditiert mit 10 CME-Punkten" },
+        { text: "13 Lernkapitel" },
+        { text: "2+ Stunden Behandlungsvideos" },
+        { text: "Vorlagen für Rechnungen" },
+        { text: "Vorlagen für Patient:innen-Infos" },
+        { text: "1.5 Jahre Zugriff (inkl. Updates)" },
+        { text: "Ärzt:innen-Community" },
+      ],
       kombiFeatures: [
         { text: "Vollständiger Onlinekurs inkludiert" },
         { text: "6+ Stunden gemeinsames Behandeln" },
@@ -244,6 +254,14 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
             }
             praxisFeatures = rawPraxis.filter((f) => f.text !== "EPHIA-Zertifikat nach Abschluss");
             kombiFeatures = rawKombi.filter((f) => f.text !== "EPHIA-Zertifikat nach Abschluss");
+          } else if (overrides.onlineFeatures) {
+            // Course has explicit online feature override
+            onlineFeatures = overrides.onlineFeatures;
+            praxisFeatures = rawPraxis;
+            kombiFeatures = rawKombi;
+            if (!kombiFeatures.some((f) => f.text === "EPHIA-Zertifikat nach Abschluss")) {
+              kombiFeatures.push({ text: "EPHIA-Zertifikat nach Abschluss" });
+            }
           } else {
             // All other courses: keep features as-is, ensure Zertifikat is present
             onlineFeatures = rawOnline;
