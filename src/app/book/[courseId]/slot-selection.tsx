@@ -148,7 +148,7 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                           <div className="flex items-start gap-2.5 px-5 md:px-6 py-4 bg-amber-50 border-b border-amber-200">
                             <span className="text-base shrink-0" aria-hidden="true">⚠️</span>
                             <p className="text-sm md:text-base font-medium text-amber-900 leading-relaxed">
-                              Bitte wähle das <strong className="font-bold">früheste verfügbare Zeitfenster</strong>, damit keine Behandlungslücken in unserem Kurs auftreten.
+                              Bitte wähle das <strong className="font-bold">früheste verfügbare Zeitfenster</strong>. Buchungen, die zu Lücken führen, können von uns geändert oder storniert werden.
                             </p>
                           </div>
                           <div className="divide-y divide-black/[0.06]">
