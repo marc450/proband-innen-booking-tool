@@ -190,6 +190,11 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
     praxisDesc?: string | React.ReactNode;
     onlineFeatures?: { text: string }[];
     kombiFeatures?: { text: string }[];
+    komplettpaket?: {
+      description: string | React.ReactNode;
+      features: { text: string }[];
+      cmePoints: string;
+    };
   }> = {
     grundkurs_botulinum_zahnmedizin: {
       header: "UNSERE KURSANGEBOTE FÜR ZAHNÄRZT:INNEN",
@@ -212,6 +217,16 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
         { text: "Max. 7 Teilnehmer:innen" },
         { text: "Ärzt:innen-Community" },
       ],
+      komplettpaket: {
+        description: "Dein Komplettpaket: Online- & Praxiskurs Botulinum plus Onlinekurs Medizinische Hautpflege.",
+        features: [
+          { text: "Vollständiger Online- & Praxiskurs inkludiert" },
+          { text: "Onlinekurs Medizinische Hautpflege inkludiert" },
+          { text: "EPHIA-Zertifikat nach Abschluss" },
+          { text: "Ärzt:innen-Community" },
+        ],
+        cmePoints: "29",
+      },
     },
   };
 
@@ -339,7 +354,8 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
           }
 
           // Default layout for all other courses
-          const cardCount = [hasOnline, hasPraxis, hasKombi].filter(Boolean).length;
+          const hasKomplettpaket = !!overrides.komplettpaket;
+          const cardCount = [hasOnline, hasPraxis, hasKombi, hasKomplettpaket].filter(Boolean).length;
           const gridCols = cardCount === 1 ? "lg:grid-cols-1 max-w-lg mx-auto" : cardCount === 2 ? "lg:grid-cols-2 max-w-4xl mx-auto" : "lg:grid-cols-3";
 
           // Ensure kombi features show "inkludiert" suffix consistently
@@ -402,12 +418,31 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   buttonText="Online- & Praxiskurs buchen"
                   additionalInfo="Praxiskurs-Standort: Berlin-Mitte"
                   onBook={(sessionId) => handleBooking("Kombikurs", sessionId)}
-                  highlighted={true}
+                  highlighted={!hasKomplettpaket}
                   isLoading={loadingCheckout?.startsWith("Kombikurs-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
                   cmePoints={template.cme_kombi || undefined}
                   inclusionHeading="Im Online- & Praxiskurs inkludiert:"
                   titleClassName="text-[1.75rem] whitespace-nowrap"
+                />
+              )}
+
+              {hasKomplettpaket && overrides.komplettpaket && (
+                <CourseCard
+                  title="Komplettpaket"
+                  description={overrides.komplettpaket.description}
+                  price={formatPrice(template.price_gross_premium)}
+                  features={overrides.komplettpaket.features}
+                  bookingType="dropdown"
+                  dates={dynamicDates}
+                  buttonText="Komplettpaket buchen"
+                  additionalInfo="Praxiskurs-Standort: Berlin-Mitte"
+                  onBook={(sessionId) => handleBooking("Premium", sessionId)}
+                  highlighted={true}
+                  isLoading={loadingCheckout?.startsWith("Premium-") || false}
+                  selectedDateForLoading={loadingCheckout?.replace("Premium-", "")}
+                  cmePoints={overrides.komplettpaket.cmePoints}
+                  inclusionHeading="Im Komplettpaket inkludiert:"
                 />
               )}
             </div>

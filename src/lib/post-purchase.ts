@@ -211,12 +211,20 @@ export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { sk
   }
 
   if (data.email && data.courseType === "Premium") {
-    const premiumCourseIds = [
-      "grundkurs-botulinum-online",
-      "aufbaukurs-botulinum-periorale-zone",
-      "aufbaukurs-medizinische-indikation-fuer-botulinum-online",
-      "grundkurs-medizinische-hautpflege",
-    ];
+    const isDentist = data.courseKey === "grundkurs_botulinum_zahnmedizin";
+    const premiumCourseIds = isDentist
+      ? [
+          // Zahnmedizin Komplettpaket: Botulinum Zahnmedizin + Hautpflege
+          template?.online_course_id, // Zahnmedizin Botulinum online course
+          "grundkurs-medizinische-hautpflege",
+        ].filter(Boolean) as string[]
+      : [
+          // Humanmedizin Komplettpaket: 4 Onlinekurse
+          "grundkurs-botulinum-online",
+          "aufbaukurs-botulinum-periorale-zone",
+          "aufbaukurs-medizinische-indikation-fuer-botulinum-online",
+          "grundkurs-medizinische-hautpflege",
+        ];
     for (const lwCourseId of premiumCourseIds) {
       try { await enrollInLearnWorlds(data.email, lwCourseId, data.firstName, data.lastName); }
       catch (lwErr) { console.error(`LearnWorlds Premium enrollment error (${lwCourseId}):`, lwErr); }

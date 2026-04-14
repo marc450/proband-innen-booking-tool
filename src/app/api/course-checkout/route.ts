@@ -99,10 +99,13 @@ export async function POST(req: NextRequest) {
       description = template.description_praxis || "";
       grossPrice = template.price_gross_praxis || 0;
     } else if (isPremium) {
-      // Komplettpaket: hardcoded 10% discount on EUR 2.220
-      productName = `Komplettpaket – ${sessionLabel}`;
-      description = "4 Onlinekurse + Praxiskurs Botulinum";
-      grossPrice = 2220;
+      productName = isDentist
+        ? `Komplettpaket (Zahnmedizin) – ${sessionLabel}`
+        : `Komplettpaket – ${sessionLabel}`;
+      description = isDentist
+        ? "Online- & Praxiskurs Botulinum + Onlinekurs Medizinische Hautpflege"
+        : "4 Onlinekurse + Praxiskurs Botulinum";
+      grossPrice = template.price_gross_premium || (isDentist ? 0 : 2220);
     } else {
       // Kombikurs
       productName = isDentist
@@ -114,8 +117,8 @@ export async function POST(req: NextRequest) {
 
     let unitAmount = Math.round(grossPrice * 100); // EUR to cents
 
-    // Premium: apply 10% discount
-    if (isPremium) {
+    // Humanmedizin Premium: apply 10% discount (Zahnmedizin uses DB price directly)
+    if (isPremium && !isDentist) {
       unitAmount = Math.round(unitAmount * 0.9);
     }
 

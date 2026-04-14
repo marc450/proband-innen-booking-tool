@@ -17,6 +17,7 @@ export interface CourseTemplate {
   price_gross_online: number | null;
   price_gross_praxis: number | null;
   price_gross_kombi: number | null;
+  price_gross_premium: number | null;
   vat_rate_online: number | null;
   vat_rate_praxis: number | null;
   vat_rate_kombi: number | null;
