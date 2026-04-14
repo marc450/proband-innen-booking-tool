@@ -40,7 +40,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
     ],
     description:
       "Lerne die Grundlagen der zahnärztlichen Botulinum-Anwendung mit unserem Online-, Praxis- oder Kombikurs, speziell für approbierte Zahnärzt:innen. Neben ästhetischen Indikationen wie Stirn und Glabella behandeln wir auch therapeutische Anwendungen wie Bruxismus und Migräne. Mit uns lernst Du patient:innenzentrierte Ansätze kennen und behandelst bewusst und diskriminierungssensibel mit Botulinum und nicht NaCl.",
-    videoPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_botulinum-fZ/My%20Movie_compressed.mp4",
+    videoPath: "/kurse/grundkurs_botulinum/hero-video.mp4",
     videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
   },
 
@@ -364,9 +364,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
           "danach die Behandlungsschritte live an Patient:innen, fachlich kommentiert und anschaulich erklärt.",
           "So kannst Du den Ablauf sicher nachvollziehen und in Deinen Praxisalltag übertragen.",
         ],
-        // TODO: Replace with Zahnmedizin-specific video
-        mediaPath: "/kurse/grundkurs_botulinum_zahnmedizin/plattform/behandlung.mp4",
-        mediaPoster: "/kurse/grundkurs_botulinum_zahnmedizin/plattform/behandlung-poster.jpg",
+        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_botulinum-fZ/My%20Movie_compressed.mp4",
       },
       {
         title: "Fachlich hochstehende Inhalte",
