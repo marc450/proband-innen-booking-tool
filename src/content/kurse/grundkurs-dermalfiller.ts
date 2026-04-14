@@ -369,7 +369,7 @@ export const grundkursDermalfiller: CourseLandingContent = {
           "Inhalte können jederzeit pausiert und wieder aufgenommen werden.",
           "Im Reiter \u201eAustausch\" kannst Du Fragen stellen und Dich mit der Community und Dozierenden austauschen.",
         ],
-        mediaPath: "/kurse/grundkurs_botulinum/plattform/navigation.png",
+        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_dermalfiller/1.png",
       },
       {
         title: "Realitätsnahe Behandlungen",
@@ -380,7 +380,7 @@ export const grundkursDermalfiller: CourseLandingContent = {
           "danach die Behandlungsschritte live an Patient:innen, fachlich kommentiert und anschaulich erklärt.",
           "So kannst Du den Ablauf sicher nachvollziehen und in Deinen Praxisalltag übertragen.",
         ],
-        mediaPath: "/kurse/grundkurs_botulinum/plattform/navigation.png",
+        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_dermalfiller/my-movie-web.mp4",
       },
       {
         title: "Fachlich hochstehende Inhalte",
@@ -391,7 +391,7 @@ export const grundkursDermalfiller: CourseLandingContent = {
           "Auch nach dem Kurs sind unsere Dozierenden in der Community für Fragen erreichbar.",
           "Für ein nachhaltiges Lernen, weit über das Kursende hinaus.",
         ],
-        mediaPath: "/kurse/grundkurs_botulinum/plattform/inhalte.png",
+        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_dermalfiller/2.png",
       },
       {
         title: "Klare Lernziele & Tests",
@@ -402,7 +402,7 @@ export const grundkursDermalfiller: CourseLandingContent = {
           "Alle Inhalte wurden so ausgewählt, dass sie direkt für Deine praktische Arbeit relevant sind.",
           "So lernst Du nicht einfach nur mit, sondern gezielt für Deine Patient:innen.",
         ],
-        mediaPath: "/kurse/grundkurs_botulinum/plattform/tests.png",
+        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_dermalfiller/3.png",
       },
     ],
   },
