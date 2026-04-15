@@ -6,6 +6,7 @@ import { Loader2, Mail, Pencil, Search, RefreshCw, X } from "lucide-react";
 import { useSignature } from "@/hooks/use-signature";
 import { useDrafts } from "@/hooks/use-drafts";
 import { RichTextEditor } from "@/app/dashboard/inbox/rich-text-editor";
+import { ContactAutocomplete } from "@/app/dashboard/inbox/contact-autocomplete";
 import { Input } from "@/components/ui/input";
 
 type InboxFilter = "all" | "unread" | "answered" | "spam";
@@ -273,11 +274,10 @@ export function InboxMobile() {
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
             <label className="text-xs text-gray-500 w-8">An</label>
-            <Input
+            <ContactAutocomplete
               value={composeTo}
-              onChange={(e) => setComposeTo(e.target.value)}
-              placeholder="email@example.com"
-              type="email"
+              onChange={setComposeTo}
+              placeholder="Name oder E-Mail..."
               className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8 text-sm"
             />
           </div>

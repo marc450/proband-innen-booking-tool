@@ -5,6 +5,7 @@ import { Loader2, Send, X, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "./rich-text-editor";
+import { ContactAutocomplete } from "./contact-autocomplete";
 
 // Center-column compose view shown when the user clicks "Neue E-Mail".
 // Replaces the old modal dialog: the draft shows up as a synthetic item
@@ -71,11 +72,10 @@ export function ComposePane({
             <label className="text-xs font-medium text-gray-500 w-16 flex-shrink-0">
               An
             </label>
-            <Input
+            <ContactAutocomplete
               value={to}
-              onChange={(e) => onToChange(e.target.value)}
-              placeholder="email@example.com"
-              type="email"
+              onChange={onToChange}
+              placeholder="Name oder E-Mail..."
               className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8"
             />
             {(!showCc || !showBcc) && (
@@ -108,11 +108,10 @@ export function ComposePane({
               <label className="text-xs font-medium text-gray-500 w-16 flex-shrink-0">
                 CC
               </label>
-              <Input
+              <ContactAutocomplete
                 value={cc}
-                onChange={(e) => onCcChange(e.target.value)}
-                placeholder="email@example.com"
-                type="email"
+                onChange={onCcChange}
+                placeholder="Name oder E-Mail..."
                 className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8"
                 autoFocus
               />
@@ -135,11 +134,10 @@ export function ComposePane({
               <label className="text-xs font-medium text-gray-500 w-16 flex-shrink-0">
                 BCC
               </label>
-              <Input
+              <ContactAutocomplete
                 value={bcc}
-                onChange={(e) => onBccChange(e.target.value)}
-                placeholder="email@example.com"
-                type="email"
+                onChange={onBccChange}
+                placeholder="Name oder E-Mail..."
                 className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8"
                 autoFocus
               />
