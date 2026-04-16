@@ -21,7 +21,7 @@ type NavLink = {
 
 const NAV_LINKS: NavLink[] = [
   {
-    label: "Kurse",
+    label: "Unsere Kurse",
     href: "/kurse/unsere-kurse",
     subLinks: [
       { label: "Einzelkurse", href: "/kurse/unsere-kurse" },
