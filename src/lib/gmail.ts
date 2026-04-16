@@ -169,6 +169,11 @@ export async function getThread(threadId: string): Promise<GmailThread> {
   return gmailFetch(`threads/${threadId}?format=full`);
 }
 
+// Move a thread to Gmail Trash. Reversible from within Gmail for 30 days.
+export async function trashThread(threadId: string): Promise<void> {
+  await gmailFetch(`threads/${threadId}/trash`, { method: "POST" });
+}
+
 // Get a single message
 export async function getMessage(messageId: string): Promise<GmailMessage> {
   return gmailFetch(`messages/${messageId}?format=full`);

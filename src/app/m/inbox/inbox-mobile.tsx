@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Mail, Pencil, Search, RefreshCw, X } from "lucide-react";
+import { Loader2, Mail, Pencil, Search, RefreshCw, Trash2, X } from "lucide-react";
 import { useSignature } from "@/hooks/use-signature";
 import { useDrafts } from "@/hooks/use-drafts";
 import { RichTextEditor } from "@/app/dashboard/inbox/rich-text-editor";
 import { ContactAutocomplete } from "@/app/dashboard/inbox/contact-autocomplete";
 import { Input } from "@/components/ui/input";
+import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
 
 type InboxFilter = "all" | "unread" | "answered" | "spam";
 
@@ -69,6 +70,164 @@ function getInitials(name: string) {
   ).toUpperCase() || "?";
 }
 
+// Minimum horizontal swipe (px) before the delete background is revealed.
+const SWIPE_REVEAL = 16;
+// Swipe distance required to trigger the delete confirm on release.
+const SWIPE_TRIGGER = 96;
+// Maximum visual translation applied while dragging.
+const SWIPE_MAX = 120;
+
+interface SwipeableThreadRowProps {
+  thread: ThreadSummary;
+  assignment?: Assignment;
+  hasDraft: boolean;
+  onOpen: () => void;
+  onRequestDelete: () => void;
+}
+
+function SwipeableThreadRow({ thread, assignment, hasDraft, onOpen, onRequestDelete }: SwipeableThreadRowProps) {
+  const [offset, setOffset] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const lockedAxis = useRef<"x" | "y" | null>(null);
+  const moved = useRef(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    startX.current = t.clientX;
+    startY.current = t.clientY;
+    lockedAxis.current = null;
+    moved.current = false;
+    setDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    const dx = t.clientX - startX.current;
+    const dy = t.clientY - startY.current;
+    if (!lockedAxis.current) {
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+        lockedAxis.current = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      }
+    }
+    if (lockedAxis.current !== "x") return;
+    moved.current = true;
+    // Only track left-swipes. Clamp rubber-band feel at the max.
+    const next = Math.max(-SWIPE_MAX, Math.min(0, dx));
+    setOffset(next);
+  };
+
+  const handleTouchEnd = () => {
+    setDragging(false);
+    if (lockedAxis.current === "x" && offset <= -SWIPE_TRIGGER) {
+      // Snap fully open so the action is visible during the confirm prompt.
+      setOffset(-SWIPE_MAX);
+      onRequestDelete();
+    } else {
+      setOffset(0);
+    }
+  };
+
+  const handleClick = () => {
+    // Suppress click that fires at end of a swipe gesture.
+    if (moved.current && lockedAxis.current === "x") return;
+    onOpen();
+  };
+
+  const revealed = offset < -SWIPE_REVEAL;
+
+  return (
+    <div className="relative rounded-[10px] overflow-hidden">
+      {/* Delete background — becomes visible as the row slides left. */}
+      <div
+        className={`absolute inset-0 flex items-center justify-end pr-5 bg-red-500 transition-opacity ${revealed ? "opacity-100" : "opacity-0"}`}
+        aria-hidden="true"
+      >
+        <div className="flex flex-col items-center text-white">
+          <Trash2 className="w-5 h-5" />
+          <span className="text-[10px] font-semibold mt-0.5">Löschen</span>
+        </div>
+      </div>
+
+      <button
+        onClick={handleClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+        style={{
+          transform: `translateX(${offset}px)`,
+          transition: dragging ? "none" : "transform 200ms ease-out",
+        }}
+        className="w-full bg-white rounded-[10px] p-4 text-left active:bg-gray-50 relative"
+      >
+        <div className="flex items-start gap-3">
+          {/* Avatar */}
+          <div className="w-10 h-10 rounded-full bg-[#0066FF]/10 flex items-center justify-center flex-shrink-0">
+            <span className="text-xs font-bold text-[#0066FF]">
+              {getInitials(thread.contactName || thread.contactEmail)}
+            </span>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <span
+                className={`text-sm truncate ${
+                  thread.isUnread ? "font-bold text-black" : "font-medium text-gray-700"
+                }`}
+              >
+                {thread.contactName || thread.contactEmail}
+              </span>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {assignment && (() => {
+                  const color = getAvatarColor(assignment.assignedTo);
+                  return (
+                    <span
+                      className={`w-5 h-5 rounded-full ${color.bg} ${color.text} text-[9px] font-bold flex items-center justify-center flex-shrink-0`}
+                    >
+                      {assignment.assignedToName
+                        .split(" ")
+                        .map((w: string) => w[0])
+                        .slice(-2)
+                        .join("")
+                        .toUpperCase()}
+                    </span>
+                  );
+                })()}
+                {hasDraft && (
+                  <span className="text-[9px] font-medium text-amber-600 bg-amber-50 rounded px-1 py-0.5">
+                    Entwurf
+                  </span>
+                )}
+                <span className="text-[10px] text-gray-400">
+                  {formatDate(thread.lastDate)}
+                </span>
+              </div>
+            </div>
+            <p
+              className={`text-xs truncate mt-0.5 ${
+                thread.isUnread ? "font-semibold text-black" : "text-gray-600"
+              }`}
+            >
+              {thread.subject || "(kein Betreff)"}
+            </p>
+            <p className="text-xs text-gray-400 truncate mt-0.5">
+              {thread.snippet}
+            </p>
+          </div>
+
+          {/* Unread dot */}
+          {thread.isUnread && (
+            <div className="w-2.5 h-2.5 rounded-full bg-[#0066FF] flex-shrink-0 mt-1.5" />
+          )}
+        </div>
+      </button>
+    </div>
+  );
+}
+
 export function InboxMobile() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -84,6 +243,11 @@ export function InboxMobile() {
   const [nextPageToken, setNextPageToken] = useState<string | undefined>();
   const [refreshing, setRefreshing] = useState(false);
   const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
+
+  // Swipe-to-delete state: move the thread to Gmail Trash after confirmation.
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Compose overlay state
   const [composing, setComposing] = useState(false);
@@ -146,6 +310,29 @@ export function InboxMobile() {
     },
     [buildQuery, searchQuery, filter]
   );
+
+  const confirmDelete = useCallback(async () => {
+    if (!pendingDeleteId || deleting) return;
+    const id = pendingDeleteId;
+    setDeleting(true);
+    // Optimistically remove from the visible list; restore on error.
+    const previous = threads;
+    setThreads((prev) => prev.filter((t) => t.id !== id));
+    try {
+      const res = await fetch(`/api/gmail/threads/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setThreads(previous);
+        setDeleteError(data.error || "E-Mail konnte nicht gelöscht werden.");
+      }
+    } catch {
+      setThreads(previous);
+      setDeleteError("Verbindungsfehler beim Löschen.");
+    } finally {
+      setDeleting(false);
+      setPendingDeleteId(null);
+    }
+  }, [pendingDeleteId, deleting, threads]);
 
   const fetchAssignments = useCallback(async () => {
     try {
@@ -473,74 +660,14 @@ export function InboxMobile() {
       ) : (
         <div className="space-y-2">
           {visibleThreads.map((thread) => (
-            <button
+            <SwipeableThreadRow
               key={thread.id}
-              onClick={() => router.push(`/m/inbox/${thread.id}`)}
-              className="w-full bg-white rounded-[10px] p-4 text-left active:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-start gap-3">
-                {/* Avatar */}
-                <div className="w-10 h-10 rounded-full bg-[#0066FF]/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-xs font-bold text-[#0066FF]">
-                    {getInitials(thread.contactName || thread.contactEmail)}
-                  </span>
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <span
-                      className={`text-sm truncate ${
-                        thread.isUnread ? "font-bold text-black" : "font-medium text-gray-700"
-                      }`}
-                    >
-                      {thread.contactName || thread.contactEmail}
-                    </span>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      {assignments[thread.id] && (() => {
-                        const a = assignments[thread.id];
-                        const color = getAvatarColor(a.assignedTo);
-                        return (
-                          <span
-                            className={`w-5 h-5 rounded-full ${color.bg} ${color.text} text-[9px] font-bold flex items-center justify-center flex-shrink-0`}
-                          >
-                            {a.assignedToName
-                              .split(" ")
-                              .map((w: string) => w[0])
-                              .slice(-2)
-                              .join("")
-                              .toUpperCase()}
-                          </span>
-                        );
-                      })()}
-                      {drafts.replyDrafts[thread.id] && (
-                        <span className="text-[9px] font-medium text-amber-600 bg-amber-50 rounded px-1 py-0.5">
-                          Entwurf
-                        </span>
-                      )}
-                      <span className="text-[10px] text-gray-400">
-                        {formatDate(thread.lastDate)}
-                      </span>
-                    </div>
-                  </div>
-                  <p
-                    className={`text-xs truncate mt-0.5 ${
-                      thread.isUnread ? "font-semibold text-black" : "text-gray-600"
-                    }`}
-                  >
-                    {thread.subject || "(kein Betreff)"}
-                  </p>
-                  <p className="text-xs text-gray-400 truncate mt-0.5">
-                    {thread.snippet}
-                  </p>
-                </div>
-
-                {/* Unread dot */}
-                {thread.isUnread && (
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#0066FF] flex-shrink-0 mt-1.5" />
-                )}
-              </div>
-            </button>
+              thread={thread}
+              assignment={assignments[thread.id]}
+              hasDraft={!!drafts.replyDrafts[thread.id]}
+              onOpen={() => router.push(`/m/inbox/${thread.id}`)}
+              onRequestDelete={() => setPendingDeleteId(thread.id)}
+            />
           ))}
 
           {visibleThreads.length === 0 && !loading && (
@@ -588,6 +715,23 @@ export function InboxMobile() {
       >
         <Pencil className="w-5 h-5" />
       </button>
+
+      <ConfirmDialog
+        open={!!pendingDeleteId}
+        title="E-Mail löschen?"
+        description="Die E-Mail wird in den Gmail-Papierkorb verschoben und dort nach 30 Tagen endgültig entfernt."
+        confirmLabel={deleting ? "Wird gelöscht..." : "Löschen"}
+        variant="destructive"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
+
+      <AlertDialog
+        open={!!deleteError}
+        title="Fehler beim Löschen"
+        description={deleteError ?? ""}
+        onClose={() => setDeleteError(null)}
+      />
     </div>
   );
 }
