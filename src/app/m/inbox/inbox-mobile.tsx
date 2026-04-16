@@ -90,6 +90,10 @@ export function InboxMobile() {
   const [composeTo, setComposeTo] = useState("");
   const [composeSubject, setComposeSubject] = useState("");
   const [composeBody, setComposeBody] = useState("");
+  const [composeCc, setComposeCc] = useState("");
+  const [composeBcc, setComposeBcc] = useState("");
+  const [showComposeCc, setShowComposeCc] = useState(false);
+  const [showComposeBcc, setShowComposeBcc] = useState(false);
   const [composeSending, setComposeSending] = useState(false);
 
   const buildQuery = useCallback((search: string, f: InboxFilter) => {
@@ -166,6 +170,10 @@ export function InboxMobile() {
       setComposeTo(to);
       setComposeSubject("");
       setComposeBody(signature?.html ? `<br><br>${signature.html}` : "");
+      setComposeCc("");
+      setComposeBcc("");
+      setShowComposeCc(false);
+      setShowComposeBcc(false);
       setComposing(true);
     }
   }, [searchParams, signature]);
@@ -173,10 +181,10 @@ export function InboxMobile() {
   // Auto-save compose draft on field changes
   useEffect(() => {
     if (!composing) return;
-    if (!composeTo && !composeSubject && !composeBody) return;
-    drafts.saveComposeDraft({ to: composeTo, subject: composeSubject, body: composeBody, cc: "", bcc: "" });
+    if (!composeTo && !composeSubject && !composeBody && !composeCc && !composeBcc) return;
+    drafts.saveComposeDraft({ to: composeTo, subject: composeSubject, body: composeBody, cc: composeCc, bcc: composeBcc });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [composing, composeTo, composeSubject, composeBody]);
+  }, [composing, composeTo, composeSubject, composeBody, composeCc, composeBcc]);
 
   const visibleThreads = useMemo(() => {
     if (filter === "answered") {
@@ -211,6 +219,8 @@ export function InboxMobile() {
           to: composeTo,
           subject: composeSubject,
           htmlBody: `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;">${composeBody}</div>`,
+          cc: composeCc || undefined,
+          bcc: composeBcc || undefined,
         }),
       });
       if (res.ok) {
@@ -218,6 +228,10 @@ export function InboxMobile() {
         setComposeTo("");
         setComposeSubject("");
         setComposeBody("");
+        setComposeCc("");
+        setComposeBcc("");
+        setShowComposeCc(false);
+        setShowComposeBcc(false);
         await drafts.deleteComposeDraft();
         fetchThreads();
       }
@@ -256,6 +270,10 @@ export function InboxMobile() {
               setComposeTo("");
               setComposeSubject("");
               setComposeBody("");
+              setComposeCc("");
+              setComposeBcc("");
+              setShowComposeCc(false);
+              setShowComposeBcc(false);
               await drafts.deleteComposeDraft();
             }}
             className="text-sm text-[#0066FF] font-medium"
@@ -280,7 +298,73 @@ export function InboxMobile() {
               placeholder="Name oder E-Mail..."
               className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8 text-sm"
             />
+            {(!showComposeCc || !showComposeBcc) && (
+              <div className="flex gap-2 flex-shrink-0">
+                {!showComposeCc && (
+                  <button
+                    type="button"
+                    onClick={() => setShowComposeCc(true)}
+                    className="text-xs text-[#0066FF] font-medium"
+                  >
+                    CC
+                  </button>
+                )}
+                {!showComposeBcc && (
+                  <button
+                    type="button"
+                    onClick={() => setShowComposeBcc(true)}
+                    className="text-xs text-[#0066FF] font-medium"
+                  >
+                    BCC
+                  </button>
+                )}
+              </div>
+            )}
           </div>
+          {showComposeCc && (
+            <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
+              <label className="text-xs text-gray-500 w-8">CC</label>
+              <ContactAutocomplete
+                value={composeCc}
+                onChange={setComposeCc}
+                placeholder="Name oder E-Mail..."
+                className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8 text-sm"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setShowComposeCc(false);
+                  setComposeCc("");
+                }}
+                className="text-gray-400 active:text-gray-600 flex-shrink-0 text-xs px-1"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          {showComposeBcc && (
+            <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
+              <label className="text-xs text-gray-500 w-8">BCC</label>
+              <ContactAutocomplete
+                value={composeBcc}
+                onChange={setComposeBcc}
+                placeholder="Name oder E-Mail..."
+                className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8 text-sm"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setShowComposeBcc(false);
+                  setComposeBcc("");
+                }}
+                className="text-gray-400 active:text-gray-600 flex-shrink-0 text-xs px-1"
+              >
+                ✕
+              </button>
+            </div>
+          )}
           <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
             <label className="text-xs text-gray-500 w-8">Betr.</label>
             <Input
@@ -484,10 +568,18 @@ export function InboxMobile() {
             setComposeTo(drafts.composeDraft.to);
             setComposeSubject(drafts.composeDraft.subject);
             setComposeBody(drafts.composeDraft.body);
+            setComposeCc(drafts.composeDraft.cc || "");
+            setComposeBcc(drafts.composeDraft.bcc || "");
+            setShowComposeCc(!!drafts.composeDraft.cc);
+            setShowComposeBcc(!!drafts.composeDraft.bcc);
           } else {
             setComposeTo("");
             setComposeSubject("");
             setComposeBody(signature?.html ? `<br><br>${signature.html}` : "");
+            setComposeCc("");
+            setComposeBcc("");
+            setShowComposeCc(false);
+            setShowComposeBcc(false);
           }
           setComposing(true);
         }}

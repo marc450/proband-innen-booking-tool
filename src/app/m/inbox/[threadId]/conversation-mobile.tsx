@@ -6,6 +6,7 @@ import { ArrowLeft, Loader2, Send, ChevronDown, UserCircle } from "lucide-react"
 import { useSignature } from "@/hooks/use-signature";
 import { useDrafts } from "@/hooks/use-drafts";
 import { RichTextEditor } from "@/app/dashboard/inbox/rich-text-editor";
+import { ContactAutocomplete } from "@/app/dashboard/inbox/contact-autocomplete";
 import type { ThreadMessage } from "@/app/dashboard/inbox/conversation-pane";
 
 interface TeamMember { id: string; name: string; initials: string; }
@@ -43,6 +44,10 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
   const [loading, setLoading] = useState(true);
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyHtml, setReplyHtml] = useState("");
+  const [replyCc, setReplyCc] = useState("");
+  const [replyBcc, setReplyBcc] = useState("");
+  const [showCc, setShowCc] = useState(false);
+  const [showBcc, setShowBcc] = useState(false);
   const [sending, setSending] = useState(false);
   const [expandedMsgs, setExpandedMsgs] = useState<Set<string>>(new Set());
 
@@ -131,6 +136,10 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
     const saved = drafts.replyDrafts[threadId];
     if (saved && saved.html) {
       setReplyHtml(saved.html);
+      setReplyCc(saved.cc || "");
+      setReplyBcc(saved.bcc || "");
+      setShowCc(saved.showCc);
+      setShowBcc(saved.showBcc);
       setReplyOpen(true);
     }
     // Only run once drafts are loaded
@@ -142,13 +151,19 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
     if (!replyOpen || !replyHtml.trim() || draftDeletedRef.current) return;
     drafts.saveReplyDraft(threadId, {
       html: replyHtml,
-      cc: "",
-      bcc: "",
-      showCc: false,
-      showBcc: false,
+      cc: replyCc,
+      bcc: replyBcc,
+      showCc,
+      showBcc,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [replyHtml, replyOpen]);
+  }, [replyHtml, replyOpen, replyCc, replyBcc, showCc, showBcc]);
+
+  // Keep refs to latest reply state for the cleanup effect (avoids stale closures)
+  const replyHtmlRef = useRef(replyHtml);
+  replyHtmlRef.current = replyHtml;
+  const replyStateRef = useRef({ cc: replyCc, bcc: replyBcc, showCc, showBcc });
+  replyStateRef.current = { cc: replyCc, bcc: replyBcc, showCc, showBcc };
 
   // Save reply draft on unmount / navigation away
   useEffect(() => {
@@ -156,21 +171,18 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
       if (draftDeletedRef.current) return;
       const html = replyHtmlRef.current;
       if (html && html.trim()) {
+        const s = replyStateRef.current;
         drafts.saveReplyDraft(threadId, {
           html,
-          cc: "",
-          bcc: "",
-          showCc: false,
-          showBcc: false,
+          cc: s.cc,
+          bcc: s.bcc,
+          showCc: s.showCc,
+          showBcc: s.showBcc,
         });
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threadId]);
-
-  // Keep a ref to replyHtml for the cleanup effect
-  const replyHtmlRef = useRef(replyHtml);
-  replyHtmlRef.current = replyHtml;
 
   const lastMsg = messages[messages.length - 1];
   const subject = messages[0]?.subject || "(kein Betreff)";
@@ -178,6 +190,16 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
   const openReply = () => {
     const sig = signature?.html ? `<br><br>${signature.html}` : "";
     setReplyHtml(sig);
+    // Auto-populate CC from the last message's CC header (desktop parity)
+    if (lastMsg?.cc) {
+      setReplyCc(lastMsg.cc);
+      setShowCc(true);
+    } else {
+      setReplyCc("");
+      setShowCc(false);
+    }
+    setReplyBcc("");
+    setShowBcc(false);
     setReplyOpen(true);
   };
 
@@ -203,12 +225,18 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
           references: lastMsg.references
             ? `${lastMsg.references} ${lastMsg.messageId}`
             : lastMsg.messageId,
+          cc: replyCc || undefined,
+          bcc: replyBcc || undefined,
         }),
       });
       if (res.ok) {
         draftDeletedRef.current = true;
         setReplyOpen(false);
         setReplyHtml("");
+        setReplyCc("");
+        setReplyBcc("");
+        setShowCc(false);
+        setShowBcc(false);
         await drafts.deleteReplyDraft(threadId);
         // Refetch thread
         const refreshRes = await fetch(
@@ -395,12 +423,80 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
           </div>
         ) : (
           <div className="p-3 space-y-2">
-            <div className="text-xs text-gray-500">
-              An:{" "}
-              {lastMsg?.isInbound
-                ? lastMsg.fromEmail
-                : lastMsg?.to.split(",")[0].trim()}
+            <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
+              <span className="truncate min-w-0">
+                An:{" "}
+                {lastMsg?.isInbound
+                  ? lastMsg.fromEmail
+                  : lastMsg?.to.split(",")[0].trim()}
+              </span>
+              {(!showCc || !showBcc) && (
+                <div className="flex gap-2 flex-shrink-0">
+                  {!showCc && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCc(true)}
+                      className="text-xs text-[#0066FF] font-medium"
+                    >
+                      CC
+                    </button>
+                  )}
+                  {!showBcc && (
+                    <button
+                      type="button"
+                      onClick={() => setShowBcc(true)}
+                      className="text-xs text-[#0066FF] font-medium"
+                    >
+                      BCC
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
+            {showCc && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-gray-500 w-8 flex-shrink-0">CC</label>
+                <ContactAutocomplete
+                  value={replyCc}
+                  onChange={setReplyCc}
+                  placeholder="Name oder E-Mail..."
+                  className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8 text-sm"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCc(false);
+                    setReplyCc("");
+                  }}
+                  className="text-gray-400 active:text-gray-600 flex-shrink-0 text-xs px-1"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            {showBcc && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-gray-500 w-8 flex-shrink-0">BCC</label>
+                <ContactAutocomplete
+                  value={replyBcc}
+                  onChange={setReplyBcc}
+                  placeholder="Name oder E-Mail..."
+                  className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8 text-sm"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBcc(false);
+                    setReplyBcc("");
+                  }}
+                  className="text-gray-400 active:text-gray-600 flex-shrink-0 text-xs px-1"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
             <RichTextEditor
               value={replyHtml}
               onChange={setReplyHtml}
