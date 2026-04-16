@@ -383,7 +383,7 @@ export const grundkursDermalfiller: CourseLandingContent = {
           "danach die Behandlungsschritte live an Patient:innen, fachlich kommentiert und anschaulich erklärt.",
           "So kannst Du den Ablauf sicher nachvollziehen und in Deinen Praxisalltag übertragen.",
         ],
-        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_dermalfiller/my-movie-web.mp4",
+        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_dermalfiller/My%20Movie-compressed.mp4",
       },
       {
         title: "Fachlich hochstehende Inhalte",
