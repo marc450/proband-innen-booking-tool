@@ -157,7 +157,7 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
       </Link>
 
       {/* 3-column HubSpot-style layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_320px] gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_320px] gap-5">
 
         {/* ===== LEFT: Contact info ===== */}
         <div className="space-y-5">
@@ -166,7 +166,7 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
             <CardContent className="pt-5 pb-4">
               <div className="relative">
                 <div className="flex items-center gap-1.5 group">
-                  <h1 className="text-xl font-semibold">
+                  <h1 className="text-xl font-semibold break-words min-w-0">
                     {[azubi.title, azubi.first_name, azubi.last_name].filter(Boolean).join(" ") || "Unbekannt"}
                   </h1>
                   <button

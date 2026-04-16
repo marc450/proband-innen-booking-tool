@@ -127,7 +127,7 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
       </Link>
 
       {/* 3-column HubSpot-style layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_320px] gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_320px] gap-5">
 
         {/* ===== LEFT: Contact info ===== */}
         <div className="space-y-5">
