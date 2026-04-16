@@ -6,49 +6,54 @@ import { PremiumCard, BADGE_COLORS } from "./premium-card";
 import type { IncludedCourse } from "./premium-card";
 import type { CourseTemplate, CourseSession, CourseType } from "@/lib/types";
 
+// Shared base for the Medizinische Hautpflege Onlinekurs so the modal
+// looks identical on every package (Zahnmedizin, Dermalfiller, etc.).
+// Only the pill colour varies per package.
+const MEDIZINISCHE_HAUTPFLEGE: Omit<IncludedCourse, "badgeClasses"> = {
+  name: "Grundkurs Medizinische Hautpflege",
+  shortName: "Medizinische Hautpflege",
+  type: "Onlinekurs",
+  level: "Für alle Fachrichtungen",
+  description: "In diesem Onlinekurs lernst Du als medizinische Fachperson die Grundkenntnisse in der Hautpflege, die in 19 Minuten in der Dermatologie und medizinischen Hautpflege vermittelt werden. Der Kurs bietet praxisrelevante Strategien in evidenzbasierter Weise, mit Fokus auf patientenorientierte Beratung.",
+  cmePoints: "7",
+  duration: "~4 Stunden",
+  features: [
+    "Grundlagen der Hautalterung",
+    "Akne, Rosazea, periorale Dermatitis",
+    "Aufbau einer nachhaltigen Pflegeroutine",
+  ],
+  lernziele: [
+    "Hautphysiologie",
+    "Skin of Color",
+    "Störungen (Akne, Rosazea, etc.)",
+    "Wirkstoffe",
+    "Behandlungsoptionen",
+    "Patient:innenkonsultation",
+  ],
+  kursinhalt: [
+    "Begrüßung",
+    "Grundlagen zur Haut",
+    "Skin of Color",
+    "Akne",
+    "Rosazea",
+    "Periorale Dermatitis",
+    "Hautalterung",
+    "Aufbau einer Pflegeroutine",
+    "Myth Buster",
+  ],
+  inkludiert: [
+    "9 online Lernkapitel",
+    "Lehrvideos",
+    "Ärzt:innen-Community",
+    "1.5 Jahre Zugriff",
+    "CME-Punkte",
+    "Zertifikat",
+  ],
+};
+
 // Zahnmedizin Komplettpaket: only includes the Hautpflege Onlinekurs
 const ZAHNMEDIZIN_INCLUDED_COURSES: IncludedCourse[] = [
-  {
-    name: "Grundkurs Medizinische Hautpflege",
-    shortName: "Medizinische Hautpflege",
-    type: "Onlinekurs",
-    level: "Für alle Fachrichtungen",
-    description: "In diesem Onlinekurs lernst Du als medizinische Fachperson die Grundkenntnisse in der Hautpflege, die in 19 Minuten in der Dermatologie und medizinischen Hautpflege vermittelt werden. Der Kurs bietet praxisrelevante Strategien in evidenzbasierter Weise, mit Fokus auf patientenorientierte Beratung.",
-    cmePoints: "",
-    duration: "~4 Stunden",
-    features: [
-      "Grundlagen der Hautalterung",
-      "Akne, Rosazea, periorale Dermatitis",
-      "Aufbau einer nachhaltigen Pflegeroutine",
-    ],
-    lernziele: [
-      "Hautphysiologie",
-      "Skin of Color",
-      "Störungen (Akne, Rosazea, etc.)",
-      "Wirkstoffe",
-      "Behandlungsoptionen",
-      "Patient:innenkonsultation",
-    ],
-    kursinhalt: [
-      "Begrüßung",
-      "Grundlagen zur Haut",
-      "Skin of Color",
-      "Akne",
-      "Rosazea",
-      "Periorale Dermatitis",
-      "Hautalterung",
-      "Aufbau einer Pflegeroutine",
-      "Myth Buster",
-    ],
-    inkludiert: [
-      "9 online Lernkapitel",
-      "Lehrvideos",
-      "Ärzt:innen-Community",
-      "1.5 Jahre Zugriff",
-      "Zertifikat",
-    ],
-    badgeClasses: BADGE_COLORS[2],
-  },
+  { ...MEDIZINISCHE_HAUTPFLEGE, badgeClasses: BADGE_COLORS[2] },
 ];
 
 // Dermalfiller Komplettpaket: Dermalfiller Online- & Praxiskurs (base)
@@ -95,47 +100,7 @@ const DERMALFILLER_INCLUDED_COURSES: IncludedCourse[] = [
     ],
     badgeClasses: BADGE_COLORS[1],
   },
-  {
-    name: "Grundkurs Medizinische Hautpflege",
-    shortName: "Medizinische Hautpflege",
-    type: "Onlinekurs",
-    level: "Für alle Fachrichtungen",
-    description: "In diesem Onlinekurs lernst Du als medizinische Fachperson die Grundlagen der Dermatologie und medizinischen Hautpflege. Der Kurs bietet praxisrelevante Strategien in evidenzbasierter Weise, mit Fokus auf patient:innenorientierte Beratung.",
-    cmePoints: "",
-    duration: "~4 Stunden",
-    features: [
-      "Grundlagen der Hautalterung",
-      "Akne, Rosazea, periorale Dermatitis",
-      "Aufbau einer nachhaltigen Pflegeroutine",
-    ],
-    lernziele: [
-      "Hautphysiologie",
-      "Skin of Color",
-      "Störungen (Akne, Rosazea, etc.)",
-      "Wirkstoffe",
-      "Behandlungsoptionen",
-      "Patient:innenkonsultation",
-    ],
-    kursinhalt: [
-      "Begrüßung",
-      "Grundlagen zur Haut",
-      "Skin of Color",
-      "Akne",
-      "Rosazea",
-      "Periorale Dermatitis",
-      "Hautalterung",
-      "Aufbau einer Pflegeroutine",
-      "Myth Buster",
-    ],
-    inkludiert: [
-      "9 online Lernkapitel",
-      "Lehrvideos",
-      "Ärzt:innen-Community",
-      "1.5 Jahre Zugriff",
-      "Zertifikat",
-    ],
-    badgeClasses: BADGE_COLORS[2],
-  },
+  { ...MEDIZINISCHE_HAUTPFLEGE, badgeClasses: BADGE_COLORS[2] },
 ];
 
 interface Props {
