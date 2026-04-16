@@ -238,7 +238,14 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
     kombiFeatures?: { text: string }[];
     hasKomplettpaket?: boolean;
     hideCme?: boolean;
+    // Hide the standalone Praxiskurs card on this landing page only.
+    // The /courses/[courseKey] LearnWorlds embed and other surfaces are
+    // unaffected — they read price_gross_praxis from the DB directly.
+    hidePraxis?: boolean;
   }> = {
+    grundkurs_dermalfiller: {
+      hidePraxis: true,
+    },
     grundkurs_botulinum_zahnmedizin: {
       header: "UNSERE KURSANGEBOTE FÜR ZAHNÄRZT:INNEN",
       onlineDesc: "Erlerne die Theorie zur Behandlung von Patient:innen mit Botulinum.",
@@ -389,7 +396,8 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
 
           // Default layout for all other courses
           const hasKomplettpaket = !!overrides.hasKomplettpaket && !!template.price_gross_premium;
-          const cardCount = [hasOnline, hasPraxis, hasKombi, hasKomplettpaket].filter(Boolean).length;
+          const showPraxis = hasPraxis && !overrides.hidePraxis;
+          const cardCount = [hasOnline, showPraxis, hasKombi, hasKomplettpaket].filter(Boolean).length;
           const gridCols = cardCount === 1 ? "lg:grid-cols-1 max-w-lg mx-auto" : cardCount === 2 ? "lg:grid-cols-2 max-w-4xl mx-auto" : "lg:grid-cols-3";
 
           // Ensure kombi features show "inkludiert" suffix consistently
@@ -419,7 +427,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                 />
               )}
 
-              {hasPraxis && (
+              {showPraxis && (
                 <CourseCard
                   title="Praxiskurs"
                   description={
