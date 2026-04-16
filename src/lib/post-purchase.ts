@@ -224,7 +224,7 @@ export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { sk
             // Dermalfiller Komplettpaket: Dermalfiller online + Hautpflege + Lippen
             template?.online_course_id, // Grundkurs Dermalfiller online course
             "grundkurs-medizinische-hautpflege",
-            "aufbaukurs-lippen",
+            "aufbaukurs-lippen-online",
           ].filter(Boolean) as string[]
         : [
             // Humanmedizin Komplettpaket: 4 Onlinekurse
