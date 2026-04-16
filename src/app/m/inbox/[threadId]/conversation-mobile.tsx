@@ -348,7 +348,7 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
                 {/* Body */}
                 <div className="relative">
                   <div
-                    className={`prose prose-sm max-w-none text-sm [&_img]:max-w-full [&_table]:text-sm ${
+                    className={`prose prose-sm max-w-none text-sm [&_img]:max-w-full [&_table]:text-sm [&_a]:text-[#0066FF] [&_a]:underline ${
                       !isExpanded ? "max-h-40 overflow-hidden" : ""
                     }`}
                     dangerouslySetInnerHTML={{

@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/app/dashboard/inbox/rich-text-editor";
+import { ContactAutocomplete } from "@/app/dashboard/inbox/contact-autocomplete";
 import { useSignature } from "@/hooks/use-signature";
 
 // Contact profile email card. Lists past Gmail threads with this contact
@@ -50,6 +51,10 @@ export function EmailHistory({
   const [composing, setComposing] = useState(false);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
+  const [cc, setCc] = useState("");
+  const [bcc, setBcc] = useState("");
+  const [showCc, setShowCc] = useState(false);
+  const [showBcc, setShowBcc] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const signature = useSignature();
@@ -102,6 +107,10 @@ export function EmailHistory({
     // every other composer in the admin panel. The <br><br> gives the
     // user space to type above it without fighting with contenteditable.
     setBody(signature?.html ? `<br><br>${signature.html}` : "");
+    setCc("");
+    setBcc("");
+    setShowCc(false);
+    setShowBcc(false);
     setSendError(null);
     setComposing(true);
   };
@@ -110,6 +119,10 @@ export function EmailHistory({
     setComposing(false);
     setSubject("");
     setBody("");
+    setCc("");
+    setBcc("");
+    setShowCc(false);
+    setShowBcc(false);
     setSendError(null);
   };
 
@@ -124,6 +137,8 @@ export function EmailHistory({
           to: email,
           subject,
           htmlBody: `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;">${body}</div>`,
+          cc: cc || undefined,
+          bcc: bcc || undefined,
         }),
       });
       if (!res.ok) {
@@ -134,6 +149,10 @@ export function EmailHistory({
       setComposing(false);
       setSubject("");
       setBody("");
+      setCc("");
+      setBcc("");
+      setShowCc(false);
+      setShowBcc(false);
       // Give Gmail a moment to index the new thread before re-fetching.
       setTimeout(fetchEmails, 1200);
     } catch {
@@ -174,21 +193,89 @@ export function EmailHistory({
         {/* Inline composer */}
         {canCompose && composing && (
           <div className="border border-gray-200 rounded-[10px] p-4 space-y-3 bg-gray-50/40">
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground min-w-0 truncate">
                 An:{" "}
                 <span className="text-foreground font-medium">
                   {displayName ? `${displayName} <${email}>` : email}
                 </span>
               </p>
-              <button
-                onClick={cancelComposer}
-                className="text-gray-500 hover:text-gray-700"
-                title="Abbrechen"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {!showCc && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCc(true)}
+                    className="text-xs text-[#0066FF] hover:underline font-medium"
+                  >
+                    CC
+                  </button>
+                )}
+                {!showBcc && (
+                  <button
+                    type="button"
+                    onClick={() => setShowBcc(true)}
+                    className="text-xs text-[#0066FF] hover:underline font-medium"
+                  >
+                    BCC
+                  </button>
+                )}
+                <button
+                  onClick={cancelComposer}
+                  className="text-gray-500 hover:text-gray-700"
+                  title="Abbrechen"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
+            {showCc && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-gray-500 w-10 flex-shrink-0">
+                  CC
+                </label>
+                <ContactAutocomplete
+                  value={cc}
+                  onChange={setCc}
+                  placeholder="Name oder E-Mail..."
+                  className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8 text-xs"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCc(false);
+                    setCc("");
+                  }}
+                  className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+            {showBcc && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-gray-500 w-10 flex-shrink-0">
+                  BCC
+                </label>
+                <ContactAutocomplete
+                  value={bcc}
+                  onChange={setBcc}
+                  placeholder="Name oder E-Mail..."
+                  className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8 text-xs"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBcc(false);
+                    setBcc("");
+                  }}
+                  className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
             <Input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}

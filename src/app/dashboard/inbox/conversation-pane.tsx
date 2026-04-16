@@ -445,7 +445,7 @@ export function ConversationPane({
                 {/* Message body */}
                 <div className="px-5 py-4">
                   <div
-                    className="prose prose-sm max-w-none text-sm [&_img]:max-w-full [&_table]:text-sm"
+                    className="prose prose-sm max-w-none text-sm [&_img]:max-w-full [&_table]:text-sm [&_a]:text-[#0066FF] [&_a]:underline"
                     dangerouslySetInnerHTML={{
                       __html:
                         msg.body.html || msg.body.text.replace(/\n/g, "<br>"),
