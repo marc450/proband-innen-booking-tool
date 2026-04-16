@@ -36,7 +36,7 @@ interface ThreadSummary {
   id: string;
   subject: string;
   snippet: string;
-  date: string;
+  lastDate: string;
   contactName: string;
   contactEmail: string;
   isUnread: boolean;
@@ -435,7 +435,7 @@ export function InboxMobile() {
                         </span>
                       )}
                       <span className="text-[10px] text-gray-400">
-                        {formatDate(thread.date)}
+                        {formatDate(thread.lastDate)}
                       </span>
                     </div>
                   </div>
