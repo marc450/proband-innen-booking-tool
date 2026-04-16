@@ -23,6 +23,15 @@ import {
 } from "@/components/ui/table";
 import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { SortableHead } from "@/components/table/sortable-head";
+import { useTableSort } from "@/hooks/use-table-sort";
+import {
   Plus,
   Trash2,
   Copy,
@@ -151,10 +160,14 @@ const filterOptions: { value: FilterKey; label: string }[] = [
   { value: "no_show", label: "No-Shows" },
 ];
 
+type SortKey = "kind" | "customer" | "amount" | "status" | "created";
+
 export function RechnungenManager(_props: Props) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterKey>("all");
+  const [search, setSearch] = useState("");
+  const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("created", "desc");
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [alertState, setAlertState] = useState<{ title: string; description: string } | null>(null);
@@ -194,9 +207,10 @@ export function RechnungenManager(_props: Props) {
   const [daysUntilDue, setDaysUntilDue] = useState("14");
   const [createError, setCreateError] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = async (opts?: { refresh?: boolean }) => {
     setLoading(true);
-    const res = await fetch("/api/admin/transactions");
+    const qs = opts?.refresh ? "?refresh=1" : "";
+    const res = await fetch(`/api/admin/transactions${qs}`);
     if (res.ok) {
       setTransactions(await res.json());
     } else {
@@ -398,7 +412,7 @@ export function RechnungenManager(_props: Props) {
     }
 
     setCreatedInvoice(data);
-    await load();
+    await load({ refresh: true });
   };
 
   const handleCancelInvoice = async () => {
@@ -417,7 +431,7 @@ export function RechnungenManager(_props: Props) {
       return;
     }
     setCancelTarget(null);
-    await load();
+    await load({ refresh: true });
   };
 
   const handleCopyLink = () => {
@@ -481,15 +495,51 @@ export function RechnungenManager(_props: Props) {
     }
   };
 
-  // Filter chips apply in-memory to the already-loaded transaction list.
-  const filteredTransactions = transactions.filter((t) => {
-    if (filter === "all") return true;
-    if (filter === "invoice")
-      return t.kind === "invoice_manual" || t.kind === "invoice_other";
-    if (filter === "charge") return t.kind === "charge";
-    if (filter === "no_show") return t.kind === "invoice_no_show";
-    return true;
-  });
+  // Filter chips + search apply in-memory to the already-loaded ledger.
+  const filteredTransactions = (() => {
+    let rows = transactions.filter((t) => {
+      if (filter === "all") return true;
+      if (filter === "invoice")
+        return t.kind === "invoice_manual" || t.kind === "invoice_other";
+      if (filter === "charge") return t.kind === "charge";
+      if (filter === "no_show") return t.kind === "invoice_no_show";
+      return true;
+    });
+
+    const q = search.trim().toLowerCase();
+    if (q) {
+      rows = rows.filter((t) => {
+        return (
+          (t.customer_name || "").toLowerCase().includes(q) ||
+          (t.customer_email || "").toLowerCase().includes(q) ||
+          (t.invoice_number || "").toLowerCase().includes(q) ||
+          (t.description || "").toLowerCase().includes(q)
+        );
+      });
+    }
+
+    const dir = sortDir === "asc" ? 1 : -1;
+    const sorted = [...rows].sort((a, b) => {
+      switch (sortKey) {
+        case "kind":
+          return a.kind.localeCompare(b.kind) * dir;
+        case "customer":
+          return (
+            (a.customer_name || a.customer_email || "").localeCompare(
+              b.customer_name || b.customer_email || ""
+            ) * dir
+          );
+        case "amount":
+          return (a.amount - b.amount) * dir;
+        case "status":
+          return a.status.localeCompare(b.status) * dir;
+        case "created":
+        default:
+          return (a.created - b.created) * dir;
+      }
+    });
+    return sorted;
+  })();
 
   const canCancelTransaction = (t: Transaction) =>
     (t.kind === "invoice_manual" || t.kind === "invoice_no_show") &&
@@ -923,24 +973,41 @@ export function RechnungenManager(_props: Props) {
         </DialogContent>
       </Dialog>
 
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2 flex-wrap">
-          {filterOptions.map((f) => (
-            <Button
-              key={f.value}
-              type="button"
-              variant={filter === f.value ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilter(f.value)}
-            >
-              {f.label}
-            </Button>
-          ))}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <span className="text-sm text-muted-foreground">
+          {filteredTransactions.length} {filteredTransactions.length === 1 ? "Eintrag" : "Einträge"}
+        </span>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Name, E-Mail, Rechnungsnr...."
+              style={{ paddingLeft: "2.5rem" }}
+              className="h-9 w-[260px] bg-white border-input/60"
+            />
+          </div>
+          <Select value={filter} onValueChange={(v) => setFilter(v as FilterKey)}>
+            <SelectTrigger className="w-[170px] h-9 bg-white border-input/60">
+              <SelectValue placeholder="Typ" />
+            </SelectTrigger>
+            <SelectContent>
+              {filterOptions.map((f) => (
+                <SelectItem key={f.value} value={f.value}>
+                  {f.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            onClick={() => setShowCreate(true)}
+            className="h-9 px-3.5 py-0 text-sm font-medium"
+          >
+            <Plus className="h-4 w-4 mr-1.5" />
+            Neue Rechnung
+          </Button>
         </div>
-        <Button onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4 mr-1.5" />
-          Neue Rechnung
-        </Button>
       </div>
 
       <Card>
@@ -957,11 +1024,11 @@ export function RechnungenManager(_props: Props) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Typ</TableHead>
-                  <TableHead>Kund:in</TableHead>
-                  <TableHead>Betrag</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Datum</TableHead>
+                  <SortableHead label="Typ" sortKey="kind" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+                  <SortableHead label="Kund:in" sortKey="customer" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+                  <SortableHead label="Betrag" sortKey="amount" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+                  <SortableHead label="Status" sortKey="status" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+                  <SortableHead label="Datum" sortKey="created" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
                   <TableHead>Dokumente</TableHead>
                   <TableHead />
                 </TableRow>

@@ -1,8 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
+
+// In-memory cache (per process). The Stripe calls are the expensive part;
+// 60 s is short enough that freshness is still fine for a human-driven admin
+// page but cuts cold-tab reloads from multi-second to near-instant.
+type Cached = { at: number; body: unknown };
+const CACHE = new Map<string, Cached>();
+const CACHE_TTL_MS = 60 * 1000;
 
 async function assertAdmin() {
   const supabase = await createClient();
@@ -138,16 +145,31 @@ function normalizeChargeStatus(c: StripeCharge): string {
   return c.status; // pending/failed
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const user = await assertAdmin();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
+  // Allow callers to request more when they want the full ledger. Default is
+  // 100 + 100 which typically resolves in one Stripe round-trip per type
+  // instead of two, halving the wall-clock load time.
+  const url = request.nextUrl;
+  const maxInvoices = Math.min(500, Math.max(10, Number(url.searchParams.get("maxInvoices")) || 100));
+  const maxCharges = Math.min(500, Math.max(10, Number(url.searchParams.get("maxCharges")) || 100));
+  const forceRefresh = url.searchParams.get("refresh") === "1";
+  const cacheKey = `${maxInvoices}:${maxCharges}`;
+
+  if (!forceRefresh) {
+    const cached = CACHE.get(cacheKey);
+    if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+      return NextResponse.json(cached.body);
+    }
+  }
+
   try {
-    // Fetch up to 200 invoices + 200 charges in parallel. Voided and draft
-    // invoices are included so the ledger is complete.
+    // Fetch invoices + charges in parallel (each call caps at 100).
     const [invoices, charges] = await Promise.all([
-      fetchPaginated<StripeInvoice>("/invoices", 200),
-      fetchPaginated<StripeCharge>("/charges", 200),
+      fetchPaginated<StripeInvoice>("/invoices", maxInvoices),
+      fetchPaginated<StripeCharge>("/charges", maxCharges),
     ]);
 
     // Collect all emails so we can batch-lookup matching auszubildende ids
@@ -230,6 +252,7 @@ export async function GET() {
     // Strict chronological desc
     transactions.sort((a, b) => b.created - a.created);
 
+    CACHE.set(cacheKey, { at: Date.now(), body: transactions });
     return NextResponse.json(transactions);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Fehler beim Laden";
