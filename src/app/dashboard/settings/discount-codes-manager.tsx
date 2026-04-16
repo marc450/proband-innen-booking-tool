@@ -24,7 +24,7 @@ import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
 
 import { SortableHead } from "@/components/table/sortable-head";
 import { useTableSort } from "@/hooks/use-table-sort";
-import { Plus, Power, PowerOff, Trash2, Shuffle } from "lucide-react";
+import { Plus, Power, PowerOff, Trash2, Shuffle, Copy, Check } from "lucide-react";
 
 // Random coupon code generator — avoids ambiguous characters (0/O, 1/I/L)
 // so codes stay readable when shared verbally or over chat.
@@ -73,6 +73,17 @@ export function DiscountCodesManager() {
   const [percentOff, setPercentOff] = useState("10");
   const [maxRedemptions, setMaxRedemptions] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const copyCode = async (c: DiscountCode) => {
+    try {
+      await navigator.clipboard.writeText(c.code);
+      setCopiedId(c.id);
+      setTimeout(() => setCopiedId((cur) => (cur === c.id ? null : cur)), 1500);
+    } catch {
+      // Ignore clipboard errors silently
+    }
+  };
 
   // Sorting
   const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("created", "desc");
@@ -316,7 +327,23 @@ export function DiscountCodesManager() {
               <TableBody>
                 {sortedCodes.map((c) => (
                   <TableRow key={c.id}>
-                    <TableCell className="font-mono font-medium">{c.code}</TableCell>
+                    <TableCell className="font-mono font-medium">
+                      <div className="inline-flex items-center gap-2 group">
+                        <span>{c.code}</span>
+                        <button
+                          type="button"
+                          onClick={() => copyCode(c)}
+                          title="Code kopieren"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                        >
+                          {copiedId === c.id ? (
+                            <Check className="h-3.5 w-3.5 text-emerald-600" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </TableCell>
                     <TableCell>{c.percent_off != null ? `${c.percent_off}%` : "–"}</TableCell>
                     <TableCell className="text-sm">
                       {c.times_redeemed}
