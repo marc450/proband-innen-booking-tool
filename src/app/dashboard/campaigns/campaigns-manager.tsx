@@ -14,6 +14,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { TableHeaderBar } from "@/components/table/table-header-bar";
 import { SortableHead } from "@/components/table/sortable-head";
 import { useTableSort } from "@/hooks/use-table-sort";
@@ -44,6 +51,7 @@ type StatusFilter = "all" | CampaignStatus;
 
 interface Props {
   campaigns: EmailCampaign[];
+  monthlyEmailsSent?: number;
 }
 
 function formatDateShort(dateStr: string) {
@@ -58,7 +66,7 @@ const statusFilters: { value: StatusFilter; label: string }[] = [
   { value: "failed", label: "Fehlgeschlagen" },
 ];
 
-export function CampaignsManager({ campaigns: initialCampaigns }: Props) {
+export function CampaignsManager({ campaigns: initialCampaigns, monthlyEmailsSent = 0 }: Props) {
   const router = useRouter();
   const supabase = createClient();
   const [campaigns, setCampaigns] = useState(initialCampaigns);
@@ -137,6 +145,15 @@ export function CampaignsManager({ campaigns: initialCampaigns }: Props) {
     }
   };
 
+  // Resend's free tier is 3000/month. Set NEXT_PUBLIC_RESEND_MONTHLY_LIMIT to your plan's actual limit.
+  const monthlyLimit = Number(process.env.NEXT_PUBLIC_RESEND_MONTHLY_LIMIT) || 3000;
+  const remaining = Math.max(0, monthlyLimit - monthlyEmailsSent);
+  const usagePercent = Math.min(100, (monthlyEmailsSent / monthlyLimit) * 100);
+  const usageColor =
+    usagePercent >= 90 ? "text-red-700 bg-red-50 border-red-200"
+    : usagePercent >= 70 ? "text-amber-700 bg-amber-50 border-amber-200"
+    : "text-emerald-700 bg-emerald-50 border-emerald-200";
+
   return (
     <div className="space-y-6">
       <TableHeaderBar
@@ -147,24 +164,35 @@ export function CampaignsManager({ campaigns: initialCampaigns }: Props) {
         onSearchChange={setSearch}
         searchPlaceholder="Name oder Betreff..."
         filters={
-          <div className="flex gap-1">
-            {statusFilters.map(({ value, label }) => (
-              <Button
-                key={value}
-                variant={statusFilter === value ? "default" : "outline"}
-                size="sm"
-                onClick={() => setStatusFilter(value)}
-                className="h-8 text-xs"
-              >
-                {label}
-              </Button>
-            ))}
-          </div>
+          <>
+            <div
+              className={`hidden md:inline-flex items-center gap-1.5 text-xs font-medium rounded-[10px] border px-2.5 h-9 ${usageColor}`}
+              title={`Resend-Kontingent: ${monthlyEmailsSent.toLocaleString("de-DE")} von ${monthlyLimit.toLocaleString("de-DE")} E-Mails diesen Monat versendet (nur Kampagnen).`}
+            >
+              <span className="opacity-70">Resend:</span>
+              <span>{remaining.toLocaleString("de-DE")} / {monthlyLimit.toLocaleString("de-DE")}</span>
+            </div>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+            >
+              <SelectTrigger className="w-[160px] h-9 bg-white border-input/60">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusFilters.map(({ value, label }) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
         }
         actions={
           <Link href="/dashboard/campaigns/new">
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
+            <Button className="h-9 px-3.5 py-0 text-sm font-medium">
+              <Plus className="h-4 w-4 mr-1.5" />
               Neue Kampagne
             </Button>
           </Link>

@@ -67,6 +67,19 @@ export default async function SettingsPage() {
     .select("*")
     .order("date_iso", { ascending: true });
 
+  // Count of Zahnmediziner:innen bookings per session (excluding cancelled).
+  const { data: zahnBookings } = await adminClient
+    .from("course_bookings")
+    .select("session_id")
+    .eq("audience_tag", "Zahnmediziner:in")
+    .neq("status", "cancelled");
+  const zahnmedizinerCounts: Record<string, number> = {};
+  for (const row of zahnBookings ?? []) {
+    if (row.session_id) {
+      zahnmedizinerCounts[row.session_id] = (zahnmedizinerCounts[row.session_id] ?? 0) + 1;
+    }
+  }
+
   const { data: auszubildendeData } = await adminClient
     .from("auszubildende")
     .select("id, first_name, last_name, email, phone, title")
@@ -94,6 +107,7 @@ export default async function SettingsPage() {
       dozentUsers={dozentUsersData ?? []}
       betreuerUsers={betreuerUsersData ?? []}
       initialAuszubildende={(auszubildendeData ?? []) as Pick<Auszubildende, "id" | "first_name" | "last_name" | "email" | "phone" | "title">[]}
+      zahnmedizinerCounts={zahnmedizinerCounts}
     />
   );
 }

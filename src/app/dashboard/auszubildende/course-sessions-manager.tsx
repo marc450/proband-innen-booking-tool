@@ -30,6 +30,7 @@ interface Props {
   initialSessions: CourseSession[];
   dozentUsers: DozentUser[];
   betreuerUsers?: DozentUser[];
+  zahnmedizinerCounts?: Record<string, number>;
 }
 
 type SortKey = "status" | "date" | "time" | "course" | "instructor" | "betreuer" | "seats" | "duration";
@@ -49,7 +50,7 @@ function dozentDisplayName(d: DozentUser): string {
   return [d.title, d.first_name, d.last_name].filter(Boolean).join(" ");
 }
 
-export function CourseSessionsManager({ initialTemplates, initialSessions, dozentUsers, betreuerUsers = [] }: Props) {
+export function CourseSessionsManager({ initialTemplates, initialSessions, dozentUsers, betreuerUsers = [], zahnmedizinerCounts = {} }: Props) {
   const supabase = createClient();
   const [sessions, setSessions] = useState(initialSessions);
   const [templates] = useState(initialTemplates);
@@ -60,10 +61,13 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
 
   // Filters
   const [filterInstructor, setFilterInstructor] = useState("");
+  const [filterBetreuer, setFilterBetreuer] = useState("");
   const [filterTemplate, setFilterTemplate] = useState("");
   const [filterStatus, setFilterStatus] = useState("live");
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterTime, setFilterTime] = useState("");
+  const [filterCme, setFilterCme] = useState("");
+  const [filterZahnmedizin, setFilterZahnmedizin] = useState("");
 
   // Counter to force-reset defaultValue inputs on cancel
   const [resetKey, setResetKey] = useState(0);
@@ -142,11 +146,15 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   const sortedSessions = useMemo(() => {
     const filtered = sessions.filter((s) => {
       if (filterInstructor && s.instructor_name !== filterInstructor) return false;
+      if (filterBetreuer && s.betreuer_name !== filterBetreuer) return false;
       if (filterTemplate && s.template_id !== filterTemplate) return false;
       if (filterStatus === "live" && !s.is_live) return false;
       if (filterStatus === "offline" && s.is_live) return false;
       if (filterDateFrom && s.date_iso < filterDateFrom) return false;
       if (filterTime && s.start_time !== filterTime) return false;
+      if (filterCme && (s.cme_status || "Nicht beantragt") !== filterCme) return false;
+      if (filterZahnmedizin === "with" && (zahnmedizinerCounts[s.id] ?? 0) === 0) return false;
+      if (filterZahnmedizin === "without" && (zahnmedizinerCounts[s.id] ?? 0) > 0) return false;
       return true;
     });
     const sorted = [...filtered];
@@ -174,7 +182,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
       }
     });
     return sorted;
-  }, [sessions, sortKey, sortDir, filterInstructor, filterTemplate, filterStatus, filterDateFrom, filterTime]);
+  }, [sessions, sortKey, sortDir, filterInstructor, filterBetreuer, filterTemplate, filterStatus, filterDateFrom, filterTime, filterCme, filterZahnmedizin, zahnmedizinerCounts]);
 
   const SortableHead = ({ label, sortKeyName, className }: { label: string; sortKeyName: SortKey; className?: string }) => (
     <TableHead className={className}>
@@ -314,7 +322,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
             <SortableHead label="Status" sortKeyName="status" className="w-[100px]" />
             <SortableHead label="Datum" sortKeyName="date" />
             <SortableHead label="Startzeit" sortKeyName="time" className="w-[90px]" />
-            <SortableHead label="Dauer" sortKeyName="duration" className="w-[80px]" />
+            <SortableHead label="Dauer (Min)" sortKeyName="duration" className="w-[90px]" />
             <SortableHead label="Kurs" sortKeyName="course" />
             <SortableHead label="Dozent:in" sortKeyName="instructor" />
             <SortableHead label="Kursbetreuung" sortKeyName="betreuer" />
@@ -390,22 +398,60 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 ))}
               </select>
             </TableHead>
+            {/* Kursbetreuung filter */}
+            <TableHead className="py-1.5">
+              <select
+                value={filterBetreuer}
+                onChange={(e) => setFilterBetreuer(e.target.value)}
+                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+              >
+                <option value="">Alle</option>
+                {Array.from(new Set(sessions.map((s) => s.betreuer_name).filter(Boolean))).sort().map((name) => (
+                  <option key={name!} value={name!}>{name}</option>
+                ))}
+              </select>
+            </TableHead>
             {/* Plätze — empty */}
             <TableHead className="py-1.5" />
-            {/* CME — empty */}
-            <TableHead className="py-1.5" />
-            {/* Zahnmedizin — empty */}
-            <TableHead className="py-1.5" />
+            {/* CME filter */}
+            <TableHead className="py-1.5">
+              <select
+                value={filterCme}
+                onChange={(e) => setFilterCme(e.target.value)}
+                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+              >
+                <option value="">Alle</option>
+                <option value="Nicht beantragt">Nicht beantragt</option>
+                <option value="LÄK Berlin">LÄK Berlin</option>
+                <option value="LÄK Brandenburg">LÄK Brandenburg</option>
+                <option value="Buchung auf anderen Kurs">Buchung auf anderen Kurs</option>
+              </select>
+            </TableHead>
+            {/* Zahnmedizin filter */}
+            <TableHead className="py-1.5">
+              <select
+                value={filterZahnmedizin}
+                onChange={(e) => setFilterZahnmedizin(e.target.value)}
+                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+              >
+                <option value="">Alle</option>
+                <option value="with">Mit Zahnmediziner:innen</option>
+                <option value="without">Ohne</option>
+              </select>
+            </TableHead>
             {/* Reset button */}
             <TableHead className="py-1.5">
-              {(filterInstructor || filterTemplate || filterStatus || filterDateFrom || filterTime) && (
+              {(filterInstructor || filterBetreuer || filterTemplate || filterStatus || filterDateFrom || filterTime || filterCme || filterZahnmedizin) && (
                 <button
                   onClick={() => {
                     setFilterInstructor("");
+                    setFilterBetreuer("");
                     setFilterTemplate("");
                     setFilterStatus("");
                     setFilterDateFrom("");
                     setFilterTime("");
+                    setFilterCme("");
+                    setFilterZahnmedizin("");
                   }}
                   className="text-xs text-muted-foreground hover:text-foreground underline whitespace-nowrap"
                 >
@@ -457,7 +503,11 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                         requestChange(session.id, "date_iso", e.target.value, true);
                       }
                     }}
-                    className="border-0 bg-transparent font-medium text-sm p-0 focus:outline-none focus:ring-0 w-[130px]"
+                    onClick={(e) => {
+                      const el = e.currentTarget as HTMLInputElement & { showPicker?: () => void };
+                      el.showPicker?.();
+                    }}
+                    className="date-no-icon border-0 bg-transparent font-medium text-sm p-0 focus:outline-none focus:ring-0 w-[110px] cursor-pointer"
                   />
                 </TableCell>
 
@@ -487,21 +537,18 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
 
                 {/* Duration */}
                 <TableCell>
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="number"
-                      defaultValue={session.duration_minutes || ""}
-                      key={`dur-${session.id}-${session.duration_minutes}-${resetKey}`}
-                      onBlur={(e) => {
-                        const val = parseInt(e.target.value) || 0;
-                        if (val !== (session.duration_minutes || 0)) {
-                          requestChange(session.id, "duration_minutes", val);
-                        }
-                      }}
-                      className="border-0 bg-transparent text-sm p-0 focus:outline-none focus:ring-0 w-[45px]"
-                    />
-                    <span className="text-xs text-muted-foreground">min</span>
-                  </div>
+                  <input
+                    type="number"
+                    defaultValue={session.duration_minutes || ""}
+                    key={`dur-${session.id}-${session.duration_minutes}-${resetKey}`}
+                    onBlur={(e) => {
+                      const val = parseInt(e.target.value) || 0;
+                      if (val !== (session.duration_minutes || 0)) {
+                        requestChange(session.id, "duration_minutes", val);
+                      }
+                    }}
+                    className="border-0 bg-transparent text-sm p-0 focus:outline-none focus:ring-0 w-[55px]"
+                  />
                 </TableCell>
 
                 {/* Course */}
@@ -611,13 +658,22 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                   </select>
                 </TableCell>
 
-                {/* Zahnmedizin */}
+                {/* Zahnmedizin count */}
                 <TableCell>
-                  {session.has_zahnmedizin && (
-                    <span className="text-xs font-medium bg-amber-100 text-amber-700 rounded-full px-2.5 py-1">
-                      Zahnmedizin
-                    </span>
-                  )}
+                  {(() => {
+                    const count = zahnmedizinerCounts[session.id] ?? 0;
+                    if (count === 0) {
+                      return <span className="text-xs text-muted-foreground">–</span>;
+                    }
+                    return (
+                      <span
+                        className="text-xs font-medium bg-amber-100 text-amber-700 rounded-full px-2.5 py-1"
+                        title={`${count} Zahnmediziner:innen in diesem Kurs`}
+                      >
+                        {count} {count === 1 ? "Zahnmediziner:in" : "Zahnmediziner:innen"}
+                      </span>
+                    );
+                  })()}
                 </TableCell>
 
                 {/* Actions */}

@@ -390,5 +390,15 @@ body:has([data-dashboard-root]) [data-slot="select-trigger"][data-size="default"
   padding-right: 0.75rem;
   font-size: 1rem;
 }
+
+/* Hide native date-picker icon on inline editable date inputs in tables.
+   The whole field stays clickable and opens the picker via showPicker(). */
+.date-no-icon::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+.date-no-icon {
+  -moz-appearance: textfield;
+}
 }
 
