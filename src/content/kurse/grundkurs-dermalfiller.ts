@@ -20,7 +20,6 @@ export const grundkursDermalfiller: CourseLandingContent = {
 
   hero: {
     heading: "GRUNDKURS DERMALFILLER",
-    socialProof: "Über 300 zertifizierte Ärzt:innen",
     subheadline:
       "Dein sicherer Einstieg in die ästhetische Medizin: Praxisnah, fundiert und mit echten Proband:innen.",
     stats: [
