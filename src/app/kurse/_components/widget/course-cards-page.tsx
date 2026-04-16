@@ -51,6 +51,93 @@ const ZAHNMEDIZIN_INCLUDED_COURSES: IncludedCourse[] = [
   },
 ];
 
+// Dermalfiller Komplettpaket: Dermalfiller Online- & Praxiskurs (base)
+// plus Medizinische Hautpflege + Aufbaukurs Lippen Onlinekurs.
+// Only the two add-ons are listed here; the base course is the card headline.
+// Lippen CME are currently pending LÄK Berlin approval.
+const DERMALFILLER_INCLUDED_COURSES: IncludedCourse[] = [
+  {
+    name: "Grundkurs Medizinische Hautpflege",
+    shortName: "Medizinische Hautpflege",
+    type: "Onlinekurs",
+    level: "Für alle Fachrichtungen",
+    description: "In diesem Onlinekurs lernst Du als medizinische Fachperson die Grundlagen der Dermatologie und medizinischen Hautpflege. Der Kurs bietet praxisrelevante Strategien in evidenzbasierter Weise, mit Fokus auf patient:innenorientierte Beratung.",
+    cmePoints: "",
+    duration: "~4 Stunden",
+    features: [
+      "Grundlagen der Hautalterung",
+      "Akne, Rosazea, periorale Dermatitis",
+      "Aufbau einer nachhaltigen Pflegeroutine",
+    ],
+    lernziele: [
+      "Hautphysiologie",
+      "Skin of Color",
+      "Störungen (Akne, Rosazea, etc.)",
+      "Wirkstoffe",
+      "Behandlungsoptionen",
+      "Patient:innenkonsultation",
+    ],
+    kursinhalt: [
+      "Begrüßung",
+      "Grundlagen zur Haut",
+      "Skin of Color",
+      "Akne",
+      "Rosazea",
+      "Periorale Dermatitis",
+      "Hautalterung",
+      "Aufbau einer Pflegeroutine",
+      "Myth Buster",
+    ],
+    inkludiert: [
+      "9 online Lernkapitel",
+      "Lehrvideos",
+      "Ärzt:innen-Community",
+      "1.5 Jahre Zugriff",
+      "Zertifikat",
+    ],
+    badgeClasses: BADGE_COLORS[1],
+  },
+  {
+    name: "Aufbaukurs Lippen",
+    shortName: "Onlinekurs Lippen",
+    type: "Onlinekurs",
+    level: "Aufbaukurs · setzt Grundkurs Dermalfiller voraus",
+    description: "Vertiefe Deine Behandlungssicherheit in der perioralen Zone. Der Aufbaukurs Lippen deckt Anatomie, Indikationen, Produktwahl, Technik, Patient:innenkommunikation und Komplikationsmanagement ab, mit praxisnahen Behandlungsvideos und klaren Schritt-für-Schritt-Anleitungen.",
+    cmePoints: "",
+    duration: "~5 Stunden",
+    features: [
+      "Anatomie der perioralen Zone",
+      "Indikationen & Produktwahl",
+      "Technik, Behandlungsvideos & Myth Buster",
+    ],
+    lernziele: [
+      "Anatomie",
+      "Indikationen",
+      "Produktkenntnis",
+      "Patient:innenkommunikation",
+      "Technik",
+      "Komplikationsmanagement",
+    ],
+    kursinhalt: [
+      "Begrüßung",
+      "Anatomie der perioralen Zone",
+      "Indikationen & Wirkstoffe",
+      "Beratung & Aufklärung",
+      "Komplikation & Nachsorge",
+      "Myth Buster",
+      "Behandlungstechniken",
+    ],
+    inkludiert: [
+      "CME-Punkte bei der LÄK Berlin beantragt",
+      "Online Lernkapitel & Lehrvideos",
+      "Ärzt:innen-Community",
+      "1.5 Jahre Zugriff",
+      "Zertifikat",
+    ],
+    badgeClasses: BADGE_COLORS[2],
+  },
+];
+
 interface Props {
   template: CourseTemplate;
   sessions: CourseSession[];
@@ -245,6 +332,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
   }> = {
     grundkurs_dermalfiller: {
       hidePraxis: true,
+      hasKomplettpaket: true,
     },
     grundkurs_botulinum_zahnmedizin: {
       header: "UNSERE KURSANGEBOTE FÜR ZAHNÄRZT:INNEN",
@@ -394,8 +482,12 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
             );
           }
 
-          // Default layout for all other courses
-          const hasKomplettpaket = !!overrides.hasKomplettpaket && !!template.price_gross_premium;
+          // Default layout for all other courses.
+          // Dermalfiller uses a hardcoded price below, so the DB price
+          // gate is bypassed when the override explicitly sets the flag.
+          const isDermalfiller = template.course_key === "grundkurs_dermalfiller";
+          const hasKomplettpaket =
+            !!overrides.hasKomplettpaket && (!!template.price_gross_premium || isDermalfiller);
           const showPraxis = hasPraxis && !overrides.hidePraxis;
           const cardCount = [hasOnline, showPraxis, hasKombi, hasKomplettpaket].filter(Boolean).length;
           const gridCols = cardCount === 1 ? "lg:grid-cols-1 max-w-lg mx-auto" : cardCount === 2 ? "lg:grid-cols-2 max-w-4xl mx-auto" : "lg:grid-cols-3";
@@ -469,7 +561,22 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                 />
               )}
 
-              {hasKomplettpaket && (
+              {hasKomplettpaket && isDermalfiller && (
+                <PremiumCard
+                  dates={dynamicDates}
+                  onBook={(sessionId) => handleBooking("Premium", sessionId)}
+                  isLoading={loadingCheckout?.startsWith("Premium-") || false}
+                  selectedDateForLoading={loadingCheckout?.replace("Premium-", "")}
+                  description="Dein Komplettpaket: Online- & Praxiskurs Dermalfiller plus Onlinekurs Medizinische Hautpflege und Aufbaukurs Lippen Onlinekurs."
+                  price="EUR 1.827"
+                  originalPrice="EUR 2.030"
+                  discountLabel="10% Paket-Rabatt"
+                  cmeTotal="22"
+                  includedCourses={DERMALFILLER_INCLUDED_COURSES}
+                />
+              )}
+
+              {hasKomplettpaket && !isDermalfiller && (
                 <PremiumCard
                   dates={dynamicDates}
                   onBook={(sessionId) => handleBooking("Premium", sessionId)}
