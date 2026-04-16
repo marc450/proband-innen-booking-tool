@@ -328,13 +328,13 @@ export function DiscountCodesManager() {
                 {sortedCodes.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-mono font-medium">
-                      <div className="inline-flex items-center gap-2 group">
+                      <div className="inline-flex items-center gap-2">
                         <span>{c.code}</span>
                         <button
                           type="button"
                           onClick={() => copyCode(c)}
                           title="Code kopieren"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                          className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                         >
                           {copiedId === c.id ? (
                             <Check className="h-3.5 w-3.5 text-emerald-600" />
