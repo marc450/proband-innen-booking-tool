@@ -20,6 +20,10 @@ export interface IncludedCourse {
   level?: string;
   description: string;
   cmePoints: string;
+  // When true, render a blue "CME-Punkte beantragt" badge instead of a
+  // numeric badge, plus an explanatory note below the badge row.
+  // Used for courses where the LÄK certification is still in progress.
+  cmePending?: boolean;
   duration: string;
   features: string[];
   lernziele?: string[];
@@ -228,17 +232,28 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
 
           <p className="text-sm text-gray-700 mb-4 leading-relaxed">{course.description}</p>
 
-          <div className="flex flex-wrap gap-4 mb-5">
+          <div className={`flex flex-wrap gap-4 ${course.cmePending ? "mb-3" : "mb-5"}`}>
             {course.cmePoints && (
               <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2">
                 <Award className="w-4 h-4 text-[#0066FF]" />
                 <span className="text-sm font-bold text-[#0066FF]">{course.cmePoints} CME-Punkte</span>
               </div>
             )}
+            {course.cmePending && (
+              <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2">
+                <Award className="w-4 h-4 text-[#0066FF]" />
+                <span className="text-sm font-bold text-[#0066FF]">CME-Punkte beantragt</span>
+              </div>
+            )}
             <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
               <span className="text-sm text-gray-600">Lernaufwand: {course.duration}</span>
             </div>
           </div>
+          {course.cmePending && (
+            <p className="text-xs text-gray-600 mb-5 leading-relaxed">
+              Die CME-Punkte sind bei der LÄK Berlin beantragt. Sobald die Zertifizierung abgeschlossen ist, werden sie den Teilnehmer:innen rückwirkend gutgeschrieben.
+            </p>
+          )}
         </div>
 
         {/* Lernziele */}

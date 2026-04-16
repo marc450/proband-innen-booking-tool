@@ -68,6 +68,7 @@ const DERMALFILLER_INCLUDED_COURSES: IncludedCourse[] = [
     level: "Aufbaukurs · setzt Grundkurs Dermalfiller voraus",
     description: "Vertiefe Deine Behandlungssicherheit in der perioralen Zone. Der Aufbaukurs Lippen deckt Anatomie, Indikationen, Produktwahl, Technik, Patient:innenkommunikation und Komplikationsmanagement ab, mit praxisnahen Behandlungsvideos und klaren Schritt-für-Schritt-Anleitungen.",
     cmePoints: "",
+    cmePending: true,
     duration: "~5 Stunden",
     features: [
       "Anatomie der perioralen Zone",
