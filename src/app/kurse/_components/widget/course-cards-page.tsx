@@ -537,7 +537,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   price="EUR 1.827"
                   originalPrice="EUR 2.030"
                   discountLabel=""
-                  cmeTotal="22"
+                  cmeTotal="25"
                   includedCourses={DERMALFILLER_INCLUDED_COURSES}
                 />
               )}
