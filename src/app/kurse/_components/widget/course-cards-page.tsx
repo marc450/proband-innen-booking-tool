@@ -570,7 +570,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   description="Dein Komplettpaket: Online- & Praxiskurs Dermalfiller plus Onlinekurs Medizinische Hautpflege und Aufbaukurs Lippen Onlinekurs."
                   price="EUR 1.827"
                   originalPrice="EUR 2.030"
-                  discountLabel="10% Paket-Rabatt"
+                  discountLabel=""
                   cmeTotal="22"
                   includedCourses={DERMALFILLER_INCLUDED_COURSES}
                 />
