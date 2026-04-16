@@ -8,6 +8,9 @@ import { Menu, X, ChevronDown } from "lucide-react";
 type SubLink = {
   label: string;
   href: string;
+  // When true the entry shows in the dropdown but is not clickable.
+  // Used for curricula that don't have landing pages yet.
+  disabled?: boolean;
 };
 
 type NavLink = {
@@ -18,8 +21,14 @@ type NavLink = {
 
 const NAV_LINKS: NavLink[] = [
   {
-    label: "Unsere Kurse",
+    label: "Kurse",
     href: "/kurse/unsere-kurse",
+    subLinks: [
+      { label: "Einzelkurse", href: "/kurse/unsere-kurse" },
+      { label: "Curriculum Botulinum", href: "#", disabled: true },
+      { label: "Curriculum Dermalfiller", href: "#", disabled: true },
+      { label: "Curriculum Hautpflege", href: "#", disabled: true },
+    ],
   },
   {
     label: "Über EPHIA",
@@ -81,15 +90,25 @@ export function Header() {
                   {/* Invisible bridge to avoid hover gap */}
                   <div className="absolute left-0 right-0 top-full h-3" />
                   <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+0.5rem)] min-w-[240px] bg-white rounded-[10px] shadow-lg py-3 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200">
-                    {link.subLinks.map((sub) => (
-                      <a
-                        key={sub.label}
-                        href={sub.href}
-                        className="block px-5 py-2.5 text-base font-normal text-black hover:text-[#0066FF] hover:bg-[#FAEBE1]/60 transition-colors"
-                      >
-                        {sub.label}
-                      </a>
-                    ))}
+                    {link.subLinks.map((sub) =>
+                      sub.disabled ? (
+                        <span
+                          key={sub.label}
+                          className="block px-5 py-2.5 text-base font-normal text-black/40 cursor-not-allowed select-none"
+                          aria-disabled="true"
+                        >
+                          {sub.label}
+                        </span>
+                      ) : (
+                        <a
+                          key={sub.label}
+                          href={sub.href}
+                          className="block px-5 py-2.5 text-base font-normal text-black hover:text-[#0066FF] hover:bg-[#FAEBE1]/60 transition-colors"
+                        >
+                          {sub.label}
+                        </a>
+                      ),
+                    )}
                   </div>
                 </div>
               ) : (
@@ -144,16 +163,26 @@ export function Header() {
                   </button>
                   {mobileExpanded === link.label && (
                     <div className="pb-3 pl-4 flex flex-col gap-1">
-                      {link.subLinks.map((sub) => (
-                        <a
-                          key={sub.label}
-                          href={sub.href}
-                          className="block py-2 text-sm font-medium text-black/80"
-                          onClick={() => setMobileOpen(false)}
-                        >
-                          {sub.label}
-                        </a>
-                      ))}
+                      {link.subLinks.map((sub) =>
+                        sub.disabled ? (
+                          <span
+                            key={sub.label}
+                            className="block py-2 text-sm font-medium text-black/40 cursor-not-allowed select-none"
+                            aria-disabled="true"
+                          >
+                            {sub.label}
+                          </span>
+                        ) : (
+                          <a
+                            key={sub.label}
+                            href={sub.href}
+                            className="block py-2 text-sm font-medium text-black/80"
+                            onClick={() => setMobileOpen(false)}
+                          >
+                            {sub.label}
+                          </a>
+                        ),
+                      )}
                     </div>
                   )}
                 </div>
