@@ -48,7 +48,7 @@ export function TableHeaderBar({
               value={searchValue || ""}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder={searchPlaceholder}
-              className="!pl-9 h-9 w-[240px]"
+              className="!pl-9 h-9 w-[240px] bg-white border-input/60"
             />
           </div>
         )}

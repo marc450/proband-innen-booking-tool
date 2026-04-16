@@ -288,7 +288,7 @@ export function AuszubildendeManager({
                 value={typeFilter}
                 onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}
               >
-                <SelectTrigger className="w-[140px] h-9">
+                <SelectTrigger className="w-[140px] h-9 bg-white border-input/60">
                   <SelectValue placeholder="Typ" />
                 </SelectTrigger>
                 <SelectContent>
@@ -302,7 +302,7 @@ export function AuszubildendeManager({
               value={statusFilter}
               onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
             >
-              <SelectTrigger className="w-[140px] h-9">
+              <SelectTrigger className="w-[140px] h-9 bg-white border-input/60">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -325,8 +325,8 @@ export function AuszubildendeManager({
               />
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => fileInputRef.current?.click()}
+                className="h-9 px-3.5 py-0 text-sm font-medium bg-white border-input/60"
               >
                 <Upload className="h-4 w-4 mr-2" />
                 Import CSV
