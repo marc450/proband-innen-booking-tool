@@ -33,6 +33,7 @@ export function Hero({ content }: { content: CourseHeroContent }) {
             videoPath={content.videoPath}
             videoPoster={content.videoPoster}
             videoCaptionsPath={content.videoCaptionsPath}
+            objectPosition={content.videoObjectPosition}
           />
 
           {/* Text */}

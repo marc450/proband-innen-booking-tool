@@ -17,6 +17,12 @@ interface HeroVideoProps {
    * permanently muted. Defaults to true (toggle visible).
    */
   allowUnmute?: boolean;
+  /**
+   * Optional `object-position` value applied to the video element
+   * (e.g. "40% center"). Useful when the subject is not horizontally
+   * centered in the source. Defaults to "center center".
+   */
+  objectPosition?: string;
 }
 
 export function HeroVideo({
@@ -25,6 +31,7 @@ export function HeroVideo({
   videoCaptionsPath,
   aspectClassName = "aspect-[4/5] md:aspect-[4/3] lg:aspect-[4/5]",
   allowUnmute = true,
+  objectPosition,
 }: HeroVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
@@ -84,6 +91,7 @@ export function HeroVideo({
       <video
         ref={videoRef}
         className="absolute inset-0 w-full h-full object-cover"
+        style={objectPosition ? { objectPosition } : undefined}
         poster={videoPoster}
         autoPlay
         muted

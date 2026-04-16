@@ -33,6 +33,12 @@ export interface CourseHeroContent {
   videoPoster: string;
   /** Optional path to a WebVTT captions file (relative to /public) */
   videoCaptionsPath?: string;
+  /**
+   * Optional CSS `object-position` value applied to the hero video
+   * (e.g. "40% center"). Use this to shift the visible crop when the
+   * subject is off-center in the source. Defaults to "center center".
+   */
+  videoObjectPosition?: string;
   /** Optional social proof pill shown above the heading, e.g. "300+ zertifizierte Ärzt:innen" */
   socialProof?: string;
 }
