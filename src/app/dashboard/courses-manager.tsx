@@ -1154,6 +1154,11 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                     {course.course_date
                       ? format(parseISO(course.course_date), "dd. MMMM yyyy", { locale: de })
                       : <span className="italic">Kein Datum</span>}
+                    {activeSlots.length > 0 && (
+                      <span className="ml-2 text-foreground font-medium">
+                        ab {format(new Date(activeSlots[0].start_time), "HH:mm")} Uhr
+                      </span>
+                    )}
                   </span>
                   <span className={`[flex:1_1_0%] text-sm font-semibold text-center whitespace-nowrap ${bookedCount === totalCapacity && totalCapacity > 0 ? "text-green-600" : "text-red-500"}`}>
                     {bookedCount}/{totalCapacity}
