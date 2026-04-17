@@ -103,6 +103,37 @@ const LIPPEN_INCLUDED_COURSES: IncludedCourse[] = [
   },
 ];
 
+// Therapeutische Indikationen Komplettpaket: Online- & Praxiskurs
+// (base) plus Onlinekurs Medizinische Hautpflege + Onlinekurs Grundkurs
+// Botulinum. The Botulinum online course carries the same prerequisite
+// warning as the Dermalfiller one in the Lippen package — the online
+// theory alone is not a sufficient basis for the therapeutic Aufbaukurs.
+const THERAPEUTISCHE_INDIKATIONEN_INCLUDED_COURSES: IncludedCourse[] = [
+  {
+    name: "Grundkurs Botulinum — Onlinekurs",
+    shortName: "Onlinekurs Botulinum",
+    type: "Onlinekurs",
+    level: "Einsteigerkurs",
+    description:
+      "Die theoretischen Grundlagen der Botulinum-Anwendung: Anatomie der mimischen Muskulatur, Produktkunde, ästhetische Indikationen, Kommunikation und Komplikationsmanagement.",
+    warning:
+      "Der Onlinekurs Botulinum alleine ist keine ausreichende Grundlage für den Aufbaukurs Therapeutische Indikationen. Wir empfehlen, vorher den Praxiskurs Botulinum zu absolvieren.",
+    cmePoints: "10",
+    duration: "~10 Stunden",
+    features: [
+      "Anatomie der mimischen Muskulatur",
+      "Produktkunde & Dosierung",
+      "Komplikationsmanagement",
+    ],
+    badgeClasses: BADGE_COLORS[0],
+  },
+  {
+    ...MEDIZINISCHE_HAUTPFLEGE,
+    shortName: "Onlinekurs Med. Hautpflege",
+    badgeClasses: BADGE_COLORS[1],
+  },
+];
+
 // Dermalfiller Komplettpaket: Dermalfiller Online- & Praxiskurs (base)
 // plus Medizinische Hautpflege + Aufbaukurs Lippen Onlinekurs.
 // Only the two add-ons are listed here; the base course is the card headline.
@@ -361,6 +392,20 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
       hidePraxis: true,
       onlineDesc: "Dein fundierter Einstieg in die medizinische Hautpflege.",
     },
+    aufbaukurs_therapeutische_indikationen_botulinum: {
+      hidePraxis: true,
+      hasKomplettpaket: true,
+      kombiFeatures: [
+        { text: "Akkreditiert mit 21 CME-Punkten" },
+        { text: "Vollständiger Onlinekurs inkludiert" },
+        { text: "6+ Stunden gemeinsames Behandeln" },
+        { text: "Üben an echten Proband:innen" },
+        { text: "Geübt wird mit BTX nicht NaCl" },
+        { text: "Erfahrene Dozent:innen-Aufsicht" },
+        { text: "Max. 7 Teilnehmer:innen" },
+        { text: "EPHIA-Zertifikat nach Abschluss" },
+      ],
+    },
     aufbaukurs_lippen: {
       hidePraxis: true,
       hasKomplettpaket: true,
@@ -530,9 +575,11 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
           // gate is bypassed when the override explicitly sets the flag.
           const isDermalfiller = template.course_key === "grundkurs_dermalfiller";
           const isLippen = template.course_key === "aufbaukurs_lippen";
+          const isTherapeutischeIndikationen =
+            template.course_key === "aufbaukurs_therapeutische_indikationen_botulinum";
           const hasKomplettpaket =
             !!overrides.hasKomplettpaket &&
-            (!!template.price_gross_premium || isDermalfiller || isLippen);
+            (!!template.price_gross_premium || isDermalfiller || isLippen || isTherapeutischeIndikationen);
           const showPraxis = hasPraxis && !overrides.hidePraxis;
           const cardCount = [hasOnline, showPraxis, hasKombi, hasKomplettpaket].filter(Boolean).length;
           const gridCols = cardCount === 1 ? "lg:grid-cols-1 max-w-lg mx-auto" : cardCount === 2 ? "lg:grid-cols-2 max-w-4xl mx-auto" : "lg:grid-cols-3";
@@ -644,7 +691,25 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                 />
               )}
 
-              {hasKomplettpaket && !isDermalfiller && !isLippen && (
+              {hasKomplettpaket && isTherapeutischeIndikationen && (
+                <PremiumCard
+                  dates={dynamicDates}
+                  onBook={(sessionId) => handleBooking("Premium", sessionId)}
+                  isLoading={loadingCheckout?.startsWith("Premium-") || false}
+                  selectedDateForLoading={loadingCheckout?.replace("Premium-", "")}
+                  description="Für Deinen sicheren Einstieg in die therapeutischen Indikationen: 1 Praxiskurs + 2 Onlinekurse."
+                  // Price: Therap. Kombi (1.140) + Onlinekurs Botulinum
+                  // (490) + Hautpflege (250) = 1.880. -10% bundle = 1.692.
+                  price="EUR 1.692"
+                  originalPrice="EUR 1.880"
+                  discountLabel=""
+                  // 21 (Kombi) + 10 (Botulinum online) + 7 (Hautpflege) = 38
+                  cmeTotal="38"
+                  includedCourses={THERAPEUTISCHE_INDIKATIONEN_INCLUDED_COURSES}
+                />
+              )}
+
+              {hasKomplettpaket && !isDermalfiller && !isLippen && !isTherapeutischeIndikationen && (
                 <PremiumCard
                   dates={dynamicDates}
                   onBook={(sessionId) => handleBooking("Premium", sessionId)}

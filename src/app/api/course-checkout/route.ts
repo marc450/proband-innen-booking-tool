@@ -101,30 +101,39 @@ export async function POST(req: NextRequest) {
     } else if (isPremium) {
       const isDermalfiller = courseKey === "grundkurs_dermalfiller";
       const isLippen = courseKey === "aufbaukurs_lippen";
+      const isTherapeutischeIndikationen =
+        courseKey === "aufbaukurs_therapeutische_indikationen_botulinum";
       productName = isDentist
         ? `Komplettpaket (Zahnmedizin) – ${sessionLabel}`
         : isDermalfiller
           ? `Komplettpaket Dermalfiller – ${sessionLabel}`
           : isLippen
             ? `Komplettpaket Lippen – ${sessionLabel}`
-            : `Komplettpaket – ${sessionLabel}`;
+            : isTherapeutischeIndikationen
+              ? `Komplettpaket Therapeutische Indikationen – ${sessionLabel}`
+              : `Komplettpaket – ${sessionLabel}`;
       description = isDentist
         ? "Online- & Praxiskurs Botulinum + Onlinekurs Medizinische Hautpflege"
         : isDermalfiller
           ? "Online- & Praxiskurs Dermalfiller + Onlinekurs Medizinische Hautpflege + Aufbaukurs Lippen Onlinekurs"
           : isLippen
             ? "Online- & Praxiskurs Lippen + Onlinekurs Dermalfiller + Onlinekurs Medizinische Hautpflege + Onlinekurs Botulinum Periorale Zone"
-            : "4 Onlinekurse + Praxiskurs Botulinum";
+            : isTherapeutischeIndikationen
+              ? "Online- & Praxiskurs Therapeutische Indikationen + Onlinekurs Grundkurs Botulinum + Onlinekurs Medizinische Hautpflege"
+              : "4 Onlinekurse + Praxiskurs Botulinum";
       // Hardcoded fallbacks when price_gross_premium isn't set in the DB.
       // - Zahnmedizin: DB value required (falls through to 0 = 400 error).
       // - Dermalfiller: 1290 + 250 + 490 = 2030 → -10% bundle = 1827.
       // - Lippen: 1140 (Kombi) + 490 (Dermalfiller online) + 250 (Hautpflege)
       //          + 340 (Periorale Zone) = 2220 → -10% bundle = 1998.
+      // - Therapeutische Indikationen: 1140 (Kombi) + 490 (Botulinum online)
+      //          + 250 (Hautpflege) = 1880 → -10% bundle = 1692.
       // - Humanmedizin (Botulinum): 2220 default.
       grossPrice = template.price_gross_premium || (
         isDentist ? 0 :
         isDermalfiller ? 2030 :
         isLippen ? 2220 :
+        isTherapeutischeIndikationen ? 1880 :
         2220
       );
     } else {

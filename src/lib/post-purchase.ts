@@ -214,6 +214,8 @@ export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { sk
     const isDentist = data.courseKey === "grundkurs_botulinum_zahnmedizin";
     const isDermalfiller = data.courseKey === "grundkurs_dermalfiller";
     const isLippen = data.courseKey === "aufbaukurs_lippen";
+    const isTherapeutischeIndikationen =
+      data.courseKey === "aufbaukurs_therapeutische_indikationen_botulinum";
     const premiumCourseIds = isDentist
       ? [
           // Zahnmedizin Komplettpaket: Botulinum Zahnmedizin + Hautpflege
@@ -235,13 +237,21 @@ export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { sk
               "grundkurs-medizinische-hautpflege",
               "aufbaukurs-botulinum-periorale-zone",
             ].filter(Boolean) as string[]
-          : [
-              // Humanmedizin Komplettpaket: 4 Onlinekurse
-              "grundkurs-botulinum-online",
-              "aufbaukurs-botulinum-periorale-zone",
-              "aufbaukurs-medizinische-indikation-fuer-botulinum-online",
-              "grundkurs-medizinische-hautpflege",
-            ];
+          : isTherapeutischeIndikationen
+            ? [
+                // Therapeutische Indikationen Komplettpaket:
+                // Therapeutische Indikationen online + Grundkurs Botulinum online + Hautpflege
+                template?.online_course_id, // Aufbaukurs Therapeutische Indikationen online course
+                "grundkurs-botulinum-online",
+                "grundkurs-medizinische-hautpflege",
+              ].filter(Boolean) as string[]
+            : [
+                // Humanmedizin Komplettpaket: 4 Onlinekurse
+                "grundkurs-botulinum-online",
+                "aufbaukurs-botulinum-periorale-zone",
+                "aufbaukurs-medizinische-indikation-fuer-botulinum-online",
+                "grundkurs-medizinische-hautpflege",
+              ];
     for (const lwCourseId of premiumCourseIds) {
       try { await enrollInLearnWorlds(data.email, lwCourseId, data.firstName, data.lastName); }
       catch (lwErr) { console.error(`LearnWorlds Premium enrollment error (${lwCourseId}):`, lwErr); }
