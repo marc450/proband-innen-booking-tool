@@ -1071,12 +1071,19 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
 
       {/* Course list */}
       {(() => {
-        const filteredCourses = courses.filter((c) => {
-          if (filterCourse && c.title !== filterCourse) return false;
-          if (filterDozent && c.instructor !== filterDozent) return false;
-          if (filterDate && c.course_date !== filterDate) return false;
-          return true;
-        });
+        const filteredCourses = courses
+          .filter((c) => {
+            if (filterCourse && c.title !== filterCourse) return false;
+            if (filterDozent && c.instructor !== filterDozent) return false;
+            if (filterDate && c.course_date !== filterDate) return false;
+            return true;
+          })
+          // Default sort: newest course date on top. Courses without a
+          // course_date sink to the bottom (null → empty string in the
+          // localeCompare, loses every comparison against a YYYY-MM-DD).
+          .sort((a, b) =>
+            (b.course_date || "").localeCompare(a.course_date || ""),
+          );
         if (filteredCourses.length === 0) return (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
