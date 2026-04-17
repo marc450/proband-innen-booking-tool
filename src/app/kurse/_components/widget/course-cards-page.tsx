@@ -356,6 +356,11 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
         { text: "Ärzt:innen-Community" },
       ],
     },
+    grundkurs_medizinische_hautpflege: {
+      // Online-only course — no Praxiskurs, no Komplettpaket card needed.
+      hidePraxis: true,
+      onlineDesc: "Dein fundierter Einstieg in die medizinische Hautpflege.",
+    },
     aufbaukurs_lippen: {
       hidePraxis: true,
       hasKomplettpaket: true,

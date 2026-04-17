@@ -96,7 +96,7 @@ export const homeContent: HomeContent = {
         courseKey: "grundkurs_medizinische_hautpflege",
         imageAlt: "Grundkurs Medizinische Hautpflege",
         ctaLabel: "Zu den Kursdetails",
-        href: "https://www.ephia.de/grundkurs-medizinische-hautpflege",
+        href: "/grundkurs-medizinische-hautpflege",
       },
       {
         kicker: "AUFBAUKURS",
