@@ -78,6 +78,9 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [slotTime, setSlotTime] = useState("");
   const [slotCapacity, setSlotCapacity] = useState("1");
+  // When set, the slot dialog is in edit mode and writes to this slot
+  // instead of inserting a new row.
+  const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
 
   // Duplicate dialog
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
@@ -327,16 +330,36 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
 
     const startTime = buildStartTime(course.course_date, slotTime);
     const cap = parseInt(slotCapacity) || 1;
-    const courseId = selectedCourseId;
+    const slotIdBeingEdited = editingSlotId;
 
     setSlotDialogOpen(false);
     setSlotTime("");
     setSlotCapacity("1");
+    setEditingSlotId(null);
 
+    if (slotIdBeingEdited) {
+      // Edit existing slot
+      const { data, error } = await supabase
+        .from("slots")
+        .update({ start_time: startTime, capacity: cap })
+        .eq("id", slotIdBeingEdited)
+        .select()
+        .single();
+      if (error) {
+        console.error("Slot update error:", error);
+        return;
+      }
+      if (data) {
+        setSlots((prev) => prev.map((s) => (s.id === slotIdBeingEdited ? data : s)));
+      }
+      return;
+    }
+
+    // Create new slot
     const { data, error } = await supabase
       .from("slots")
       .insert({
-        course_id: courseId,
+        course_id: selectedCourseId,
         start_time: startTime,
         end_time: null,
         capacity: cap,
@@ -902,11 +925,18 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
       {/* Slot dialog */}
       <Dialog
         open={slotDialogOpen}
-        onOpenChange={(open) => setSlotDialogOpen(open)}
+        onOpenChange={(open) => {
+          setSlotDialogOpen(open);
+          if (!open) {
+            setEditingSlotId(null);
+            setSlotTime("");
+            setSlotCapacity("1");
+          }
+        }}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Neuer Slot</DialogTitle>
+            <DialogTitle>{editingSlotId ? "Slot bearbeiten" : "Neuer Slot"}</DialogTitle>
           </DialogHeader>
           {(() => {
             const course = courses.find((c) => c.id === selectedCourseId);
@@ -947,7 +977,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                   className="w-full"
                   disabled={!course?.course_date || !slotTime}
                 >
-                  Slot anlegen
+                  {editingSlotId ? "Änderungen speichern" : "Slot anlegen"}
                 </Button>
               </div>
             );
@@ -1116,6 +1146,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                       size="sm"
                       onClick={() => {
                         setSelectedCourseId(course.id);
+                        setEditingSlotId(null);
                         setSlotTime("");
                         setSlotCapacity("1");
                         setSlotDialogOpen(true);
@@ -1194,6 +1225,21 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
 
                               {isAdmin && (
                                 <div className="flex items-center gap-1 shrink-0">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-8 p-0"
+                                    onClick={() => {
+                                      setSelectedCourseId(course.id);
+                                      setEditingSlotId(slot.id);
+                                      setSlotTime(format(new Date(slot.start_time), "HH:mm"));
+                                      setSlotCapacity(String(slot.capacity));
+                                      setSlotDialogOpen(true);
+                                    }}
+                                    title="Slot bearbeiten"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
                                   <Button
                                     variant="ghost"
                                     size="sm"
