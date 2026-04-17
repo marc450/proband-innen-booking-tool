@@ -107,7 +107,7 @@ export const homeContent: HomeContent = {
         courseKey: "aufbaukurs_therapeutische_indikationen_botulinum",
         imageAlt: "Aufbaukurs Botulinum Therapeutische Indikationen",
         ctaLabel: "Zu den Kursdetails",
-        href: "https://www.ephia.de/aufbaukurs-botulinum-therapeutische-indikationen",
+        href: "/aufbaukurs-therapeutische-indikationen-botulinum",
       },
       {
         kicker: "AUFBAUKURS",
