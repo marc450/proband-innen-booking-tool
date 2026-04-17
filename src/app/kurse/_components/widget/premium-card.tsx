@@ -525,8 +525,9 @@ export function PremiumCard({
         </div>
       </div>
 
-      {/* Included courses */}
-      <div className="border-t border-gray-200 pt-8 px-7 pb-10 mt-auto lg:min-h-[20rem]">
+      {/* Included courses — no mt-auto so the separator line lands at the
+          same Y as the sibling CourseCard separators. */}
+      <div className="border-t border-gray-200 pt-8 px-7 pb-10">
         <h3 className="font-bold text-black mb-5">{inclusionHeading}</h3>
         <ul className={listSpacingClass}>
           {cmeTotal && (

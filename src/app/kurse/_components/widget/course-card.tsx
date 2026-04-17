@@ -254,8 +254,10 @@ export function CourseCard({
         )}
       </div>
 
-      {/* Features */}
-      <div className="border-t border-gray-200 pt-8 px-7 pb-10 mt-auto lg:min-h-[20rem]">
+      {/* Features — no mt-auto so the separator line + "inkludiert:" header
+          sit at the same Y on every card, regardless of feature-list length.
+          Cards with shorter lists simply have empty space at the bottom. */}
+      <div className="border-t border-gray-200 pt-8 px-7 pb-10">
         <h3 className="font-bold text-black mb-5">{inclusionHeading || `Im ${title.split(" ")[0]} inkludiert:`}</h3>
         <ul className="space-y-3">
           {features.map((feature, index) => {
