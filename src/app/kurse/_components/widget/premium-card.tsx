@@ -60,6 +60,13 @@ interface PremiumCardProps {
    * two Premium cards sitting next to a normal Kombi card line up.
    */
   extraFeatures?: string[];
+  /**
+   * Tailwind `space-y-*` class used on the feature list. Defaults to
+   * space-y-4 (matches the Kombi card). Pass a larger value (e.g.
+   * "space-y-6") when this card has fewer items than an adjacent Kombi
+   * card so the feature lists line up visually.
+   */
+  listSpacingClass?: string;
 }
 
 const DEFAULT_INCLUDED_COURSES: IncludedCourse[] = [
@@ -344,6 +351,7 @@ export function PremiumCard({
   includedCourses = DEFAULT_INCLUDED_COURSES,
   inclusionHeading = "Im Komplettpaket inkludiert:",
   extraFeatures,
+  listSpacingClass = "space-y-4",
 }: PremiumCardProps) {
   const [selectedDate, setSelectedDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -511,7 +519,7 @@ export function PremiumCard({
       {/* Included courses */}
       <div className="border-t border-gray-200 pt-8 px-7 pb-10 mt-auto lg:min-h-[20rem]">
         <h3 className="font-bold text-black mb-5">{inclusionHeading}</h3>
-        <ul className="space-y-4">
+        <ul className={listSpacingClass}>
           {cmeTotal && (
             <li className="flex items-center gap-2">
               <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" aria-hidden="true" />
