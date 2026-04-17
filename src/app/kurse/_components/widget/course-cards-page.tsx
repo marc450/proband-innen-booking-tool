@@ -554,7 +554,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   // has 6 rows (2 of which are taller pills), so we bump
                   // the spacing a touch so both feature blocks match.
                   extraFeatures={["Ärzt:innen-Community"]}
-                  listSpacingClass="space-y-[1.4rem]"
+                  listSpacingClass="space-y-[1.85rem]"
                 />
               )}
 
