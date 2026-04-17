@@ -304,7 +304,6 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
         { text: "Vollständiger Onlinekurs inkludiert" },
         { text: "6+ Stunden gemeinsames Behandeln" },
         { text: "Üben an echten Proband:innen" },
-        { text: "Üben mit echten Dermalfillern" },
         { text: "Erfahrene Dozent:innen-Aufsicht" },
         { text: "Max. 5 Teilnehmer:innen" },
         { text: "Ärzt:innen-Community" },
