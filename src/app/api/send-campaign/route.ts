@@ -2,15 +2,44 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildEmailHtml, type ContentBlock } from "@/lib/email-template";
 import { decryptPatient } from "@/lib/encryption";
+import { normalizeEmail } from "@/lib/email-normalize";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const BATCH_SIZE = 100;
+
+// Basic RFC-ish email pattern. Matches Resend's expectation of the
+// `email@example.com` shape; rejects embedded spaces, commas, quotes and
+// display-name-style strings like "Name <foo@bar.com>" (we never want the
+// latter here — recipients are always just the address).
+const EMAIL_RE = /^[^\s@,<>"']+@[^\s@,<>"']+\.[^\s@,<>"']+$/;
 
 type AudienceType = "probandinnen" | "aerztinnen" | "alle";
 
 interface Recipient {
   email: string;
   first_name: string | null;
+}
+
+/**
+ * Sanitise a raw email value from the DB (which can be dirty: trailing
+ * commas from CSV import, whitespace, quoted wrappers, "foo,bar@baz"
+ * stacks). Returns the cleaned lowercase address, or null if it cannot
+ * be made into a single valid recipient.
+ */
+function sanitizeRecipientEmail(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  // Split on any delimiter a user might have typed into an email cell.
+  const first = raw
+    .split(/[,;\n\r]/)
+    .map((s) => s.trim())
+    .find(Boolean);
+  if (!first) return null;
+  // Strip wrapping < > or angle-bracketed display-name form.
+  const inAngle = first.match(/<([^>]+)>/);
+  const candidate = (inAngle ? inAngle[1] : first).trim().replace(/^["']|["']$/g, "");
+  const cleaned = candidate.toLowerCase();
+  if (!EMAIL_RE.test(cleaned)) return null;
+  return cleaned;
 }
 
 export async function POST(req: NextRequest) {
@@ -48,6 +77,9 @@ export async function POST(req: NextRequest) {
   const excludedSet = new Set(excludedIds || []);
   const emailsSeen = new Set<string>();
   const recipients: Recipient[] = [];
+  // Track addresses that were filtered out so we can log/display why the
+  // final count is lower than the expected audience size.
+  const skippedInvalid: string[] = [];
 
   // Resolve recipients based on audience type
   if (audienceType === "probandinnen" || audienceType === "alle") {
@@ -57,10 +89,16 @@ export async function POST(req: NextRequest) {
       if (!p.email) continue;
       if (excludeBlacklisted && p.patient_status === "blacklist") continue;
       if (excludedSet.has(`p-${p.id}`)) continue;
-      const emailLower = p.email.toLowerCase();
-      if (emailsSeen.has(emailLower)) continue;
-      emailsSeen.add(emailLower);
-      recipients.push({ email: p.email, first_name: p.first_name });
+      const cleaned = sanitizeRecipientEmail(p.email);
+      if (!cleaned) {
+        skippedInvalid.push(p.email);
+        continue;
+      }
+      // Gmail-alias aware dedupe key (googlemail.com → gmail.com, drop dots).
+      const dedupeKey = normalizeEmail(cleaned) || cleaned;
+      if (emailsSeen.has(dedupeKey)) continue;
+      emailsSeen.add(dedupeKey);
+      recipients.push({ email: cleaned, first_name: p.first_name });
     }
   }
 
@@ -73,11 +111,24 @@ export async function POST(req: NextRequest) {
       if (ct !== "auszubildende" && ct !== null) continue;
       if (!a.email) continue;
       if (excludedSet.has(`a-${a.id}`)) continue;
-      const emailLower = a.email.toLowerCase();
-      if (emailsSeen.has(emailLower)) continue;
-      emailsSeen.add(emailLower);
-      recipients.push({ email: a.email, first_name: a.first_name });
+      const cleaned = sanitizeRecipientEmail(a.email);
+      if (!cleaned) {
+        skippedInvalid.push(a.email);
+        continue;
+      }
+      const dedupeKey = normalizeEmail(cleaned) || cleaned;
+      if (emailsSeen.has(dedupeKey)) continue;
+      emailsSeen.add(dedupeKey);
+      recipients.push({ email: cleaned, first_name: a.first_name });
     }
+  }
+
+  if (skippedInvalid.length > 0) {
+    // Visible in Vercel/Railway logs so staff can fix the DB rows.
+    console.warn(
+      `send-campaign: skipped ${skippedInvalid.length} invalid email(s):`,
+      skippedInvalid,
+    );
   }
 
   if (recipients.length === 0) {
