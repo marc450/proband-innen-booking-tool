@@ -40,7 +40,9 @@ export function normalizeEmail(input: string | null | undefined): string {
     // Drop "+tag" suffix
     const plusIdx = local.indexOf("+");
     if (plusIdx !== -1) local = local.slice(0, plusIdx);
-    // Remove dots (Gmail ignores them)
+    // Remove dots from the local part only (Gmail ignores them). The
+    // split above separates the domain, so dots in "gmail.com" are
+    // preserved automatically.
     local = local.replaceAll(".", "");
   }
 
