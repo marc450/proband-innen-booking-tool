@@ -1,6 +1,48 @@
 const LOGO_URL =
   "https://lwfiles.mycourse.app/6638baeec5c56514e03ec360-public/f64a1ea1eb5346a171fe9ea36e8615ca.png";
 
+/**
+ * Shared preparation / onboarding copy sent to Proband:innen in every
+ * appointment email (initial confirmation, slot change, etc.). Kept in
+ * one place so copy drift between the paid funnel, the private funnel
+ * and the slot-change notification can't happen again.
+ */
+export const PATIENT_PREPARATION_BLOCK = `
+  <p style="margin:0 0 12px;">
+    <strong>Bitte stelle sicher, dass Du 10 Minuten vor Start Deiner Behandlung in der Praxis eintriffst.</strong>
+  </p>
+
+  <p style="margin:20px 0 4px; font-weight:bold;">Umfang Deiner Behandlung</p>
+  <p style="margin:0 0 0;">
+    Bei der Registrierung durftest Du Deine Behandlungswünsche angeben. Leider kann aus Zeit- und Kostengründen nicht garantiert werden, dass der/die behandelnde Ärzt:in alle Deine Wünsche erfüllen kann, er/sie wird sich aber größte Mühe geben, Dir so weit wie möglich entgegenzukommen.
+  </p>
+
+  <p style="margin:20px 0 4px; font-weight:bold;">Hautpflege & Make-up</p>
+  <p style="margin:0 0 8px;">
+    Bitte bereite Dich gut auf Deinen Termin vor, damit Deine Behandlung reibungslos und effektiv verläuft. Gib der Ärztin/dem Arzt vor Deiner Behandlung Bescheid, falls das Deine erste ästhetische Behandlung sein wird.
+  </p>
+
+  <p style="margin:12px 0 4px; font-weight:bold;">Hautpflege</p>
+  <p style="margin:0 0 0;">
+    Vermeide 2-3 Tage vor der Behandlung Hautpflegeprodukte, die Deine Haut reizen könnten. Setze stattdessen auf leichte und gut verträgliche Pflege. Achte außerdem darauf, ausreichend Wasser zu trinken, um Deine Haut optimal zu hydratisieren.
+  </p>
+
+  <p style="margin:12px 0 4px; font-weight:bold;">Make-up</p>
+  <p style="margin:0 0 0;">
+    Am Tag der Behandlung solltest Du möglichst kein Make-up tragen, um die Hygiene während der Behandlung zu gewährleisten. Falls Du Dich ohne Make-up unwohl fühlst, kannst Du leichtes Make-up verwenden und Dich vor Ort im Studio abschminken. Wir bitten Dich, die dafür notwendigen Utensilien selbst mitzubringen.
+  </p>
+
+  <p style="margin:20px 0 4px; font-weight:bold;">Zusätzliche Informationen</p>
+  <p style="margin:0 0 0;">
+    Stelle Dich bitte auf längere Wartezeiten ein und beachte, dass wir in der Praxis keine Kapazitäten für Freunde, Angehörige oder Haustiere haben. Komme daher bitte ohne Begleitung. Am besten bringst Du ein Buch mit oder etwas, womit Du Dich beschäftigen kannst, solltest Du nicht direkt drankommen. Während des Kurses werden wir Vorher-Nachher-Bilder von den Behandlungen erstellen. Dies dient unserer internen Dokumentation.
+  </p>
+
+  <p style="margin:20px 0 4px; font-weight:bold;">Bei Fragen</p>
+  <p style="margin:0 0 20px;">
+    Solltest Du nach Deiner Behandlung noch weitere Fragen haben, möchten wir Dich bitten, Dich zunächst an die Ärztin oder den Arzt zu wenden, die/der Dich behandelt hat. Sollte es dennoch weiterhin Unklarheiten geben, bieten wir allen Ärzt:innen, die wir ausgebildet haben, eine direkte Anlaufstelle für solche Situationen.
+  </p>
+`;
+
 const FOOTER = `
   <div style="margin-top:24px; padding-top:16px; border-top:1px solid #f0f0f0; text-align:left;">
     <img src="${LOGO_URL}" alt="EPHIA" style="width:160px; height:auto; display:block; margin:0 0 8px;">

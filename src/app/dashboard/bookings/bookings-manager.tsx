@@ -320,12 +320,56 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
   const handleDeleteBooking = async () => {
     if (!deleteBookingPending) return;
     setDeletingBooking(true);
+
+    // Capture what we need for the cancellation email BEFORE deleting —
+    // once the row is gone, decrypting again won't work and the slot
+    // join is lost.
+    const cancellation = (() => {
+      const b = deleteBookingPending;
+      if (!b.email || !b.slots?.start_time) return null;
+      const date = new Date(b.slots.start_time).toLocaleDateString("de-DE", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: "Europe/Berlin",
+      });
+      const time = new Date(b.slots.start_time).toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Europe/Berlin",
+      });
+      const courseId = b.slots?.course_id;
+      const courseLocation = courseId
+        ? courses.find((c) => c.id === courseId)?.location || ""
+        : "";
+      return {
+        email: b.email,
+        firstName: b.first_name || b.name?.split(" ")[0] || "",
+        courseTitle: b.slots?.courses?.title || "",
+        date,
+        time,
+        location: courseLocation,
+      };
+    })();
+
     const { error } = await supabase
       .from("bookings")
       .delete()
       .eq("id", deleteBookingPending.id);
     if (!error) {
       setBookings((prev) => prev.filter((b) => b.id !== deleteBookingPending.id));
+      // Best-effort cancellation email. Fire-and-forget so a Resend
+      // hiccup doesn't block the delete UX.
+      if (cancellation) {
+        fetch("/api/send-booking-cancellation-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(cancellation),
+        }).catch(() => {
+          /* swallow — the booking is already deleted */
+        });
+      }
     }
     setDeletingBooking(false);
     setDeleteBookingPending(null);

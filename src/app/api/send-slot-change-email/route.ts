@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildEmailHtml } from "@/lib/email-template";
+import { buildEmailHtml, PATIENT_PREPARATION_BLOCK } from "@/lib/email-template";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 
@@ -20,10 +20,12 @@ export async function POST(req: NextRequest) {
       { label: "Ort", value: location || "" },
     ],
     note: bookingType === "private" ? undefined : "Bei Nichterscheinen oder Absage weniger als 48 Stunden vor dem Termin wird eine Ausfallgebühr von 50,00 EUR erhoben.",
-    extraContent: `<p style="margin:0 0 20px;">
-      Solltest Du Fragen haben oder einen anderen Termin benötigen, melde Dich jederzeit bei uns:
-      <a href="mailto:customerlove@ephia.de" style="color:#0066FF; text-decoration:none;">customerlove@ephia.de</a>
-    </p>`,
+    extraContent: `${PATIENT_PREPARATION_BLOCK}
+
+      <p style="margin:0 0 20px;">
+        Solltest Du Fragen haben oder einen anderen Termin benötigen, melde Dich jederzeit bei uns:
+        <a href="mailto:customerlove@ephia.de" style="color:#0066FF; text-decoration:none;">customerlove@ephia.de</a>
+      </p>`,
   });
 
   const res = await fetch("https://api.resend.com/emails", {
