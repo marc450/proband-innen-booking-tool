@@ -334,7 +334,7 @@ export const grundkursMedizinischeHautpflege: CourseLandingContent = {
           "Inhalte können jederzeit pausiert und wieder aufgenommen werden.",
           "Im Reiter „Austausch\" kannst Du Fragen stellen und Dich mit der Community und Dozierenden austauschen.",
         ],
-        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_dermalfiller/1.png",
+        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_med_hautpflege/1.png",
       },
       {
         title: "Fachlich hochstehende Inhalte",
@@ -345,7 +345,7 @@ export const grundkursMedizinischeHautpflege: CourseLandingContent = {
           "Auch nach dem Kurs sind unsere Dozierenden in der Community für Fragen erreichbar.",
           "Für ein nachhaltiges Lernen, weit über das Kursende hinaus.",
         ],
-        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_dermalfiller/2.png",
+        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_med_hautpflege/2.png",
       },
       {
         title: "Klare Lernziele & Tests",
@@ -356,7 +356,7 @@ export const grundkursMedizinischeHautpflege: CourseLandingContent = {
           "Alle Inhalte wurden so ausgewählt, dass sie direkt für Deine praktische Arbeit relevant sind.",
           "So lernst Du nicht einfach nur mit, sondern gezielt für Deine Patient:innen.",
         ],
-        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_dermalfiller/3.png",
+        mediaPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_med_hautpflege/3.png",
       },
     ],
   },
