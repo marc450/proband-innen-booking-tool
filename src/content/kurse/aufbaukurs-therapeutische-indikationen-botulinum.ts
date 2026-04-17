@@ -1,36 +1,36 @@
 import type { CourseLandingContent } from "./types";
 
 /**
- * Aufbaukurs Botulinum — Therapeutische Indikationen landing page content.
+ * Aufbaukurs Botulinum Therapeutische Indikationen landing page content.
  *
  * Content sourced from the live www.ephia.de/aufbaukurs-therapeutische-
  * botulinum-indikationen page.
  *
  * Prices, sessions, and availability are pulled dynamically from Supabase
- * via the booking widget — do NOT hardcode them here.
+ * via the booking widget (do NOT hardcode them here).
  */
 export const aufbaukursTherapeutischeIndikationenBotulinum: CourseLandingContent = {
   slug: "aufbaukurs-therapeutische-indikationen-botulinum",
   courseKey: "aufbaukurs_therapeutische_indikationen_botulinum",
 
   meta: {
-    title: "Aufbaukurs Botulinum — Therapeutische Indikationen | EPHIA",
+    title: "Aufbaukurs Botulinum Therapeutische Indikationen | EPHIA",
     description:
       "Aufbaukurs Botulinum für approbierte Ärzt:innen mit Fokus auf therapeutische Indikationen: Bruxismus, Masseterhypertrophie, Migräne, Hyperhidrose. Praxisnah, evidenzbasiert und CME-zertifiziert.",
     ogImage: "/kurse/aufbaukurs_therapeutische_indikationen_botulinum/og-image.jpg",
   },
 
   hero: {
-    heading: "AUFBAUKURS BOTULINUM — THERAPEUTISCHE INDIKATIONEN",
+    heading: "AUFBAUKURS BOTULINUM THERAPEUTISCHE INDIKATIONEN",
     subheadline:
-      "Erweitere Dein Behandlungsspektrum in den therapeutischen Botulinum-Indikationen — fundiert, evidenzbasiert und praxisnah.",
+      "Erweitere Dein Behandlungsspektrum in den therapeutischen Botulinum-Indikationen, fundiert, evidenzbasiert und praxisnah.",
     stats: [
       { icon: "Clock", label: "Format", value: "Online- und als Praxiskurs" },
       { icon: "Award", label: "Akkreditiert", value: "CME-Punkte + Zertifikat" },
       { icon: "GraduationCap", label: "Level", value: "Aufbaukurs" },
     ],
     description:
-      "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen mit Grunderfahrung in der Botulinum-Anwendung. Du vertiefst Dein Wissen in den wichtigsten therapeutischen Indikationen — Bruxismus und Masseterhypertrophie, chronische Migräne sowie fokale Hyperhidrose — und lernst Anatomie, Indikationsstellung, Produktwahl, Technik, Patient:innenkommunikation und Komplikationsmanagement sicher umzusetzen.",
+      "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen mit Grunderfahrung in der Botulinum-Anwendung. Du vertiefst Dein Wissen in den wichtigsten therapeutischen Indikationen, also Bruxismus und Masseterhypertrophie, chronische Migräne sowie fokale Hyperhidrose, und lernst Anatomie, Indikationsstellung, Produktwahl, Technik, Patient:innenkommunikation und Komplikationsmanagement sicher umzusetzen.",
     videoPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/aufbaukurs_therap_indik/Tina_Indikation_23022025_V.1-compressed.mp4",
     videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
   },
@@ -44,7 +44,7 @@ export const aufbaukursTherapeutischeIndikationenBotulinum: CourseLandingContent
         label: "Anatomie",
         icon: "BicepsFlexed",
         description:
-          "Vertiefung der funktionellen Anatomie für therapeutische Indikationen — Masseter, Temporalis, perioraler Komplex, zervikale Muskulatur und Schweißdrüsenareale.",
+          "Vertiefung der funktionellen Anatomie für therapeutische Indikationen: Masseter, Temporalis, perioraler Komplex, zervikale Muskulatur und Schweißdrüsenareale.",
       },
       {
         label: "Indikationen",
@@ -74,7 +74,7 @@ export const aufbaukursTherapeutischeIndikationenBotulinum: CourseLandingContent
         label: "Komplikationsmanagement",
         icon: "ShieldAlert",
         description:
-          "Prävention, Erkennung und Management typischer Komplikationen — von Asymmetrien über unerwünschte Kau- und Mimikeffekte bis hin zu seltenen systemischen Reaktionen.",
+          "Prävention, Erkennung und Management typischer Komplikationen, von Asymmetrien über unerwünschte Kau- und Mimikeffekte bis hin zu seltenen systemischen Reaktionen.",
       },
     ],
   },
