@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { X } from "lucide-react";
 
 interface ContactResult {
   id: string;
@@ -13,11 +13,34 @@ interface ContactResult {
 }
 
 interface Props {
+  /**
+   * The value stored upstream. Accepted as a comma-/semicolon-separated
+   * recipient string (the historical format) so existing draft code keeps
+   * working without changes; internally it's parsed into chips.
+   */
   value: string;
+  /**
+   * Reports the current value back as a comma-separated string (the same
+   * format the backend /api/gmail/send already expects).
+   */
   onChange: (v: string) => void;
   placeholder?: string;
   className?: string;
   autoFocus?: boolean;
+}
+
+const EMAIL_RE = /^[^\s@,<>"']+@[^\s@,<>"']+\.[^\s@,<>"']+$/;
+
+function parseRecipients(raw: string): string[] {
+  if (!raw) return [];
+  return raw
+    .split(/[,;]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function joinRecipients(list: string[]): string {
+  return list.join(", ");
 }
 
 export function ContactAutocomplete({
@@ -27,7 +50,11 @@ export function ContactAutocomplete({
   className,
   autoFocus,
 }: Props) {
-  const [query, setQuery] = useState("");
+  // Chips = the already-selected recipients. Split out cleanly so the
+  // user can edit each independently (remove via X, backspace-to-remove-
+  // last, Enter/comma to commit the current text as a chip).
+  const [chips, setChips] = useState<string[]>(() => parseRecipients(value));
+  const [input, setInput] = useState("");
   const [results, setResults] = useState<ContactResult[]>([]);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -35,35 +62,41 @@ export function ContactAutocomplete({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // When value is set externally (e.g. draft restore), sync the visible input
+  // Report chips (plus the current unsubmitted input fragment) upstream as
+  // a comma-separated string. The input fragment is included so that
+  // pressing "Send" without having committed the last token (e.g. the
+  // user typed a full email and clicked Send without pressing Enter) still
+  // ships that recipient — /api/gmail/send trims/normalises so trailing
+  // commas or empty fragments are harmless.
+  const reportUp = useMemo(
+    () => (list: string[], tail: string) => {
+      const parts = [...list];
+      if (tail.trim()) parts.push(tail.trim());
+      onChange(joinRecipients(parts));
+    },
+    [onChange],
+  );
+
+  // Keep internal state in sync when `value` is set externally (e.g. draft
+  // restore, programmatic clear on send).
   useEffect(() => {
-    setQuery(value);
+    const parsed = parseRecipients(value);
+    // Compare against the current chips; if they match, don't reset the
+    // input (otherwise typing would get clobbered on every keystroke
+    // because onChange → setValue → useEffect → setChips).
+    if (
+      parsed.length === chips.length &&
+      parsed.every((p, i) => p === chips[i])
+    ) {
+      return;
+    }
+    setChips(parsed);
+    setInput("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
-  // Extract the "current token" the user is typing — the fragment after the
-  // last recipient separator. Supports the standard email list delimiters:
-  // comma, semicolon, and whitespace (tab/newline for paste, spaces after a
-  // full "Name <foo@bar>" block). Everything before that is already-entered
-  // recipients and should be left alone.
-  const tokenBoundary = (raw: string): { prefix: string; token: string } => {
-    const match = raw.match(/[,;\s]/g);
-    if (!match) return { prefix: "", token: raw };
-    const lastSep = Math.max(
-      raw.lastIndexOf(","),
-      raw.lastIndexOf(";"),
-      raw.lastIndexOf(" "),
-      raw.lastIndexOf("\t"),
-      raw.lastIndexOf("\n"),
-    );
-    return {
-      prefix: raw.slice(0, lastSep + 1),
-      token: raw.slice(lastSep + 1),
-    };
-  };
-
-  const search = (rawValue: string) => {
+  const search = (token: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    const { token } = tokenBoundary(rawValue);
     const q = token.trim();
     if (q.length < 2) {
       setResults([]);
@@ -73,7 +106,7 @@ export function ContactAutocomplete({
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/admin/contact-search?q=${encodeURIComponent(q)}&limit=8`
+          `/api/admin/contact-search?q=${encodeURIComponent(q)}&limit=8`,
         );
         if (!res.ok) return;
         const data: ContactResult[] = await res.json();
@@ -87,46 +120,114 @@ export function ContactAutocomplete({
   };
 
   const handleInputChange = (raw: string) => {
-    setQuery(raw);
-    onChange(raw);
+    // Commit-on-separator: if the user types a comma or semicolon, commit
+    // whatever was typed so far as a chip and clear the input.
+    if (/[,;]/.test(raw)) {
+      const parts = raw.split(/[,;]/);
+      const committed: string[] = [];
+      for (let i = 0; i < parts.length - 1; i++) {
+        const t = parts[i].trim();
+        if (t) committed.push(t);
+      }
+      const tail = parts[parts.length - 1];
+      if (committed.length > 0) {
+        const next = [...chips, ...committed];
+        setChips(next);
+        setInput(tail);
+        reportUp(next, tail);
+        search(tail);
+        return;
+      }
+    }
+    setInput(raw);
+    reportUp(chips, raw);
     search(raw);
   };
 
-  const selectContact = (contact: ContactResult) => {
-    // Replace only the fragment the user is currently typing, preserving
-    // any recipients they already entered before the last separator. Add
-    // a trailing ", " so the next recipient can be typed straight away.
-    const { prefix } = tokenBoundary(query);
-    const normalisedPrefix = prefix.replace(/[,;\s]+$/, "");
-    const next = normalisedPrefix
-      ? `${normalisedPrefix}, ${contact.email}, `
-      : `${contact.email}, `;
-    onChange(next);
-    setQuery(next);
+  const addChip = (email: string) => {
+    const trimmed = email.trim().replace(/[,;]+$/, "");
+    if (!trimmed) return;
+    const next = chips.includes(trimmed) ? chips : [...chips, trimmed];
+    setChips(next);
+    setInput("");
+    reportUp(next, "");
     setOpen(false);
     setResults([]);
-    // Keep focus in the input so the user can immediately type the next name
     inputRef.current?.focus();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!open || results.length === 0) return;
+  const removeChip = (index: number) => {
+    const next = chips.filter((_, i) => i !== index);
+    setChips(next);
+    reportUp(next, input);
+    inputRef.current?.focus();
+  };
 
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setActiveIndex((i) => (i < results.length - 1 ? i + 1 : 0));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setActiveIndex((i) => (i > 0 ? i - 1 : results.length - 1));
-    } else if (e.key === "Enter" && activeIndex >= 0) {
-      e.preventDefault();
+  const selectContact = (contact: ContactResult) => {
+    addChip(contact.email);
+  };
+
+  const commitCurrentInput = (): boolean => {
+    // Accept the current input as a chip if it's at least a plausible email
+    // or if there's an active dropdown selection.
+    if (activeIndex >= 0 && results[activeIndex]) {
       selectContact(results[activeIndex]);
-    } else if (e.key === "Escape") {
-      setOpen(false);
+      return true;
+    }
+    const t = input.trim();
+    if (!t) return false;
+    if (!EMAIL_RE.test(t)) {
+      // Still commit — the user might be in the middle of typing, and we
+      // don't want to silently swallow their input. /api/gmail/send will
+      // validate again. Browser autofill often inserts "Name <a@b.c>";
+      // accept as-is.
+      addChip(t);
+      return true;
+    }
+    addChip(t);
+    return true;
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Backspace on empty input removes the last chip.
+    if (e.key === "Backspace" && input === "" && chips.length > 0) {
+      e.preventDefault();
+      removeChip(chips.length - 1);
+      return;
+    }
+
+    if (open && results.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActiveIndex((i) => (i < results.length - 1 ? i + 1 : 0));
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActiveIndex((i) => (i > 0 ? i - 1 : results.length - 1));
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setOpen(false);
+        return;
+      }
+    }
+
+    // Commit keys: Enter, Tab, comma, semicolon (comma+semicolon are also
+    // handled in handleInputChange for the case where they arrive via
+    // autofill/paste rather than a direct keystroke).
+    if (e.key === "Enter" || e.key === "Tab" || e.key === "," || e.key === ";") {
+      if (commitCurrentInput()) {
+        e.preventDefault();
+      }
     }
   };
 
-  // Close dropdown on outside click
+  // Clicking anywhere in the chip row focuses the input (standard chip UX).
+  const focusInput = () => inputRef.current?.focus();
+
+  // Close dropdown on outside click.
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (
@@ -134,11 +235,16 @@ export function ContactAutocomplete({
         !containerRef.current.contains(e.target as Node)
       ) {
         setOpen(false);
+        // Also commit any half-typed email so a click-to-send doesn't lose it.
+        if (input.trim()) {
+          addChip(input);
+        }
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [input, chips]);
 
   const formatName = (c: ContactResult) => {
     const parts = [c.title, c.firstName, c.lastName].filter(Boolean);
@@ -146,17 +252,45 @@ export function ContactAutocomplete({
   };
 
   return (
-    <div ref={containerRef} className="relative flex-1">
-      <Input
+    <div
+      ref={containerRef}
+      className={`relative flex-1 min-h-[2.25rem] border border-input rounded-md bg-transparent px-2 py-1 flex flex-wrap items-center gap-1.5 cursor-text focus-within:ring-2 focus-within:ring-ring/50 ${className ?? ""}`}
+      onClick={focusInput}
+    >
+      {chips.map((email, i) => (
+        <span
+          key={`${email}-${i}`}
+          className="inline-flex items-center gap-1 bg-gray-100 text-gray-900 text-sm rounded-full pl-2.5 pr-1 py-0.5"
+        >
+          <span>{email}</span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              removeChip(i);
+            }}
+            className="p-0.5 rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-900 transition-colors"
+            aria-label={`${email} entfernen`}
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </span>
+      ))}
+      <input
         ref={inputRef}
-        value={query}
+        value={input}
         onChange={(e) => handleInputChange(e.target.value)}
         onKeyDown={handleKeyDown}
         onFocus={() => {
           if (results.length > 0) setOpen(true);
         }}
-        placeholder={placeholder}
-        className={className}
+        onBlur={() => {
+          // Commit a dangling typed email on blur so clicking "Send"
+          // doesn't silently drop the last recipient.
+          if (input.trim()) addChip(input);
+        }}
+        placeholder={chips.length === 0 ? placeholder : ""}
+        className="flex-1 min-w-[120px] bg-transparent outline-none text-sm py-1"
         autoFocus={autoFocus}
         autoComplete="off"
       />
