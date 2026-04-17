@@ -31,9 +31,7 @@ export const aufbaukursTherapeutischeIndikationenBotulinum: CourseLandingContent
     ],
     description:
       "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen mit Grunderfahrung in der Botulinum-Anwendung. Du vertiefst Dein Wissen in den wichtigsten therapeutischen Indikationen — Bruxismus und Masseterhypertrophie, chronische Migräne sowie fokale Hyperhidrose — und lernst Anatomie, Indikationsstellung, Produktwahl, Technik, Patient:innenkommunikation und Komplikationsmanagement sicher umzusetzen.",
-    // Placeholder video/poster until Therapeutische-Indikationen-specific
-    // marketing media exists.
-    videoPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_botulinum/hero-video.mp4",
+    videoPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/aufbaukurs_therap_indik/Tina_Indikation_23022025_V.1-compressed.mp4",
     videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
   },
 
