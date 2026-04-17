@@ -35,8 +35,7 @@ export const aufbaukursLippen: CourseLandingContent = {
     ],
     description:
       "Der Aufbaukurs Lippen richtet sich an approbierte Ärzt:innen mit Grunderfahrung in der Dermalfiller-Anwendung. Er baut auf dem Grundkurs Dermalfiller auf und vertieft Deine Kenntnisse in Anatomie, Indikationen, Produktwahl und Technik der perioralen Zone, mit besonderem Fokus auf Patient:innenkommunikation und Komplikationsmanagement.",
-    // Placeholder assets until the Lippen-specific marketing media exists.
-    videoPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_dermalfiller/dermalfiller-hero-web.mp4",
+    videoPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/aufbaukurs_lippen/My%20Movie-compressed.mp4",
     videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
   },
 
