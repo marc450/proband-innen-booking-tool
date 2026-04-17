@@ -29,10 +29,14 @@ export function CtaBannerButton({
     return (
       <a
         href={href}
-        className="inline-block text-[1.1rem] font-bold text-[#0066FF] bg-white hover:bg-white/90 rounded-[10px] px-6 py-3.5 transition-colors"
+        className="inline-flex items-center gap-3 text-[1.1rem] font-bold text-[#0066FF] bg-white hover:bg-white/90 rounded-[10px] px-6 py-3.5 transition-colors"
       >
-        {label}
-        {priceSuffix && <span className="ml-2 opacity-80 font-semibold">— {priceSuffix}</span>}
+        <span>{label}</span>
+        {priceSuffix && (
+          <span className="text-sm font-semibold bg-[#0066FF]/10 rounded-full px-2.5 py-0.5 tracking-wide">
+            {priceSuffix}
+          </span>
+        )}
       </a>
     );
   }
@@ -79,15 +83,21 @@ export function CtaBannerButton({
       type="button"
       onClick={onClick}
       disabled={loading}
-      className="inline-flex items-center gap-2 text-[1.1rem] font-bold text-[#0066FF] bg-white hover:bg-white/90 rounded-[10px] px-6 py-3.5 transition-colors disabled:opacity-70 disabled:cursor-wait"
+      className="inline-flex items-center gap-3 text-[1.1rem] font-bold text-[#0066FF] bg-white hover:bg-white/90 rounded-[10px] px-6 py-3.5 transition-colors disabled:opacity-70 disabled:cursor-wait"
     >
-      {loading && <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />}
       {loading ? (
-        "Wird geladen..."
+        <>
+          <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+          <span>Wird geladen...</span>
+        </>
       ) : (
         <>
-          {label}
-          {priceSuffix && <span className="ml-2 opacity-80 font-semibold">— {priceSuffix}</span>}
+          <span>{label}</span>
+          {priceSuffix && (
+            <span className="text-sm font-semibold bg-[#0066FF]/10 rounded-full px-2.5 py-0.5 tracking-wide">
+              {priceSuffix}
+            </span>
+          )}
         </>
       )}
     </button>

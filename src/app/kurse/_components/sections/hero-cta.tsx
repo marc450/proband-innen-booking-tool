@@ -25,10 +25,14 @@ export function HeroCta({ label, href, directCheckoutCourseKey, priceSuffix }: P
     return (
       <a
         href={href}
-        className="inline-block text-[1.1rem] font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-6 py-3.5 transition-colors text-center sm:text-left"
+        className="inline-flex items-center gap-3 text-[1.1rem] font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-6 py-3.5 transition-colors"
       >
-        {label}
-        {priceSuffix && <span className="ml-2 opacity-80 font-semibold">— {priceSuffix}</span>}
+        <span>{label}</span>
+        {priceSuffix && (
+          <span className="text-sm font-semibold bg-white/20 rounded-full px-2.5 py-0.5 tracking-wide">
+            {priceSuffix}
+          </span>
+        )}
       </a>
     );
   }
@@ -75,15 +79,21 @@ export function HeroCta({ label, href, directCheckoutCourseKey, priceSuffix }: P
       type="button"
       onClick={onClick}
       disabled={loading}
-      className="inline-flex items-center gap-2 text-[1.1rem] font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-6 py-3.5 transition-colors text-center sm:text-left disabled:opacity-70 disabled:cursor-wait"
+      className="inline-flex items-center gap-3 text-[1.1rem] font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-6 py-3.5 transition-colors disabled:opacity-70 disabled:cursor-wait"
     >
-      {loading && <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />}
       {loading ? (
-        "Wird geladen..."
+        <>
+          <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+          <span>Wird geladen...</span>
+        </>
       ) : (
         <>
-          {label}
-          {priceSuffix && <span className="ml-2 opacity-80 font-semibold">— {priceSuffix}</span>}
+          <span>{label}</span>
+          {priceSuffix && (
+            <span className="text-sm font-semibold bg-white/20 rounded-full px-2.5 py-0.5 tracking-wide">
+              {priceSuffix}
+            </span>
+          )}
         </>
       )}
     </button>
