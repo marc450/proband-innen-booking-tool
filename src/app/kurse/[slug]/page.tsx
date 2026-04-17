@@ -183,10 +183,14 @@ export default async function KursPage({
       {!content.hideBookingWidget && (
         <CourseCardsPage template={template} sessions={sessions ?? []} />
       )}
-      <Gruppenbuchungen
-        content={content.gruppenbuchungen}
-        courseTitle={content.hero.heading}
-      />
+      {/* Pure-online courses skip the Gruppenbuchungen pitch — group
+          discounts only make sense when there's an onsite Praxiskurs. */}
+      {!content.hideBookingWidget && (
+        <Gruppenbuchungen
+          content={content.gruppenbuchungen}
+          courseTitle={content.hero.heading}
+        />
+      )}
       <Inhalt content={content.inhalt} />
       <Lernplattform content={content.lernplattform} />
       <CtaBanner
