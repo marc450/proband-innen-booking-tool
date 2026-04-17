@@ -36,9 +36,7 @@ export const grundkursMedizinischeHautpflege: CourseLandingContent = {
     ],
     description:
       "Dieser Onlinekurs richtet sich an approbierte Ärzt:innen aller Fachrichtungen, die ihr Wissen rund um medizinische Hautpflege vertiefen möchten. Du lernst die wichtigsten Hautzustände wie Akne, Rosazea und periorale Dermatitis sicher zu erkennen und zu behandeln und erhältst einen klaren Rahmen für eine nachhaltige, patient:innenorientierte Pflegeroutine.",
-    // Reuse the Dermalfiller hero video as a placeholder until a dedicated
-    // Hautpflege clip exists.
-    videoPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_dermalfiller/dermalfiller-hero-web.mp4",
+    videoPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_med_hautpflege/1_Sarah_Vorstellung_V1.1-compressed.mp4",
     videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
     // Hautpflege is online-only — skip the booking widget on the page
     // and wire the hero CTA straight to Stripe checkout instead.

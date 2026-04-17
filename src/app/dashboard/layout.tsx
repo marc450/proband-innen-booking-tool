@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { DashboardNav } from "./nav";
+
+export const metadata: Metadata = {
+  title: "EPHIA Admin",
+};
 
 export default async function DashboardLayout({
   children,
