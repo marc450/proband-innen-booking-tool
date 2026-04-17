@@ -460,6 +460,7 @@ export function AuszubildendeManager({
             <SortableHead label="E-Mail" sortKey="email" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
             <TableHead>Telefon</TableHead>
             <TableHead>Ort</TableHead>
+            <TableHead>Fachrichtung</TableHead>
             <SortableHead label="Status" sortKey="status" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
             <SortableHead label="Erstellt am" sortKey="created_at" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
             <TableHead></TableHead>
@@ -468,7 +469,7 @@ export function AuszubildendeManager({
         <TableBody>
           {filtered.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                 {search ? "Keine Einträge gefunden." : "Noch keine Einträge vorhanden."}
               </TableCell>
             </TableRow>
@@ -498,6 +499,28 @@ export function AuszubildendeManager({
                   <TableCell>{azubi.email}</TableCell>
                   <TableCell>{azubi.phone || "–"}</TableCell>
                   <TableCell>{ort || "–"}</TableCell>
+                  <TableCell>
+                    {(() => {
+                      const isZahn = azubi.specialty === "Zahnmedizin";
+                      // Anything else (Allgemeinmedizin, Dermatologie,
+                      // Chirurgie, …) is a Humanmediziner:in. If specialty
+                      // hasn't been filled yet we leave the cell empty so
+                      // incomplete profiles are visible at a glance.
+                      if (!azubi.specialty) return <span className="text-xs text-muted-foreground">–</span>;
+                      return (
+                        <Badge
+                          variant="secondary"
+                          className={`text-xs ${
+                            isZahn
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-blue-100 text-blue-700"
+                          }`}
+                        >
+                          {isZahn ? "Zahnmediziner:in" : "Humanmediziner:in"}
+                        </Badge>
+                      );
+                    })()}
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant="secondary"
