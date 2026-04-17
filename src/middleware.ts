@@ -118,6 +118,20 @@ export async function middleware(request: NextRequest) {
       url.pathname = "/kurse/werde-proband-in";
       return NextResponse.rewrite(url);
     }
+
+    // The /kurse/* tree is marketing and lives on kurse.ephia.de. If a
+    // user lands on proband-innen.ephia.de/kurse/... (e.g. from an old
+    // link), bounce them to the real marketing domain so the relative
+    // CTA hrefs on that page resolve to the right place. Exception: the
+    // /kurse/werde-proband-in landing is served from this domain above.
+    if (
+      pathname.startsWith("/kurse/") &&
+      pathname !== "/kurse/werde-proband-in" &&
+      !pathname.startsWith("/kurse/werde-proband-in/")
+    ) {
+      const target = new URL(pathname + request.nextUrl.search, `https://${KURSE_DOMAIN}`);
+      return NextResponse.redirect(target, 308);
+    }
   }
 
   // Run Supabase auth session (handles dashboard auth protection)
