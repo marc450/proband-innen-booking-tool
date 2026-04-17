@@ -10,6 +10,9 @@ import type { CourseLandingContent } from "./types";
 export const aufbaukursBotulinumPerioraleZone: CourseLandingContent = {
   slug: "aufbaukurs-botulinum-periorale-zone",
   courseKey: "aufbaukurs_botulinum_periorale_zone",
+  // Pure-online course — skip the 3-card booking widget. The hero CTA
+  // and mid-page CTA banner both start Stripe checkout directly.
+  hideBookingWidget: true,
 
   meta: {
     title: "Aufbaukurs Botulinum Periorale Zone | EPHIA",
@@ -23,7 +26,7 @@ export const aufbaukursBotulinumPerioraleZone: CourseLandingContent = {
     subheadline:
       "Vertiefe Deine Myomodulations-Skills für die sensible periorale Zone, fundiert, evidenzbasiert und praxisnah.",
     stats: [
-      { icon: "Clock", label: "Format", value: "Online- und als Praxiskurs" },
+      { icon: "Clock", label: "Format", value: "Online" },
       { icon: "Award", label: "Akkreditiert", value: "CME-Punkte + Zertifikat" },
       { icon: "GraduationCap", label: "Level", value: "Aufbaukurs" },
     ],
@@ -31,6 +34,11 @@ export const aufbaukursBotulinumPerioraleZone: CourseLandingContent = {
       "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen mit Grunderfahrung in der Botulinum-Anwendung. Du vertiefst Deine Behandlungssicherheit in der perioralen Zone, lernst die relevante Anatomie, Indikationen und Produktwahl, spezifische Injektionstechniken für Lip Flip, Gummy Smile, Mundwinkel, Erdbeerkinn und Platysma sowie diskriminierungssensible Patient:innenkommunikation und Komplikationsmanagement.",
     videoPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/aufbaukurs_botulinum_periorale_zone/1.%20Intro_Periorale_Zone_V1-compressed.mp4",
     videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
+    // Online-only course: the hero CTA triggers Stripe checkout directly.
+    ctaOverride: {
+      label: "Jetzt buchen",
+      directCheckoutCourseKey: "aufbaukurs_botulinum_periorale_zone",
+    },
   },
 
   lernziele: {
@@ -352,10 +360,13 @@ export const aufbaukursBotulinumPerioraleZone: CourseLandingContent = {
     ],
   },
 
+  // Mid-page CTA banner. Online-only course, so both the hero and this
+  // banner's CTAs trigger Stripe checkout directly.
   ctaBanner: {
     heading: "Bring Dein Fachwissen auf die nächste Stufe!",
-    ctaLabel: "Zu den Angeboten",
-    ctaHref: "#kursangebote",
+    ctaLabel: "Jetzt buchen",
+    ctaHref: "#",
+    directCheckoutCourseKey: "aufbaukurs_botulinum_periorale_zone",
   },
 
   testimonials: {
