@@ -65,8 +65,29 @@ interface Props {
 
 const COURSE_TYPES: CourseType[] = ["Onlinekurs", "Praxiskurs", "Kombikurs", "Premium"];
 
+type DiscountCode = {
+  id: string;
+  code: string;
+  active: boolean;
+  percent_off: number | null;
+  amount_off: number | null;
+  currency: string | null;
+};
+
+const NO_PROMO = "__none__";
+
+function formatDiscountLabel(c: DiscountCode): string {
+  if (c.percent_off != null) return `${c.code} (${c.percent_off}% Rabatt)`;
+  if (c.amount_off != null) {
+    const eur = (c.amount_off / 100).toLocaleString("de-DE", { style: "currency", currency: c.currency?.toUpperCase() || "EUR" });
+    return `${c.code} (${eur} Rabatt)`;
+  }
+  return c.code;
+}
+
 export function BookingInvitesManager({ templates, sessions }: Props) {
   const [invites, setInvites] = useState<Invite[]>([]);
+  const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -80,7 +101,7 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
   const [sessionId, setSessionId] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [recipientEmail, setRecipientEmail] = useState("");
-  const [promoCodeId, setPromoCodeId] = useState("");
+  const [promoCodeId, setPromoCodeId] = useState(NO_PROMO);
   const [adminNote, setAdminNote] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
@@ -99,6 +120,14 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
 
   useEffect(() => {
     load();
+    // Preload discount codes so the promo dropdown is ready when the
+    // admin opens the create dialog.
+    fetch("/api/admin/discount-codes")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data: DiscountCode[]) => {
+        if (Array.isArray(data)) setDiscountCodes(data.filter((c) => c.active));
+      })
+      .catch(() => {});
   }, []);
 
   const resetForm = () => {
@@ -107,7 +136,7 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
     setSessionId("");
     setRecipientName("");
     setRecipientEmail("");
-    setPromoCodeId("");
+    setPromoCodeId(NO_PROMO);
     setAdminNote("");
     setExpiresAt("");
     setCreateError(null);
@@ -143,7 +172,7 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
         templateId,
         sessionId: needsSession ? sessionId : null,
         courseType,
-        stripePromotionCodeId: promoCodeId.trim() || null,
+        stripePromotionCodeId: promoCodeId && promoCodeId !== NO_PROMO ? promoCodeId : null,
         recipientEmail: recipientEmail.trim() || null,
         recipientName: recipientName.trim() || null,
         adminNote: adminNote.trim() || null,
@@ -255,17 +284,23 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[520px]">
+        <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Neue Einladung erstellen</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
+          <div className="space-y-5 py-2">
+            <div className="space-y-2">
               <Label>Kurs *</Label>
               <Select value={templateId} onValueChange={(v) => { setTemplateId(v ?? ""); setSessionId(""); }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Kurs wählen..." />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Kurs wählen...">
+                    {templateId
+                      ? (templates.find((t) => t.id === templateId)?.course_label_de
+                          || templates.find((t) => t.id === templateId)?.title
+                          || "Kurs wählen...")
+                      : "Kurs wählen..."}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {templates.map((t) => (
@@ -277,11 +312,13 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
               </Select>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Kursvariante *</Label>
               <Select value={courseType} onValueChange={(v) => setCourseType(v as CourseType)}>
-                <SelectTrigger>
-                  <SelectValue />
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {courseType === "Premium" ? "Komplettpaket" : courseType}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {COURSE_TYPES.map((t) => (
@@ -294,11 +331,20 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
             </div>
 
             {needsSession && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label>Kurstermin *</Label>
                 <Select value={sessionId} onValueChange={(v) => setSessionId(v ?? "")}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={sessionsForTemplate.length === 0 ? "Kein Termin für diesen Kurs" : "Kurstermin wählen..."} />
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={sessionsForTemplate.length === 0 ? "Kein Termin für diesen Kurs" : "Kurstermin wählen..."}>
+                      {sessionId
+                        ? (() => {
+                            const s = sessionsForTemplate.find((x) => x.id === sessionId);
+                            if (!s) return "Kurstermin wählen...";
+                            const label = s.label_de || s.date_iso || "";
+                            return s.booked_seats >= s.max_seats ? `${label} (ausgebucht)` : label;
+                          })()
+                        : (sessionsForTemplate.length === 0 ? "Kein Termin für diesen Kurs" : "Kurstermin wählen...")}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {sessionsForTemplate.map((s) => (
@@ -312,8 +358,8 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <Label>Empfänger:in Name</Label>
                 <Input
                   value={recipientName}
@@ -321,7 +367,7 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
                   placeholder="optional"
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label>Empfänger:in E-Mail</Label>
                 <Input
                   type="email"
@@ -332,19 +378,34 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label>Stripe Promotion Code (optional)</Label>
-              <Input
-                value={promoCodeId}
-                onChange={(e) => setPromoCodeId(e.target.value)}
-                placeholder="promo_... (z.B. für 100% Rabatt-Code)"
-              />
+            <div className="space-y-2">
+              <Label>Rabattcode (optional)</Label>
+              <Select value={promoCodeId} onValueChange={(v) => setPromoCodeId(v ?? NO_PROMO)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Kein Rabattcode">
+                    {promoCodeId === NO_PROMO || !promoCodeId
+                      ? "Kein Rabattcode"
+                      : (() => {
+                          const c = discountCodes.find((d) => d.id === promoCodeId);
+                          return c ? formatDiscountLabel(c) : "Kein Rabattcode";
+                        })()}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_PROMO}>Kein Rabattcode</SelectItem>
+                  {discountCodes.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {formatDiscountLabel(c)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <p className="text-xs text-muted-foreground">
-                Die ID (nicht der Code), z.B. <code className="font-mono">promo_1Abc...</code>. Wenn gesetzt, wird der Code beim Checkout automatisch angewendet.
+                Wird beim Checkout automatisch angewendet. Rabattcodes kannst Du unter &quot;Rabattcodes&quot; verwalten.
               </p>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Ablaufdatum (optional)</Label>
               <Input
                 type="datetime-local"
@@ -353,7 +414,7 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
               />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Notiz (intern)</Label>
               <Textarea
                 value={adminNote}
