@@ -30,7 +30,7 @@ export const aufbaukursLippen: CourseLandingContent = {
       "Vertiefe Deine Behandlungssicherheit in der perioralen Zone, fundiert, praxisnah und diskriminierungssensibel.",
     stats: [
       { icon: "Clock", label: "Format", value: "Online- und als Praxiskurs" },
-      { icon: "Award", label: "Akkreditierung", value: "CME bei LÄK Berlin beantragt" },
+      { icon: "Award", label: "Akkreditierung", value: "CME beantragt" },
       { icon: "GraduationCap", label: "Level", value: "Aufbaukurs" },
     ],
     description:
