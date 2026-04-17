@@ -41,7 +41,7 @@ type BookingWithHash = BookingWithDetails & { email_hash?: string };
 
 interface Props {
   initialBookings: BookingWithHash[];
-  courses: { id: string; title: string; location: string | null }[];
+  courses: { id: string; title: string; location: string | null; course_date: string | null }[];
   isAdmin?: boolean;
 }
 
@@ -478,58 +478,82 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Kurs</Label>
-                <Select value={slotChangeTargetCourseId} onValueChange={(val) => { if (val) handleSlotChangeCourseSelect(val); }}>
-                  <SelectTrigger>
-                    <span className="truncate">
-                      {slotChangeTargetCourseId
-                        ? courses.find((c) => c.id === slotChangeTargetCourseId)?.title ?? slotChangeTargetCourseId
-                        : "Kurs wählen..."}
-                    </span>
-                  </SelectTrigger>
-                  <SelectContent className="w-[--radix-select-trigger-width]">
-                    {courses.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {(() => {
+                // Restrict the course dropdown to courses with the same
+                // title as the booking's current course. Staff only ever
+                // want to move a patient to a different slot of the same
+                // course type, not onto a completely different product.
+                const currentCourseTitle = slotChangePending.slots?.courses?.title || "";
+                const selectableCourses = currentCourseTitle
+                  ? courses.filter((c) => c.title === currentCourseTitle)
+                  : courses;
+                return (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Kursdatum</Label>
+                      <Select value={slotChangeTargetCourseId} onValueChange={(val) => { if (val) handleSlotChangeCourseSelect(val); }}>
+                        <SelectTrigger>
+                          <span className="truncate">
+                            {slotChangeTargetCourseId
+                              ? (() => {
+                                  const c = selectableCourses.find((c) => c.id === slotChangeTargetCourseId);
+                                  if (!c) return slotChangeTargetCourseId;
+                                  return c.course_date
+                                    ? format(new Date(c.course_date), "dd.MM.yyyy", { locale: de })
+                                    : c.title;
+                                })()
+                              : "Kursdatum wählen..."}
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent className="w-[--radix-select-trigger-width]">
+                          {selectableCourses.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.course_date
+                                ? format(new Date(c.course_date), "dd.MM.yyyy", { locale: de })
+                                : c.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-              <div className="space-y-2">
-                <Label>Neuer Termin</Label>
-                {loadingSlots ? (
-                  <div className="text-sm text-muted-foreground py-2">Lade Termine...</div>
-                ) : slotsForCourse.length === 0 ? (
-                  <div className="text-sm text-muted-foreground py-2">
-                    {slotChangeTargetCourseId ? "Keine anderen Termine verfügbar." : "Bitte erst einen Kurs wählen."}
-                  </div>
-                ) : (
-                  <Select value={slotChangeTargetSlotId} onValueChange={(val) => { if (val) { setSlotChangeTargetSlotId(val); setSlotChangeError(null); } }}>
-                    <SelectTrigger>
-                      <span className="truncate">
-                        {slotChangeTargetSlotId
-                          ? (() => {
-                              const s = slotsForCourse.find((s) => s.id === slotChangeTargetSlotId);
-                              return s ? `${format(new Date(s.start_time), "dd.MM.yyyy HH:mm", { locale: de })} — ${s.remaining_capacity} Platz${s.remaining_capacity !== 1 ? "ätze" : ""} frei` : "Termin wählen...";
-                            })()
-                          : "Termin wählen..."}
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent className="w-[--radix-select-trigger-width]">
-                      {slotsForCourse.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {format(new Date(s.start_time), "dd.MM.yyyy HH:mm", { locale: de })}
-                          {" — "}
-                          {`${s.remaining_capacity} Platz${s.remaining_capacity !== 1 ? "ätze" : ""} frei`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
+                    <div className="space-y-2">
+                      <Label>Neuer Termin</Label>
+                      {loadingSlots ? (
+                        <div className="text-sm text-muted-foreground py-2">Lade Termine...</div>
+                      ) : slotsForCourse.length === 0 ? (
+                        <div className="text-sm text-muted-foreground py-2">
+                          {slotChangeTargetCourseId ? "Keine anderen Termine verfügbar." : "Bitte erst ein Kursdatum wählen."}
+                        </div>
+                      ) : (
+                        <Select value={slotChangeTargetSlotId} onValueChange={(val) => { if (val) { setSlotChangeTargetSlotId(val); setSlotChangeError(null); } }}>
+                          <SelectTrigger>
+                            <span className="truncate">
+                              {slotChangeTargetSlotId
+                                ? (() => {
+                                    const s = slotsForCourse.find((s) => s.id === slotChangeTargetSlotId);
+                                    return s
+                                      ? `${format(new Date(s.start_time), "HH:mm", { locale: de })} Uhr — ${s.remaining_capacity} Platz${s.remaining_capacity !== 1 ? "ätze" : ""} frei`
+                                      : "Termin wählen...";
+                                  })()
+                                : "Termin wählen..."}
+                            </span>
+                          </SelectTrigger>
+                          <SelectContent className="w-[--radix-select-trigger-width]">
+                            {slotsForCourse.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {format(new Date(s.start_time), "HH:mm", { locale: de })} Uhr
+                                {" — "}
+                                {`${s.remaining_capacity} Platz${s.remaining_capacity !== 1 ? "ätze" : ""} frei`}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
 
               {slotChangeError && (
                 <p className="text-sm text-destructive">{slotChangeError}</p>

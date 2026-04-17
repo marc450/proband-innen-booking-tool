@@ -26,7 +26,7 @@ export default async function BookingsPage() {
         )
       `)
       .order("created_at", { ascending: false }),
-    supabase.from("courses").select("id, title, location").order("title"),
+    supabase.from("courses").select("id, title, location, course_date").order("course_date", { ascending: true }),
   ]);
 
   return (
