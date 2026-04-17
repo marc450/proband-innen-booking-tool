@@ -323,10 +323,21 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
   };
 
   const handleSaveSlot = async () => {
-    if (!selectedCourseId || !slotTime) return;
+    if (!selectedCourseId || !slotTime) {
+      console.warn("handleSaveSlot: missing selectedCourseId or slotTime", {
+        selectedCourseId,
+        slotTime,
+      });
+      return;
+    }
 
     const course = courses.find((c) => c.id === selectedCourseId);
-    if (!course?.course_date) return;
+    if (!course?.course_date) {
+      console.warn("handleSaveSlot: course has no course_date set", {
+        courseId: selectedCourseId,
+      });
+      return;
+    }
 
     const startTime = buildStartTime(course.course_date, slotTime);
     const cap = parseInt(slotCapacity) || 1;
@@ -940,12 +951,19 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
           </DialogHeader>
           {(() => {
             const course = courses.find((c) => c.id === selectedCourseId);
+            const missingCourseDate = !course?.course_date;
+            const invalidTime = !/^\d{2}:\d{2}$/.test(slotTime);
             return (
               <div className="space-y-4 pt-4">
-                {!course?.course_date && (
-                  <p className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
-                    Bitte zuerst ein Datum für diesen Kurs festlegen.
-                  </p>
+                {missingCourseDate && (
+                  <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-3 rounded space-y-2">
+                    <p className="font-medium">
+                      Dieser Kurs hat noch kein Datum. Slots können erst angelegt werden, wenn das Kursdatum gesetzt ist.
+                    </p>
+                    <p className="text-xs">
+                      Schließe diesen Dialog, klicke beim Kurs auf „Bearbeiten" und setze zuerst das Kursdatum.
+                    </p>
+                  </div>
                 )}
                 <div>
                   <Label htmlFor="slot_time">Startzeit</Label>
@@ -954,11 +972,19 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                     type="time"
                     value={slotTime}
                     onChange={(e) => setSlotTime(e.target.value)}
-                    disabled={!course?.course_date}
+                    // Keep the field editable even if the course has no
+                    // date, so Safari / older Firefox don't swallow the
+                    // keyboard input silently. The save button below
+                    // still guards on course_date.
                   />
                   {course?.course_date && (
                     <p className="text-xs text-muted-foreground mt-1">
                       am {format(parseISO(course.course_date), "dd.MM.yyyy", { locale: de })}
+                    </p>
+                  )}
+                  {!missingCourseDate && invalidTime && slotTime && (
+                    <p className="text-xs text-red-600 mt-1">
+                      Ungültige Zeit. Bitte im Format HH:MM eingeben.
                     </p>
                   )}
                 </div>
@@ -975,7 +1001,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                 <Button
                   onClick={handleSaveSlot}
                   className="w-full"
-                  disabled={!course?.course_date || !slotTime}
+                  disabled={missingCourseDate || invalidTime}
                 >
                   {editingSlotId ? "Änderungen speichern" : "Slot anlegen"}
                 </Button>
