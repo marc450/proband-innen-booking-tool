@@ -363,6 +363,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
         { text: "Erfahrene Dozent:innen-Aufsicht" },
         { text: "Max. 5 Teilnehmer:innen" },
         { text: "Ärzt:innen-Community" },
+        { text: "EPHIA-Zertifikat nach Abschluss" },
       ],
       // CME for Lippen is still pending LÄK approval, so hide the numeric
       // CME badge everywhere until that changes.
