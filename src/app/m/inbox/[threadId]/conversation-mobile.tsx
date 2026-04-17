@@ -203,6 +203,21 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
     setReplyOpen(true);
   };
 
+  // ⌘+Enter / Ctrl+Enter sends the reply (iPad/desktop keyboards).
+  useEffect(() => {
+    if (!replyOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Enter") return;
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (sending || !replyHtml.trim()) return;
+      e.preventDefault();
+      void handleSend();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replyOpen, replyHtml, sending]);
+
   const handleSend = async () => {
     if (!lastMsg) return;
     setSending(true);

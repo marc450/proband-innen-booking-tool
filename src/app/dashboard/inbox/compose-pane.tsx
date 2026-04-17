@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Send, X, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,10 +50,26 @@ export function ComposePane({
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const canSend = !!to.trim() && !!subject.trim() && body.trim().length > 0;
+
+  // ⌘+Enter (or Ctrl+Enter on Windows/Linux) sends the mail from anywhere
+  // in the compose view — matches Gmail/Outlook keyboard shortcut.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Enter") return;
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (!rootRef.current?.contains(e.target as Node)) return;
+      if (sending || !canSend) return;
+      e.preventDefault();
+      onSend();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [sending, canSend, onSend]);
   return (
-    <div className="flex flex-col h-full bg-gray-50/30">
+    <div ref={rootRef} className="flex flex-col h-full bg-gray-50/30">
       <div className="px-6 py-4 bg-white border-b border-gray-100 flex items-center justify-between">
         <h2 className="text-base font-bold">Neue E-Mail</h2>
         <button

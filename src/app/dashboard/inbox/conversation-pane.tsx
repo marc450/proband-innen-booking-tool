@@ -183,6 +183,27 @@ export function ConversationPane({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [replyHtml, replyCc, replyBcc, showCc, showBcc]);
 
+  // ⌘+Enter / Ctrl+Enter sends the reply from anywhere in the open reply
+  // composer (matches Gmail/Outlook). Listener is only armed while the
+  // reply panel is open + fillable, so normal Enter-to-newline in other
+  // fields keeps working.
+  useEffect(() => {
+    if (!replyOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Enter") return;
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (sending) return;
+      if (!replyHtml.trim()) return;
+      e.preventDefault();
+      void handleSend();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+    // handleSend closes over lots of state — that's fine, we just want the
+    // latest version at trigger time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replyOpen, replyHtml, sending]);
+
   // Messages are sorted newest-first; the most recent is at index 0
   const lastMsg = messages[0];
 

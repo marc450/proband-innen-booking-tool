@@ -396,6 +396,22 @@ export function InboxMobile() {
     fetchThreads();
   };
 
+  // ⌘+Enter / Ctrl+Enter sends the compose mail (iPad/desktop keyboards).
+  useEffect(() => {
+    if (!composing) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Enter") return;
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (composeSending) return;
+      if (!composeTo.trim() || !composeSubject.trim()) return;
+      e.preventDefault();
+      void handleComposeSend();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [composing, composeSending, composeTo, composeSubject]);
+
   const handleComposeSend = async () => {
     setComposeSending(true);
     try {
