@@ -111,6 +111,17 @@ export const homeContent: HomeContent = {
       },
       {
         kicker: "AUFBAUKURS",
+        title: "LIPPEN",
+        audience: "Für fortgeschrittene Ärzt:innen",
+        description:
+          "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen mit Grunderfahrung in der Dermalfiller-Anwendung, die ihre Behandlungssicherheit in der perioralen Zone vertiefen möchten. Du lernst die relevante Anatomie, Indikationen und Produktwahl, spezifische Injektionstechniken, Patient:innenkommunikation sowie Komplikationsmanagement, ergänzt durch praxisnahe Behandlungsvideos und klare Schritt-für-Schritt-Anleitungen.",
+        courseKey: "aufbaukurs_lippen",
+        imageAlt: "Aufbaukurs Lippen",
+        ctaLabel: "Zu den Kursdetails",
+        href: "/aufbaukurs-lippen",
+      },
+      {
+        kicker: "AUFBAUKURS",
         title: "BOTULINUM",
         audience: "Periorale Zone",
         description:
