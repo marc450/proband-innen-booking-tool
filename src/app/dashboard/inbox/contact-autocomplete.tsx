@@ -40,8 +40,31 @@ export function ContactAutocomplete({
     setQuery(value);
   }, [value]);
 
-  const search = (q: string) => {
+  // Extract the "current token" the user is typing — the fragment after the
+  // last recipient separator. Supports the standard email list delimiters:
+  // comma, semicolon, and whitespace (tab/newline for paste, spaces after a
+  // full "Name <foo@bar>" block). Everything before that is already-entered
+  // recipients and should be left alone.
+  const tokenBoundary = (raw: string): { prefix: string; token: string } => {
+    const match = raw.match(/[,;\s]/g);
+    if (!match) return { prefix: "", token: raw };
+    const lastSep = Math.max(
+      raw.lastIndexOf(","),
+      raw.lastIndexOf(";"),
+      raw.lastIndexOf(" "),
+      raw.lastIndexOf("\t"),
+      raw.lastIndexOf("\n"),
+    );
+    return {
+      prefix: raw.slice(0, lastSep + 1),
+      token: raw.slice(lastSep + 1),
+    };
+  };
+
+  const search = (rawValue: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    const { token } = tokenBoundary(rawValue);
+    const q = token.trim();
     if (q.length < 2) {
       setResults([]);
       setOpen(false);
@@ -70,10 +93,20 @@ export function ContactAutocomplete({
   };
 
   const selectContact = (contact: ContactResult) => {
-    onChange(contact.email);
-    setQuery(contact.email);
+    // Replace only the fragment the user is currently typing, preserving
+    // any recipients they already entered before the last separator. Add
+    // a trailing ", " so the next recipient can be typed straight away.
+    const { prefix } = tokenBoundary(query);
+    const normalisedPrefix = prefix.replace(/[,;\s]+$/, "");
+    const next = normalisedPrefix
+      ? `${normalisedPrefix}, ${contact.email}, `
+      : `${contact.email}, `;
+    onChange(next);
+    setQuery(next);
     setOpen(false);
     setResults([]);
+    // Keep focus in the input so the user can immediately type the next name
+    inputRef.current?.focus();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
