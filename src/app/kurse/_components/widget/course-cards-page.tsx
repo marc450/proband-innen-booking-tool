@@ -548,13 +548,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   discountLabel=""
                   cmeTotal="25"
                   includedCourses={DERMALFILLER_INCLUDED_COURSES}
-                  // Pad the feature list so the Komplettpaket card height
-                  // matches the adjacent Online- & Praxiskurs card. The
-                  // Kombi card has 7 text rows at space-y-4; this card
-                  // has 6 rows (2 of which are taller pills), so we bump
-                  // the spacing a touch so both feature blocks match.
                   extraFeatures={["Ärzt:innen-Community"]}
-                  listSpacingClass="space-y-6"
                 />
               )}
 

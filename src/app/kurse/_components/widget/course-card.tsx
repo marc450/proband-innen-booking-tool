@@ -124,8 +124,9 @@ export function CourseCard({
         <p className="text-black mb-3 mt-3 lg:min-h-[4.5rem]">{description}</p>
       </div>
 
-      {/* Body */}
-      <div className="px-7 pt-8 pb-5">
+      {/* Body — fixed min-height on desktop so the separator line below
+          lands at the same Y as the PremiumCard sibling's. */}
+      <div className="px-7 pt-8 pb-5 lg:min-h-[30.5rem]">
         {/* Price row — fixed height so it aligns across cards on desktop */}
         <div className="mb-8 lg:min-h-[4.5rem]">
           <div className="text-4xl font-bold text-[#0066FF] mb-1">{price}</div>
