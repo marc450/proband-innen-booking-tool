@@ -1,26 +1,30 @@
 /**
  * Normalise an email address for use as a stable lookup key.
  *
- * Gmail treats these as equivalent (they all deliver to the same mailbox):
- *   - "Foo.Bar@gmail.com"
- *   - "foo.bar@gmail.com"
- *   - "foobar@gmail.com"
- *   - "foo.bar@googlemail.com"
- *
- * Our `auszubildende` table has a unique index on `email`, so two spellings
- * of the same Gmail address create two rows and break the "returning
- * customer" detection in the Stripe webhook (customer ends up filling the
- * profile form twice).
+ * Our `auszubildende` table has a unique index on `email`, so variant
+ * spellings of the same mailbox create two rows and break the
+ * "returning customer" detection in the Stripe webhook (customer ends
+ * up filling the profile form twice). The concrete case that motivated
+ * this helper: Google owns both `gmail.com` and `googlemail.com` and
+ * routes them to the same mailbox, but our DB treated a customer who
+ * booked once with each form as two separate people.
  *
  * Rules:
- *   1. Trim + lowercase the address.
- *   2. Rewrite `@googlemail.com` → `@gmail.com` (Gmail aliases them globally).
- *   3. Strip dots from the local part for gmail.com addresses only.
- *      Do NOT strip for other providers (iCloud/Outlook keep dots meaningful).
- *   4. Drop the `+tag` suffix for gmail.com only. (iCloud also supports this
- *      but it's safer to be conservative for non-Google providers.)
+ *   1. Trim + lowercase the whole address. RFC 5321 defines the local
+ *      part as case-sensitive in theory, but in practice every mail
+ *      provider in use today treats it case-insensitively, so this is
+ *      safe and catches "Foo@bar.com" vs "foo@bar.com" duplicates.
+ *   2. Rewrite `@googlemail.com` → `@gmail.com`. Google aliases these
+ *      domains globally.
  *
- * Non-email inputs are returned empty so callers can fall back safely.
+ * We deliberately do NOT strip dots or "+tag" suffixes from Gmail local
+ * parts. Gmail ignores both when delivering, but the user's display
+ * form is theirs and we want to preserve it for invoices, support
+ * lookups, and LearnWorlds account matching. Real-world duplicate
+ * bookings from the same person with different dot patterns are
+ * vanishingly rare, so the tradeoff wasn't worth it.
+ *
+ * Non-email inputs are returned as-is (trimmed + lowercased).
  */
 export function normalizeEmail(input: string | null | undefined): string {
   if (!input) return "";
@@ -28,22 +32,12 @@ export function normalizeEmail(input: string | null | undefined): string {
   if (!trimmed.includes("@")) return trimmed;
 
   const atIdx = trimmed.lastIndexOf("@");
-  let local = trimmed.slice(0, atIdx);
+  const local = trimmed.slice(0, atIdx);
   let domain = trimmed.slice(atIdx + 1);
 
-  // googlemail.com is an alias of gmail.com
+  // googlemail.com is an alias of gmail.com (same mailbox, same password)
   if (domain === "googlemail.com") {
     domain = "gmail.com";
-  }
-
-  if (domain === "gmail.com") {
-    // Drop "+tag" suffix
-    const plusIdx = local.indexOf("+");
-    if (plusIdx !== -1) local = local.slice(0, plusIdx);
-    // Remove dots from the local part only (Gmail ignores them). The
-    // split above separates the domain, so dots in "gmail.com" are
-    // preserved automatically.
-    local = local.replaceAll(".", "");
   }
 
   return `${local}@${domain}`;
