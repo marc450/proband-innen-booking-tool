@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { encryptPatientFields, encryptBookingFields, hashEmail, hashPhone } from "@/lib/encryption";
 import { buildEmailHtml } from "@/lib/email-template";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
-
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 
@@ -155,12 +152,69 @@ export async function POST(req: NextRequest) {
 
     // Send confirmation email
     if (RESEND_API_KEY) {
+      // Slots are stored as UTC ISO timestamps (derived client-side from
+      // Berlin local time), so we must format them back in Europe/Berlin
+      // or the server-side (UTC) `format()` would shift the time by 1–2h.
       const dateStr = slot.start_time
-        ? format(new Date(slot.start_time), "EEEE, dd. MMMM yyyy", { locale: de })
+        ? new Date(slot.start_time).toLocaleDateString("de-DE", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+            timeZone: "Europe/Berlin",
+          })
         : "";
       const timeStr = slot.start_time
-        ? format(new Date(slot.start_time), "HH:mm")
+        ? new Date(slot.start_time).toLocaleTimeString("de-DE", {
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: "Europe/Berlin",
+          })
         : "";
+
+      const prepBlock = `
+        <p style="margin:0 0 12px;">
+          <strong>Bitte stelle sicher, dass Du 10 Minuten vor Start Deiner Behandlung in der Praxis eintriffst.</strong>
+        </p>
+        <p style="margin:0 0 20px;">
+          Damit Du gut auf Deine Behandlung vorbereitet bist, möchten wir Dich bitten, folgende Informationen sorgfältig zu lesen:
+        </p>
+
+        <p style="margin:20px 0 4px; font-weight:bold;">Umfang Deiner Behandlung</p>
+        <p style="margin:0 0 0;">
+          Bei der Registrierung durftest Du Deine Behandlungswünsche angeben. Leider kann aus Zeit- und Kostengründen nicht garantiert werden, dass der/die behandelnde Ärzt:in alle Deine Wünsche erfüllen kann, er/sie wird sich aber größte Mühe geben, Dir so weit wie möglich entgegenzukommen.
+        </p>
+
+        <p style="margin:20px 0 4px; font-weight:bold;">Hautpflege & Make-up</p>
+        <p style="margin:0 0 0;">
+          Bitte bereite Dich gut auf Deinen Termin vor, damit Deine Behandlung reibungslos und effektiv verläuft. Gib der Ärztin/dem Arzt vor Deiner Behandlung Bescheid, falls das Deine erste ästhetische Behandlung sein wird.
+        </p>
+
+        <p style="margin:12px 0 4px; font-weight:bold;">Hautpflege</p>
+        <p style="margin:0 0 0;">
+          Vermeide 2-3 Tage vor der Behandlung Hautpflegeprodukte, die Deine Haut reizen könnten. Setze stattdessen auf leichte und gut verträgliche Pflege. Achte außerdem darauf, ausreichend Wasser zu trinken, um Deine Haut optimal zu hydratisieren.
+        </p>
+
+        <p style="margin:12px 0 4px; font-weight:bold;">Make-up</p>
+        <p style="margin:0 0 0;">
+          Am Tag der Behandlung solltest Du möglichst kein Make-up tragen, um die Hygiene während der Behandlung zu gewährleisten. Falls Du Dich ohne Make-up unwohl fühlst, kannst Du leichtes Make-up verwenden und Dich vor Ort im Studio abschminken. Wir bitten Dich, die dafür notwendigen Utensilien selbst mitzubringen.
+        </p>
+
+        <p style="margin:20px 0 4px; font-weight:bold;">Zusätzliche Informationen</p>
+        <p style="margin:0 0 0;">
+          Stelle Dich bitte auf längere Wartezeiten ein und beachte, dass wir in der Praxis keine Kapazitäten für Freunde, Angehörige oder Haustiere haben. Komme daher bitte ohne Begleitung. Am besten bringst Du ein Buch mit oder etwas, womit Du Dich beschäftigen kannst, solltest Du nicht direkt drankommen. Während des Kurses werden wir Vorher-Nachher-Bilder von den Behandlungen erstellen. Dies dient unserer internen Dokumentation.
+        </p>
+
+        <p style="margin:20px 0 4px; font-weight:bold;">Bei Fragen</p>
+        <p style="margin:0 0 20px;">
+          Solltest Du nach Deiner Behandlung noch weitere Fragen haben, möchten wir Dich bitten, Dich zunächst an die Ärztin oder den Arzt zu wenden, die/der Dich behandelt hat. Sollte es dennoch weiterhin Unklarheiten geben, bieten wir allen Ärzt:innen, die wir ausgebildet haben, eine direkte Anlaufstelle für solche Situationen.
+        </p>
+
+        <p style="margin:0 0 20px;">
+          Solltest Du weitere Fragen haben, melde Dich jederzeit bei uns:
+          <a href="mailto:customerlove@ephia.de" style="color:#0066FF; text-decoration:none;">customerlove@ephia.de</a>
+        </p>
+      `;
 
       const html = buildEmailHtml({
         firstName: firstName,
@@ -172,10 +226,7 @@ export async function POST(req: NextRequest) {
           { label: "Ort", value: course?.location || "" },
           { label: "Zuweisende:r Ärzt:in", value: referringDoctor },
         ],
-        extraContent: `<p style="margin:0 0 20px;">
-          Solltest Du Fragen haben, melde Dich jederzeit bei uns:
-          <a href="mailto:customerlove@ephia.de" style="color:#0066FF; text-decoration:none;">customerlove@ephia.de</a>
-        </p>`,
+        extraContent: prepBlock,
       });
 
       await fetch("https://api.resend.com/emails", {
@@ -209,10 +260,20 @@ export async function POST(req: NextRequest) {
         }
 
         const dateStr = slot.start_time
-          ? format(new Date(slot.start_time), "EEEE, dd. MMMM yyyy", { locale: de })
+          ? new Date(slot.start_time).toLocaleDateString("de-DE", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+              timeZone: "Europe/Berlin",
+            })
           : "";
         const timeStr = slot.start_time
-          ? format(new Date(slot.start_time), "HH:mm")
+          ? new Date(slot.start_time).toLocaleTimeString("de-DE", {
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone: "Europe/Berlin",
+            })
           : "";
 
         await fetch(SLACK_WEBHOOK_URL, {

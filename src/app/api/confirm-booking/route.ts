@@ -393,6 +393,16 @@ export async function POST(req: NextRequest) {
       <strong>Wichtiger Hinweis:</strong> Bei Nichterscheinen oder Absage weniger als 48 Stunden vor dem Termin wird eine Ausfallgebühr von 50,00 EUR erhoben.
     </div>
 
+    <p style="margin:0 0 12px;">
+      <strong>Bitte stelle sicher, dass Du 10 Minuten vor Start Deiner Behandlung in der Praxis eintriffst.</strong>
+    </p>
+
+    <p style="margin:20px 0 4px; font-weight:bold;">Umfang Deiner Behandlung</p>
+    <p style="margin:0 0 0;">
+      Bei der Registrierung durftest Du Deine Behandlungswünsche angeben. Leider kann aus Zeit- und Kostengründen nicht garantiert werden, dass der/die behandelnde Ärzt:in alle Deine Wünsche erfüllen kann, er/sie wird sich aber größte Mühe geben, Dir so weit wie möglich entgegenzukommen.
+    </p>
+
+    <p style="margin:20px 0 4px; font-weight:bold;">Hautpflege & Make-up</p>
     <p style="margin:0 0 8px;">
       Bitte bereite Dich gut auf Deinen Termin bei uns vor, damit Deine Behandlung reibungslos und effektiv verläuft. Gib der behandelnden Ärztin/dem behandelnden Arzt Bescheid, falls das Deine erste ästhetische Behandlung sein wird.
     </p>
