@@ -118,13 +118,13 @@ export async function POST(req: NextRequest) {
       // Hardcoded fallbacks when price_gross_premium isn't set in the DB.
       // - Zahnmedizin: DB value required (falls through to 0 = 400 error).
       // - Dermalfiller: 1290 + 250 + 490 = 2030 → -10% bundle = 1827.
-      // - Lippen: 1290 (Kombi) + 490 (Dermalfiller online) + 250 (Hautpflege)
-      //          + 340 (Periorale Zone) = 2370 → -10% bundle = 2133.
+      // - Lippen: 1140 (Kombi) + 490 (Dermalfiller online) + 250 (Hautpflege)
+      //          + 340 (Periorale Zone) = 2220 → -10% bundle = 1998.
       // - Humanmedizin (Botulinum): 2220 default.
       grossPrice = template.price_gross_premium || (
         isDentist ? 0 :
         isDermalfiller ? 2030 :
-        isLippen ? 2370 :
+        isLippen ? 2220 :
         2220
       );
     } else {

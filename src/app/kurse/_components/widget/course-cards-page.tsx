@@ -620,15 +620,18 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   isLoading={loadingCheckout?.startsWith("Premium-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Premium-", "")}
                   description="Für Deine umfassende Expertise rund um Dermalfiller und die periorale Zone: 1 Praxiskurs + 3 Onlinekurse."
-                  // Price: Lippen Kombi (1.290) + Onlinekurs Dermalfiller
-                  // (490) + Hautpflege (250) + Periorale Zone (340) = 2.370.
-                  // -10% bundle discount = 2.133.
-                  price="EUR 2.133"
-                  originalPrice="EUR 2.370"
+                  // Price: Lippen Kombi (1.140) + Onlinekurs Dermalfiller
+                  // (490) + Hautpflege (250) + Periorale Zone (340) = 2.220.
+                  // -10% bundle discount = 1.998.
+                  price="EUR 1.998"
+                  originalPrice="EUR 2.220"
                   discountLabel=""
-                  cmeTotal=""
+                  // Sum of included online-course CME points: Dermalfiller
+                  // (11) + Hautpflege (7) + Periorale Zone (4) = 22. Lippen
+                  // itself is still pending LÄK accreditation so it doesn't
+                  // contribute yet.
+                  cmeTotal="22"
                   includedCourses={LIPPEN_INCLUDED_COURSES}
-                  extraFeatures={["Ärzt:innen-Community"]}
                 />
               )}
 
