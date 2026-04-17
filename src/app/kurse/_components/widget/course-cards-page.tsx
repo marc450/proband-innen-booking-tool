@@ -299,6 +299,15 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
     grundkurs_dermalfiller: {
       hidePraxis: true,
       hasKomplettpaket: true,
+      kombiFeatures: [
+        { text: "Akkreditiert mit 18 CME-Punkten" },
+        { text: "Vollständiger Onlinekurs inkludiert" },
+        { text: "6+ Stunden gemeinsames Behandeln" },
+        { text: "Üben an echten Proband:innen mit echten Dermalfillern" },
+        { text: "Erfahrene Dozent:innen-Aufsicht" },
+        { text: "Max. 5 Teilnehmer:innen" },
+        { text: "Ärzt:innen-Community" },
+      ],
     },
     grundkurs_botulinum_zahnmedizin: {
       header: "UNSERE KURSANGEBOTE FÜR ZAHNÄRZT:INNEN",
