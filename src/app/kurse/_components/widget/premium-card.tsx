@@ -422,9 +422,8 @@ export function PremiumCard({
         </p>
       </div>
 
-      {/* Body — fixed min-height on desktop so the separator line below
-          lands at exactly the same Y as the CourseCard sibling's. */}
-      <div className="px-7 pt-8 pb-5 lg:min-h-[30.5rem]">
+      {/* Body */}
+      <div className="px-7 pt-8 pb-5">
         {/* Price row — fixed height to align with other cards on desktop */}
         <div className="mb-8 lg:min-h-[4.5rem]">
           <div className="flex items-baseline gap-3 mb-1">
