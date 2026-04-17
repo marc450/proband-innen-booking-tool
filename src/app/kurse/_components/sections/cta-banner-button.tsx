@@ -33,9 +33,10 @@ export function CtaBannerButton({
       >
         <span>{label}</span>
         {priceSuffix && (
-          <span className="text-sm font-semibold bg-[#0066FF]/10 rounded-full px-2.5 py-0.5 tracking-wide">
-            {priceSuffix}
-          </span>
+          <>
+            <span className="h-5 w-px bg-[#0066FF]/30" aria-hidden="true" />
+            <span className="font-semibold">{priceSuffix}</span>
+          </>
         )}
       </a>
     );
@@ -94,9 +95,10 @@ export function CtaBannerButton({
         <>
           <span>{label}</span>
           {priceSuffix && (
-            <span className="text-sm font-semibold bg-[#0066FF]/10 rounded-full px-2.5 py-0.5 tracking-wide">
-              {priceSuffix}
-            </span>
+            <>
+              <span className="h-5 w-px bg-[#0066FF]/30" aria-hidden="true" />
+              <span className="font-semibold">{priceSuffix}</span>
+            </>
           )}
         </>
       )}

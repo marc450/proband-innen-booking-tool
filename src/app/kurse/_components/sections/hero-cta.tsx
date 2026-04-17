@@ -29,9 +29,10 @@ export function HeroCta({ label, href, directCheckoutCourseKey, priceSuffix }: P
       >
         <span>{label}</span>
         {priceSuffix && (
-          <span className="text-sm font-semibold bg-white/20 rounded-full px-2.5 py-0.5 tracking-wide">
-            {priceSuffix}
-          </span>
+          <>
+            <span className="h-5 w-px bg-white/40" aria-hidden="true" />
+            <span className="font-semibold">{priceSuffix}</span>
+          </>
         )}
       </a>
     );
@@ -90,9 +91,10 @@ export function HeroCta({ label, href, directCheckoutCourseKey, priceSuffix }: P
         <>
           <span>{label}</span>
           {priceSuffix && (
-            <span className="text-sm font-semibold bg-white/20 rounded-full px-2.5 py-0.5 tracking-wide">
-              {priceSuffix}
-            </span>
+            <>
+              <span className="h-5 w-px bg-white/40" aria-hidden="true" />
+              <span className="font-semibold">{priceSuffix}</span>
+            </>
           )}
         </>
       )}
