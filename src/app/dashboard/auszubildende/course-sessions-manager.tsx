@@ -50,10 +50,25 @@ function dozentDisplayName(d: DozentUser): string {
   return [d.title, d.first_name, d.last_name].filter(Boolean).join(" ");
 }
 
+// Courses whose public landing pages read sessions from ANOTHER template
+// (see SESSION_SHARING in src/app/kurse/[slug]/page.tsx). These templates
+// never need their own course_sessions rows, so we hide them from the
+// "Kurs" dropdowns in the admin to prevent accidentally creating dead
+// sessions that no public page ever renders.
+const SESSION_INHERIT_KEYS = new Set<string>([
+  "grundkurs_botulinum_zahnmedizin",
+]);
+
 export function CourseSessionsManager({ initialTemplates, initialSessions, dozentUsers, betreuerUsers = [], zahnmedizinerCounts = {} }: Props) {
   const supabase = createClient();
   const [sessions, setSessions] = useState(initialSessions);
   const [templates] = useState(initialTemplates);
+  // Templates that can host their own sessions (all except the ones that
+  // inherit from another template).
+  const assignableTemplates = useMemo(
+    () => templates.filter((t) => !SESSION_INHERIT_KEYS.has(t.course_key || "")),
+    [templates],
+  );
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("date");
@@ -561,11 +576,22 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                         onChange={(e) => requestChange(session.id, "template_id", e.target.value)}
                         className={`${color.bg} ${color.text} font-medium text-xs rounded-full px-2.5 py-1 border-0 focus:outline-none focus:ring-0 cursor-pointer max-w-[250px] truncate`}
                       >
-                        {templates.map((t) => (
+                        {assignableTemplates.map((t) => (
                           <option key={t.id} value={t.id}>
                             {t.course_label_de || t.title}
                           </option>
                         ))}
+                        {/* Fallback: render the template this session currently points
+                            at even if it's in the inherit set, so legacy Zahnmedizin
+                            sessions stay visible until migrated. */}
+                        {!assignableTemplates.some((t) => t.id === session.template_id) && (() => {
+                          const t = templates.find((x) => x.id === session.template_id);
+                          return t ? (
+                            <option key={t.id} value={t.id}>
+                              {t.course_label_de || t.title}
+                            </option>
+                          ) : null;
+                        })()}
                       </select>
                     );
                   })()}
@@ -737,7 +763,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 className="h-10 w-full border border-input rounded-lg px-2.5 text-sm bg-transparent"
               >
                 <option value="">Kurs wählen...</option>
-                {templates.map((t) => (
+                {assignableTemplates.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.course_label_de || t.title}
                   </option>
