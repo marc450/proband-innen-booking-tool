@@ -80,11 +80,14 @@ const LIPPEN_INCLUDED_COURSES: IncludedCourse[] = [
   },
   {
     ...MEDIZINISCHE_HAUTPFLEGE,
+    // Override the pill label for this package so the three pills share
+    // the "Onlinekurs …" prefix and read as a consistent set.
+    shortName: "Onlinekurs Med. Hautpflege",
     badgeClasses: BADGE_COLORS[1],
   },
   {
     name: "Aufbaukurs Botulinum: Periorale Zone",
-    shortName: "Periorale Zone",
+    shortName: "Onlinekurs Periorale Zone",
     type: "Onlinekurs",
     level: "Aufbaukurs",
     description:
@@ -620,7 +623,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   onBook={(sessionId) => handleBooking("Premium", sessionId)}
                   isLoading={loadingCheckout?.startsWith("Premium-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Premium-", "")}
-                  description="Für Deine umfassende Expertise rund um Dermalfiller und die periorale Zone: 1 Praxiskurs + 3 Onlinekurse."
+                  description="Deine umfassende Expertise für die periorale Zone: 1 Praxiskurs + 3 Onlinekurse."
                   // Price: Lippen Kombi (1.140) + Onlinekurs Dermalfiller
                   // (490) + Hautpflege (250) + Periorale Zone (340) = 2.220.
                   // -10% bundle discount = 1.998.
