@@ -129,7 +129,7 @@ export const homeContent: HomeContent = {
         courseKey: "aufbaukurs_botulinum_periorale_zone",
         imageAlt: "Aufbaukurs Botulinum Periorale Zone",
         ctaLabel: "Zu den Kursdetails",
-        href: "https://www.ephia.de/aufbaukurs-botulinum-periorale-zone",
+        href: "/aufbaukurs-botulinum-periorale-zone",
       },
       {
         kicker: "GRUPPENBUCHUNGEN",
