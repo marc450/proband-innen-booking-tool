@@ -1071,6 +1071,16 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
 
       {/* Course list */}
       {(() => {
+        // "Closest upcoming first" sort:
+        //   • future courses come first, earliest date on top (so the
+        //     very next Kurs staff needs to run sits at the top),
+        //   • past courses fall to the bottom, most recent first,
+        //   • rows without a course_date sink to the very bottom.
+        // Dates are plain YYYY-MM-DD strings so string compare is safe.
+        const today = new Date().toISOString().slice(0, 10);
+        const bucket = (d: string | null | undefined) =>
+          !d ? 2 : d >= today ? 0 : 1;
+
         const filteredCourses = courses
           .filter((c) => {
             if (filterCourse && c.title !== filterCourse) return false;
@@ -1078,12 +1088,16 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
             if (filterDate && c.course_date !== filterDate) return false;
             return true;
           })
-          // Default sort: newest course date on top. Courses without a
-          // course_date sink to the bottom (null → empty string in the
-          // localeCompare, loses every comparison against a YYYY-MM-DD).
-          .sort((a, b) =>
-            (b.course_date || "").localeCompare(a.course_date || ""),
-          );
+          .sort((a, b) => {
+            const ba = bucket(a.course_date);
+            const bb = bucket(b.course_date);
+            if (ba !== bb) return ba - bb;
+            const ad = a.course_date || "";
+            const bd = b.course_date || "";
+            // Future bucket: ascending (closest first).
+            // Past bucket:   descending (most recent first).
+            return ba === 0 ? ad.localeCompare(bd) : bd.localeCompare(ad);
+          });
         if (filteredCourses.length === 0) return (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
