@@ -24,7 +24,14 @@ const STAT_ICON_MAP: Record<string, LucideIcon> = {
   Calendar,
 };
 
-export function Hero({ content }: { content: CourseHeroContent }) {
+export function Hero({
+  content,
+  priceSuffix,
+}: {
+  content: CourseHeroContent;
+  /** Optional "EUR 250" suffix appended to the CTA when doing direct checkout */
+  priceSuffix?: string;
+}) {
   return (
     <section className="bg-[#FAEBE1] pt-12 pb-16 md:pt-20 md:pb-24">
       <div className="max-w-7xl mx-auto px-5 md:px-8">
@@ -89,6 +96,7 @@ export function Hero({ content }: { content: CourseHeroContent }) {
                 label={content.ctaOverride?.label || "Zu den Kursangeboten"}
                 href={content.ctaOverride?.href || "#kursangebote"}
                 directCheckoutCourseKey={content.ctaOverride?.directCheckoutCourseKey}
+                priceSuffix={priceSuffix}
               />
               {content.socialProof && (
                 <div className="flex items-center gap-2 text-sm text-black/70">

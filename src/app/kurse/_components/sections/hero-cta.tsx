@@ -13,9 +13,11 @@ interface Props {
    * online courses that don't render the booking widget on the page.
    */
   directCheckoutCourseKey?: string;
+  /** Optional price string shown after the label, e.g. "EUR 250". */
+  priceSuffix?: string;
 }
 
-export function HeroCta({ label, href, directCheckoutCourseKey }: Props) {
+export function HeroCta({ label, href, directCheckoutCourseKey, priceSuffix }: Props) {
   const [loading, setLoading] = useState(false);
 
   // No direct checkout → render a normal anchor (SSR-friendly, no JS).
@@ -26,6 +28,7 @@ export function HeroCta({ label, href, directCheckoutCourseKey }: Props) {
         className="inline-block text-[1.1rem] font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-6 py-3.5 transition-colors text-center sm:text-left"
       >
         {label}
+        {priceSuffix && <span className="ml-2 opacity-80 font-semibold">— {priceSuffix}</span>}
       </a>
     );
   }
@@ -75,7 +78,14 @@ export function HeroCta({ label, href, directCheckoutCourseKey }: Props) {
       className="inline-flex items-center gap-2 text-[1.1rem] font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-6 py-3.5 transition-colors text-center sm:text-left disabled:opacity-70 disabled:cursor-wait"
     >
       {loading && <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />}
-      {loading ? "Wird geladen..." : label}
+      {loading ? (
+        "Wird geladen..."
+      ) : (
+        <>
+          {label}
+          {priceSuffix && <span className="ml-2 opacity-80 font-semibold">— {priceSuffix}</span>}
+        </>
+      )}
     </button>
   );
 }

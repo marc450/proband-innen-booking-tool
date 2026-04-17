@@ -7,6 +7,8 @@ interface Props {
   label: string;
   href: string;
   directCheckoutCourseKey?: string;
+  /** Optional price string shown after the label, e.g. "EUR 250". */
+  priceSuffix?: string;
 }
 
 /**
@@ -19,6 +21,7 @@ export function CtaBannerButton({
   label,
   href,
   directCheckoutCourseKey,
+  priceSuffix,
 }: Props) {
   const [loading, setLoading] = useState(false);
 
@@ -29,6 +32,7 @@ export function CtaBannerButton({
         className="inline-block text-[1.1rem] font-bold text-[#0066FF] bg-white hover:bg-white/90 rounded-[10px] px-6 py-3.5 transition-colors"
       >
         {label}
+        {priceSuffix && <span className="ml-2 opacity-80 font-semibold">— {priceSuffix}</span>}
       </a>
     );
   }
@@ -78,7 +82,14 @@ export function CtaBannerButton({
       className="inline-flex items-center gap-2 text-[1.1rem] font-bold text-[#0066FF] bg-white hover:bg-white/90 rounded-[10px] px-6 py-3.5 transition-colors disabled:opacity-70 disabled:cursor-wait"
     >
       {loading && <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />}
-      {loading ? "Wird geladen..." : label}
+      {loading ? (
+        "Wird geladen..."
+      ) : (
+        <>
+          {label}
+          {priceSuffix && <span className="ml-2 opacity-80 font-semibold">— {priceSuffix}</span>}
+        </>
+      )}
     </button>
   );
 }

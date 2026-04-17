@@ -1,7 +1,14 @@
 import type { CourseCtaBannerContent } from "@/content/kurse/types";
 import { CtaBannerButton } from "./cta-banner-button";
 
-export function CtaBanner({ content }: { content: CourseCtaBannerContent }) {
+export function CtaBanner({
+  content,
+  priceSuffix,
+}: {
+  content: CourseCtaBannerContent;
+  /** Optional "EUR 250" suffix appended to the CTA when doing direct checkout */
+  priceSuffix?: string;
+}) {
   return (
     <section className="py-16 md:py-20" style={{ backgroundColor: "#0066FF" }}>
       <div className="max-w-4xl mx-auto px-5 md:px-8 text-center">
@@ -12,6 +19,7 @@ export function CtaBanner({ content }: { content: CourseCtaBannerContent }) {
           label={content.ctaLabel}
           href={content.ctaHref}
           directCheckoutCourseKey={content.directCheckoutCourseKey}
+          priceSuffix={priceSuffix}
         />
       </div>
     </section>

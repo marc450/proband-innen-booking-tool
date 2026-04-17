@@ -168,7 +168,17 @@ export default async function KursPage({
         // JSON.stringify output is trusted — no user input flows in here
         dangerouslySetInnerHTML={{ __html: JSON.stringify(courseJsonLd) }}
       />
-      <Hero content={content.hero} />
+      <Hero
+        content={content.hero}
+        // When the hero CTA fires a direct Stripe checkout, append the
+        // Onlinekurs price to the button label so users see the cost
+        // before they click (matches the booking-widget cards' price UX).
+        priceSuffix={
+          content.hero.ctaOverride?.directCheckoutCourseKey && template.price_gross_online
+            ? `EUR ${template.price_gross_online.toLocaleString("de-DE")}`
+            : undefined
+        }
+      />
       <Lernziele content={content.lernziele} />
       {!content.hideBookingWidget && (
         <CourseCardsPage template={template} sessions={sessions ?? []} />
@@ -179,7 +189,14 @@ export default async function KursPage({
       />
       <Inhalt content={content.inhalt} />
       <Lernplattform content={content.lernplattform} />
-      <CtaBanner content={content.ctaBanner} />
+      <CtaBanner
+        content={content.ctaBanner}
+        priceSuffix={
+          content.ctaBanner.directCheckoutCourseKey && template.price_gross_online
+            ? `EUR ${template.price_gross_online.toLocaleString("de-DE")}`
+            : undefined
+        }
+      />
       <Testimonials content={content.testimonials} />
       <Faq content={content.faq} />
     </>
