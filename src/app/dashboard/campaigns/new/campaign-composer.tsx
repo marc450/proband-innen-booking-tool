@@ -300,16 +300,37 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
 
   // Track which block index the image should be inserted after
   const [imageInsertAfter, setImageInsertAfter] = useState(0);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
 
-  const handleImageUpload = (files: FileList | null) => {
+  // Upload the image to Supabase Storage and insert the public URL into the
+  // content block. Inline base64 (data:) URLs used to work in Gmail web but
+  // were stripped by Outlook, Gmail mobile and some iOS Mail configurations,
+  // which caused the "screenshot shows up for some recipients, not for others"
+  // bug. Hosting on a public URL renders everywhere.
+  const handleImageUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const file = files[0];
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      insertBlock(imageInsertAfter, { type: "image", src: dataUrl, alt: file.name });
-    };
-    reader.readAsDataURL(file);
+    setImageUploadError(null);
+    setImageUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/campaign-images", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.url) {
+        setImageUploadError(data.error || "Upload fehlgeschlagen.");
+        return;
+      }
+      insertBlock(imageInsertAfter, { type: "image", src: data.url, alt: file.name });
+    } catch {
+      setImageUploadError("Upload fehlgeschlagen. Bitte erneut versuchen.");
+    } finally {
+      setImageUploading(false);
+    }
   };
 
   const fileToBase64 = (file: File): Promise<string> =>
@@ -566,10 +587,11 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                           setImageInsertAfter(i);
                           imageInputRef.current?.click();
                         }}
-                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted transition-colors"
+                        disabled={imageUploading}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted transition-colors disabled:opacity-60 disabled:cursor-wait"
                       >
                         <ImageIcon className="h-3 w-3" />
-                        Bild
+                        {imageUploading && imageInsertAfter === i ? "Lädt..." : "Bild"}
                       </button>
                     </div>
                   </div>
@@ -825,6 +847,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
 
           {/* Action */}
           {error && <p className="text-sm text-destructive">{error}</p>}
+          {imageUploadError && <p className="text-sm text-destructive">Bild-Upload: {imageUploadError}</p>}
 
           <div className="flex gap-3">
             <Button
