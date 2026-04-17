@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { DashboardNav } from "./nav";
+import { DashboardBodyTheme } from "./body-theme";
 
 export const metadata: Metadata = {
   title: "EPHIA Admin",
@@ -36,6 +37,7 @@ export default async function DashboardLayout({
       style={{ backgroundColor: "var(--dashboard-bg)" }}
       className={`min-h-screen text-foreground ${theme === "dark" ? "dark" : ""}`}
     >
+      <DashboardBodyTheme theme={theme} />
       <DashboardNav userEmail={session.user.email || ""} role={role} theme={theme} />
       <main className="ml-14 px-8 py-6">{children}</main>
     </div>
