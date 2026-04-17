@@ -5,6 +5,7 @@ import { UsersManager } from "./users-manager";
 import { CourseOfferingManager } from "./course-offering-manager";
 import { CourseSessionsSettings } from "./course-sessions-settings";
 import { DiscountCodesManager } from "./discount-codes-manager";
+import { BookingInvitesManager } from "./booking-invites-manager";
 import { RechnungenManager } from "./rechnungen-manager";
 import { CourseTemplate, CourseSession, DozentUser, Auszubildende } from "@/lib/types";
 import { AdminUser } from "./page";
@@ -26,6 +27,7 @@ const TAB_TITLES: Record<string, string> = {
   kurstermine: "Kurstermine",
   kursangebot: "Kurse",
   rabattcodes: "Rabattcodes",
+  einladungen: "Einladungen",
   rechnungen: "Zahlungsverläufe",
   benutzer: "Benutzer:innen",
 };
@@ -50,6 +52,13 @@ export function SettingsContent({
         return <CourseOfferingManager initialOfferings={initialCourseOfferings} />;
       case "rabattcodes":
         return <DiscountCodesManager />;
+      case "einladungen":
+        return (
+          <BookingInvitesManager
+            templates={initialCourseOfferings}
+            sessions={initialCourseSessions}
+          />
+        );
       case "rechnungen":
         return <RechnungenManager initialAuszubildende={initialAuszubildende} />;
       case "benutzer":

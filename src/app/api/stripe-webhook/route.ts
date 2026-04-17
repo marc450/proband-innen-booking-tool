@@ -349,6 +349,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const courseKey = metadata.courseKey;
   const checkoutSessionId = session.id;
   const audienceTag = metadata.audienceTag || "Humanmediziner:in";
+  const inviteToken = metadata.inviteToken || null;
 
   // Idempotency: check if this checkout session was already processed
   const { data: existing } = await supabase
@@ -394,19 +395,36 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Get amount paid
   const amountTotal = session.amount_total || 0;
 
-  // Create booking via RPC (atomic seat management)
-  const { data: bookingId, error: rpcError } = await supabase.rpc("create_course_booking", {
-    p_session_id: sessionId,
-    p_template_id: templateId,
-    p_course_type: courseType,
-    p_first_name: firstName,
-    p_last_name: lastName,
-    p_email: email,
-    p_phone: phone,
-    p_stripe_checkout_session_id: checkoutSessionId,
-    p_stripe_customer_id: customerId,
-    p_amount_paid: amountTotal,
-  });
+  // Create booking via RPC (atomic seat management). When the checkout was
+  // started from a single-use invite link, route through the invite-aware
+  // variant so the booking can bypass capacity and the invite is marked used
+  // in the same transaction.
+  const { data: bookingId, error: rpcError } = inviteToken
+    ? await supabase.rpc("create_course_booking_with_invite", {
+        p_session_id: sessionId,
+        p_template_id: templateId,
+        p_course_type: courseType,
+        p_first_name: firstName,
+        p_last_name: lastName,
+        p_email: email,
+        p_phone: phone,
+        p_stripe_checkout_session_id: checkoutSessionId,
+        p_stripe_customer_id: customerId,
+        p_amount_paid: amountTotal,
+        p_invite_token: inviteToken,
+      })
+    : await supabase.rpc("create_course_booking", {
+        p_session_id: sessionId,
+        p_template_id: templateId,
+        p_course_type: courseType,
+        p_first_name: firstName,
+        p_last_name: lastName,
+        p_email: email,
+        p_phone: phone,
+        p_stripe_checkout_session_id: checkoutSessionId,
+        p_stripe_customer_id: customerId,
+        p_amount_paid: amountTotal,
+      });
 
   if (rpcError) {
     console.error("Course booking RPC error:", rpcError);

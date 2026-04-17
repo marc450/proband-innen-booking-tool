@@ -21,7 +21,7 @@ async function stripePost(endpoint: string, body: Record<string, string>) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { courseKey, courseType, sessionId } = await req.json();
+    const { courseKey, courseType, sessionId, inviteToken } = await req.json();
 
     if (!courseKey || !courseType) {
       return NextResponse.json({ error: "courseKey and courseType required" }, { status: 400 });
@@ -32,6 +32,49 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createAdminClient();
+
+    // When an invite token is attached, validate it up-front and use it
+    // to bypass the "session full" guard below. The webhook re-validates
+    // atomically via create_course_booking_with_invite, so this is only
+    // a friendlier UX check (give the user a clear error BEFORE they
+    // get bounced to Stripe).
+    let invite: {
+      id: string;
+      template_id: string;
+      session_id: string | null;
+      course_type: string;
+      stripe_promotion_code_id: string | null;
+      recipient_email: string | null;
+      expires_at: string | null;
+      revoked: boolean;
+      used_count: number;
+      max_uses: number;
+    } | null = null;
+    if (inviteToken) {
+      const { data: inv } = await supabase
+        .from("booking_invites")
+        .select(
+          "id, template_id, session_id, course_type, stripe_promotion_code_id, recipient_email, expires_at, revoked, used_count, max_uses",
+        )
+        .eq("token", inviteToken)
+        .maybeSingle();
+      if (!inv) {
+        return NextResponse.json({ error: "Einladung ist ungültig." }, { status: 404 });
+      }
+      if (inv.revoked) {
+        return NextResponse.json({ error: "Einladung wurde widerrufen." }, { status: 410 });
+      }
+      if (inv.expires_at && new Date(inv.expires_at) < new Date()) {
+        return NextResponse.json({ error: "Einladung ist abgelaufen." }, { status: 410 });
+      }
+      if (inv.used_count >= inv.max_uses) {
+        return NextResponse.json({ error: "Einladung wurde bereits eingelöst." }, { status: 410 });
+      }
+      if (inv.course_type !== courseType) {
+        return NextResponse.json({ error: "Einladung passt nicht zur gewählten Kursvariante." }, { status: 400 });
+      }
+      invite = inv;
+    }
 
     // Load course template
     const { data: template } = await supabase
@@ -68,8 +111,22 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Termin nicht verfügbar" }, { status: 400 });
       }
 
-      if (session.booked_seats >= session.max_seats) {
+      // Sold-out guard: only enforce when there is no invite, or when
+      // the invite points at a different session. Invites explicitly
+      // bypass capacity for the session they were issued for.
+      const inviteMatchesSession =
+        invite && invite.session_id && invite.session_id === sessionId;
+      if (session.booked_seats >= session.max_seats && !inviteMatchesSession) {
         return NextResponse.json({ error: "Dieser Termin ist leider ausgebucht" }, { status: 409 });
+      }
+
+      // Extra safety: if the invite specifies a session, it must match
+      // the one the client is trying to book.
+      if (invite && invite.session_id && invite.session_id !== sessionId) {
+        return NextResponse.json(
+          { error: "Einladung ist für einen anderen Termin ausgestellt." },
+          { status: 400 },
+        );
       }
 
       sessionLabel = session.label_de || session.date_iso;
@@ -187,6 +244,25 @@ export async function POST(req: NextRequest) {
       "metadata[sessionDateISO]": sessionDateISO,
       "metadata[audienceTag]": courseKey === "grundkurs_botulinum_zahnmedizin" ? "Zahnmediziner:in" : "Humanmediziner:in",
     };
+
+    // Invite-specific additions:
+    //   • Carry the token as metadata so the webhook can use the
+    //     invite-aware RPC to bypass capacity and mark the invite used.
+    //   • Auto-apply the stored Stripe promotion code if the admin
+    //     attached one (e.g. a 100% free-seat discount).
+    //   • Pre-fill the recipient email to discourage link resharing.
+    if (invite) {
+      params["metadata[inviteToken]"] = inviteToken;
+      if (invite.stripe_promotion_code_id) {
+        params["discounts[0][promotion_code]"] = invite.stripe_promotion_code_id;
+        // Stripe refuses both `discounts` and `allow_promotion_codes: true`
+        // in the same request — drop the latter when we're applying one.
+        delete params.allow_promotion_codes;
+      }
+      if (invite.recipient_email) {
+        params.customer_email = invite.recipient_email;
+      }
+    }
 
     const session = await stripePost("/checkout/sessions", params);
 
