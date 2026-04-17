@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendProfileReminderEmail } from "@/lib/post-purchase";
+import { normalizeEmail } from "@/lib/email-normalize";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,15 +13,20 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Fetch booking — only send if profile not yet complete
+    // Fetch booking by id; match email in normalised form so Gmail
+    // dot/alias variants still resolve correctly.
     const { data: booking } = await supabase
       .from("course_bookings")
-      .select("id, first_name, profile_complete, profile_reminder_sent")
+      .select("id, email, first_name, profile_complete, profile_reminder_sent")
       .eq("id", bookingId)
-      .eq("email", email)
       .single();
 
-    if (!booking || booking.profile_complete || booking.profile_reminder_sent) {
+    if (
+      !booking ||
+      booking.profile_complete ||
+      booking.profile_reminder_sent ||
+      normalizeEmail(booking.email) !== normalizeEmail(email)
+    ) {
       return NextResponse.json({ ok: true, skipped: true });
     }
 

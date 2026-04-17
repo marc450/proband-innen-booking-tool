@@ -12,6 +12,7 @@ import {
   PostPurchaseData,
   CourseType,
 } from "@/lib/post-purchase";
+import { normalizeEmail } from "@/lib/email-normalize";
 import Stripe from "stripe";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
@@ -144,7 +145,9 @@ async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
     } | null;
     tax_ids?: Array<{ type?: string | null; value?: string | null }> | null;
   } | null;
-  const email = cd?.email || "";
+  // Normalise the email at the entry point so all downstream upserts and
+  // lookups share the same canonical form (e.g. gmail.com vs googlemail.com).
+  const email = normalizeEmail(cd?.email || "");
   const fullName = cd?.name || "";
   const phone = cd?.phone || "";
   const nameParts = fullName.split(" ");
@@ -372,7 +375,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     } | null;
     tax_ids?: Array<{ type?: string | null; value?: string | null }> | null;
   } | null;
-  const email = cd?.email || "";
+  // Normalise the email at the entry point so all downstream upserts and
+  // lookups share the same canonical form (e.g. gmail.com vs googlemail.com).
+  const email = normalizeEmail(cd?.email || "");
   const fullName = cd?.name || "";
   const phone = cd?.phone || "";
   const nameParts = fullName.split(" ");

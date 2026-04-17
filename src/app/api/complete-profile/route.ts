@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runPostPurchaseFlow, PostPurchaseData, CourseType } from "@/lib/post-purchase";
+import { normalizeEmail } from "@/lib/email-normalize";
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,16 +20,22 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createAdminClient();
+    const normalizedEmail = normalizeEmail(email);
 
-    // Fetch the booking and verify email matches
+    // Fetch the booking by id; verify the email matches (in normalised form
+    // so gmail.com / googlemail.com / dot variants still resolve to the
+    // same booking).
     const { data: booking, error: bookingError } = await supabase
       .from("course_bookings")
       .select("*")
       .eq("id", bookingId)
-      .eq("email", email)
       .single();
 
     if (bookingError || !booking) {
+      return NextResponse.json({ error: "Buchung nicht gefunden." }, { status: 404 });
+    }
+
+    if (normalizeEmail(booking.email) !== normalizedEmail) {
       return NextResponse.json({ error: "Buchung nicht gefunden." }, { status: 404 });
     }
 
@@ -50,8 +57,9 @@ export async function POST(req: NextRequest) {
           profile_complete: true,
         })
         .eq("id", booking.auszubildende_id);
-    } else if (email) {
-      // Fallback: find by email
+    } else if (normalizedEmail) {
+      // Fallback: find by email (normalised form so Gmail dot/alias
+      // variants still resolve to the right row).
       await supabase
         .from("auszubildende")
         .update({
@@ -62,7 +70,7 @@ export async function POST(req: NextRequest) {
           efn: efn || null,
           profile_complete: true,
         })
-        .eq("email", email);
+        .eq("email", normalizedEmail);
     }
 
     // Get session metadata for post-purchase flow

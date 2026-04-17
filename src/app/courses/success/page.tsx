@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizeEmail } from "@/lib/email-normalize";
 import { SuccessContent } from "./success-content";
 
 interface Props {
@@ -29,15 +30,18 @@ export default async function CourseSuccessPage({ searchParams }: Props) {
   }
 
   // Route 2: From reminder email (booking_id + email)
+  // Match the email in normalised form so Gmail dot/alias variants
+  // still resolve to the booking.
   if (!booking && params.booking_id && params.email) {
     const { data } = await supabase
       .from("course_bookings")
       .select("id, email, first_name, last_name, course_type, template_id, session_id, stripe_checkout_session_id, amount_paid, audience_tag, profile_complete, auszubildende_id")
       .eq("id", params.booking_id)
-      .eq("email", params.email)
       .maybeSingle();
 
-    booking = data;
+    if (data && normalizeEmail(data.email) === normalizeEmail(params.email)) {
+      booking = data;
+    }
   }
 
   // Check if auszubildende profile is already complete

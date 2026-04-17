@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizeEmail } from "@/lib/email-normalize";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 
@@ -243,7 +244,8 @@ export async function POST(req: NextRequest) {
     if (createContact) {
       try {
         const admin = createAdminClient();
-        const emailKey = email.trim().toLowerCase();
+        // Normalise so Gmail dot/alias variants hit the same row.
+        const emailKey = normalizeEmail(email);
         // Persist the real contact_type (auszubildende/proband/other). We
         // intentionally do NOT store "company" here — a Praxis that is an
         // Auszubildende:r stays classified as such; the presence of
