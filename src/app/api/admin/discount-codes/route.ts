@@ -51,6 +51,8 @@ interface StripePromotionCode {
   coupon: {
     id: string;
     percent_off: number | null;
+    amount_off: number | null;
+    currency: string | null;
     name: string | null;
     deleted?: boolean;
   } | null;
@@ -81,6 +83,9 @@ export async function GET() {
         times_redeemed: p.times_redeemed,
         max_redemptions: p.max_redemptions,
         percent_off: p.coupon?.percent_off ?? null,
+        // Stripe amount_off is the smallest currency unit (cents for EUR).
+        amount_off: p.coupon?.amount_off ?? null,
+        currency: p.coupon?.currency ?? null,
         created: p.created,
         created_by: p.metadata?.created_by || null,
       }));
@@ -106,7 +111,7 @@ export async function POST(req: NextRequest) {
     ? [profile.first_name, profile.last_name].filter(Boolean).join(" ")
     : user.email || "Unbekannt";
 
-  const { code, percentOff, maxRedemptions } = await req.json();
+  const { code, discountType, percentOff, amountOffEur, maxRedemptions } = await req.json();
 
   if (!code || typeof code !== "string" || code.trim().length < 3) {
     return NextResponse.json(
@@ -122,12 +127,38 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const pct = Number(percentOff);
-  if (!Number.isFinite(pct) || pct <= 0 || pct > 100) {
-    return NextResponse.json(
-      { error: "Prozentsatz muss zwischen 1 und 100 liegen." },
-      { status: 400 }
-    );
+  // Two mutually-exclusive discount shapes:
+  //   percent: 1–100 percent off the invoice
+  //   amount:  fixed EUR amount off the invoice (we convert to cents for Stripe)
+  const type: "percent" | "amount" =
+    discountType === "amount" ? "amount" : "percent";
+
+  let pct = 0;
+  let amountCents = 0;
+  if (type === "percent") {
+    pct = Number(percentOff);
+    if (!Number.isFinite(pct) || pct <= 0 || pct > 100) {
+      return NextResponse.json(
+        { error: "Prozentsatz muss zwischen 1 und 100 liegen." },
+        { status: 400 }
+      );
+    }
+  } else {
+    const eur = Number(amountOffEur);
+    if (!Number.isFinite(eur) || eur <= 0) {
+      return NextResponse.json(
+        { error: "Rabattbetrag muss eine positive Zahl sein." },
+        { status: 400 }
+      );
+    }
+    // Round to whole cents to avoid floating point drift at the boundary.
+    amountCents = Math.round(eur * 100);
+    if (amountCents < 1) {
+      return NextResponse.json(
+        { error: "Rabattbetrag muss mindestens 0,01 € betragen." },
+        { status: 400 }
+      );
+    }
   }
 
   const max = maxRedemptions === "" || maxRedemptions == null ? null : Number(maxRedemptions);
@@ -142,10 +173,15 @@ export async function POST(req: NextRequest) {
     // 1. Create coupon (no max_redemptions here — that caps the coupon across
     // ALL promotion codes; we want the cap on THIS promotion code instead)
     const couponBody: Record<string, string> = {
-      percent_off: String(pct),
       duration: "once",
       name: normalizedCode,
     };
+    if (type === "percent") {
+      couponBody.percent_off = String(pct);
+    } else {
+      couponBody.amount_off = String(amountCents);
+      couponBody.currency = "eur";
+    }
 
     const coupon = await stripeFetch("/coupons", {
       method: "POST",
@@ -173,7 +209,9 @@ export async function POST(req: NextRequest) {
       active: promo.active,
       times_redeemed: promo.times_redeemed,
       max_redemptions: promo.max_redemptions,
-      percent_off: pct,
+      percent_off: type === "percent" ? pct : null,
+      amount_off: type === "amount" ? amountCents : null,
+      currency: type === "amount" ? "eur" : null,
       created: promo.created,
       created_by: creatorName,
     });

@@ -55,6 +55,9 @@ interface DiscountCode {
   times_redeemed: number;
   max_redemptions: number | null;
   percent_off: number | null;
+  // Cents (e.g. 5000 = 50,00 €). Null when the code uses percent_off.
+  amount_off: number | null;
+  currency: string | null;
   created: number;
   created_by: string | null;
 }
@@ -70,7 +73,9 @@ export function DiscountCodesManager() {
   const [deleteTarget, setDeleteTarget] = useState<DiscountCode | null>(null);
 
   const [code, setCode] = useState("");
+  const [discountType, setDiscountType] = useState<"percent" | "amount">("percent");
   const [percentOff, setPercentOff] = useState("10");
+  const [amountOffEur, setAmountOffEur] = useState("50");
   const [maxRedemptions, setMaxRedemptions] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -96,7 +101,15 @@ export function DiscountCodesManager() {
         case "code":
           return a.code.localeCompare(b.code) * dir;
         case "discount":
-          return ((a.percent_off || 0) - (b.percent_off || 0)) * dir;
+          // Sort percent and absolute codes by their "weight". Percent
+          // codes use the percent value directly; absolute codes use
+          // the euro amount. Absolute codes end up after percent codes
+          // for equal numeric values — acceptable for a quick glance.
+          return (
+            ((a.percent_off ?? (a.amount_off ? a.amount_off / 100 : 0)) -
+              (b.percent_off ?? (b.amount_off ? b.amount_off / 100 : 0))) *
+            dir
+          );
         case "redemptions":
           return (a.times_redeemed - b.times_redeemed) * dir;
         case "status":
@@ -128,7 +141,9 @@ export function DiscountCodesManager() {
 
   const resetForm = () => {
     setCode("");
+    setDiscountType("percent");
     setPercentOff("10");
+    setAmountOffEur("50");
     setMaxRedemptions("");
     setCreateError(null);
   };
@@ -146,7 +161,9 @@ export function DiscountCodesManager() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         code: code.trim(),
-        percentOff: Number(percentOff),
+        discountType,
+        percentOff: discountType === "percent" ? Number(percentOff) : undefined,
+        amountOffEur: discountType === "amount" ? Number(amountOffEur) : undefined,
         maxRedemptions: maxRedemptions.trim() === "" ? null : Number(maxRedemptions),
       }),
     });
@@ -253,16 +270,55 @@ export function DiscountCodesManager() {
                 Nur Buchstaben, Zahlen, Bindestriche und Unterstriche.
               </p>
             </div>
-            <div className="space-y-1.5">
-              <Label>Rabatt in % *</Label>
-              <Input
-                type="number"
-                min={1}
-                max={100}
-                value={percentOff}
-                onChange={(e) => setPercentOff(e.target.value)}
-              />
+            <div className="space-y-2">
+              <Label>Rabattart *</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={discountType === "percent" ? "default" : "outline"}
+                  onClick={() => setDiscountType("percent")}
+                  className="flex-1"
+                >
+                  Prozent
+                </Button>
+                <Button
+                  type="button"
+                  variant={discountType === "amount" ? "default" : "outline"}
+                  onClick={() => setDiscountType("amount")}
+                  className="flex-1"
+                >
+                  Betrag (EUR)
+                </Button>
+              </div>
             </div>
+
+            {discountType === "percent" ? (
+              <div className="space-y-1.5">
+                <Label>Rabatt in % *</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={percentOff}
+                  onChange={(e) => setPercentOff(e.target.value)}
+                />
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label>Rabatt in EUR *</Label>
+                <Input
+                  type="number"
+                  min={0.01}
+                  step={0.01}
+                  value={amountOffEur}
+                  onChange={(e) => setAmountOffEur(e.target.value)}
+                  placeholder="z.B. 50"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ganze Euro-Beträge empfohlen (z.B. 50 für 50,00 €).
+                </p>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>Max. Einlösungen</Label>
               <Input
@@ -344,7 +400,16 @@ export function DiscountCodesManager() {
                         </button>
                       </div>
                     </TableCell>
-                    <TableCell>{c.percent_off != null ? `${c.percent_off}%` : "–"}</TableCell>
+                    <TableCell>
+                      {c.percent_off != null
+                        ? `${c.percent_off}%`
+                        : c.amount_off != null
+                          ? new Intl.NumberFormat("de-DE", {
+                              style: "currency",
+                              currency: (c.currency || "EUR").toUpperCase(),
+                            }).format(c.amount_off / 100)
+                          : "–"}
+                    </TableCell>
                     <TableCell className="text-sm">
                       {c.times_redeemed}
                       {c.max_redemptions != null ? ` / ${c.max_redemptions}` : " / ∞"}
