@@ -114,7 +114,7 @@ export const homeContent: HomeContent = {
         title: "LIPPEN",
         audience: "Für fortgeschrittene Ärzt:innen",
         description:
-          "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen mit Grunderfahrung in der Dermalfiller-Anwendung, die ihre Behandlungssicherheit in der perioralen Zone vertiefen möchten. Du lernst die relevante Anatomie, Indikationen und Produktwahl, spezifische Injektionstechniken, Patient:innenkommunikation sowie Komplikationsmanagement, ergänzt durch praxisnahe Behandlungsvideos und klare Schritt-für-Schritt-Anleitungen.",
+          "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen mit Grunderfahrung in der Dermalfiller-Anwendung. Du vertiefst Deine Behandlungssicherheit in der perioralen Zone, lernst Anatomie, Indikationen, Produktwahl und Technik kennen und erhältst praxisnahe Behandlungsvideos.",
         courseKey: "aufbaukurs_lippen",
         imageAlt: "Aufbaukurs Lippen",
         ctaLabel: "Zu den Kursdetails",
