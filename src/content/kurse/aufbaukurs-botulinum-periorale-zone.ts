@@ -29,8 +29,7 @@ export const aufbaukursBotulinumPerioraleZone: CourseLandingContent = {
     ],
     description:
       "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen mit Grunderfahrung in der Botulinum-Anwendung. Du vertiefst Deine Behandlungssicherheit in der perioralen Zone, lernst die relevante Anatomie, Indikationen und Produktwahl, spezifische Injektionstechniken für Lip Flip, Gummy Smile, Mundwinkel, Erdbeerkinn und Platysma sowie diskriminierungssensible Patient:innenkommunikation und Komplikationsmanagement.",
-    // Placeholder media until Periorale-Zone-specific clips exist.
-    videoPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_botulinum/hero-video.mp4",
+    videoPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/aufbaukurs_botulinum_periorale_zone/1.%20Intro_Periorale_Zone_V1-compressed.mp4",
     videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
   },
 
