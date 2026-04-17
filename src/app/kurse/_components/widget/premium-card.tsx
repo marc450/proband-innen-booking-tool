@@ -54,6 +54,12 @@ interface PremiumCardProps {
   buttonText?: string;
   includedCourses?: IncludedCourse[];
   inclusionHeading?: string;
+  /**
+   * Extra plain-text bullets rendered between the "Vollständiger ..."
+   * rows and the included-course pills. Used to pad the feature list so
+   * two Premium cards sitting next to a normal Kombi card line up.
+   */
+  extraFeatures?: string[];
 }
 
 const DEFAULT_INCLUDED_COURSES: IncludedCourse[] = [
@@ -337,6 +343,7 @@ export function PremiumCard({
   buttonText = "Komplettpaket buchen",
   includedCourses = DEFAULT_INCLUDED_COURSES,
   inclusionHeading = "Im Komplettpaket inkludiert:",
+  extraFeatures,
 }: PremiumCardProps) {
   const [selectedDate, setSelectedDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -519,6 +526,12 @@ export function PremiumCard({
             <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" aria-hidden="true" />
             <span className="text-base text-[#0066FF] font-bold">Vollständiger Praxiskurs inkludiert</span>
           </li>
+          {extraFeatures?.map((feature, i) => (
+            <li key={`extra-${i}`} className="flex items-start gap-2">
+              <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-0.5" aria-hidden="true" />
+              <span className="text-base text-black">{feature}</span>
+            </li>
+          ))}
           {includedCourses.map((course, index) => (
             <li key={index} className="flex items-start gap-2">
               <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-1" aria-hidden="true" />

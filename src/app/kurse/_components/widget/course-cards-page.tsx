@@ -548,6 +548,12 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   discountLabel=""
                   cmeTotal="25"
                   includedCourses={DERMALFILLER_INCLUDED_COURSES}
+                  // Pad the feature list so the Komplettpaket card height
+                  // matches the adjacent Online- & Praxiskurs card.
+                  extraFeatures={[
+                    "Vertiefende Onlinekurse inkludiert",
+                    "Ärzt:innen-Community",
+                  ]}
                 />
               )}
 
