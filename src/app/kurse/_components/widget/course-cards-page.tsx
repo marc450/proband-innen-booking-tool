@@ -56,6 +56,50 @@ const ZAHNMEDIZIN_INCLUDED_COURSES: IncludedCourse[] = [
   { ...MEDIZINISCHE_HAUTPFLEGE, badgeClasses: BADGE_COLORS[2] },
 ];
 
+// Lippen Komplettpaket: Aufbaukurs Lippen Online- & Praxiskurs (base)
+// plus 3 Onlinekurse for a complete Dermalfiller + Skincare story:
+// Onlinekurs Dermalfiller, Medizinische Hautpflege, Botulinum Periorale Zone.
+const LIPPEN_INCLUDED_COURSES: IncludedCourse[] = [
+  {
+    name: "Grundkurs Dermalfiller — Onlinekurs",
+    shortName: "Onlinekurs Dermalfiller",
+    type: "Onlinekurs",
+    level: "Einsteigerkurs",
+    description:
+      "Die theoretischen Grundlagen der Dermalfiller-Anwendung: Anatomie des Alterns, Produktkunde, Behandlungszonen im Mittelgesicht, Kommunikation und Komplikationsmanagement.",
+    warning:
+      "Der Onlinekurs Dermalfiller alleine ist keine ausreichende Grundlage für den Aufbaukurs Lippen. Wir empfehlen, vorher den Praxiskurs Dermalfiller zu absolvieren.",
+    cmePoints: "11",
+    duration: "~10 Stunden",
+    features: [
+      "Anatomie des Gesichts & des Alterns",
+      "Produktkunde & Behandlungszonen",
+      "Komplikationsmanagement",
+    ],
+    badgeClasses: BADGE_COLORS[0],
+  },
+  {
+    ...MEDIZINISCHE_HAUTPFLEGE,
+    badgeClasses: BADGE_COLORS[1],
+  },
+  {
+    name: "Aufbaukurs Botulinum: Periorale Zone",
+    shortName: "Periorale Zone",
+    type: "Onlinekurs",
+    level: "Aufbaukurs",
+    description:
+      "Vertiefter Fokus auf die periorale Zone mit Botulinum: Gummy Smile, Lip Flip, Erdbeerkinn und Mundwinkel. Ergänzt die Dermalfiller-Inhalte um die myomodulative Perspektive.",
+    cmePoints: "4",
+    duration: "~3 Stunden",
+    features: [
+      "Gummy Smile & Lip Flip",
+      "Mundwinkel & Erdbeerkinn",
+      "Myomodulation der perioralen Zone",
+    ],
+    badgeClasses: BADGE_COLORS[2],
+  },
+];
+
 // Dermalfiller Komplettpaket: Dermalfiller Online- & Praxiskurs (base)
 // plus Medizinische Hautpflege + Aufbaukurs Lippen Onlinekurs.
 // Only the two add-ons are listed here; the base course is the card headline.
@@ -309,6 +353,21 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
         { text: "Ärzt:innen-Community" },
       ],
     },
+    aufbaukurs_lippen: {
+      hidePraxis: true,
+      hasKomplettpaket: true,
+      kombiFeatures: [
+        { text: "Vollständiger Onlinekurs inkludiert" },
+        { text: "6+ Stunden gemeinsames Behandeln" },
+        { text: "Üben an echten Proband:innen" },
+        { text: "Erfahrene Dozent:innen-Aufsicht" },
+        { text: "Max. 5 Teilnehmer:innen" },
+        { text: "Ärzt:innen-Community" },
+      ],
+      // CME for Lippen is still pending LÄK approval, so hide the numeric
+      // CME badge everywhere until that changes.
+      hideCme: true,
+    },
     grundkurs_botulinum_zahnmedizin: {
       header: "UNSERE KURSANGEBOTE FÜR ZAHNÄRZT:INNEN",
       onlineDesc: "Erlerne die Theorie zur Behandlung von Patient:innen mit Botulinum.",
@@ -461,8 +520,10 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
           // Dermalfiller uses a hardcoded price below, so the DB price
           // gate is bypassed when the override explicitly sets the flag.
           const isDermalfiller = template.course_key === "grundkurs_dermalfiller";
+          const isLippen = template.course_key === "aufbaukurs_lippen";
           const hasKomplettpaket =
-            !!overrides.hasKomplettpaket && (!!template.price_gross_premium || isDermalfiller);
+            !!overrides.hasKomplettpaket &&
+            (!!template.price_gross_premium || isDermalfiller || isLippen);
           const showPraxis = hasPraxis && !overrides.hidePraxis;
           const cardCount = [hasOnline, showPraxis, hasKombi, hasKomplettpaket].filter(Boolean).length;
           const gridCols = cardCount === 1 ? "lg:grid-cols-1 max-w-lg mx-auto" : cardCount === 2 ? "lg:grid-cols-2 max-w-4xl mx-auto" : "lg:grid-cols-3";
@@ -552,7 +613,26 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                 />
               )}
 
-              {hasKomplettpaket && !isDermalfiller && (
+              {hasKomplettpaket && isLippen && (
+                <PremiumCard
+                  dates={dynamicDates}
+                  onBook={(sessionId) => handleBooking("Premium", sessionId)}
+                  isLoading={loadingCheckout?.startsWith("Premium-") || false}
+                  selectedDateForLoading={loadingCheckout?.replace("Premium-", "")}
+                  description="Für Deine umfassende Expertise rund um Dermalfiller und die periorale Zone: 1 Praxiskurs + 3 Onlinekurse."
+                  // Price: Lippen Kombi (1.290) + Onlinekurs Dermalfiller
+                  // (490) + Hautpflege (250) + Periorale Zone (340) = 2.370.
+                  // -10% bundle discount = 2.133.
+                  price="EUR 2.133"
+                  originalPrice="EUR 2.370"
+                  discountLabel=""
+                  cmeTotal=""
+                  includedCourses={LIPPEN_INCLUDED_COURSES}
+                  extraFeatures={["Ärzt:innen-Community"]}
+                />
+              )}
+
+              {hasKomplettpaket && !isDermalfiller && !isLippen && (
                 <PremiumCard
                   dates={dynamicDates}
                   onBook={(sessionId) => handleBooking("Premium", sessionId)}

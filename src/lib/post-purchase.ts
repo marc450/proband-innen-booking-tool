@@ -213,6 +213,7 @@ export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { sk
   if (data.email && data.courseType === "Premium") {
     const isDentist = data.courseKey === "grundkurs_botulinum_zahnmedizin";
     const isDermalfiller = data.courseKey === "grundkurs_dermalfiller";
+    const isLippen = data.courseKey === "aufbaukurs_lippen";
     const premiumCourseIds = isDentist
       ? [
           // Zahnmedizin Komplettpaket: Botulinum Zahnmedizin + Hautpflege
@@ -226,13 +227,21 @@ export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { sk
             "grundkurs-medizinische-hautpflege",
             "aufbaukurs-lippen-online",
           ].filter(Boolean) as string[]
-        : [
-            // Humanmedizin Komplettpaket: 4 Onlinekurse
-            "grundkurs-botulinum-online",
-            "aufbaukurs-botulinum-periorale-zone",
-            "aufbaukurs-medizinische-indikation-fuer-botulinum-online",
-            "grundkurs-medizinische-hautpflege",
-          ];
+        : isLippen
+          ? [
+              // Lippen Komplettpaket: Lippen online + Dermalfiller + Hautpflege + Periorale Zone
+              template?.online_course_id, // Aufbaukurs Lippen online course
+              "grundkurs-dermalfiller-online",
+              "grundkurs-medizinische-hautpflege",
+              "aufbaukurs-botulinum-periorale-zone",
+            ].filter(Boolean) as string[]
+          : [
+              // Humanmedizin Komplettpaket: 4 Onlinekurse
+              "grundkurs-botulinum-online",
+              "aufbaukurs-botulinum-periorale-zone",
+              "aufbaukurs-medizinische-indikation-fuer-botulinum-online",
+              "grundkurs-medizinische-hautpflege",
+            ];
     for (const lwCourseId of premiumCourseIds) {
       try { await enrollInLearnWorlds(data.email, lwCourseId, data.firstName, data.lastName); }
       catch (lwErr) { console.error(`LearnWorlds Premium enrollment error (${lwCourseId}):`, lwErr); }

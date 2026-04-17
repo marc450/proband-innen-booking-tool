@@ -100,24 +100,31 @@ export async function POST(req: NextRequest) {
       grossPrice = template.price_gross_praxis || 0;
     } else if (isPremium) {
       const isDermalfiller = courseKey === "grundkurs_dermalfiller";
+      const isLippen = courseKey === "aufbaukurs_lippen";
       productName = isDentist
         ? `Komplettpaket (Zahnmedizin) – ${sessionLabel}`
         : isDermalfiller
           ? `Komplettpaket Dermalfiller – ${sessionLabel}`
-          : `Komplettpaket – ${sessionLabel}`;
+          : isLippen
+            ? `Komplettpaket Lippen – ${sessionLabel}`
+            : `Komplettpaket – ${sessionLabel}`;
       description = isDentist
         ? "Online- & Praxiskurs Botulinum + Onlinekurs Medizinische Hautpflege"
         : isDermalfiller
           ? "Online- & Praxiskurs Dermalfiller + Onlinekurs Medizinische Hautpflege + Aufbaukurs Lippen Onlinekurs"
-          : "4 Onlinekurse + Praxiskurs Botulinum";
+          : isLippen
+            ? "Online- & Praxiskurs Lippen + Onlinekurs Dermalfiller + Onlinekurs Medizinische Hautpflege + Onlinekurs Botulinum Periorale Zone"
+            : "4 Onlinekurse + Praxiskurs Botulinum";
       // Hardcoded fallbacks when price_gross_premium isn't set in the DB.
       // - Zahnmedizin: DB value required (falls through to 0 = 400 error).
-      // - Dermalfiller: 1290 + 250 + 490 = 2030 (10% bundle discount
-      //   applied below yields 1827).
+      // - Dermalfiller: 1290 + 250 + 490 = 2030 → -10% bundle = 1827.
+      // - Lippen: 1290 (Kombi) + 490 (Dermalfiller online) + 250 (Hautpflege)
+      //          + 340 (Periorale Zone) = 2370 → -10% bundle = 2133.
       // - Humanmedizin (Botulinum): 2220 default.
       grossPrice = template.price_gross_premium || (
         isDentist ? 0 :
         isDermalfiller ? 2030 :
+        isLippen ? 2370 :
         2220
       );
     } else {

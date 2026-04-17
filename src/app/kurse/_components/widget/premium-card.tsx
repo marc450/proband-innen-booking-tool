@@ -24,6 +24,9 @@ export interface IncludedCourse {
   // numeric badge, plus an explanatory note below the badge row.
   // Used for courses where the LÄK certification is still in progress.
   cmePending?: boolean;
+  // Optional amber warning box shown directly below the description.
+  // Used e.g. to flag prerequisites between included courses.
+  warning?: string;
   duration: string;
   features: string[];
   lernziele?: string[];
@@ -244,6 +247,12 @@ function CourseInfoModal({ course, onClose }: { course: IncludedCourse; onClose:
           </div>
 
           <p className="text-sm text-gray-700 mb-4 leading-relaxed">{course.description}</p>
+
+          {course.warning && (
+            <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 leading-relaxed">
+              <span className="font-semibold">Hinweis:</span> {course.warning}
+            </div>
+          )}
 
           <div className={`flex flex-wrap gap-4 ${course.cmePending ? "mb-3" : "mb-5"}`}>
             {course.cmePoints && (
