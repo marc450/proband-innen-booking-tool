@@ -14,6 +14,9 @@ import type { CourseLandingContent } from "./types";
 export const grundkursMedizinischeHautpflege: CourseLandingContent = {
   slug: "grundkurs-medizinische-hautpflege",
   courseKey: "grundkurs_medizinische_hautpflege",
+  // Pure-online course — skip the 3-card booking widget. The hero CTA
+  // and the mid-page CTA banner both start Stripe checkout directly.
+  hideBookingWidget: true,
 
   meta: {
     title: "Grundkurs Medizinische Hautpflege | EPHIA",
@@ -37,6 +40,12 @@ export const grundkursMedizinischeHautpflege: CourseLandingContent = {
     // Hautpflege clip exists.
     videoPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_dermalfiller/dermalfiller-hero-web.mp4",
     videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
+    // Hautpflege is online-only — skip the booking widget on the page
+    // and wire the hero CTA straight to Stripe checkout instead.
+    ctaOverride: {
+      label: "Jetzt buchen",
+      directCheckoutCourseKey: "grundkurs_medizinische_hautpflege",
+    },
   },
 
   lernziele: {
@@ -354,10 +363,13 @@ export const grundkursMedizinischeHautpflege: CourseLandingContent = {
     ],
   },
 
+  // Mid-page CTA banner. Online-only course, so both the hero and this
+  // banner's CTAs trigger Stripe checkout directly.
   ctaBanner: {
     heading: "Bring Dein Fachwissen auf die nächste Stufe!",
-    ctaLabel: "Zu den Angeboten",
-    ctaHref: "#kursangebote",
+    ctaLabel: "Jetzt buchen",
+    ctaHref: "#",
+    directCheckoutCourseKey: "grundkurs_medizinische_hautpflege",
   },
 
   testimonials: {

@@ -170,7 +170,9 @@ export default async function KursPage({
       />
       <Hero content={content.hero} />
       <Lernziele content={content.lernziele} />
-      <CourseCardsPage template={template} sessions={sessions ?? []} />
+      {!content.hideBookingWidget && (
+        <CourseCardsPage template={template} sessions={sessions ?? []} />
+      )}
       <Gruppenbuchungen
         content={content.gruppenbuchungen}
         courseTitle={content.hero.heading}

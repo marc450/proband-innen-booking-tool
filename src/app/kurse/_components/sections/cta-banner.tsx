@@ -1,4 +1,5 @@
 import type { CourseCtaBannerContent } from "@/content/kurse/types";
+import { CtaBannerButton } from "./cta-banner-button";
 
 export function CtaBanner({ content }: { content: CourseCtaBannerContent }) {
   return (
@@ -7,12 +8,11 @@ export function CtaBanner({ content }: { content: CourseCtaBannerContent }) {
         <h2 className="text-3xl md:text-4xl font-bold text-white mb-8 tracking-tight">
           {content.heading}
         </h2>
-        <a
+        <CtaBannerButton
+          label={content.ctaLabel}
           href={content.ctaHref}
-          className="inline-block text-[1.1rem] font-bold text-[#0066FF] bg-white hover:bg-white/90 rounded-[10px] px-6 py-3.5 transition-colors"
-        >
-          {content.ctaLabel}
-        </a>
+          directCheckoutCourseKey={content.directCheckoutCourseKey}
+        />
       </div>
     </section>
   );

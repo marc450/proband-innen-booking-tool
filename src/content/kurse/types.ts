@@ -41,6 +41,21 @@ export interface CourseHeroContent {
   videoObjectPosition?: string;
   /** Optional social proof pill shown above the heading, e.g. "300+ zertifizierte Ärzt:innen" */
   socialProof?: string;
+  /**
+   * Override for the hero CTA.
+   *   label      – button text (defaults to "Zu den Kursangeboten")
+   *   href       – in-page anchor (defaults to "#kursangebote"); ignored
+   *                when `directCheckoutCourseKey` is set
+   *   directCheckoutCourseKey – when set, the CTA directly starts a
+   *                Stripe checkout for this courseKey's Onlinekurs,
+   *                skipping the booking widget. Used on pure-online
+   *                courses where there is only one card anyway.
+   */
+  ctaOverride?: {
+    label?: string;
+    href?: string;
+    directCheckoutCourseKey?: string;
+  };
 }
 
 export interface CourseLernziel {
@@ -107,6 +122,12 @@ export interface CourseCtaBannerContent {
   ctaLabel: string;
   /** Anchor ID to scroll to, e.g. "kursangebote" */
   ctaHref: string;
+  /**
+   * When set, the banner CTA starts a Stripe checkout for this
+   * courseKey's Onlinekurs instead of navigating to `ctaHref`. Used on
+   * pure-online courses that skip the booking widget entirely.
+   */
+  directCheckoutCourseKey?: string;
 }
 
 export interface CourseTestimonial {
@@ -164,4 +185,10 @@ export interface CourseLandingContent {
   ctaBanner: CourseCtaBannerContent;
   testimonials: CourseTestimonialsContent;
   faq: CourseFaqContent;
+  /**
+   * When true, skip rendering the booking widget (CourseCardsPage) on
+   * this landing page. Used for pure-online courses that are best sold
+   * via a single hero CTA wired to Stripe checkout.
+   */
+  hideBookingWidget?: boolean;
 }

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { CourseHeroContent } from "@/content/kurse/types";
 import { HeroVideo } from "./hero-video";
+import { HeroCta } from "./hero-cta";
 
 const STAT_ICON_MAP: Record<string, LucideIcon> = {
   Clock,
@@ -84,12 +85,11 @@ export function Hero({ content }: { content: CourseHeroContent }) {
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
-              <a
-                href="#kursangebote"
-                className="inline-block text-[1.1rem] font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-6 py-3.5 transition-colors text-center sm:text-left"
-              >
-                Zu den Kursangeboten
-              </a>
+              <HeroCta
+                label={content.ctaOverride?.label || "Zu den Kursangeboten"}
+                href={content.ctaOverride?.href || "#kursangebote"}
+                directCheckoutCourseKey={content.ctaOverride?.directCheckoutCourseKey}
+              />
               {content.socialProof && (
                 <div className="flex items-center gap-2 text-sm text-black/70">
                   <Heart
