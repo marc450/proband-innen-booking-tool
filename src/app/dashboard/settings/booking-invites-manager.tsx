@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import {
@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
-import { Check, Copy, Plus, Ban, Trash2 } from "lucide-react";
+import { Check, Copy, Plus, Ban, Trash2, X } from "lucide-react";
 import type { CourseTemplate, CourseSession, Auszubildende } from "@/lib/types";
 
 type AuszubildendePick = Pick<Auszubildende, "id" | "first_name" | "last_name" | "email" | "phone" | "title">;
@@ -419,22 +419,11 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
 
             <div className="space-y-2">
               <Label>Ärzt:in *</Label>
-              <Select value={assignedDoctorId} onValueChange={(v) => setAssignedDoctorId(v ?? "")}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={doctorOptions.length === 0 ? "Keine Ärzt:innen angelegt" : "Ärzt:in wählen..."}>
-                    {assignedDoctorId
-                      ? (doctorOptions.find((d) => d.id === assignedDoctorId)?.label || "Ärzt:in wählen...")
-                      : (doctorOptions.length === 0 ? "Keine Ärzt:innen angelegt" : "Ärzt:in wählen...")}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {doctorOptions.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <DoctorAutocomplete
+                doctors={doctorOptions}
+                selectedId={assignedDoctorId}
+                onChange={setAssignedDoctorId}
+              />
               <p className="text-xs text-muted-foreground">
                 Die Einladung wird auf Namen und E-Mail-Adresse der gewählten Ärzt:in ausgestellt.
               </p>
@@ -611,6 +600,195 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
             })}
           </TableBody>
         </Table>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// DoctorAutocomplete
+// Small single-select combobox over the pre-fetched auszubildende list.
+// Behaves like the inbox ContactAutocomplete (type-to-filter, arrow-key
+// nav, Enter/click to pick) but only ever holds one selection and does
+// not produce chips; picking replaces the value.
+// ─────────────────────────────────────────────────────────────────────
+
+type DoctorOption = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  label: string;
+};
+
+function DoctorAutocomplete({
+  doctors,
+  selectedId,
+  onChange,
+}: {
+  doctors: DoctorOption[];
+  selectedId: string;
+  onChange: (id: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const selected = useMemo(
+    () => doctors.find((d) => d.id === selectedId) || null,
+    [doctors, selectedId],
+  );
+
+  // Filter matches client-side; the full list is already in memory.
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return doctors.slice(0, 20);
+    return doctors
+      .filter(
+        (d) =>
+          d.label.toLowerCase().includes(q) ||
+          d.email.toLowerCase().includes(q),
+      )
+      .slice(0, 20);
+  }, [doctors, query]);
+
+  // Close dropdown when clicking outside.
+  useEffect(() => {
+    const onDocDown = (e: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocDown);
+    return () => document.removeEventListener("mousedown", onDocDown);
+  }, []);
+
+  const pick = (d: DoctorOption) => {
+    onChange(d.id);
+    setQuery("");
+    setOpen(false);
+    setActiveIndex(-1);
+    inputRef.current?.blur();
+  };
+
+  const clear = () => {
+    onChange("");
+    setQuery("");
+    setActiveIndex(-1);
+    inputRef.current?.focus();
+    setOpen(true);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!open && (e.key === "ArrowDown" || e.key === "Enter")) {
+      setOpen(true);
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => (i < results.length - 1 ? i + 1 : 0));
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => (i > 0 ? i - 1 : results.length - 1));
+      return;
+    }
+    if (e.key === "Enter") {
+      if (activeIndex >= 0 && results[activeIndex]) {
+        e.preventDefault();
+        pick(results[activeIndex]);
+      }
+      return;
+    }
+    if (e.key === "Escape") {
+      setOpen(false);
+      return;
+    }
+    if (e.key === "Backspace" && query === "" && selected) {
+      // Quick-clear: backspace on empty input removes the current selection.
+      e.preventDefault();
+      clear();
+    }
+  };
+
+  const placeholder =
+    doctors.length === 0 ? "Keine Ärzt:innen angelegt" : "Name oder E-Mail suchen...";
+
+  return (
+    <div ref={containerRef} className="relative">
+      {/* Selected chip OR search input. Keeping it as one box so the
+          position doesn't jump when a selection is made. */}
+      {selected ? (
+        <div className="flex items-center gap-2 h-10 rounded-[10px] border border-input bg-card px-3 text-sm">
+          <span className="truncate flex-1">
+            <span className="font-medium">
+              {[selected.firstName, selected.lastName].filter(Boolean).join(" ") || selected.email}
+            </span>
+            {selected.email && (
+              <span className="text-muted-foreground ml-2">{selected.email}</span>
+            )}
+          </span>
+          <button
+            type="button"
+            onClick={clear}
+            className="shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            aria-label="Auswahl entfernen"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          placeholder={placeholder}
+          disabled={doctors.length === 0}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+            setActiveIndex(-1);
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={onKeyDown}
+          className="flex h-10 w-full rounded-[10px] border border-input bg-card px-3 py-2 text-sm outline-none transition-all hover:border-foreground/30 focus:border-ring focus:ring-2 focus:ring-ring/30 placeholder:text-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+        />
+      )}
+
+      {open && !selected && results.length > 0 && (
+        <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-popover rounded-[10px] p-1 shadow-[0_8px_32px_-4px_rgba(0,0,0,0.12),0_2px_6px_-2px_rgba(0,0,0,0.08)] ring-1 ring-black/5 dark:ring-white/10 max-h-[260px] overflow-y-auto">
+          {results.map((d, i) => (
+            <button
+              key={d.id}
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                pick(d);
+              }}
+              className={`w-full flex flex-col items-start gap-0.5 rounded-[8px] px-3 py-2 text-left text-sm transition-colors ${
+                i === activeIndex ? "bg-slate-100 dark:bg-white/5" : "hover:bg-slate-100 dark:hover:bg-white/5"
+              }`}
+            >
+              <span className="font-medium text-foreground">
+                {[d.firstName, d.lastName].filter(Boolean).join(" ") || d.email}
+              </span>
+              {d.email && (
+                <span className="text-xs text-muted-foreground">{d.email}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {open && !selected && query.trim() && results.length === 0 && (
+        <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-popover rounded-[10px] p-3 shadow-[0_8px_32px_-4px_rgba(0,0,0,0.12),0_2px_6px_-2px_rgba(0,0,0,0.08)] ring-1 ring-black/5 dark:ring-white/10 text-sm text-muted-foreground">
+          Keine Ärzt:innen gefunden.
+        </div>
       )}
     </div>
   );
