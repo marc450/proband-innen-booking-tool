@@ -291,7 +291,20 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
                   {session.betreuer_name || "–"}
                 </TableCell>
                 <TableCell>
-                  <span className={session.booked_seats >= session.max_seats ? "text-emerald-600 font-medium" : ""}>
+                  <span
+                    className={
+                      session.booked_seats > session.max_seats
+                        ? "text-amber-600 font-semibold"
+                        : session.booked_seats >= session.max_seats
+                          ? "text-emerald-600 font-medium"
+                          : ""
+                    }
+                    title={
+                      session.booked_seats > session.max_seats
+                        ? `Überbucht um ${session.booked_seats - session.max_seats} (z.B. durch eine Einladung)`
+                        : undefined
+                    }
+                  >
                     {session.booked_seats}/{session.max_seats}
                   </span>
                 </TableCell>

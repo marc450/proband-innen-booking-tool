@@ -639,35 +639,49 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
 
                 {/* Seats */}
                 <TableCell>
-                  <div className="flex items-center gap-0.5">
-                    <input
-                      type="number"
-                      min={0}
-                      defaultValue={session.booked_seats}
-                      key={`booked-${session.id}-${session.booked_seats}-${resetKey}`}
-                      onBlur={(e) => {
-                        const val = parseInt(e.target.value) || 0;
-                        if (val !== session.booked_seats) {
-                          requestChange(session.id, "booked_seats", val);
-                        }
-                      }}
-                      className={`w-8 text-center bg-transparent border-b border-transparent hover:border-gray-300 focus:border-primary focus:outline-none ${session.booked_seats >= session.max_seats ? "text-emerald-600 font-medium" : ""}`}
-                    />
-                    <span className="text-muted-foreground">/</span>
-                    <input
-                      type="number"
-                      min={0}
-                      defaultValue={session.max_seats}
-                      key={`max-${session.id}-${session.max_seats}-${resetKey}`}
-                      onBlur={(e) => {
-                        const val = parseInt(e.target.value) || 0;
-                        if (val !== session.max_seats) {
-                          requestChange(session.id, "max_seats", val);
-                        }
-                      }}
-                      className={`w-8 text-center bg-transparent border-b border-transparent hover:border-gray-300 focus:border-primary focus:outline-none ${session.booked_seats >= session.max_seats ? "text-emerald-600 font-medium" : ""}`}
-                    />
-                  </div>
+                  {(() => {
+                    const overbooked = session.booked_seats > session.max_seats;
+                    const soldout = !overbooked && session.booked_seats >= session.max_seats;
+                    const numberClass = overbooked
+                      ? "text-amber-600 font-semibold"
+                      : soldout
+                        ? "text-emerald-600 font-medium"
+                        : "";
+                    const title = overbooked
+                      ? `Überbucht um ${session.booked_seats - session.max_seats} (z.B. durch eine Einladung)`
+                      : undefined;
+                    return (
+                      <div className="flex items-center gap-0.5" title={title}>
+                        <input
+                          type="number"
+                          min={0}
+                          defaultValue={session.booked_seats}
+                          key={`booked-${session.id}-${session.booked_seats}-${resetKey}`}
+                          onBlur={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            if (val !== session.booked_seats) {
+                              requestChange(session.id, "booked_seats", val);
+                            }
+                          }}
+                          className={`w-8 text-center bg-transparent border-b border-transparent hover:border-gray-300 focus:border-primary focus:outline-none ${numberClass}`}
+                        />
+                        <span className="text-muted-foreground">/</span>
+                        <input
+                          type="number"
+                          min={0}
+                          defaultValue={session.max_seats}
+                          key={`max-${session.id}-${session.max_seats}-${resetKey}`}
+                          onBlur={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            if (val !== session.max_seats) {
+                              requestChange(session.id, "max_seats", val);
+                            }
+                          }}
+                          className={`w-8 text-center bg-transparent border-b border-transparent hover:border-gray-300 focus:border-primary focus:outline-none ${numberClass}`}
+                        />
+                      </div>
+                    );
+                  })()}
                 </TableCell>
 
                 {/* CME Beantragung */}
