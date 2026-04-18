@@ -31,6 +31,18 @@ interface Props {
 
 const EMAIL_RE = /^[^\s@,<>"']+@[^\s@,<>"']+\.[^\s@,<>"']+$/;
 
+/**
+ * A fragment is only safe to auto-commit as a chip when it contains an "@".
+ * Without this guard, mobile keyboards (iOS QuickType / Smart Punctuation)
+ * that helpfully insert a comma between words would turn each typed letter
+ * into its own chip. Name fragments (no "@") must stay in the input until
+ * the user picks a contact from the dropdown, presses Enter on a complete
+ * email, or types past an "@".
+ */
+function looksLikeEmail(fragment: string): boolean {
+  return fragment.includes("@");
+}
+
 function parseRecipients(raw: string): string[] {
   if (!raw) return [];
   return raw
@@ -120,16 +132,22 @@ export function ContactAutocomplete({
   };
 
   const handleInputChange = (raw: string) => {
-    // Commit-on-separator: if the user types a comma or semicolon, commit
-    // whatever was typed so far as a chip and clear the input.
+    // Commit-on-separator: only when the fragment actually contains "@".
+    // iOS QuickType / Smart Punctuation cheerfully inserts commas between
+    // typed words, which would otherwise turn "Wyss" into four chips
+    // ("W,Y,S,S"). Name-only fragments must stay in the input; we just
+    // strip the stray separators silently.
     if (/[,;]/.test(raw)) {
       const parts = raw.split(/[,;]/);
       const committed: string[] = [];
+      const leftover: string[] = [];
       for (let i = 0; i < parts.length - 1; i++) {
         const t = parts[i].trim();
-        if (t) committed.push(t);
+        if (!t) continue;
+        if (looksLikeEmail(t)) committed.push(t);
+        else leftover.push(t);
       }
-      const tail = parts[parts.length - 1];
+      const tail = [...leftover, parts[parts.length - 1]].join(" ").trimStart();
       if (committed.length > 0) {
         const next = [...chips, ...committed];
         setChips(next);
@@ -138,6 +156,13 @@ export function ContactAutocomplete({
         search(tail);
         return;
       }
+      // No email-like fragments found — treat the whole thing as the input
+      // and strip the stray separators so the user keeps typing naturally.
+      const cleaned = raw.replace(/[,;]+/g, " ").replace(/ {2,}/g, " ");
+      setInput(cleaned);
+      reportUp(chips, cleaned);
+      search(cleaned);
+      return;
     }
     setInput(raw);
     reportUp(chips, raw);
@@ -168,22 +193,18 @@ export function ContactAutocomplete({
   };
 
   const commitCurrentInput = (): boolean => {
-    // Accept the current input as a chip if it's at least a plausible email
-    // or if there's an active dropdown selection.
+    // Prefer the highlighted autocomplete result when there is one.
     if (activeIndex >= 0 && results[activeIndex]) {
       selectContact(results[activeIndex]);
       return true;
     }
     const t = input.trim();
     if (!t) return false;
-    if (!EMAIL_RE.test(t)) {
-      // Still commit — the user might be in the middle of typing, and we
-      // don't want to silently swallow their input. /api/gmail/send will
-      // validate again. Browser autofill often inserts "Name <a@b.c>";
-      // accept as-is.
-      addChip(t);
-      return true;
-    }
+    // Refuse to chipify a fragment that doesn't look like an email. The
+    // user probably typed a name; let them keep typing or pick from the
+    // dropdown. Accept "Name <a@b.c>" (browser autofill) as-is because it
+    // contains "@". /api/gmail/send re-validates downstream.
+    if (!looksLikeEmail(t)) return false;
     addChip(t);
     return true;
   };
@@ -235,8 +256,9 @@ export function ContactAutocomplete({
         !containerRef.current.contains(e.target as Node)
       ) {
         setOpen(false);
-        // Also commit any half-typed email so a click-to-send doesn't lose it.
-        if (input.trim()) {
+        // Only commit a half-typed entry when it looks like an email —
+        // a stray name fragment must not become a chip on outside click.
+        if (input.trim() && looksLikeEmail(input)) {
           addChip(input);
         }
       }
@@ -286,8 +308,9 @@ export function ContactAutocomplete({
         }}
         onBlur={() => {
           // Commit a dangling typed email on blur so clicking "Send"
-          // doesn't silently drop the last recipient.
-          if (input.trim()) addChip(input);
+          // doesn't silently drop the last recipient. Only emails — a
+          // name fragment would be a false positive on mobile keyboards.
+          if (input.trim() && looksLikeEmail(input)) addChip(input);
         }}
         placeholder={chips.length === 0 ? placeholder : ""}
         className="flex-1 min-w-[120px] bg-transparent outline-none text-sm py-1"
