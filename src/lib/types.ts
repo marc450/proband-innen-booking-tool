@@ -6,6 +6,12 @@ export interface CourseTemplate {
   service_description: string | null;
   guide_price: string | null;
   image_url: string | null;
+  /**
+   * Optional hero image shown only on Proband:innen-facing course cards
+   * (`/kurse/werde-proband-in`, `/book/privat`). Falls back to `image_url`
+   * when null.
+   */
+  image_url_probanden: string | null;
   instructor: string | null;
   created_at: string;
   // Auszubildende-specific fields (nullable for Proband:innen templates)

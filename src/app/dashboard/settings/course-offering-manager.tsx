@@ -96,6 +96,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       service_description: "",
       guide_price: "",
       image_url: "",
+      image_url_probanden: "",
       course_key: "",
       course_label_de: "",
       name_online: "",
@@ -135,6 +136,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       service_description: o.service_description || "",
       guide_price: o.guide_price || "",
       image_url: o.image_url || "",
+      image_url_probanden: o.image_url_probanden || "",
       course_key: o.course_key || "",
       course_label_de: o.course_label_de || "",
       name_online: o.name_online || "",
@@ -175,6 +177,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       service_description: form.service_description || null,
       guide_price: form.guide_price || null,
       image_url: form.image_url || null,
+      image_url_probanden: form.image_url_probanden || null,
       course_key: form.course_key || null,
       course_label_de: form.course_label_de || null,
       name_online: form.name_online || null,
@@ -311,12 +314,13 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
     });
   };
 
-  const uploadImage = async (file: File) => {
+  const uploadImage = async (file: File, targetField: "image_url" | "image_url_probanden" = "image_url") => {
     setUploadingImage(true);
     setImageUploadError(null);
     try {
       const resized = await resizeImage(file);
-      const fileName = `template-${Date.now()}.webp`;
+      const suffix = targetField === "image_url_probanden" ? "probanden" : "template";
+      const fileName = `${suffix}-${Date.now()}.webp`;
       const { error } = await supabase.storage
         .from("course-images")
         .upload(fileName, resized, { upsert: true, contentType: "image/webp" });
@@ -327,7 +331,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       const { data: urlData } = supabase.storage
         .from("course-images")
         .getPublicUrl(fileName);
-      updateField("image_url", urlData.publicUrl);
+      updateField(targetField, urlData.publicUrl);
     } catch {
       setImageUploadError("Upload fehlgeschlagen");
     } finally {
@@ -335,22 +339,29 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await uploadImage(file);
-    e.target.value = "";
-  };
+  const makeImageUploadHandler = (targetField: "image_url" | "image_url_probanden") =>
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      await uploadImage(file, targetField);
+      e.target.value = "";
+    };
 
-  const handleImageDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith("image/")) {
-      await uploadImage(file);
-    }
-  };
+  const makeImageDropHandler = (targetField: "image_url" | "image_url_probanden") =>
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDraggingOver(false);
+      const file = e.dataTransfer.files?.[0];
+      if (file && file.type.startsWith("image/")) {
+        await uploadImage(file, targetField);
+      }
+    };
+
+  const handleImageUpload = makeImageUploadHandler("image_url");
+  const handleImageDrop = makeImageDropHandler("image_url");
+  const handleImageUploadProbanden = makeImageUploadHandler("image_url_probanden");
+  const handleImageDropProbanden = makeImageDropHandler("image_url_probanden");
 
   const sortedOfferings = useMemo(() => {
     const sorted = [...offerings];
@@ -680,6 +691,50 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
                   )}
                   {imageUploadError && (
                     <p className="text-sm text-red-600 mt-1">{imageUploadError}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Kursbild für Proband:innen (optional)</Label>
+                  <p className="text-xs text-muted-foreground -mt-0.5 mb-1">
+                    Überschreibt das Kursbild nur auf Proband:innen-Seiten (werde-proband-in, Privatbuchung). Leer lassen, um das obige Bild zu verwenden.
+                  </p>
+                  {form.image_url_probanden ? (
+                    <div className="mt-1 relative">
+                      <img
+                        src={form.image_url_probanden}
+                        alt="Kursbild Proband:innen"
+                        className="w-full aspect-video object-cover rounded-md border"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => updateField("image_url_probanden", "")}
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Entfernen
+                      </Button>
+                    </div>
+                  ) : (
+                    <label
+                      className="mt-1 flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-md cursor-pointer transition-colors hover:border-primary/50 hover:bg-muted/50"
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onDrop={handleImageDropProbanden}
+                    >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageUploadProbanden}
+                        disabled={uploadingImage}
+                      />
+                      <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                      <span className="text-sm text-muted-foreground">Bild hochladen oder hierher ziehen</span>
+                      <span className="text-xs text-muted-foreground">JPG, PNG, WebP</span>
+                    </label>
                   )}
                 </div>
               </div>

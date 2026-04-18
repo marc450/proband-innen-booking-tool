@@ -119,7 +119,7 @@ export default async function WerdeProbandInPage() {
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
 
-  const [{ data: coursesData }, { data: slotsData }] = await Promise.all([
+  const [{ data: coursesData }, { data: slotsData }, { data: templatesData }] = await Promise.all([
     supabase
       .from("courses")
       .select("*")
@@ -132,9 +132,21 @@ export default async function WerdeProbandInPage() {
       .gt("remaining_capacity", 0)
       .gt("start_time", new Date(Date.now() + 30 * 60 * 1000).toISOString())
       .order("start_time", { ascending: true }),
+    supabase
+      .from("course_templates")
+      .select("id, image_url_probanden"),
   ]);
 
-  const courses = (coursesData as Course[] | null) ?? [];
+  // Proband:innen-specific hero image overrides the course's default
+  // image_url when the admin set one on the template. See migration 034.
+  const probandenImageByTemplate = new Map<string, string>();
+  for (const t of (templatesData as { id: string; image_url_probanden: string | null }[] | null) ?? []) {
+    if (t.image_url_probanden) probandenImageByTemplate.set(t.id, t.image_url_probanden);
+  }
+  const courses = ((coursesData as Course[] | null) ?? []).map((c) => {
+    const override = c.template_id ? probandenImageByTemplate.get(c.template_id) : undefined;
+    return override ? { ...c, image_url: override } : c;
+  });
   const slots = (slotsData as AvailableSlot[] | null) ?? [];
 
   return (
