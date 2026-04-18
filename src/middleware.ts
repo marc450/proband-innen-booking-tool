@@ -15,7 +15,7 @@ const BOOKING_ONLY_PATHS = ["/book", "/courses"];
 
 // Paths that kurse.ephia.de should pass through untouched (framework assets,
 // API routes, etc). Everything else on that host is treated as a /kurse slug.
-const KURSE_PASSTHROUGH_RE = /^\/(api|_next|kurse|favicon\.ico|robots\.txt|sitemap\.xml)(\/|$)/;
+const KURSE_PASSTHROUGH_RE = /^\/(api|_next|kurse|merch|favicon\.ico|robots\.txt|sitemap\.xml)(\/|$)/;
 
 function withNoindex(response: NextResponse): NextResponse {
   response.headers.set("X-Robots-Tag", "noindex, nofollow");
@@ -129,6 +129,12 @@ export async function middleware(request: NextRequest) {
       pathname !== "/kurse/werde-proband-in" &&
       !pathname.startsWith("/kurse/werde-proband-in/")
     ) {
+      const target = new URL(pathname + request.nextUrl.search, `https://${KURSE_DOMAIN}`);
+      return NextResponse.redirect(target, 308);
+    }
+
+    // Merch shop lives on kurse.ephia.de/merch. Same redirect treatment.
+    if (pathname === "/merch" || pathname.startsWith("/merch/")) {
       const target = new URL(pathname + request.nextUrl.search, `https://${KURSE_DOMAIN}`);
       return NextResponse.redirect(target, 308);
     }

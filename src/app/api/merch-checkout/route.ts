@@ -1,0 +1,139 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
+
+// Flat shipping for V1: €2.90. Keeping this server-side and using it as
+// the Stripe fixed_amount for the shipping_option so the customer never
+// sees a different number than what they pay.
+const SHIPPING_GROSS_CENTS = 290;
+const SHIPPING_LABEL = "Versand";
+const SHIPPING_DELIVERY_MIN_DAYS = 3;
+const SHIPPING_DELIVERY_MAX_DAYS = 7;
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { variantId, firstName, lastName, email, phone, isDoctor } = body as {
+      variantId?: string;
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      phone?: string;
+      isDoctor?: boolean;
+    };
+
+    if (!variantId || !firstName || !lastName || !email || !phone || typeof isDoctor !== "boolean") {
+      return NextResponse.json({ error: "Bitte alle Felder ausfüllen." }, { status: 400 });
+    }
+
+    const admin = createAdminClient();
+
+    // Load variant + parent product. We lock in the price from the DB so a
+    // client-side tampered payload can never change what the customer pays.
+    const { data: variant, error: vErr } = await admin
+      .from("merch_product_variants")
+      .select("id, name, color, size, price_gross_cents, stock, is_active, product_id, merch_products(slug, title, is_active)")
+      .eq("id", variantId)
+      .maybeSingle();
+
+    if (vErr || !variant) {
+      return NextResponse.json({ error: "Variante nicht gefunden." }, { status: 404 });
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const product = Array.isArray((variant as any).merch_products) ? (variant as any).merch_products[0] : (variant as any).merch_products;
+    if (!product?.is_active || !variant.is_active) {
+      return NextResponse.json({ error: "Produkt nicht verfügbar." }, { status: 400 });
+    }
+    if (variant.stock <= 0) {
+      return NextResponse.json({ error: "Ausverkauft." }, { status: 409 });
+    }
+
+    const origin = req.headers.get("origin") || "https://kurse.ephia.de";
+    const successUrl = `${origin}/merch/success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${origin}/merch/${product.slug}`;
+
+    const variantLabel = [variant.color, variant.size].filter((x) => x && x !== "one-size").join(" / ");
+    const productName = variantLabel ? `${product.title} (${variantLabel})` : product.title;
+
+    // Build Stripe Checkout params.
+    const params: Record<string, string> = {
+      mode: "payment",
+      customer_creation: "always",
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      locale: "de",
+      billing_address_collection: "required",
+      "phone_number_collection[enabled]": "true",
+      "automatic_tax[enabled]": "true",
+      "tax_id_collection[enabled]": "true",
+      "consent_collection[terms_of_service]": "required",
+      "invoice_creation[enabled]": "true",
+
+      customer_email: email,
+
+      // Line item.
+      "line_items[0][quantity]": "1",
+      "line_items[0][price_data][currency]": "eur",
+      "line_items[0][price_data][unit_amount]": String(variant.price_gross_cents),
+      "line_items[0][price_data][product_data][name]": productName,
+
+      // Shipping address required.
+      "shipping_address_collection[allowed_countries][0]": "DE",
+      "shipping_address_collection[allowed_countries][1]": "AT",
+      "shipping_address_collection[allowed_countries][2]": "CH",
+
+      // Fixed shipping rate (V1 — admin can swap for dynamic rates later).
+      "shipping_options[0][shipping_rate_data][type]": "fixed_amount",
+      "shipping_options[0][shipping_rate_data][fixed_amount][amount]": String(SHIPPING_GROSS_CENTS),
+      "shipping_options[0][shipping_rate_data][fixed_amount][currency]": "eur",
+      "shipping_options[0][shipping_rate_data][display_name]": SHIPPING_LABEL,
+      "shipping_options[0][shipping_rate_data][delivery_estimate][minimum][unit]": "business_day",
+      "shipping_options[0][shipping_rate_data][delivery_estimate][minimum][value]": String(SHIPPING_DELIVERY_MIN_DAYS),
+      "shipping_options[0][shipping_rate_data][delivery_estimate][maximum][unit]": "business_day",
+      "shipping_options[0][shipping_rate_data][delivery_estimate][maximum][value]": String(SHIPPING_DELIVERY_MAX_DAYS),
+
+      // Metadata drives the stripe-webhook handler.
+      "metadata[orderType]": "merch",
+      "metadata[variantId]": variant.id,
+      "metadata[productId]": variant.product_id,
+      "metadata[productSlug]": product.slug,
+      "metadata[productTitle]": product.title,
+      "metadata[variantName]": variant.name,
+      "metadata[variantColor]": variant.color || "",
+      "metadata[variantSize]": variant.size || "",
+      "metadata[firstName]": firstName,
+      "metadata[lastName]": lastName,
+      "metadata[phone]": phone,
+      "metadata[isDoctor]": isDoctor ? "true" : "false",
+      "metadata[itemGrossCents]": String(variant.price_gross_cents),
+      "metadata[shippingGrossCents]": String(SHIPPING_GROSS_CENTS),
+    };
+
+    const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams(params).toString(),
+    });
+
+    const session = await res.json();
+    if (!res.ok) {
+      console.error("Stripe checkout session failed:", session);
+      return NextResponse.json(
+        { error: session?.error?.message || "Checkout konnte nicht gestartet werden." },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ url: session.url });
+  } catch (err) {
+    console.error("merch-checkout error:", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Unerwarteter Fehler." },
+      { status: 500 },
+    );
+  }
+}

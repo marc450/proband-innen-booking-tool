@@ -26,6 +26,7 @@ import {
   CalendarDays,
   ShieldCheck,
   TrendingUp,
+  ShoppingBag,
   LucideIcon,
 } from "lucide-react";
 
@@ -95,6 +96,16 @@ const navGroups: NavGroup[] = [
     items: [
       { href: "/dashboard/inbox", label: "Inbox" },
       { href: "/dashboard/campaigns", label: "Kampagnen" },
+    ],
+  },
+  {
+    key: "merch",
+    label: "Merch",
+    icon: ShoppingBag,
+    adminOnly: true,
+    items: [
+      { href: "/dashboard/merch/produkte", label: "Produkte" },
+      { href: "/dashboard/merch/bestellungen", label: "Bestellungen" },
     ],
   },
   {

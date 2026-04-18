@@ -1,0 +1,240 @@
+"use client";
+
+import { useState } from "react";
+import { Heart, Loader2, X } from "lucide-react";
+
+interface Props {
+  variantId: string;
+  productTitle: string;
+  variantLabel: string;
+  priceCents: number;
+  stock: number;
+}
+
+/**
+ * CTA button ("Schickt sie mir in Schwarz!") for one product variant. On
+ * click it opens a small modal that captures name + email + phone +
+ * Ärzt:in flag, then posts to /api/merch-checkout which responds with the
+ * Stripe Checkout URL.
+ */
+export function MerchCheckoutLauncher({
+  variantId,
+  productTitle,
+  variantLabel,
+  priceCents,
+  stock,
+}: Props) {
+  const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [isDoctor, setIsDoctor] = useState<"" | "yes" | "no">("");
+
+  const soldOut = stock <= 0;
+
+  const reset = () => {
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setPhone("");
+    setIsDoctor("");
+    setError(null);
+    setSubmitting(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !phone.trim() || !isDoctor) {
+      setError("Bitte alle Felder ausfüllen.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/merch-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          variantId,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          isDoctor: isDoctor === "yes",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Checkout konnte nicht gestartet werden.");
+      }
+      window.location.href = data.url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unerwarteter Fehler.");
+      setSubmitting(false);
+    }
+  };
+
+  const priceLabel = (priceCents / 100).toLocaleString("de-DE", {
+    style: "currency",
+    currency: "EUR",
+  });
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => !soldOut && setOpen(true)}
+        disabled={soldOut}
+        className={`w-full rounded-[10px] font-bold py-3.5 px-5 text-center transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2 ${
+          soldOut
+            ? "bg-gray-200 text-gray-500"
+            : "bg-[#0066FF] text-white hover:bg-[#0055DD]"
+        }`}
+      >
+        <span>{soldOut ? `Ausverkauft: ${variantLabel}` : `Schickt sie mir in ${variantLabel}!`}</span>
+        {!soldOut && <Heart className="h-4 w-4" />}
+      </button>
+
+      {open && (
+        <div
+          className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !submitting) {
+              setOpen(false);
+              reset();
+            }
+          }}
+        >
+          <div className="bg-white rounded-[10px] w-full max-w-md p-6 md:p-8 relative">
+            <button
+              type="button"
+              onClick={() => {
+                if (!submitting) {
+                  setOpen(false);
+                  reset();
+                }
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              aria-label="Schließen"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h2 className="text-xl font-bold mb-1">Deine Bestellung</h2>
+            <p className="text-sm text-black/70 mb-5">
+              {productTitle} · {variantLabel} · {priceLabel}
+              <br />
+              <span className="text-xs text-black/50">Versand 2,90 € · Spende 10 € an De la Torre-Stiftung inklusive</span>
+            </p>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium">Vorname</label>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="w-full rounded-[10px] border border-input bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0066FF]/30 focus:border-[#0066FF]"
+                    autoComplete="given-name"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium">Nachname</label>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full rounded-[10px] border border-input bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0066FF]/30 focus:border-[#0066FF]"
+                    autoComplete="family-name"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium">E-Mail</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-[10px] border border-input bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0066FF]/30 focus:border-[#0066FF]"
+                  autoComplete="email"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium">Telefon</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full rounded-[10px] border border-input bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0066FF]/30 focus:border-[#0066FF]"
+                  autoComplete="tel"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium">Bist Du Ärzt:in?</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsDoctor("yes")}
+                    className={`flex-1 rounded-[10px] border py-2 text-sm font-medium transition-colors cursor-pointer ${
+                      isDoctor === "yes"
+                        ? "border-[#0066FF] bg-[#0066FF]/5 text-[#0066FF]"
+                        : "border-input bg-white hover:bg-gray-50"
+                    }`}
+                  >
+                    Ja
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsDoctor("no")}
+                    className={`flex-1 rounded-[10px] border py-2 text-sm font-medium transition-colors cursor-pointer ${
+                      isDoctor === "no"
+                        ? "border-[#0066FF] bg-[#0066FF]/5 text-[#0066FF]"
+                        : "border-input bg-white hover:bg-gray-50"
+                    }`}
+                  >
+                    Nein
+                  </button>
+                </div>
+              </div>
+
+              {error && <p className="text-sm text-red-600">{error}</p>}
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full bg-[#0066FF] hover:bg-[#0055DD] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-[10px] py-3.5 transition-colors cursor-pointer flex items-center justify-center gap-2"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Einen Moment…
+                  </>
+                ) : (
+                  "Zur sicheren Kasse"
+                )}
+              </button>
+
+              <p className="text-xs text-black/50 text-center">
+                Versandadresse und Zahlung werden im nächsten Schritt bei Stripe erfasst.
+              </p>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

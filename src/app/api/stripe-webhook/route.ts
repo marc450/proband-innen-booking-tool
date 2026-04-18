@@ -332,6 +332,11 @@ async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const metadata = session.metadata || {};
 
+  // Route to merch handler for shop orders.
+  if (metadata.orderType === "merch") {
+    return handleMerchCheckout(session);
+  }
+
   // Route to curriculum handler if this is a curriculum purchase
   if (metadata.curriculumSlug) {
     return handleCurriculumCheckout(session);
@@ -605,6 +610,229 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 // either by our cancel-course-booking flow or manually in the Stripe dashboard),
 // flip the booking status from "cancelled" to "refunded" so staff can see at a
 // glance that the money has actually been returned to the customer.
+// ─────────────────────────────────────────────────────────────────────
+// Merch shop: create merch_orders row, decrement variant stock, upsert
+// the customer into auszubildende (as "auszubildende" when is_doctor,
+// else "other"), fire Slack and Resend notifications.
+// ─────────────────────────────────────────────────────────────────────
+async function handleMerchCheckout(session: Stripe.Checkout.Session) {
+  const metadata = session.metadata || {};
+  const supabase = createAdminClient();
+
+  const checkoutSessionId = session.id;
+
+  // Idempotency guard.
+  const { data: existing } = await supabase
+    .from("merch_orders")
+    .select("id")
+    .eq("stripe_checkout_session_id", checkoutSessionId)
+    .maybeSingle();
+  if (existing) return;
+
+  // Pull customer + shipping details from the session.
+  const cd = session.customer_details as {
+    email?: string;
+    name?: string;
+    phone?: string;
+    address?: {
+      line1?: string | null;
+      line2?: string | null;
+      postal_code?: string | null;
+      city?: string | null;
+      state?: string | null;
+      country?: string | null;
+    } | null;
+  } | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const shippingDetails = (session as any).shipping_details as
+    | { name?: string; address?: { line1?: string; line2?: string; postal_code?: string; city?: string; country?: string } }
+    | null
+    | undefined;
+  const shippingAddr = shippingDetails?.address || cd?.address || {};
+
+  const email = normalizeEmail(cd?.email || metadata.email || "");
+  const firstName = metadata.firstName || "";
+  const lastName = metadata.lastName || "";
+  const fullName = cd?.name || [firstName, lastName].filter(Boolean).join(" ");
+  const phone = cd?.phone || metadata.phone || "";
+  const isDoctor = metadata.isDoctor === "true";
+
+  const variantId = metadata.variantId || null;
+  const productId = metadata.productId || null;
+  const productTitle = metadata.productTitle || "Merch";
+  const variantName = metadata.variantName || null;
+  const variantColor = metadata.variantColor || null;
+  const variantSize = metadata.variantSize || null;
+
+  const itemGrossCents = Number(metadata.itemGrossCents) || 0;
+  const shippingGrossCents = Number(metadata.shippingGrossCents) || 0;
+  const amountPaidCents = session.amount_total || itemGrossCents + shippingGrossCents;
+
+  const customerId =
+    typeof session.customer === "string" ? session.customer : session.customer?.id || null;
+  const paymentIntentId =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id || null;
+
+  // Upsert the customer into auszubildende so they land in Kontakte. Doctors
+  // go into the auszubildende bucket; non-doctors into "other" (Sonstige).
+  let auszubildendeId: string | null = null;
+  if (email) {
+    try {
+      const azubiRow: Record<string, unknown> = {
+        email,
+        first_name: firstName || null,
+        last_name: lastName || null,
+        phone: phone || null,
+        contact_type: isDoctor ? "auszubildende" : "other",
+      };
+      const { data: azubi } = await supabase
+        .from("auszubildende")
+        .upsert(azubiRow, { onConflict: "email" })
+        .select("id")
+        .single();
+      if (azubi) auszubildendeId = azubi.id;
+    } catch (err) {
+      console.error("Failed to upsert auszubildende for merch order:", err);
+    }
+  }
+
+  // Create the order.
+  const { data: order, error: orderErr } = await supabase
+    .from("merch_orders")
+    .insert({
+      variant_id: variantId,
+      product_id: productId,
+      product_title: productTitle,
+      variant_name: variantName,
+      variant_color: variantColor,
+      variant_size: variantSize,
+      quantity: 1,
+      first_name: firstName || null,
+      last_name: lastName || null,
+      email,
+      phone: phone || null,
+      is_doctor: isDoctor,
+      auszubildende_id: auszubildendeId,
+      shipping_line1: shippingAddr.line1 || null,
+      shipping_line2: shippingAddr.line2 || null,
+      shipping_postal_code: shippingAddr.postal_code || null,
+      shipping_city: shippingAddr.city || null,
+      shipping_country: shippingAddr.country || null,
+      item_gross_cents: itemGrossCents,
+      shipping_gross_cents: shippingGrossCents,
+      amount_paid_cents: amountPaidCents,
+      stripe_checkout_session_id: checkoutSessionId,
+      stripe_payment_intent_id: paymentIntentId,
+      status: "paid",
+    })
+    .select("id")
+    .single();
+
+  if (orderErr) {
+    console.error("merch_orders insert failed:", orderErr);
+    throw new Error(`merch_orders insert failed: ${orderErr.message}`);
+  }
+
+  // Atomic stock decrement. Don't blow up the webhook on OUT_OF_STOCK —
+  // the payment already went through; alert staff via Slack below.
+  let stockError: string | null = null;
+  if (variantId) {
+    const { error: stockErr } = await supabase.rpc("merch_decrement_stock", {
+      p_variant_id: variantId,
+      p_qty: 1,
+    });
+    if (stockErr) {
+      stockError = stockErr.message;
+      console.error("merch_decrement_stock failed:", stockErr);
+    }
+  }
+
+  // Slack notification to the revenue channel.
+  const SLACK_WEBHOOK_URL_REVENUE = process.env.SLACK_WEBHOOK_URL_REVENUE;
+  if (SLACK_WEBHOOK_URL_REVENUE) {
+    try {
+      const variantLabel = [variantColor, variantSize].filter((x) => x && x !== "one-size").join(" / ");
+      const betrag = amountPaidCents
+        ? `€${(amountPaidCents / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })}`
+        : null;
+      const address = [
+        shippingAddr.line1,
+        [shippingAddr.postal_code, shippingAddr.city].filter(Boolean).join(" "),
+        shippingAddr.country,
+      ]
+        .filter(Boolean)
+        .join(", ");
+      const lines = [
+        `🧢 *Neue Merch-Bestellung*`,
+        `*Produkt:* ${productTitle}${variantLabel ? ` · ${variantLabel}` : ""}`,
+        fullName ? `*Name:* ${fullName}` : null,
+        email ? `*E-Mail:* ${email}` : null,
+        phone ? `*Telefon:* ${phone}` : null,
+        `*Ärzt:in:* ${isDoctor ? "Ja" : "Nein"}`,
+        address ? `*Versand:* ${address}` : null,
+        betrag ? `*Betrag:* ${betrag} (inkl. Versand)` : null,
+        stockError ? `⚠️ *Stock-Update fehlgeschlagen:* ${stockError}` : null,
+      ].filter(Boolean);
+      await fetch(SLACK_WEBHOOK_URL_REVENUE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: lines.join("\n") }),
+      });
+    } catch (err) {
+      console.error("Slack revenue notification failed:", err);
+    }
+  }
+
+  // Customer confirmation email via Resend.
+  if (email && RESEND_API_KEY) {
+    try {
+      const variantLabel = [variantColor, variantSize].filter((x) => x && x !== "one-size").join(" / ");
+      const betrag = amountPaidCents
+        ? (amountPaidCents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })
+        : "";
+      const versand = shippingGrossCents
+        ? (shippingGrossCents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })
+        : "";
+      const item = itemGrossCents
+        ? (itemGrossCents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })
+        : "";
+      const html = `<!doctype html>
+<html><body style="font-family:Roboto,Arial,sans-serif;background:#FAEBE1;margin:0;padding:24px;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:10px;padding:32px;">
+    <h1 style="margin:0 0 16px;font-size:22px;">Vielen Dank für Deine Bestellung!</h1>
+    <p style="margin:0 0 16px;color:#333;line-height:1.5;">
+      Hi ${firstName || "Du"},<br><br>
+      wir haben Deine Bestellung erhalten und schicken sie in den nächsten
+      3–7 Werktagen auf den Weg zu Dir.
+    </p>
+    <div style="background:#FAEBE1;border-radius:10px;padding:16px 20px;margin:16px 0 20px;font-size:14px;color:#333;">
+      <p style="margin:0 0 6px;"><strong>Produkt:</strong> ${productTitle}${variantLabel ? ` (${variantLabel})` : ""}</p>
+      <p style="margin:0 0 6px;"><strong>Artikel:</strong> ${item}</p>
+      <p style="margin:0 0 6px;"><strong>Versand:</strong> ${versand}</p>
+      <p style="margin:0;"><strong>Gesamt:</strong> ${betrag}</p>
+    </div>
+    <p style="margin:0 0 16px;color:#333;line-height:1.5;">
+      Mit Deinem Kauf unterstützt Du die
+      <a href="https://www.delatorre-stiftung.de" style="color:#0066FF;">Jenny De la Torre-Stiftung</a>
+      mit einer Spende in Höhe von 10 €. Danke, dass Du dabei bist.
+    </p>
+    <p style="margin:0;color:#333;">
+      Herzliche Grüße,<br>
+      Dein EPHIA-Team
+    </p>
+  </div>
+</body></html>`;
+      await sendEmail(email, `Deine EPHIA-Bestellung: ${productTitle}`, html);
+    } catch (err) {
+      console.error("Merch confirmation email failed:", err);
+    }
+  }
+
+  console.log(`Merch order created: ${order?.id} (${productTitle} / ${variantName})`);
+}
+
 async function handleChargeRefunded(charge: Stripe.Charge) {
   const paymentIntentId =
     typeof charge.payment_intent === "string"

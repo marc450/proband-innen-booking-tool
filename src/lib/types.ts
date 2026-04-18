@@ -244,3 +244,69 @@ export interface BookingWithDetails extends Booking {
     };
   };
 }
+
+// ── Merch shop ───────────────────────────────────────────────────────
+
+export interface MerchProduct {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string | null;
+  description: string | null;
+  image_url: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MerchProductVariant {
+  id: string;
+  product_id: string;
+  name: string;
+  color: string | null;
+  size: string | null;
+  sku: string | null;
+  price_gross_cents: number;
+  vat_rate: number;
+  stock: number;
+  image_url: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type MerchOrderStatus = "pending" | "paid" | "shipped" | "cancelled" | "refunded";
+
+export interface MerchOrder {
+  id: string;
+  variant_id: string | null;
+  product_id: string | null;
+  product_title: string;
+  variant_name: string | null;
+  variant_color: string | null;
+  variant_size: string | null;
+  quantity: number;
+  first_name: string | null;
+  last_name: string | null;
+  email: string;
+  phone: string | null;
+  is_doctor: boolean;
+  auszubildende_id: string | null;
+  shipping_line1: string | null;
+  shipping_line2: string | null;
+  shipping_postal_code: string | null;
+  shipping_city: string | null;
+  shipping_country: string | null;
+  item_gross_cents: number;
+  shipping_gross_cents: number;
+  amount_paid_cents: number;
+  stripe_checkout_session_id: string | null;
+  stripe_payment_intent_id: string | null;
+  stripe_invoice_url: string | null;
+  status: MerchOrderStatus;
+  tracking_number: string | null;
+  shipped_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
