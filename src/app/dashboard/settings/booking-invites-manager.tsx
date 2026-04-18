@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
-import { Check, Copy, Plus, Ban, Trash2, X } from "lucide-react";
+import { Check, Copy, Plus, Ban, Trash2, X, RotateCcw } from "lucide-react";
 import type { CourseTemplate, CourseSession, Auszubildende } from "@/lib/types";
 
 type AuszubildendePick = Pick<Auszubildende, "id" | "first_name" | "last_name" | "email" | "phone" | "title">;
@@ -279,6 +279,20 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
       return;
     }
     setInvites((prev) => prev.filter((i) => i.id !== invite.id));
+  };
+
+  const handleReactivate = async (invite: Invite) => {
+    const res = await fetch(`/api/admin/booking-invites/${invite.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ revoked: false }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setAlertState({ title: "Fehler", description: data.error || "Einladung konnte nicht reaktiviert werden." });
+      return;
+    }
+    setInvites((prev) => prev.map((i) => (i.id === invite.id ? { ...i, revoked: false } : i)));
   };
 
   const buildLink = (token: string): string => {
@@ -597,6 +611,17 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
                           className="text-destructive hover:text-destructive"
                         >
                           <Ban className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {invite.revoked && !used && !expired && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleReactivate(invite)}
+                          title="Einladung reaktivieren"
+                          className="text-emerald-700 hover:text-emerald-700"
+                        >
+                          <RotateCcw className="h-4 w-4" />
                         </Button>
                       )}
                       {invite.used_count === 0 && (
