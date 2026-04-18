@@ -57,6 +57,7 @@ export function SettingsContent({
           <BookingInvitesManager
             templates={initialCourseOfferings}
             sessions={initialCourseSessions}
+            auszubildende={initialAuszubildende}
           />
         );
       case "rechnungen":

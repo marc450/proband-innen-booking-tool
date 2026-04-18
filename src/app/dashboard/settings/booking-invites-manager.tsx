@@ -32,7 +32,9 @@ import {
 } from "@/components/ui/select";
 import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
 import { Check, Copy, Plus, Ban, Trash2 } from "lucide-react";
-import type { CourseTemplate, CourseSession } from "@/lib/types";
+import type { CourseTemplate, CourseSession, Auszubildende } from "@/lib/types";
+
+type AuszubildendePick = Pick<Auszubildende, "id" | "first_name" | "last_name" | "email" | "phone" | "title">;
 
 type CourseType = "Onlinekurs" | "Praxiskurs" | "Kombikurs" | "Premium";
 
@@ -61,6 +63,7 @@ interface Invite {
 interface Props {
   templates: CourseTemplate[];
   sessions: CourseSession[];
+  auszubildende: AuszubildendePick[];
 }
 
 const COURSE_TYPES: CourseType[] = ["Onlinekurs", "Praxiskurs", "Kombikurs", "Premium"];
@@ -92,7 +95,7 @@ function formatDiscountLabel(c: DiscountCode): string {
   return c.code;
 }
 
-export function BookingInvitesManager({ templates, sessions }: Props) {
+export function BookingInvitesManager({ templates, sessions, auszubildende }: Props) {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,8 +109,7 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
   const [templateId, setTemplateId] = useState("");
   const [courseType, setCourseType] = useState<CourseType>("Kombikurs");
   const [sessionId, setSessionId] = useState("");
-  const [recipientName, setRecipientName] = useState("");
-  const [recipientEmail, setRecipientEmail] = useState("");
+  const [assignedDoctorId, setAssignedDoctorId] = useState("");
   const [promoCodeId, setPromoCodeId] = useState(NO_PROMO);
   const [adminNote, setAdminNote] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
@@ -141,13 +143,28 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
     setTemplateId("");
     setCourseType("Kombikurs");
     setSessionId("");
-    setRecipientName("");
-    setRecipientEmail("");
+    setAssignedDoctorId("");
     setPromoCodeId(NO_PROMO);
     setAdminNote("");
     setExpiresAt("");
     setCreateError(null);
   };
+
+  // Sort doctors alphabetically for the dropdown, pre-formatted label.
+  const doctorOptions = useMemo(() => {
+    return [...auszubildende]
+      .sort((a, b) => {
+        const la = (a.last_name || "").toLowerCase();
+        const lb = (b.last_name || "").toLowerCase();
+        if (la !== lb) return la.localeCompare(lb, "de");
+        return (a.first_name || "").toLowerCase().localeCompare((b.first_name || "").toLowerCase(), "de");
+      })
+      .map((a) => {
+        const nameParts = [a.title, a.first_name, a.last_name].filter(Boolean);
+        const name = nameParts.join(" ").trim() || a.email;
+        return { id: a.id, email: a.email, firstName: a.first_name || "", lastName: a.last_name || "", label: `${name}${a.email ? ` (${a.email})` : ""}` };
+      });
+  }, [auszubildende]);
 
   // Sessions relevant for the picked template: only future dates, sorted
   // ascending. Invites for past sessions make no sense.
@@ -199,6 +216,13 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
       setCreateError("Bitte einen Kurstermin auswählen.");
       return;
     }
+    const doctor = doctorOptions.find((d) => d.id === assignedDoctorId);
+    if (!doctor) {
+      setCreateError("Bitte eine:n Ärzt:in auswählen, dem/der die Einladung zugeordnet werden soll.");
+      return;
+    }
+    const recipientName = [doctor.firstName, doctor.lastName].filter(Boolean).join(" ").trim() || null;
+    const recipientEmail = doctor.email || null;
     setSaving(true);
     const res = await fetch("/api/admin/booking-invites", {
       method: "POST",
@@ -208,8 +232,8 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
         sessionId: needsSession ? sessionId : null,
         courseType,
         stripePromotionCodeId: promoCodeId && promoCodeId !== NO_PROMO ? promoCodeId : null,
-        recipientEmail: recipientEmail.trim() || null,
-        recipientName: recipientName.trim() || null,
+        recipientEmail,
+        recipientName,
         adminNote: adminNote.trim() || null,
         // HTML <input type="datetime-local"> returns "YYYY-MM-DDTHH:mm"
         // without a timezone; the server treats it as an ISO string in
@@ -393,24 +417,27 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Empfänger:in Name</Label>
-                <Input
-                  value={recipientName}
-                  onChange={(e) => setRecipientName(e.target.value)}
-                  placeholder="optional"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Empfänger:in E-Mail</Label>
-                <Input
-                  type="email"
-                  value={recipientEmail}
-                  onChange={(e) => setRecipientEmail(e.target.value)}
-                  placeholder="optional"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>Ärzt:in *</Label>
+              <Select value={assignedDoctorId} onValueChange={(v) => setAssignedDoctorId(v ?? "")}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={doctorOptions.length === 0 ? "Keine Ärzt:innen angelegt" : "Ärzt:in wählen..."}>
+                    {assignedDoctorId
+                      ? (doctorOptions.find((d) => d.id === assignedDoctorId)?.label || "Ärzt:in wählen...")
+                      : (doctorOptions.length === 0 ? "Keine Ärzt:innen angelegt" : "Ärzt:in wählen...")}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {doctorOptions.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Die Einladung wird auf Namen und E-Mail-Adresse der gewählten Ärzt:in ausgestellt.
+              </p>
             </div>
 
             <div className="space-y-2">
