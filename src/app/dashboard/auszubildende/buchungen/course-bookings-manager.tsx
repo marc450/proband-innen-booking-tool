@@ -434,7 +434,6 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                 />
               </TableHead>
             )}
-            <TableHead>Buchungsnr.</TableHead>
             <SortableHead label="Name" sortKey="name" {...sortProps} />
             <SortableHead label="Kurstyp" sortKey="kurstyp" {...sortProps} />
             <SortableHead label="Kurs" sortKey="kurs" {...sortProps} />
@@ -449,7 +448,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
         <TableBody>
           {sorted.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={isAdmin ? 11 : 8} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={isAdmin ? 10 : 7} className="text-center text-muted-foreground py-8">
                 {search ? "Keine Buchungen gefunden." : "Noch keine Kursbuchungen vorhanden."}
               </TableCell>
             </TableRow>
@@ -469,9 +468,6 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                       />
                     </TableCell>
                   )}
-                  <TableCell className="font-mono text-xs text-gray-500">
-                    {booking.stripe_invoice_number || "–"}
-                  </TableCell>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       {booking.auszubildende_id ? (
