@@ -25,6 +25,7 @@ import {
   Receipt,
   CalendarDays,
   ShieldCheck,
+  TrendingUp,
   LucideIcon,
 } from "lucide-react";
 
@@ -33,6 +34,8 @@ type NavItem = {
   label: string;
   exact?: boolean;
   adminOnly?: boolean;
+  /** Restrict this item to a specific list of user emails (lowercase). */
+  emailAllowlist?: string[];
 };
 
 type NavGroup = {
@@ -41,7 +44,11 @@ type NavGroup = {
   icon: LucideIcon;
   items: NavItem[];
   adminOnly?: boolean;
+  /** Restrict the whole group to a specific list of user emails (lowercase). */
+  emailAllowlist?: string[];
 };
+
+const LEADERSHIP_EMAILS = ["sophia@ephia.de", "marc@ephia.de"];
 
 const navGroups: NavGroup[] = [
   {
@@ -88,6 +95,16 @@ const navGroups: NavGroup[] = [
     items: [
       { href: "/dashboard/inbox", label: "Inbox" },
       { href: "/dashboard/campaigns", label: "Kampagnen" },
+    ],
+  },
+  {
+    key: "leadership",
+    label: "Dashboard",
+    icon: TrendingUp,
+    adminOnly: true,
+    emailAllowlist: LEADERSHIP_EMAILS,
+    items: [
+      { href: "/dashboard/umsatzpotenzial", label: "Umsatzpotenzial" },
     ],
   },
   {
@@ -166,7 +183,12 @@ export function DashboardNav({
     return () => clearInterval(interval);
   }, [role]);
 
-  const visibleGroups = navGroups.filter((g) => !g.adminOnly || role === "admin");
+  const currentEmailLower = (userEmail || "").toLowerCase();
+  const emailAllowed = (list?: string[]) => !list || list.includes(currentEmailLower);
+
+  const visibleGroups = navGroups.filter(
+    (g) => (!g.adminOnly || role === "admin") && emailAllowed(g.emailAllowlist),
+  );
 
   const isItemActive = (item: NavItem) => {
     // Split path and query so we can compare both parts. Two nav entries may
@@ -189,6 +211,7 @@ export function DashboardNav({
   const isGroupActive = (group: NavGroup) =>
     group.items
       .filter((i) => !i.adminOnly || role === "admin")
+      .filter((i) => emailAllowed(i.emailAllowlist))
       .some(isItemActive);
 
   const handleEnter = (key: string) => {
@@ -337,7 +360,9 @@ export function DashboardNav({
           {visibleGroups.map((group) => {
             const Icon = group.icon;
             const active = isGroupActive(group);
-            const items = group.items.filter((i) => !i.adminOnly || role === "admin");
+            const items = group.items
+              .filter((i) => !i.adminOnly || role === "admin")
+              .filter((i) => emailAllowed(i.emailAllowlist));
             const isSingle = items.length === 1;
             const firstHref = items[0]?.href;
 
