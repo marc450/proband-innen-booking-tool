@@ -6,7 +6,7 @@ export const metadata = { title: "EPHIA Merch · Danke!" };
 
 export default async function MerchSuccessPage() {
   return (
-    <div className="min-h-screen bg-[#FAEBE1] flex items-center justify-center px-5 py-12">
+    <div className="flex items-center justify-center px-5 py-16 md:py-20">
       <div className="max-w-lg w-full bg-white rounded-[10px] shadow-sm p-8 md:p-10 text-center">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-100 mb-5">
           <CheckCircle2 className="w-7 h-7 text-emerald-700" />

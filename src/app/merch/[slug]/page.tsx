@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { ImageIcon } from "lucide-react";
@@ -25,9 +25,11 @@ export default async function MerchProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const supabase = await createClient();
+  // Admin client: service-role server-side read that bypasses RLS so anon
+  // visitors can actually see the product page.
+  const admin = createAdminClient();
 
-  const { data: product } = await supabase
+  const { data: product } = await admin
     .from("merch_products")
     .select("*")
     .eq("slug", slug)
@@ -37,7 +39,7 @@ export default async function MerchProductPage({
   if (!product) notFound();
   const p = product as MerchProduct;
 
-  const { data: variantsData } = await supabase
+  const { data: variantsData } = await admin
     .from("merch_product_variants")
     .select("*")
     .eq("product_id", p.id)
@@ -47,7 +49,7 @@ export default async function MerchProductPage({
   const variants = (variantsData ?? []) as MerchProductVariant[];
 
   return (
-    <div className="min-h-screen bg-[#FAEBE1]">
+    <div>
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-5 md:px-8 pt-16 md:pt-20 pb-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
 import Image from "next/image";
 import { ImageIcon } from "lucide-react";
@@ -11,15 +11,14 @@ export const metadata = {
 };
 
 export default async function MerchIndexPage() {
-  const supabase = await createClient();
+  // Use the admin (service-role) client on this server component so we can
+  // read merch_products / merch_product_variants under RLS even though the
+  // visitor is anonymous. Service-role runs server-side only.
+  const admin = createAdminClient();
 
-  // Fetch active products and all their variants in one round trip. The
-  // product page itself only shows a product tile when at least one
-  // variant still has stock, so we filter in-memory rather than adding a
-  // second query.
   const [{ data: products }, { data: variants }] = await Promise.all([
-    supabase.from("merch_products").select("*").eq("is_active", true).order("created_at"),
-    supabase.from("merch_product_variants").select("*").eq("is_active", true).order("sort_order"),
+    admin.from("merch_products").select("*").eq("is_active", true).order("created_at"),
+    admin.from("merch_product_variants").select("*").eq("is_active", true).order("sort_order"),
   ]);
 
   const productList = (products ?? []) as MerchProduct[];
@@ -32,7 +31,7 @@ export default async function MerchIndexPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAEBE1]">
+    <div>
       <div className="max-w-6xl mx-auto px-5 md:px-8 py-16 md:py-20">
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-bold">EPHIA Merch</h1>
