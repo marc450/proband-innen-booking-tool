@@ -144,17 +144,51 @@ export default async function EinladungPage({
         ? "Online- & Praxiskurs"
         : invite.course_type;
 
-  // Base price in cents for the chosen variant. Premium bundles can be
-  // stored in either price_gross_premium or fall back to price_gross_kombi
-  // (Komplettpaket = Kombi + extras), so try premium first, then kombi.
-  const basePriceCents: number | null =
-    invite.course_type === "Onlinekurs"
-      ? tmpl?.price_gross_online ?? null
-      : invite.course_type === "Praxiskurs"
-        ? tmpl?.price_gross_praxis ?? null
-        : invite.course_type === "Kombikurs"
-          ? tmpl?.price_gross_kombi ?? null
-          : tmpl?.price_gross_premium ?? tmpl?.price_gross_kombi ?? null;
+  // Price logic mirrors src/app/api/course-checkout/route.ts so the user
+  // sees exactly what Stripe will charge. course_templates.price_gross_*
+  // columns are stored in EUR (not cents); cents = EUR * 100.
+  const isDentist = courseKey === "grundkurs_botulinum_zahnmedizin";
+  const isDermalfiller = courseKey === "grundkurs_dermalfiller";
+  const isLippen = courseKey === "aufbaukurs_lippen";
+  const isTherapeutischeIndikationen =
+    courseKey === "aufbaukurs_therapeutische_indikationen_botulinum";
+
+  let grossPriceEur: number | null = null;
+  if (invite.course_type === "Onlinekurs") {
+    grossPriceEur = tmpl?.price_gross_online ?? null;
+  } else if (invite.course_type === "Praxiskurs") {
+    grossPriceEur = tmpl?.price_gross_praxis ?? null;
+  } else if (invite.course_type === "Kombikurs") {
+    grossPriceEur = tmpl?.price_gross_kombi ?? null;
+  } else {
+    // Premium / Komplettpaket. Hardcoded fallbacks match course-checkout
+    // exactly for consistency when price_gross_premium is null in DB.
+    grossPriceEur =
+      tmpl?.price_gross_premium ??
+      (isDentist
+        ? null
+        : isDermalfiller
+          ? 2030
+          : isLippen
+            ? 2220
+            : isTherapeutischeIndikationen
+              ? 1880
+              : 2220);
+  }
+
+  let basePriceCents: number | null =
+    grossPriceEur != null ? Math.round(grossPriceEur * 100) : null;
+
+  // Humanmedizin Premium gets a 10% bundle discount (Zahnmedizin uses the
+  // DB price directly). This isn't a promo code, it's baked into the
+  // Stripe line item in course-checkout, so show it as the base price.
+  if (
+    invite.course_type === "Premium" &&
+    !isDentist &&
+    basePriceCents != null
+  ) {
+    basePriceCents = Math.round(basePriceCents * 0.9);
+  }
 
   const promo = await fetchPromoSnapshot(invite.stripe_promotion_code_id);
 
