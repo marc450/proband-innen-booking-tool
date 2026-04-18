@@ -67,7 +67,7 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    const isBookingPath = BOOKING_ONLY_PATHS.some((p) => pathname.startsWith(p));
+    const isBookingPath = BOOKING_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
     if (isBookingPath) {
       return NextResponse.rewrite(new URL("/not-found", request.url));
     }
@@ -108,7 +108,7 @@ export async function middleware(request: NextRequest) {
   //  - Block admin-only paths.
   //  - Everything else (/book, /courses, …) passes through untouched.
   if (hostname === BOOKING_DOMAIN) {
-    const isAdminPath = ADMIN_ONLY_PATHS.some((p) => pathname.startsWith(p));
+    const isAdminPath = ADMIN_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
     if (isAdminPath) {
       return NextResponse.rewrite(new URL("/not-found", request.url));
     }

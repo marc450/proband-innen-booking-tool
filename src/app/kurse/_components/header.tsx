@@ -58,8 +58,16 @@ export function Header() {
     <header className="sticky top-0 z-40 bg-[#FAEBE1]/95 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-5 md:px-8">
         <div className="flex items-center justify-between h-14 md:h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center shrink-0" aria-label="EPHIA">
+          {/* Logo always points at the marketing home. Uses an absolute
+              kurse.ephia.de URL so visitors on proband-innen.ephia.de
+              (where this header is rendered for the werde-proband-in
+              page) are bounced back to the marketing site instead of
+              staying on the booking funnel. */}
+          <Link
+            href="https://kurse.ephia.de/"
+            className="flex items-center shrink-0"
+            aria-label="EPHIA"
+          >
             <Image
               src="/logos/ephia-logo.png"
               alt="EPHIA"
