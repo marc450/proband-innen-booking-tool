@@ -479,8 +479,8 @@ export function PremiumCard({
                         !date.available
                           ? "text-gray-400 cursor-not-allowed"
                           : selectedDate === date.id
-                            ? "bg-blue-50 font-semibold text-black"
-                            : "font-semibold text-black hover:bg-gray-50"
+                            ? "bg-blue-50 font-semibold text-black cursor-pointer"
+                            : "font-semibold text-black hover:bg-gray-50 cursor-pointer"
                       }`}
                     >
                       <span className="mr-3">{date.label}</span>
@@ -496,7 +496,7 @@ export function PremiumCard({
             <button
               onClick={handleBook}
               disabled={!selectedDate || isLoading}
-              className="w-full bg-[#0066FF] hover:bg-[#0055DD] text-white font-semibold py-3 rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="w-full bg-[#0066FF] hover:bg-[#0055DD] text-white font-semibold py-3 rounded-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
             >
               {isLoading && selectedDate === selectedDateForLoading ? (
                 <>
