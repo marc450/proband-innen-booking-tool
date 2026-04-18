@@ -164,12 +164,12 @@ export default async function EinladungPage({
     if (promo.percentOff != null) {
       const off = Math.round((basePriceCents * promo.percentOff) / 100);
       finalPriceCents = Math.max(basePriceCents - off, 0);
-      discountLine = `${promo.code}: ${promo.percentOff}% Rabatt (${formatEur(off)})`;
+      discountLine = `${promo.percentOff}% Rabatt (${formatEur(off)})`;
     } else if (promo.amountOffCents != null) {
       finalPriceCents = Math.max(basePriceCents - promo.amountOffCents, 0);
-      discountLine = `${promo.code}: ${formatEur(promo.amountOffCents)} Rabatt`;
+      discountLine = `${formatEur(promo.amountOffCents)} Rabatt`;
     } else {
-      discountLine = `${promo.code} wird beim Checkout angewendet`;
+      discountLine = "Rabatt wird beim Checkout angewendet";
     }
   }
 
