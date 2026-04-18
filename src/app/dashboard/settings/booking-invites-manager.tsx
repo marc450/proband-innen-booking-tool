@@ -151,6 +151,30 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
     [sessions, templateId],
   );
 
+  // Which variants the currently selected template offers (non-null price =
+  // available for purchase). Falls back to all four when no template is
+  // selected yet so the dropdown still shows something.
+  const availableVariants: CourseType[] = useMemo(() => {
+    if (!templateId) return COURSE_TYPES;
+    const t = templates.find((x) => x.id === templateId);
+    if (!t) return COURSE_TYPES;
+    const list: CourseType[] = [];
+    if (t.price_gross_online != null) list.push("Onlinekurs");
+    if (t.price_gross_praxis != null) list.push("Praxiskurs");
+    if (t.price_gross_kombi != null) list.push("Kombikurs");
+    if (t.price_gross_premium != null) list.push("Premium");
+    return list.length > 0 ? list : COURSE_TYPES;
+  }, [templateId, templates]);
+
+  // Auto-switch the variant when the chosen template doesn't offer the
+  // currently selected one (e.g. picked a Kombikurs, then switched to an
+  // online-only course).
+  useEffect(() => {
+    if (!availableVariants.includes(courseType) && availableVariants.length > 0) {
+      setCourseType(availableVariants[0]);
+    }
+  }, [availableVariants, courseType]);
+
   // Onlinekurs invites don't need a session id; everything else does.
   const needsSession = courseType !== "Onlinekurs";
 
@@ -321,7 +345,7 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {COURSE_TYPES.map((t) => (
+                  {availableVariants.map((t) => (
                     <SelectItem key={t} value={t}>
                       {t === "Premium" ? "Komplettpaket" : t}
                     </SelectItem>
