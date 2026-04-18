@@ -775,10 +775,17 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
         betrag ? `*Betrag:* ${betrag} (inkl. Versand)` : null,
         stockError ? `⚠️ *Stock-Update fehlgeschlagen:* ${stockError}` : null,
       ].filter(Boolean);
+      // Override sender identity so the post does not inherit the parent
+      // Slack-app name ("Neue Kursbuchung!"). username + icon_emoji are
+      // honoured by classic Incoming Webhooks.
       await fetch(SLACK_WEBHOOK_URL_REVENUE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: lines.join("\n") }),
+        body: JSON.stringify({
+          text: lines.join("\n"),
+          username: "EPHIA Merch",
+          icon_emoji: ":shopping_bags:",
+        }),
       });
     } catch (err) {
       console.error("Slack revenue notification failed:", err);
