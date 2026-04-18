@@ -65,6 +65,13 @@ interface Props {
 
 const COURSE_TYPES: CourseType[] = ["Onlinekurs", "Praxiskurs", "Kombikurs", "Premium"];
 
+/** Customer-facing German label for each course variant. */
+function variantLabel(t: CourseType): string {
+  if (t === "Kombikurs") return "Online- & Praxiskurs";
+  if (t === "Premium") return "Komplettpaket";
+  return t;
+}
+
 type DiscountCode = {
   id: string;
   code: string;
@@ -163,7 +170,10 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
     if (t.price_gross_online != null) list.push("Onlinekurs");
     if (t.price_gross_praxis != null) list.push("Praxiskurs");
     if (t.price_gross_kombi != null) list.push("Kombikurs");
-    if (t.price_gross_premium != null) list.push("Premium");
+    // Komplettpaket (Premium) is a bundle built on top of Kombi, so
+    // include it whenever the course has either an explicit premium price
+    // or at least a Kombi variant.
+    if (t.price_gross_premium != null || t.price_gross_kombi != null) list.push("Premium");
     return list.length > 0 ? list : COURSE_TYPES;
   }, [templateId, templates]);
 
@@ -342,13 +352,13 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
               <Select value={courseType} onValueChange={(v) => setCourseType(v as CourseType)}>
                 <SelectTrigger className="w-full">
                   <SelectValue>
-                    {courseType === "Premium" ? "Komplettpaket" : courseType}
+                    {variantLabel(courseType)}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {availableVariants.map((t) => (
                     <SelectItem key={t} value={t}>
-                      {t === "Premium" ? "Komplettpaket" : t}
+                      {variantLabel(t)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -516,7 +526,7 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
                     {invite.course_templates?.title || invite.template_id}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {invite.course_type === "Premium" ? "Komplettpaket" : invite.course_type}
+                    {variantLabel(invite.course_type)}
                   </TableCell>
                   <TableCell className="text-sm whitespace-nowrap">
                     {invite.course_sessions?.label_de
