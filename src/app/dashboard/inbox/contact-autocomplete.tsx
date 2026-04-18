@@ -91,17 +91,23 @@ export function ContactAutocomplete({
 
   // Keep internal state in sync when `value` is set externally (e.g. draft
   // restore, programmatic clear on send).
+  //
+  // CRITICAL: we must NOT re-parse the value when it simply echoes what we
+  // just reported upstream. Otherwise typing "W" produces onChange("W") →
+  // parent state update → re-render with value="W" → parseRecipients →
+  // ["W"] → setChips(["W"]) → a chip for "W" is created on every keystroke.
+  // The chip-input ↔ comma-string round trip is the actual source of the
+  // "every letter becomes its own chip" bug that iOS users were hitting.
   useEffect(() => {
+    // If the incoming value is exactly what we would produce from our
+    // current internal state, it's an echo — ignore.
+    const selfEcho = joinRecipients(
+      input.trim() ? [...chips, input.trim()] : [...chips],
+    );
+    if (value === selfEcho) return;
+
+    // Genuine external change: re-parse as chips and drop the input.
     const parsed = parseRecipients(value);
-    // Compare against the current chips; if they match, don't reset the
-    // input (otherwise typing would get clobbered on every keystroke
-    // because onChange → setValue → useEffect → setChips).
-    if (
-      parsed.length === chips.length &&
-      parsed.every((p, i) => p === chips[i])
-    ) {
-      return;
-    }
     setChips(parsed);
     setInput("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
