@@ -13,12 +13,13 @@ import type { CourseTemplate, CourseSession } from "@/lib/types";
 interface Props {
   initialTemplates: CourseTemplate[];
   initialSessions: CourseSession[];
+  zahnmedizinerCounts?: Record<string, number>;
 }
 
 type SortKey = "status" | "date" | "time" | "course" | "instructor" | "seats" | "duration";
 type SortDir = "asc" | "desc";
 
-export function CourseSessionsOverview({ initialTemplates, initialSessions }: Props) {
+export function CourseSessionsOverview({ initialTemplates, initialSessions, zahnmedizinerCounts = {} }: Props) {
   const sessions = initialSessions;
   const templates = initialTemplates;
   const [sortKey, setSortKey] = useState<SortKey>("date");
@@ -312,11 +313,18 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions }: Pr
                   {session.cme_status || "Nicht beantragt"}
                 </TableCell>
                 <TableCell>
-                  {session.has_zahnmedizin && (
-                    <span className="text-xs font-medium bg-amber-100 text-amber-700 rounded-full px-2.5 py-1">
-                      Zahnmedizin
-                    </span>
-                  )}
+                  {(() => {
+                    const count = zahnmedizinerCounts[session.id] ?? 0;
+                    if (count === 0) return null;
+                    return (
+                      <span
+                        className="text-xs font-medium bg-amber-100 text-amber-700 rounded-full px-2.5 py-1"
+                        title={`${count} Zahnmediziner:innen in diesem Kurs`}
+                      >
+                        {count} {count === 1 ? "Zahnmediziner:in" : "Zahnmediziner:innen"}
+                      </span>
+                    );
+                  })()}
                 </TableCell>
               </TableRow>
             ))
