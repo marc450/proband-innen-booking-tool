@@ -549,6 +549,7 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
               <TableHead>Variante</TableHead>
               <TableHead>Termin</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Notiz</TableHead>
               <TableHead>Erstellt</TableHead>
               <TableHead />
             </TableRow>
@@ -583,6 +584,15 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
                         : "–"}
                   </TableCell>
                   <TableCell>{statusBadge(invite)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[220px]">
+                    {invite.admin_note ? (
+                      <span className="line-clamp-2" title={invite.admin_note}>
+                        {invite.admin_note}
+                      </span>
+                    ) : (
+                      "–"
+                    )}
+                  </TableCell>
                   <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                     {format(new Date(invite.created_at), "dd.MM.yyyy, HH:mm", { locale: de })}
                   </TableCell>
