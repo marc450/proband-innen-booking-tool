@@ -241,15 +241,19 @@ export async function POST(req: NextRequest) {
             })
           : "";
 
+        const nameLine = [firstName, lastName].filter(Boolean).join(" ");
         await fetch(SLACK_WEBHOOK_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             text: [
+              nameLine ? `*Name:* ${nameLine}` : null,
+              email ? `*E-Mail:* ${email}` : null,
+              referringDoctor ? `*Zuweiser:in:* ${referringDoctor}` : null,
               `*Kurs:* ${slot.course_title || ""}`,
               `*Datum:* ${dateStr}${timeStr ? `, ${timeStr} Uhr` : ""}`,
               `*Freie Plätze:* ${totalRemaining}`,
-            ].join("\n"),
+            ].filter(Boolean).join("\n"),
           }),
         });
       } catch (slackErr) {
