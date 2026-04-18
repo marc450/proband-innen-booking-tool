@@ -142,14 +142,15 @@ export function BookingInvitesManager({ templates, sessions }: Props) {
     setCreateError(null);
   };
 
-  // Sessions relevant for the picked template, sorted by date ascending
-  const sessionsForTemplate = useMemo(
-    () =>
-      sessions
-        .filter((s) => s.template_id === templateId)
-        .sort((a, b) => (a.date_iso || "").localeCompare(b.date_iso || "")),
-    [sessions, templateId],
-  );
+  // Sessions relevant for the picked template: only future dates, sorted
+  // ascending. Invites for past sessions make no sense.
+  const sessionsForTemplate = useMemo(() => {
+    const todayIso = new Date().toISOString().slice(0, 10);
+    return sessions
+      .filter((s) => s.template_id === templateId)
+      .filter((s) => !s.date_iso || s.date_iso >= todayIso)
+      .sort((a, b) => (a.date_iso || "").localeCompare(b.date_iso || ""));
+  }, [sessions, templateId]);
 
   // Which variants the currently selected template offers (non-null price =
   // available for purchase). Falls back to all four when no template is
