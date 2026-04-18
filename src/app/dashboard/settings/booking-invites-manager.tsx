@@ -304,11 +304,28 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
 
   const statusBadge = (invite: Invite) => {
     if (invite.revoked) return <Badge variant="destructive">Widerrufen</Badge>;
-    if (invite.used_count >= invite.max_uses) return <Badge>Eingelöst</Badge>;
+    if (invite.used_count >= invite.max_uses) {
+      return (
+        <div className="flex flex-col items-start gap-0.5">
+          <Badge
+            variant="outline"
+            className="text-emerald-800 border-emerald-400 bg-emerald-50 gap-1"
+          >
+            <Check className="h-3 w-3" strokeWidth={3} />
+            Eingelöst
+          </Badge>
+          {invite.used_at && (
+            <span className="text-[10px] text-muted-foreground">
+              am {format(new Date(invite.used_at), "dd.MM.yyyy, HH:mm", { locale: de })}
+            </span>
+          )}
+        </div>
+      );
+    }
     if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
       return <Badge variant="secondary">Abgelaufen</Badge>;
     }
-    return <Badge variant="outline" className="text-emerald-700 border-emerald-300 bg-emerald-50">Aktiv</Badge>;
+    return <Badge variant="outline" className="text-sky-700 border-sky-300 bg-sky-50">Aktiv</Badge>;
   };
 
   return (
