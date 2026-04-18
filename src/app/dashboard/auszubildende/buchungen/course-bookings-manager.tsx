@@ -129,6 +129,25 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
   // Bundle filter
   const [bundleFilter, setBundleFilter] = useState<string | null>(null);
 
+  // Column filters (one per column) — complement the existing free-text
+  // search box which still covers Name + E-Mail.
+  const [filterKurstyp, setFilterKurstyp] = useState("");
+  const [filterTemplate, setFilterTemplate] = useState("");
+  const [filterKursdatumFrom, setFilterKursdatumFrom] = useState("");
+  const [filterKaufdatumFrom, setFilterKaufdatumFrom] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+
+  const anyFilterActive =
+    filterKurstyp || filterTemplate || filterKursdatumFrom || filterKaufdatumFrom || filterStatus;
+
+  const resetColumnFilters = () => {
+    setFilterKurstyp("");
+    setFilterTemplate("");
+    setFilterKursdatumFrom("");
+    setFilterKaufdatumFrom("");
+    setFilterStatus("");
+  };
+
   const [cancelBooking, setCancelBooking] = useState<BookingRow | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState("");
@@ -173,6 +192,19 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
   const filtered = bookings.filter((b) => {
     // Bundle filter
     if (bundleFilter && b.bundle_group_id !== bundleFilter) return false;
+
+    // Per-column filters
+    if (filterKurstyp && b.course_type !== filterKurstyp) return false;
+    if (filterTemplate && b.template_id !== filterTemplate) return false;
+    if (filterStatus && b.status !== filterStatus) return false;
+    if (filterKursdatumFrom) {
+      const d = b.course_sessions?.date_iso;
+      if (!d || d < filterKursdatumFrom) return false;
+    }
+    if (filterKaufdatumFrom) {
+      // created_at is a full timestamp; compare by date prefix.
+      if (!b.created_at || b.created_at.slice(0, 10) < filterKaufdatumFrom) return false;
+    }
 
     if (!search) return true;
     const s = search.toLowerCase();
@@ -411,6 +443,15 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                 Curriculum-Bundle ✕
               </Badge>
             )}
+            {anyFilterActive && (
+              <Badge
+                variant="outline"
+                className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 cursor-pointer"
+                onClick={resetColumnFilters}
+              >
+                Filter zurücksetzen ✕
+              </Badge>
+            )}
             {isAdmin && selected.size > 0 && (
               <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
                 <Trash2 className="h-4 w-4 mr-1" />
@@ -443,6 +484,83 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
             <SortableHead label="Status" sortKey="status" {...sortProps} />
             {isAdmin && <TableHead className="w-[60px]">Rechnung</TableHead>}
             {isAdmin && <TableHead className="w-[50px]"></TableHead>}
+          </TableRow>
+          {/* Filter row — one dropdown/input per column. */}
+          <TableRow className="hover:bg-transparent">
+            {isAdmin && <TableHead className="py-1.5" />}
+            <TableHead className="py-1.5" />
+            <TableHead className="py-1.5">
+              <select
+                value={filterKurstyp}
+                onChange={(e) => setFilterKurstyp(e.target.value)}
+                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+              >
+                <option value="">Alle</option>
+                {Array.from(new Set(bookings.map((b) => b.course_type))).sort().map((ct) => (
+                  <option key={ct} value={ct}>{ct === "Premium" ? "Komplettpaket" : ct}</option>
+                ))}
+              </select>
+            </TableHead>
+            <TableHead className="py-1.5">
+              <select
+                value={filterTemplate}
+                onChange={(e) => setFilterTemplate(e.target.value)}
+                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+              >
+                <option value="">Alle</option>
+                {(() => {
+                  const seen = new Map<string, string>();
+                  for (const b of bookings) {
+                    if (b.template_id && !seen.has(b.template_id)) {
+                      seen.set(
+                        b.template_id,
+                        b.course_templates?.course_label_de ||
+                          b.course_templates?.title ||
+                          b.template_id,
+                      );
+                    }
+                  }
+                  return [...seen.entries()]
+                    .sort((a, b) => a[1].localeCompare(b[1], "de"))
+                    .map(([id, label]) => (
+                      <option key={id} value={id}>{label}</option>
+                    ));
+                })()}
+              </select>
+            </TableHead>
+            <TableHead className="py-1.5">
+              <input
+                type="date"
+                value={filterKursdatumFrom}
+                onChange={(e) => setFilterKursdatumFrom(e.target.value)}
+                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 font-normal text-foreground"
+                title="Ab Kursdatum"
+              />
+            </TableHead>
+            <TableHead className="py-1.5">
+              <input
+                type="date"
+                value={filterKaufdatumFrom}
+                onChange={(e) => setFilterKaufdatumFrom(e.target.value)}
+                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 font-normal text-foreground"
+                title="Ab Kaufdatum"
+              />
+            </TableHead>
+            {isAdmin && <TableHead className="py-1.5" />}
+            <TableHead className="py-1.5">
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+              >
+                <option value="">Alle</option>
+                {statusOrder.map((s) => (
+                  <option key={s} value={s}>{statusLabels[s]}</option>
+                ))}
+              </select>
+            </TableHead>
+            {isAdmin && <TableHead className="py-1.5" />}
+            {isAdmin && <TableHead className="py-1.5" />}
           </TableRow>
         </TableHeader>
         <TableBody>
