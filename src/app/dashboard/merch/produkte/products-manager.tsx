@@ -55,7 +55,7 @@ export function ProductsManager({ initialProducts, initialVariants }: Props) {
   const [editingVariant, setEditingVariant] = useState<MerchProductVariant | null>(null);
   const [variantParentId, setVariantParentId] = useState<string | null>(null);
   const [showVariantDialog, setShowVariantDialog] = useState(false);
-  const [vForm, setVForm] = useState<{ name: string; color: string; size: string; sku: string; price_gross_eur: string; vat_rate: string; stock: string; is_active: boolean }>({
+  const [vForm, setVForm] = useState<{ name: string; color: string; size: string; sku: string; price_gross_eur: string; vat_rate: string; stock: string; image_url: string; is_active: boolean }>({
     name: "",
     color: "",
     size: "one-size",
@@ -63,6 +63,7 @@ export function ProductsManager({ initialProducts, initialVariants }: Props) {
     price_gross_eur: "35",
     vat_rate: "0.19",
     stock: "0",
+    image_url: "",
     is_active: true,
   });
 
@@ -163,6 +164,7 @@ export function ProductsManager({ initialProducts, initialVariants }: Props) {
       price_gross_eur: v ? (v.price_gross_cents / 100).toString() : "35",
       vat_rate: v ? v.vat_rate.toString() : "0.19",
       stock: v ? v.stock.toString() : "0",
+      image_url: v?.image_url ?? "",
       is_active: v?.is_active ?? true,
     });
     setShowVariantDialog(true);
@@ -184,6 +186,7 @@ export function ProductsManager({ initialProducts, initialVariants }: Props) {
       price_gross_cents: priceCents,
       vat_rate: parseFloat(vForm.vat_rate) || 0.19,
       stock: Math.max(parseInt(vForm.stock) || 0, 0),
+      image_url: vForm.image_url.trim() || null,
       is_active: vForm.is_active,
     };
 
@@ -519,6 +522,28 @@ export function ProductsManager({ initialProducts, initialVariants }: Props) {
             <div className="space-y-1.5">
               <Label>SKU (optional)</Label>
               <Input value={vForm.sku} onChange={(e) => setVForm((f) => ({ ...f, sku: e.target.value }))} placeholder="CAP-SCHWARZ-OS" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Bild-URL (optional)</Label>
+              <Input
+                value={vForm.image_url}
+                onChange={(e) => setVForm((f) => ({ ...f, image_url: e.target.value }))}
+                placeholder="https://..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Variantenspezifisches Bild (z.B. Schwarz vs. Beige). Wird im Shop bevorzugt vor dem Produkt-Hauptbild gezeigt. Leer lassen, um das Produkt-Bild zu verwenden.
+              </p>
+              {vForm.image_url.trim() && (
+                // Live preview of the URL the admin pasted, so they can sanity-check
+                // that it loads + looks right before saving. eslint-disable: it's an
+                // arbitrary HTTPS URL, next/image would need every host whitelisted.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={vForm.image_url.trim()}
+                  alt="Vorschau"
+                  className="mt-2 h-32 w-32 object-cover rounded-[10px] border border-border"
+                />
+              )}
             </div>
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input
