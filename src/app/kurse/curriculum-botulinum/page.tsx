@@ -409,7 +409,6 @@ export default async function CurriculumBotulinumPage() {
         intro="Vier Schritte vom Einstieg bis zur Masterclass. Jede Karte verlinkt auf die jeweilige Kursseite, wo Du direkt buchen kannst."
         steps={steps}
         destination={{
-          label: "Du auf Expert:innen-Niveau",
           certificationName: "Botulinum Specialist",
           certificationDescription: (
             <>

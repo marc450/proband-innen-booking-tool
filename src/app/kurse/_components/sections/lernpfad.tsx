@@ -24,8 +24,6 @@ export interface LernpfadStep {
 }
 
 export interface LernpfadDestination {
-  /** Headline shown next to the trophy at the end of the path. */
-  label: string;
   /** Name of the certification, e.g. "Botulinum Specialist". */
   certificationName: string;
   /**
@@ -257,55 +255,42 @@ function PathStep({
 function Destination({ destination }: { destination: LernpfadDestination }) {
   return (
     <div className="mt-16 md:mt-20 flex flex-col items-center text-center">
-      {/* Trophy in a colored circle */}
-      <div className="relative">
-        <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-[#0066FF] flex items-center justify-center shadow-lg ring-8 ring-[#FAEBE1]">
+      {/* Trophy floats above the card and overlaps it slightly so the
+          card visually "earns" the trophy. -mb-10 negative margin lets
+          the bottom half of the trophy sit on top of the card edge. */}
+      <div className="relative z-10 -mb-10">
+        <div className="w-20 h-20 rounded-full bg-[#0066FF] flex items-center justify-center shadow-lg ring-8 ring-[#FAEBE1]">
           <Trophy
-            className="w-10 h-10 md:w-12 md:h-12 text-white"
+            className="w-10 h-10 text-white"
             strokeWidth={2}
             aria-hidden="true"
           />
         </div>
       </div>
 
-      <p className="mt-6 text-xs md:text-sm font-bold tracking-[0.18em] text-[#0066FF] uppercase">
-        Ziel erreicht
-      </p>
-      <h3 className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black max-w-xl">
-        {destination.label}
-      </h3>
-
-      {/* Certification card */}
-      <div className="mt-8 max-w-lg w-full bg-white rounded-[14px] shadow-md p-6 md:p-7">
-        <div className="flex items-center gap-3 mb-3 justify-center">
-          <Award
-            className="w-5 h-5 text-[#0066FF]"
-            strokeWidth={2.5}
-            aria-hidden="true"
-          />
-          <p className="text-[11px] font-bold tracking-[0.18em] text-[#0066FF] uppercase">
-            Zertifizierung
-          </p>
-        </div>
-        <h4 className="text-xl md:text-2xl font-bold tracking-tight text-black mb-2">
+      {/* Single card: title + description + CME pill. No eyebrows, no
+          inner divider — the trophy already says "achievement" and the
+          title says what the achievement is. */}
+      <div className="max-w-lg w-full bg-white rounded-[14px] shadow-md px-6 pt-14 pb-7 md:px-7 md:pt-16 md:pb-8">
+        <h3 className="text-2xl md:text-3xl font-bold tracking-tight text-black mb-3">
           {destination.certificationName}
-        </h4>
-        <p className="text-sm md:text-base text-black/70 leading-relaxed">
+        </h3>
+        <p className="text-sm md:text-base text-black/70 leading-relaxed mb-5">
           {destination.certificationDescription}
         </p>
 
         {destination.cmeTotal && (
-          <div className="mt-5 pt-5 border-t border-black/[0.08]">
+          <>
             <span className="inline-flex items-center gap-1.5 text-sm font-bold rounded-full px-3 py-1.5 bg-[#0066FF] text-white">
               <Award className="w-4 h-4" aria-hidden="true" />
               {destination.cmeTotal}
             </span>
             {destination.cmeNote && (
-              <p className="mt-2 text-xs md:text-sm text-black/60">
+              <p className="mt-3 text-xs md:text-sm text-black/55">
                 {destination.cmeNote}
               </p>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>
