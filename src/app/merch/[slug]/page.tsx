@@ -21,10 +21,15 @@ export async function generateMetadata({
 
 export default async function MerchProductPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ color?: string | string[] }>;
 }) {
   const { slug } = await params;
+  const { color } = await searchParams;
+  const requestedColor = Array.isArray(color) ? color[0] : color;
+
   // Admin client: service-role server-side read that bypasses RLS so anon
   // visitors can actually see the product page.
   const admin = createAdminClient();
@@ -48,6 +53,17 @@ export default async function MerchProductPage({
 
   const variants = (variantsData ?? []) as MerchProductVariant[];
 
+  // The /merch index links into this page with ?color=<variant.color> so
+  // we can render a single targeted buy CTA instead of re-showing every
+  // colorway. Pick the requested variant; fall back to the first available
+  // one (direct navigation to /merch/ephia-cap without a query).
+  const selected =
+    (requestedColor && variants.find((v) => (v.color || "").toLowerCase() === requestedColor.toLowerCase())) ||
+    variants[0] ||
+    null;
+
+  const heroImage = selected?.image_url || p.image_url || null;
+
   return (
     <div>
       {/* Hero */}
@@ -60,39 +76,42 @@ export default async function MerchProductPage({
               </p>
             )}
             <h1 className="text-4xl md:text-5xl font-bold leading-tight">{p.title}</h1>
+            {selected?.color && (
+              <p className="mt-3 text-sm font-medium text-black/70">
+                Farbe: <span className="font-semibold text-black">{selected.color}</span>
+              </p>
+            )}
             {p.description && (
               <p className="mt-5 text-base md:text-lg text-black/75 leading-relaxed max-w-xl">
-                {/* Short teaser only — full description lives below. */}
+                {/* Short teaser only — full description lives in the donation block below. */}
                 {p.description.split(". ").slice(0, 2).join(". ")}
                 {p.description.split(". ").length > 2 ? "." : ""}
               </p>
             )}
 
-            <div className="mt-8 space-y-3 max-w-md">
-              {variants.length === 0 ? (
+            <div className="mt-8 max-w-md">
+              {!selected ? (
                 <p className="text-sm text-black/60">Keine Varianten verfügbar.</p>
               ) : (
-                variants.map((v) => (
-                  <MerchCheckoutLauncher
-                    key={v.id}
-                    variantId={v.id}
-                    productTitle={p.title}
-                    variantLabel={v.color || v.name}
-                    priceCents={v.price_gross_cents}
-                    stock={v.stock}
-                  />
-                ))
+                <MerchCheckoutLauncher
+                  variantId={selected.id}
+                  productTitle={p.title}
+                  variantLabel={selected.color || selected.name}
+                  priceCents={selected.price_gross_cents}
+                  stock={selected.stock}
+                  buttonText={selected.stock > 0 ? "Jetzt bestellen" : undefined}
+                />
               )}
             </div>
           </div>
 
-          {/* Product image(s) */}
+          {/* Product image */}
           <div className="relative">
-            {p.image_url ? (
+            {heroImage ? (
               <div className="relative aspect-square bg-white rounded-[10px] overflow-hidden">
                 <Image
-                  src={p.image_url}
-                  alt={p.title}
+                  src={heroImage}
+                  alt={selected?.color ? `${p.title} ${selected.color}` : p.title}
                   fill
                   quality={90}
                   sizes="(min-width: 768px) 50vw, 100vw"

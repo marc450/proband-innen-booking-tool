@@ -9,13 +9,22 @@ interface Props {
   variantLabel: string;
   priceCents: number;
   stock: number;
+  /**
+   * Optional override for the CTA label. When the product detail page is
+   * scoped to one pre-selected variant (via /merch/[slug]?color=...) we
+   * pass "Jetzt bestellen" so the button doesn't redundantly name the
+   * color the user just clicked on the index tile. When omitted the
+   * launcher falls back to the original playful "Schickt sie mir in
+   * <variantLabel>!" copy for contexts that still render one button per
+   * variant.
+   */
+  buttonText?: string;
 }
 
 /**
- * CTA button ("Schickt sie mir in Schwarz!") for one product variant. On
- * click it opens a small modal that captures name + email + phone +
- * Ärzt:in flag, then posts to /api/merch-checkout which responds with the
- * Stripe Checkout URL.
+ * CTA button for one product variant. On click it opens a small modal
+ * that captures name + email + phone + Ärzt:in flag, then posts to
+ * /api/merch-checkout which responds with the Stripe Checkout URL.
  */
 export function MerchCheckoutLauncher({
   variantId,
@@ -23,6 +32,7 @@ export function MerchCheckoutLauncher({
   variantLabel,
   priceCents,
   stock,
+  buttonText,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -97,7 +107,11 @@ export function MerchCheckoutLauncher({
             : "bg-[#0066FF] text-white hover:bg-[#0055DD]"
         }`}
       >
-        <span>{soldOut ? `Ausverkauft: ${variantLabel}` : `Schickt sie mir in ${variantLabel}!`}</span>
+        <span>
+          {soldOut
+            ? `Ausverkauft: ${variantLabel}`
+            : buttonText ?? `Schickt sie mir in ${variantLabel}!`}
+        </span>
         {!soldOut && <Heart className="h-4 w-4" />}
       </button>
 

@@ -92,7 +92,10 @@ export default async function MerchIndexPage() {
             {tiles.map((t) => (
               <Link
                 key={t.key}
-                href={`/merch/${t.productSlug}`}
+                // Pass the color through so the detail page can render a
+                // single targeted buy CTA instead of relisting the other
+                // colorways that are already here on the index grid.
+                href={t.color ? `/merch/${t.productSlug}?color=${encodeURIComponent(t.color)}` : `/merch/${t.productSlug}`}
                 className="bg-white rounded-[10px] overflow-hidden flex flex-col group transition-shadow hover:shadow-lg"
               >
                 {t.imageUrl ? (
