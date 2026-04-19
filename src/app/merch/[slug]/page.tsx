@@ -1,9 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
-import Image from "next/image";
-import { ImageIcon } from "lucide-react";
 import type { MerchProduct, MerchProductVariant } from "@/lib/types";
 import { PurchasePanel } from "./purchase-panel";
+import { ProductGallery } from "./product-gallery";
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +64,18 @@ export default async function MerchProductPage({
     : variants;
   const selected = variantsForColor[0] || null;
 
-  const heroImage = selected?.image_url || p.image_url || null;
+  // Build the gallery image list: variant-specific image first (if set),
+  // then product images 1-3. Dedupe and drop empties. Always at least one
+  // entry when any image is configured.
+  const galleryImages = [
+    selected?.image_url,
+    p.image_url,
+    p.image_url_2,
+    p.image_url_3,
+  ]
+    .map((x) => (typeof x === "string" ? x.trim() : ""))
+    .filter((x, i, arr) => x && arr.indexOf(x) === i);
+  const galleryAlt = selected?.color ? `${p.title} ${selected.color}` : p.title;
 
   return (
     <div>
@@ -85,28 +95,17 @@ export default async function MerchProductPage({
               </p>
             )}
 
-            {/* Mobile-only image: sits between "Farbe: …" and the
+            {/* Mobile-only gallery: sits between "Farbe: …" and the
                 Beschreibung so shoppers see the product before reading
                 the copy. Hidden on md+ where the dedicated right-column
-                image takes over. */}
-            <div className="md:hidden mt-6 relative">
-              {heroImage ? (
-                <div className="relative aspect-square bg-white rounded-[10px] overflow-hidden">
-                  <Image
-                    src={heroImage}
-                    alt={selected?.color ? `${p.title} ${selected.color}` : p.title}
-                    fill
-                    quality={90}
-                    sizes="100vw"
-                    priority
-                    className="object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="aspect-square bg-white rounded-[10px] flex items-center justify-center">
-                  <ImageIcon className="w-16 h-16 text-black/20" />
-                </div>
-              )}
+                gallery takes over. */}
+            <div className="md:hidden mt-6">
+              <ProductGallery
+                images={galleryImages}
+                alt={galleryAlt}
+                sizes="100vw"
+                priority
+              />
             </div>
 
             {p.description && (
@@ -142,26 +141,14 @@ export default async function MerchProductPage({
             </div>
           </div>
 
-          {/* Product image (desktop only — mobile renders it above the
+          {/* Product gallery (desktop only — mobile renders it above the
               description inside the text column). */}
-          <div className="hidden md:block relative">
-            {heroImage ? (
-              <div className="relative aspect-square bg-white rounded-[10px] overflow-hidden">
-                <Image
-                  src={heroImage}
-                  alt={selected?.color ? `${p.title} ${selected.color}` : p.title}
-                  fill
-                  quality={90}
-                  sizes="(min-width: 768px) 50vw, 100vw"
-                  priority
-                  className="object-cover"
-                />
-              </div>
-            ) : (
-              <div className="aspect-square bg-white rounded-[10px] flex items-center justify-center">
-                <ImageIcon className="w-16 h-16 text-black/20" />
-              </div>
-            )}
+          <div className="hidden md:block">
+            <ProductGallery
+              images={galleryImages}
+              alt={galleryAlt}
+              sizes="(min-width: 768px) 50vw, 100vw"
+            />
           </div>
         </div>
       </section>

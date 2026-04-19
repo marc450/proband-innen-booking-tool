@@ -33,8 +33,17 @@ export async function updateSession(request: NextRequest) {
 
   const user = session?.user ?? null;
 
-  // Protect dashboard routes
-  if ((request.nextUrl.pathname.startsWith("/dashboard") || request.nextUrl.pathname.startsWith("/m")) && !user) {
+  // Protect dashboard routes. Require full-segment matches so unrelated
+  // trees that happen to share a prefix with "/m" (e.g. /merch) don't
+  // accidentally trigger the login redirect. Same pattern we apply in
+  // middleware.ts for ADMIN_ONLY_PATHS / BOOKING_ONLY_PATHS.
+  const path = request.nextUrl.pathname;
+  const isProtected =
+    path === "/dashboard" ||
+    path.startsWith("/dashboard/") ||
+    path === "/m" ||
+    path.startsWith("/m/");
+  if (isProtected && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

@@ -85,16 +85,19 @@ export function Header() {
             {NAV_LINKS.map((link) =>
               link.subLinks ? (
                 <div key={link.label} className="relative group">
-                  <a
-                    href={link.href}
-                    className="flex items-center gap-1 text-base font-normal text-black hover:text-[#0066FF] transition-colors py-2"
+                  {/* Parent of a dropdown is not a link — only the sub-items
+                      navigate. Rendered as a span (kept buttonless so the
+                      hover chevron rotation from the group: selector still
+                      works cleanly). */}
+                  <span
+                    className="flex items-center gap-1 text-base font-normal text-black group-hover:text-[#0066FF] transition-colors py-2 cursor-default select-none"
                   >
                     <span>{link.label}</span>
                     <ChevronDown
                       className="w-4 h-4 transition-transform duration-200 group-hover:rotate-180"
                       strokeWidth={2.25}
                     />
-                  </a>
+                  </span>
                   {/* Invisible bridge to avoid hover gap */}
                   <div className="absolute left-0 right-0 top-full h-3" />
                   <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+0.5rem)] min-w-[240px] bg-white rounded-[10px] shadow-lg py-3 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200">
