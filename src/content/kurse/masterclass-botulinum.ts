@@ -30,9 +30,9 @@ export const masterclassBotulinum: CourseLandingContent = {
     subheadline:
       "Feinschliff auf Expert:innen-Niveau: Full Face Analyse, fortgeschrittene Techniken und souveränes Komplikationsmanagement.",
     stats: [
-      { icon: "GraduationCap", label: "Niveau", value: "Expert:innen" },
-      { icon: "Award", label: "Akkreditierung", value: "CME beantragt" },
-      { icon: "Users", label: "Format", value: "Praxiskurs + Onlinekurs" },
+      { icon: "Clock", label: "Format", value: "Online- und als Praxiskurs" },
+      { icon: "Award", label: "Akkreditiert", value: "CME beantragt + Zertifikat" },
+      { icon: "GraduationCap", label: "Level", value: "Masterclass" },
     ],
     description:
       "Diese Masterclass richtet sich an approbierte Ärzt:innen, die bereits regelmäßig mit Botulinum behandeln und ihr Können auf Expert:innen-Niveau heben möchten. Im Fokus stehen die ganzheitliche Full Face Analyse, fortgeschrittene Injektionstechniken für komplexe Indikationen, eine vertiefte Behandlungsstrategie über mehrere Sitzungen hinweg sowie strukturiertes Komplikationsmanagement. Du arbeitest unter Anleitung erfahrener Dozent:innen direkt an Patient:innen, profitierst vom Austausch in einer kleinen Gruppe und integrierst neue Behandlungskonzepte sicher in Deinen Praxisalltag.",
@@ -41,10 +41,6 @@ export const masterclassBotulinum: CourseLandingContent = {
     // Poster falls back to the Grundkurs Botulinum frame until a
     // dedicated Masterclass poster is uploaded.
     videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
-    ctaOverride: {
-      label: "Zu den Terminen",
-      href: "#kursangebote",
-    },
   },
 
   lernziele: {

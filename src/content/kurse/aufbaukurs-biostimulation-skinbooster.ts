@@ -27,10 +27,9 @@ export const aufbaukursBiostimulationSkinbooster: CourseLandingContent = {
     subheadline:
       "Erweitere Dein Behandlungsspektrum um zwei moderne Regenerationsverfahren für Haut, Volumen und Hauttextur.",
     stats: [
-      { icon: "GraduationCap", label: "Niveau", value: "Fortgeschritten" },
-      { icon: "Award", label: "Abschluss", value: "Zertifikat" },
-      { icon: "Users", label: "Format", value: "Praxiskurs" },
-      { icon: "CheckCircle2", label: "Akkreditierung", value: "CME beantragt" },
+      { icon: "Clock", label: "Format", value: "Praxiskurs" },
+      { icon: "Award", label: "Akkreditiert", value: "CME beantragt + Zertifikat" },
+      { icon: "GraduationCap", label: "Level", value: "Aufbaukurs" },
     ],
     description:
       "Dieser Aufbaukurs richtet sich an approbierte Humanmediziner:innen mit Grundkenntnissen in der ästhetischen Medizin. Im Fokus stehen Poly-L-Milchsäure-basierte Biostimulation und Skinbooster-Behandlungen zur Regeneration von Hautqualität, Spannkraft und Volumen. Du lernst die relevante Anatomie, Indikationen und Produktkenntnisse, spezifische Injektionstechniken für Gesicht, Hals und Dekolleté sowie diskriminierungssensible Patient:innenkommunikation und Komplikationsmanagement. Nach dem Kurs integrierst Du beide Verfahren sicher und evidenzbasiert in Deinen Behandlungsalltag.",
@@ -40,10 +39,6 @@ export const aufbaukursBiostimulationSkinbooster: CourseLandingContent = {
     // frame is uploaded — same pattern used on Periorale Zone. Swap in a
     // proper poster once available.
     videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
-    ctaOverride: {
-      label: "Zu den Terminen",
-      href: "#kursangebote",
-    },
   },
 
   lernziele: {
