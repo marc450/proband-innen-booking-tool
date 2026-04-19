@@ -143,6 +143,18 @@ export const homeContent: HomeContent = {
         href: "/kurse/masterclass-botulinum",
       },
       {
+        kicker: "CURRICULUM",
+        title: "BOTULINUM",
+        audience: "Vom Einstieg bis zur Masterclass",
+        description:
+          "Du willst Botulinum systematisch lernen, statt Kurse zufällig aneinanderzureihen? Unser Curriculum zeigt Dir den empfohlenen Lernpfad durch unsere vier Botulinum-Kurse, vom Grundkurs bis zur Masterclass — mit Botulinum Specialist Zertifikat am Ende.",
+        imagePath:
+          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/home/gruppenbuchungen.png",
+        imageAlt: "Curriculum Botulinum Lernpfad",
+        ctaLabel: "Zum Lernpfad",
+        href: "/kurse/curriculum-botulinum",
+      },
+      {
         kicker: "GRUPPENBUCHUNGEN",
         title: "GRUPPENBUCHUNGEN",
         audience: "Für private Kurse",

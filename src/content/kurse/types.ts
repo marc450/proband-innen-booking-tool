@@ -72,6 +72,13 @@ export interface CourseLernzieleContent {
   intro?: string;
   /** Override for the audience badge, defaults to "Nur für approbierte Ärzt:innen" */
   audienceLabel?: string;
+  /**
+   * Hide the audience pill above the heading entirely. Used on
+   * curriculum / orientation pages where the icon-card grid is reused
+   * for sections like "Wozu ein Curriculum?" or "Lernformat" that
+   * don't need a doctors-only callout.
+   */
+  hideAudienceLabel?: boolean;
   items: CourseLernziel[];
 }
 

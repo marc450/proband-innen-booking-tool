@@ -8,6 +8,15 @@ import {
   ShieldAlert,
   Sparkles,
   Stethoscope,
+  BookOpen,
+  Clock,
+  Users,
+  MapPin,
+  ShieldCheck,
+  Compass,
+  Layers,
+  GraduationCap,
+  ScanFace,
   type LucideIcon,
 } from "lucide-react";
 import type { CourseLernzieleContent } from "@/content/kurse/types";
@@ -20,24 +29,38 @@ const ICON_MAP: Record<string, LucideIcon> = {
   MessageCircleHeart,
   Target,
   ShieldAlert,
+  // Extended set used by curriculum-style pages (Wozu / Personas / Lernformat).
+  BookOpen,
+  Clock,
+  Users,
+  MapPin,
+  ShieldCheck,
+  Compass,
+  Layers,
+  GraduationCap,
+  ScanFace,
+  Sparkles,
+  Stethoscope,
 };
 
 export function Lernziele({ content }: { content: CourseLernzieleContent }) {
   return (
     <section className="bg-white py-16 md:py-24">
       <div className="max-w-7xl mx-auto px-5 md:px-8">
-        <div className="flex md:justify-center mb-4">
-          <div className="inline-flex items-center gap-2 bg-[#FAEBE1] rounded-full px-3.5 py-1.5">
-            <Stethoscope
-              className="w-4 h-4 text-[#0066FF] flex-shrink-0"
-              strokeWidth={2.5}
-              aria-hidden="true"
-            />
-            <span className="text-xs md:text-sm font-semibold text-black">
-              {content.audienceLabel || "Nur für approbierte Ärzt:innen"}
-            </span>
+        {!content.hideAudienceLabel && (
+          <div className="flex md:justify-center mb-4">
+            <div className="inline-flex items-center gap-2 bg-[#FAEBE1] rounded-full px-3.5 py-1.5">
+              <Stethoscope
+                className="w-4 h-4 text-[#0066FF] flex-shrink-0"
+                strokeWidth={2.5}
+                aria-hidden="true"
+              />
+              <span className="text-xs md:text-sm font-semibold text-black">
+                {content.audienceLabel || "Nur für approbierte Ärzt:innen"}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
         <h2 className="text-3xl md:text-4xl font-bold text-left md:text-center tracking-wide mb-4">
           {content.heading}
         </h2>
