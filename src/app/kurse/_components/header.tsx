@@ -43,7 +43,7 @@ const NAV_LINKS: NavLink[] = [
   { label: "EPHIA Journal", href: "https://www.ephia.de/blog" },
   { label: "Werde Proband:in", href: "https://proband-innen.ephia.de/" },
   { label: "Merch ✨", href: "/merch" },
-  { label: "FAQ & Kontakt", href: "https://www.ephia.de/faq-kontakt" },
+  { label: "FAQ & Kontakt", href: "/kurse/faq-kontakt" },
 ];
 
 export function Header() {
