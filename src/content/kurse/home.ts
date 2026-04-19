@@ -132,6 +132,17 @@ export const homeContent: HomeContent = {
         href: "/aufbaukurs-botulinum-periorale-zone",
       },
       {
+        kicker: "MASTERCLASS",
+        title: "BOTULINUM",
+        audience: "Für erfahrene Ärzt:innen",
+        description:
+          "Diese Masterclass richtet sich an approbierte Ärzt:innen, die bereits regelmäßig mit Botulinum behandeln und ihr Können auf Expert:innen-Niveau heben möchten. Du vertiefst Full Face Analyse, fortgeschrittene Injektionstechniken und Komplikationsmanagement direkt am Patient:innen unter Anleitung erfahrener Dozent:innen.",
+        courseKey: "masterclass_botulinum",
+        imageAlt: "Masterclass Botulinum für erfahrene Ärzt:innen",
+        ctaLabel: "Zu den Kursdetails",
+        href: "/kurse/masterclass-botulinum",
+      },
+      {
         kicker: "GRUPPENBUCHUNGEN",
         title: "GRUPPENBUCHUNGEN",
         audience: "Für private Kurse",
