@@ -84,6 +84,31 @@ export default async function MerchProductPage({
                 Farbe: <span className="font-semibold text-black">{selected.color}</span>
               </p>
             )}
+
+            {/* Mobile-only image: sits between "Farbe: …" and the
+                Beschreibung so shoppers see the product before reading
+                the copy. Hidden on md+ where the dedicated right-column
+                image takes over. */}
+            <div className="md:hidden mt-6 relative">
+              {heroImage ? (
+                <div className="relative aspect-square bg-white rounded-[10px] overflow-hidden">
+                  <Image
+                    src={heroImage}
+                    alt={selected?.color ? `${p.title} ${selected.color}` : p.title}
+                    fill
+                    quality={90}
+                    sizes="100vw"
+                    priority
+                    className="object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="aspect-square bg-white rounded-[10px] flex items-center justify-center">
+                  <ImageIcon className="w-16 h-16 text-black/20" />
+                </div>
+              )}
+            </div>
+
             {p.description && (
               /* Renders the full Beschreibung the admin typed in the
                  product dialog. Preserves paragraph breaks the admin
@@ -117,8 +142,9 @@ export default async function MerchProductPage({
             </div>
           </div>
 
-          {/* Product image */}
-          <div className="relative">
+          {/* Product image (desktop only — mobile renders it above the
+              description inside the text column). */}
+          <div className="hidden md:block relative">
             {heroImage ? (
               <div className="relative aspect-square bg-white rounded-[10px] overflow-hidden">
                 <Image
