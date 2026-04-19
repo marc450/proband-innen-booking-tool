@@ -33,6 +33,7 @@ import {
 import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
 import { Check, Copy, Plus, Ban, Trash2, X, RotateCcw } from "lucide-react";
 import type { CourseTemplate, CourseSession, Auszubildende } from "@/lib/types";
+import { formatPersonName } from "@/lib/utils";
 
 type AuszubildendePick = Pick<Auszubildende, "id" | "first_name" | "last_name" | "email" | "phone" | "title">;
 
@@ -160,8 +161,7 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
         return (a.first_name || "").toLowerCase().localeCompare((b.first_name || "").toLowerCase(), "de");
       })
       .map((a) => {
-        const nameParts = [a.title, a.first_name, a.last_name].filter(Boolean);
-        const name = nameParts.join(" ").trim() || a.email;
+        const name = formatPersonName({ title: a.title, firstName: a.first_name, lastName: a.last_name }) || a.email;
         return { id: a.id, email: a.email, firstName: a.first_name || "", lastName: a.last_name || "", label: `${name}${a.email ? ` (${a.email})` : ""}` };
       });
   }, [auszubildende]);

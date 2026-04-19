@@ -15,14 +15,14 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Plus, Trash2, Edit } from "lucide-react";
+import { formatPersonName } from "@/lib/utils";
 
 interface Props {
   initialDozenten: Dozent[];
 }
 
 export function formatDozentName(d: Dozent): string {
-  const parts = [d.title, d.first_name, d.last_name].filter(Boolean);
-  return parts.join(" ");
+  return formatPersonName({ title: d.title, firstName: d.first_name, lastName: d.last_name }) || "";
 }
 
 export function DozentenManager({ initialDozenten }: Props) {

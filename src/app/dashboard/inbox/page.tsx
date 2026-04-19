@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { formatPersonName } from "@/lib/utils";
 import { InboxManager } from "./inbox-manager";
 
 export default async function InboxPage() {
@@ -20,7 +21,7 @@ export default async function InboxPage() {
 
   const teamMembers = (profiles || []).map((p) => ({
     id: p.id,
-    name: [p.title, p.first_name, p.last_name].filter(Boolean).join(" ") || "Unbekannt",
+    name: formatPersonName({ title: p.title, firstName: p.first_name, lastName: p.last_name }) || "Unbekannt",
     initials: ((p.first_name?.[0] || "") + (p.last_name?.[0] || "")).toUpperCase() || "?",
   }));
 

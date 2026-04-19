@@ -13,6 +13,7 @@ import {
   Building2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { formatPersonName } from "@/lib/utils";
 import type { Auszubildende, CourseBookingStatus } from "@/lib/types";
 
 interface BookingRow {
@@ -75,7 +76,7 @@ export function ArztProfile({ azubi: initial, bookings }: Props) {
   const [savingNotes, setSavingNotes] = useState(false);
 
   const fullName =
-    [azubi.title, azubi.first_name, azubi.last_name].filter(Boolean).join(" ") ||
+    formatPersonName({ title: azubi.title, firstName: azubi.first_name, lastName: azubi.last_name }) ||
     azubi.email ||
     "Unbekannt";
   const initials =

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { ArrowLeft, Pencil, FileText, AlertTriangle, Ban, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import { formatPersonName } from "@/lib/utils";
 import type { Auszubildende, CourseBookingStatus } from "@/lib/types";
 
 interface BookingRow {
@@ -167,7 +168,7 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
               <div className="relative">
                 <div className="flex items-center gap-1.5 group">
                   <h1 className="text-xl font-semibold break-words min-w-0">
-                    {[azubi.title, azubi.first_name, azubi.last_name].filter(Boolean).join(" ") || "Unbekannt"}
+                    {formatPersonName({ title: azubi.title, firstName: azubi.first_name, lastName: azubi.last_name }) || "Unbekannt"}
                   </h1>
                   <button
                     onClick={() => setNamePopoverOpen(!namePopoverOpen)}

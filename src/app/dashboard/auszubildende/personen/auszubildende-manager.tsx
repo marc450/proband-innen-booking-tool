@@ -33,6 +33,7 @@ import { TableHeaderBar } from "@/components/table/table-header-bar";
 import { SortableHead } from "@/components/table/sortable-head";
 import { useTableSort } from "@/hooks/use-table-sort";
 import type { Auszubildende } from "@/lib/types";
+import { formatPersonName } from "@/lib/utils";
 
 // Shape matches the server-side ImportRow in /api/import-auszubildende.
 // All fields except email are optional; empty strings are allowed and
@@ -396,9 +397,7 @@ export function AuszubildendeManager({
                       {importRows.slice(0, 5).map((r, i) => (
                         <TableRow key={i}>
                           <TableCell>
-                            {[r.title, r.first_name, r.last_name]
-                              .filter(Boolean)
-                              .join(" ") || "–"}
+                            {formatPersonName({ title: r.title, firstName: r.first_name, lastName: r.last_name }) || "–"}
                           </TableCell>
                           <TableCell>{r.email}</TableCell>
                           <TableCell>{r.phone || "–"}</TableCell>
