@@ -228,28 +228,27 @@ function PathStep({
         </div>
 
         {/* Benefit copy */}
-        <p className="text-sm md:text-base text-black/75 leading-relaxed mb-5">
+        <p className="text-sm md:text-base text-black/75 leading-relaxed mb-6">
           {step.benefit}
         </p>
 
-        {/* Price row */}
-        <div className="flex items-center justify-end mb-5">
-          <span className="text-base md:text-lg font-bold text-black">
+        {/* Price + CTA — sit on the same row so the call to action and
+            the cost the buyer is committing to read as one unit. */}
+        <div className="flex items-center justify-between gap-3 pt-4 border-t border-black/[0.06]">
+          <span className="text-base md:text-lg font-bold text-black tabular-nums">
             {step.price}
           </span>
+          <a
+            href={step.href}
+            className="inline-flex items-center gap-1.5 text-sm font-bold text-[#0066FF] hover:text-[#0055DD] group"
+          >
+            Zu den Kursdetails
+            <ArrowRight
+              className="w-4 h-4 transition-transform group-hover:translate-x-0.5"
+              aria-hidden="true"
+            />
+          </a>
         </div>
-
-        {/* CTA */}
-        <a
-          href={step.href}
-          className="inline-flex items-center gap-1.5 text-sm font-bold text-[#0066FF] hover:text-[#0055DD] group"
-        >
-          Zu den Kursdetails
-          <ArrowRight
-            className="w-4 h-4 transition-transform group-hover:translate-x-0.5"
-            aria-hidden="true"
-          />
-        </a>
       </article>
     </li>
   );
