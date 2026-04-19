@@ -533,6 +533,16 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
       hideCme: true,
     },
     masterclass_botulinum: {
+      // Make the equivalence with the Periorale Zone Onlinekurs explicit
+      // in the Onlinekurs card description so buyers immediately see
+      // they're not paying twice for the same content if they've already
+      // taken Periorale Zone.
+      onlineDesc: (
+        <>
+          Inhaltsgleich mit dem Onlinekurs des{" "}
+          <strong className="font-bold">Aufbaukurs Botulinum Periorale Zone</strong>.
+        </>
+      ),
       // Only the Onlinekurs (Periorale Zone) carries an approved CME
       // count. The Praxiskurs and Kombikurs CME accreditation is still
       // pending — show the amber "CME beantragt" pill instead of a
