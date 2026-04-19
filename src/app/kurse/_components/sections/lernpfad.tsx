@@ -1,13 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  ArrowRight,
-  Award,
-  Compass,
-  MapPin,
-  Trophy,
-} from "lucide-react";
+import { ArrowRight, Award, Compass, Trophy } from "lucide-react";
 
 export interface LernpfadStep {
   /** Step number, displayed as "01" / "02" / etc. */
@@ -25,11 +19,6 @@ export interface LernpfadStep {
   price: string;
   /** One-line "what you'll learn here" description shown on the card. */
   benefit: string;
-  /**
-   * Voraussetzung pill, e.g. "Empfohlener Einstieg" /
-   * "Setzt Schritt 1 voraus". Always shown.
-   */
-  prerequisite: string;
   /** Link target for the "Zu den Kursdetails" CTA. */
   href: string;
 }
@@ -243,12 +232,8 @@ function PathStep({
           {step.benefit}
         </p>
 
-        {/* Prerequisite + price row */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wide rounded-full px-2.5 py-1 bg-black/[0.05] text-black/70">
-            <MapPin className="w-3 h-3" aria-hidden="true" />
-            {step.prerequisite}
-          </span>
+        {/* Price row */}
+        <div className="flex items-center justify-end mb-5">
           <span className="text-base md:text-lg font-bold text-black">
             {step.price}
           </span>

@@ -237,14 +237,14 @@ const TESTIMONIALS = {
 
 /**
  * Static curriculum-step metadata that doesn't live in the DB
- * (format pill, prerequisite copy, slug for the per-course landing
- * page, one-line benefit). Title/price/CME are layered in server-side
- * from `course_templates` so they stay in sync with whatever Marc
- * edits in the admin.
+ * (format pill, slug for the per-course landing page, one-line
+ * benefit). Title/price/CME are layered in server-side from
+ * `course_templates` so they stay in sync with whatever Marc edits in
+ * the admin.
  */
 const STEP_META: Record<
   string,
-  Pick<LernpfadStep, "format" | "benefit" | "prerequisite" | "href"> & {
+  Pick<LernpfadStep, "format" | "benefit" | "href"> & {
     /** Override for the CME pill text. When unset, falls back to the DB. */
     cme?: string;
     /** Static title used if the DB title is unavailable (course not live). */
@@ -255,7 +255,6 @@ const STEP_META: Record<
     format: "Online- & Praxiskurs",
     benefit:
       "Dein sicherer Einstieg: Anatomie, Indikationen, Beratung und die ersten Behandlungen unter Aufsicht.",
-    prerequisite: "Empfohlener Einstieg",
     href: "/kurse/grundkurs-botulinum",
     fallbackTitle: "Botulinum",
   },
@@ -263,7 +262,6 @@ const STEP_META: Record<
     format: "Onlinekurs",
     benefit:
       "Hautphysiologie, Akne, Rosazea und der Aufbau einer evidenzbasierten Pflegeroutine. Die Basis für jede ästhetische Behandlung.",
-    prerequisite: "Begleitend zu Schritt 1",
     href: "/kurse/grundkurs-medizinische-hautpflege",
     fallbackTitle: "Medizinische Hautpflege",
   },
@@ -271,7 +269,6 @@ const STEP_META: Record<
     format: "Online- & Praxiskurs",
     benefit:
       "Bruxismus, chronische Migräne, Hyperhidrose und mehr. Du öffnest Dir neue Behandlungsfelder mit therapeutischem Fokus.",
-    prerequisite: "Setzt Schritt 1 voraus",
     href: "/kurse/aufbaukurs-therapeutische-indikationen-botulinum",
     fallbackTitle: "Therapeutische Indikationen Botulinum",
   },
@@ -279,7 +276,6 @@ const STEP_META: Record<
     format: "Online- & Praxiskurs",
     benefit:
       "Full Face Analyse, fortgeschrittene Injektionstechniken und souveränes Komplikationsmanagement auf Expert:innen-Niveau.",
-    prerequisite: "Setzt Schritte 1–3 voraus",
     href: "/kurse/masterclass-botulinum",
     fallbackTitle: "Masterclass Botulinum",
   },
@@ -367,7 +363,6 @@ export default async function CurriculumBotulinumPage() {
         cme,
         price: formatPrice(price),
         benefit: meta.benefit,
-        prerequisite: meta.prerequisite,
         href: meta.href,
       };
     });
