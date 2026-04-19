@@ -172,7 +172,7 @@ function PathStep({
   step: LernpfadStep;
   side: "left" | "right";
 }) {
-  const numberLabel = String(step.number).padStart(2, "0");
+  const numberLabel = String(step.number);
   // Desktop: alternate sides. Mobile: always "left" (cards span full width).
   const desktopAlign =
     side === "left"
