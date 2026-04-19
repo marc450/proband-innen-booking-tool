@@ -466,6 +466,13 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
      */
     kombiCmePending?: boolean;
     /**
+     * When true, ensures every card's feature list contains an
+     * "Ärzt:innen-Community" bullet (added at the end if missing).
+     * Useful for courses where access to the community is part of the
+     * value prop on every package.
+     */
+    ensureCommunityFeature?: boolean;
+    /**
      * When set, the standalone Praxiskurs booking flow opens a
      * prerequisite-confirmation dialog before kicking off Stripe. The
      * checkout only proceeds after the user explicitly ticks the
@@ -529,12 +536,15 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
       // Only the Onlinekurs (Periorale Zone) carries an approved CME
       // count. The Praxiskurs and Kombikurs CME accreditation is still
       // pending — show the amber "CME beantragt" pill instead of a
-      // number.
+      // number AND swap any "Akkreditiert mit N CME-Punkten" feature
+      // bullet for "CME-Punkte beantragt" on those cards.
       praxisCmePending: true,
       kombiCmePending: true,
       // Onlinekurs IS the Aufbaukurs Periorale Zone Onlinekurs, which
       // is accredited with 10 CME points.
       cmeOnlineOverride: "10",
+      // All three packages include access to the Ärzt:innen-Community.
+      ensureCommunityFeature: true,
       praxisPrereqConfirm: {
         description:
           "Der Praxiskurs der Masterclass Botulinum baut auf dem Onlinekurs Botulinum Periorale Zone auf. Bitte bestätige, dass Du diesen bereits abgeschlossen hast, bevor Du den Praxiskurs buchst.",
@@ -626,6 +636,43 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
             if (!kombiFeatures.some((f) => f.text === "EPHIA-Zertifikat nach Abschluss")) {
               kombiFeatures.push({ text: "EPHIA-Zertifikat nach Abschluss" });
             }
+          }
+
+          // Post-processing: swap any "Akkreditiert mit N CME-Punkten"
+          // feature for "CME-Punkte beantragt" on cards whose CME is
+          // still pending. Driven off the same flags that flip the
+          // numeric CME badge to the pending pill, so the card text
+          // and the badge always stay in sync.
+          const swapPendingCme = (features: { text: string }[]) =>
+            features.map((f) =>
+              /^Akkreditiert mit \d+ CME[- ]Punkten?$/i.test(f.text)
+                ? { text: "CME-Punkte beantragt" }
+                : f,
+            );
+          if (overrides.praxisCmePending) praxisFeatures = swapPendingCme(praxisFeatures);
+          if (overrides.kombiCmePending) kombiFeatures = swapPendingCme(kombiFeatures);
+
+          // Optional: ensure every card lists "Ärzt:innen-Community"
+          // when the course has explicitly opted into it. Inserts the
+          // bullet before "EPHIA-Zertifikat nach Abschluss" so the
+          // certificate stays at the end.
+          if (overrides.ensureCommunityFeature) {
+            const ensureCommunity = (features: { text: string }[]) => {
+              if (features.some((f) => f.text === "Ärzt:innen-Community")) return features;
+              const certIdx = features.findIndex(
+                (f) => f.text === "EPHIA-Zertifikat nach Abschluss",
+              );
+              const bullet = { text: "Ärzt:innen-Community" };
+              if (certIdx === -1) return [...features, bullet];
+              return [
+                ...features.slice(0, certIdx),
+                bullet,
+                ...features.slice(certIdx),
+              ];
+            };
+            onlineFeatures = ensureCommunity(onlineFeatures);
+            praxisFeatures = ensureCommunity(praxisFeatures);
+            kombiFeatures = ensureCommunity(kombiFeatures);
           }
 
           if (isPremiumLayout) {
