@@ -21,13 +21,32 @@ type NavLink = {
 
 const NAV_LINKS: NavLink[] = [
   {
-    label: "Unsere Kurse",
-    href: "/kurse/unsere-kurse",
+    // Lernpfade = curated multi-course tracks. Parent link points at
+    // the active track so the parent itself is never a dead "#".
+    label: "Lernpfade",
+    href: "/kurse/curriculum-botulinum",
     subLinks: [
-      { label: "Einzelkurse", href: "/kurse/unsere-kurse" },
       { label: "Curriculum Botulinum", href: "/kurse/curriculum-botulinum" },
       { label: "Curriculum Dermalfiller", href: "#", disabled: true },
       { label: "Curriculum Hautpflege", href: "#", disabled: true },
+    ],
+  },
+  {
+    // Einzelkurse = the individual course landing pages. Parent link
+    // takes the visitor to the full overview grid.
+    label: "Einzelkurse",
+    href: "/kurse/unsere-kurse",
+    subLinks: [
+      { label: "Alle Einzelkurse", href: "/kurse/unsere-kurse" },
+      { label: "Grundkurs Botulinum", href: "/kurse/grundkurs-botulinum" },
+      { label: "Grundkurs Botulinum (Zahnmedizin)", href: "/kurse/grundkurs-botulinum-zahnmedizin" },
+      { label: "Grundkurs Dermalfiller", href: "/kurse/grundkurs-dermalfiller" },
+      { label: "Grundkurs Medizinische Hautpflege", href: "/kurse/grundkurs-medizinische-hautpflege" },
+      { label: "Aufbaukurs Therapeutische Indikationen", href: "/kurse/aufbaukurs-therapeutische-indikationen-botulinum" },
+      { label: "Aufbaukurs Periorale Zone", href: "/kurse/aufbaukurs-botulinum-periorale-zone" },
+      { label: "Aufbaukurs Lippen", href: "/kurse/aufbaukurs-lippen" },
+      { label: "Aufbaukurs Biostimulation & Skinbooster", href: "/kurse/aufbaukurs-biostimulation-skinbooster" },
+      { label: "Masterclass Botulinum", href: "/kurse/masterclass-botulinum" },
     ],
   },
   {
