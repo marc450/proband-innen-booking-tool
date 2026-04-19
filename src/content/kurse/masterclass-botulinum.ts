@@ -181,9 +181,9 @@ export const masterclassBotulinum: CourseLandingContent = {
   // Masterclass Onlinekurs IS the Periorale Zone online course. Editing
   // the Periorale Zone chapters automatically updates this section.
   inhaltOnline: {
-    heading: "INHALT ONLINEKURS PERIORALE ZONE",
+    heading: "INHALT ONLINEKURS",
     intro:
-      "Der Onlinekurs der Masterclass entspricht inhaltlich dem Aufbaukurs Periorale Zone und ist im Kombikurs der Masterclass enthalten.",
+      "Der Onlinekurs der Masterclass Botulinum entspricht inhaltlich dem Aufbaukurs Periorale Zone. Solltest Du den Onlinekurs bereits absolviert haben, kannst Du direkt den Praxiskurs buchen.",
     chapters: aufbaukursBotulinumPerioraleZone.inhalt.chapters,
   },
 
