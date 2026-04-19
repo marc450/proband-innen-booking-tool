@@ -91,7 +91,7 @@ const PERSONAS = [
     icon: Sparkles,
     title: "Du steigst gerade ein",
     description:
-      "Du bist Ärzt:in und willst einen sicheren, leitliniengerechten Einstieg in die Botulinumtoxin-Therapie. Der Grundkurs gibt Dir das Fundament, der Rest des Curriculums baut Schritt für Schritt darauf auf.",
+      "Du bist Ärzt:in und willst einen sicheren, leitliniengerechten Einstieg in die Botulinum-Therapie. Der Grundkurs gibt Dir das Fundament, der Rest des Curriculums baut Schritt für Schritt darauf auf.",
   },
   {
     icon: Target,
@@ -232,7 +232,7 @@ const FAQS = [
   },
   {
     q: "Für wen ist das Curriculum geeignet?",
-    a: "Das Curriculum richtet sich an approbierte Ärzt:innen, die in die Botulinumtoxin-Therapie einsteigen oder ihre bestehenden Kenntnisse systematisch vertiefen wollen. Weitere Voraussetzungen gibt es nicht.",
+    a: "Das Curriculum richtet sich an approbierte Ärzt:innen, die in die Botulinum-Therapie einsteigen oder ihre bestehenden Kenntnisse systematisch vertiefen wollen. Weitere Voraussetzungen gibt es nicht.",
   },
 ];
 

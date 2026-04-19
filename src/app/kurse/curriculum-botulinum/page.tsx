@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Curriculum Botulinum — EPHIA",
   description:
-    "Dein strukturierter Weg zur Spezialisierung in der Botulinumtoxin-Therapie. Vier aufeinander aufbauende Kurse vom Einstieg bis zur Masterclass — und die Möglichkeit zur Botulinum Specialist Zertifizierung.",
+    "Dein strukturierter Weg zur Spezialisierung in der Botulinum-Therapie. Vier aufeinander aufbauende Kurse vom Einstieg bis zur Masterclass — und die Möglichkeit zur Botulinum Specialist Zertifizierung.",
   alternates: {
     canonical: "https://kurse.ephia.de/kurse/curriculum-botulinum",
   },
@@ -25,18 +25,9 @@ export const metadata: Metadata = {
 /* -------------------------------------------------------------------------- */
 
 const HERO = {
-  kicker: "CURRICULUM",
   heading: "CURRICULUM BOTULINUM",
-  tagline:
-    "Dein strukturierter Weg zur Spezialisierung in der Botulinumtoxin-Therapie.",
   description:
-    "Vier aufeinander aufbauende Kurse, die Dich vom Einstieg bis auf Expert:innen-Niveau begleiten. Du buchst jeden Kurs einzeln, in Deinem Tempo. Das Curriculum gibt Dir die Struktur, in welcher Reihenfolge die Inhalte am besten ineinandergreifen.",
-  stats: [
-    "4 Kurse",
-    "Online + Praxis",
-    "Einstieg bis Masterclass",
-    "in Deinem Tempo",
-  ],
+    "Dein strukturierter Weg zur Spezialisierung in der Botulinum-Therapie. Vier aufeinander aufbauende Kurse vom Einstieg bis auf Expert:innen-Niveau, die Du einzeln und in Deinem Tempo buchst.",
   ctaLabel: "Lernpfad ansehen",
   ctaHref: "#lernpfad",
 };
@@ -78,7 +69,7 @@ const PERSONAS = {
       icon: "Sparkles",
       label: "Du steigst gerade ein",
       description:
-        "Du bist Ärzt:in und willst einen sicheren, leitliniengerechten Einstieg in die Botulinumtoxin-Therapie. Der Grundkurs gibt Dir das Fundament, der Rest des Curriculums baut Schritt für Schritt darauf auf.",
+        "Du bist Ärzt:in und willst einen sicheren, leitliniengerechten Einstieg in die Botulinum-Therapie. Der Grundkurs gibt Dir das Fundament, der Rest des Curriculums baut Schritt für Schritt darauf auf.",
     },
     {
       icon: "Target",
@@ -199,7 +190,7 @@ const FAQS = [
   {
     question: "Für wen ist das Curriculum geeignet?",
     answer:
-      "Das Curriculum richtet sich an approbierte Ärzt:innen, die in die Botulinumtoxin-Therapie einsteigen oder ihre bestehenden Kenntnisse systematisch vertiefen wollen. Weitere Voraussetzungen gibt es nicht.",
+      "Das Curriculum richtet sich an approbierte Ärzt:innen, die in die Botulinum-Therapie einsteigen oder ihre bestehenden Kenntnisse systematisch vertiefen wollen. Weitere Voraussetzungen gibt es nicht.",
   },
 ];
 
@@ -382,35 +373,17 @@ export default async function CurriculumBotulinumPage() {
 
   return (
     <>
-      {/* Hero — custom inline (no video, centered, on the rose bg) */}
-      <section className="bg-[#FAEBE1] pt-16 pb-20 md:pt-24 md:pb-28">
-        <div className="max-w-4xl mx-auto px-5 md:px-8 text-center">
-          <p className="text-xs md:text-sm font-semibold tracking-[0.2em] text-[#0066FF] mb-5">
-            {HERO.kicker}
-          </p>
-          <h1 className={`${TYPO.h1} text-4xl md:text-5xl lg:text-6xl mb-6`}>
+      {/* Hero — title, one paragraph, CTA. Stripped of the kicker,
+          tagline subtitle and stat pills so the page has room to
+          breathe before the curriculum reasoning section below. */}
+      <section className="bg-[#FAEBE1] pt-20 pb-24 md:pt-28 md:pb-32">
+        <div className="max-w-3xl mx-auto px-5 md:px-8 text-center">
+          <h1 className={`${TYPO.h1} text-4xl md:text-5xl lg:text-6xl mb-8`}>
             {HERO.heading}
           </h1>
-          <p className="text-lg md:text-xl font-bold text-black mb-5 max-w-2xl mx-auto">
-            {HERO.tagline}
-          </p>
-          <p className="text-base md:text-[17px] text-black/75 leading-relaxed max-w-2xl mx-auto mb-8">
+          <p className="text-base md:text-lg text-black/75 leading-relaxed mb-10">
             {HERO.description}
           </p>
-
-          {/* Soft stats row — pills */}
-          <div className="flex flex-wrap justify-center gap-2 mb-10">
-            {HERO.stats.map((s) => (
-              <span
-                key={s}
-                className="text-xs md:text-sm font-semibold rounded-full px-3 py-1.5 bg-white text-black"
-              >
-                {s}
-              </span>
-            ))}
-          </div>
-
-          {/* CTA → anchors to the Lernpfad */}
           <a
             href={HERO.ctaHref}
             className="inline-flex items-center gap-2 bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold rounded-[10px] px-6 py-3.5 text-sm md:text-base transition-colors"

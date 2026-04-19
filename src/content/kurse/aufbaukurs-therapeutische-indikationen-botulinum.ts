@@ -56,7 +56,7 @@ export const aufbaukursTherapeutischeIndikationenBotulinum: CourseLandingContent
         label: "Produktkenntnis",
         icon: "Syringe",
         description:
-          "Unterschiede der verfügbaren Botulinumtoxin-Präparate, ihre Dosierung für die therapeutischen Indikationen und sinnvolle Auswahlkriterien im Praxisalltag.",
+          "Unterschiede der verfügbaren Botulinum-Präparate, ihre Dosierung für die therapeutischen Indikationen und sinnvolle Auswahlkriterien im Praxisalltag.",
       },
       {
         label: "Patient:innenkommunikation",
@@ -146,7 +146,7 @@ export const aufbaukursTherapeutischeIndikationenBotulinum: CourseLandingContent
           {
             title: "Pathophysiologie chronischer Migräne",
             description:
-              "Periphere und zentrale Komponenten der Migräne, Wirkmechanismus von Botulinumtoxin.",
+              "Periphere und zentrale Komponenten der Migräne, Wirkmechanismus von Botulinum.",
           },
           {
             title: "PREEMPT-Protokoll",

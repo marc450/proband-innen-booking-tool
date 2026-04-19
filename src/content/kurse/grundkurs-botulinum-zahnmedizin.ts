@@ -130,7 +130,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
           {
             title: "Wirkweise von Botulinum",
             description:
-              "Was ist Botulinumtoxin Typ A, Neurotoxine, SNAP-25, Hemmung der neuromuskulären Transmission, Wirkbeginn, Wirkmaximum, typische Patient:innenreaktionen.",
+              "Was ist Botulinum Typ A, Neurotoxine, SNAP-25, Hemmung der neuromuskulären Transmission, Wirkbeginn, Wirkmaximum, typische Patient:innenreaktionen.",
           },
           {
             title: "Botulinum-Präparate & Zulassungen",

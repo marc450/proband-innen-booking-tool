@@ -22,7 +22,7 @@ export interface CurriculumConfig {
 export const CURRICULUM_BOTULINUM: CurriculumConfig = {
   slug: "botulinum",
   title: "Curriculum Botulinum",
-  subtitle: "Dein Weg zur Spezialisierung in der Botulinumtoxin-Therapie",
+  subtitle: "Dein Weg zur Spezialisierung in der Botulinum-Therapie",
   description:
     "Vier aufeinander aufbauende Kurse, die Dich vom Grundlagenwissen bis zur Masterclass begleiten. Buche das Komplettpaket und spare 10%.",
   discountPercent: 10,

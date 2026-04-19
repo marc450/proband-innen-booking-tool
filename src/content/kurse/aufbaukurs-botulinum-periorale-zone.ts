@@ -62,7 +62,7 @@ export const aufbaukursBotulinumPerioraleZone: CourseLandingContent = {
         label: "Produktkenntnis",
         icon: "Syringe",
         description:
-          "Unterschiede der Botulinumtoxin-Präparate, ihre Dosierung für die periorale Zone und sinnvolle Auswahlkriterien im Praxisalltag.",
+          "Unterschiede der Botulinum-Präparate, ihre Dosierung für die periorale Zone und sinnvolle Auswahlkriterien im Praxisalltag.",
       },
       {
         label: "Patient:innenkommunikation",
