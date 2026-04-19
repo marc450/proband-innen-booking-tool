@@ -543,6 +543,8 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
           <strong className="font-bold">Onlinekurs Botulinum Periorale Zone</strong>.
         </>
       ),
+      praxisDesc:
+        "Onlinekurs bereits absolviert? Dann buche direkt den Praxiskurs.",
       // Only the Onlinekurs (Periorale Zone) carries an approved CME
       // count. The Praxiskurs and Kombikurs CME accreditation is still
       // pending — show the amber "CME beantragt" pill instead of a
@@ -792,10 +794,12 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                 <CourseCard
                   title="Praxiskurs"
                   description={
-                    <>
-                      Wende Dein <strong className="font-bold">bereits existierendes</strong> theoretisches
-                      Wissen in der Praxis an.
-                    </>
+                    overrides.praxisDesc ?? (
+                      <>
+                        Wende Dein <strong className="font-bold">bereits existierendes</strong> theoretisches
+                        Wissen in der Praxis an.
+                      </>
+                    )
                   }
                   price={formatPrice(template.price_gross_praxis)}
                   features={praxisFeatures}
