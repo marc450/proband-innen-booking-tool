@@ -192,7 +192,12 @@ export default async function KursPage({
         />
       )}
       <Inhalt content={content.inhalt} />
-      <Lernplattform content={content.lernplattform} />
+      {/* Practical-only courses (no Onlinekurs) have no e-learning
+          platform to show off — skip the Lernplattform section when no
+          features are configured. */}
+      {content.lernplattform.features.length > 0 && (
+        <Lernplattform content={content.lernplattform} />
+      )}
       <CtaBanner
         content={content.ctaBanner}
         priceSuffix={

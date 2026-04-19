@@ -6,6 +6,7 @@ import { aufbaukursLippen } from "./aufbaukurs-lippen";
 import { grundkursMedizinischeHautpflege } from "./grundkurs-medizinische-hautpflege";
 import { aufbaukursTherapeutischeIndikationenBotulinum } from "./aufbaukurs-therapeutische-indikationen-botulinum";
 import { aufbaukursBotulinumPerioraleZone } from "./aufbaukurs-botulinum-periorale-zone";
+import { aufbaukursBiostimulationSkinbooster } from "./aufbaukurs-biostimulation-skinbooster";
 
 /**
  * Registry of all course landing page content, keyed by URL slug.
@@ -24,6 +25,7 @@ const registry: Record<string, CourseLandingContent> = {
   [grundkursMedizinischeHautpflege.slug]: grundkursMedizinischeHautpflege,
   [aufbaukursTherapeutischeIndikationenBotulinum.slug]: aufbaukursTherapeutischeIndikationenBotulinum,
   [aufbaukursBotulinumPerioraleZone.slug]: aufbaukursBotulinumPerioraleZone,
+  [aufbaukursBiostimulationSkinbooster.slug]: aufbaukursBiostimulationSkinbooster,
 };
 
 export function getCourseContent(slug: string): CourseLandingContent | null {
