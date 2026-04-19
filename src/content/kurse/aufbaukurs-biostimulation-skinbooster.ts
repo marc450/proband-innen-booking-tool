@@ -34,8 +34,12 @@ export const aufbaukursBiostimulationSkinbooster: CourseLandingContent = {
     ],
     description:
       "Dieser Aufbaukurs richtet sich an approbierte Humanmediziner:innen mit Grundkenntnissen in der ästhetischen Medizin. Im Fokus stehen Poly-L-Milchsäure-basierte Biostimulation und Skinbooster-Behandlungen zur Regeneration von Hautqualität, Spannkraft und Volumen. Du lernst die relevante Anatomie, Indikationen und Produktkenntnisse, spezifische Injektionstechniken für Gesicht, Hals und Dekolleté sowie diskriminierungssensible Patient:innenkommunikation und Komplikationsmanagement. Nach dem Kurs integrierst Du beide Verfahren sicher und evidenzbasiert in Deinen Behandlungsalltag.",
-    videoPath: "/kurse/aufbaukurs_skulptra/hero.mp4",
-    videoPoster: "/kurse/aufbaukurs_skulptra/hero-poster.jpg",
+    videoPath:
+      "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/aufbaukurs_skinbooster/4.%20Intro_Skinbooster_BioStim_V1-compressed.mp4",
+    // Falling back to the Grundkurs Botulinum poster until a dedicated
+    // frame is uploaded — same pattern used on Periorale Zone. Swap in a
+    // proper poster once available.
+    videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
     ctaOverride: {
       label: "Zu den Terminen",
       href: "#kursangebote",

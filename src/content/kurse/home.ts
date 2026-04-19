@@ -85,7 +85,7 @@ export const homeContent: HomeContent = {
         courseKey: "aufbaukurs_skulptra",
         imageAlt: "Aufbaukurs Skulptra & Skinbooster",
         ctaLabel: "Zu den Kursdetails",
-        href: "https://www.ephia.de/aufbaukurs-sculptra-skinbooster",
+        href: "/kurse/aufbaukurs-biostimulation-skinbooster",
       },
       {
         kicker: "GRUNDKURS",
