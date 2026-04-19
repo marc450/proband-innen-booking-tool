@@ -139,7 +139,14 @@ export function CourseCard({
       ) : cmePoints ? (
         <div className="absolute -top-4 right-5 z-10 bg-[#0066FF] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5" style={{ boxShadow: "0 0 0 3px rgba(255,255,255,0.9), 0 2px 8px rgba(0,0,0,0.15)" }}>
           <Award className="w-4 h-4" aria-hidden="true" />
-          <span className="text-sm font-bold whitespace-nowrap">{cmePoints} CME</span>
+          {/* Normalise the badge text: callers may pass either a bare
+              number ("22") or a value already containing "CME" ("22 CME",
+              "10 CME-Punkte"), depending on whether the value comes from
+              the DB or a code-level override. Always render exactly one
+              "CME" suffix. */}
+          <span className="text-sm font-bold whitespace-nowrap">
+            {/CME/i.test(cmePoints) ? cmePoints : `${cmePoints} CME`}
+          </span>
         </div>
       ) : null}
 
