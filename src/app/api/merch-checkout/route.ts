@@ -11,12 +11,18 @@ const SHIPPING_LABEL = "Versand";
 const SHIPPING_DELIVERY_MIN_DAYS = 3;
 const SHIPPING_DELIVERY_MAX_DAYS = 7;
 
+// Hard cap per checkout — mirrors MAX_QUANTITY_PER_ORDER on the
+// purchase-panel UI. Belt-and-braces: even if a tampered client tries
+// quantity=999 we never let one order drain all stock.
+const MAX_QUANTITY_PER_ORDER = 10;
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { variantId, isDoctor } = body as {
+    const { variantId, isDoctor, quantity: rawQuantity } = body as {
       variantId?: string;
       isDoctor?: boolean;
+      quantity?: number;
     };
 
     // Name, email, phone, address are collected by Stripe Checkout (see
@@ -26,6 +32,14 @@ export async function POST(req: NextRequest) {
     if (!variantId || typeof isDoctor !== "boolean") {
       return NextResponse.json({ error: "Variante und Ärzt:in-Angabe sind erforderlich." }, { status: 400 });
     }
+
+    // Quantity defaults to 1 (legacy callers + the cap's "one click"
+    // flow). Coerce to a positive integer, clamp to [1, MAX] up front;
+    // we still re-clamp against actual stock once we've loaded the
+    // variant below.
+    let quantity = Math.floor(Number(rawQuantity ?? 1));
+    if (!Number.isFinite(quantity) || quantity < 1) quantity = 1;
+    if (quantity > MAX_QUANTITY_PER_ORDER) quantity = MAX_QUANTITY_PER_ORDER;
 
     const admin = createAdminClient();
 
@@ -47,6 +61,12 @@ export async function POST(req: NextRequest) {
     }
     if (variant.stock <= 0) {
       return NextResponse.json({ error: "Ausverkauft." }, { status: 409 });
+    }
+    if (quantity > variant.stock) {
+      return NextResponse.json(
+        { error: `Nur noch ${variant.stock} auf Lager.` },
+        { status: 409 },
+      );
     }
 
     const origin = req.headers.get("origin") || "https://kurse.ephia.de";
@@ -81,7 +101,7 @@ export async function POST(req: NextRequest) {
       // net, fails to match EPHIA's merch tax settings, and shows 0,00 €
       // tax. "txcd_99999999" is Stripe's "General - Tangible Goods" code
       // which covers apparel/caps/etc in the default DE configuration.
-      "line_items[0][quantity]": "1",
+      "line_items[0][quantity]": String(quantity),
       "line_items[0][price_data][currency]": "eur",
       "line_items[0][price_data][unit_amount]": String(variant.price_gross_cents),
       "line_items[0][price_data][tax_behavior]": "inclusive",
@@ -119,7 +139,13 @@ export async function POST(req: NextRequest) {
       "metadata[variantColor]": variant.color || "",
       "metadata[variantSize]": variant.size || "",
       "metadata[isDoctor]": isDoctor ? "true" : "false",
-      "metadata[itemGrossCents]": String(variant.price_gross_cents),
+      "metadata[quantity]": String(quantity),
+      // itemUnitGrossCents = per-unit VAT-inclusive price; itemGrossCents
+      // is the line-item total (unit × quantity). Webhook uses both:
+      // unit + quantity for the merch_orders row, total for the receipt
+      // amount sanity check.
+      "metadata[itemUnitGrossCents]": String(variant.price_gross_cents),
+      "metadata[itemGrossCents]": String(variant.price_gross_cents * quantity),
       "metadata[shippingGrossCents]": String(SHIPPING_GROSS_CENTS),
     };
 

@@ -670,6 +670,13 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
   const variantColor = metadata.variantColor || null;
   const variantSize = metadata.variantSize || null;
 
+  // Quantity defaults to 1 for orders created before quantity support
+  // shipped (older sessions don't carry the metadata key).
+  const quantity = Math.max(1, Number(metadata.quantity) || 1);
+  // itemGrossCents is the line-item total (unit × quantity). For legacy
+  // orders the metadata only carried the unit price; treat it as the
+  // total in that case so reporting math doesn't suddenly inflate when
+  // we apply the new key on existing rows.
   const itemGrossCents = Number(metadata.itemGrossCents) || 0;
   const shippingGrossCents = Number(metadata.shippingGrossCents) || 0;
   const amountPaidCents = session.amount_total || itemGrossCents + shippingGrossCents;
@@ -714,7 +721,7 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
       variant_name: variantName,
       variant_color: variantColor,
       variant_size: variantSize,
-      quantity: 1,
+      quantity,
       first_name: firstName || null,
       last_name: lastName || null,
       email,
@@ -747,7 +754,7 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
   if (variantId) {
     const { error: stockErr } = await supabase.rpc("merch_decrement_stock", {
       p_variant_id: variantId,
-      p_qty: 1,
+      p_qty: quantity,
     });
     if (stockErr) {
       stockError = stockErr.message;
@@ -772,7 +779,7 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
         .join(", ");
       const lines = [
         `🧢 *Neue Merch-Bestellung*`,
-        `*Produkt:* ${productTitle}${variantLabel ? ` · ${variantLabel}` : ""}`,
+        `*Produkt:* ${productTitle}${variantLabel ? ` · ${variantLabel}` : ""}${quantity > 1 ? ` · *${quantity}×*` : ""}`,
         fullName ? `*Name:* ${fullName}` : null,
         email ? `*E-Mail:* ${email}` : null,
         phone ? `*Telefon:* ${phone}` : null,
@@ -815,7 +822,10 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
         intro:
           "vielen Dank für Deine Bestellung! Wir haben sie erhalten und schicken sie in den nächsten 3–7 Werktagen auf den Weg zu Dir.",
         infoRows: [
-          { label: "Produkt", value: `${productTitle}${variantLabel ? ` (${variantLabel})` : ""}` },
+          {
+            label: "Produkt",
+            value: `${productTitle}${variantLabel ? ` (${variantLabel})` : ""}${quantity > 1 ? ` × ${quantity}` : ""}`,
+          },
           { label: "Artikel", value: fmt(itemGrossCents) },
           { label: "Versand", value: fmt(shippingGrossCents) },
           { label: "Gesamt", value: fmt(amountPaidCents) },

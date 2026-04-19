@@ -10,6 +10,13 @@ interface Props {
   priceCents: number;
   stock: number;
   /**
+   * How many units the user wants to order. Defaults to 1 for legacy
+   * callers that don't render the stepper. PurchasePanel always sets
+   * this; the API also re-validates against stock server-side so a
+   * tampered value can't oversell.
+   */
+  quantity?: number;
+  /**
    * Optional override for the CTA label. When the product detail page is
    * scoped to one pre-selected variant (via /merch/[slug]?color=...) we
    * pass "Jetzt bestellen" so the button doesn't redundantly name the
@@ -40,6 +47,7 @@ export function MerchCheckoutLauncher({
   variantLabel,
   priceCents,
   stock,
+  quantity = 1,
   buttonText,
   donates = false,
 }: Props) {
@@ -72,6 +80,7 @@ export function MerchCheckoutLauncher({
     // short-circuit immediately so we don't spam Stripe with duplicates.
     const payload = JSON.stringify({
       variantId,
+      quantity,
       isDoctor: isDoctor === "yes",
     });
     let lastNetErr: string | null = null;
@@ -103,6 +112,10 @@ export function MerchCheckoutLauncher({
   };
 
   const priceLabel = (priceCents / 100).toLocaleString("de-DE", {
+    style: "currency",
+    currency: "EUR",
+  });
+  const subtotalLabel = ((priceCents * quantity) / 100).toLocaleString("de-DE", {
     style: "currency",
     currency: "EUR",
   });
@@ -154,11 +167,19 @@ export function MerchCheckoutLauncher({
 
             <h2 className="text-xl font-bold mb-1">Deine Bestellung</h2>
             <p className="text-sm text-black/70 mb-5">
-              {productTitle} · {variantLabel} · {priceLabel}
+              {productTitle} · {variantLabel}
+              {quantity > 1 ? (
+                <>
+                  {" "}· {priceLabel} × {quantity} ={" "}
+                  <strong className="font-semibold text-black">{subtotalLabel}</strong>
+                </>
+              ) : (
+                <> · {priceLabel}</>
+              )}
               <br />
               <span className="text-xs text-black/50">
                 {donates
-                  ? "Versand 2,90 € · Spende 10 € an De la Torre-Stiftung inklusive"
+                  ? `Versand 2,90 € · Spende 10 € an De la Torre-Stiftung pro Cap${quantity > 1 ? ` (${quantity}× = ${(quantity * 10).toLocaleString("de-DE")} €)` : ""}`
                   : "Versand 2,90 €"}
               </span>
             </p>
