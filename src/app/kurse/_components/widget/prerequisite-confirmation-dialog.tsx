@@ -4,11 +4,7 @@ import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
 
 interface PrerequisiteConfirmationDialogProps {
   open: boolean;
@@ -31,6 +27,10 @@ interface PrerequisiteConfirmationDialogProps {
  * to make the user explicitly acknowledge that they meet a hard
  * prerequisite (e.g. having completed a specific Onlinekurs). The
  * Confirm button stays disabled until the checkbox is ticked.
+ *
+ * Styled to match the kurse landing pages: white background (overrides
+ * the global rose `--background`), brand-blue CTA, generous spacing
+ * and Roboto typography inherited from the site.
  *
  * Currently used on the Masterclass Botulinum Praxiskurs to require an
  * explicit confirmation that the Onlinekurs Periorale Zone has been
@@ -62,36 +62,53 @@ export function PrerequisiteConfirmationDialog({
         if (!isOpen) onCancel();
       }}
     >
-      <DialogContent showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle
-              className="w-5 h-5 text-amber-600"
-              aria-hidden="true"
-            />
+      <DialogContent
+        showCloseButton={false}
+        className="!bg-white sm:max-w-md p-0 gap-0 ring-0 shadow-2xl rounded-[10px] overflow-hidden"
+      >
+        {/* Header */}
+        <div className="px-7 pt-7 pb-2">
+          <h2 className="text-xl md:text-2xl font-bold text-black tracking-tight">
             {title}
-          </DialogTitle>
-        </DialogHeader>
+          </h2>
+        </div>
 
-        <p className="text-sm text-black/80 leading-relaxed">{description}</p>
+        {/* Body */}
+        <div className="px-7 pt-3 pb-6 space-y-5">
+          <p className="text-[15px] text-black/75 leading-relaxed">
+            {description}
+          </p>
 
-        <label className="flex items-start gap-3 cursor-pointer select-none mt-2 rounded-md border border-amber-300 bg-amber-50 p-3">
-          <input
-            type="checkbox"
-            checked={checked}
-            onChange={(e) => setChecked(e.target.checked)}
-            className="mt-0.5 h-4 w-4 cursor-pointer accent-[#0066FF]"
-          />
-          <span className="text-sm text-black leading-snug">{checkboxLabel}</span>
-        </label>
+          <label className="flex items-start gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={(e) => setChecked(e.target.checked)}
+              className="mt-1 h-[18px] w-[18px] flex-shrink-0 cursor-pointer accent-[#0066FF]"
+            />
+            <span className="text-[15px] text-black leading-snug">
+              {checkboxLabel}
+            </span>
+          </label>
+        </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button variant="outline" onClick={onCancel}>
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-7 py-5 border-t border-black/[0.08] bg-black/[0.015]">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-sm font-semibold text-black/70 hover:text-black px-4 py-2.5 rounded-[10px] cursor-pointer transition-colors"
+          >
             {cancelLabel}
-          </Button>
-          <Button onClick={onConfirm} disabled={!checked}>
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={!checked}
+            className="text-sm font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] disabled:bg-black/15 disabled:text-black/40 disabled:cursor-not-allowed px-5 py-2.5 rounded-[10px] cursor-pointer transition-colors"
+          >
             {confirmLabel}
-          </Button>
+          </button>
         </div>
       </DialogContent>
     </Dialog>
