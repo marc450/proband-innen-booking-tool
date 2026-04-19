@@ -393,7 +393,7 @@ export default async function CurriculumBotulinumPage() {
             {HERO.stats.map((s) => (
               <span
                 key={s}
-                className="text-xs md:text-sm font-semibold rounded-full px-3 py-1.5 bg-white text-black"
+                className="text-xs md:text-sm font-semibold rounded-full px-3 py-1.5 bg-[#0066FF] text-white"
               >
                 {s}
               </span>
