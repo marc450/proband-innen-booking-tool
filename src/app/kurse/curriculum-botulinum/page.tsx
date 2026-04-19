@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ArrowDown, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CURRICULUM_BOTULINUM } from "@/lib/curricula";
 import { TYPO } from "../_components/typography";
@@ -28,8 +28,12 @@ const HERO = {
   heading: "CURRICULUM BOTULINUM",
   description:
     "Dein strukturierter Weg zur Spezialisierung in der Botulinum-Therapie. Vier aufeinander aufbauende Kurse vom Einstieg bis auf Expert:innen-Niveau, die Du einzeln und in Deinem Tempo buchst.",
-  ctaLabel: "Lernpfad ansehen",
-  ctaHref: "#lernpfad",
+  stats: [
+    "4 Kurse",
+    "Online + Praxis",
+    "Einstieg bis Masterclass",
+    "in Deinem Tempo",
+  ],
 };
 
 const REASONS = {
@@ -373,24 +377,28 @@ export default async function CurriculumBotulinumPage() {
 
   return (
     <>
-      {/* Hero — title, one paragraph, CTA. Stripped of the kicker,
-          tagline subtitle and stat pills so the page has room to
-          breathe before the curriculum reasoning section below. */}
+      {/* Hero — title, paragraph, soft stat pills. No CTA button: the
+          page is an orientation tool, not a conversion funnel; the
+          per-step "Zu den Kursdetails" CTAs in the Lernpfad below do
+          the booking. */}
       <section className="bg-[#FAEBE1] pt-20 pb-24 md:pt-28 md:pb-32">
         <div className="max-w-3xl mx-auto px-5 md:px-8 text-center">
           <h1 className={`${TYPO.h1} text-4xl md:text-5xl lg:text-6xl mb-8`}>
             {HERO.heading}
           </h1>
-          <p className="text-base md:text-lg text-black/75 leading-relaxed mb-10">
+          <p className="text-base md:text-lg text-black/75 leading-relaxed mb-8">
             {HERO.description}
           </p>
-          <a
-            href={HERO.ctaHref}
-            className="inline-flex items-center gap-2 bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold rounded-[10px] px-6 py-3.5 text-sm md:text-base transition-colors"
-          >
-            {HERO.ctaLabel}
-            <ArrowDown className="w-4 h-4" aria-hidden="true" />
-          </a>
+          <div className="flex flex-wrap justify-center gap-2">
+            {HERO.stats.map((s) => (
+              <span
+                key={s}
+                className="text-xs md:text-sm font-semibold rounded-full px-3 py-1.5 bg-white text-black"
+              >
+                {s}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 
