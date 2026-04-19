@@ -197,10 +197,6 @@ export function MerchCheckoutLauncher({
                   "Zur sicheren Kasse"
                 )}
               </button>
-
-              <p className="text-xs text-black/50 text-center">
-                Name, E-Mail, Telefon, Versandadresse und Zahlung werden im nächsten Schritt bei Stripe erfasst.
-              </p>
             </form>
           </div>
         </div>
