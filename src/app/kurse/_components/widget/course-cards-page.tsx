@@ -453,6 +453,14 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
      */
     praxisCmePending?: boolean;
     /**
+     * Override for the Onlinekurs CME badge value. Takes precedence
+     * over `course_templates.cme_online` from the DB. Used when the
+     * Onlinekurs on a landing page corresponds to a different course
+     * (e.g. Masterclass Botulinum reuses the Periorale Zone Onlinekurs,
+     * which is accredited with 10 CME points).
+     */
+    cmeOnlineOverride?: string;
+    /**
      * When true, the Online- & Praxiskurs (Kombikurs) card shows an
      * amber "CME beantragt" pill instead of a numeric CME badge.
      */
@@ -524,6 +532,9 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
       // number.
       praxisCmePending: true,
       kombiCmePending: true,
+      // Onlinekurs IS the Aufbaukurs Periorale Zone Onlinekurs, which
+      // is accredited with 10 CME points.
+      cmeOnlineOverride: "10",
       praxisPrereqConfirm: {
         description:
           "Der Praxiskurs der Masterclass Botulinum baut auf dem Onlinekurs Botulinum Periorale Zone auf. Bitte bestätige, dass Du diesen bereits abgeschlossen hast, bevor Du den Praxiskurs buchst.",
@@ -716,7 +727,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   buttonText="Onlinekurs buchen"
                   onBook={() => handleBooking("Onlinekurs")}
                   isLoading={loadingCheckout === "Onlinekurs-direct"}
-                  cmePoints={overrides.hideCme ? undefined : (template.cme_online || undefined)}
+                  cmePoints={overrides.hideCme ? undefined : (overrides.cmeOnlineOverride || template.cme_online || undefined)}
                 />
               )}
 
