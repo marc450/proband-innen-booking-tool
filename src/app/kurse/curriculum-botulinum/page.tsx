@@ -438,7 +438,6 @@ export default async function CurriculumBotulinumPage() {
       </section>
 
       <Lernziele content={REASONS} />
-      <Lernziele content={PERSONAS} />
 
       <Lernpfad
         heading="DEIN LERNPFAD"
@@ -462,6 +461,8 @@ export default async function CurriculumBotulinumPage() {
             "Praxis-CME der Masterclass sind beantragt und werden nach Genehmigung ergänzt.",
         }}
       />
+
+      <Lernziele content={PERSONAS} />
 
       {/* Outcomes — checklist on rose bg */}
       <section className="bg-white py-16 md:py-24">
