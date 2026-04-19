@@ -798,45 +798,37 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
     }
   }
 
-  // Customer confirmation email via Resend.
+  // Customer confirmation email via Resend. Uses the shared
+  // buildEmailHtml helper so the merch confirmation matches the course
+  // confirmation emails (logo footer, Hi {firstName}, beige info box,
+  // EPHIA Medical GmbH address block).
   if (email && RESEND_API_KEY) {
     try {
       const variantLabel = [variantColor, variantSize].filter((x) => x && x !== "one-size").join(" / ");
-      const betrag = amountPaidCents
-        ? (amountPaidCents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })
-        : "";
-      const versand = shippingGrossCents
-        ? (shippingGrossCents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })
-        : "";
-      const item = itemGrossCents
-        ? (itemGrossCents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })
-        : "";
-      const html = `<!doctype html>
-<html><body style="font-family:Roboto,Arial,sans-serif;background:#FAEBE1;margin:0;padding:24px;">
-  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:10px;padding:32px;">
-    <h1 style="margin:0 0 16px;font-size:22px;">Vielen Dank für Deine Bestellung!</h1>
-    <p style="margin:0 0 16px;color:#333;line-height:1.5;">
-      Hi ${firstName || "Du"},<br><br>
-      wir haben Deine Bestellung erhalten und schicken sie in den nächsten
-      3–7 Werktagen auf den Weg zu Dir.
-    </p>
-    <div style="background:#FAEBE1;border-radius:10px;padding:16px 20px;margin:16px 0 20px;font-size:14px;color:#333;">
-      <p style="margin:0 0 6px;"><strong>Produkt:</strong> ${productTitle}${variantLabel ? ` (${variantLabel})` : ""}</p>
-      <p style="margin:0 0 6px;"><strong>Artikel:</strong> ${item}</p>
-      <p style="margin:0 0 6px;"><strong>Versand:</strong> ${versand}</p>
-      <p style="margin:0;"><strong>Gesamt:</strong> ${betrag}</p>
-    </div>
-    <p style="margin:0 0 16px;color:#333;line-height:1.5;">
-      Mit Deinem Kauf unterstützt Du die
-      <a href="https://www.delatorre-stiftung.de" style="color:#0066FF;">Jenny De la Torre-Stiftung</a>
-      mit einer Spende in Höhe von 10 €. Danke, dass Du dabei bist.
-    </p>
-    <p style="margin:0;color:#333;">
-      Herzliche Grüße,<br>
-      Dein EPHIA-Team
-    </p>
-  </div>
-</body></html>`;
+      const fmt = (cents: number) =>
+        cents
+          ? (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })
+          : "";
+
+      const html = buildEmailHtml({
+        firstName: firstName || "Du",
+        intro:
+          "vielen Dank für Deine Bestellung! Wir haben sie erhalten und schicken sie in den nächsten 3–7 Werktagen auf den Weg zu Dir.",
+        infoRows: [
+          { label: "Produkt", value: `${productTitle}${variantLabel ? ` (${variantLabel})` : ""}` },
+          { label: "Artikel", value: fmt(itemGrossCents) },
+          { label: "Versand", value: fmt(shippingGrossCents) },
+          { label: "Gesamt", value: fmt(amountPaidCents) },
+        ],
+        extraContent: `
+          <p style="margin:0 0 20px;font-size:14px;line-height:1.5;">
+            Deine Rechnung bekommst Du in einer separaten E-Mail. Falls Du per
+            SEPA-Lastschrift bezahlt hast, kann das ein paar Tage dauern, bis
+            die Zahlung bestätigt ist. Erst danach geht die Rechnung raus.
+          </p>
+        `,
+      });
+
       await sendEmail(email, `Deine EPHIA-Bestellung: ${productTitle}`, html);
     } catch (err) {
       console.error("Merch confirmation email failed:", err);
