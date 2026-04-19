@@ -72,11 +72,19 @@ export async function POST(req: NextRequest) {
 
       customer_email: email,
 
-      // Line item.
+      // Line item. price_gross_cents is the VAT-INCLUSIVE price (35,00 EUR
+      // for the cap), so we tell Stripe the amount is "inclusive" and let
+      // automatic_tax split the 19% DE VAT out on the receipt instead of
+      // adding tax on top. Without this hint Stripe treats the price as
+      // net, fails to match EPHIA's merch tax settings, and shows 0,00 €
+      // tax. "txcd_99999999" is Stripe's "General - Tangible Goods" code
+      // which covers apparel/caps/etc in the default DE configuration.
       "line_items[0][quantity]": "1",
       "line_items[0][price_data][currency]": "eur",
       "line_items[0][price_data][unit_amount]": String(variant.price_gross_cents),
+      "line_items[0][price_data][tax_behavior]": "inclusive",
       "line_items[0][price_data][product_data][name]": productName,
+      "line_items[0][price_data][product_data][tax_code]": "txcd_99999999",
 
       // Shipping address required.
       "shipping_address_collection[allowed_countries][0]": "DE",
@@ -84,10 +92,16 @@ export async function POST(req: NextRequest) {
       "shipping_address_collection[allowed_countries][2]": "CH",
 
       // Fixed shipping rate (V1 — admin can swap for dynamic rates later).
+      // Mark the 2,90 EUR as VAT-inclusive and tag with Stripe's shipping
+      // tax_code ("txcd_92010001") so automatic_tax splits the VAT portion
+      // consistently with the line item rather than treating shipping as
+      // tax-free.
       "shipping_options[0][shipping_rate_data][type]": "fixed_amount",
       "shipping_options[0][shipping_rate_data][fixed_amount][amount]": String(SHIPPING_GROSS_CENTS),
       "shipping_options[0][shipping_rate_data][fixed_amount][currency]": "eur",
       "shipping_options[0][shipping_rate_data][display_name]": SHIPPING_LABEL,
+      "shipping_options[0][shipping_rate_data][tax_behavior]": "inclusive",
+      "shipping_options[0][shipping_rate_data][tax_code]": "txcd_92010001",
       "shipping_options[0][shipping_rate_data][delivery_estimate][minimum][unit]": "business_day",
       "shipping_options[0][shipping_rate_data][delivery_estimate][minimum][value]": String(SHIPPING_DELIVERY_MIN_DAYS),
       "shipping_options[0][shipping_rate_data][delivery_estimate][maximum][unit]": "business_day",
