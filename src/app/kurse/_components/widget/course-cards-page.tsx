@@ -539,8 +539,8 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
       // taken Periorale Zone.
       onlineDesc: (
         <>
-          Inhaltsgleich mit dem Onlinekurs des{" "}
-          <strong className="font-bold">Aufbaukurs Botulinum Periorale Zone</strong>.
+          Inhaltsgleich mit dem{" "}
+          <strong className="font-bold">Onlinekurs Botulinum Periorale Zone</strong>.
         </>
       ),
       // Only the Onlinekurs (Periorale Zone) carries an approved CME
