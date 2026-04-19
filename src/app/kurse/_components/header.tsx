@@ -40,7 +40,6 @@ const NAV_LINKS: NavLink[] = [
       { label: "Unsere Didaktik", href: "/kurse/didaktik" },
     ],
   },
-  { label: "EPHIA Journal", href: "https://www.ephia.de/blog" },
   { label: "Werde Proband:in", href: "https://proband-innen.ephia.de/" },
   { label: "Merch ✨", href: "/merch" },
   { label: "FAQ & Kontakt", href: "/kurse/faq-kontakt" },
