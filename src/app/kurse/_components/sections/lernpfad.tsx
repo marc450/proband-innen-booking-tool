@@ -12,8 +12,6 @@ import {
 export interface LernpfadStep {
   /** Step number, displayed as "01" / "02" / etc. */
   number: number;
-  /** Small uppercase kicker badge: "GRUNDKURS" / "AUFBAUKURS" / "MASTERCLASS". */
-  kicker: string;
   /** Course title, e.g. "Botulinum". */
   title: string;
   /** Format pill, e.g. "Onlinekurs" or "Online- & Praxiskurs". */
@@ -222,13 +220,8 @@ function PathStep({
           {numberLabel}
         </span>
 
-        {/* Kicker badge */}
-        <p className="text-[11px] font-bold tracking-[0.18em] text-[#0066FF] mb-2">
-          {step.kicker}
-        </p>
-
         {/* Title */}
-        <h3 className="text-xl md:text-2xl font-bold tracking-tight text-black mb-3">
+        <h3 className="text-xl md:text-2xl font-bold tracking-tight text-black mb-3 mt-1">
           {step.title}
         </h3>
 
