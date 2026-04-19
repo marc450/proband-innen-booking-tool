@@ -69,6 +69,10 @@ export async function POST(req: NextRequest) {
       "tax_id_collection[enabled]": "true",
       "consent_collection[terms_of_service]": "required",
       "invoice_creation[enabled]": "true",
+      // Surface the "Rabattcode hinzufügen" link on Stripe Checkout so
+      // buyers can redeem any active promotion code from Stripe (same
+      // codes we manage under Dashboard > Rabattcodes).
+      allow_promotion_codes: "true",
 
       // Line item. price_gross_cents is the VAT-INCLUSIVE price (35,00 EUR
       // for the cap), so we tell Stripe the amount is "inclusive" and let
