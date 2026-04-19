@@ -447,8 +447,16 @@ export default async function CurriculumBotulinumPage() {
         destination={{
           label: "Du auf Expert:innen-Niveau",
           certificationName: "Botulinum Specialist",
-          certificationDescription:
-            "Wer alle vier Kurse des Curriculums erfolgreich abschließt, erhält das EPHIA Botulinum Specialist Zertifikat als sichtbaren Beleg der vollständigen Spezialisierung.",
+          certificationDescription: (
+            <>
+              Wer alle vier Kurse des Curriculums erfolgreich abschließt,
+              erhält das{" "}
+              <strong className="font-bold text-[#0066FF]">
+                EPHIA Botulinum Specialist Zertifikat
+              </strong>{" "}
+              als sichtbaren Beleg der vollständigen Spezialisierung.
+            </>
+          ),
           cmeTotal: cmeTotalLabel,
           cmeNote:
             "Praxis-CME der Masterclass sind beantragt und werden nach Genehmigung ergänzt.",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowRight,
   Award,
@@ -41,8 +41,12 @@ export interface LernpfadDestination {
   label: string;
   /** Name of the certification, e.g. "Botulinum Specialist". */
   certificationName: string;
-  /** Short paragraph about the certification. */
-  certificationDescription: string;
+  /**
+   * Short paragraph about the certification. ReactNode so callers can
+   * highlight key phrases (e.g. wrap "EPHIA Botulinum Specialist
+   * Zertifikat" in a styled <strong>).
+   */
+  certificationDescription: ReactNode;
   /**
    * Optional total CME pill shown on the certification card, e.g.
    * "60 CME-Punkte". Pass null/undefined to suppress.
