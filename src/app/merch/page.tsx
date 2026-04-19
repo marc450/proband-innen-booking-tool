@@ -106,7 +106,11 @@ export default async function MerchIndexPage() {
                       fill
                       quality={85}
                       sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                      // object-top anchors the 4:3 crop to the top of the
+                      // source photo so the cap (which sits at the top of
+                      // the model shots) ends up centered in the tile,
+                      // instead of getting cut off above the model's torso.
+                      className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
                     />
                   </div>
                 ) : (
