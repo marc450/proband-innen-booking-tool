@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Check, Loader2, Award, ChevronDown } from "lucide-react";
+import { Check, Loader2, Award, ChevronDown, AlertTriangle } from "lucide-react";
 import { TerminUpdateModal } from "./termin-update-modal";
 
 interface CourseDate {
@@ -28,6 +28,13 @@ interface CourseCardProps {
   cmePoints?: string;
   inclusionHeading?: string;
   titleClassName?: string;
+  /**
+   * Optional prerequisite warning rendered as an amber banner inside
+   * the card body, above the price block. Used e.g. on the Masterclass
+   * Botulinum Praxiskurs to flag that the Onlinekurs Periorale Zone is
+   * a hard requirement.
+   */
+  warning?: string;
 }
 
 export function CourseCard({
@@ -46,6 +53,7 @@ export function CourseCard({
   cmePoints,
   inclusionHeading,
   titleClassName,
+  warning,
 }: CourseCardProps) {
   const [selectedDate, setSelectedDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -126,6 +134,22 @@ export function CourseCard({
 
       {/* Body */}
       <div className="px-7 pt-8 pb-5">
+        {/* Prerequisite warning banner — sits above the price so it's
+            impossible to miss before the user picks a date. Uses the
+            same amber treatment as the prerequisite-confirmation modal
+            so the visual story is consistent. */}
+        {warning && (
+          <div className="mb-6 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3">
+            <AlertTriangle
+              className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5"
+              aria-hidden="true"
+            />
+            <p className="text-sm font-semibold text-amber-900 leading-snug">
+              {warning}
+            </p>
+          </div>
+        )}
+
         {/* Price row — fixed height so it aligns across cards on desktop */}
         <div className="mb-8 lg:min-h-[4.5rem]">
           <div className="text-4xl font-bold text-[#0066FF] mb-1">{price}</div>

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { CourseCard } from "./course-card";
+import { PrerequisiteConfirmationDialog } from "./prerequisite-confirmation-dialog";
 import { PremiumCard, BADGE_COLORS } from "./premium-card";
 import type { IncludedCourse } from "./premium-card";
 import type { CourseTemplate, CourseSession, CourseType } from "@/lib/types";
@@ -323,6 +324,10 @@ function getAvailability(session: CourseSession) {
 export function CourseCardsPage({ template, sessions: initialSessions }: Props) {
   const [sessions, setSessions] = useState(initialSessions);
   const [loadingCheckout, setLoadingCheckout] = useState<string | null>(null);
+  // Pending Praxiskurs booking that's waiting on the prerequisite-confirmation
+  // dialog. Holds the sessionId so we can resume the checkout when the user
+  // confirms. Null when no confirmation flow is in progress.
+  const [pendingPraxisBooking, setPendingPraxisBooking] = useState<string | null>(null);
 
   // Poll for session updates every 60 seconds
   useEffect(() => {
@@ -435,6 +440,24 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
     // The /courses/[courseKey] LearnWorlds embed and other surfaces are
     // unaffected — they read price_gross_praxis from the DB directly.
     hidePraxis?: boolean;
+    /**
+     * Optional warning rendered as an amber banner inside the standalone
+     * Praxiskurs card (not the Kombikurs). Used to flag a hard
+     * prerequisite. When set together with `praxisPrereqConfirm`, the
+     * booking flow also opens a confirmation modal before checkout.
+     */
+    praxisWarning?: string;
+    /**
+     * When set, the standalone Praxiskurs booking flow opens a
+     * prerequisite-confirmation dialog before kicking off Stripe. The
+     * checkout only proceeds after the user explicitly ticks the
+     * checkbox and confirms.
+     */
+    praxisPrereqConfirm?: {
+      title?: string;
+      description: string;
+      checkboxLabel: string;
+    };
   }> = {
     grundkurs_dermalfiller: {
       hidePraxis: true,
@@ -483,6 +506,16 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
       // CME for Lippen is still pending LÄK approval, so hide the numeric
       // CME badge everywhere until that changes.
       hideCme: true,
+    },
+    masterclass_botulinum: {
+      praxisWarning:
+        "Voraussetzung: abgeschlossener Onlinekurs Botulinum Periorale Zone.",
+      praxisPrereqConfirm: {
+        description:
+          "Der Praxiskurs der Masterclass Botulinum baut auf dem Onlinekurs Botulinum Periorale Zone auf. Bitte bestätige, dass Du diesen bereits abgeschlossen hast, bevor Du den Praxiskurs buchst.",
+        checkboxLabel:
+          "Ich bestätige, dass ich den Onlinekurs Botulinum Periorale Zone bereits abgeschlossen habe.",
+      },
     },
     grundkurs_botulinum_zahnmedizin: {
       header: "UNSERE KURSANGEBOTE FÜR ZAHNÄRZT:INNEN",
@@ -688,7 +721,17 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   dates={dynamicDates}
                   buttonText="Praxiskurs buchen"
                   additionalInfo="Praxiskurs-Standort: Berlin-Mitte"
-                  onBook={(sessionId) => handleBooking("Praxiskurs", sessionId)}
+                  warning={overrides.praxisWarning}
+                  onBook={(sessionId) => {
+                    // If this course has a prerequisite-confirmation flow
+                    // configured, intercept and stash the sessionId until
+                    // the user confirms in the modal.
+                    if (overrides.praxisPrereqConfirm && sessionId) {
+                      setPendingPraxisBooking(sessionId);
+                      return;
+                    }
+                    handleBooking("Praxiskurs", sessionId);
+                  }}
                   isLoading={loadingCheckout?.startsWith("Praxiskurs-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Praxiskurs-", "")}
                   cmePoints={overrides.hideCme ? undefined : (template.cme_praxis || undefined)}
@@ -790,6 +833,26 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
         })()}
 
       </div>
+
+      {/* Prerequisite-confirmation dialog. Mounted once at the section
+          level so it can intercept any standalone Praxiskurs booking on
+          courses that opt in via `praxisPrereqConfirm`. The pending
+          sessionId is stashed in `pendingPraxisBooking` while the user
+          decides; on confirm we resume the normal checkout flow. */}
+      {overrides.praxisPrereqConfirm && (
+        <PrerequisiteConfirmationDialog
+          open={!!pendingPraxisBooking}
+          title={overrides.praxisPrereqConfirm.title}
+          description={overrides.praxisPrereqConfirm.description}
+          checkboxLabel={overrides.praxisPrereqConfirm.checkboxLabel}
+          onCancel={() => setPendingPraxisBooking(null)}
+          onConfirm={() => {
+            const sessionId = pendingPraxisBooking;
+            setPendingPraxisBooking(null);
+            if (sessionId) handleBooking("Praxiskurs", sessionId);
+          }}
+        />
+      )}
     </section>
   );
 }
