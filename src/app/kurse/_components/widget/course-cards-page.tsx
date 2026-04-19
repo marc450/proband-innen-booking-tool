@@ -448,6 +448,16 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
      */
     praxisWarning?: string;
     /**
+     * When true, the standalone Praxiskurs card shows an amber
+     * "CME beantragt" pill instead of a numeric CME badge.
+     */
+    praxisCmePending?: boolean;
+    /**
+     * When true, the Online- & Praxiskurs (Kombikurs) card shows an
+     * amber "CME beantragt" pill instead of a numeric CME badge.
+     */
+    kombiCmePending?: boolean;
+    /**
      * When set, the standalone Praxiskurs booking flow opens a
      * prerequisite-confirmation dialog before kicking off Stripe. The
      * checkout only proceeds after the user explicitly ticks the
@@ -508,8 +518,12 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
       hideCme: true,
     },
     masterclass_botulinum: {
-      praxisWarning:
-        "Voraussetzung: abgeschlossener Onlinekurs Botulinum Periorale Zone.",
+      // Only the Onlinekurs (Periorale Zone) carries an approved CME
+      // count. The Praxiskurs and Kombikurs CME accreditation is still
+      // pending — show the amber "CME beantragt" pill instead of a
+      // number.
+      praxisCmePending: true,
+      kombiCmePending: true,
       praxisPrereqConfirm: {
         description:
           "Der Praxiskurs der Masterclass Botulinum baut auf dem Onlinekurs Botulinum Periorale Zone auf. Bitte bestätige, dass Du diesen bereits abgeschlossen hast, bevor Du den Praxiskurs buchst.",
@@ -735,6 +749,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   isLoading={loadingCheckout?.startsWith("Praxiskurs-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Praxiskurs-", "")}
                   cmePoints={overrides.hideCme ? undefined : (template.cme_praxis || undefined)}
+                  cmePending={overrides.praxisCmePending}
                 />
               )}
 
@@ -753,6 +768,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   isLoading={loadingCheckout?.startsWith("Kombikurs-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
                   cmePoints={overrides.hideCme ? undefined : (template.cme_kombi || undefined)}
+                  cmePending={overrides.kombiCmePending}
                   inclusionHeading="Im Online- & Praxiskurs inkludiert:"
                   titleClassName="text-[1.75rem] whitespace-nowrap"
                 />

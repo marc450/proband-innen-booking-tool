@@ -26,6 +26,13 @@ interface CourseCardProps {
   isLoading?: boolean;
   selectedDateForLoading?: string;
   cmePoints?: string;
+  /**
+   * When true, replace the numeric CME badge with a "CME beantragt"
+   * pill (amber). Used for cards whose CME accreditation is still
+   * pending. Mutually exclusive with `cmePoints` — if both are set,
+   * `cmePending` wins.
+   */
+  cmePending?: boolean;
   inclusionHeading?: string;
   titleClassName?: string;
   /**
@@ -51,6 +58,7 @@ export function CourseCard({
   isLoading = false,
   selectedDateForLoading,
   cmePoints,
+  cmePending,
   inclusionHeading,
   titleClassName,
   warning,
@@ -118,13 +126,22 @@ export function CourseCard({
         highlighted ? "ring-2 ring-[#0066FF] shadow-2xl" : ""
       }`}
     >
-      {/* CME badge — sits on the top edge of the card */}
-      {cmePoints && (
+      {/* CME badge — sits on the top edge of the card. Pending status
+          (CME beantragt) wins over a numeric value if both are set. */}
+      {cmePending ? (
+        <div
+          className="absolute -top-4 right-5 z-10 bg-amber-500 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5"
+          style={{ boxShadow: "0 0 0 3px rgba(255,255,255,0.9), 0 2px 8px rgba(0,0,0,0.15)" }}
+        >
+          <Award className="w-4 h-4" aria-hidden="true" />
+          <span className="text-sm font-bold whitespace-nowrap">CME beantragt</span>
+        </div>
+      ) : cmePoints ? (
         <div className="absolute -top-4 right-5 z-10 bg-[#0066FF] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5" style={{ boxShadow: "0 0 0 3px rgba(255,255,255,0.9), 0 2px 8px rgba(0,0,0,0.15)" }}>
           <Award className="w-4 h-4" aria-hidden="true" />
           <span className="text-sm font-bold">{cmePoints}</span>
         </div>
-      )}
+      ) : null}
 
       {/* Header */}
       <div className="rounded-t-lg p-5 relative" style={{ backgroundColor: "hsl(24, 71%, 93%)" }}>
