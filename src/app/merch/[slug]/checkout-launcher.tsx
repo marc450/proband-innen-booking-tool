@@ -66,28 +66,44 @@ export function MerchCheckoutLauncher({
     }
 
     setSubmitting(true);
-    try {
-      const res = await fetch("/api/merch-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          variantId,
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          email: email.trim(),
-          phone: phone.trim(),
-          isDoctor: isDoctor === "yes",
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.url) {
-        throw new Error(data.error || "Checkout konnte nicht gestartet werden.");
+    // Retry the POST up to 3 times on transient network errors ("Failed to
+    // fetch") with a short backoff. Server-side errors (non-2xx) short-
+    // circuit immediately so we don't spam Stripe with duplicates.
+    const payload = JSON.stringify({
+      variantId,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      isDoctor: isDoctor === "yes",
+    });
+    let lastNetErr: string | null = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const res = await fetch("/api/merch-checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: payload,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.url) {
+          setError(data.error || `Checkout konnte nicht gestartet werden (HTTP ${res.status}).`);
+          setSubmitting(false);
+          return;
+        }
+        window.location.href = data.url;
+        return;
+      } catch (err) {
+        // TypeError from fetch — transient. Retry.
+        lastNetErr = err instanceof Error ? err.message : "Unerwarteter Netzwerkfehler.";
+        console.warn(`merch-checkout fetch attempt ${attempt} failed:`, err);
+        if (attempt < 3) await new Promise((r) => setTimeout(r, 400 * attempt));
       }
-      window.location.href = data.url;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unerwarteter Fehler.");
-      setSubmitting(false);
     }
+    setError(
+      `Verbindungsproblem: ${lastNetErr}. Bitte neu laden (Cmd+Shift+R) oder Browser-Erweiterungen prüfen (z.B. Adblocker).`,
+    );
+    setSubmitting(false);
   };
 
   const priceLabel = (priceCents / 100).toLocaleString("de-DE", {
