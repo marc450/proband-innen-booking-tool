@@ -187,57 +187,11 @@ export const masterclassBotulinum: CourseLandingContent = {
     chapters: aufbaukursBotulinumPerioraleZone.inhalt.chapters,
   },
 
-  lernplattform: {
-    heading: "AUFBAU UNSERER LERNPLATTFORM",
-    features: [
-      {
-        title: "Einfache Navigation",
-        description:
-          "Unsere Plattform bietet Dir eine klare Struktur mit übersichtlicher Navigation zwischen Kapiteln und Unterkapiteln.",
-        bullets: [
-          "Fortschrittsanzeige zeigt Dir jederzeit, wie weit Du bist.",
-          "Inhalte können jederzeit pausiert und wieder aufgenommen werden.",
-          "Im Reiter „Austausch\" kannst Du Fragen stellen und Dich mit der Community und Dozierenden austauschen.",
-        ],
-        mediaPath: "/kurse/grundkurs_botulinum/plattform/navigation.png",
-      },
-      {
-        title: "Realitätsnahe Behandlungen",
-        description:
-          "Zu jeder im Kurs behandelten Indikation findest Du praxisnahe Videosequenzen:",
-        bullets: [
-          "Zuerst siehst Du die korrekte Anzeichnung der Injektionspunkte direkt am Modell,",
-          "danach die Behandlungsschritte live an Patient:innen, fachlich kommentiert und anschaulich erklärt.",
-          "So kannst Du den Ablauf sicher nachvollziehen und in Deinen Praxisalltag übertragen.",
-        ],
-        mediaPath:
-          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_botulinum/Grundkurs%20Botulinum_compressed.mp4",
-        mediaPoster: "/kurse/grundkurs_botulinum/plattform/behandlung-poster.jpg",
-      },
-      {
-        title: "Fachlich hochstehende Inhalte",
-        description:
-          "Alle Kursinhalte wurden von unseren erfahrenen Dozierenden entwickelt und durch unser unabhängiges Review-Board geprüft.",
-        bullets: [
-          "Evidenzbasierte Informationen, aktuelle Literatur und klinische Relevanz stehen im Mittelpunkt.",
-          "Auch nach dem Kurs sind unsere Dozierenden in der Community für Fragen erreichbar.",
-          "Für ein nachhaltiges Lernen, weit über das Kursende hinaus.",
-        ],
-        mediaPath: "/kurse/grundkurs_botulinum/plattform/inhalte.png",
-      },
-      {
-        title: "Klare Lernziele & Tests",
-        description:
-          "Jedes Kapitel startet mit präzise formulierten Lernzielen, die Dir helfen, den Fokus zu setzen:",
-        bullets: [
-          "Die Lernziele sind abgestimmt auf die CME-Testfragen am Kapitelende.",
-          "Alle Inhalte wurden so ausgewählt, dass sie direkt für Deine praktische Arbeit relevant sind.",
-          "So lernst Du nicht einfach nur mit, sondern gezielt für Deine Patient:innen.",
-        ],
-        mediaPath: "/kurse/grundkurs_botulinum/plattform/tests.png",
-      },
-    ],
-  },
+  // Lernplattform showcase mirrors the Aufbaukurs Periorale Zone page
+  // exactly — the Masterclass Onlinekurs IS the Periorale Zone course,
+  // so the platform features and screenshots match. Reused by reference
+  // so future edits to Periorale Zone flow through automatically.
+  lernplattform: aufbaukursBotulinumPerioraleZone.lernplattform,
 
   ctaBanner: {
     heading: "Bring Dein Fachwissen auf die nächste Stufe!",
