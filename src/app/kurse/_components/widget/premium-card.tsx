@@ -550,18 +550,30 @@ export function PremiumCard({
               <span className="text-base text-black">{feature}</span>
             </li>
           ))}
-          {includedCourses.map((course, index) => (
-            <li key={index} className="flex items-start gap-2">
-              <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-1" aria-hidden="true" />
-              <button
-                type="button"
-                onClick={() => setInfoModal(course)}
-                className={`text-sm font-semibold rounded-full px-3 py-1 transition-colors cursor-pointer text-left ${course.badgeClasses}`}
-              >
-                {course.shortName || course.name}
-              </button>
-            </li>
-          ))}
+          {includedCourses.map((course, index) => {
+            // Make sure the pill always reads as "<Type> <Name>" so the
+            // buyer immediately sees that the included extras are
+            // Onlinekurs(e), not full Praxiskurse. Some packages already
+            // store the type in the shortName ("Onlinekurs Periorale
+            // Zone") — only prefix when it's missing so we don't double
+            // up.
+            const rawLabel = course.shortName || course.name;
+            const pillLabel = rawLabel.toLowerCase().startsWith(course.type.toLowerCase())
+              ? rawLabel
+              : `${course.type} ${rawLabel}`;
+            return (
+              <li key={index} className="flex items-start gap-2">
+                <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0 mt-1" aria-hidden="true" />
+                <button
+                  type="button"
+                  onClick={() => setInfoModal(course)}
+                  className={`text-sm font-semibold rounded-full px-3 py-1 transition-colors cursor-pointer text-left ${course.badgeClasses}`}
+                >
+                  {pillLabel}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       </div>
 
