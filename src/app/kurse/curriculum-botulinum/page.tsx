@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ArrowDown, Check, Sparkles } from "lucide-react";
+import { ArrowDown, Check } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CURRICULUM_BOTULINUM } from "@/lib/curricula";
 import { TYPO } from "../_components/typography";
@@ -147,12 +147,6 @@ const FORMAT = {
         "Auch nach dem Kurs bleiben Dir unsere Dozent:innen über die Community erhalten. Stell Fragen, tausche Dich aus, bleib am Ball.",
     },
   ],
-};
-
-const PACING = {
-  heading: "EMPFOHLENE REIHENFOLGE & TEMPO",
-  body:
-    "Wir empfehlen die Reihenfolge Grundkurs Botulinum → Medizinische Hautpflege → Aufbaukurs Therapeutische Indikationen → Masterclass. Die Inhalte bauen aufeinander auf. Du hast 1,5 Jahre Zugriff auf alle Online-Inhalte und kannst die Praxiskurse flexibel im Rahmen der verfügbaren Termine buchen. Eine realistische Mindestdauer für das gesamte Curriculum sind etwa 6 Monate, mehr Zeit ist absolut in Ordnung.",
 };
 
 const FAQS = [
@@ -502,23 +496,6 @@ export default async function CurriculumBotulinumPage() {
       </section>
 
       <Lernziele content={FORMAT} />
-
-      {/* Pacing — short prose paragraph */}
-      <section className="bg-white pb-16 md:pb-24">
-        <div className="max-w-3xl mx-auto px-5 md:px-8 text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#0066FF]/10 mb-5">
-            <Sparkles
-              className="w-5 h-5 text-[#0066FF]"
-              strokeWidth={2.5}
-              aria-hidden="true"
-            />
-          </div>
-          <h2 className={`${TYPO.h2} mb-4`}>{PACING.heading}</h2>
-          <p className="text-base md:text-lg text-black/75 leading-relaxed">
-            {PACING.body}
-          </p>
-        </div>
-      </section>
 
       <Testimonials content={TESTIMONIALS} />
 
