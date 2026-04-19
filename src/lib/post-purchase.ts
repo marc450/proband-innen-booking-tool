@@ -4,6 +4,7 @@ import {
   buildPraxiskursEmail,
   buildKombikursEmail,
   buildCommunityInviteEmail,
+  buildProbandinnenInfoEmail,
   formatDateDe,
 } from "@/lib/course-email-templates";
 import { buildEmailHtml } from "@/lib/email-template";
@@ -198,6 +199,26 @@ export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { sk
       await sendEmailViaResend(data.email, "Willkommen in der EPHIA-Community!", buildCommunityInviteEmail(data.firstName));
     } catch (inviteErr) {
       console.error("Failed to send community invite email:", inviteErr);
+    }
+
+    // Proband:innen-Info — second transactional email for any booking
+    // that includes a praxis component (Praxiskurs, Kombikurs, or the
+    // Premium Komplettpaket which is built on a Kombikurs). Pure
+    // Onlinekurs purchases skip this since there's no in-person session.
+    if (
+      data.courseType === "Praxiskurs" ||
+      data.courseType === "Kombikurs" ||
+      data.courseType === "Premium"
+    ) {
+      try {
+        await sendEmailViaResend(
+          data.email,
+          "Nächster Schritt: Proband:innen für Deinen Praxiskurs",
+          buildProbandinnenInfoEmail(data.firstName),
+        );
+      } catch (probandErr) {
+        console.error("Failed to send Proband:innen info email:", probandErr);
+      }
     }
   }
 

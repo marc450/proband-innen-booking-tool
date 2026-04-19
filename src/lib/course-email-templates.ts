@@ -220,6 +220,69 @@ export function buildKombikursEmail(firstName: string, courseName: string, praxi
 </div>`;
 }
 
+/**
+ * Praxiskurs Proband:innen-Info email — second transactional email
+ * sent to anyone who books a Praxiskurs, Kombikurs or Premium bundle.
+ * Explains that EPHIA provides Proband:innen by default but the buyer
+ * can bring one of their own (one max) via the public registration
+ * link, and points out the fast-paced public seat allocation that
+ * makes acting quickly important.
+ */
+export function buildProbandinnenInfoEmail(firstName: string): string {
+  return `<div style="background-color:#fff; padding:0; font-family:Arial, sans-serif;">
+  <div style="background-color:#fff; max-width:600px; margin:0 auto; padding:8px; text-align:left; line-height:1.5;">
+    <p style="margin-top:0; margin-bottom:18px;">
+      Hi ${firstName},
+    </p>
+
+    <p style="margin:0 0 18px;">
+      für Deinen Praxiskurs stellen wir Dir automatisch passende Proband:innen aus unserem Pool zur Verfügung. Du musst Dich also grundsätzlich um nichts kümmern.
+    </p>
+
+    <p style="margin:0 0 18px;">
+      Falls Du eine eigene Proband:in einplanen möchtest, ist schnelles Handeln wichtig. Unsere Termine werden parallel öffentlich vergeben und sind erfahrungsgemäß innerhalb weniger Tage vollständig ausgebucht. Sobald alle Slots belegt sind, können wir keine Änderungen oder Zuordnungen mehr vornehmen.
+    </p>
+
+    <p style="margin:0 0 18px;">
+      <strong>Pro Teilnehmer:in kann maximal ein:e eigene:r Proband:in eingebracht werden.</strong>
+    </p>
+
+    <p style="margin:0 0 12px;">
+      Wenn Du eine:n eigene:n Proband:in mitbringen möchtest, leite den folgenden Link bitte direkt weiter:
+    </p>
+    <p style="margin:0 0 18px;">
+      <a href="https://proband-innen.ephia.de/book/privat" style="display:inline-block; background-color:#0066FF; color:#fff; text-decoration:none; padding:12px 22px; border-radius:10px; font-weight:bold;">
+        Zur Proband:innen-Registrierung
+      </a>
+    </p>
+
+    <p style="margin:0 0 18px;">
+      Die Registrierung muss persönlich durch den/die Proband:in erfolgen, da AGB und Datenschutzerklärung bestätigt werden müssen. Über diesen Link ist die Buchung kostenfrei.
+    </p>
+
+    <p style="margin:0 0 18px;">
+      Bitte beachte zudem: Medizinische Leistungen müssen gemäß GOÄ abgerechnet werden. Da die Behandlung durch Dich erfolgt, liegt die ordnungsgemäße Abrechnung in Deiner Verantwortung.
+    </p>
+
+    <h3 style="margin:24px 0 10px; font-size:16px; font-weight:bold;">Voraussetzungen für Proband:innen</h3>
+    <p style="margin:0 0 20px;">
+      Volljährig, grundsätzlich gesund, keine Schwangerschaft oder Stillzeit, keine akuten Hauterkrankungen im Behandlungsareal sowie Einverständnis zur internen Fotodokumentation.
+    </p>
+
+    <p style="margin:0 0 20px;">
+      Bei Fragen sind wir jederzeit für Dich da.
+    </p>
+
+    <p style="margin:0 0 20px;">
+      Herzliche Grüße,<br>
+      Dein EPHIA-Team
+    </p>
+
+    ${FOOTER}
+  </div>
+</div>`;
+}
+
 export function buildCommunityInviteEmail(firstName: string): string {
   return `<div style="background-color:#fff; padding:20px; font-family:Arial, sans-serif;">
   <div style="background-color:#fff; max-width:600px; margin:0 auto; padding:30px;">
