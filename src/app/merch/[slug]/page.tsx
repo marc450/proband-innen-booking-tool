@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { ImageIcon } from "lucide-react";
 import type { MerchProduct, MerchProductVariant } from "@/lib/types";
-import { MerchCheckoutLauncher } from "./checkout-launcher";
+import { PurchasePanel } from "./purchase-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -54,13 +54,16 @@ export default async function MerchProductPage({
   const variants = (variantsData ?? []) as MerchProductVariant[];
 
   // The /merch index links into this page with ?color=<variant.color> so
-  // we can render a single targeted buy CTA instead of re-showing every
-  // colorway. Pick the requested variant; fall back to the first available
-  // one (direct navigation to /merch/ephia-cap without a query).
-  const selected =
-    (requestedColor && variants.find((v) => (v.color || "").toLowerCase() === requestedColor.toLowerCase())) ||
-    variants[0] ||
-    null;
+  // we can scope the CTA and hero to a single colorway even when the
+  // product has several. If the product has size variants (e.g. SONJA X
+  // EPHIA T-Shirt in S/M/L) they all share the same color and become the
+  // picker inside PurchasePanel. Fall back to the first colorway for
+  // direct navigation without a query string.
+  const colorKey = (requestedColor || variants[0]?.color || "").toLowerCase();
+  const variantsForColor = colorKey
+    ? variants.filter((v) => (v.color || "").toLowerCase() === colorKey)
+    : variants;
+  const selected = variantsForColor[0] || null;
 
   const heroImage = selected?.image_url || p.image_url || null;
 
@@ -99,18 +102,17 @@ export default async function MerchProductPage({
             )}
 
             <div className="mt-8 max-w-md">
-              {!selected ? (
-                <p className="text-sm text-black/60">Keine Varianten verfügbar.</p>
-              ) : (
-                <MerchCheckoutLauncher
-                  variantId={selected.id}
-                  productTitle={p.title}
-                  variantLabel={selected.color || selected.name}
-                  priceCents={selected.price_gross_cents}
-                  stock={selected.stock}
-                  buttonText={selected.stock > 0 ? "Jetzt bestellen" : undefined}
-                />
-              )}
+              <PurchasePanel
+                productTitle={p.title}
+                variants={variantsForColor.map((v) => ({
+                  id: v.id,
+                  name: v.name,
+                  color: v.color,
+                  size: v.size,
+                  price_gross_cents: v.price_gross_cents,
+                  stock: v.stock,
+                }))}
+              />
             </div>
           </div>
 
