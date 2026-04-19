@@ -66,12 +66,16 @@ function praxiskursInfoBox({
 const PROBANDINNEN_SECTION = `
     <h3 style="margin:16px 0 10px;font-size:16px;font-weight:bold;">Proband:innen-Organisation</h3>
     <p style="margin:0 0 20px;">
-      Für den Praxiskurs sollten alle Teilnehmer:innen eine:n eigene:n Proband:in mitbringen. Dein:e Proband:in registriert sich bitte spätestens zwei Wochen vor Kursbeginn über <a href="https://proband-innen.ephia.de/book" style="color:#0066FF;text-decoration:none;">diesen Link</a>.
-      <br><br>
-      Solltest Du keine:n Proband:in mitbringen können, ist das kein Ausschlusskriterium: Melde Dich einfach unter <a href="mailto:customerlove@ephia.de" style="color:#0066FF;text-decoration:none;">customerlove@ephia.de</a>, wir greifen dann auf unseren Proband:innen-Pool zurück und versuchen, eine passende Person für Dich zu organisieren. Bitte beachte, dass Anmeldungen von Proband:innen nach einer Woche vor Kursstart nicht mehr beachtet werden können.
+      Für Deinen Praxiskurs stellen wir Dir automatisch passende Proband:innen aus unserem Pool zur Verfügung. Du musst Dich also grundsätzlich um nichts kümmern.
     </p>
     <p style="margin:0 0 20px;">
-      Sobald Du eine:n Proband:in angemeldet hast, erhält die Person ca. <strong>48 Stunden vor Kursbeginn</strong> alle relevanten Informationen per E-Mail, inklusive genauer Adresse, gewünschter Ankunftszeit und Details zur Behandlung.
+      Wir freuen uns trotzdem sehr, wenn Du eine:n eigene:n Proband:in mitbringst. Verpflichtend ist das aber nicht. <strong>Pro Teilnehmer:in kann maximal ein:e eigene:r Proband:in eingebracht werden.</strong>
+    </p>
+    <p style="margin:0 0 20px;">
+      Wenn Du jemanden mitbringen möchtest, leite bitte den folgenden Link weiter: <a href="https://proband-innen.ephia.de/book/privat" style="color:#0066FF;text-decoration:none;">https://proband-innen.ephia.de/book/privat</a>. Die Registrierung muss persönlich durch den/die Proband:in erfolgen, da AGB und Datenschutzerklärung bestätigt werden müssen, und ist über diesen Link kostenfrei. Da unsere Termine parallel öffentlich vergeben werden, ist schnelles Handeln wichtig.
+    </p>
+    <p style="margin:0 0 20px;">
+      Sobald Dein:e Proband:in angemeldet ist, erhält die Person ca. <strong>48 Stunden vor Kursbeginn</strong> alle relevanten Informationen per E-Mail, inklusive genauer Adresse, gewünschter Ankunftszeit und Details zur Behandlung.
       <br><br>
       Bei der Auswahl Deiner Proband:in freuen wir uns, wenn Du an Personen mit mehreren möglichen Indikationen denkst. So können vor Ort möglichst viele Behandlungstechniken gezeigt und geübt werden. Bitte beachte dabei unbedingt bekannte Kontraindikationen.
     </p>`;
