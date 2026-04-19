@@ -22,9 +22,13 @@ type Variant = {
 export function PurchasePanel({
   variants,
   productTitle,
+  donates = false,
 }: {
   variants: Variant[];
   productTitle: string;
+  /** Forwarded to the launcher so only donating products (the cap)
+   *  mention the 10 EUR Jenny De la Torre-Stiftung line in the modal. */
+  donates?: boolean;
 }) {
   // Strip virtual "one-size" from the picker. It's not a real size the
   // buyer chooses, just a placeholder we store so the schema can handle
@@ -88,6 +92,7 @@ export function PurchasePanel({
         priceCents={selected.price_gross_cents}
         stock={selected.stock}
         buttonText={selected.stock > 0 ? "Jetzt bestellen" : undefined}
+        donates={donates}
       />
     </div>
   );

@@ -19,6 +19,12 @@ interface Props {
    * variant.
    */
   buttonText?: string;
+  /**
+   * When true the modal subtitle mentions the 10 EUR donation to the
+   * Jenny De la Torre-Stiftung. Only set for products that actually
+   * trigger the donation (the cap). Other merch keeps a neutral subtitle.
+   */
+  donates?: boolean;
 }
 
 /**
@@ -35,6 +41,7 @@ export function MerchCheckoutLauncher({
   priceCents,
   stock,
   buttonText,
+  donates = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -149,12 +156,20 @@ export function MerchCheckoutLauncher({
             <p className="text-sm text-black/70 mb-5">
               {productTitle} · {variantLabel} · {priceLabel}
               <br />
-              <span className="text-xs text-black/50">Versand 2,90 € · Spende 10 € an De la Torre-Stiftung inklusive</span>
+              <span className="text-xs text-black/50">
+                {donates
+                  ? "Versand 2,90 € · Spende 10 € an De la Torre-Stiftung inklusive"
+                  : "Versand 2,90 €"}
+              </span>
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Bist Du Ärzt:in?</label>
+                <p className="text-xs text-black/55">
+                  Nur für unsere interne Einordnung. Hat keinen Einfluss auf
+                  Preis, Versand oder Deine Bestellung.
+                </p>
                 <div className="flex gap-2">
                   <button
                     type="button"
