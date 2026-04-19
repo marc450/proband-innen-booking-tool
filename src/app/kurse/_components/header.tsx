@@ -31,24 +31,8 @@ const NAV_LINKS: NavLink[] = [
       { label: "Curriculum Hautpflege", href: "#", disabled: true },
     ],
   },
-  {
-    // Einzelkurse = the individual course landing pages. Parent link
-    // takes the visitor to the full overview grid.
-    label: "Einzelkurse",
-    href: "/kurse/unsere-kurse",
-    subLinks: [
-      { label: "Alle Einzelkurse", href: "/kurse/unsere-kurse" },
-      { label: "Grundkurs Botulinum", href: "/kurse/grundkurs-botulinum" },
-      { label: "Grundkurs Botulinum (Zahnmedizin)", href: "/kurse/grundkurs-botulinum-zahnmedizin" },
-      { label: "Grundkurs Dermalfiller", href: "/kurse/grundkurs-dermalfiller" },
-      { label: "Grundkurs Medizinische Hautpflege", href: "/kurse/grundkurs-medizinische-hautpflege" },
-      { label: "Aufbaukurs Therapeutische Indikationen", href: "/kurse/aufbaukurs-therapeutische-indikationen-botulinum" },
-      { label: "Aufbaukurs Periorale Zone", href: "/kurse/aufbaukurs-botulinum-periorale-zone" },
-      { label: "Aufbaukurs Lippen", href: "/kurse/aufbaukurs-lippen" },
-      { label: "Aufbaukurs Biostimulation & Skinbooster", href: "/kurse/aufbaukurs-biostimulation-skinbooster" },
-      { label: "Masterclass Botulinum", href: "/kurse/masterclass-botulinum" },
-    ],
-  },
+  // "Alle Kurse" = direct link to the full overview grid, no dropdown.
+  { label: "Alle Kurse", href: "/kurse/unsere-kurse" },
   {
     label: "Über EPHIA",
     href: "https://www.ephia.de/ueber-ephia",
