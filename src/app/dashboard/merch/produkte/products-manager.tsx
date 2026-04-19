@@ -325,18 +325,21 @@ export function ProductsManager({ initialProducts, initialVariants }: Props) {
                     Keine Varianten. Füge mindestens eine Variante hinzu, um das Produkt verkaufen zu können.
                   </div>
                 ) : (
-                  <Table>
+                  // table-fixed with explicit column widths so the two
+                  // product tables (EPHIA Cap vs SONJA X EPHIA T-Shirt)
+                  // align column-by-column regardless of row content.
+                  <Table className="table-fixed w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Farbe</TableHead>
-                        <TableHead>Größe</TableHead>
-                        <TableHead>SKU</TableHead>
-                        <TableHead className="text-right">Preis brutto</TableHead>
-                        <TableHead className="text-right">MwSt.</TableHead>
-                        <TableHead className="text-right">Bestand</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead />
+                        <TableHead className="w-[220px]">Name</TableHead>
+                        <TableHead className="w-[110px]">Farbe</TableHead>
+                        <TableHead className="w-[110px]">Größe</TableHead>
+                        <TableHead className="w-[170px]">SKU</TableHead>
+                        <TableHead className="w-[130px] text-right">Preis brutto</TableHead>
+                        <TableHead className="w-[80px] text-right">MwSt.</TableHead>
+                        <TableHead className="w-[100px] text-right">Bestand</TableHead>
+                        <TableHead className="w-[120px]">Status</TableHead>
+                        <TableHead className="w-[150px]" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
