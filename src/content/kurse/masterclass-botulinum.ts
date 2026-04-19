@@ -36,10 +36,10 @@ export const masterclassBotulinum: CourseLandingContent = {
     ],
     description:
       "Diese Masterclass richtet sich an approbierte Ärzt:innen, die bereits regelmäßig mit Botulinum behandeln und ihr Können auf Expert:innen-Niveau heben möchten. Im Fokus stehen die ganzheitliche Full Face Analyse, fortgeschrittene Injektionstechniken für komplexe Indikationen, eine vertiefte Behandlungsstrategie über mehrere Sitzungen hinweg sowie strukturiertes Komplikationsmanagement. Du arbeitest unter Anleitung erfahrener Dozent:innen direkt an Patient:innen, profitierst vom Austausch in einer kleinen Gruppe und integrierst neue Behandlungskonzepte sicher in Deinen Praxisalltag.",
-    // Placeholder until a dedicated Masterclass hero video is uploaded —
-    // mirrors the fallback used on Skinbooster and Periorale Zone pages.
     videoPath:
-      "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/grundkurs_botulinum/Grundkurs%20Botulinum_compressed.mp4",
+      "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/masterclass_botulinum/3.%20Intro_Masterclass_V1_compressed.mp4",
+    // Poster falls back to the Grundkurs Botulinum frame until a
+    // dedicated Masterclass poster is uploaded.
     videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
     ctaOverride: {
       label: "Zu den Terminen",
