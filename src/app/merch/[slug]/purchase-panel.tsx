@@ -108,19 +108,21 @@ export function PurchasePanel({
 
       {showQuantity && (
         <div>
-          <p className="text-xs font-medium text-black/70 mb-2">Menge</p>
-          <div className="inline-flex items-stretch overflow-hidden rounded-[10px] border border-input bg-white">
+          <p className="text-xs font-bold tracking-wide uppercase text-black/60 mb-2.5">
+            Menge
+          </p>
+          <div className="inline-flex items-center gap-3 bg-white rounded-full p-1.5 shadow-sm">
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
               disabled={quantity <= 1}
-              className="px-3 text-black hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              className="w-9 h-9 rounded-full bg-[#0066FF] text-white flex items-center justify-center hover:bg-[#0055DD] disabled:bg-black/10 disabled:text-black/30 disabled:cursor-not-allowed cursor-pointer transition-colors"
               aria-label="Menge verringern"
             >
-              <Minus className="w-4 h-4" />
+              <Minus className="w-4 h-4" strokeWidth={3} />
             </button>
             <div
-              className="min-w-[3rem] flex items-center justify-center text-sm font-semibold text-black tabular-nums border-x border-input"
+              className="min-w-[2rem] text-center text-lg font-bold text-black tabular-nums"
               aria-live="polite"
               aria-label={`Menge: ${quantity}`}
             >
@@ -130,14 +132,14 @@ export function PurchasePanel({
               type="button"
               onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
               disabled={quantity >= maxQty}
-              className="px-3 text-black hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              className="w-9 h-9 rounded-full bg-[#0066FF] text-white flex items-center justify-center hover:bg-[#0055DD] disabled:bg-black/10 disabled:text-black/30 disabled:cursor-not-allowed cursor-pointer transition-colors"
               aria-label="Menge erhöhen"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4" strokeWidth={3} />
             </button>
           </div>
           {quantity >= maxQty && (
-            <p className="mt-1.5 text-xs text-black/55">
+            <p className="mt-2 text-xs text-black/55">
               {maxQty === selected.stock
                 ? `Nur noch ${selected.stock} auf Lager.`
                 : `Maximal ${MAX_QUANTITY_PER_ORDER} pro Bestellung.`}
