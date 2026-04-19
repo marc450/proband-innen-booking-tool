@@ -43,6 +43,16 @@ export interface LernpfadDestination {
   certificationName: string;
   /** Short paragraph about the certification. */
   certificationDescription: string;
+  /**
+   * Optional total CME pill shown on the certification card, e.g.
+   * "60 CME-Punkte". Pass null/undefined to suppress.
+   */
+  cmeTotal?: string;
+  /**
+   * Optional small note below the CME total, e.g. caveats like
+   * "(zzgl. Praxis Masterclass beantragt)".
+   */
+  cmeNote?: string;
 }
 
 interface LernpfadProps {
@@ -302,6 +312,20 @@ function Destination({ destination }: { destination: LernpfadDestination }) {
         <p className="text-sm md:text-base text-black/70 leading-relaxed">
           {destination.certificationDescription}
         </p>
+
+        {destination.cmeTotal && (
+          <div className="mt-5 pt-5 border-t border-black/[0.08]">
+            <span className="inline-flex items-center gap-1.5 text-sm font-bold rounded-full px-3 py-1.5 bg-[#0066FF] text-white">
+              <Award className="w-4 h-4" aria-hidden="true" />
+              {destination.cmeTotal}
+            </span>
+            {destination.cmeNote && (
+              <p className="mt-2 text-xs md:text-sm text-black/60">
+                {destination.cmeNote}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

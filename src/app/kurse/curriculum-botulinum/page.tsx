@@ -383,6 +383,19 @@ export default async function CurriculumBotulinumPage() {
       };
     });
 
+  // Sum the leading number from each step's CME pill to get the total
+  // CME a doctor accumulates by completing the entire curriculum
+  // (always booking the Online + Praxis combination where available).
+  // Only the *first* number is parsed, so values like
+  // "10 CME · Praxis beantragt" contribute the approved 10 — the
+  // pending praxis-CME of the Masterclass is acknowledged separately
+  // via the cmeNote on the destination card.
+  const cmeTotal = steps.reduce((sum, s) => {
+    const match = s.cme?.match(/(\d+)/);
+    return sum + (match ? parseInt(match[1], 10) : 0);
+  }, 0);
+  const cmeTotalLabel = `${cmeTotal} CME-Punkte`;
+
   return (
     <>
       {/* Hero — custom inline (no video, centered, on the rose bg) */}
@@ -436,6 +449,9 @@ export default async function CurriculumBotulinumPage() {
           certificationName: "Botulinum Specialist",
           certificationDescription:
             "Wer alle vier Kurse des Curriculums erfolgreich abschließt, erhält das EPHIA Botulinum Specialist Zertifikat als sichtbaren Beleg der vollständigen Spezialisierung.",
+          cmeTotal: cmeTotalLabel,
+          cmeNote:
+            "Praxis-CME der Masterclass sind beantragt und werden nach Genehmigung ergänzt.",
         }}
       />
 
