@@ -139,7 +139,12 @@ export default async function MerchProductPage({
         </div>
       </section>
 
-      {/* Donation / cause block (EPHIA hilft) */}
+      {/* Donation / cause block (EPHIA hilft). Scoped to cap products
+          because that is where the 10 EUR donation to the Jenny De la
+          Torre-Stiftung applies; showing it on a future t-shirt detail
+          page would be misleading. If we add more donating products we
+          can swap this slug check for a shows_donation_block column. */}
+      {p.slug.includes("cap") && (
       <section className="bg-white py-16 md:py-20">
         <div className="max-w-3xl mx-auto px-5 md:px-8 text-center space-y-6">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#0066FF]/10">
@@ -172,6 +177,7 @@ export default async function MerchProductPage({
           </div>
         </div>
       </section>
+      )}
     </div>
   );
 }
