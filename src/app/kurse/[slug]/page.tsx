@@ -192,6 +192,7 @@ export default async function KursPage({
         />
       )}
       <Inhalt content={content.inhalt} />
+      {content.inhaltOnline && <Inhalt content={content.inhaltOnline} />}
       {/* Practical-only courses (no Onlinekurs) have no e-learning
           platform to show off — skip the Lernplattform section when no
           features are configured. */}

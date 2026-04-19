@@ -181,6 +181,13 @@ export interface CourseLandingContent {
   kursangeboteHeading: string;
   gruppenbuchungen: CourseGruppenbuchungenContent;
   inhalt: CourseInhaltContent;
+  /**
+   * Optional second Inhalt section, rendered directly below `inhalt`.
+   * Used when a course has both a Praxiskurs curriculum AND a separate
+   * Onlinekurs curriculum (e.g. Masterclass Botulinum, whose online
+   * component is the Aufbaukurs Periorale Zone curriculum).
+   */
+  inhaltOnline?: CourseInhaltContent;
   lernplattform: CourseLernplattformContent;
   ctaBanner: CourseCtaBannerContent;
   testimonials: CourseTestimonialsContent;

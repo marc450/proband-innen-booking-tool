@@ -1,4 +1,5 @@
 import type { CourseLandingContent } from "./types";
+import { aufbaukursBotulinumPerioraleZone } from "./aufbaukurs-botulinum-periorale-zone";
 
 /**
  * Masterclass Botulinum landing page content.
@@ -178,6 +179,16 @@ export const masterclassBotulinum: CourseLandingContent = {
         ],
       },
     ],
+  },
+
+  // Reuses the Aufbaukurs Periorale Zone curriculum by reference — the
+  // Masterclass Onlinekurs IS the Periorale Zone online course. Editing
+  // the Periorale Zone chapters automatically updates this section.
+  inhaltOnline: {
+    heading: "INHALT ONLINEKURS PERIORALE ZONE",
+    intro:
+      "Der Onlinekurs der Masterclass entspricht inhaltlich dem Aufbaukurs Periorale Zone und ist im Kombikurs der Masterclass enthalten.",
+    chapters: aufbaukursBotulinumPerioraleZone.inhalt.chapters,
   },
 
   lernplattform: {
