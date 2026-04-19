@@ -431,7 +431,15 @@ export function ProductsManager({ initialProducts, initialVariants }: Props) {
             </div>
             <div className="space-y-1.5">
               <Label>Beschreibung</Label>
-              <Textarea rows={4} value={pForm.description} onChange={(e) => setPForm((f) => ({ ...f, description: e.target.value }))} />
+              <Textarea
+                rows={6}
+                value={pForm.description}
+                onChange={(e) => setPForm((f) => ({ ...f, description: e.target.value }))}
+                placeholder="Erscheint als Fließtext unter dem Produkttitel auf der Shop-Seite. Leerzeile erzwingt einen Absatz."
+              />
+              <p className="text-xs text-muted-foreground">
+                Wird 1:1 auf <code className="font-mono">/merch/{pForm.slug || "…"}</code> angezeigt. Eine Leerzeile erzeugt einen Absatzwechsel.
+              </p>
             </div>
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input

@@ -82,11 +82,20 @@ export default async function MerchProductPage({
               </p>
             )}
             {p.description && (
-              <p className="mt-5 text-base md:text-lg text-black/75 leading-relaxed max-w-xl">
-                {/* Short teaser only — full description lives in the donation block below. */}
-                {p.description.split(". ").slice(0, 2).join(". ")}
-                {p.description.split(". ").length > 2 ? "." : ""}
-              </p>
+              /* Renders the full Beschreibung the admin typed in the
+                 product dialog. Preserves paragraph breaks the admin
+                 inserted with blank lines. */
+              <div className="mt-5 text-base md:text-lg text-black/75 leading-relaxed max-w-xl space-y-4">
+                {p.description
+                  .split(/\n{2,}/)
+                  .map((para) => para.trim())
+                  .filter(Boolean)
+                  .map((para, i) => (
+                    <p key={i} className="whitespace-pre-line">
+                      {para}
+                    </p>
+                  ))}
+              </div>
             )}
 
             <div className="mt-8 max-w-md">
