@@ -14,17 +14,17 @@ const SHIPPING_DELIVERY_MAX_DAYS = 7;
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { variantId, firstName, lastName, email, phone, isDoctor } = body as {
+    const { variantId, isDoctor } = body as {
       variantId?: string;
-      firstName?: string;
-      lastName?: string;
-      email?: string;
-      phone?: string;
       isDoctor?: boolean;
     };
 
-    if (!variantId || !firstName || !lastName || !email || !phone || typeof isDoctor !== "boolean") {
-      return NextResponse.json({ error: "Bitte alle Felder ausfüllen." }, { status: 400 });
+    // Name, email, phone, address are collected by Stripe Checkout (see
+    // shipping_address_collection + phone_number_collection below); the
+    // pre-modal only gathers the Ärzt:in flag so it can be persisted on
+    // the order row and drive the auszubildende contact_type.
+    if (!variantId || typeof isDoctor !== "boolean") {
+      return NextResponse.json({ error: "Variante und Ärzt:in-Angabe sind erforderlich." }, { status: 400 });
     }
 
     const admin = createAdminClient();
@@ -70,8 +70,6 @@ export async function POST(req: NextRequest) {
       "consent_collection[terms_of_service]": "required",
       "invoice_creation[enabled]": "true",
 
-      customer_email: email,
-
       // Line item. price_gross_cents is the VAT-INCLUSIVE price (35,00 EUR
       // for the cap), so we tell Stripe the amount is "inclusive" and let
       // automatic_tax split the 19% DE VAT out on the receipt instead of
@@ -116,9 +114,6 @@ export async function POST(req: NextRequest) {
       "metadata[variantName]": variant.name,
       "metadata[variantColor]": variant.color || "",
       "metadata[variantSize]": variant.size || "",
-      "metadata[firstName]": firstName,
-      "metadata[lastName]": lastName,
-      "metadata[phone]": phone,
       "metadata[isDoctor]": isDoctor ? "true" : "false",
       "metadata[itemGrossCents]": String(variant.price_gross_cents),
       "metadata[shippingGrossCents]": String(SHIPPING_GROSS_CENTS),

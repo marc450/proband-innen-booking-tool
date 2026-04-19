@@ -651,9 +651,15 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
   const shippingAddr = shippingDetails?.address || cd?.address || {};
 
   const email = normalizeEmail(cd?.email || metadata.email || "");
-  const firstName = metadata.firstName || "";
-  const lastName = metadata.lastName || "";
-  const fullName = cd?.name || [firstName, lastName].filter(Boolean).join(" ");
+  // Stripe returns the customer's name as a single string (e.g. "Marc Wyss").
+  // The merch pre-modal no longer collects name separately, so split on the
+  // first whitespace to fill first_name / last_name on both merch_orders
+  // and the upserted auszubildende row.
+  const fullName = cd?.name || "";
+  const firstNameSplit = fullName.trim().split(/\s+/)[0] || "";
+  const lastNameSplit = fullName.trim().split(/\s+/).slice(1).join(" ") || "";
+  const firstName = metadata.firstName || firstNameSplit;
+  const lastName = metadata.lastName || lastNameSplit;
   const phone = cd?.phone || metadata.phone || "";
   const isDoctor = metadata.isDoctor === "true";
 

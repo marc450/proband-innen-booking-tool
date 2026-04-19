@@ -23,8 +23,10 @@ interface Props {
 
 /**
  * CTA button for one product variant. On click it opens a small modal
- * that captures name + email + phone + Ärzt:in flag, then posts to
+ * with a single question — "Bist Du Ärzt:in?" — then POSTs to
  * /api/merch-checkout which responds with the Stripe Checkout URL.
+ * Stripe Checkout itself collects name, email, phone, and shipping
+ * address, so we intentionally do not re-ask for those here.
  */
 export function MerchCheckoutLauncher({
   variantId,
@@ -37,20 +39,11 @@ export function MerchCheckoutLauncher({
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [isDoctor, setIsDoctor] = useState<"" | "yes" | "no">("");
 
   const soldOut = stock <= 0;
 
   const reset = () => {
-    setFirstName("");
-    setLastName("");
-    setEmail("");
-    setPhone("");
     setIsDoctor("");
     setError(null);
     setSubmitting(false);
@@ -60,21 +53,18 @@ export function MerchCheckoutLauncher({
     e.preventDefault();
     setError(null);
 
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !phone.trim() || !isDoctor) {
-      setError("Bitte alle Felder ausfüllen.");
+    if (!isDoctor) {
+      setError("Bitte eine Auswahl treffen.");
       return;
     }
 
     setSubmitting(true);
-    // Retry the POST up to 3 times on transient network errors ("Failed to
-    // fetch") with a short backoff. Server-side errors (non-2xx) short-
-    // circuit immediately so we don't spam Stripe with duplicates.
+
+    // Retry the POST up to 3 times on transient network errors ("Failed
+    // to fetch") with a short backoff. Server-side errors (non-2xx)
+    // short-circuit immediately so we don't spam Stripe with duplicates.
     const payload = JSON.stringify({
       variantId,
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
       isDoctor: isDoctor === "yes",
     });
     let lastNetErr: string | null = null;
@@ -94,7 +84,6 @@ export function MerchCheckoutLauncher({
         window.location.href = data.url;
         return;
       } catch (err) {
-        // TypeError from fetch — transient. Retry.
         lastNetErr = err instanceof Error ? err.message : "Unerwarteter Netzwerkfehler.";
         console.warn(`merch-checkout fetch attempt ${attempt} failed:`, err);
         if (attempt < 3) await new Promise((r) => setTimeout(r, 400 * attempt));
@@ -163,63 +152,14 @@ export function MerchCheckoutLauncher({
               <span className="text-xs text-black/50">Versand 2,90 € · Spende 10 € an De la Torre-Stiftung inklusive</span>
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium">Vorname</label>
-                  <input
-                    type="text"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full rounded-[10px] border border-input bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0066FF]/30 focus:border-[#0066FF]"
-                    autoComplete="given-name"
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium">Nachname</label>
-                  <input
-                    type="text"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    className="w-full rounded-[10px] border border-input bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0066FF]/30 focus:border-[#0066FF]"
-                    autoComplete="family-name"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium">E-Mail</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-[10px] border border-input bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0066FF]/30 focus:border-[#0066FF]"
-                  autoComplete="email"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium">Telefon</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full rounded-[10px] border border-input bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0066FF]/30 focus:border-[#0066FF]"
-                  autoComplete="tel"
-                  required
-                />
-              </div>
-
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <label className="text-xs font-medium">Bist Du Ärzt:in?</label>
+                <label className="text-sm font-medium">Bist Du Ärzt:in?</label>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setIsDoctor("yes")}
-                    className={`flex-1 rounded-[10px] border py-2 text-sm font-medium transition-colors cursor-pointer ${
+                    className={`flex-1 rounded-[10px] border py-2.5 text-sm font-medium transition-colors cursor-pointer ${
                       isDoctor === "yes"
                         ? "border-[#0066FF] bg-[#0066FF]/5 text-[#0066FF]"
                         : "border-input bg-white hover:bg-gray-50"
@@ -230,7 +170,7 @@ export function MerchCheckoutLauncher({
                   <button
                     type="button"
                     onClick={() => setIsDoctor("no")}
-                    className={`flex-1 rounded-[10px] border py-2 text-sm font-medium transition-colors cursor-pointer ${
+                    className={`flex-1 rounded-[10px] border py-2.5 text-sm font-medium transition-colors cursor-pointer ${
                       isDoctor === "no"
                         ? "border-[#0066FF] bg-[#0066FF]/5 text-[#0066FF]"
                         : "border-input bg-white hover:bg-gray-50"
@@ -259,7 +199,7 @@ export function MerchCheckoutLauncher({
               </button>
 
               <p className="text-xs text-black/50 text-center">
-                Versandadresse und Zahlung werden im nächsten Schritt bei Stripe erfasst.
+                Name, E-Mail, Telefon, Versandadresse und Zahlung werden im nächsten Schritt bei Stripe erfasst.
               </p>
             </form>
           </div>
