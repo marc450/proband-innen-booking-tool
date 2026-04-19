@@ -139,7 +139,7 @@ export function CourseCard({
       ) : cmePoints ? (
         <div className="absolute -top-4 right-5 z-10 bg-[#0066FF] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5" style={{ boxShadow: "0 0 0 3px rgba(255,255,255,0.9), 0 2px 8px rgba(0,0,0,0.15)" }}>
           <Award className="w-4 h-4" aria-hidden="true" />
-          <span className="text-sm font-bold">{cmePoints}</span>
+          <span className="text-sm font-bold whitespace-nowrap">{cmePoints} CME</span>
         </div>
       ) : null}
 
