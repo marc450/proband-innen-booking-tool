@@ -377,43 +377,73 @@ export default async function CurriculumBotulinumPage() {
           give the cards their own surface without breaking the page
           into a separate section. */}
       <section className="bg-[#FAEBE1] pt-20 pb-20 md:pt-28 md:pb-28">
-        <div className="max-w-5xl mx-auto px-5 md:px-8">
+        <div className="max-w-6xl mx-auto px-5 md:px-8">
           {/* Intro */}
-          <div className="max-w-3xl mx-auto text-center mb-16 md:mb-20">
+          <div className="max-w-3xl mx-auto text-center mb-20 md:mb-24">
             <h1 className={`${TYPO.h1} text-4xl md:text-5xl lg:text-6xl mb-8`}>
               {HERO.heading}
             </h1>
-            <p className="text-base md:text-lg text-black/75 leading-relaxed mb-8">
+            <p className="text-base md:text-lg text-black/75 leading-relaxed">
               {HERO.description}
             </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {HERO.stats.map((s) => (
-                <span
-                  key={s}
-                  className="text-xs md:text-sm font-semibold rounded-full px-3 py-1.5 bg-[#0066FF] text-white"
-                >
-                  {s}
-                </span>
-              ))}
-            </div>
           </div>
 
-          {/* Reasons — three white cards on the rose backdrop */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {REASONS.map(({ icon: Icon, label, description }) => (
-              <div
-                key={label}
-                className="bg-white rounded-[10px] p-6 md:p-7"
-              >
-                <div className="w-12 h-12 rounded-[10px] bg-[#0066FF]/10 flex items-center justify-center mb-4">
-                  <Icon className="w-6 h-6 text-[#0066FF]" aria-hidden="true" />
+          {/* --- Option 1: typographic triad, no cards ---------------- */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12 mb-20 md:mb-24">
+            {REASONS.map((r, i) => {
+              const kickers = [
+                "4 KURSE",
+                "ONLINE + PRAXIS",
+                "EINSTIEG → MASTERCLASS",
+              ];
+              return (
+                <div key={r.label} className="text-left">
+                  <p className="text-[11px] md:text-xs font-bold tracking-[0.2em] text-[#0066FF] mb-3">
+                    {kickers[i]}
+                  </p>
+                  <h3 className="text-xl md:text-2xl font-bold tracking-tight text-black mb-3">
+                    {r.label}
+                  </h3>
+                  <p className="text-sm md:text-base text-black/75 leading-relaxed">
+                    {r.description}
+                  </p>
                 </div>
-                <h3 className="text-lg font-bold mb-2">{label}</h3>
-                <p className="text-sm md:text-base text-black/75 leading-relaxed">
-                  {description}
-                </p>
-              </div>
-            ))}
+              );
+            })}
+          </div>
+
+          {/* --- Option 2: unified white feature strip ---------------- */}
+          <div className="bg-white rounded-[14px] shadow-sm overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-black/[0.08]">
+              {REASONS.map(({ icon: Icon, label, description }, i) => {
+                const footnotes = [
+                  "4 Kurse",
+                  "Online + Praxis",
+                  "In Deinem Tempo",
+                ];
+                return (
+                  <div key={label} className="p-6 md:p-8">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-[10px] bg-[#0066FF]/10 flex items-center justify-center flex-shrink-0">
+                        <Icon
+                          className="w-5 h-5 text-[#0066FF]"
+                          aria-hidden="true"
+                        />
+                      </div>
+                      <h3 className="text-lg md:text-xl font-bold tracking-tight text-black">
+                        {label}
+                      </h3>
+                    </div>
+                    <p className="text-sm md:text-base text-black/75 leading-relaxed mb-4">
+                      {description}
+                    </p>
+                    <p className="text-[11px] md:text-xs font-bold tracking-[0.18em] text-[#0066FF] uppercase">
+                      {footnotes[i]}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
