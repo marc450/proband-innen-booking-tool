@@ -60,7 +60,9 @@ interface Props {
   teamMembers?: TeamMember[];
   onAssign?: (assignedTo: string | null) => void;
   replyDraft?: ReplyDraft | null;
-  onReplyDraftChange?: (draft: ReplyDraft | null) => void;
+  // threadId is passed explicitly so cleanup closures can't leak content
+  // from one thread into another on rapid thread switches.
+  onReplyDraftChange?: (threadId: string, draft: ReplyDraft | null) => void;
 }
 
 function formatFullDate(dateStr: string) {
@@ -103,10 +105,6 @@ export function ConversationPane({
     (files) => setReplyAttachments((prev) => [...prev, ...files]),
   );
 
-  // Ref to capture current reply state for saving drafts (avoids stale closures)
-  const replyStateRef = useRef({ open: false, html: "", cc: "", bcc: "", showCc: false, showBcc: false });
-  replyStateRef.current = { open: replyOpen, html: replyHtml, cc: replyCc, bcc: replyBcc, showCc, showBcc };
-
   // Close assign dropdown on outside click
   useEffect(() => {
     if (!assignDropdownOpen) return;
@@ -119,14 +117,23 @@ export function ConversationPane({
     return () => document.removeEventListener("mousedown", handler);
   }, [assignDropdownOpen]);
 
-  // Save reply draft when leaving a thread, restore when entering.
-  // The cleanup function fires with the *previous* threadId, so we can
-  // read the ref at that moment to save the draft.
-  const onReplyDraftChangeRef = useRef(onReplyDraftChange);
-  onReplyDraftChangeRef.current = onReplyDraftChange;
-
+  // On thread change: restore the saved draft for this thread, or reset the
+  // composer if there is none. Deliberately NO cleanup side effect here:
+  //
+  //  - Persistence is already handled by the auto-save useEffect on every
+  //    keystroke (it writes to `drafts.replyDrafts[threadId]` + schedules a
+  //    debounced DB flush keyed by threadId).
+  //  - The hook's own `pagehide` handler flushes pending replies on tab close.
+  //
+  // Previously we also tried to save-or-delete the outgoing thread's draft
+  // from the cleanup. That caused two bugs:
+  //   1. With the original stale-closure callback, typed content from thread
+  //      A leaked onto thread B.
+  //   2. With `cb(capturedThreadId, null)` on empty state, switching away
+  //      from a thread that had never been typed into (because we just
+  //      reset its composer on entry) would delete its draft.
+  // The cleanest fix is to stop trying to be clever on thread switch.
   useEffect(() => {
-    // Restore saved draft for this thread (or reset)
     if (replyDraft) {
       setReplyOpen(true);
       setReplyHtml(replyDraft.html);
@@ -143,19 +150,6 @@ export function ConversationPane({
       setShowBcc(false);
     }
     setReplyAttachments([]);
-
-    // Cleanup: save draft when leaving this thread (skip if draft was just deleted)
-    return () => {
-      if (draftDeletedRef.current) { draftDeletedRef.current = false; return; }
-      const s = replyStateRef.current;
-      const cb = onReplyDraftChangeRef.current;
-      if (!cb) return;
-      if (s.open && s.html) {
-        cb({ html: s.html, cc: s.cc, bcc: s.bcc, showCc: s.showCc, showBcc: s.showBcc });
-      } else {
-        cb(null);
-      }
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threadId]);
 
@@ -185,7 +179,7 @@ export function ConversationPane({
       draftDeletedRef.current = false;
       return;
     }
-    onReplyDraftChange?.({ html: replyHtml, cc: replyCc, bcc: replyBcc, showCc, showBcc });
+    onReplyDraftChange?.(threadId, { html: replyHtml, cc: replyCc, bcc: replyBcc, showCc, showBcc });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [replyHtml, replyCc, replyBcc, showCc, showBcc]);
 
@@ -291,7 +285,7 @@ export function ConversationPane({
         setReplyAttachments([]);
         setShowCc(false);
         setShowBcc(false);
-        onReplyDraftChange?.(null);
+        if (threadId) onReplyDraftChange?.(threadId, null);
         onSent();
       }
     } finally {

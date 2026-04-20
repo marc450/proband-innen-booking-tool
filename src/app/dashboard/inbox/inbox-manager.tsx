@@ -324,7 +324,17 @@ export function InboxManager({
     await drafts.deleteComposeDraft();
   };
 
-  const openCompose = () => {
+  // Track a deferred compose-open request that arrived while drafts were
+  // still loading. Opening a blank composer during load can cause the user's
+  // first keystrokes to overwrite a previously-saved draft once the fetch
+  // lands, so we wait for drafts.loading to flip to false.
+  const pendingComposeOpenRef = useRef(false);
+
+  const openCompose = useCallback(() => {
+    if (drafts.loading) {
+      pendingComposeOpenRef.current = true;
+      return;
+    }
     if (drafts.composeDraft) {
       // Restore saved draft from Supabase
       setComposeTo(drafts.composeDraft.to);
@@ -345,7 +355,15 @@ export function InboxManager({
     setComposing(true);
     setSelectedThread(null);
     setThreadMessages([]);
-  };
+  }, [drafts.loading, drafts.composeDraft, signature]);
+
+  // Once drafts finish loading, fulfil any deferred compose-open request.
+  useEffect(() => {
+    if (drafts.loading) return;
+    if (!pendingComposeOpenRef.current) return;
+    pendingComposeOpenRef.current = false;
+    openCompose();
+  }, [drafts.loading, openCompose]);
 
   // ── Gmail auth required ──
   if (authUrl) {
@@ -374,6 +392,11 @@ export function InboxManager({
       {error && (
         <div className="bg-destructive/10 text-destructive text-sm px-4 py-2 flex-shrink-0">
           {error}
+        </div>
+      )}
+      {drafts.lastError && (
+        <div className="bg-amber-50 text-amber-900 text-sm px-4 py-2 flex-shrink-0">
+          Entwurf konnte nicht gespeichert werden: {drafts.lastError}
         </div>
       )}
       <div className="flex-1 grid grid-cols-[320px_minmax(0,1fr)_360px] min-h-0">
@@ -446,10 +469,14 @@ export function InboxManager({
               teamMembers={teamMembers}
               onAssign={(assignedTo) => selectedThread && handleAssign(selectedThread, assignedTo)}
               replyDraft={selectedThread ? drafts.replyDrafts[selectedThread] || null : null}
-              onReplyDraftChange={(draft) => {
-                if (!selectedThread) return;
-                if (draft) drafts.saveReplyDraft(selectedThread, draft);
-                else drafts.deleteReplyDraft(selectedThread);
+              onReplyDraftChange={(threadId, draft) => {
+                // Use the threadId passed by the child (captured at its effect
+                // setup time). Do NOT use `selectedThread` here: on rapid
+                // thread switches it's already the NEXT thread by the time
+                // the child's cleanup fires.
+                if (!threadId) return;
+                if (draft) drafts.saveReplyDraft(threadId, draft);
+                else drafts.deleteReplyDraft(threadId);
               }}
             />
           )}

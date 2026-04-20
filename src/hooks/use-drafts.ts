@@ -38,14 +38,35 @@ export interface UseDraftsReturn {
   composeDraft: ComposeDraft | null;
   replyDrafts: Record<string, ReplyDraft>;
   loading: boolean;
+  lastError: string | null;
   saveComposeDraft: (draft: ComposeDraft) => void;
   deleteComposeDraft: () => Promise<void>;
   saveReplyDraft: (threadId: string, draft: ReplyDraft) => void;
   deleteReplyDraft: (threadId: string) => Promise<void>;
 }
 
-const DEBOUNCE_MS = 500;
+const DEBOUNCE_MS = 250;
 const STORAGE_BUCKET = "draft-images";
+// Body size ceiling for keepalive unload saves. Browsers cap keepalive at 64 KB
+// per origin, so we skip the beacon path for oversized bodies and rely on the
+// last debounced save instead.
+const KEEPALIVE_MAX_BYTES = 50 * 1024;
+
+function logDraftError(context: string, err: unknown) {
+  // Visible in the console so a failed save is no longer invisible.
+  // eslint-disable-next-line no-console
+  console.warn(`[drafts] ${context}:`, err);
+}
+
+function errorMessage(err: unknown): string {
+  if (!err) return "Unbekannter Fehler";
+  if (typeof err === "string") return err;
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object" && err && "message" in err) {
+    return String((err as { message: unknown }).message);
+  }
+  return String(err);
+}
 
 // Upload base64 inline images to Supabase Storage and replace src with public URLs.
 // This prevents draft saves from failing due to Supabase's request size limits.
@@ -53,6 +74,7 @@ async function uploadInlineImages(
   html: string,
   supabase: ReturnType<typeof createClient>,
   draftId: string,
+  onError: (msg: string) => void,
 ): Promise<string> {
   const imgRegex = /<img\s+([^>]*)src=["'](data:image\/([a-z+]+);base64,([^"']+))["']([^>]*)\/?\s*>/gi;
   const matches = [...html.matchAll(imgRegex)];
@@ -79,7 +101,15 @@ async function uploadInlineImages(
           upsert: true,
         });
 
-      if (error) continue; // Keep original if upload fails
+      if (error) {
+        logDraftError(`inline image upload (${filePath})`, error);
+        onError(errorMessage(error));
+        // Strip the image rather than leaving a megabyte of base64 in the row,
+        // which would push the draft over PostgREST's body size limit and kill
+        // the whole save. A missing image is better than a lost draft.
+        result = result.replace(fullMatch, "");
+        continue;
+      }
 
       const { data: urlData } = supabase.storage
         .from(STORAGE_BUCKET)
@@ -89,9 +119,14 @@ async function uploadInlineImages(
         const attrs = (match[1] || "") + (match[5] || "");
         const newImg = `<img ${attrs}src="${urlData.publicUrl}" />`;
         result = result.replace(fullMatch, newImg);
+      } else {
+        // No URL resolved. Strip to avoid bloating the row.
+        result = result.replace(fullMatch, "");
       }
-    } catch {
-      // Keep original image tag if anything fails
+    } catch (e) {
+      logDraftError("inline image processing", e);
+      onError(errorMessage(e));
+      result = result.replace(fullMatch, "");
     }
   }
   return result;
@@ -110,7 +145,29 @@ async function cleanupDraftImages(
       const paths = files.map((f) => `${draftId}/${f.name}`);
       await supabase.storage.from(STORAGE_BUCKET).remove(paths);
     }
-  } catch { /* non-critical */ }
+  } catch (e) {
+    logDraftError("cleanup images", e);
+  }
+}
+
+// Best-effort save during `pagehide` / tab close. Uses keepalive so the
+// request survives the unload. Skips oversized bodies because browsers drop
+// keepalive above ~64 KB.
+function beaconSave(payload: Record<string, unknown>) {
+  try {
+    const body = JSON.stringify(payload);
+    if (body.length > KEEPALIVE_MAX_BYTES) return;
+    // fetch(..., { keepalive: true }) is supported in all evergreen browsers.
+    fetch("/api/inbox/draft", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      keepalive: true,
+      credentials: "same-origin",
+    }).catch((e) => logDraftError("beacon save", e));
+  } catch (e) {
+    logDraftError("beacon serialize", e);
+  }
 }
 
 // ── Hook ──
@@ -121,12 +178,13 @@ export function useDrafts(): UseDraftsReturn {
   const [composeDraft, setComposeDraft] = useState<ComposeDraft | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, ReplyDraft>>({});
   const [loading, setLoading] = useState(true);
+  const [lastError, setLastError] = useState<string | null>(null);
 
   // Loaded flag — until the initial fetch completes, we must NOT allow saves to
   // fire (they could race against the fetch and overwrite the user's typing).
   const loadedRef = useRef(false);
 
-  // Track existing DB row IDs to decide insert vs update
+  // Track existing DB row IDs to decide whether we already know about a row.
   const composeRowId = useRef<string | null>(null);
   const replyRowIds = useRef<Record<string, string>>({});
 
@@ -138,52 +196,64 @@ export function useDrafts(): UseDraftsReturn {
   const pendingCompose = useRef<ComposeDraft | null>(null);
   const pendingReplies = useRef<Record<string, ReplyDraft>>({});
 
-  // In-flight flush promises — serialize flushes per key so we never double-insert
+  // In-flight flush promises. Serialize flushes per key so we never double-write.
   const composeFlushChain = useRef<Promise<void>>(Promise.resolve());
   const replyFlushChains = useRef<Record<string, Promise<void>>>({});
+
+  const recordError = useCallback((msg: string) => {
+    setLastError(msg);
+  }, []);
 
   // ── Fetch all drafts on mount ──
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("email_drafts")
           .select("id, kind, thread_id, to, subject, body, cc, bcc, show_cc, show_bcc");
 
-        if (cancelled || !data) {
+        if (error) {
+          logDraftError("initial fetch", error);
+          recordError(errorMessage(error));
+        }
+
+        if (cancelled) {
           loadedRef.current = true;
           setLoading(false);
           return;
         }
 
-        const rows = data as DbRow[];
-        for (const row of rows) {
-          if (row.kind === "compose") {
-            composeRowId.current = row.id;
-            setComposeDraft({
-              to: row.to || "",
-              subject: row.subject || "",
-              body: row.body || "",
-              cc: row.cc || "",
-              bcc: row.bcc || "",
-            });
-          } else if (row.kind === "reply" && row.thread_id) {
-            replyRowIds.current[row.thread_id] = row.id;
-            setReplyDrafts((prev) => ({
-              ...prev,
-              [row.thread_id!]: {
-                html: row.body || "",
+        if (data) {
+          const rows = data as DbRow[];
+          for (const row of rows) {
+            if (row.kind === "compose") {
+              composeRowId.current = row.id;
+              setComposeDraft({
+                to: row.to || "",
+                subject: row.subject || "",
+                body: row.body || "",
                 cc: row.cc || "",
                 bcc: row.bcc || "",
-                showCc: row.show_cc,
-                showBcc: row.show_bcc,
-              },
-            }));
+              });
+            } else if (row.kind === "reply" && row.thread_id) {
+              replyRowIds.current[row.thread_id] = row.id;
+              setReplyDrafts((prev) => ({
+                ...prev,
+                [row.thread_id!]: {
+                  html: row.body || "",
+                  cc: row.cc || "",
+                  bcc: row.bcc || "",
+                  showCc: row.show_cc,
+                  showBcc: row.show_bcc,
+                },
+              }));
+            }
           }
         }
-      } catch {
-        // Non-critical — drafts are a nice-to-have
+      } catch (e) {
+        logDraftError("initial fetch (exception)", e);
+        recordError(errorMessage(e));
       }
       loadedRef.current = true;
       setLoading(false);
@@ -200,67 +270,51 @@ export function useDrafts(): UseDraftsReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Compose draft: persist to Supabase (serialized) ──
+  // ── Compose draft flush (atomic upsert via conflict_key) ──
   const flushCompose = useCallback(
     (draft: ComposeDraft) => {
       const run = async () => {
         try {
-          // Resolve the target row (SELECT-then-INSERT/UPDATE) — we don't rely
-          // on a partial unique index for upsert because ON CONFLICT with
-          // partial indexes is fragile via PostgREST.
-          if (!composeRowId.current) {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-            // Look up any existing compose row for this user first
-            const { data: existing } = await supabase
-              .from("email_drafts")
-              .select("id")
-              .eq("user_id", user.id)
-              .eq("kind", "compose")
-              .maybeSingle();
-            if (existing?.id) {
-              composeRowId.current = existing.id;
-            } else {
-              // Upload images to a user-scoped namespace (no row id yet)
-              const safeBodyPre = await uploadInlineImages(draft.body, supabase, `compose-${user.id}`);
-              const { data: inserted } = await supabase
-                .from("email_drafts")
-                .insert({
-                  user_id: user.id,
-                  kind: "compose",
-                  to: draft.to,
-                  subject: draft.subject,
-                  body: safeBodyPre,
-                  cc: draft.cc,
-                  bcc: draft.bcc,
-                })
-                .select("id")
-                .single();
-              if (inserted?.id) {
-                composeRowId.current = inserted.id;
-                return; // Insert already persisted the latest draft body
-              }
-              return; // Insert failed — bail out, try again next flush
-            }
-          }
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
 
-          const rowId = composeRowId.current;
-          if (!rowId) return;
-          const safeBody = await uploadInlineImages(draft.body, supabase, rowId);
-          await supabase
+          const draftDir = composeRowId.current || `compose-${user.id}`;
+          const safeBody = await uploadInlineImages(draft.body, supabase, draftDir, recordError);
+
+          const { data, error } = await supabase
             .from("email_drafts")
-            .update({
-              to: draft.to,
-              subject: draft.subject,
-              body: safeBody,
-              cc: draft.cc,
-              bcc: draft.bcc,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", rowId);
-        } catch { /* non-critical */ }
+            .upsert(
+              {
+                user_id: user.id,
+                kind: "compose",
+                thread_id: null,
+                to: draft.to,
+                subject: draft.subject,
+                body: safeBody,
+                cc: draft.cc,
+                bcc: draft.bcc,
+                show_cc: false,
+                show_bcc: false,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "conflict_key" },
+            )
+            .select("id")
+            .single();
+
+          if (error) {
+            logDraftError("compose upsert", error);
+            recordError(errorMessage(error));
+            return;
+          }
+          if (data?.id) composeRowId.current = data.id;
+          // Clear error once a save succeeds so stale warnings don't linger.
+          setLastError((prev) => (prev ? null : prev));
+        } catch (e) {
+          logDraftError("compose upsert (exception)", e);
+          recordError(errorMessage(e));
+        }
       };
-      // Chain onto any in-flight flush so we never run two at once
       const next = composeFlushChain.current.then(run, run);
       composeFlushChain.current = next;
       return next;
@@ -292,75 +346,64 @@ export function useDrafts(): UseDraftsReturn {
     pendingCompose.current = null;
     setComposeDraft(null);
     // Wait for any in-flight flush so we don't delete before it has created the row
-    try { await composeFlushChain.current; } catch { /* ignore */ }
+    try { await composeFlushChain.current; } catch { /* already logged */ }
     if (composeRowId.current) {
-      cleanupDraftImages(supabase, composeRowId.current);
-      await supabase.from("email_drafts").delete().eq("id", composeRowId.current);
+      const idToClean = composeRowId.current;
+      cleanupDraftImages(supabase, idToClean);
+      const { error } = await supabase.from("email_drafts").delete().eq("id", idToClean);
+      if (error) {
+        logDraftError("compose delete", error);
+        recordError(errorMessage(error));
+      }
       composeRowId.current = null;
     }
-    try { localStorage.removeItem("inbox:composeDraft"); } catch {}
+    try { localStorage.removeItem("inbox:composeDraft"); } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Reply draft: persist to Supabase (serialized) ──
+  // ── Reply draft flush (atomic upsert via conflict_key) ──
   const flushReply = useCallback(
     (threadId: string, draft: ReplyDraft) => {
       const run = async () => {
         try {
-          if (!replyRowIds.current[threadId]) {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-            const { data: existing } = await supabase
-              .from("email_drafts")
-              .select("id")
-              .eq("user_id", user.id)
-              .eq("kind", "reply")
-              .eq("thread_id", threadId)
-              .maybeSingle();
-            if (existing?.id) {
-              replyRowIds.current[threadId] = existing.id;
-            } else {
-              const safeHtmlPre = await uploadInlineImages(
-                draft.html,
-                supabase,
-                `reply-${user.id}-${threadId}`,
-              );
-              const { data: inserted } = await supabase
-                .from("email_drafts")
-                .insert({
-                  user_id: user.id,
-                  kind: "reply",
-                  thread_id: threadId,
-                  body: safeHtmlPre,
-                  cc: draft.cc,
-                  bcc: draft.bcc,
-                  show_cc: draft.showCc,
-                  show_bcc: draft.showBcc,
-                })
-                .select("id")
-                .single();
-              if (inserted?.id) {
-                replyRowIds.current[threadId] = inserted.id;
-                return; // Insert already persisted the latest draft body
-              }
-              return;
-            }
-          }
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
 
-          const rowId = replyRowIds.current[threadId];
-          const safeHtml = await uploadInlineImages(draft.html, supabase, rowId);
-          await supabase
+          const draftDir = replyRowIds.current[threadId] || `reply-${user.id}-${threadId}`;
+          const safeHtml = await uploadInlineImages(draft.html, supabase, draftDir, recordError);
+
+          const { data, error } = await supabase
             .from("email_drafts")
-            .update({
-              body: safeHtml,
-              cc: draft.cc,
-              bcc: draft.bcc,
-              show_cc: draft.showCc,
-              show_bcc: draft.showBcc,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", rowId);
-        } catch { /* non-critical */ }
+            .upsert(
+              {
+                user_id: user.id,
+                kind: "reply",
+                thread_id: threadId,
+                to: null,
+                subject: null,
+                body: safeHtml,
+                cc: draft.cc,
+                bcc: draft.bcc,
+                show_cc: draft.showCc,
+                show_bcc: draft.showBcc,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "conflict_key" },
+            )
+            .select("id")
+            .single();
+
+          if (error) {
+            logDraftError("reply upsert", error);
+            recordError(errorMessage(error));
+            return;
+          }
+          if (data?.id) replyRowIds.current[threadId] = data.id;
+          setLastError((prev) => (prev ? null : prev));
+        } catch (e) {
+          logDraftError("reply upsert (exception)", e);
+          recordError(errorMessage(e));
+        }
       };
       const prev = replyFlushChains.current[threadId] || Promise.resolve();
       const next = prev.then(run, run);
@@ -395,40 +438,80 @@ export function useDrafts(): UseDraftsReturn {
       delete next[threadId];
       return next;
     });
-    try { await (replyFlushChains.current[threadId] || Promise.resolve()); } catch { /* ignore */ }
+    try { await (replyFlushChains.current[threadId] || Promise.resolve()); } catch { /* already logged */ }
     if (replyRowIds.current[threadId]) {
-      cleanupDraftImages(supabase, replyRowIds.current[threadId]);
-      await supabase.from("email_drafts").delete().eq("id", replyRowIds.current[threadId]);
+      const idToClean = replyRowIds.current[threadId];
+      cleanupDraftImages(supabase, idToClean);
+      const { error } = await supabase.from("email_drafts").delete().eq("id", idToClean);
+      if (error) {
+        logDraftError("reply delete", error);
+        recordError(errorMessage(error));
+      }
       delete replyRowIds.current[threadId];
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Flush pending saves when the page is hidden or unmounts ──
-  // Runs BOTH on React unmount and on browser pagehide / visibilitychange so
-  // drafts survive tab-close and hard reloads.
+  // pagehide uses keepalive fetch so the final save survives tab close.
+  // visibilitychange (hidden) uses the normal Supabase path because the tab
+  // may come back to life.
   useEffect(() => {
-    const flushAllPending = () => {
+    const flushAllViaSupabase = () => {
       if (composeTimer.current) {
         clearTimeout(composeTimer.current);
         composeTimer.current = null;
       }
-      if (pendingCompose.current) {
-        flushCompose(pendingCompose.current);
+      if (pendingCompose.current) flushCompose(pendingCompose.current);
+      for (const [threadId, timer] of Object.entries(replyTimers.current)) {
+        clearTimeout(timer);
+        if (pendingReplies.current[threadId]) flushReply(threadId, pendingReplies.current[threadId]);
+      }
+      replyTimers.current = {};
+    };
+
+    const flushAllViaBeacon = () => {
+      // Don't upload inline images on unload. They may still be data: URLs
+      // if typing outran the debounce; the beacon skips saves that are too
+      // large anyway, and the normal debounced save should have already
+      // persisted the previous state a moment earlier.
+      if (composeTimer.current) {
+        clearTimeout(composeTimer.current);
+        composeTimer.current = null;
+      }
+      const c = pendingCompose.current;
+      if (c) {
+        beaconSave({
+          kind: "compose",
+          to: c.to,
+          subject: c.subject,
+          body: c.body,
+          cc: c.cc,
+          bcc: c.bcc,
+        });
       }
       for (const [threadId, timer] of Object.entries(replyTimers.current)) {
         clearTimeout(timer);
-        if (pendingReplies.current[threadId]) {
-          flushReply(threadId, pendingReplies.current[threadId]);
+        const r = pendingReplies.current[threadId];
+        if (r) {
+          beaconSave({
+            kind: "reply",
+            threadId,
+            body: r.html,
+            cc: r.cc,
+            bcc: r.bcc,
+            showCc: r.showCc,
+            showBcc: r.showBcc,
+          });
         }
       }
       replyTimers.current = {};
     };
 
     const onVisibility = () => {
-      if (document.visibilityState === "hidden") flushAllPending();
+      if (document.visibilityState === "hidden") flushAllViaSupabase();
     };
-    const onPageHide = () => flushAllPending();
+    const onPageHide = () => flushAllViaBeacon();
 
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pagehide", onPageHide);
@@ -437,7 +520,7 @@ export function useDrafts(): UseDraftsReturn {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", onPageHide);
       // Final flush on React unmount
-      flushAllPending();
+      flushAllViaSupabase();
     };
   }, [flushCompose, flushReply]);
 
@@ -446,13 +529,14 @@ export function useDrafts(): UseDraftsReturn {
     try {
       localStorage.removeItem("inbox:composeDraft");
       localStorage.removeItem("inbox:replyDrafts");
-    } catch {}
+    } catch { /* ignore */ }
   }, []);
 
   return {
     composeDraft,
     replyDrafts,
     loading,
+    lastError,
     saveComposeDraft,
     deleteComposeDraft,
     saveReplyDraft,
