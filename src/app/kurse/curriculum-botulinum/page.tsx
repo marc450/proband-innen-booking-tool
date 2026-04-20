@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Curriculum Botulinum — EPHIA",
   description:
-    "Dein strukturierter Weg zur Spezialisierung in der Botulinum-Therapie. Vier aufeinander aufbauende Kurse vom Einstieg bis zur Masterclass — und die Möglichkeit zur Botulinum Specialist Zertifizierung.",
+    "Dein strukturierter Weg zur Spezialisierung in der Botulinum-Therapie. Vier aufeinander aufbauende Kurse vom Einstieg bis zur Masterclass — und die Möglichkeit zur EPHIA Botulinum Specialist Zertifizierung.",
   alternates: {
     canonical: "https://kurse.ephia.de/kurse/curriculum-botulinum",
   },
@@ -149,7 +149,7 @@ const FAQS = [
   {
     question: "Bekomme ich eine Zertifizierung für das gesamte Curriculum?",
     answer:
-      "Ja. Wenn Du alle vier Kurse erfolgreich abgeschlossen hast, erhältst Du das Botulinum Specialist Zertifikat von EPHIA, ergänzend zu den Einzelzertifikaten der jeweiligen Kurse.",
+      "Ja. Wenn Du alle vier Kurse erfolgreich abgeschlossen hast, erhältst Du das EPHIA Botulinum Specialist Zertifikat, ergänzend zu den Einzelzertifikaten der jeweiligen Kurse.",
   },
   {
     question: "Kann ich Termine später verschieben?",
@@ -413,7 +413,7 @@ export default async function CurriculumBotulinumPage() {
         intro="Vier Schritte vom Einstieg bis zur Masterclass. Jede Karte verlinkt auf die jeweilige Kursseite, wo Du direkt buchen kannst."
         steps={steps}
         destination={{
-          certificationName: "Botulinum Specialist",
+          certificationName: "EPHIA Botulinum Specialist",
           certificationDescription: (
             <>
               Wer alle vier Kurse des Curriculums erfolgreich abschließt,
