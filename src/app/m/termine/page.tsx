@@ -2,7 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { CoursesOverview } from "./courses-overview";
+import { decryptBooking } from "@/lib/encryption";
+import { CoursesOverview, type SlotBooking } from "./courses-overview";
 
 export default async function MobileTerminePage() {
   const supabase = await createClient();
@@ -11,7 +12,7 @@ export default async function MobileTerminePage() {
   const [
     { data: courses },
     { data: slots },
-    { data: bookingCounts },
+    { data: bookingRows },
     { data: templates },
     { data: sessions },
   ] = await Promise.all([
@@ -25,9 +26,10 @@ export default async function MobileTerminePage() {
       .from("slots")
       .select("*")
       .order("start_time"),
+    // Fetch full booking rows so we can decrypt the patient name for each slot.
     supabase
       .from("bookings")
-      .select("slot_id")
+      .select("*")
       .in("status", ["booked", "attended"]),
     // Kurstermine data
     adminSupabase
@@ -41,17 +43,33 @@ export default async function MobileTerminePage() {
       .order("date_iso", { ascending: true }),
   ]);
 
-  // Count bookings per slot
-  const slotBookingCounts: Record<string, number> = {};
-  for (const b of bookingCounts || []) {
-    slotBookingCounts[b.slot_id] = (slotBookingCounts[b.slot_id] || 0) + 1;
+  // Group decrypted bookings by slot_id so the UI can render a clickable
+  // patient link per booking.
+  const slotBookings: Record<string, SlotBooking[]> = {};
+  for (const raw of bookingRows || []) {
+    try {
+      const b = decryptBooking(raw);
+      const fullName =
+        [b.first_name, b.last_name].filter(Boolean).join(" ").trim() ||
+        b.name ||
+        b.email ||
+        "Unbekannt";
+      if (!slotBookings[b.slot_id]) slotBookings[b.slot_id] = [];
+      slotBookings[b.slot_id].push({
+        id: b.id,
+        patientId: b.patient_id ?? null,
+        name: fullName,
+      });
+    } catch {
+      // If a single row fails to decrypt, skip it rather than breaking the page.
+    }
   }
 
   return (
     <CoursesOverview
       courses={courses || []}
       slots={slots || []}
-      slotBookingCounts={slotBookingCounts}
+      slotBookings={slotBookings}
       templates={templates || []}
       sessions={sessions || []}
     />

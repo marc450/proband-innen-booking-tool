@@ -1,13 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, MapPin, User, Clock, Users } from "lucide-react";
+import Link from "next/link";
+import { ChevronDown, ChevronRight, MapPin, User, Clock, Users } from "lucide-react";
 import type { Course, Slot, CourseTemplate, CourseSession } from "@/lib/types";
+
+export interface SlotBooking {
+  id: string;
+  patientId: string | null;
+  name: string;
+}
 
 interface Props {
   courses: Course[];
   slots: Slot[];
-  slotBookingCounts: Record<string, number>;
+  slotBookings: Record<string, SlotBooking[]>;
   templates: CourseTemplate[];
   sessions: CourseSession[];
 }
@@ -50,7 +57,7 @@ function getFillColor(booked: number, capacity: number) {
 export function CoursesOverview({
   courses,
   slots,
-  slotBookingCounts,
+  slotBookings,
   templates,
   sessions,
 }: Props) {
@@ -218,21 +225,51 @@ export function CoursesOverview({
                 {isExpanded && courseSlots.length > 0 && (
                   <div className="px-4 pb-4 space-y-2">
                     {courseSlots.map((slot) => {
-                      const booked = slotBookingCounts[slot.id] || 0;
+                      const bookingsForSlot = slotBookings[slot.id] || [];
+                      const booked = bookingsForSlot.length;
                       const fillColor = getFillColor(booked, slot.capacity);
+                      const timeLabel = `${formatTime(slot.start_time)}${
+                        slot.end_time ? ` bis ${formatTime(slot.end_time)}` : ""
+                      }`;
                       return (
-                        <div
-                          key={slot.id}
-                          className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2.5"
-                        >
-                          <div className="flex items-center gap-2 text-sm text-black">
-                            <Clock className="w-3.5 h-3.5 text-gray-400" />
-                            {formatTime(slot.start_time)}
-                            {slot.end_time ? ` bis ${formatTime(slot.end_time)}` : ""}
+                        <div key={slot.id} className="bg-gray-50 rounded-lg overflow-hidden">
+                          <div className="flex items-center justify-between px-3 py-2.5">
+                            <div className="flex items-center gap-2 text-sm text-black">
+                              <Clock className="w-3.5 h-3.5 text-gray-400" />
+                              {timeLabel}
+                            </div>
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${fillColor}`}>
+                              {booked}/{slot.capacity}
+                            </span>
                           </div>
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${fillColor}`}>
-                            {booked}/{slot.capacity}
-                          </span>
+                          {bookingsForSlot.length > 0 && (
+                            <div className="border-t border-gray-100 bg-white">
+                              {bookingsForSlot.map((b) => {
+                                const row = (
+                                  <div className="flex items-center justify-between px-3 py-2 active:bg-gray-50 transition-colors">
+                                    <div className="flex items-center gap-2 text-sm text-black min-w-0">
+                                      <User className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                                      <span className="truncate">{b.name}</span>
+                                    </div>
+                                    {b.patientId && (
+                                      <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                    )}
+                                  </div>
+                                );
+                                return b.patientId ? (
+                                  <Link
+                                    key={b.id}
+                                    href={`/m/kontakte/${b.patientId}`}
+                                    className="block"
+                                  >
+                                    {row}
+                                  </Link>
+                                ) : (
+                                  <div key={b.id}>{row}</div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
