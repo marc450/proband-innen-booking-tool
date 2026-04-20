@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Check } from "lucide-react";
+import { Check, Compass, Layers, ShieldCheck, type LucideIcon } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CURRICULUM_BOTULINUM } from "@/lib/curricula";
 import { TYPO } from "../_components/typography";
@@ -36,32 +36,26 @@ const HERO = {
   ],
 };
 
-const REASONS = {
-  heading: "WOZU EIN CURRICULUM?",
-  intro:
-    "Unser Kursangebot ist umfangreich. Das Curriculum hilft Dir, Dich zu orientieren und systematisch zu lernen, statt Kurse zufällig aneinanderzureihen.",
-  hideAudienceLabel: true,
-  items: [
-    {
-      icon: "Layers",
-      label: "Aufeinander aufbauend",
-      description:
-        "Jeder Kurs setzt da an, wo der vorherige aufhört. Du baust Wissen systematisch auf, statt Lücken stehen zu lassen.",
-    },
-    {
-      icon: "Compass",
-      label: "Klare Orientierung",
-      description:
-        "Statt im großen Kursangebot verloren zu gehen, weißt Du nach jedem Schritt, was als nächstes sinnvoll ist.",
-    },
-    {
-      icon: "ShieldCheck",
-      label: "Sicherheit auf jedem Niveau",
-      description:
-        "Du gehst nie weiter, bevor das Fundament sitzt. So bleibst Du im Praxisalltag immer sicher und souverän.",
-    },
-  ],
-};
+const REASONS: Array<{ icon: LucideIcon; label: string; description: string }> = [
+  {
+    icon: Layers,
+    label: "Aufeinander aufbauend",
+    description:
+      "Jeder Kurs setzt da an, wo der vorherige aufhört. Du baust Wissen systematisch auf, statt Lücken stehen zu lassen.",
+  },
+  {
+    icon: Compass,
+    label: "Klare Orientierung",
+    description:
+      "Statt im großen Kursangebot verloren zu gehen, weißt Du nach jedem Schritt, was als nächstes sinnvoll ist.",
+  },
+  {
+    icon: ShieldCheck,
+    label: "Sicherheit auf jedem Niveau",
+    description:
+      "Du gehst nie weiter, bevor das Fundament sitzt. So bleibst Du im Praxisalltag immer sicher und souverän.",
+  },
+];
 
 const PERSONAS = {
   heading: "FÜR WEN IST DAS CURRICULUM?",
@@ -377,32 +371,52 @@ export default async function CurriculumBotulinumPage() {
 
   return (
     <>
-      {/* Hero — title, paragraph, soft stat pills. No CTA button: the
-          page is an orientation tool, not a conversion funnel; the
-          per-step "Zu den Kursdetails" CTAs in the Lernpfad below do
-          the booking. */}
-      <section className="bg-[#FAEBE1] pt-20 pb-24 md:pt-28 md:pb-32">
-        <div className="max-w-3xl mx-auto px-5 md:px-8 text-center">
-          <h1 className={`${TYPO.h1} text-4xl md:text-5xl lg:text-6xl mb-8`}>
-            {HERO.heading}
-          </h1>
-          <p className="text-base md:text-lg text-black/75 leading-relaxed mb-8">
-            {HERO.description}
-          </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {HERO.stats.map((s) => (
-              <span
-                key={s}
-                className="text-xs md:text-sm font-semibold rounded-full px-3 py-1.5 bg-[#0066FF] text-white"
+      {/* Hero + "Wozu" merged into one section so the page opens with
+          a single coherent intro: title → description → quick-scan
+          pills → three reasoning cards. White cards on the rose bg
+          give the cards their own surface without breaking the page
+          into a separate section. */}
+      <section className="bg-[#FAEBE1] pt-20 pb-20 md:pt-28 md:pb-28">
+        <div className="max-w-5xl mx-auto px-5 md:px-8">
+          {/* Intro */}
+          <div className="max-w-3xl mx-auto text-center mb-16 md:mb-20">
+            <h1 className={`${TYPO.h1} text-4xl md:text-5xl lg:text-6xl mb-8`}>
+              {HERO.heading}
+            </h1>
+            <p className="text-base md:text-lg text-black/75 leading-relaxed mb-8">
+              {HERO.description}
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {HERO.stats.map((s) => (
+                <span
+                  key={s}
+                  className="text-xs md:text-sm font-semibold rounded-full px-3 py-1.5 bg-[#0066FF] text-white"
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Reasons — three white cards on the rose backdrop */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+            {REASONS.map(({ icon: Icon, label, description }) => (
+              <div
+                key={label}
+                className="bg-white rounded-[10px] p-6 md:p-7"
               >
-                {s}
-              </span>
+                <div className="w-12 h-12 rounded-[10px] bg-[#0066FF]/10 flex items-center justify-center mb-4">
+                  <Icon className="w-6 h-6 text-[#0066FF]" aria-hidden="true" />
+                </div>
+                <h3 className="text-lg font-bold mb-2">{label}</h3>
+                <p className="text-sm md:text-base text-black/75 leading-relaxed">
+                  {description}
+                </p>
+              </div>
             ))}
           </div>
         </div>
       </section>
-
-      <Lernziele content={REASONS} />
 
       <Lernpfad
         heading="DEIN LERNPFAD"
