@@ -23,8 +23,21 @@ function formatDate(dateStr: string) {
   });
 }
 
-function formatTime(timeStr: string) {
-  return timeStr?.slice(0, 5) || "";
+function formatTime(timeStr: string | null | undefined) {
+  if (!timeStr) return "";
+  // `slots.start_time` is a timestamptz ("2026-05-10T14:30:00+00:00"), and
+  // `course_sessions.start_time` is a plain "HH:MM:SS". Handle both by
+  // detecting the ISO shape and parsing via Date for those.
+  if (timeStr.includes("T")) {
+    const d = new Date(timeStr);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleTimeString("de-DE", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Europe/Berlin",
+    });
+  }
+  return timeStr.slice(0, 5);
 }
 
 function getFillColor(booked: number, capacity: number) {
@@ -215,7 +228,7 @@ export function CoursesOverview({
                           <div className="flex items-center gap-2 text-sm text-black">
                             <Clock className="w-3.5 h-3.5 text-gray-400" />
                             {formatTime(slot.start_time)}
-                            {slot.end_time ? ` – ${formatTime(slot.end_time)}` : ""}
+                            {slot.end_time ? ` bis ${formatTime(slot.end_time)}` : ""}
                           </div>
                           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${fillColor}`}>
                             {booked}/{slot.capacity}
