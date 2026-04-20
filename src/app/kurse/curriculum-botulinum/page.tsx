@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Check, Compass, Layers, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Check } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CURRICULUM_BOTULINUM } from "@/lib/curricula";
 import { TYPO } from "../_components/typography";
@@ -28,29 +28,20 @@ const HERO = {
   heading: "CURRICULUM BOTULINUM",
   description:
     "Unser Kursangebot ist umfangreich. Das Curriculum hilft Dir, Dich zu orientieren und systematisch zu lernen, statt Kurse zufällig aneinanderzureihen.",
-  stats: [
-    "4 Kurse",
-    "Online + Praxis",
-    "Einstieg bis Masterclass",
-    "in Deinem Tempo",
-  ],
 };
 
-const REASONS: Array<{ icon: LucideIcon; label: string; description: string }> = [
+const REASONS: Array<{ label: string; description: string }> = [
   {
-    icon: Layers,
     label: "Aufeinander aufbauend",
     description:
       "Jeder Kurs setzt da an, wo der vorherige aufhört. Du baust Wissen systematisch auf, statt Lücken stehen zu lassen.",
   },
   {
-    icon: Compass,
     label: "Klare Orientierung",
     description:
       "Statt im großen Kursangebot verloren zu gehen, weißt Du nach jedem Schritt, was als nächstes sinnvoll ist.",
   },
   {
-    icon: ShieldCheck,
     label: "Sicherheit auf jedem Niveau",
     description:
       "Du gehst nie weiter, bevor das Fundament sitzt. So bleibst Du im Praxisalltag immer sicher und souverän.",
@@ -388,8 +379,9 @@ export default async function CurriculumBotulinumPage() {
             </p>
           </div>
 
-          {/* --- Option 1: typographic triad, no cards ---------------- */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12 mb-20 md:mb-24">
+          {/* Reasons — typographic triad, no cards. Small kicker above
+              each headline absorbs the old pill row. */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12">
             {REASONS.map((r, i) => {
               const kickers = [
                 "4 KURSE",
@@ -410,40 +402,6 @@ export default async function CurriculumBotulinumPage() {
                 </div>
               );
             })}
-          </div>
-
-          {/* --- Option 2: unified white feature strip ---------------- */}
-          <div className="bg-white rounded-[14px] shadow-sm overflow-hidden">
-            <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-black/[0.08]">
-              {REASONS.map(({ icon: Icon, label, description }, i) => {
-                const footnotes = [
-                  "4 Kurse",
-                  "Online + Praxis",
-                  "In Deinem Tempo",
-                ];
-                return (
-                  <div key={label} className="p-6 md:p-8">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-[10px] bg-[#0066FF]/10 flex items-center justify-center flex-shrink-0">
-                        <Icon
-                          className="w-5 h-5 text-[#0066FF]"
-                          aria-hidden="true"
-                        />
-                      </div>
-                      <h3 className="text-lg md:text-xl font-bold tracking-tight text-black">
-                        {label}
-                      </h3>
-                    </div>
-                    <p className="text-sm md:text-base text-black/75 leading-relaxed mb-4">
-                      {description}
-                    </p>
-                    <p className="text-[11px] md:text-xs font-bold tracking-[0.18em] text-[#0066FF] uppercase">
-                      {footnotes[i]}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
           </div>
         </div>
       </section>
