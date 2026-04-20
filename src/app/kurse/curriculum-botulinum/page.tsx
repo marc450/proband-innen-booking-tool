@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 const HERO = {
   heading: "CURRICULUM BOTULINUM",
   description:
-    "Unser Kursangebot ist umfangreich. Das Curriculum hilft Dir, Dich zu orientieren und systematisch zu lernen, statt Kurse zufällig aneinanderzureihen. Vier aufeinander aufbauende Kurse vom Einstieg bis auf Expert:innen-Niveau, die Du einzeln und in Deinem Tempo buchst.",
+    "Unser Kursangebot ist umfangreich. Das Curriculum hilft Dir, Dich zu orientieren und systematisch zu lernen, statt Kurse zufällig aneinanderzureihen.",
   stats: [
     "4 Kurse",
     "Online + Praxis",
