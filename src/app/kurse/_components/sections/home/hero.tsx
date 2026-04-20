@@ -44,13 +44,6 @@ export function HomeHero({ content }: { content: HomeHeroContent }) {
           >
             {content.ctaLabel}
           </a>
-
-          <a
-            href="https://proband-innen.ephia.de/"
-            className="mt-4 inline-block text-sm font-semibold text-[#0066FF] hover:text-[#0055DD] underline underline-offset-2 transition-colors"
-          >
-            Werde Proband:in &rarr;
-          </a>
         </div>
       </div>
 
@@ -91,20 +84,12 @@ export function HomeHero({ content }: { content: HomeHeroContent }) {
               ))}
             </ul>
 
-            <div className="flex flex-col items-start gap-4">
-              <a
-                href={content.ctaHref}
-                className="inline-block text-base lg:text-lg font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-12 py-3.5 transition-colors"
-              >
-                {content.ctaLabel}
-              </a>
-              <a
-                href="https://proband-innen.ephia.de/"
-                className="text-sm lg:text-base font-semibold text-[#0066FF] hover:text-[#0055DD] underline underline-offset-2 transition-colors"
-              >
-                Werde Proband:in &rarr;
-              </a>
-            </div>
+            <a
+              href={content.ctaHref}
+              className="inline-block text-base lg:text-lg font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-12 py-3.5 transition-colors"
+            >
+              {content.ctaLabel}
+            </a>
           </div>
         </div>
       </div>
