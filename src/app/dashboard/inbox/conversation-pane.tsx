@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Send, X, Reply, Paperclip, FileText, Image, File, UserCircle, ChevronDown } from "lucide-react";
+import { Loader2, Send, X, Reply, Paperclip, FileText, Image, File, UserCircle, ChevronDown, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "./rich-text-editor";
+import { useFileDrop } from "./use-file-drop";
 import type { ReplyDraft } from "@/hooks/use-drafts";
 
 // Middle pane: renders the selected Gmail thread and a reply composer.
@@ -96,6 +97,11 @@ export function ConversationPane({
   const [assignDropdownOpen, setAssignDropdownOpen] = useState(false);
   const assignDropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Drag & drop attachments anywhere on the reply composer.
+  const { isDragOver: isReplyDragOver, dragProps: replyDragProps } = useFileDrop(
+    (files) => setReplyAttachments((prev) => [...prev, ...files]),
+  );
 
   // Ref to capture current reply state for saving drafts (avoids stale closures)
   const replyStateRef = useRef({ open: false, html: "", cc: "", bcc: "", showCc: false, showBcc: false });
@@ -519,7 +525,23 @@ export function ConversationPane({
             </Button>
           </div>
         ) : (
-          <div className="p-4 space-y-3">
+          <div {...replyDragProps} className="relative p-4 space-y-3">
+            {/* Drop overlay — only while dragging files over the reply
+                area. pointer-events-none keeps the form editable right
+                up until the drop event fires. */}
+            {isReplyDragOver && (
+              <div
+                className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center bg-[#0066FF]/10 backdrop-blur-[1px] rounded"
+                aria-hidden="true"
+              >
+                <div className="flex flex-col items-center gap-2 rounded-[10px] border-2 border-dashed border-[#0066FF] bg-white/90 px-6 py-4 shadow">
+                  <Upload className="h-6 w-6 text-[#0066FF]" strokeWidth={2.5} />
+                  <p className="text-xs font-semibold text-black">
+                    Dateien hier ablegen, um sie anzuhängen
+                  </p>
+                </div>
+              </div>
+            )}
             {/* To + CC/BCC toggle */}
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <div className="flex items-center gap-2 min-w-0">

@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Send, X, Paperclip } from "lucide-react";
+import { Loader2, Send, X, Paperclip, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "./rich-text-editor";
 import { ContactAutocomplete } from "./contact-autocomplete";
+import { useFileDrop } from "./use-file-drop";
 
 // Center-column compose view shown when the user clicks "Neue E-Mail".
 // Replaces the old modal dialog: the draft shows up as a synthetic item
@@ -54,6 +55,11 @@ export function ComposePane({
 
   const canSend = !!to.trim() && !!subject.trim() && body.trim().length > 0;
 
+  // Drag & drop attachments anywhere on the composer.
+  const { isDragOver, dragProps } = useFileDrop((files) =>
+    onAttachmentsChange([...attachments, ...files]),
+  );
+
   // ⌘+Enter (or Ctrl+Enter on Windows/Linux) sends the mail from anywhere
   // in the compose view — matches Gmail/Outlook keyboard shortcut.
   useEffect(() => {
@@ -69,7 +75,27 @@ export function ComposePane({
     return () => window.removeEventListener("keydown", handler);
   }, [sending, canSend, onSend]);
   return (
-    <div ref={rootRef} className="flex flex-col h-full bg-gray-50/30">
+    <div
+      ref={rootRef}
+      {...dragProps}
+      className="flex flex-col h-full bg-gray-50/30 relative"
+    >
+      {/* Drop overlay — only rendered while the user is dragging files
+          over the composer. pointer-events-none keeps the underlying
+          UI interactive until the drop actually happens. */}
+      {isDragOver && (
+        <div
+          className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center bg-[#0066FF]/10 backdrop-blur-[1px]"
+          aria-hidden="true"
+        >
+          <div className="flex flex-col items-center gap-3 rounded-[10px] border-2 border-dashed border-[#0066FF] bg-white/90 px-8 py-6 shadow-lg">
+            <Upload className="h-8 w-8 text-[#0066FF]" strokeWidth={2.5} />
+            <p className="text-sm font-semibold text-black">
+              Dateien hier ablegen, um sie anzuhängen
+            </p>
+          </div>
+        </div>
+      )}
       <div className="px-6 py-4 bg-white border-b border-gray-100 flex items-center justify-between">
         <h2 className="text-base font-bold">Neue E-Mail</h2>
         <button
