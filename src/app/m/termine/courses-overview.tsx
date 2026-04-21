@@ -121,7 +121,11 @@ export function CoursesOverview({
             </p>
           )}
           {liveSessions.map((session) => (
-            <div key={session.id} className="bg-white rounded-[10px] p-4">
+            <Link
+              key={session.id}
+              href={`/m/termine/sessions/${session.id}`}
+              className="block bg-white rounded-[10px] p-4 active:bg-gray-50 transition-colors"
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <h3 className="text-sm font-bold text-black">
@@ -152,16 +156,19 @@ export function CoursesOverview({
                     )}
                   </div>
                 </div>
-                <span
-                  className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${
-                    getFillColor(session.booked_seats, session.max_seats)
-                  }`}
-                >
-                  <Users className="w-3 h-3 inline mr-0.5" />
-                  {session.booked_seats}/{session.max_seats}
-                </span>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <span
+                    className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                      getFillColor(session.booked_seats, session.max_seats)
+                    }`}
+                  >
+                    <Users className="w-3 h-3 inline mr-0.5" />
+                    {session.booked_seats}/{session.max_seats}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
