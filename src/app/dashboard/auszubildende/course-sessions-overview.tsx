@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   TableBody,
   TableCell,
@@ -20,6 +21,7 @@ type SortKey = "status" | "date" | "time" | "course" | "instructor" | "seats" | 
 type SortDir = "asc" | "desc";
 
 export function CourseSessionsOverview({ initialTemplates, initialSessions, zahnmedizinerCounts = {} }: Props) {
+  const router = useRouter();
   const sessions = initialSessions;
   const templates = initialTemplates;
   const [sortKey, setSortKey] = useState<SortKey>("date");
@@ -246,7 +248,12 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions, zahn
             </TableRow>
           ) : (
             sortedSessions.map((session) => (
-              <TableRow key={session.id} style={Number(session.booked_seats) >= Number(session.max_seats) && Number(session.max_seats) > 0 ? { backgroundColor: "var(--soldout-bg)" } : undefined}>
+              <TableRow
+                key={session.id}
+                onClick={() => router.push(`/dashboard/auszubildende/sessions/${session.id}`)}
+                className="cursor-pointer hover:bg-gray-50 transition-colors"
+                style={Number(session.booked_seats) >= Number(session.max_seats) && Number(session.max_seats) > 0 ? { backgroundColor: "var(--soldout-bg)" } : undefined}
+              >
                 <TableCell>
                   <span
                     className={`text-xs font-medium rounded-full px-2.5 py-1 ${
