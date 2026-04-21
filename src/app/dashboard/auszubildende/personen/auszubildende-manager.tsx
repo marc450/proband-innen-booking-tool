@@ -500,12 +500,15 @@ export function AuszubildendeManager({
                   <TableCell>{ort || "–"}</TableCell>
                   <TableCell>
                     {(() => {
+                      // Show the actual specialty string the Arzt:in entered
+                      // (e.g. "Allgemeinmedizin", "Dermatologie"). Zahnmedizin
+                      // gets an amber pill so it still stands out at a glance;
+                      // everything else is a blue pill. Empty specialty shows
+                      // a dash so incomplete profiles remain visible.
+                      if (!azubi.specialty) {
+                        return <span className="text-xs text-muted-foreground">–</span>;
+                      }
                       const isZahn = azubi.specialty === "Zahnmedizin";
-                      // Anything else (Allgemeinmedizin, Dermatologie,
-                      // Chirurgie, …) is a Humanmediziner:in. If specialty
-                      // hasn't been filled yet we leave the cell empty so
-                      // incomplete profiles are visible at a glance.
-                      if (!azubi.specialty) return <span className="text-xs text-muted-foreground">–</span>;
                       return (
                         <Badge
                           variant="secondary"
@@ -515,7 +518,7 @@ export function AuszubildendeManager({
                               : "bg-blue-100 text-blue-700"
                           }`}
                         >
-                          {isZahn ? "Zahnmediziner:in" : "Humanmediziner:in"}
+                          {azubi.specialty}
                         </Badge>
                       );
                     })()}
