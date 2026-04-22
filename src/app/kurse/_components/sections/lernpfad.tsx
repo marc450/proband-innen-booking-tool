@@ -221,7 +221,7 @@ function PathStep({
             {step.format}
           </span>
           {step.cme && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold tracking-wide rounded-full px-2.5 py-1 bg-[#BF785E] text-white">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold tracking-wide rounded-full px-2.5 py-1 bg-[#FAEBE1] text-[#733D29]">
               <Award className="w-3 h-3" aria-hidden="true" />
               {step.cme}
             </span>
@@ -262,9 +262,9 @@ function Destination({ destination }: { destination: LernpfadDestination }) {
           card visually "earns" the trophy. -mb-10 negative margin lets
           the bottom half of the trophy sit on top of the card edge. */}
       <div className="relative z-10 -mb-10">
-        <div className="w-20 h-20 rounded-full bg-[#BF785E] flex items-center justify-center shadow-lg ring-8 ring-[#0066FF]">
+        <div className="w-20 h-20 rounded-full bg-[#FAEBE1] flex items-center justify-center shadow-lg ring-8 ring-[#0066FF]">
           <Trophy
-            className="w-10 h-10 text-white"
+            className="w-10 h-10 text-[#733D29]"
             strokeWidth={2}
             aria-hidden="true"
           />
@@ -284,7 +284,7 @@ function Destination({ destination }: { destination: LernpfadDestination }) {
 
         {destination.cmeTotal && (
           <>
-            <span className="inline-flex items-center gap-1.5 text-sm font-bold rounded-full px-3 py-1.5 bg-[#BF785E] text-white">
+            <span className="inline-flex items-center gap-1.5 text-sm font-bold rounded-full px-3 py-1.5 bg-[#FAEBE1] text-[#733D29]">
               <Award className="w-4 h-4" aria-hidden="true" />
               {destination.cmeTotal}
             </span>

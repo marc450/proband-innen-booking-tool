@@ -1,4 +1,5 @@
 @AGENTS.md
+@BRAND_MANUAL.md
 
 ## LearnWorlds Embed (DO NOT EDIT without explicit permission)
 - `src/app/courses/[courseKey]/**` is the LearnWorlds iframe embed page
