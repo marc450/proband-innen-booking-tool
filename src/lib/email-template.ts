@@ -170,10 +170,10 @@ export function buildEmailHtml({
     bodyHtml = `<p style="margin:0 0 20px;">${intro || ""}</p>\n    ${buttonsHtml}`;
   }
 
-  return `<div style="background-color:#fff; padding:0; font-family:Arial, sans-serif;">
-  <div style="background-color:#fff; max-width:600px; margin:0 auto; padding:8px; text-align:left; line-height:1.5;">
+  return `<div style="background-color:#fff; padding:0; font-family:Arial, sans-serif; font-size:14px;">
+  <div style="background-color:#fff; max-width:600px; margin:0 auto; padding:8px; text-align:left; line-height:1.5; font-size:14px;">
 
-    <p style="margin-top:0; margin-bottom:20px;">
+    <p style="margin-top:0; margin-bottom:20px; font-size:14px;">
       Hi ${firstName},
     </p>
 
@@ -186,7 +186,7 @@ export function buildEmailHtml({
     ${noteHtml}
     ${extraContent}
 
-    <p style="margin:0 0 20px;">
+    <p style="margin:0 0 20px; font-size:14px;">
       ${closing}
     </p>
 
