@@ -271,7 +271,11 @@ export function RichTextEditor({
           }
         }}
         data-placeholder={placeholder}
-        className="flex-1 px-4 py-3 text-sm outline-none overflow-y-auto min-h-[120px] max-h-[320px] [&_p]:mb-2 [&_ul]:list-disc [&_ul]:ml-5 [&_ol]:list-decimal [&_ol]:ml-5 [&_blockquote]:ml-6 [&_blockquote]:border-l-2 [&_blockquote]:border-gray-200 [&_blockquote]:pl-3 [&_a]:text-[#0066FF] [&_a]:underline empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none"
+        // Force Arial + the same paragraph / list spacing and link color
+        // as the rendered email HTML so the composer is a true WYSIWYG
+        // preview of what Gmail will show the recipient.
+        style={{ fontFamily: "Arial, sans-serif" }}
+        className="flex-1 px-4 py-3 text-sm leading-[1.5] outline-none overflow-y-auto min-h-[120px] max-h-[320px] [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2 [&_li]:mb-1 [&_blockquote]:pl-3 [&_blockquote]:border-l-2 [&_blockquote]:border-gray-200 [&_blockquote]:text-gray-600 [&_blockquote]:mb-2 [&_a]:text-[#0066FF] [&_a]:underline empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none"
       />
     </div>
   );

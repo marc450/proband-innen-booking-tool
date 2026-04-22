@@ -72,6 +72,33 @@ function renderButton(b: EmailButton) {
   return `<a href="${b.url}" target="_blank" style="display:inline-block;background-color:#0066FF;color:#ffffff;font-weight:bold;font-size:16px;padding:12px 24px;border-radius:10px;text-decoration:none;margin:0 8px 8px 0;">${b.label}</a>`;
 }
 
+// Inline default styles into rich-text HTML coming out of the editor so
+// the sent email matches what Marc sees while composing. Without this,
+// Gmail and most desktop clients fall back to their own browser defaults
+// (big <p> margins, 40px <ul> padding, no link color), which visibly
+// diverges from the editor preview. We only apply a style when the tag
+// doesn't already carry one so user-pasted styled content is preserved.
+function inlineRichTextStyles(html: string): string {
+  const inject = (tag: string, style: string) =>
+    (s: string) =>
+      s.replace(
+        new RegExp(`<${tag}(?![^>]*\\sstyle=)(\\s|>)`, "gi"),
+        `<${tag} style="${style}"$1`,
+      );
+  const pipeline: Array<(s: string) => string> = [
+    inject("p", "margin:0 0 8px;"),
+    inject("ul", "margin:0 0 8px;padding-left:20px;list-style-type:disc;"),
+    inject("ol", "margin:0 0 8px;padding-left:20px;list-style-type:decimal;"),
+    inject("li", "margin:0 0 4px;"),
+    inject("a", "color:#0066FF;text-decoration:underline;"),
+    inject(
+      "blockquote",
+      "margin:0 0 8px;padding-left:12px;border-left:2px solid #e5e7eb;color:#525252;",
+    ),
+  ];
+  return pipeline.reduce((acc, fn) => fn(acc), html);
+}
+
 function renderContentBlocks(blocks: ContentBlock[]): string {
   return blocks
     .map((block) => {
@@ -79,7 +106,8 @@ function renderContentBlocks(blocks: ContentBlock[]): string {
         // Use a <div> wrapper — the text already contains <p>/<div>/<br> from
         // the rich text editor. Wrapping in <p> would create invalid nested
         // paragraphs with inconsistent spacing between editor and preview.
-        return `<div style="margin:0 0 20px;font-size:14px;line-height:1.5;">${block.text}</div>`;
+        const styled = inlineRichTextStyles(block.text);
+        return `<div style="margin:0 0 20px;font-family:Arial,sans-serif;font-size:14px;line-height:1.5;">${styled}</div>`;
       }
       if (block.type === "button" && block.label && block.url) {
         return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
