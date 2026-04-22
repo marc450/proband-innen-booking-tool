@@ -18,6 +18,7 @@ import {
 import { ArrowLeft, Pencil, FileText, AlertTriangle, Ban, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { formatPersonName } from "@/lib/utils";
+import { MEDICAL_SPECIALTIES } from "@/lib/medical-specialties";
 import type { Auszubildende, CourseBookingStatus } from "@/lib/types";
 
 interface BookingRow {
@@ -347,7 +348,24 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
             <CardContent className="text-sm">
               <div className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-2 items-center">
                 <span className="text-xs text-muted-foreground">Fachrichtung</span>
-                <input defaultValue={azubi.specialty || ""} placeholder="–" onBlur={(e) => autosave("specialty", e.target.value)} className={fieldClass} />
+                <select
+                  value={azubi.specialty || ""}
+                  onChange={(e) => autosave("specialty", e.target.value)}
+                  className={`${fieldClass} cursor-pointer`}
+                >
+                  <option value="">–</option>
+                  {/* If the stored specialty isn't on the canonical list,
+                      surface it as an extra option so we never lose the
+                      existing value on first edit. */}
+                  {azubi.specialty && !MEDICAL_SPECIALTIES.includes(
+                    azubi.specialty as typeof MEDICAL_SPECIALTIES[number]
+                  ) && (
+                    <option value={azubi.specialty}>{azubi.specialty}</option>
+                  )}
+                  {MEDICAL_SPECIALTIES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
 
                 <span className="text-xs text-muted-foreground">EFN</span>
                 <input defaultValue={azubi.efn || ""} placeholder="–" onBlur={(e) => autosave("efn", e.target.value)} className={`${fieldClass} font-mono`} />

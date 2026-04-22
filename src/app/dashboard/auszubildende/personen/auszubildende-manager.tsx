@@ -240,15 +240,24 @@ export function AuszubildendeManager({
     .filter((a) => {
       if (statusFilter !== "all" && a.status !== statusFilter) return false;
       if (scope === "other" && typeFilter !== "all" && a.contact_type !== typeFilter) return false;
-      if (!search) return true;
-      const s = search.toLowerCase();
-      return (
-        a.first_name?.toLowerCase().includes(s) ||
-        a.last_name?.toLowerCase().includes(s) ||
-        a.email?.toLowerCase().includes(s) ||
-        a.phone?.toLowerCase().includes(s) ||
-        a.company_name?.toLowerCase().includes(s)
-      );
+      if (!search.trim()) return true;
+      // Tokenise the query so typing both "Ahmad Al-Masri" matches a
+      // row where "Ahmad" is in first_name and "Al-Masri" is in
+      // last_name. Every token must appear somewhere in the combined
+      // haystack; single-word searches still work because the loop has
+      // one iteration.
+      const haystack = [
+        a.first_name,
+        a.last_name,
+        a.email,
+        a.phone,
+        a.company_name,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      const tokens = search.toLowerCase().trim().split(/\s+/);
+      return tokens.every((t) => haystack.includes(t));
     })
     .sort((a, b) => {
       const dir = sortDir === "asc" ? 1 : -1;

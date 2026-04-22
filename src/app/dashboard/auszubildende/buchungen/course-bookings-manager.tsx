@@ -227,17 +227,23 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
       if (!b.created_at || b.created_at.slice(0, 10) < filterKaufdatumFrom) return false;
     }
 
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return (
-      // Match both the denormalized snapshot and the current profile name so
-      // renames remain searchable immediately.
-      b.first_name?.toLowerCase().includes(s) ||
-      b.last_name?.toLowerCase().includes(s) ||
-      b.auszubildende?.first_name?.toLowerCase().includes(s) ||
-      b.auszubildende?.last_name?.toLowerCase().includes(s) ||
-      b.email?.toLowerCase().includes(s)
-    );
+    if (!search.trim()) return true;
+    // Token-based match: every whitespace-separated token must appear
+    // somewhere in the combined haystack. This lets the user type a
+    // full "Vorname Nachname" string (the single-token search used to
+    // only match one or the other).
+    const haystack = [
+      b.first_name,
+      b.last_name,
+      b.auszubildende?.first_name,
+      b.auszubildende?.last_name,
+      b.email,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    const tokens = search.toLowerCase().trim().split(/\s+/);
+    return tokens.every((t) => haystack.includes(t));
   });
 
   // Sort filtered results
