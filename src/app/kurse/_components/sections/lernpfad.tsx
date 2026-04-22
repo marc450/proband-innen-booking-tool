@@ -104,16 +104,16 @@ export function Lernpfad({
     <section
       ref={sectionRef}
       id="lernpfad"
-      className="bg-[#FAEBE1] py-20 md:py-28 relative overflow-hidden scroll-mt-24"
+      className="bg-[#0066FF] py-20 md:py-28 relative overflow-hidden scroll-mt-24"
     >
       <div className="max-w-6xl mx-auto px-5 md:px-8">
         {/* Heading */}
         <div className="text-center mb-12 md:mb-16 max-w-2xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-wide uppercase mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-wide uppercase mb-4 text-white">
             {heading}
           </h2>
           {intro && (
-            <p className="text-base md:text-lg text-black/70 leading-relaxed">
+            <p className="text-base md:text-lg text-white/80 leading-relaxed">
               {intro}
             </p>
           )}
@@ -182,16 +182,19 @@ function PathStep({
   return (
     <li className={`relative flex justify-center ${desktopAlign}`}>
       {/* Medallion — circle with the step number, sits on top of the
-          path on desktop and on the mobile vertical line. */}
+          path on desktop and on the mobile vertical line. Inverted to
+          white-on-blue now the section background is blue; the ring
+          matches the new background so the dashed path appears to pass
+          behind the medallion. */}
       <div
-        className="hidden md:flex absolute left-1/2 top-6 -translate-x-1/2 z-10 w-12 h-12 rounded-full bg-[#0066FF] text-white items-center justify-center font-bold text-base shadow-md ring-4 ring-[#FAEBE1]"
+        className="hidden md:flex absolute left-1/2 top-6 -translate-x-1/2 z-10 w-12 h-12 rounded-full bg-white text-[#0066FF] items-center justify-center font-bold text-base shadow-md ring-4 ring-[#0066FF]"
         aria-hidden="true"
       >
         {numberLabel}
       </div>
       {/* Mobile medallion sits on the left dashed line */}
       <div
-        className="md:hidden absolute left-3 top-6 z-10 w-10 h-10 rounded-full bg-[#0066FF] text-white flex items-center justify-center font-bold text-sm shadow-md ring-4 ring-[#FAEBE1]"
+        className="md:hidden absolute left-3 top-6 z-10 w-10 h-10 rounded-full bg-white text-[#0066FF] flex items-center justify-center font-bold text-sm shadow-md ring-4 ring-[#0066FF]"
         aria-hidden="true"
       >
         {numberLabel}
@@ -259,9 +262,9 @@ function Destination({ destination }: { destination: LernpfadDestination }) {
           card visually "earns" the trophy. -mb-10 negative margin lets
           the bottom half of the trophy sit on top of the card edge. */}
       <div className="relative z-10 -mb-10">
-        <div className="w-20 h-20 rounded-full bg-[#0066FF] flex items-center justify-center shadow-lg ring-8 ring-[#FAEBE1]">
+        <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-lg ring-8 ring-[#0066FF]">
           <Trophy
-            className="w-10 h-10 text-white"
+            className="w-10 h-10 text-[#0066FF]"
             strokeWidth={2}
             aria-hidden="true"
           />
@@ -347,8 +350,9 @@ function DesktopPath({
       <path
         d={d}
         fill="none"
-        stroke="#0066FF"
-        strokeWidth="0.5"
+        stroke="white"
+        strokeOpacity={0.85}
+        strokeWidth="0.6"
         strokeLinecap="round"
         // Long dashes (`6 4` in viewBox units) read as a hand-drawn
         // dashed route rather than a technical dotted line.
@@ -376,7 +380,7 @@ function MobileLine({ drawn }: { drawn: boolean }) {
         className="w-px h-full"
         style={{
           backgroundImage:
-            "repeating-linear-gradient(to bottom, #0066FF 0 6px, transparent 6px 12px)",
+            "repeating-linear-gradient(to bottom, rgba(255,255,255,0.85) 0 6px, transparent 6px 12px)",
           // Animate height from 0 → 100% as the path "draws" in.
           transformOrigin: "top",
           transform: drawn ? "scaleY(1)" : "scaleY(0)",
