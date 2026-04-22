@@ -26,6 +26,7 @@ import { TableHeaderBar } from "@/components/table/table-header-bar";
 import { SortableHead } from "@/components/table/sortable-head";
 import { useTableSort } from "@/hooks/use-table-sort";
 import Link from "next/link";
+import { formatPersonName } from "@/lib/utils";
 import type { CourseBookingStatus } from "@/lib/types";
 
 interface BookingRow {
@@ -48,6 +49,26 @@ interface BookingRow {
   bundle_group_id: string | null;
   course_sessions: { date_iso: string; label_de: string | null; instructor_name: string | null; start_time: string | null; duration_minutes: number | null; address: string | null } | null;
   course_templates: { title: string; course_label_de: string | null } | null;
+  // Current name from the linked auszubildende row, joined at fetch time.
+  // Prefer this for display — `first_name`/`last_name` on the booking itself
+  // are denormalized snapshots from checkout and do not track profile renames.
+  auszubildende: { title: string | null; first_name: string | null; last_name: string | null } | null;
+}
+
+// Resolve the display name for a booking: prefer the current auszubildende
+// profile name (including title) when a link exists, otherwise fall back to
+// the denormalized booking-row snapshot, then to an em-dash.
+function displayNameOf(b: Pick<BookingRow, "first_name" | "last_name" | "auszubildende">): string {
+  const fromAzubi = b.auszubildende
+    ? formatPersonName({
+        title: b.auszubildende.title,
+        firstName: b.auszubildende.first_name,
+        lastName: b.auszubildende.last_name,
+      })
+    : undefined;
+  if (fromAzubi) return fromAzubi;
+  const fromBooking = [b.first_name, b.last_name].filter(Boolean).join(" ").trim();
+  return fromBooking || "–";
 }
 
 interface SessionOption {
@@ -89,7 +110,7 @@ const statusOrder: CourseBookingStatus[] = ["booked", "completed", "cancelled", 
 function getSortValue(booking: BookingRow, key: SortKey): string | number {
   switch (key) {
     case "name":
-      return [booking.first_name, booking.last_name].filter(Boolean).join(" ").toLowerCase();
+      return displayNameOf(booking).toLowerCase();
     case "kurstyp":
       return booking.course_type.toLowerCase();
     case "kurs":
@@ -209,8 +230,12 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
     if (!search) return true;
     const s = search.toLowerCase();
     return (
+      // Match both the denormalized snapshot and the current profile name so
+      // renames remain searchable immediately.
       b.first_name?.toLowerCase().includes(s) ||
       b.last_name?.toLowerCase().includes(s) ||
+      b.auszubildende?.first_name?.toLowerCase().includes(s) ||
+      b.auszubildende?.last_name?.toLowerCase().includes(s) ||
       b.email?.toLowerCase().includes(s)
     );
   });
@@ -353,7 +378,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: changeBooking.email,
-        firstName: changeBooking.first_name,
+        firstName: changeBooking.auszubildende?.first_name || changeBooking.first_name,
         courseName,
         dateIso: newSession.date_iso,
         startTime: newSession.start_time,
@@ -572,7 +597,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
             </TableRow>
           ) : (
             sorted.map((booking) => {
-              const name = [booking.first_name, booking.last_name].filter(Boolean).join(" ") || "–";
+              const name = displayNameOf(booking);
               return (
                 <TableRow key={booking.id} className="cursor-pointer" onClick={() => router.push(`/dashboard/auszubildende/buchungen/${booking.id}`)}>
                   {isAdmin && (
@@ -799,7 +824,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
             </div>
 
             <div className="text-sm">
-              <p><strong>Kund:in:</strong> {[cancelBooking?.first_name, cancelBooking?.last_name].filter(Boolean).join(" ")}</p>
+              <p><strong>Kund:in:</strong> {cancelBooking ? displayNameOf(cancelBooking) : ""}</p>
               <p><strong>Kurs:</strong> {cancelBooking?.course_templates?.course_label_de || cancelBooking?.course_templates?.title || "–"}</p>
               {cancelBooking?.course_sessions?.label_de && (
                 <p><strong>Termin:</strong> {cancelBooking.course_sessions.label_de}</p>

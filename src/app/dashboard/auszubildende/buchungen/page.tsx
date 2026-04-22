@@ -11,7 +11,11 @@ export default async function CourseBookingsPage() {
 
   const { data: bookings } = await supabase
     .from("course_bookings")
-    .select("*, course_sessions(date_iso, label_de, instructor_name, start_time, duration_minutes, address), course_templates:template_id(title, course_label_de)")
+    .select(
+      // Pull the current auszubildende name alongside the historical copy
+      // stored on the booking row so the list reflects profile renames.
+      "*, course_sessions(date_iso, label_de, instructor_name, start_time, duration_minutes, address), course_templates:template_id(title, course_label_de), auszubildende:auszubildende_id(title, first_name, last_name)"
+    )
     .order("created_at", { ascending: false });
 
   return <CourseBookingsManager initialBookings={bookings ?? []} isAdmin={isAdmin} />;
