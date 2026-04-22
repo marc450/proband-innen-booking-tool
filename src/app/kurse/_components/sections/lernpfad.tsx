@@ -187,14 +187,14 @@ function PathStep({
           matches the new background so the dashed path appears to pass
           behind the medallion. */}
       <div
-        className="hidden md:flex absolute left-1/2 top-6 -translate-x-1/2 z-10 w-12 h-12 rounded-full bg-white text-[#0066FF] items-center justify-center font-bold text-base shadow-md ring-4 ring-[#0066FF]"
+        className="hidden md:flex absolute left-1/2 top-6 -translate-x-1/2 z-10 w-12 h-12 rounded-full bg-[#FAEBE1] text-[#733D29] items-center justify-center font-bold text-base shadow-md ring-4 ring-[#0066FF]"
         aria-hidden="true"
       >
         {numberLabel}
       </div>
       {/* Mobile medallion sits on the left dashed line */}
       <div
-        className="md:hidden absolute left-3 top-6 z-10 w-10 h-10 rounded-full bg-white text-[#0066FF] flex items-center justify-center font-bold text-sm shadow-md ring-4 ring-[#0066FF]"
+        className="md:hidden absolute left-3 top-6 z-10 w-10 h-10 rounded-full bg-[#FAEBE1] text-[#733D29] flex items-center justify-center font-bold text-sm shadow-md ring-4 ring-[#0066FF]"
         aria-hidden="true"
       >
         {numberLabel}
