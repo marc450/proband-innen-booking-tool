@@ -4,6 +4,7 @@ import { ArrowDown, HeartHandshake, ShieldCheck, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { AvailableSlot, Course } from "@/lib/types";
 import { HeroVideo } from "../_components/sections/hero-video";
+import { BackgroundVideo } from "../_components/sections/background-video";
 import { Faq } from "../_components/sections/faq";
 import { TreatmentList } from "../_components/sections/treatment-list";
 import { TYPO } from "../_components/typography";
@@ -151,9 +152,14 @@ export default async function WerdeProbandInPage() {
 
   return (
     <>
-      {/* Hero — mirrors the home hero two-column split on desktop. */}
-      <section className="bg-[#FAEBE1] pt-12 md:pt-20 pb-16 md:pb-24">
-        <div className="max-w-6xl mx-auto px-5 md:px-8">
+      {/* Hero — mirrors the home hero two-column split on desktop.
+          On mobile (< lg) the same hero clip plays full-bleed behind the
+          text, dimmed so the cream brand colour still dominates. */}
+      <section className="relative bg-[#FAEBE1] pt-12 md:pt-20 pb-16 md:pb-24 overflow-hidden">
+        <div className="lg:hidden">
+          <BackgroundVideo videoPath={hero.videoPath} opacityPercent={22} />
+        </div>
+        <div className="relative z-10 max-w-6xl mx-auto px-5 md:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-14 items-center">
             <div className="text-center lg:text-left">
               <h1 className={`${TYPO.h1} text-black`}>{hero.heading}</h1>
