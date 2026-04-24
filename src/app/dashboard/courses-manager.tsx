@@ -50,6 +50,26 @@ function formatDozentName(d: DozentUser): string {
   return [d.title, d.first_name, d.last_name].filter(Boolean).join(" ");
 }
 
+// Visual color coding per treatment type so different course categories are
+// easy to distinguish at a glance in the admin list. Uses Tailwind semantic
+// colors on purpose (the brand manual allows neutrals/semantics for admin
+// surfaces that aren't user-facing).
+function getTreatmentAccent(
+  treatmentTitle: string | null,
+  title: string,
+): { bar: string; dot: string; label: string } {
+  const key = `${treatmentTitle || ""} ${title}`.toLowerCase();
+  if (key.includes("botulinum"))
+    return { bar: "border-l-indigo-400", dot: "bg-indigo-400", label: "Botulinum" };
+  if (key.includes("dermalfiller") || key.includes("filler"))
+    return { bar: "border-l-pink-400", dot: "bg-pink-400", label: "Dermalfiller" };
+  if (key.includes("biostimulation") || key.includes("skinbooster"))
+    return { bar: "border-l-teal-400", dot: "bg-teal-400", label: "Biostimulation" };
+  if (key.includes("hautpflege") || key.includes("skincare"))
+    return { bar: "border-l-amber-400", dot: "bg-amber-400", label: "Hautpflege" };
+  return { bar: "border-l-gray-300", dot: "bg-gray-300", label: "Sonstiges" };
+}
+
 export function CoursesManager({ initialCourses, initialSlots, initialBookings, templates, dozentUsers, isAdmin = true }: Props) {
   const [courses, setCourses] = useState(initialCourses);
   const [slots, setSlots] = useState(initialSlots);
@@ -1120,9 +1140,10 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
           }, 0);
 
           const isExpanded = expandedCourses.has(course.id);
+          const accent = getTreatmentAccent(course.treatment_title, course.title);
 
           return (
-            <Card key={course.id} className="overflow-hidden shadow-none">
+            <Card key={course.id} className={`overflow-hidden shadow-none border-l-4 ${accent.bar}`}>
               {/* Course header row */}
               <div className="flex items-center gap-2 px-4 py-1.5">
                 <button
