@@ -147,8 +147,8 @@ export function CampaignsManager({ campaigns: initialCampaigns, monthlyEmailsSen
     }
   };
 
-  // Resend's free tier is 3000/month. Set NEXT_PUBLIC_RESEND_MONTHLY_LIMIT to your plan's actual limit.
-  const monthlyLimit = Number(process.env.NEXT_PUBLIC_RESEND_MONTHLY_LIMIT) || 3000;
+  // Current Resend plan: 50k emails/month. Set NEXT_PUBLIC_RESEND_MONTHLY_LIMIT to override when the plan changes.
+  const monthlyLimit = Number(process.env.NEXT_PUBLIC_RESEND_MONTHLY_LIMIT) || 50000;
   const remaining = Math.max(0, monthlyLimit - monthlyEmailsSent);
   const usagePercent = Math.min(100, (monthlyEmailsSent / monthlyLimit) * 100);
   const usageColor =
