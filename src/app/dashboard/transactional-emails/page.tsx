@@ -1,11 +1,16 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   FUNNEL_LABELS,
   groupTransactionalEmails,
 } from "@/lib/transactional-emails";
+import { isAdmin } from "@/lib/auth";
 import { Mail } from "lucide-react";
 
-export default function TransactionalEmailsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function TransactionalEmailsPage() {
+  if (!(await isAdmin())) redirect("/dashboard");
   const groups = groupTransactionalEmails();
   const total = groups.reduce((n, g) => n + g.emails.length, 0);
 

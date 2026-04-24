@@ -1,22 +1,21 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import {
   FUNNEL_LABELS,
   getTransactionalEmailById,
 } from "@/lib/transactional-emails";
 import { TransactionalEmailPreview } from "../transactional-email-preview";
-import { TRANSACTIONAL_EMAILS } from "@/lib/transactional-emails";
+import { isAdmin } from "@/lib/auth";
 
-export function generateStaticParams() {
-  return TRANSACTIONAL_EMAILS.map((e) => ({ id: e.id }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function TransactionalEmailDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  if (!(await isAdmin())) redirect("/dashboard");
   const { id } = await params;
   const email = getTransactionalEmailById(id);
   if (!email) notFound();
