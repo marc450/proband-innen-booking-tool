@@ -64,8 +64,8 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       // PDF Marc supplied.
       // X matches the name (centerX=173). Y calibrated below the
       // baked-in "VNR Theorie:" / "VNR Praxis:" labels.
-      vnrTheorie: { x: 173, y: 57, size: 7 },
-      vnrPraxis: { x: 173, y: 33, size: 7 },
+      vnrTheorie: { x: 173, y: 57, size: 8 },
+      vnrPraxis: { x: 173, y: 33, size: 8 },
     },
   },
 ];
