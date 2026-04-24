@@ -105,17 +105,17 @@ export function Header() {
                   </span>
                   {/* Invisible bridge to avoid hover gap */}
                   <div className="absolute left-0 right-0 top-full h-3" />
-                  <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+0.5rem)] min-w-[240px] bg-white rounded-[10px] shadow-lg py-3 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200">
+                  <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+0.5rem)] w-max min-w-[240px] bg-white rounded-[10px] shadow-lg py-3 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200">
                     {link.subLinks.map((sub) =>
                       sub.disabled ? (
                         <span
                           key={sub.label}
-                          className="flex items-center justify-between gap-3 px-5 py-2.5 text-base font-normal text-black/40 cursor-not-allowed select-none"
+                          className="flex items-center justify-between gap-4 px-5 py-2.5 text-base font-normal text-black/40 cursor-not-allowed select-none whitespace-nowrap"
                           aria-disabled="true"
                         >
                           <span>{sub.label}</span>
                           {sub.note && (
-                            <span className="text-[11px] font-medium uppercase tracking-wide text-[#0066FF]/80 bg-[#0066FF]/10 rounded-full px-2 py-0.5">
+                            <span className="text-[11px] font-medium uppercase tracking-wide text-[#0066FF]/80 bg-[#0066FF]/10 rounded-full px-2 py-0.5 whitespace-nowrap">
                               {sub.note}
                             </span>
                           )}
@@ -188,12 +188,12 @@ export function Header() {
                         sub.disabled ? (
                           <span
                             key={sub.label}
-                            className="flex items-center justify-between gap-3 py-2 text-sm font-medium text-black/40 cursor-not-allowed select-none"
+                            className="flex items-center justify-between gap-3 py-2 text-sm font-medium text-black/40 cursor-not-allowed select-none whitespace-nowrap"
                             aria-disabled="true"
                           >
-                            <span>{sub.label}</span>
+                            <span className="truncate">{sub.label}</span>
                             {sub.note && (
-                              <span className="text-[10px] font-medium uppercase tracking-wide text-[#0066FF]/80 bg-[#0066FF]/10 rounded-full px-2 py-0.5">
+                              <span className="text-[10px] font-medium uppercase tracking-wide text-[#0066FF]/80 bg-[#0066FF]/10 rounded-full px-2 py-0.5 whitespace-nowrap flex-shrink-0">
                                 {sub.note}
                               </span>
                             )}
