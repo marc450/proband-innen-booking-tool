@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
           // or by us (outbound). Used by the "Beantwortet" filter in the
           // inbox UI to hide threads that still need a reply.
           const lastMessageInbound = isInbound(lastMsg);
+          const hasAttachments = full.messages.some((m) => getAttachments(m).length > 0);
 
           // Get the external participant (not customerlove@ephia.de)
           const participants = new Set<string>();
@@ -95,9 +96,10 @@ export async function GET(request: NextRequest) {
             messageCount: full.messages.length,
             isUnread,
             lastMessageInbound,
+            hasAttachments,
           };
         } catch {
-          return { id: t.id, subject: "", snippet: t.snippet, lastDate: "", lastFrom: "", contactName: "", contactEmail: "", messageCount: 0, isUnread: false, lastMessageInbound: true };
+          return { id: t.id, subject: "", snippet: t.snippet, lastDate: "", lastFrom: "", contactName: "", contactEmail: "", messageCount: 0, isUnread: false, lastMessageInbound: true, hasAttachments: false };
         }
       })
     );

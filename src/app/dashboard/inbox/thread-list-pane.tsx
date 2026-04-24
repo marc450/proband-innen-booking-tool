@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Loader2, MailOpen, PenSquare, RefreshCw, X } from "lucide-react";
+import { Search, Loader2, MailOpen, PenSquare, RefreshCw, X, Paperclip } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 // Left pane of the HubSpot-style inbox. Owns the search input and filter
@@ -19,6 +19,7 @@ export interface ThreadSummary {
   messageCount: number;
   isUnread: boolean;
   lastMessageInbound: boolean;
+  hasAttachments?: boolean;
 }
 
 interface Props {
@@ -272,6 +273,12 @@ export function ThreadListPane({
                               </button>
                             )}
                           </span>
+                        )}
+                        {t.hasAttachments && (
+                          <Paperclip
+                            className="h-3 w-3 text-gray-400 flex-shrink-0"
+                            aria-label="Enthält Anhang"
+                          />
                         )}
                         <span className="text-[11px] text-muted-foreground">
                           {formatDate(t.lastDate)}

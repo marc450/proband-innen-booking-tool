@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Mail, Pencil, Search, RefreshCw, Trash2, X } from "lucide-react";
+import { Loader2, Mail, Pencil, Search, RefreshCw, Trash2, X, Paperclip } from "lucide-react";
 import { useSignature } from "@/hooks/use-signature";
 import { useDrafts } from "@/hooks/use-drafts";
 import { RichTextEditor } from "@/app/dashboard/inbox/rich-text-editor";
@@ -43,6 +43,7 @@ interface ThreadSummary {
   isUnread: boolean;
   lastMessageInbound: boolean;
   messageCount: number;
+  hasAttachments?: boolean;
 }
 
 const FILTERS: { value: InboxFilter; label: string }[] = [
@@ -200,6 +201,12 @@ function SwipeableThreadRow({ thread, assignment, hasDraft, onOpen, onRequestDel
                   <span className="text-[9px] font-medium text-amber-600 bg-amber-50 rounded px-1 py-0.5">
                     Entwurf
                   </span>
+                )}
+                {thread.hasAttachments && (
+                  <Paperclip
+                    className="w-3 h-3 text-gray-400 flex-shrink-0"
+                    aria-label="Enthält Anhang"
+                  />
                 )}
                 <span className="text-[10px] text-gray-400">
                   {formatDate(thread.lastDate)}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Send, ChevronDown, UserCircle } from "lucide-react";
+import { ArrowLeft, Loader2, Send, ChevronDown, UserCircle, FileText, Image as ImageIcon, File as FileIcon } from "lucide-react";
 import { useSignature } from "@/hooks/use-signature";
 import { useDrafts } from "@/hooks/use-drafts";
 import { RichTextEditor } from "@/app/dashboard/inbox/rich-text-editor";
@@ -416,6 +416,32 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
                   />
                   {isExpanded ? "Weniger" : "Mehr anzeigen"}
                 </button>
+
+                {/* Attachments */}
+                {msg.attachments && msg.attachments.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {msg.attachments.map((att, i) => {
+                      const isImg = att.mimeType.startsWith("image/");
+                      const isPdf = att.mimeType === "application/pdf";
+                      const Icon = isImg ? ImageIcon : isPdf ? FileText : FileIcon;
+                      const sizeKb = Math.round(att.size / 1024);
+                      const sizeLabel = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
+                      const href = `/api/gmail/attachments?messageId=${msg.id}&attachmentId=${encodeURIComponent(att.attachmentId)}&filename=${encodeURIComponent(att.filename)}&mimeType=${encodeURIComponent(att.mimeType)}`;
+                      return (
+                        <a
+                          key={i}
+                          href={href}
+                          download={att.filename}
+                          className="inline-flex items-center gap-2 px-3 py-2 bg-gray-50 active:bg-gray-100 rounded-[10px] text-xs text-gray-700 max-w-full"
+                        >
+                          <Icon className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                          <span className="truncate max-w-[160px]">{att.filename}</span>
+                          <span className="text-gray-400 flex-shrink-0">{sizeLabel}</span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })
