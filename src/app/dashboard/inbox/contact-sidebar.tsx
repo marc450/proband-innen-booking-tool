@@ -94,6 +94,15 @@ function formatDate(iso: string | null) {
 
 const TITLE_OPTIONS = ["Dr. med.", "Dr. med. dent.", "Prof. Dr.", "PD Dr.", "Kein Titel"];
 const GENDER_OPTIONS = ["Weiblich", "Männlich", "Divers"];
+// "inactive" = hard unsubscribe; excluded from all campaign emails. Kept
+// separate from "blacklist" so that blacklist (behavior flag) and inactive
+// (communication opt-out) are independent signals.
+const STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: "active", label: "Aktiv" },
+  { value: "warning", label: "Warnung" },
+  { value: "blacklist", label: "Blacklist" },
+  { value: "inactive", label: "Inaktiv (keine E-Mails)" },
+];
 const SPECIALTIES = [
   "Allgemeinmedizin", "Anatomie", "Anästhesiologie", "Arbeitsmedizin",
   "Augenheilkunde", "Chirurgie", "Dermatologie", "Gynäkologie",
@@ -310,12 +319,20 @@ export function ContactSidebar({ email, displayName }: Props) {
                 />
               </>
             )}
-            {contact.source === "patient" && contact.patientStatus && (
+            {contact.source === "patient" && (
               <EditableField
                 label="Patient:innen-Status"
                 value={contact.patientStatus}
-                onSave={() => {}}
-                readOnly
+                onSave={(v) => saveField("patient_status", v)}
+                options={STATUS_OPTIONS}
+              />
+            )}
+            {contact.source === "auszubildende" && (
+              <EditableField
+                label="Status"
+                value={contact.status}
+                onSave={(v) => saveField("status", v)}
+                options={STATUS_OPTIONS}
               />
             )}
             <EditableField
@@ -458,6 +475,8 @@ function uiFieldToDtoKey(field: string): keyof ContactDTO {
       return "addressCity";
     case "address_country":
       return "addressCountry";
+    case "patient_status":
+      return "patientStatus";
     default:
       return field as keyof ContactDTO;
   }

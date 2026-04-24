@@ -87,6 +87,9 @@ export async function POST(req: NextRequest) {
     const allPatients = (rawPatients || []).map(decryptPatient);
     for (const p of allPatients) {
       if (!p.email) continue;
+      // "inactive" is a hard unsubscribe — ignore the excludeBlacklisted
+      // toggle, they never receive campaigns.
+      if (p.patient_status === "inactive") continue;
       if (excludeBlacklisted && p.patient_status === "blacklist") continue;
       if (excludedSet.has(`p-${p.id}`)) continue;
       const cleaned = sanitizeRecipientEmail(p.email);
@@ -105,11 +108,13 @@ export async function POST(req: NextRequest) {
   if (audienceType === "aerztinnen" || audienceType === "alle") {
     const { data: azubis } = await supabase
       .from("auszubildende")
-      .select("id, email, first_name, contact_type");
+      .select("id, email, first_name, contact_type, status");
     for (const a of azubis || []) {
       const ct = a.contact_type as string | null;
       if (ct !== "auszubildende" && ct !== null) continue;
       if (!a.email) continue;
+      // Hard unsubscribe — same semantics as the patients branch above.
+      if ((a.status as string | null) === "inactive") continue;
       if (excludedSet.has(`a-${a.id}`)) continue;
       const cleaned = sanitizeRecipientEmail(a.email);
       if (!cleaned) {

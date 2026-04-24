@@ -19,15 +19,20 @@ export default async function NewCampaignPage() {
 
   const decrypted = (patients || []).map(decryptPatient);
 
-  // Only Auszubildende (not "other"/"company")
+  // Only Auszubildende (not "other"/"company") and drop anyone who has
+  // explicitly opted out (status "inactive") so the composer UI matches
+  // what the send pipeline actually mails.
   const filteredAzubis = (auszubildende || []).filter((a) => {
     const ct = a.contact_type as string | null;
-    return ct === "auszubildende" || ct == null;
+    const isAzubi = ct === "auszubildende" || ct == null;
+    return isAzubi && a.status !== "inactive";
   });
+
+  const sendablePatients = decrypted.filter((p) => p.patient_status !== "inactive");
 
   return (
     <CampaignComposer
-      patients={decrypted.map((p) => ({
+      patients={sendablePatients.map((p) => ({
         id: p.id,
         email: p.email,
         first_name: p.first_name,

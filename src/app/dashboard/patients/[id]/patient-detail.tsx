@@ -179,17 +179,26 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
                       ? "bg-amber-100 text-amber-700"
                       : patient.patient_status === "blacklist"
                       ? "bg-red-100 text-red-700"
+                      : patient.patient_status === "inactive"
+                      ? "bg-gray-200 text-gray-700"
                       : "bg-gray-100 text-gray-600"
                   }`}
                 >
                   {patient.patient_status === "active" && <CheckCircle2 className="h-3 w-3" />}
                   {patient.patient_status === "warning" && <AlertTriangle className="h-3 w-3" />}
                   {patient.patient_status === "blacklist" && <Ban className="h-3 w-3" />}
-                  {patient.patient_status === "active" ? "Aktiv" : patient.patient_status === "warning" ? "Warnung" : "Blacklist"}
+                  {patient.patient_status === "inactive" && <Ban className="h-3 w-3" />}
+                  {patient.patient_status === "active"
+                    ? "Aktiv"
+                    : patient.patient_status === "warning"
+                    ? "Warnung"
+                    : patient.patient_status === "blacklist"
+                    ? "Blacklist"
+                    : "Inaktiv"}
                 </button>
                 {statusDropdownOpen && (
-                  <div className="absolute z-50 mt-1 left-0 bg-popover border rounded-md shadow-md py-1 min-w-[140px]">
-                    {(["active", "warning", "blacklist"] as PatientStatus[]).map((s) => (
+                  <div className="absolute z-50 mt-1 left-0 bg-popover border rounded-md shadow-md py-1 min-w-[180px]">
+                    {(["active", "warning", "blacklist", "inactive"] as PatientStatus[]).map((s) => (
                       <button
                         key={s}
                         className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-muted text-left"
@@ -198,7 +207,14 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
                         {s === "active" && <CheckCircle2 className="h-3 w-3 text-emerald-600" />}
                         {s === "warning" && <AlertTriangle className="h-3 w-3 text-amber-600" />}
                         {s === "blacklist" && <Ban className="h-3 w-3 text-red-600" />}
-                        {s === "active" ? "Aktiv" : s === "warning" ? "Warnung" : "Blacklist"}
+                        {s === "inactive" && <Ban className="h-3 w-3 text-gray-600" />}
+                        {s === "active"
+                          ? "Aktiv"
+                          : s === "warning"
+                          ? "Warnung"
+                          : s === "blacklist"
+                          ? "Blacklist"
+                          : "Inaktiv (keine E-Mails)"}
                       </button>
                     ))}
                   </div>

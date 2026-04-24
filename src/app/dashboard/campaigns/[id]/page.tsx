@@ -40,14 +40,19 @@ export default async function CampaignDetailPage({
 
   const decrypted = (patients || []).map(decryptPatient);
 
+  // Mirror dashboard/campaigns/new/page.tsx: drop hard-unsubscribed
+  // contacts so the UI matches the send pipeline.
   const filteredAzubis = (auszubildende || []).filter((a) => {
     const ct = a.contact_type as string | null;
-    return ct === "auszubildende" || ct == null;
+    const isAzubi = ct === "auszubildende" || ct == null;
+    return isAzubi && a.status !== "inactive";
   });
+
+  const sendablePatients = decrypted.filter((p) => p.patient_status !== "inactive");
 
   return (
     <CampaignComposer
-      patients={decrypted.map((p) => ({
+      patients={sendablePatients.map((p) => ({
         id: p.id,
         email: p.email,
         first_name: p.first_name,

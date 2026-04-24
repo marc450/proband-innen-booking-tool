@@ -45,21 +45,24 @@ const statusLabels: Record<PatientStatus, string> = {
   active: "Aktiv",
   warning: "Warnung",
   blacklist: "Blacklist",
+  inactive: "Inaktiv",
 };
 
 const statusBadgeVariants: Record<PatientStatus, "outline" | "secondary" | "destructive"> = {
   active: "outline",
   warning: "secondary",
   blacklist: "destructive",
+  inactive: "secondary",
 };
 
 const statusColors: Record<PatientStatus, string> = {
   active: "text-green-600",
   warning: "text-amber-600",
   blacklist: "",
+  inactive: "text-gray-500",
 };
 
-const allStatuses: PatientStatus[] = ["active", "warning", "blacklist"];
+const allStatuses: PatientStatus[] = ["active", "warning", "blacklist", "inactive"];
 
 type SortKey = "last_name" | "first_name" | "email" | "city" | "status" | "created_at";
 
@@ -108,6 +111,7 @@ export function PatientsManager({ initialPatients }: Props) {
     const val = (raw || "").toLowerCase().trim();
     if (val === "blacklist") return "blacklist";
     if (val === "warning") return "warning";
+    if (val === "inactive") return "inactive";
     return "active";
   }
 
@@ -346,6 +350,7 @@ export function PatientsManager({ initialPatients }: Props) {
                               >
                                 {s === "warning" && <AlertTriangle className="h-3 w-3 text-amber-600" />}
                                 {s === "blacklist" && <Ban className="h-3 w-3 text-red-600" />}
+                                {s === "inactive" && <Ban className="h-3 w-3 text-gray-500" />}
                                 {statusLabels[s]}
                               </button>
                             ))}

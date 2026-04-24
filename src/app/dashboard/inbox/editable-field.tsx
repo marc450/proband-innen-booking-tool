@@ -8,6 +8,8 @@ import { useState, useRef, useEffect } from "react";
 // the onSave callback, Escape cancels. The parent owns the "source of
 // truth" value and applies the optimistic update + server sync.
 
+type OptionItem = string | { value: string; label: string };
+
 interface Props {
   label: string;
   value: string | null;
@@ -16,7 +18,14 @@ interface Props {
   type?: "text" | "email" | "tel" | "date";
   readOnly?: boolean;
   multiline?: boolean;
-  options?: string[];
+  options?: OptionItem[];
+}
+
+function optionValue(o: OptionItem): string {
+  return typeof o === "string" ? o : o.value;
+}
+function optionLabel(o: OptionItem): string {
+  return typeof o === "string" ? o : o.label;
 }
 
 export function EditableField({
@@ -75,7 +84,9 @@ export function EditableField({
         >
           <option value="">Bitte wählen...</option>
           {options.map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
+            <option key={optionValue(opt)} value={optionValue(opt)}>
+              {optionLabel(opt)}
+            </option>
           ))}
         </select>
       );
@@ -114,6 +125,15 @@ export function EditableField({
     );
   };
 
+  // When options carry a display label distinct from the stored value,
+  // show the label in read mode instead of the raw value.
+  const displayValue = (() => {
+    if (!value) return null;
+    if (!options) return value;
+    const match = options.find((o) => optionValue(o) === value);
+    return match ? optionLabel(match) : value;
+  })();
+
   return (
     <div className="py-2">
       <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1">
@@ -132,7 +152,7 @@ export function EditableField({
               : "hover:bg-gray-50 cursor-text text-gray-900"
           } ${!value ? "text-gray-400 italic" : ""}`}
         >
-          {value || placeholder || "–"}
+          {displayValue || placeholder || "–"}
         </button>
       )}
     </div>

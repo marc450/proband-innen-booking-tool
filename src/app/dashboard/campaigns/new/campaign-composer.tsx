@@ -32,7 +32,7 @@ interface PatientOption {
   email: string;
   first_name: string | null;
   last_name: string | null;
-  patient_status: "active" | "warning" | "blacklist";
+  patient_status: "active" | "warning" | "blacklist" | "inactive";
 }
 
 interface AuszubildendeOption {

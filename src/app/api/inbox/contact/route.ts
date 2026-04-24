@@ -336,6 +336,22 @@ export async function PATCH(req: NextRequest) {
   }
 
   if (source === "patient") {
+    // patient_status is a plaintext column, not part of the encrypted blob
+    // — handle it with a direct column update instead of decrypt/re-encrypt.
+    if ("patient_status" in patch) {
+      const raw = patch.patient_status;
+      const allowed = new Set(["active", "warning", "blacklist", "inactive"]);
+      if (typeof raw !== "string" || !allowed.has(raw)) {
+        return NextResponse.json({ error: "Invalid patient_status" }, { status: 400 });
+      }
+      const { error } = await admin
+        .from("patients")
+        .update({ patient_status: raw })
+        .eq("id", id);
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ ok: true });
+    }
+
     const { data: row } = await admin
       .from("patients")
       .select("encrypted_data, encrypted_key, encryption_iv")

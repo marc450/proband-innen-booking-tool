@@ -167,7 +167,7 @@ export interface Booking {
   created_at: string;
 }
 
-export type PatientStatus = "active" | "warning" | "blacklist";
+export type PatientStatus = "active" | "warning" | "blacklist" | "inactive";
 
 export interface Patient {
   id: string;
