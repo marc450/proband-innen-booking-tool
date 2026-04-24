@@ -429,6 +429,8 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
                   end_time: newSlot?.end_time || b.slots.end_time,
                   courses: {
                     title: newCourse?.title || b.slots.courses.title,
+                    treatment_title:
+                      newCourse?.treatment_title ?? b.slots.courses.treatment_title,
                     instructor: b.slots.courses.instructor,
                   },
                 },

@@ -241,7 +241,10 @@ export interface BookingWithDetails extends Booking {
     end_time: string;
     courses: {
       title: string;
-      treatment_title: string | null;
+      // Optional because several list/detail queries still select only
+      // { title, instructor } — the patient-facing emails live behind
+      // the bookings-page query which does fetch treatment_title.
+      treatment_title?: string | null;
       instructor: string | null;
     };
   };
