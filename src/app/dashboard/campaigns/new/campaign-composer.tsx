@@ -888,11 +888,11 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
 
         {/* Right: Preview */}
         <div className="space-y-3">
-          <Card className="sticky top-4">
-            <CardHeader className="pb-3">
+          <Card className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-hidden">
+            <CardHeader className="pb-3 flex-shrink-0">
               <CardTitle className="text-base">Vorschau</CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-0 flex-1 min-h-0 overflow-y-auto">
               <div className="border-t">
                 <EmailPreview html={previewHtml} />
               </div>
