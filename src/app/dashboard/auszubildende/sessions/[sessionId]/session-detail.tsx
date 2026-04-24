@@ -156,11 +156,6 @@ export function SessionDetail({
     [participants],
   );
 
-  const incomplete = useMemo(
-    () => participants.filter((p) => p.auszubildendeId && p.profileComplete === false),
-    [participants],
-  );
-
   const sortedParticipants = useMemo(() => {
     // Group sort: by course type order, then by last name
     const order: Record<string, number> = {
@@ -295,59 +290,29 @@ export function SessionDetail({
       </div>
 
       {/* Alerts */}
-      {(incomplete.length > 0 || withNotes.length > 0) && (
-        <div className="grid gap-3 md:grid-cols-2">
-          {incomplete.length > 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-[10px] p-4">
-              <div className="flex items-start gap-2 text-amber-800">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold">
-                    {incomplete.length} Teilnehmer:in
-                    {incomplete.length !== 1 ? "nen" : ""} mit unvollständigem Profil
-                  </p>
-                  <p className="text-xs text-amber-700 mt-0.5">
-                    EFN, Geburtsdatum oder Adresse fehlen. Für CME-Zertifikate nötig.
-                  </p>
-                  <ul className="mt-2 space-y-1">
-                    {incomplete.map((p) => (
-                      <li key={p.bookingId}>
-                        <LinkableName
-                          participant={p}
-                          className="text-sm text-amber-900 hover:underline"
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
+      {withNotes.length > 0 && (
+        <div className="bg-white rounded-[10px] p-4">
+          <div className="flex items-start gap-2">
+            <FileText className="w-4 h-4 flex-shrink-0 mt-0.5 text-muted-foreground" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">
+                Notizen ({withNotes.length})
+              </p>
+              <ul className="mt-2 space-y-3">
+                {withNotes.map((p) => (
+                  <li key={p.bookingId} className="text-sm">
+                    <LinkableName
+                      participant={p}
+                      className="font-semibold hover:underline"
+                    />
+                    <p className="text-muted-foreground whitespace-pre-wrap mt-0.5 text-xs">
+                      {p.notes}
+                    </p>
+                  </li>
+                ))}
+              </ul>
             </div>
-          )}
-          {withNotes.length > 0 && (
-            <div className="bg-white rounded-[10px] p-4">
-              <div className="flex items-start gap-2">
-                <FileText className="w-4 h-4 flex-shrink-0 mt-0.5 text-muted-foreground" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold">
-                    Notizen ({withNotes.length})
-                  </p>
-                  <ul className="mt-2 space-y-3">
-                    {withNotes.map((p) => (
-                      <li key={p.bookingId} className="text-sm">
-                        <LinkableName
-                          participant={p}
-                          className="font-semibold hover:underline"
-                        />
-                        <p className="text-muted-foreground whitespace-pre-wrap mt-0.5 text-xs">
-                          {p.notes}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       )}
 
