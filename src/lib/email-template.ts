@@ -110,8 +110,8 @@ function renderContentBlocks(blocks: ContentBlock[]): string {
         return `<div style="margin:0 0 20px;font-family:Arial,sans-serif;font-size:14px;line-height:1.5;">${styled}</div>`;
       }
       if (block.type === "button" && block.label && block.url) {
-        return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
-        <tr><td>${renderButton(block)}</td></tr>
+        return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 32px;">
+        <tr><td style="padding:8px 0;">${renderButton(block)}</td></tr>
       </table>`;
       }
       if (block.type === "image" && block.src) {
@@ -161,8 +161,8 @@ export function buildEmailHtml({
     bodyHtml = renderContentBlocks(contentBlocks);
   } else {
     const buttonsHtml = buttons.length > 0
-      ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
-        <tr><td>
+      ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 32px;">
+        <tr><td style="padding:8px 0;">
           ${buttons.map(renderButton).join("\n          ")}
         </td></tr>
       </table>`
