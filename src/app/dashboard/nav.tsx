@@ -131,6 +131,7 @@ const navGroups: NavGroup[] = [
       { href: "/dashboard/settings?tab=einladungen", label: "Einladungen" },
       { href: "/dashboard/settings?tab=rechnungen", label: "Zahlungsverläufe" },
       { href: "/dashboard/settings?tab=benutzer", label: "Benutzer:innen" },
+      { href: "/dashboard/zertifikate", label: "Zertifikate (Test)" },
     ],
   },
 ];
