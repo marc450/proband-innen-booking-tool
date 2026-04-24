@@ -27,6 +27,16 @@ const CATEGORY_LABELS: Record<TreatmentCategory, string> = {
   sonstiges: "Sonstiges",
 };
 
+// Pill styling per category, used on the white treatment cards. Same color
+// family as the admin dashboard accent bars so an operator recognises them.
+const CATEGORY_PILL: Record<TreatmentCategory, string> = {
+  botulinum: "bg-indigo-50 text-indigo-700",
+  dermalfiller: "bg-pink-50 text-pink-700",
+  biostimulation: "bg-teal-50 text-teal-700",
+  hautpflege: "bg-amber-50 text-amber-700",
+  sonstiges: "bg-gray-100 text-gray-700",
+};
+
 const CATEGORY_ORDER: TreatmentCategory[] = [
   "botulinum",
   "dermalfiller",
@@ -195,6 +205,11 @@ export function TreatmentList({ courses, slots }: TreatmentListProps) {
                 )}
 
                 <div className="flex flex-col flex-1 p-6 md:p-8">
+                  <span
+                    className={`self-start inline-flex items-center text-[11px] font-semibold uppercase tracking-wide rounded-full px-2.5 py-1 mb-3 ${CATEGORY_PILL[group.category]}`}
+                  >
+                    {CATEGORY_LABELS[group.category]}
+                  </span>
                   <h3 className="text-lg md:text-xl font-bold tracking-wide leading-tight text-black xl:whitespace-nowrap xl:overflow-hidden xl:text-ellipsis">
                     {group.firstCourse.treatment_title || group.firstCourse.title}
                   </h3>
