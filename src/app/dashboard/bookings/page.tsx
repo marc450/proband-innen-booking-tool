@@ -21,12 +21,13 @@ export default async function BookingsPage() {
           end_time,
           courses (
             title,
+            treatment_title,
             instructor
           )
         )
       `)
       .order("created_at", { ascending: false }),
-    supabase.from("courses").select("id, title, location, course_date").order("course_date", { ascending: true }),
+    supabase.from("courses").select("id, title, treatment_title, location, course_date").order("course_date", { ascending: true }),
   ]);
 
   return (

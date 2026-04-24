@@ -72,7 +72,12 @@ export interface TransactionalEmail {
 const SAMPLE = {
   firstName: "Anna",
   lastName: "Beispiel",
+  // `courseTitle` is the internal admin-facing Kursname; `treatmentTitle`
+  // is the public-facing "Behandlungsname" from course_templates.
+  // Patient-facing emails prefer `treatmentTitle` so recipients see the
+  // treatment, not the course.
   courseTitle: "Grundkurs Botulinum",
+  treatmentTitle: "Behandlung mimischer Falten mit Botulinum",
   dateFormatted: "Samstag, 24. Mai 2026",
   timeFormatted: "10:30 Uhr",
   time: "10:30",
@@ -92,7 +97,7 @@ function buildBookingConfirmationSampleHtml(): string {
   const logoUrl =
     "https://lwfiles.mycourse.app/6638baeec5c56514e03ec360-public/f64a1ea1eb5346a171fe9ea36e8615ca.png";
   const infoRows = [
-    { label: "Behandlung", value: SAMPLE.courseTitle },
+    { label: "Behandlung", value: SAMPLE.treatmentTitle },
     { label: "Datum", value: SAMPLE.dateFormatted },
     { label: "Uhrzeit", value: SAMPLE.timeFormatted },
     { label: "Ort", value: SAMPLE.location },
@@ -108,7 +113,7 @@ function buildBookingConfirmationSampleHtml(): string {
 
     <p style="margin-top:0; margin-bottom:20px;">
       Hi ${SAMPLE.firstName},<br><br>
-      Deine Buchung für <strong>${SAMPLE.courseTitle}</strong> ist bestätigt!<br>
+      Deine Buchung für <strong>${SAMPLE.treatmentTitle}</strong> ist bestätigt!<br>
       Wir freuen uns, Dich bald bei uns begrüßen zu dürfen. Hier sind alle wichtigen Infos zu Deinem Termin:
     </p>
 
@@ -160,7 +165,7 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
     description:
       "Bestätigt die öffentliche Buchung mit Termindetails, Vorbereitungshinweisen und 48h-Stornogebühr.",
     renderSample: () => ({
-      subject: `Buchungsbestätigung: ${SAMPLE.courseTitle}`,
+      subject: `Buchungsbestätigung: ${SAMPLE.treatmentTitle}`,
       html: buildBookingConfirmationSampleHtml(),
     }),
   },
@@ -176,12 +181,12 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
     description:
       "Bestätigt die ärztlich zugewiesene Privatbuchung inklusive Zuweiser:in und Vorbereitungshinweisen. Keine Zahlung, keine Ausfallgebühr.",
     renderSample: () => ({
-      subject: `Buchungsbestätigung: ${SAMPLE.courseTitle}`,
+      subject: `Buchungsbestätigung: ${SAMPLE.treatmentTitle}`,
       html: buildEmailHtml({
         firstName: SAMPLE.firstName,
         intro: `Du wurdest von <strong>${SAMPLE.referringDoctor}</strong> als Privatpatient:in für die folgende Behandlung angemeldet:`,
         infoRows: [
-          { label: "Behandlung", value: SAMPLE.courseTitle },
+          { label: "Behandlung", value: SAMPLE.treatmentTitle },
           { label: "Datum", value: SAMPLE.dateFormatted },
           { label: "Uhrzeit", value: SAMPLE.timeFormatted },
           { label: "Ort", value: SAMPLE.location },
@@ -209,12 +214,12 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
     description:
       "Neue Termindetails mit Vorbereitungshinweisen und (bei öffentlichen Buchungen) erneuter 48h-Stornogebühr.",
     renderSample: () => ({
-      subject: `Terminänderung: ${SAMPLE.courseTitle}`,
+      subject: `Terminänderung: ${SAMPLE.treatmentTitle}`,
       html: buildEmailHtml({
         firstName: SAMPLE.firstName,
-        intro: `Dein Termin für <strong>${SAMPLE.courseTitle}</strong> wurde geändert. Hier sind Deine neuen Termindetails:`,
+        intro: `Dein Termin für <strong>${SAMPLE.treatmentTitle}</strong> wurde geändert. Hier sind Deine neuen Termindetails:`,
         infoRows: [
-          { label: "Behandlung", value: SAMPLE.courseTitle },
+          { label: "Behandlung", value: SAMPLE.treatmentTitle },
           { label: "Datum", value: SAMPLE.dateFormatted },
           { label: "Uhrzeit", value: SAMPLE.timeFormatted },
           { label: "Ort", value: SAMPLE.location },
@@ -240,12 +245,12 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
     description:
       "Informiert über die Stornierung eines bestätigten Termins und lädt zur Neubuchung ein.",
     renderSample: () => ({
-      subject: `Stornierung Deines Termins: ${SAMPLE.courseTitle}`,
+      subject: `Stornierung Deines Termins: ${SAMPLE.treatmentTitle}`,
       html: buildEmailHtml({
         firstName: SAMPLE.firstName,
-        intro: `Dein Termin für <strong>${SAMPLE.courseTitle}</strong> wurde storniert. Hier sind die Details des stornierten Termins:`,
+        intro: `Dein Termin für <strong>${SAMPLE.treatmentTitle}</strong> wurde storniert. Hier sind die Details des stornierten Termins:`,
         infoRows: [
-          { label: "Behandlung", value: SAMPLE.courseTitle },
+          { label: "Behandlung", value: SAMPLE.treatmentTitle },
           { label: "Datum", value: SAMPLE.dateFormatted },
           { label: "Uhrzeit", value: SAMPLE.timeFormatted },
           { label: "Ort", value: SAMPLE.location },
@@ -273,7 +278,7 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
         intro:
           "in 3 Tagen ist es soweit: Dein Termin bei EPHIA steht an. Bitte sei 10 Minuten vor Deinem Termin da.",
         infoRows: [
-          { label: "Behandlung", value: SAMPLE.courseTitle },
+          { label: "Behandlung", value: SAMPLE.treatmentTitle },
           { label: "Datum", value: SAMPLE.dateFormatted },
           { label: "Uhrzeit", value: SAMPLE.timeFormatted },
           { label: "Ort", value: SAMPLE.location },
@@ -297,7 +302,7 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
         intro:
           "eine kurze Erinnerung: Dein Termin ist morgen. Bitte sei 10 Minuten vor Deinem Termin da.",
         infoRows: [
-          { label: "Behandlung", value: SAMPLE.courseTitle },
+          { label: "Behandlung", value: SAMPLE.treatmentTitle },
           { label: "Datum", value: SAMPLE.dateFormatted },
           { label: "Uhrzeit", value: SAMPLE.timeFormatted },
           { label: "Ort", value: SAMPLE.location },

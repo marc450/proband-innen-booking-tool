@@ -41,7 +41,7 @@ type BookingWithHash = BookingWithDetails & { email_hash?: string };
 
 interface Props {
   initialBookings: BookingWithHash[];
-  courses: { id: string; title: string; location: string | null; course_date: string | null }[];
+  courses: { id: string; title: string; treatment_title: string | null; location: string | null; course_date: string | null }[];
   isAdmin?: boolean;
 }
 
@@ -346,7 +346,10 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
       return {
         email: b.email,
         firstName: b.first_name || b.name?.split(" ")[0] || "",
-        courseTitle: b.slots?.courses?.title || "",
+        // Patient-facing: prefer the public "Behandlungsname" over the
+        // internal course title.
+        courseTitle:
+          b.slots?.courses?.treatment_title || b.slots?.courses?.title || "",
         date,
         time,
         location: courseLocation,
@@ -450,7 +453,13 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
           body: JSON.stringify({
             email: slotChangePending.email,
             firstName: slotChangePending.first_name || slotChangePending.name?.split(" ")[0] || "",
-            courseTitle: newCourseForEmail?.title || slotChangePending.slots?.courses?.title || "",
+            // Prefer the public Behandlungsname over the internal title.
+            courseTitle:
+              newCourseForEmail?.treatment_title ||
+              newCourseForEmail?.title ||
+              slotChangePending.slots?.courses?.treatment_title ||
+              slotChangePending.slots?.courses?.title ||
+              "",
             date,
             time,
             location: newCourseForEmail?.location || "",

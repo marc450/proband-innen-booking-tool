@@ -28,12 +28,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Zeitfenster nicht gefunden." }, { status: 404 });
     }
 
-    // Get course location
+    // Fetch treatment_title (public-facing "Behandlungsname") alongside
+    // location. Falls back to the internal course title when empty.
     const { data: course } = await supabase
       .from("courses")
-      .select("location")
+      .select("location, treatment_title")
       .eq("id", slot.course_id)
       .single();
+
+    const displayTreatment = course?.treatment_title || slot.course_title || "EPHIA Kurs";
 
     // Check blacklist
     const { data: blacklisted } = await supabase
@@ -185,7 +188,7 @@ export async function POST(req: NextRequest) {
         firstName: firstName,
         intro: `Du wurdest von <strong>${referringDoctor}</strong> als Privatpatient:in für die folgende Behandlung angemeldet:`,
         infoRows: [
-          { label: "Behandlung", value: slot.course_title || "" },
+          { label: "Behandlung", value: displayTreatment },
           { label: "Datum", value: dateStr },
           { label: "Uhrzeit", value: timeStr ? `${timeStr} Uhr` : "" },
           { label: "Ort", value: course?.location || "" },
@@ -203,7 +206,7 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           from: "EPHIA <customerlove@ephia.de>",
           to: [email],
-          subject: `Buchungsbestätigung: ${slot.course_title || "EPHIA Kurs"}`,
+          subject: `Buchungsbestätigung: ${displayTreatment}`,
           html,
         }),
       });

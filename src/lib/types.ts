@@ -241,6 +241,7 @@ export interface BookingWithDetails extends Booking {
     end_time: string;
     courses: {
       title: string;
+      treatment_title: string | null;
       instructor: string | null;
     };
   };
