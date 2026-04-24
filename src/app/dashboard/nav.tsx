@@ -96,6 +96,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: "/dashboard/inbox", label: "Inbox" },
       { href: "/dashboard/campaigns", label: "Kampagnen" },
+      { href: "/dashboard/transactional-emails", label: "Transaktional" },
     ],
   },
   {
