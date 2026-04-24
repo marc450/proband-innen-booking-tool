@@ -5,22 +5,31 @@ import fontkit from "@pdf-lib/fontkit";
 
 /**
  * Renders a CME participation certificate by stamping the participant's
- * full name onto a standardised template PDF. One template per course
- * (keyed by slug), stored under public/certificates/<slug>.pdf. Uses
- * Roboto Bold (public/fonts/Roboto-Bold.ttf) to match the website.
+ * full name (Roboto Bold) and the two VNR numbers (Roboto Regular, rose
+ * to match the footer copy) onto a standardised template PDF. One
+ * template per course, stored under public/certificates/<slug>.pdf.
  *
  * The name auto-shrinks so it always fits on one line regardless of
- * title length — "Anna Schmidt" renders at full 36pt, "Prof. Dr. Dr.
- * Maximilian Wolfgang von Bergsträsser-Schmidt" shrinks until it fits.
+ * title length. The VNR numbers are rendered with character spacing to
+ * match the footer typographic style.
  */
+
+export interface VnrStampPosition {
+  /** Left edge of the number (right after the ":" of the baked label). */
+  x: number;
+  /** Baseline Y (PDF origin is bottom-left). */
+  y: number;
+  /** Font size in points. Defaults to 7pt — matches the footer. */
+  size?: number;
+}
 
 export interface CertificateTemplate {
   /** URL slug + filename stem under public/certificates/<slug>.pdf */
   slug: string;
   /** Display name shown in admin UIs */
   label: string;
-  /** Layout calibration for this specific template. Coordinates are in
-   *  PDF user units with origin at the bottom-left of the page. */
+  /** Name-line calibration. Coordinates are in PDF user units with
+   *  origin at the bottom-left of the page. */
   layout: {
     page: number; // 1-indexed
     centerX: number;
@@ -28,6 +37,8 @@ export interface CertificateTemplate {
     maxWidth: number;
     targetSize: number;
     minSize: number;
+    vnrTheorie: VnrStampPosition;
+    vnrPraxis: VnrStampPosition;
   };
 }
 
@@ -41,17 +52,18 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
     layout: {
       page: 1,
       // A4 landscape, 842 x 595 pt. Name sits centred over the dotted
-      // underline in the left column of page 1. Calibrated visually by
-      // rendering y-markers on the template and positioning the name
-      // between "Hiermit wird bestätigt, dass" (baseline ~430) and the
-      // underline (~390). Values locked in on short ("Dr. Marc Wyss")
-      // and long ("Prof. Dr. Dr. Maximilian von Bergsträsser-Schmidt")
-      // test names — both render within the underline width.
+      // underline in the left column of page 1.
       centerX: 173,
       baselineY: 388,
       maxWidth: 325,
       targetSize: 28,
       minSize: 12,
+      // VNR lines are baked as labels ("VNR Theorie:" / "VNR Praxis:")
+      // in the footer. The number is stamped just after the colon on
+      // the same baseline. Calibrated visually against the reference
+      // PDF Marc supplied.
+      vnrTheorie: { x: 255, y: 72, size: 7 },
+      vnrPraxis: { x: 255, y: 42, size: 7 },
     },
   },
 ];
@@ -74,57 +86,68 @@ export function formatParticipantName(parts: {
     .join(" ");
 }
 
+/** Space characters out ("276102" → "2 7 6 1 0 2") to match the
+ *  letter-spaced style of the footer text ("V N R  T h e o r i e"). */
+function spaceDigits(value: string): string {
+  return value.split("").join(" ");
+}
+
 export async function generateCertificatePdf(opts: {
   template: CertificateTemplate;
   fullName: string;
+  vnrTheorie: string;
+  vnrPraxis: string;
 }): Promise<Uint8Array> {
-  const { template, fullName } = opts;
+  const { template, fullName, vnrTheorie, vnrPraxis } = opts;
 
-  const templatePath = path.join(
-    process.cwd(),
-    "public",
-    "certificates",
-    `${template.slug}.pdf`,
-  );
-  const fontPath = path.join(
-    process.cwd(),
-    "public",
-    "fonts",
-    "Roboto-Bold.ttf",
-  );
-
-  const [templateBytes, fontBytes] = await Promise.all([
-    fs.readFile(templatePath),
-    fs.readFile(fontPath),
+  const cwd = process.cwd();
+  const [templateBytes, boldBytes, regBytes] = await Promise.all([
+    fs.readFile(path.join(cwd, "public", "certificates", `${template.slug}.pdf`)),
+    fs.readFile(path.join(cwd, "public", "fonts", "Roboto-Bold.ttf")),
+    fs.readFile(path.join(cwd, "public", "fonts", "Roboto-Regular.ttf")),
   ]);
 
   const pdf = await PDFDocument.load(templateBytes);
   pdf.registerFontkit(fontkit);
-  const font = await pdf.embedFont(fontBytes, { subset: true });
+  const boldFont = await pdf.embedFont(boldBytes, { subset: true });
+  const regFont = await pdf.embedFont(regBytes, { subset: true });
 
   const pageIndex = Math.max(0, template.layout.page - 1);
   const page = pdf.getPages()[pageIndex];
   if (!page) throw new Error(`Template has no page ${template.layout.page}`);
 
-  // Shrink-to-fit: step size down 1pt at a time until the measured width
-  // is within maxWidth. Floor at minSize so we never render something
-  // unreadable, even for hypothetical worst-case names.
+  // Name: shrink-to-fit at the calibrated center.
   let size = template.layout.targetSize;
   while (size > template.layout.minSize) {
-    const w = font.widthOfTextAtSize(fullName, size);
+    const w = boldFont.widthOfTextAtSize(fullName, size);
     if (w <= template.layout.maxWidth) break;
     size -= 1;
   }
-
-  const textWidth = font.widthOfTextAtSize(fullName, size);
-  const x = template.layout.centerX - textWidth / 2;
-
+  const textWidth = boldFont.widthOfTextAtSize(fullName, size);
   page.drawText(fullName, {
-    x,
+    x: template.layout.centerX - textWidth / 2,
     y: template.layout.baselineY,
     size,
-    font,
+    font: boldFont,
     color: rgb(0, 0, 0),
+  });
+
+  // VNRs: rose, regular weight, letter-spaced to match the footer.
+  // Rose is calibrated against the printed reference copy.
+  const rose = rgb(0.75, 0.47, 0.37);
+  page.drawText(spaceDigits(vnrTheorie), {
+    x: template.layout.vnrTheorie.x,
+    y: template.layout.vnrTheorie.y,
+    size: template.layout.vnrTheorie.size ?? 7,
+    font: regFont,
+    color: rose,
+  });
+  page.drawText(spaceDigits(vnrPraxis), {
+    x: template.layout.vnrPraxis.x,
+    y: template.layout.vnrPraxis.y,
+    size: template.layout.vnrPraxis.size ?? 7,
+    font: regFont,
+    color: rose,
   });
 
   return await pdf.save();

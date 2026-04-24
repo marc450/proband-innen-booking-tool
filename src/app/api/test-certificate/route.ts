@@ -30,6 +30,8 @@ export async function POST(req: NextRequest) {
   const name = String(body.name || "").trim();
   const email = String(body.email || "").trim();
   const templateSlug = String(body.templateSlug || "").trim();
+  const vnrTheorie = String(body.vnrTheorie || "").trim();
+  const vnrPraxis = String(body.vnrPraxis || "").trim();
   const preview = body.preview === true;
 
   if (!name) {
@@ -37,6 +39,12 @@ export async function POST(req: NextRequest) {
   }
   if (!templateSlug) {
     return NextResponse.json({ error: "Kurs-Vorlage fehlt" }, { status: 400 });
+  }
+  if (!vnrTheorie) {
+    return NextResponse.json({ error: "VNR Theorie fehlt" }, { status: 400 });
+  }
+  if (!vnrPraxis) {
+    return NextResponse.json({ error: "VNR Praxis fehlt" }, { status: 400 });
   }
   if (!preview && !email) {
     return NextResponse.json({ error: "E-Mail fehlt" }, { status: 400 });
@@ -52,7 +60,12 @@ export async function POST(req: NextRequest) {
 
   let pdfBytes: Uint8Array;
   try {
-    pdfBytes = await generateCertificatePdf({ template, fullName: name });
+    pdfBytes = await generateCertificatePdf({
+      template,
+      fullName: name,
+      vnrTheorie,
+      vnrPraxis,
+    });
   } catch (err) {
     console.error("Certificate render failed:", err);
     return NextResponse.json(

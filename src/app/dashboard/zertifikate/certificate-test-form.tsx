@@ -23,13 +23,16 @@ export function CertificateTestForm({ templates }: Props) {
   );
   const [name, setName] = useState("Dr. Marc Wyss");
   const [email, setEmail] = useState("wyss.a.marc@gmail.com");
+  const [vnrTheorie, setVnrTheorie] = useState("2761102025010470002");
+  const [vnrPraxis, setVnrPraxis] = useState("2761102025043200004");
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<{
     title: string;
     description: string;
   } | null>(null);
 
-  const canSubmit = templateSlug.trim() && name.trim();
+  const canSubmit =
+    templateSlug.trim() && name.trim() && vnrTheorie.trim() && vnrPraxis.trim();
 
   const handlePreview = async () => {
     if (!canSubmit) return;
@@ -37,7 +40,13 @@ export function CertificateTestForm({ templates }: Props) {
     const res = await fetch("/api/test-certificate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, templateSlug, preview: true }),
+      body: JSON.stringify({
+        name,
+        templateSlug,
+        vnrTheorie,
+        vnrPraxis,
+        preview: true,
+      }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -62,7 +71,13 @@ export function CertificateTestForm({ templates }: Props) {
       const res = await fetch("/api/test-certificate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, templateSlug }),
+        body: JSON.stringify({
+          name,
+          email,
+          templateSlug,
+          vnrTheorie,
+          vnrPraxis,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -125,6 +140,35 @@ export function CertificateTestForm({ templates }: Props) {
             Wird automatisch verkleinert, falls der Name in der Standardgröße
             nicht auf eine Zeile passt.
           </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="cert_vnr_theorie">VNR Theorie</Label>
+            <Input
+              id="cert_vnr_theorie"
+              value={vnrTheorie}
+              onChange={(e) => setVnrTheorie(e.target.value)}
+              placeholder="2761102025010470002"
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              Stabil pro Kurs und Jahr (Onlineanteil).
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="cert_vnr_praxis">VNR Praxis</Label>
+            <Input
+              id="cert_vnr_praxis"
+              value={vnrPraxis}
+              onChange={(e) => setVnrPraxis(e.target.value)}
+              placeholder="2761102025043200004"
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              Ändert sich pro Kurstermin (Praxisanteil).
+            </p>
+          </div>
         </div>
 
         <div className="space-y-1.5">
