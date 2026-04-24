@@ -48,7 +48,7 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       // and long ("Prof. Dr. Dr. Maximilian von Bergsträsser-Schmidt")
       // test names — both render within the underline width.
       centerX: 237,
-      baselineY: 402,
+      baselineY: 395,
       maxWidth: 325,
       targetSize: 28,
       minSize: 12,
