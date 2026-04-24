@@ -220,6 +220,11 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
   const [sending, setSending] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
+  // Gates the final send action — forces the sender to open the mobile
+  // preview at least once before blasting a campaign, since the desktop
+  // preview is misleading for most recipients (they read mail on phones).
+  const [mobilePreviewConfirmed, setMobilePreviewConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Reset exclusions when audience changes
@@ -995,12 +1000,42 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
         {/* Right: Preview */}
         <div className="space-y-3">
           <Card className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-hidden">
-            <CardHeader className="pb-3 flex-shrink-0">
+            <CardHeader className="pb-3 flex-shrink-0 flex-row items-center justify-between gap-3">
               <CardTitle className="text-base">Vorschau</CardTitle>
+              <div className="inline-flex rounded-md border border-input bg-background p-0.5 text-xs">
+                {(["desktop", "mobile"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => {
+                      setPreviewMode(m);
+                      if (m === "mobile") setMobilePreviewConfirmed(true);
+                    }}
+                    aria-pressed={previewMode === m}
+                    className={`px-2.5 py-1 rounded-sm font-medium transition-colors ${
+                      previewMode === m
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {m === "desktop" ? "Desktop" : "Mobil"}
+                  </button>
+                ))}
+              </div>
             </CardHeader>
             <CardContent className="p-0 flex-1 min-h-0 overflow-y-auto">
               <div className="border-t">
-                <EmailPreview html={previewHtml} />
+                {previewMode === "mobile" ? (
+                  <div className="bg-gray-100 p-4 flex justify-center">
+                    <div className="w-[390px] max-w-full rounded-[28px] bg-black p-2 shadow-lg">
+                      <div className="rounded-[22px] overflow-hidden bg-white">
+                        <EmailPreview html={previewHtml} />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <EmailPreview html={previewHtml} />
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1008,7 +1043,15 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
       </div>
 
       {/* Confirmation dialog */}
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialog
+        open={confirmOpen}
+        onOpenChange={(open) => {
+          setConfirmOpen(open);
+          // Reset the mobile-check gate each time the dialog reopens so a
+          // prior send's tick can't leak into the next one.
+          if (!open) setMobilePreviewConfirmed(false);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -1020,9 +1063,23 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                 : `Die E-Mail wird jetzt an ${eligibleContacts.length} Empfänger:innen gesendet. Dieser Vorgang kann nicht rückgängig gemacht werden.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <label className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 cursor-pointer select-none">
+            <Checkbox
+              checked={mobilePreviewConfirmed}
+              onCheckedChange={(v) => setMobilePreviewConfirmed(v === true)}
+              className="mt-0.5"
+            />
+            <span>
+              Ich habe die E-Mail in der <strong>Mobil-Vorschau</strong> geprüft und sie sieht auf dem Smartphone gut aus.
+            </span>
+          </label>
           <AlertDialogFooter>
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSend}>
+            <AlertDialogAction
+              onClick={handleSend}
+              disabled={!mobilePreviewConfirmed}
+              className={!mobilePreviewConfirmed ? "opacity-50 pointer-events-none" : ""}
+            >
               {scheduleMode === "later" ? "Planen" : "Jetzt senden"}
             </AlertDialogAction>
           </AlertDialogFooter>
