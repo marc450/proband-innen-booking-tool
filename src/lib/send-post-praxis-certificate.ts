@@ -41,6 +41,44 @@ interface SendResult {
   errors: number;
 }
 
+// Embedded-relation rows come back from Supabase as either the inferred
+// object or an array of length 1 (depending on type-gen vs. runtime).
+// Normalise to a single object.
+function pickOne<T>(embedded: T | T[] | null | undefined): T | null {
+  if (!embedded) return null;
+  return Array.isArray(embedded) ? (embedded[0] ?? null) : embedded;
+}
+
+interface EmbeddedTemplate {
+  id: string | null;
+  title: string | null;
+  course_label_de: string | null;
+  course_key: string | null;
+  vnr_theorie: string | null;
+}
+
+interface SessionWithTemplate {
+  id: string;
+  template_id: string;
+  date_iso: string;
+  vnr_praxis: string | null;
+  course_templates: EmbeddedTemplate | EmbeddedTemplate[] | null;
+}
+
+interface EmbeddedAuszubildende {
+  title: string | null;
+}
+
+interface BookingRow {
+  id: string;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  course_type: string;
+  auszubildende_id: string | null;
+  auszubildende: EmbeddedAuszubildende | EmbeddedAuszubildende[] | null;
+}
+
 export async function sendPostPraxisCertificates(
   supabase: SupabaseClient,
 ): Promise<SendResult> {
@@ -69,20 +107,19 @@ export async function sendPostPraxisCertificates(
     return result;
   }
 
-  for (const session of sessions ?? []) {
-    const template = (session as { course_templates: Record<string, unknown> | null })
-      .course_templates;
+  const sessionRows = (sessions ?? []) as unknown as SessionWithTemplate[];
+  for (const session of sessionRows) {
+    const template = pickOne(session.course_templates);
     if (!template) continue;
 
-    const courseKey = template.course_key as string | null;
-    const cert = getCertificateForCourseKey(courseKey);
+    const cert = getCertificateForCourseKey(template.course_key);
     if (!cert) {
       result.skippedNoCert += 1;
       continue; // Silent skip — course intentionally has no certificate.
     }
 
-    const vnrTheorie = (template.vnr_theorie as string | null)?.trim() || "";
-    const vnrPraxis = (session.vnr_praxis as string | null)?.trim() || "";
+    const vnrTheorie = template.vnr_theorie?.trim() || "";
+    const vnrPraxis = session.vnr_praxis?.trim() || "";
     if (!vnrTheorie || !vnrPraxis) {
       result.skippedNoVnr += 1;
       console.warn(
@@ -114,17 +151,15 @@ export async function sendPostPraxisCertificates(
     }
 
     const courseName =
-      (template.course_label_de as string | null) ||
-      (template.title as string | null) ||
-      cert.label;
+      template.course_label_de || template.title || cert.label;
 
     const courseDay = formatDate(session.date_iso);
 
-    for (const booking of bookings ?? []) {
+    const bookingRows = (bookings ?? []) as unknown as BookingRow[];
+    for (const booking of bookingRows) {
       try {
         if (!booking.email) continue;
-        const azubi = (booking as { auszubildende: { title?: string | null } | null })
-          .auszubildende;
+        const azubi = pickOne(booking.auszubildende);
         const fullName = formatParticipantName({
           title: azubi?.title,
           firstName: booking.first_name,
