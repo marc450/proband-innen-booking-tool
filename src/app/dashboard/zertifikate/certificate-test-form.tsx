@@ -92,7 +92,7 @@ export function CertificateTestForm({ templates }: Props) {
       >
         <div className="space-y-1.5">
           <Label htmlFor="cert_template">Kursvorlage</Label>
-          <Select value={templateSlug} onValueChange={setTemplateSlug}>
+          <Select value={templateSlug} onValueChange={(v) => setTemplateSlug(v ?? "")}>
             <SelectTrigger id="cert_template" className="h-10 w-full">
               <SelectValue placeholder="Vorlage wählen..." />
             </SelectTrigger>
