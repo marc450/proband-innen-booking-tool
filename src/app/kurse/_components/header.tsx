@@ -11,6 +11,9 @@ type SubLink = {
   // When true the entry shows in the dropdown but is not clickable.
   // Used for curricula that don't have landing pages yet.
   disabled?: boolean;
+  // Optional note shown beside the label, e.g. "Coming soon" for
+  // curricula that are being prepared.
+  note?: string;
 };
 
 type NavLink = {
@@ -27,8 +30,8 @@ const NAV_LINKS: NavLink[] = [
     href: "/kurse/curriculum-botulinum",
     subLinks: [
       { label: "Curriculum Botulinum", href: "/kurse/curriculum-botulinum" },
-      { label: "Curriculum Dermalfiller", href: "#", disabled: true },
-      { label: "Curriculum Hautpflege", href: "#", disabled: true },
+      { label: "Curriculum Dermalfiller", href: "#", disabled: true, note: "Coming soon" },
+      { label: "Curriculum Hautpflege", href: "#", disabled: true, note: "Coming soon" },
     ],
   },
   // "Alle Kurse" = direct link to the full overview grid, no dropdown.
@@ -107,10 +110,15 @@ export function Header() {
                       sub.disabled ? (
                         <span
                           key={sub.label}
-                          className="block px-5 py-2.5 text-base font-normal text-black/40 cursor-not-allowed select-none"
+                          className="flex items-center justify-between gap-3 px-5 py-2.5 text-base font-normal text-black/40 cursor-not-allowed select-none"
                           aria-disabled="true"
                         >
-                          {sub.label}
+                          <span>{sub.label}</span>
+                          {sub.note && (
+                            <span className="text-[11px] font-medium uppercase tracking-wide text-[#0066FF]/80 bg-[#0066FF]/10 rounded-full px-2 py-0.5">
+                              {sub.note}
+                            </span>
+                          )}
                         </span>
                       ) : (
                         <a
@@ -180,10 +188,15 @@ export function Header() {
                         sub.disabled ? (
                           <span
                             key={sub.label}
-                            className="block py-2 text-sm font-medium text-black/40 cursor-not-allowed select-none"
+                            className="flex items-center justify-between gap-3 py-2 text-sm font-medium text-black/40 cursor-not-allowed select-none"
                             aria-disabled="true"
                           >
-                            {sub.label}
+                            <span>{sub.label}</span>
+                            {sub.note && (
+                              <span className="text-[10px] font-medium uppercase tracking-wide text-[#0066FF]/80 bg-[#0066FF]/10 rounded-full px-2 py-0.5">
+                                {sub.note}
+                              </span>
+                            )}
                           </span>
                         ) : (
                           <a

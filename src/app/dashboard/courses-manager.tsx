@@ -598,7 +598,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
         setCourseDialogOpen(open);
         if (!open) resetCourseForm();
       }}>
-        <DialogContent size="wide" className="bg-card sm:max-w-[640px]">
+        <DialogContent size="wide" className="bg-card sm:max-w-[640px] max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>Neuen Kurs anlegen</DialogTitle>
           </DialogHeader>
@@ -609,7 +609,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
             </div>
           ) : (
             <>
-              <div className="space-y-5 py-1">
+              <div className="flex-1 overflow-y-auto space-y-5 py-1 pr-1 -mr-1">
                 {/* Kursdaten */}
                 <div className="space-y-4">
                   <div className="space-y-1.5">
