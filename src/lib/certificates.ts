@@ -28,6 +28,11 @@ export interface CertificateTemplate {
   slug: string;
   /** Display name shown in admin UIs */
   label: string;
+  /** `course_templates.course_key` values this cert applies to. The
+   *  post-praxis cron uses this to decide whether to send a certificate
+   *  for a given session; if no entry matches the session's course_key,
+   *  no email is sent. */
+  courseKeys: string[];
   /** Name-line calibration. Coordinates are in PDF user units with
    *  origin at the bottom-left of the page. */
   layout: {
@@ -49,6 +54,7 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
   {
     slug: "grundkurs-botulinum",
     label: "Grundkurs Botulinum",
+    courseKeys: ["grundkurs-botulinum"],
     layout: {
       page: 1,
       // A4 landscape, 842 x 595 pt. Name sits centred over the dotted
@@ -74,6 +80,16 @@ export function getCertificateTemplate(
   slug: string,
 ): CertificateTemplate | undefined {
   return CERTIFICATE_TEMPLATES.find((t) => t.slug === slug);
+}
+
+/** Return the cert template registered for a given course_templates.course_key,
+ *  or undefined if none is registered. The cron uses this to decide whether
+ *  to emit a post-praxis certificate email at all. */
+export function getCertificateForCourseKey(
+  courseKey: string | null | undefined,
+): CertificateTemplate | undefined {
+  if (!courseKey) return undefined;
+  return CERTIFICATE_TEMPLATES.find((t) => t.courseKeys.includes(courseKey));
 }
 
 export function formatParticipantName(parts: {

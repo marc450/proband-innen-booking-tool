@@ -108,6 +108,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
     booked_seats: "Gebuchte Plätze",
     max_seats: "Max. Plätze",
     cme_status: "CME Beantragung",
+    vnr_praxis: "VNR Praxis",
   };
 
   // Create form state
@@ -347,6 +348,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
             <SortableHead label="Gebucht / Max" sortKeyName="seats" className="w-[100px]" />
             <TableHead>CME Beantragung</TableHead>
             <TableHead>Zahnmedizin</TableHead>
+            <TableHead className="w-[140px]">VNR Praxis</TableHead>
             <TableHead className="w-[80px]">Aktionen</TableHead>
           </TableRow>
           {/* Filter row */}
@@ -457,6 +459,8 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 <option value="without">Ohne</option>
               </select>
             </TableHead>
+            {/* VNR Praxis — empty filter cell (not filterable for now) */}
+            <TableHead className="py-1.5" />
             {/* Reset button */}
             <TableHead className="py-1.5">
               {(filterInstructor || filterBetreuer || filterTemplate || filterStatus || filterDateFrom || filterTime || filterCme || filterZahnmedizin) && (
@@ -717,6 +721,28 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                       </span>
                     );
                   })()}
+                </TableCell>
+
+                {/* VNR Praxis — inline editable, fehlt pill when empty */}
+                <TableCell>
+                  <input
+                    type="text"
+                    defaultValue={session.vnr_praxis || ""}
+                    key={`vnr-${session.id}-${session.vnr_praxis ?? ""}-${resetKey}`}
+                    onBlur={(e) => {
+                      const val = e.target.value.trim();
+                      const current = session.vnr_praxis ?? "";
+                      if (val !== current) {
+                        requestChange(session.id, "vnr_praxis", val || "");
+                      }
+                    }}
+                    placeholder={session.vnr_praxis ? "" : "Fehlt"}
+                    className={`w-full text-xs font-mono bg-transparent border-b border-transparent hover:border-gray-300 focus:border-primary focus:outline-none ${
+                      session.vnr_praxis
+                        ? "text-gray-700"
+                        : "placeholder:text-red-600 placeholder:font-semibold"
+                    }`}
+                  />
                 </TableCell>
 
                 {/* Actions */}

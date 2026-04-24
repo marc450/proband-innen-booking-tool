@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptPatient } from "@/lib/encryption";
 import { buildEmailHtml } from "@/lib/email-template";
 import { sendProfileReminderEmail } from "@/lib/post-purchase";
+import { sendPostPraxisCertificates } from "@/lib/send-post-praxis-certificate";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -21,9 +22,32 @@ export async function GET(req: NextRequest) {
 
   const supabase = createAdminClient();
   const now = new Date();
-  const results = { reminders72h: 0, reminders24h: 0, profileReminders: 0, errors: 0 };
+  const results = {
+    reminders72h: 0,
+    reminders24h: 0,
+    profileReminders: 0,
+    certificates: 0,
+    certSkippedNoCert: 0,
+    certSkippedNoVnr: 0,
+    errors: 0,
+  };
 
   try {
+    // ── Post-praxis certificates (24h after the praxis day) ──
+    // Scans course_sessions whose praxis day has already passed and
+    // emails the certificate PDF to each participant that hasn't been
+    // sent to yet. Fully idempotent via course_bookings.cert_sent_at.
+    try {
+      const certResult = await sendPostPraxisCertificates(supabase);
+      results.certificates = certResult.sent;
+      results.certSkippedNoCert = certResult.skippedNoCert;
+      results.certSkippedNoVnr = certResult.skippedNoVnr;
+      results.errors += certResult.errors;
+    } catch (certErr) {
+      console.error("Post-praxis certificate pass failed:", certErr);
+      results.errors += 1;
+    }
+
     // ── Profile completion reminders for Auszubildende ──
     // Send reminder to users who haven't completed their profile 30+ minutes after booking
     const thirtyMinAgo = new Date(now.getTime() - 30 * 60 * 1000).toISOString();
