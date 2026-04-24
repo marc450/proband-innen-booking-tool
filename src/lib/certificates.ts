@@ -62,8 +62,10 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       // in the footer. The number is stamped just after the colon on
       // the same baseline. Calibrated visually against the reference
       // PDF Marc supplied.
-      vnrTheorie: { x: 255, y: 72, size: 7 },
-      vnrPraxis: { x: 255, y: 42, size: 7 },
+      // X matches the name (centerX=173). Y calibrated below the
+      // baked-in "VNR Theorie:" / "VNR Praxis:" labels.
+      vnrTheorie: { x: 173, y: 60, size: 7 },
+      vnrPraxis: { x: 173, y: 30, size: 7 },
     },
   },
 ];
@@ -132,20 +134,27 @@ export async function generateCertificatePdf(opts: {
     color: rgb(0, 0, 0),
   });
 
-  // VNRs: rose, regular weight, letter-spaced to match the footer.
-  // Rose is calibrated against the printed reference copy.
+  // VNRs: rose, regular weight, letter-spaced, centred on the same x
+  // as the name above. `vnrTheorie.x` / `vnrPraxis.x` are treated as
+  // the visual CENTER, mirroring how the name is placed.
   const rose = rgb(0.75, 0.47, 0.37);
-  page.drawText(spaceDigits(vnrTheorie), {
-    x: template.layout.vnrTheorie.x,
+  const tSize = template.layout.vnrTheorie.size ?? 7;
+  const pSize = template.layout.vnrPraxis.size ?? 7;
+  const tSpaced = spaceDigits(vnrTheorie);
+  const pSpaced = spaceDigits(vnrPraxis);
+  const tWidth = regFont.widthOfTextAtSize(tSpaced, tSize);
+  const pWidth = regFont.widthOfTextAtSize(pSpaced, pSize);
+  page.drawText(tSpaced, {
+    x: template.layout.vnrTheorie.x - tWidth / 2,
     y: template.layout.vnrTheorie.y,
-    size: template.layout.vnrTheorie.size ?? 7,
+    size: tSize,
     font: regFont,
     color: rose,
   });
-  page.drawText(spaceDigits(vnrPraxis), {
-    x: template.layout.vnrPraxis.x,
+  page.drawText(pSpaced, {
+    x: template.layout.vnrPraxis.x - pWidth / 2,
     y: template.layout.vnrPraxis.y,
-    size: template.layout.vnrPraxis.size ?? 7,
+    size: pSize,
     font: regFont,
     color: rose,
   });
