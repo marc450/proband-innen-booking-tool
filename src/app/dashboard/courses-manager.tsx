@@ -50,24 +50,41 @@ function formatDozentName(d: DozentUser): string {
   return [d.title, d.first_name, d.last_name].filter(Boolean).join(" ");
 }
 
-// Visual color coding per treatment type so different course categories are
-// easy to distinguish at a glance in the admin list. Uses Tailwind semantic
-// colors on purpose (the brand manual allows neutrals/semantics for admin
-// surfaces that aren't user-facing).
-function getTreatmentAccent(
-  treatmentTitle: string | null,
-  title: string,
-): { bar: string; dot: string; label: string } {
+// Visual pill color per (treatment × level). Each known combination gets a
+// distinct tone so Grundkurs Botulinum and Masterclass Botulinum don't blur
+// together at the top of the list. Uses Tailwind semantic colors on purpose
+// (the brand manual allows neutrals/semantics on admin surfaces).
+function getCoursePill(treatmentTitle: string | null, title: string): string {
   const key = `${treatmentTitle || ""} ${title}`.toLowerCase();
-  if (key.includes("botulinum"))
-    return { bar: "border-l-indigo-400", dot: "bg-indigo-400", label: "Botulinum" };
-  if (key.includes("dermalfiller") || key.includes("filler"))
-    return { bar: "border-l-pink-400", dot: "bg-pink-400", label: "Dermalfiller" };
-  if (key.includes("biostimulation") || key.includes("skinbooster"))
-    return { bar: "border-l-teal-400", dot: "bg-teal-400", label: "Biostimulation" };
-  if (key.includes("hautpflege") || key.includes("skincare"))
-    return { bar: "border-l-amber-400", dot: "bg-amber-400", label: "Hautpflege" };
-  return { bar: "border-l-gray-300", dot: "bg-gray-300", label: "Sonstiges" };
+  const isBotulinum = key.includes("botulinum");
+  const isDermalfiller = key.includes("dermalfiller") || key.includes("filler");
+  const isBiostim = key.includes("biostimulation") || key.includes("skinbooster");
+  const isHautpflege = key.includes("hautpflege") || key.includes("skincare");
+
+  const isMasterclass = key.includes("masterclass");
+  const isAufbau = key.includes("aufbaukurs");
+
+  if (isBotulinum) {
+    if (isMasterclass) return "bg-fuchsia-100 text-fuchsia-800";
+    if (isAufbau) return "bg-violet-100 text-violet-800";
+    return "bg-indigo-100 text-indigo-800"; // Grundkurs / default
+  }
+  if (isDermalfiller) {
+    if (isMasterclass) return "bg-rose-200 text-rose-900";
+    if (isAufbau) return "bg-rose-100 text-rose-800";
+    return "bg-pink-100 text-pink-800";
+  }
+  if (isBiostim) {
+    if (isMasterclass) return "bg-cyan-200 text-cyan-900";
+    if (isAufbau) return "bg-cyan-100 text-cyan-800";
+    return "bg-teal-100 text-teal-800";
+  }
+  if (isHautpflege) {
+    if (isMasterclass) return "bg-orange-200 text-orange-900";
+    if (isAufbau) return "bg-orange-100 text-orange-800";
+    return "bg-amber-100 text-amber-800";
+  }
+  return "bg-gray-100 text-gray-800";
 }
 
 export function CoursesManager({ initialCourses, initialSlots, initialBookings, templates, dozentUsers, isAdmin = true }: Props) {
@@ -1140,10 +1157,10 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
           }, 0);
 
           const isExpanded = expandedCourses.has(course.id);
-          const accent = getTreatmentAccent(course.treatment_title, course.title);
+          const pillClass = getCoursePill(course.treatment_title, course.title);
 
           return (
-            <Card key={course.id} className={`overflow-hidden shadow-none border-l-4 ${accent.bar}`}>
+            <Card key={course.id} className="overflow-hidden shadow-none">
               {/* Course header row */}
               <div className="flex items-center gap-2 px-4 py-1.5">
                 <button
@@ -1167,7 +1184,11 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                       : <Badge variant="outline" className="text-xs text-green-700 border-green-300 bg-green-50">Live</Badge>
                     }
                   </span>
-                  <span className="[flex:3_1_0%] font-semibold text-base truncate min-w-0">{course.title}</span>
+                  <span className="[flex:3_1_0%] min-w-0">
+                    <span className={`inline-flex items-center font-semibold text-sm rounded-full px-3 py-1 max-w-full truncate ${pillClass}`}>
+                      {course.title}
+                    </span>
+                  </span>
                   <span className="[flex:2_1_0%] text-sm text-muted-foreground truncate">
                     {course.instructor || <span className="italic opacity-50">Kein:e Dozent:in</span>}
                   </span>
