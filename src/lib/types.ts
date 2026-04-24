@@ -222,6 +222,7 @@ export interface EmailCampaign {
   course_id: string | null;
   subject: string;
   body_text: string;
+  content_blocks: unknown;
   recipient_count: number;
   recipient_emails: string[] | null;
   excluded_patient_ids: string[];

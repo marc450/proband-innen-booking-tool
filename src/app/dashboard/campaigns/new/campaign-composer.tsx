@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import { useRouter } from "next/navigation";
 import { buildEmailHtml, type ContentBlock } from "@/lib/email-template";
+import { normalizeEmail } from "@/lib/email-normalize";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -205,6 +206,11 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
   const [scheduledAt, setScheduledAt] = useState("");
   const [recipientSearch, setRecipientSearch] = useState("");
   const [showRecipients, setShowRecipients] = useState(false);
+  // Bulk-exclude by pasted email list (e.g. recovering from a partial send).
+  const [bulkExcludeText, setBulkExcludeText] = useState("");
+  const [bulkExcludeResult, setBulkExcludeResult] = useState<
+    { added: number; alreadyExcluded: number; notFound: string[] } | null
+  >(null);
 
   const [attachments, setAttachments] = useState<File[]>([]);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
@@ -279,6 +285,54 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
       else next.add(id);
       return next;
     });
+  };
+
+  // Parse the pasted "exclude these addresses" textarea and move every
+  // matching contact into `manuallyExcluded`. Accepts any common separator
+  // (newline, comma, semicolon, tab, whitespace). Matching is gmail-alias
+  // aware via normalizeEmail, so googlemail.com ↔ gmail.com addresses line
+  // up with our stored rows.
+  const applyBulkExclude = () => {
+    const tokens = bulkExcludeText
+      .split(/[\s,;]+/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+    if (tokens.length === 0) {
+      setBulkExcludeResult(null);
+      return;
+    }
+
+    const byNormalized = new Map<string, string>(); // normalized email -> contact id
+    for (const c of allContacts) {
+      const key = normalizeEmail(c.email);
+      if (key && !byNormalized.has(key)) byNormalized.set(key, c.id);
+    }
+
+    const notFound: string[] = [];
+    let added = 0;
+    let alreadyExcluded = 0;
+    const next = new Set(manuallyExcluded);
+    for (const raw of tokens) {
+      const key = normalizeEmail(raw);
+      if (!key || !key.includes("@")) {
+        notFound.push(raw);
+        continue;
+      }
+      const id = byNormalized.get(key);
+      if (!id) {
+        notFound.push(raw);
+        continue;
+      }
+      if (next.has(id)) {
+        alreadyExcluded += 1;
+      } else {
+        next.add(id);
+        added += 1;
+      }
+    }
+    setManuallyExcluded(next);
+    setBulkExcludeResult({ added, alreadyExcluded, notFound });
+    if (added > 0 || alreadyExcluded > 0) setBulkExcludeText("");
   };
 
   // Content block management
@@ -763,6 +817,58 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                   </div>
                 </div>
               )}
+
+              {/* Bulk exclude by pasted email list. Useful when recovering
+                  from a partially-sent campaign: paste the addresses that
+                  already received the mail and we remove them from the
+                  selection before sending. */}
+              <details className="rounded-md border border-dashed border-muted-foreground/30">
+                <summary className="cursor-pointer select-none px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground">
+                  Adressen per Liste ausschließen
+                </summary>
+                <div className="px-3 pb-3 pt-1 space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    Füge die E-Mail-Adressen ein, die nicht erneut angeschrieben werden sollen. Zeilenumbruch, Komma oder Leerzeichen sind alle erlaubt.
+                  </p>
+                  <textarea
+                    value={bulkExcludeText}
+                    onChange={(e) => {
+                      setBulkExcludeText(e.target.value);
+                      setBulkExcludeResult(null);
+                    }}
+                    placeholder="anna@example.com&#10;tobias@example.com, lisa@gmail.com"
+                    className="w-full min-h-[96px] rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                  />
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={applyBulkExclude}
+                      disabled={!bulkExcludeText.trim()}
+                    >
+                      Ausschließen
+                    </Button>
+                    {bulkExcludeResult && (
+                      <span className="text-xs text-muted-foreground">
+                        {bulkExcludeResult.added} ausgeschlossen
+                        {bulkExcludeResult.alreadyExcluded > 0 && `, ${bulkExcludeResult.alreadyExcluded} bereits`}
+                        {bulkExcludeResult.notFound.length > 0 && `, ${bulkExcludeResult.notFound.length} nicht gefunden`}
+                      </span>
+                    )}
+                  </div>
+                  {bulkExcludeResult && bulkExcludeResult.notFound.length > 0 && (
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                        Nicht gefundene Adressen anzeigen
+                      </summary>
+                      <pre className="mt-1 max-h-32 overflow-y-auto rounded bg-muted/40 p-2 text-[11px] text-muted-foreground whitespace-pre-wrap break-all">
+                        {bulkExcludeResult.notFound.join("\n")}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              </details>
 
               {/* Expandable full recipient list */}
               <button

@@ -129,6 +129,8 @@ export function CampaignsManager({ campaigns: initialCampaigns, monthlyEmailsSen
           name: campaign.name ? `${campaign.name} (Kopie)` : "Kopie",
           subject: campaign.subject,
           body_text: campaign.body_text,
+          content_blocks: campaign.content_blocks,
+          audience_type: campaign.audience_type,
           status: "draft",
           recipient_count: 0,
           excluded_patient_ids: [],
