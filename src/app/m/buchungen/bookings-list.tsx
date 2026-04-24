@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Loader2, Calendar } from "lucide-react";
+import { Search, Loader2, Calendar, Clock } from "lucide-react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { createClient } from "@/lib/supabase/client";
 import type { BookingWithDetails, BookingStatus, CourseBookingStatus } from "@/lib/types";
@@ -88,7 +88,15 @@ function formatDate(dateStr: string) {
 }
 
 function formatTime(timeStr: string) {
-  return timeStr?.slice(0, 5) || "";
+  if (!timeStr) return "";
+  // slots.start_time is stored as timestamptz and comes back as an ISO
+  // string like "2026-05-10T15:30:00+00:00" — parse and render HH:MM.
+  // Fall back to a bare "HH:MM" slice for plain time columns.
+  const d = new Date(timeStr);
+  if (!Number.isNaN(d.getTime())) {
+    return d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  }
+  return timeStr.slice(0, 5);
 }
 
 export function BookingsList({
@@ -315,15 +323,20 @@ export function BookingsList({
                           </div>
                           <div className="text-xs text-gray-500 mt-0.5">
                             {course?.title || "Kurs"}
-                            {booking.slots?.start_time
-                              ? ` · ${formatTime(booking.slots.start_time)}`
-                              : ""}
                           </div>
-                          {booking.booking_type === "private" && (
-                            <span className="inline-block mt-1 text-[10px] font-semibold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                              Privat
-                            </span>
-                          )}
+                          <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                            {booking.slots?.start_time && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-blue-50 text-[#0066FF] px-2 py-0.5 rounded-full">
+                                <Clock className="w-3 h-3" />
+                                {formatTime(booking.slots.start_time)} Uhr
+                              </span>
+                            )}
+                            {booking.booking_type === "private" && (
+                              <span className="inline-flex items-center text-[10px] font-semibold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                                Privat
+                              </span>
+                            )}
+                          </div>
                         </button>
                         {isAdmin ? (
                           <button

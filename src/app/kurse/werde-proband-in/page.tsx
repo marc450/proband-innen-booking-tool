@@ -52,17 +52,17 @@ const steps = [
   {
     number: "1",
     title: "Kurs & Termin wählen",
-    body: "Such Dir aus unseren offenen Ausbildungskursen die Behandlung und einen Termin aus, der Dir passt.",
+    body: "Such Dir aus unseren offenen Ausbildungskursen die Behandlung und einen Termin aus, der in Deinen Alltag passt. Das geht in wenigen Klicks.",
   },
   {
     number: "2",
     title: "Buchung bestätigen",
-    body: "Du hinterlegst ein Zahlungsmittel und bestätigst Deine Buchung. Der Richtpreis wird erst am Behandlungstag in der Praxis abgerechnet, nicht vorab.",
+    body: "Hinterlege ein Zahlungsmittel und bestätige Deine Buchung. Der Richtpreis wird erst am Behandlungstag in der Praxis abgerechnet, nicht vorab.",
   },
   {
     number: "3",
     title: "Behandlung erhalten",
-    body: "Am Kurstag wirst Du von einer approbierten Ärzt:in unter Aufsicht einer erfahrenen Dozent:in behandelt. Du bekommst dieselbe Sorgfalt wie in einer regulären Sprechstunde.",
+    body: "Am Kurstag wirst Du von einer approbierten Ärzt:in unter Aufsicht einer erfahrenen Dozent:in behandelt, mit derselben Sorgfalt wie in einer regulären Sprechstunde.",
   },
   {
     number: "4",
@@ -155,11 +155,11 @@ export default async function WerdeProbandInPage() {
       <section className="bg-[#FAEBE1] pt-12 md:pt-20 pb-16 md:pb-24">
         <div className="max-w-6xl mx-auto px-5 md:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-14 items-center">
-            <div>
+            <div className="text-center lg:text-left">
               <h1 className={`${TYPO.h1} text-black`}>{hero.heading}</h1>
               <p className={`${TYPO.bodyLead} mt-6`}>{hero.lead}</p>
 
-              <div className="mt-8">
+              <div className="mt-8 flex justify-center lg:justify-start">
                 <Link
                   href={hero.ctaHref}
                   className="inline-flex items-center gap-2 text-base md:text-lg font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-7 py-4 transition-colors"
