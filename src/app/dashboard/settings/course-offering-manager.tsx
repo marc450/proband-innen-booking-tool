@@ -122,6 +122,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       audience: "humanmediziner",
       level: "",
       card_description: "",
+      vnr_theorie: "",
     });
     setImageUploadError(null);
     setShowDialog(true);
@@ -162,6 +163,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       audience: o.audience || "humanmediziner",
       level: o.level || "",
       card_description: o.card_description || "",
+      vnr_theorie: o.vnr_theorie || "",
     });
     setImageUploadError(null);
     setShowDialog(true);
@@ -203,6 +205,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       audience: form.audience || null,
       level: form.level || null,
       card_description: form.card_description || null,
+      vnr_theorie: form.vnr_theorie?.trim() || null,
     };
 
     if (editing) {
@@ -403,13 +406,14 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
             <SortableHead label="Online" sortKey="online" currentKey={sortKey} direction={sortDir} onSort={handleSort} className="w-[100px]" />
             <SortableHead label="Praxis" sortKey="praxis" currentKey={sortKey} direction={sortDir} onSort={handleSort} className="w-[100px]" />
             <SortableHead label="Kombi" sortKey="kombi" currentKey={sortKey} direction={sortDir} onSort={handleSort} className="w-[100px]" />
+            <TableHead className="w-[120px]">VNR Theorie</TableHead>
             <TableHead className="w-[80px]">Aktionen</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {sortedOfferings.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                 Noch keine Kurse erstellt.
               </TableCell>
             </TableRow>
@@ -486,6 +490,19 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {formatPrice(o.price_gross_kombi)}
+                </TableCell>
+
+                {/* VNR Theorie — filled or red "Fehlt" pill */}
+                <TableCell>
+                  {o.vnr_theorie ? (
+                    <span className="text-xs font-mono text-gray-600 truncate inline-block max-w-[110px]" title={o.vnr_theorie}>
+                      {o.vnr_theorie}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-semibold tracking-wide rounded-full px-2 py-0.5 bg-red-50 text-red-700">
+                      Fehlt
+                    </span>
+                  )}
                 </TableCell>
 
                 {/* Actions */}
@@ -849,6 +866,24 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
                     <Input value={form.cancel_url_kombi} onChange={(e) => updateField("cancel_url_kombi", e.target.value)} />
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div className="border-t" />
+
+            {/* ── Zertifikat ── */}
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Zertifikat</h3>
+              <div className="space-y-1.5 max-w-md">
+                <Label>VNR Theorie (LÄK Berlin)</Label>
+                <Input
+                  value={form.vnr_theorie ?? ""}
+                  onChange={(e) => updateField("vnr_theorie", e.target.value)}
+                  placeholder="z.B. 2761102025010470002"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Stabile Fortbildungsnummer für den Onlinekurs-Anteil. Wird auf das Zertifikat gedruckt.
+                </p>
               </div>
             </div>
           </div>

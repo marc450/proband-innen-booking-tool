@@ -44,6 +44,10 @@ export interface CourseTemplate {
   cme_online: string | null;
   cme_praxis: string | null;
   cme_kombi: string | null;
+  // CME registration number for the online/theory portion. Stable per
+  // course template for the year (Landesärztekammer Berlin). Stamped
+  // onto the participation certificate at render time.
+  vnr_theorie: string | null;
   // Marketing card badges — drive the audience + level pills on /kurse tiles.
   // audience: 'humanmediziner' | 'zahnmediziner' | 'alle' | null
   // level:    'einsteiger'     | 'fortgeschritten' | null
@@ -72,6 +76,10 @@ export interface CourseSession {
   is_live: boolean;
   cme_status: string | null;
   has_zahnmedizin: boolean;
+  // CME registration number for this specific practical course session.
+  // Changes per session (each run gets its own VNR from the LÄK Berlin).
+  // Stamped onto the participation certificate at render time.
+  vnr_praxis: string | null;
   created_at: string;
 }
 

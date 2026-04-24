@@ -160,6 +160,7 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions, zahn
             <SortableHead label="Plätze" sortKeyName="seats" className="w-[80px]" />
             <TableHead>CME Beantragung</TableHead>
             <TableHead>Zahnmedizin</TableHead>
+            <TableHead className="w-[110px]">VNR Praxis</TableHead>
           </TableRow>
           {/* Filter row */}
           <TableRow className="hover:bg-transparent">
@@ -332,6 +333,17 @@ export function CourseSessionsOverview({ initialTemplates, initialSessions, zahn
                       </span>
                     );
                   })()}
+                </TableCell>
+                <TableCell>
+                  {session.vnr_praxis ? (
+                    <span className="text-xs font-mono text-gray-600 truncate inline-block max-w-[100px]" title={session.vnr_praxis}>
+                      {session.vnr_praxis}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-semibold tracking-wide rounded-full px-2 py-0.5 bg-red-50 text-red-700">
+                      Fehlt
+                    </span>
+                  )}
                 </TableCell>
               </TableRow>
             ))

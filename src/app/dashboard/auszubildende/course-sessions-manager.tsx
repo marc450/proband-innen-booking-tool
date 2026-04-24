@@ -118,6 +118,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   const [formAddress, setFormAddress] = useState("HYSTUDIO, Rosa-Luxemburg-Straße 20, 10178 Berlin, Deutschland");
   const [formStartTime, setFormStartTime] = useState("10:00");
   const [formDuration, setFormDuration] = useState("360");
+  const [formVnrPraxis, setFormVnrPraxis] = useState("");
 
   const getTemplateName = (templateId: string) => {
     const t = templates.find((t) => t.id === templateId);
@@ -314,6 +315,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
         address: formAddress || null,
         start_time: formStartTime || null,
         duration_minutes: parseInt(formDuration) || null,
+        vnr_praxis: formVnrPraxis.trim() || null,
       })
       .select()
       .single();
@@ -322,6 +324,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
       setShowCreateDialog(false);
       setFormDateIso("");
       setFormInstructor("");
+      setFormVnrPraxis("");
     }
   };
 
@@ -823,6 +826,18 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 <Label>Dauer (Minuten)</Label>
                 <Input className="h-10" type="number" value={formDuration} onChange={(e) => setFormDuration(e.target.value)} />
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>VNR Praxis (LÄK Berlin)</Label>
+              <Input
+                className="h-10"
+                value={formVnrPraxis}
+                onChange={(e) => setFormVnrPraxis(e.target.value)}
+                placeholder="z.B. 2761102025043200004"
+              />
+              <p className="text-xs text-muted-foreground">
+                Fortbildungsnummer für diesen Praxiskurs-Termin. Wird auf das Zertifikat gedruckt.
+              </p>
             </div>
           </div>
           <DialogFooter>
