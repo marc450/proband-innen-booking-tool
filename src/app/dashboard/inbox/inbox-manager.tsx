@@ -9,6 +9,7 @@ import { ThreadListPane, type ThreadSummary, type InboxFilter } from "./thread-l
 import { ConversationPane, type ThreadMessage } from "./conversation-pane";
 import { ContactSidebar } from "./contact-sidebar";
 import { ComposePane } from "./compose-pane";
+import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
 
 // Three-pane HubSpot-style inbox. The parent owns all state: thread list,
 // active filter/search, selected thread, and compose modal. Each pane is
@@ -240,6 +241,41 @@ export function InboxManager({
     if (selectedThread) openThread(selectedThread);
     fetchThreads();
   };
+
+  // Delete (trash) the selected thread. Shows a ConfirmDialog first;
+  // on confirm, calls DELETE /api/gmail/threads/[id] (moves to Gmail Trash),
+  // optimistically removes it from the list, and closes the center pane.
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const confirmDelete = useCallback(async () => {
+    if (!pendingDeleteId || deleting) return;
+    const id = pendingDeleteId;
+    setDeleting(true);
+    const previous = threads;
+    setThreads((prev) => prev.filter((t) => t.id !== id));
+    if (selectedThread === id) {
+      setSelectedThread(null);
+      setThreadMessages([]);
+    }
+    try {
+      const res = await fetch(`/api/gmail/threads/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setThreads(previous);
+        setDeleteError(data.error || "E-Mail konnte nicht gelöscht werden.");
+      } else {
+        await drafts.deleteReplyDraft(id).catch(() => {});
+      }
+    } catch {
+      setThreads(previous);
+      setDeleteError("Verbindungsfehler beim Löschen.");
+    } finally {
+      setDeleting(false);
+      setPendingDeleteId(null);
+    }
+  }, [pendingDeleteId, deleting, threads, selectedThread, drafts]);
 
   // Contact email for sidebar: while composing, follow the recipient input
   // (once it parses as an email). Otherwise derive from the selected thread.
@@ -478,6 +514,7 @@ export function InboxManager({
                 if (draft) drafts.saveReplyDraft(threadId, draft);
                 else drafts.deleteReplyDraft(threadId);
               }}
+              onDelete={selectedThread ? () => setPendingDeleteId(selectedThread) : undefined}
             />
           )}
         </div>
@@ -485,6 +522,23 @@ export function InboxManager({
           <ContactSidebar email={contactEmail} displayName={contactDisplayName} />
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!pendingDeleteId}
+        title="E-Mail löschen?"
+        description="Die E-Mail wird in den Gmail-Papierkorb verschoben und dort nach 30 Tagen endgültig entfernt."
+        confirmLabel={deleting ? "Wird gelöscht..." : "Löschen"}
+        variant="destructive"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
+
+      <AlertDialog
+        open={!!deleteError}
+        title="Fehler beim Löschen"
+        description={deleteError ?? ""}
+        onClose={() => setDeleteError(null)}
+      />
     </div>
   );
 }

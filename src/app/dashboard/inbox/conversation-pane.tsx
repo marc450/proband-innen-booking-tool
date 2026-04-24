@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Send, X, Reply, Paperclip, FileText, Image, File, UserCircle, ChevronDown, Upload } from "lucide-react";
+import { Loader2, Send, X, Reply, Paperclip, FileText, Image, File, UserCircle, ChevronDown, Upload, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "./rich-text-editor";
@@ -63,6 +63,7 @@ interface Props {
   // threadId is passed explicitly so cleanup closures can't leak content
   // from one thread into another on rapid thread switches.
   onReplyDraftChange?: (threadId: string, draft: ReplyDraft | null) => void;
+  onDelete?: () => void;
 }
 
 function formatFullDate(dateStr: string) {
@@ -87,6 +88,7 @@ export function ConversationPane({
   onAssign,
   replyDraft,
   onReplyDraftChange,
+  onDelete,
 }: Props) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyHtml, setReplyHtml] = useState("");
@@ -312,6 +314,17 @@ export function ConversationPane({
           <span className="text-xs text-muted-foreground">
             {messages.length} Nachricht{messages.length !== 1 && "en"}
           </span>
+
+          {onDelete && (
+            <button
+              onClick={onDelete}
+              className="inline-flex items-center justify-center h-7 w-7 rounded-full text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+              title="E-Mail löschen"
+              aria-label="E-Mail löschen"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
 
           {/* Assignment dropdown */}
           {onAssign && (
