@@ -149,6 +149,8 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
   const [searchQuery, setSearchQuery] = useState("");
   const [chargingId, setChargingId] = useState<string | null>(null);
   const [deleteBookingPending, setDeleteBookingPending] = useState<BookingWithDetails | null>(null);
+  const [cancelPending, setCancelPending] = useState<BookingWithHash | null>(null);
+  const [cancelling, setCancelling] = useState(false);
   const [deletingBooking, setDeletingBooking] = useState(false);
 
   // No-show confirmation
@@ -241,6 +243,17 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
       return;
     }
 
+    // Switching to "cancelled" sends the Proband:in a cancellation email.
+    // Only email on the transition INTO cancelled (not re-saves) and gate
+    // behind a confirmation so an accidental click doesn't notify.
+    if (newStatus === "cancelled") {
+      const booking = bookings.find((b) => b.id === bookingId);
+      if (booking && booking.status !== "cancelled") {
+        setCancelPending(booking);
+        return;
+      }
+    }
+
     const { error } = await supabase
       .from("bookings")
       .update({ status: newStatus })
@@ -248,6 +261,70 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
 
     if (!error) {
       setBookings((prev) => prev.map((b) => b.id === bookingId ? { ...b, status: newStatus } : b));
+    }
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancelPending) return;
+    setCancelling(true);
+
+    // Capture everything the cancellation email needs BEFORE the update.
+    const emailPayload = (() => {
+      const b = cancelPending;
+      if (!b.email || !b.slots?.start_time) return null;
+      const date = new Date(b.slots.start_time).toLocaleDateString("de-DE", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: "Europe/Berlin",
+      });
+      const time = new Date(b.slots.start_time).toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Europe/Berlin",
+      });
+      const courseId = b.slots?.course_id;
+      const courseLocation = courseId
+        ? courses.find((c) => c.id === courseId)?.location || ""
+        : "";
+      return {
+        email: b.email,
+        firstName: b.first_name || b.name?.split(" ")[0] || "",
+        courseTitle:
+          b.slots?.courses?.treatment_title || b.slots?.courses?.title || "",
+        date,
+        time,
+        location: courseLocation,
+      };
+    })();
+
+    try {
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: "cancelled" })
+        .eq("id", cancelPending.id);
+
+      if (!error) {
+        setBookings((prev) =>
+          prev.map((b) =>
+            b.id === cancelPending.id ? { ...b, status: "cancelled" } : b,
+          ),
+        );
+        if (emailPayload) {
+          // Best-effort. Fire-and-forget so Resend hiccups don't block.
+          fetch("/api/send-booking-cancellation-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(emailPayload),
+          }).catch(() => {
+            /* swallow — status is already updated */
+          });
+        }
+      }
+    } finally {
+      setCancelling(false);
+      setCancelPending(null);
     }
   };
 
@@ -321,58 +398,14 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
     if (!deleteBookingPending) return;
     setDeletingBooking(true);
 
-    // Capture what we need for the cancellation email BEFORE deleting —
-    // once the row is gone, decrypting again won't work and the slot
-    // join is lost.
-    const cancellation = (() => {
-      const b = deleteBookingPending;
-      if (!b.email || !b.slots?.start_time) return null;
-      const date = new Date(b.slots.start_time).toLocaleDateString("de-DE", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-        timeZone: "Europe/Berlin",
-      });
-      const time = new Date(b.slots.start_time).toLocaleTimeString("de-DE", {
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "Europe/Berlin",
-      });
-      const courseId = b.slots?.course_id;
-      const courseLocation = courseId
-        ? courses.find((c) => c.id === courseId)?.location || ""
-        : "";
-      return {
-        email: b.email,
-        firstName: b.first_name || b.name?.split(" ")[0] || "",
-        // Patient-facing: prefer the public "Behandlungsname" over the
-        // internal course title.
-        courseTitle:
-          b.slots?.courses?.treatment_title || b.slots?.courses?.title || "",
-        date,
-        time,
-        location: courseLocation,
-      };
-    })();
-
+    // Hard delete only. No cancellation email is sent here — staff use
+    // "Status → Storniert" for the communicated-to-Proband:in path.
     const { error } = await supabase
       .from("bookings")
       .delete()
       .eq("id", deleteBookingPending.id);
     if (!error) {
       setBookings((prev) => prev.filter((b) => b.id !== deleteBookingPending.id));
-      // Best-effort cancellation email. Fire-and-forget so a Resend
-      // hiccup doesn't block the delete UX.
-      if (cancellation) {
-        fetch("/api/send-booking-cancellation-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(cancellation),
-        }).catch(() => {
-          /* swallow — the booking is already deleted */
-        });
-      }
     }
     setDeletingBooking(false);
     setDeleteBookingPending(null);
@@ -505,11 +538,22 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
       <ConfirmDialog
         open={!!deleteBookingPending}
         title="Buchung löschen"
-        description={`Möchtest Du die Buchung von ${deleteBookingPending?.first_name || deleteBookingPending?.name || "diesem/dieser Proband:in"} (${deleteBookingPending?.slots?.courses?.title || ""}) wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`}
+        description={`Möchtest Du die Buchung von ${deleteBookingPending?.first_name || deleteBookingPending?.name || "diesem/dieser Proband:in"} (${deleteBookingPending?.slots?.courses?.title || ""}) wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden. Achtung: Diese Aktion versendet keine Stornierungs-E-Mail. Für eine Benachrichtigung an den/die Proband:in setze stattdessen den Status auf "Storniert".`}
         confirmLabel={deletingBooking ? "Wird gelöscht..." : "Endgültig löschen"}
         variant="destructive"
         onConfirm={handleDeleteBooking}
         onCancel={() => setDeleteBookingPending(null)}
+      />
+
+      {/* Status → Storniert confirmation (triggers the cancellation email) */}
+      <ConfirmDialog
+        open={!!cancelPending}
+        title="Buchung stornieren"
+        description={`Die Buchung von ${cancelPending?.first_name || cancelPending?.name || "diesem/dieser Proband:in"} (${cancelPending?.slots?.courses?.title || ""}) wird auf "Storniert" gesetzt. ${cancelPending?.email ? "Der/die Proband:in erhält eine Stornierungs-E-Mail." : "Achtung: Keine E-Mail-Adresse hinterlegt, es wird keine Benachrichtigung versendet."}`}
+        confirmLabel={cancelling ? "Wird storniert..." : "Stornieren & benachrichtigen"}
+        variant="destructive"
+        onConfirm={handleConfirmCancel}
+        onCancel={() => setCancelPending(null)}
       />
 
       {/* Slot change modal */}

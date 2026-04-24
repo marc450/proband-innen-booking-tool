@@ -241,7 +241,7 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
     name: "Stornierung",
     recipient: "Proband:in",
     trigger:
-      "Admin löscht eine Buchung im Dashboard (die Buchung wird hart gelöscht; der/die Proband:in erhält diese E-Mail zur Information)",
+      "Admin setzt den Status einer Buchung im Dashboard auf \"Storniert\" (nur dieser Weg benachrichtigt den/die Proband:in; das Löschen-Icon entfernt die Buchung ohne E-Mail).",
     codeRef: "src/app/api/send-booking-cancellation-email/route.ts",
     description:
       "Informiert über die Stornierung eines bestätigten Termins und lädt zur Neubuchung ein.",
