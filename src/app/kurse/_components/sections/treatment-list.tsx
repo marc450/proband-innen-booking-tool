@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { ArrowRight, ImageIcon } from "lucide-react";
 import type { AvailableSlot, Course } from "@/lib/types";
 import { TYPO } from "../typography";
@@ -9,10 +12,46 @@ interface TreatmentListProps {
   slots: AvailableSlot[];
 }
 
+type TreatmentCategory =
+  | "botulinum"
+  | "dermalfiller"
+  | "biostimulation"
+  | "hautpflege"
+  | "sonstiges";
+
+const CATEGORY_LABELS: Record<TreatmentCategory, string> = {
+  botulinum: "Botulinum",
+  dermalfiller: "Dermalfiller",
+  biostimulation: "Biostimulation",
+  hautpflege: "Hautpflege",
+  sonstiges: "Sonstiges",
+};
+
+const CATEGORY_ORDER: TreatmentCategory[] = [
+  "botulinum",
+  "dermalfiller",
+  "biostimulation",
+  "hautpflege",
+  "sonstiges",
+];
+
+function classifyTreatment(
+  treatmentTitle: string | null,
+  title: string,
+): TreatmentCategory {
+  const key = `${treatmentTitle || ""} ${title}`.toLowerCase();
+  if (key.includes("botulinum")) return "botulinum";
+  if (key.includes("dermalfiller") || key.includes("filler")) return "dermalfiller";
+  if (key.includes("biostimulation") || key.includes("skinbooster")) return "biostimulation";
+  if (key.includes("hautpflege") || key.includes("skincare")) return "hautpflege";
+  return "sonstiges";
+}
+
 interface TreatmentGroup {
   title: string;
   firstCourse: Course;
   totalSlots: number;
+  category: TreatmentCategory;
 }
 
 /**
@@ -23,30 +62,47 @@ interface TreatmentGroup {
  * `/book/{courseId}`, sodass der Buchungs-Funnel unverändert bleibt.
  */
 export function TreatmentList({ courses, slots }: TreatmentListProps) {
-  const groupedMap = new Map<string, TreatmentGroup>();
+  const groups = useMemo(() => {
+    const groupedMap = new Map<string, TreatmentGroup>();
 
-  for (const course of courses) {
-    const courseSlots = slots.filter((s) => s.course_id === course.id);
-    if (courseSlots.length === 0) continue;
+    for (const course of courses) {
+      const courseSlots = slots.filter((s) => s.course_id === course.id);
+      if (courseSlots.length === 0) continue;
 
-    if (!groupedMap.has(course.title)) {
-      groupedMap.set(course.title, {
-        title: course.title,
-        firstCourse: course,
-        totalSlots: 0,
-      });
-    } else {
-      // Bevorzuge einen Eintrag, der bereits ein Bild hat
-      const existing = groupedMap.get(course.title)!;
-      if (!existing.firstCourse.image_url && course.image_url) {
-        existing.firstCourse = course;
+      if (!groupedMap.has(course.title)) {
+        groupedMap.set(course.title, {
+          title: course.title,
+          firstCourse: course,
+          totalSlots: 0,
+          category: classifyTreatment(course.treatment_title, course.title),
+        });
+      } else {
+        // Bevorzuge einen Eintrag, der bereits ein Bild hat
+        const existing = groupedMap.get(course.title)!;
+        if (!existing.firstCourse.image_url && course.image_url) {
+          existing.firstCourse = course;
+        }
       }
+
+      groupedMap.get(course.title)!.totalSlots += courseSlots.length;
     }
 
-    groupedMap.get(course.title)!.totalSlots += courseSlots.length;
-  }
+    return Array.from(groupedMap.values());
+  }, [courses, slots]);
 
-  const groups = Array.from(groupedMap.values());
+  const availableCategories = useMemo(() => {
+    const present = new Set(groups.map((g) => g.category));
+    return CATEGORY_ORDER.filter((c) => present.has(c));
+  }, [groups]);
+
+  const [selectedCategory, setSelectedCategory] = useState<
+    TreatmentCategory | "all"
+  >("all");
+
+  const visibleGroups = useMemo(() => {
+    if (selectedCategory === "all") return groups;
+    return groups.filter((g) => g.category === selectedCategory);
+  }, [groups, selectedCategory]);
 
   return (
     <section
@@ -62,6 +118,38 @@ export function TreatmentList({ courses, slots }: TreatmentListProps) {
           </p>
         </div>
 
+        {availableCategories.length > 1 && (
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-8 md:mb-10">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory("all")}
+              aria-pressed={selectedCategory === "all"}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                selectedCategory === "all"
+                  ? "bg-white text-[#0066FF]"
+                  : "bg-white/10 text-white hover:bg-white/20"
+              }`}
+            >
+              Alle
+            </button>
+            {availableCategories.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setSelectedCategory(cat)}
+                aria-pressed={selectedCategory === cat}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                  selectedCategory === cat
+                    ? "bg-white text-[#0066FF]"
+                    : "bg-white/10 text-white hover:bg-white/20"
+                }`}
+              >
+                {CATEGORY_LABELS[cat]}
+              </button>
+            ))}
+          </div>
+        )}
+
         {groups.length === 0 ? (
           <div className="bg-white rounded-[10px] p-10 md:p-12 text-center">
             <p className="text-base md:text-lg text-black/70">
@@ -69,9 +157,16 @@ export function TreatmentList({ courses, slots }: TreatmentListProps) {
               bald wieder vorbei.
             </p>
           </div>
+        ) : visibleGroups.length === 0 ? (
+          <div className="bg-white rounded-[10px] p-10 md:p-12 text-center">
+            <p className="text-base md:text-lg text-black/70">
+              Keine Termine in dieser Kategorie verfügbar. Schau bei einer
+              anderen Kategorie oder bald wieder vorbei.
+            </p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-            {groups.map((group) => (
+            {visibleGroups.map((group) => (
               <article
                 key={group.title}
                 className="bg-white rounded-[10px] overflow-hidden flex flex-col group"
