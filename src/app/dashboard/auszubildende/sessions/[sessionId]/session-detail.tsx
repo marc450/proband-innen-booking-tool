@@ -456,11 +456,6 @@ function ParticipantRow({ p }: { p: Participant }) {
             <Building2 className="w-3 h-3 text-muted-foreground" />
             {p.companyName}
           </span>
-        ) : p.addressCity ? (
-          <span className="flex items-center gap-1 text-muted-foreground">
-            <MapPin className="w-3 h-3" />
-            {p.addressCity}
-          </span>
         ) : (
           <span className="text-muted-foreground">—</span>
         )}
