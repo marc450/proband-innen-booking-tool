@@ -84,8 +84,27 @@ interface BookingRow {
   last_name: string | null;
   course_type: string;
   audience_tag: string | null;
+  status: string | null;
+  cert_sent_at: string | null;
   auszubildende_id: string | null;
   auszubildende: EmbeddedAuszubildende | EmbeddedAuszubildende[] | null;
+}
+
+/** One row in the dry-run preview surfaced by the admin tester. */
+export interface CertDryRunRow {
+  bookingId: string;
+  sessionId: string;
+  sessionDateIso: string;
+  email: string | null;
+  fullName: string;
+  courseType: string;
+  audienceTag: string | null;
+  specialty: string | null;
+  status: string | null;
+  certSentAt: string | null;
+  decision:
+    | { kind: "send"; certSlug: string; certLabel: string; reason: string }
+    | { kind: "skip"; reason: string };
 }
 
 export async function sendPostPraxisCertificates(
@@ -216,6 +235,199 @@ export async function sendPostPraxisCertificates(
   }
 
   return result;
+}
+
+/**
+ * Dry-run sibling of sendPostPraxisCertificates.
+ *
+ * Walks the same data model as the cron but never sends an e-mail and
+ * never writes cert_sent_at. For each booking that would be considered
+ * (any non-cancelled booking with a Praxiskurs / Kombikurs / Premium
+ * course_type on a session matching `dateIso`), it returns the cert
+ * routing decision: which template would be used and why, or which
+ * skip branch the cron would take. Bookings that already have
+ * cert_sent_at set are surfaced too — flagged as "skip: already sent"
+ * — so the admin can audit a session end-to-end, not just the next
+ * batch.
+ */
+export async function previewPostPraxisCertificates(
+  supabase: SupabaseClient,
+  opts: { dateIso: string },
+): Promise<CertDryRunRow[]> {
+  const { data: sessions, error: sessErr } = await supabase
+    .from("course_sessions")
+    .select(
+      `id, template_id, date_iso, label_de, vnr_praxis,
+       course_templates:template_id (
+         id, title, course_label_de, course_key, vnr_theorie
+       )`,
+    )
+    .eq("date_iso", opts.dateIso);
+
+  if (sessErr) {
+    console.error("post-praxis cert preview: session query failed", sessErr);
+    return [];
+  }
+
+  const out: CertDryRunRow[] = [];
+  const sessionRows = (sessions ?? []) as unknown as SessionWithTemplate[];
+
+  for (const session of sessionRows) {
+    const template = pickOne(session.course_templates);
+    const vnrTheorie = template?.vnr_theorie?.trim() || "";
+    const vnrPraxis = session.vnr_praxis?.trim() || "";
+
+    const { data: bookings, error: bookingErr } = await supabase
+      .from("course_bookings")
+      .select(
+        `id, email, first_name, last_name, course_type, audience_tag, status, cert_sent_at, auszubildende_id,
+         auszubildende:auszubildende_id ( title, specialty )`,
+      )
+      .eq("session_id", session.id);
+
+    if (bookingErr) {
+      console.error(
+        `post-praxis cert preview: booking query failed for session ${session.id}`,
+        bookingErr,
+      );
+      continue;
+    }
+
+    const bookingRows = (bookings ?? []) as unknown as BookingRow[];
+    for (const booking of bookingRows) {
+      const azubi = pickOne(booking.auszubildende);
+      const fullName =
+        formatParticipantName({
+          title: azubi?.title,
+          firstName: booking.first_name,
+          lastName: booking.last_name,
+        }) || "(ohne Name)";
+
+      const base: Omit<CertDryRunRow, "decision"> = {
+        bookingId: booking.id,
+        sessionId: session.id,
+        sessionDateIso: session.date_iso,
+        email: booking.email,
+        fullName,
+        courseType: booking.course_type,
+        audienceTag: booking.audience_tag,
+        specialty: azubi?.specialty ?? null,
+        status: booking.status,
+        certSentAt: booking.cert_sent_at,
+      };
+
+      // Reproduce the cron's filters first, in the same order.
+      if (booking.status === "cancelled") {
+        out.push({ ...base, decision: { kind: "skip", reason: "Buchung storniert" } });
+        continue;
+      }
+      if (
+        !CERTIFIABLE_COURSE_TYPES.includes(
+          booking.course_type as (typeof CERTIFIABLE_COURSE_TYPES)[number],
+        )
+      ) {
+        out.push({
+          ...base,
+          decision: {
+            kind: "skip",
+            reason: `Kein zertifizierter Kurstyp (${booking.course_type})`,
+          },
+        });
+        continue;
+      }
+      if (booking.cert_sent_at) {
+        out.push({
+          ...base,
+          decision: {
+            kind: "skip",
+            reason: `Bereits versendet (${booking.cert_sent_at})`,
+          },
+        });
+        continue;
+      }
+      if (!booking.email) {
+        out.push({ ...base, decision: { kind: "skip", reason: "Keine E-Mail" } });
+        continue;
+      }
+      if (session.date_iso < EARLIEST_CERT_SESSION_DATE) {
+        out.push({
+          ...base,
+          decision: {
+            kind: "skip",
+            reason: `Vor Rollout-Cutoff (${EARLIEST_CERT_SESSION_DATE})`,
+          },
+        });
+        continue;
+      }
+      if (!template) {
+        out.push({ ...base, decision: { kind: "skip", reason: "Kursvorlage nicht gefunden" } });
+        continue;
+      }
+
+      const cert = getCertificateForBooking({
+        sessionCourseKey: template.course_key,
+        audienceTag: booking.audience_tag,
+        specialty: azubi?.specialty,
+      });
+      if (!cert) {
+        out.push({
+          ...base,
+          decision: {
+            kind: "skip",
+            reason: `Kein Zertifikat registriert für course_key=${template.course_key}`,
+          },
+        });
+        continue;
+      }
+      if (certificateRequiresVnr(cert) && (!vnrTheorie || !vnrPraxis)) {
+        out.push({
+          ...base,
+          decision: {
+            kind: "skip",
+            reason: `VNR fehlt (theorie=${!!vnrTheorie}, praxis=${!!vnrPraxis})`,
+          },
+        });
+        continue;
+      }
+
+      // Reason string explains WHY this cert was chosen so the admin
+      // can spot a wrong route at a glance (e.g. specialty=Zahnmedizin
+      // but cert is the Humanmedizin one would be a bug).
+      const isDentistByTag = booking.audience_tag === "Zahnmediziner:in";
+      const isDentistBySpecialty =
+        (azubi?.specialty || "").trim().toLowerCase() === "zahnmedizin";
+      let reason: string;
+      if (cert.isDentist) {
+        if (isDentistByTag && isDentistBySpecialty) {
+          reason = "Zahnmedizin (audience_tag + specialty)";
+        } else if (isDentistByTag) {
+          reason = "Zahnmedizin (audience_tag)";
+        } else if (isDentistBySpecialty) {
+          reason = "Zahnmedizin (specialty, legacy import)";
+        } else {
+          reason = "Zahnmedizin (cert override)";
+        }
+      } else {
+        reason = `course_key=${template.course_key}`;
+      }
+
+      out.push({
+        ...base,
+        decision: {
+          kind: "send",
+          certSlug: cert.slug,
+          certLabel: cert.label,
+          reason,
+        },
+      });
+    }
+  }
+
+  out.sort((a, b) => {
+    if (a.sessionId !== b.sessionId) return a.sessionId.localeCompare(b.sessionId);
+    return a.fullName.localeCompare(b.fullName);
+  });
+  return out;
 }
 
 async function sendCertificateEmail(opts: {
