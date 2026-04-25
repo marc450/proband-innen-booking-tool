@@ -9,6 +9,7 @@ import {
   PenSquare,
   X,
   Send,
+  ChevronDown,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,18 @@ interface ThreadSummary {
   isUnread: boolean;
 }
 
+interface ThreadMessage {
+  id: string;
+  fromName: string;
+  fromEmail: string;
+  to: string;
+  cc: string;
+  date: string;
+  body: { html: string; text: string };
+  isInbound: boolean;
+  sentBy?: string | null;
+}
+
 export function EmailHistory({
   email,
   displayName,
@@ -46,6 +59,15 @@ export function EmailHistory({
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Inline thread expansion: id of the currently open thread, the
+  // fetched messages keyed by thread id, and per-thread loading/error so
+  // multiple threads can be opened in succession without clobbering each
+  // other's state.
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [threadCache, setThreadCache] = useState<Record<string, ThreadMessage[]>>({});
+  const [threadLoading, setThreadLoading] = useState<Record<string, boolean>>({});
+  const [threadError, setThreadError] = useState<Record<string, string>>({});
 
   // Compose state
   const [composing, setComposing] = useState(false);
@@ -100,6 +122,53 @@ export function EmailHistory({
       year: "numeric",
     });
   };
+
+  const formatFullDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    return new Date(dateStr).toLocaleString("de-DE", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const toggleThread = useCallback(
+    async (threadId: string) => {
+      if (expandedId === threadId) {
+        setExpandedId(null);
+        return;
+      }
+      setExpandedId(threadId);
+      if (threadCache[threadId]) return;
+
+      setThreadLoading((prev) => ({ ...prev, [threadId]: true }));
+      setThreadError((prev) => {
+        if (!(threadId in prev)) return prev;
+        const next = { ...prev };
+        delete next[threadId];
+        return next;
+      });
+      try {
+        const res = await fetch(`/api/gmail/threads?threadId=${threadId}`);
+        const data = await res.json();
+        if (res.ok && data.thread?.messages) {
+          setThreadCache((prev) => ({ ...prev, [threadId]: data.thread.messages }));
+        } else {
+          setThreadError((prev) => ({
+            ...prev,
+            [threadId]: data.error || "Fehler beim Laden",
+          }));
+        }
+      } catch {
+        setThreadError((prev) => ({ ...prev, [threadId]: "Fehler beim Laden" }));
+      } finally {
+        setThreadLoading((prev) => ({ ...prev, [threadId]: false }));
+      }
+    },
+    [expandedId, threadCache],
+  );
 
   const openComposer = () => {
     setSubject("");
@@ -325,32 +394,123 @@ export function EmailHistory({
           </p>
         ) : (
           <div className="space-y-1">
-            {threads.map((thread) => (
-              <Link
-                key={thread.id}
-                href={`/dashboard/inbox?thread=${thread.id}`}
-                className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors group"
-              >
-                <div className="flex-1 min-w-0">
-                  <p
-                    className={`text-sm truncate ${
-                      thread.isUnread ? "font-semibold" : ""
+            {threads.map((thread) => {
+              const isOpen = expandedId === thread.id;
+              const messages = threadCache[thread.id];
+              const isLoading = threadLoading[thread.id];
+              const errMsg = threadError[thread.id];
+              return (
+                <div key={thread.id}>
+                  <div
+                    className={`flex items-center gap-3 py-2 px-3 rounded-lg transition-colors group ${
+                      isOpen ? "bg-gray-50" : "hover:bg-gray-50"
                     }`}
                   >
-                    {thread.subject || "(kein Betreff)"}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {thread.snippet}
-                  </p>
+                    <button
+                      type="button"
+                      onClick={() => toggleThread(thread.id)}
+                      className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                      aria-expanded={isOpen}
+                    >
+                      <ChevronDown
+                        className={`h-3.5 w-3.5 text-muted-foreground flex-shrink-0 transition-transform ${
+                          isOpen ? "rotate-0" : "-rotate-90"
+                        }`}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className={`text-sm truncate ${
+                            thread.isUnread ? "font-semibold" : ""
+                          }`}
+                        >
+                          {thread.subject || "(kein Betreff)"}
+                        </p>
+                        {!isOpen && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            {thread.snippet}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground flex-shrink-0">
+                        {formatDate(thread.lastDate)}
+                      </span>
+                    </button>
+                    <Link
+                      href={`/dashboard/inbox?thread=${thread.id}`}
+                      title="Im Posteingang öffnen"
+                      className="text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Link>
+                  </div>
+
+                  {isOpen && (
+                    <div className="mt-2 ml-6 mr-1 mb-3 space-y-2">
+                      {isLoading && !messages && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Nachrichten werden geladen...
+                        </div>
+                      )}
+                      {errMsg && (
+                        <p className="text-xs text-destructive py-2">{errMsg}</p>
+                      )}
+                      {messages?.map((msg) => (
+                        <div
+                          key={msg.id}
+                          className="rounded-[10px] border border-gray-100 bg-white shadow-sm"
+                        >
+                          <div className="px-4 py-2.5 border-b border-gray-50 flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <div className="h-6 w-6 rounded-full bg-[#0066FF]/10 text-[#0066FF] flex items-center justify-center text-[10px] font-semibold flex-shrink-0">
+                                  {(msg.fromName?.[0] || "?").toUpperCase()}
+                                </div>
+                                <span className="font-semibold text-sm truncate">
+                                  {msg.fromName}
+                                </span>
+                                <span className="text-xs text-muted-foreground truncate">
+                                  &lt;{msg.fromEmail}&gt;
+                                </span>
+                                {!msg.isInbound && (
+                                  <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-medium">
+                                    Gesendet
+                                  </span>
+                                )}
+                              </div>
+                              {msg.to && (
+                                <p className="text-[11px] text-muted-foreground mt-0.5 ml-8 truncate">
+                                  An: {msg.to}
+                                </p>
+                              )}
+                              {msg.cc && (
+                                <p className="text-[11px] text-muted-foreground ml-8 truncate">
+                                  CC: {msg.cc}
+                                </p>
+                              )}
+                            </div>
+                            <span className="text-[11px] text-muted-foreground whitespace-nowrap pt-1">
+                              {formatFullDate(msg.date)}
+                            </span>
+                          </div>
+                          <div className="px-4 py-3">
+                            <div
+                              className="prose prose-sm max-w-none text-sm [&_img]:max-w-full [&_table]:text-sm [&_a]:text-[#0066FF] [&_a]:underline"
+                              dangerouslySetInnerHTML={{
+                                __html:
+                                  msg.body.html ||
+                                  msg.body.text.replace(/\n/g, "<br>"),
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-xs text-muted-foreground">
-                    {formatDate(thread.lastDate)}
-                  </span>
-                  <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-              </Link>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>
