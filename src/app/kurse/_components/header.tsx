@@ -2,8 +2,21 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
+
+// Pathnames that map to the Werde Proband:in funnel start. The page is
+// rendered by /kurse/werde-proband-in but middleware rewrites both "/"
+// and "/werde-proband-in" on proband-innen.ephia.de to it without
+// touching the URL bar — so usePathname can return any of the three.
+// We hide the entire kurse header on those routes so visitors don't
+// get distracted by Login or other navigation away from the funnel.
+const HEADERLESS_PATHS = new Set([
+  "/",
+  "/werde-proband-in",
+  "/kurse/werde-proband-in",
+]);
 
 type SubLink = {
   label: string;
@@ -54,10 +67,16 @@ const NAV_LINKS: NavLink[] = [
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
+  const pathname = usePathname();
 
   const toggleMobileSection = (label: string) => {
     setMobileExpanded((current) => (current === label ? null : label));
   };
+
+  // Werde Proband:in is a single-funnel page — the kurse layout still
+  // mounts this header above it, but we render nothing so the page
+  // starts clean at the top.
+  if (pathname && HEADERLESS_PATHS.has(pathname)) return null;
 
   return (
     <header className="sticky top-0 z-40 bg-[#FAEBE1]/95 backdrop-blur-sm">
