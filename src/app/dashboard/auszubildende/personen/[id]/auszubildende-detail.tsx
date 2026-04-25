@@ -61,22 +61,12 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
   const [notes, setNotes] = useState(azubi.notes || "");
   const [savingNotes, setSavingNotes] = useState(false);
 
-  // Name edit popover. We keep a local draft so "click away to save" can
-  // commit the final values: the inputs used to rely on onBlur, but the
-  // outside-click handler fires on mousedown and unmounts the popover
-  // before blur gets to run — so the last field the user typed into
-  // (usually Nachname) was silently dropped.
+  // Name edit popover. Each input is independent (defaultValue + onBlur)
+  // so editing Nachname commits via autosave on blur, identical to the
+  // patient detail page. Outside-click closes the popover but doesn't
+  // need to flush state — the blur on the focused input does that.
   const [namePopoverOpen, setNamePopoverOpen] = useState(false);
   const namePopoverRef = useRef<HTMLDivElement>(null);
-  const [nameDraft, setNameDraft] = useState<{
-    title: string;
-    first_name: string;
-    last_name: string;
-  }>({
-    title: initialAzubi.title || "",
-    first_name: initialAzubi.first_name || "",
-    last_name: initialAzubi.last_name || "",
-  });
 
   // Status dropdown
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
@@ -88,45 +78,13 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
     ? azubi.company_name || "Firma"
     : personName || azubi.company_name || "Unbekannt";
 
-  const openNamePopover = () => {
-    // Seed the draft from the current row every time we open so we never
-    // display stale values after an external update.
-    setNameDraft({
-      title: azubi.title || "",
-      first_name: azubi.first_name || "",
-      last_name: azubi.last_name || "",
-    });
-    setNamePopoverOpen(true);
-  };
-
-  const closeNamePopoverAndSave = async () => {
-    const trimmed = {
-      title: nameDraft.title.trim() || null,
-      first_name: nameDraft.first_name.trim() || null,
-      last_name: nameDraft.last_name.trim() || null,
-    };
-    const changed =
-      trimmed.title !== (azubi.title ?? null) ||
-      trimmed.first_name !== (azubi.first_name ?? null) ||
-      trimmed.last_name !== (azubi.last_name ?? null);
-    setNamePopoverOpen(false);
-    if (!changed) return;
-    const { error } = await supabase
-      .from("auszubildende")
-      .update(trimmed)
-      .eq("id", azubi.id);
-    if (!error) {
-      setAzubi((prev) => ({ ...prev, ...trimmed }));
-    }
-  };
-
-  // Close popovers on outside click. For the name popover we flush the
-  // draft via closeNamePopoverAndSave so the user's typing is never lost.
+  // Close popovers on outside click. Per-input onBlur handles the save,
+  // so this just hides the popover.
   useEffect(() => {
     if (!namePopoverOpen && !statusDropdownOpen) return;
     const handler = (e: MouseEvent) => {
       if (namePopoverOpen && namePopoverRef.current && !namePopoverRef.current.contains(e.target as Node)) {
-        void closeNamePopoverAndSave();
+        setNamePopoverOpen(false);
       }
       if (statusDropdownOpen && statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
         setStatusDropdownOpen(false);
@@ -134,8 +92,7 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [namePopoverOpen, statusDropdownOpen, nameDraft]);
+  }, [namePopoverOpen, statusDropdownOpen]);
 
   const autosave = async (field: string, value: string) => {
     const trimmed = value.trim() || null;
@@ -219,9 +176,7 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
                     {formatPersonName({ title: azubi.title, firstName: azubi.first_name, lastName: azubi.last_name }) || "Unbekannt"}
                   </h1>
                   <button
-                    onClick={() =>
-                      namePopoverOpen ? void closeNamePopoverAndSave() : openNamePopover()
-                    }
+                    onClick={() => setNamePopoverOpen((v) => !v)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted shrink-0"
                     title="Name bearbeiten"
                   >
@@ -232,9 +187,6 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
                   <div
                     ref={namePopoverRef}
                     className="absolute top-full left-0 mt-2 bg-popover border rounded-lg shadow-lg p-4 space-y-3 z-20 w-[280px]"
-                    onKeyDown={(e) => {
-                      if (e.key === "Escape") void closeNamePopoverAndSave();
-                    }}
                   >
                     {/* Reference: show the email so names can be derived
                         from it without having to close the popover. */}
@@ -245,10 +197,8 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
                     <div>
                       <label className="text-xs text-muted-foreground">Titel</label>
                       <input
-                        value={nameDraft.title}
-                        onChange={(e) =>
-                          setNameDraft((d) => ({ ...d, title: e.target.value }))
-                        }
+                        defaultValue={azubi.title || ""}
+                        onBlur={(e) => autosave("title", e.target.value)}
                         placeholder="z.B. Dr."
                         className="w-full mt-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                       />
@@ -256,10 +206,8 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
                     <div>
                       <label className="text-xs text-muted-foreground">Vorname</label>
                       <input
-                        value={nameDraft.first_name}
-                        onChange={(e) =>
-                          setNameDraft((d) => ({ ...d, first_name: e.target.value }))
-                        }
+                        defaultValue={azubi.first_name || ""}
+                        onBlur={(e) => autosave("first_name", e.target.value)}
                         autoFocus
                         className="w-full mt-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                       />
@@ -267,13 +215,8 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
                     <div>
                       <label className="text-xs text-muted-foreground">Nachname</label>
                       <input
-                        value={nameDraft.last_name}
-                        onChange={(e) =>
-                          setNameDraft((d) => ({ ...d, last_name: e.target.value }))
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") void closeNamePopoverAndSave();
-                        }}
+                        defaultValue={azubi.last_name || ""}
+                        onBlur={(e) => autosave("last_name", e.target.value)}
                         className="w-full mt-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
