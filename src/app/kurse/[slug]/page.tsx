@@ -99,6 +99,37 @@ export default async function KursPage({
     .eq("is_live", true)
     .order("date_iso", { ascending: true });
 
+  // Template-token substitution. Lets content files reference live
+  // template values (e.g. `{cme_online}` in the hero subheadline) so a
+  // CME number bump in Supabase auto-updates everywhere it's quoted.
+  const tokens: Record<string, string> = {};
+  if (template.cme_online != null) {
+    tokens["{cme_online}"] = String(template.cme_online);
+  }
+  if (template.cme_kombi != null) {
+    tokens["{cme_kombi}"] = String(template.cme_kombi);
+  }
+  const sub = (s: string): string => {
+    let out = s;
+    for (const [k, v] of Object.entries(tokens)) {
+      out = out.split(k).join(v);
+    }
+    return out;
+  };
+  const heroContent = {
+    ...content.hero,
+    subheadline: content.hero.subheadline ? sub(content.hero.subheadline) : undefined,
+    description: sub(content.hero.description),
+    stats: content.hero.stats?.map((s) => ({ ...s, value: sub(s.value) })),
+  };
+  const faqContent = {
+    ...content.faq,
+    items: content.faq.items.map((item) => ({
+      ...item,
+      answer: sub(item.answer),
+    })),
+  };
+
   // JSON-LD Course schema (+ hasCourseInstance per session) for Google Search
   // https://developers.google.com/search/docs/appearance/structured-data/course
   // Marketing /kurse/* pages are canonically served from kurse.ephia.de,
@@ -127,8 +158,10 @@ export default async function KursPage({
           },
         ]
       : []),
-    // One instance per live Praxiskurs session
-    ...liveSessions.map((s) => ({
+    // One instance per live Praxiskurs session. Suppressed on
+    // online-only landing pages so Google doesn't see Praxis dates the
+    // page itself doesn't surface.
+    ...(content.hideBookingWidget ? [] : liveSessions).map((s) => ({
       "@type": "CourseInstance",
       courseMode: "Onsite",
       startDate: s.date_iso,
@@ -194,11 +227,11 @@ export default async function KursPage({
 
   // FAQPage JSON-LD — only when the page actually has FAQ items.
   const faqJsonLd =
-    content.faq.items.length > 0
+    faqContent.items.length > 0
       ? {
           "@context": "https://schema.org",
           "@type": "FAQPage",
-          mainEntity: content.faq.items.map((item) => ({
+          mainEntity: faqContent.items.map((item) => ({
             "@type": "Question",
             name: item.question,
             acceptedAnswer: {
@@ -260,7 +293,7 @@ export default async function KursPage({
         />
       )}
       <Hero
-        content={content.hero}
+        content={heroContent}
         // When the hero CTA fires a direct Stripe checkout, append the
         // Onlinekurs price to the button label so users see the cost
         // before they click (matches the booking-widget cards' price UX).
@@ -301,7 +334,7 @@ export default async function KursPage({
         }
       />
       <Testimonials content={content.testimonials} />
-      <Faq content={content.faq} />
+      <Faq content={faqContent} />
     </>
   );
 }
