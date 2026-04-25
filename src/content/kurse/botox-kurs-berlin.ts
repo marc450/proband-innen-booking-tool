@@ -95,8 +95,8 @@ export const botoxKursBerlin: CourseLandingContent = {
   lernplattform: grundkursBotulinum.lernplattform,
 
   ctaBanner: {
-    heading: "Bring Deine Botox-Skills in Berlin auf das nächste Level.",
-    ctaLabel: "Termine in Berlin sehen",
+    heading: "Bring Deine Botox-Skills auf das nächste Level in Berlin.",
+    ctaLabel: "Termine sehen",
     ctaHref: "#kursangebote",
   },
 
