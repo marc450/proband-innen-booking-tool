@@ -48,7 +48,7 @@ export async function generateMetadata({
       ...(content.meta.ogImage ? { images: [content.meta.ogImage] } : {}),
     },
     alternates: {
-      canonical: `/kurse/${content.slug}`,
+      canonical: `https://kurse.ephia.de/kurse/${content.slug}`,
     },
   };
 }
@@ -101,7 +101,9 @@ export default async function KursPage({
 
   // JSON-LD Course schema (+ hasCourseInstance per session) for Google Search
   // https://developers.google.com/search/docs/appearance/structured-data/course
-  const siteUrl = "https://proband-innen.ephia.de";
+  // Marketing /kurse/* pages are canonically served from kurse.ephia.de,
+  // not the staff/booking subdomains.
+  const siteUrl = "https://kurse.ephia.de";
   const courseUrl = `${siteUrl}/kurse/${content.slug}`;
   const priceCurrency = "EUR";
   const liveSessions = (sessions ?? []).filter((s) => s.is_live);

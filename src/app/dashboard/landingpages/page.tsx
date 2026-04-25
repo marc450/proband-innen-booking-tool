@@ -12,12 +12,21 @@ type PageEntry = {
 type PageGroup = {
   label: string;
   description?: string;
+  /** Public host for every page in this group, e.g. "https://kurse.ephia.de". */
+  host: string;
   pages: PageEntry[];
 };
+
+// Canonical public hosts for each marketing surface. Links in this
+// overview must open on the correct subdomain (NOT on admin.ephia.de),
+// otherwise users land on the staff host instead of the marketing site.
+const HOST_MARKETING = "https://kurse.ephia.de";
+const HOST_PROBAND = "https://proband-innen.ephia.de";
 
 const HAUPTSEITEN: PageGroup = {
   label: "Hauptseiten",
   description: "Startseite und allgemeine Marketingseiten unter /kurse.",
+  host: HOST_MARKETING,
   pages: [
     { title: "Startseite", path: "/kurse" },
     { title: "Unsere Kurse", path: "/kurse/unsere-kurse" },
@@ -33,6 +42,7 @@ const HAUPTSEITEN: PageGroup = {
 
 const RECHTLICHES: PageGroup = {
   label: "Rechtliches",
+  host: HOST_MARKETING,
   pages: [
     { title: "Impressum", path: "/kurse/impressum" },
     { title: "Datenschutz", path: "/kurse/datenschutz" },
@@ -42,6 +52,7 @@ const RECHTLICHES: PageGroup = {
 
 const SONSTIGE: PageGroup = {
   label: "Sonstige Marketingseiten",
+  host: HOST_PROBAND,
   pages: [
     { title: "Einladung", path: "/einladung" },
     { title: "Merch Shop", path: "/merch" },
@@ -51,6 +62,7 @@ const SONSTIGE: PageGroup = {
 const FUNNELS: PageGroup = {
   label: "Buchungsfunnels",
   description: "Öffentliche Buchungsstrecken für Proband:innen.",
+  host: HOST_PROBAND,
   pages: [
     { title: "Standard Buchung (Proband:innen)", path: "/book" },
     { title: "Privat-Funnel (Empfehlung)", path: "/book/privat" },
@@ -72,6 +84,7 @@ function buildCourseGroup(): PageGroup {
   return {
     label: "Kurs-Landingpages",
     description: "Eine Landingpage pro Kursangebot, gerendert über /kurse/[slug].",
+    host: HOST_MARKETING,
     pages,
   };
 }
@@ -108,25 +121,29 @@ export default function LandingPagesPage() {
             )}
           </div>
           <div className="bg-white rounded-[10px] divide-y divide-gray-100 overflow-hidden shadow-sm">
-            {group.pages.map((p) => (
-              <a
-                key={p.path}
-                href={p.path}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-gray-50 transition-colors"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {p.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {p.path}
-                  </p>
-                </div>
-                <ExternalLink className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              </a>
-            ))}
+            {group.pages.map((p) => {
+              const fullUrl = `${group.host}${p.path}`;
+              const displayUrl = `${group.host.replace(/^https?:\/\//, "")}${p.path}`;
+              return (
+                <a
+                  key={p.path}
+                  href={fullUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {p.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {displayUrl}
+                    </p>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                </a>
+              );
+            })}
           </div>
         </section>
       ))}
