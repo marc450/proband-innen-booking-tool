@@ -151,7 +151,6 @@ export function CoursesOverview({
                       <span className="text-xs text-gray-500 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {formatTime(session.start_time)}
-                        {session.duration_minutes ? ` (${session.duration_minutes} Min)` : ""}
                       </span>
                     )}
                   </div>
