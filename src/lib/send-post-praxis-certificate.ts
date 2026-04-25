@@ -1,8 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
+  certificateRequiresVnr,
   formatParticipantName,
   generateCertificatePdf,
-  getCertificateForCourseKey,
+  getCertificateForBooking,
   type CertificateTemplate,
 } from "@/lib/certificates";
 import {
@@ -73,6 +74,7 @@ interface SessionWithTemplate {
 
 interface EmbeddedAuszubildende {
   title: string | null;
+  specialty: string | null;
 }
 
 interface BookingRow {
@@ -81,6 +83,7 @@ interface BookingRow {
   first_name: string | null;
   last_name: string | null;
   course_type: string;
+  audience_tag: string | null;
   auszubildende_id: string | null;
   auszubildende: EmbeddedAuszubildende | EmbeddedAuszubildende[] | null;
 }
@@ -116,30 +119,18 @@ export async function sendPostPraxisCertificates(
     const template = pickOne(session.course_templates);
     if (!template) continue;
 
-    const cert = getCertificateForCourseKey(template.course_key);
-    if (!cert) {
-      result.skippedNoCert += 1;
-      continue; // Silent skip — course intentionally has no certificate.
-    }
-
     const vnrTheorie = template.vnr_theorie?.trim() || "";
     const vnrPraxis = session.vnr_praxis?.trim() || "";
-    if (!vnrTheorie || !vnrPraxis) {
-      result.skippedNoVnr += 1;
-      console.warn(
-        `post-praxis cert: skipping session ${session.id} — VNR missing (theorie=${!!vnrTheorie}, praxis=${!!vnrPraxis})`,
-      );
-      continue;
-    }
 
     // Bookings on this session that still need a cert. Join auszubildende
     // for the title (course_bookings.title is not stored — the Arzt:in's
-    // title lives on the auszubildende row).
+    // title lives on the auszubildende row) and for the specialty so we
+    // can route legacy Zahnmedizin bookings to the dentist cert.
     const { data: bookings, error: bookingErr } = await supabase
       .from("course_bookings")
       .select(
-        `id, email, first_name, last_name, course_type, auszubildende_id,
-         auszubildende:auszubildende_id ( title )`,
+        `id, email, first_name, last_name, course_type, audience_tag, auszubildende_id,
+         auszubildende:auszubildende_id ( title, specialty )`,
       )
       .eq("session_id", session.id)
       .is("cert_sent_at", null)
@@ -154,9 +145,6 @@ export async function sendPostPraxisCertificates(
       continue;
     }
 
-    const courseName =
-      template.course_label_de || template.title || cert.label;
-
     const courseDay = formatDate(session.date_iso);
 
     const bookingRows = (bookings ?? []) as unknown as BookingRow[];
@@ -164,12 +152,41 @@ export async function sendPostPraxisCertificates(
       try {
         if (!booking.email) continue;
         const azubi = pickOne(booking.auszubildende);
+
+        // Per-booking cert pick: dentists (audience_tag or specialty)
+        // route to the Zahnmedizin cert; everyone else falls back to
+        // the cert registered for the session's course_key.
+        const cert = getCertificateForBooking({
+          sessionCourseKey: template.course_key,
+          audienceTag: booking.audience_tag,
+          specialty: azubi?.specialty,
+        });
+        if (!cert) {
+          result.skippedNoCert += 1;
+          continue; // Silent skip — no cert for this booking.
+        }
+
+        // VNRs only matter for certs that actually stamp them. The
+        // Zahnmedizin cert carries no CME and therefore no VNRs, so
+        // skipping the check lets legacy dentist bookings receive a
+        // cert even if vnr_theorie / vnr_praxis are empty.
+        if (certificateRequiresVnr(cert) && (!vnrTheorie || !vnrPraxis)) {
+          result.skippedNoVnr += 1;
+          console.warn(
+            `post-praxis cert: skipping booking ${booking.id} on session ${session.id} — VNR missing for ${cert.slug} (theorie=${!!vnrTheorie}, praxis=${!!vnrPraxis})`,
+          );
+          continue;
+        }
+
         const fullName = formatParticipantName({
           title: azubi?.title,
           firstName: booking.first_name,
           lastName: booking.last_name,
         });
         if (!fullName) continue;
+
+        const courseName =
+          template.course_label_de || template.title || cert.label;
 
         await sendCertificateEmail({
           to: booking.email,
@@ -222,6 +239,9 @@ async function sendCertificateEmail(opts: {
     vnrPraxis,
   } = opts;
 
+  // generateCertificatePdf gates VNR drawing on both the layout slot
+  // and a non-empty value, so the dentist cert silently ignores the
+  // empty strings we pass in here.
   const pdfBytes = await generateCertificatePdf({
     template: cert,
     fullName,

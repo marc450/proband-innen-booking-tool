@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/auth";
-import { CERTIFICATE_TEMPLATES } from "@/lib/certificates";
+import {
+  CERTIFICATE_TEMPLATES,
+  certificateRequiresVnr,
+} from "@/lib/certificates";
 import { CertificateTestForm } from "./certificate-test-form";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +27,7 @@ export default async function ZertifikateTestPage() {
         templates={CERTIFICATE_TEMPLATES.map((t) => ({
           slug: t.slug,
           label: t.label,
+          requiresVnr: certificateRequiresVnr(t),
         }))}
       />
     </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
 import {
+  certificateRequiresVnr,
   generateCertificatePdf,
   getCertificateTemplate,
 } from "@/lib/certificates";
@@ -40,12 +41,6 @@ export async function POST(req: NextRequest) {
   if (!templateSlug) {
     return NextResponse.json({ error: "Kurs-Vorlage fehlt" }, { status: 400 });
   }
-  if (!vnrTheorie) {
-    return NextResponse.json({ error: "VNR Theorie fehlt" }, { status: 400 });
-  }
-  if (!vnrPraxis) {
-    return NextResponse.json({ error: "VNR Praxis fehlt" }, { status: 400 });
-  }
   if (!preview && !email) {
     return NextResponse.json({ error: "E-Mail fehlt" }, { status: 400 });
   }
@@ -56,6 +51,18 @@ export async function POST(req: NextRequest) {
       { error: `Vorlage "${templateSlug}" nicht gefunden.` },
       { status: 404 },
     );
+  }
+
+  // VNR fields are only required for templates that actually stamp them.
+  // The Zahnmedizin variant has no CME and therefore no VNR layout, so
+  // empty strings are accepted.
+  if (certificateRequiresVnr(template)) {
+    if (!vnrTheorie) {
+      return NextResponse.json({ error: "VNR Theorie fehlt" }, { status: 400 });
+    }
+    if (!vnrPraxis) {
+      return NextResponse.json({ error: "VNR Praxis fehlt" }, { status: 400 });
+    }
   }
 
   let pdfBytes: Uint8Array;

@@ -14,7 +14,7 @@ import {
 import { AlertDialog } from "@/components/confirm-dialog";
 
 interface Props {
-  templates: { slug: string; label: string }[];
+  templates: { slug: string; label: string; requiresVnr: boolean }[];
 }
 
 export function CertificateTestForm({ templates }: Props) {
@@ -31,8 +31,14 @@ export function CertificateTestForm({ templates }: Props) {
     description: string;
   } | null>(null);
 
-  const canSubmit =
-    templateSlug.trim() && name.trim() && vnrTheorie.trim() && vnrPraxis.trim();
+  const selectedTemplate = templates.find((t) => t.slug === templateSlug);
+  const requiresVnr = selectedTemplate?.requiresVnr ?? true;
+
+  const canSubmit = !!(
+    templateSlug.trim() &&
+    name.trim() &&
+    (!requiresVnr || (vnrTheorie.trim() && vnrPraxis.trim()))
+  );
 
   const handlePreview = async () => {
     if (!canSubmit) return;
@@ -43,8 +49,8 @@ export function CertificateTestForm({ templates }: Props) {
       body: JSON.stringify({
         name,
         templateSlug,
-        vnrTheorie,
-        vnrPraxis,
+        vnrTheorie: requiresVnr ? vnrTheorie : "",
+        vnrPraxis: requiresVnr ? vnrPraxis : "",
         preview: true,
       }),
     });
@@ -75,8 +81,8 @@ export function CertificateTestForm({ templates }: Props) {
           name,
           email,
           templateSlug,
-          vnrTheorie,
-          vnrPraxis,
+          vnrTheorie: requiresVnr ? vnrTheorie : "",
+          vnrPraxis: requiresVnr ? vnrPraxis : "",
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -142,34 +148,41 @@ export function CertificateTestForm({ templates }: Props) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="cert_vnr_theorie">VNR Theorie</Label>
-            <Input
-              id="cert_vnr_theorie"
-              value={vnrTheorie}
-              onChange={(e) => setVnrTheorie(e.target.value)}
-              placeholder="2761102025010470002"
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              Stabil pro Kurs und Jahr (Onlineanteil).
-            </p>
+        {requiresVnr ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="cert_vnr_theorie">VNR Theorie</Label>
+              <Input
+                id="cert_vnr_theorie"
+                value={vnrTheorie}
+                onChange={(e) => setVnrTheorie(e.target.value)}
+                placeholder="2761102025010470002"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Stabil pro Kurs und Jahr (Onlineanteil).
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cert_vnr_praxis">VNR Praxis</Label>
+              <Input
+                id="cert_vnr_praxis"
+                value={vnrPraxis}
+                onChange={(e) => setVnrPraxis(e.target.value)}
+                placeholder="2761102025043200004"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Ändert sich pro Kurstermin (Praxisanteil).
+              </p>
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="cert_vnr_praxis">VNR Praxis</Label>
-            <Input
-              id="cert_vnr_praxis"
-              value={vnrPraxis}
-              onChange={(e) => setVnrPraxis(e.target.value)}
-              placeholder="2761102025043200004"
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              Ändert sich pro Kurstermin (Praxisanteil).
-            </p>
-          </div>
-        </div>
+        ) : (
+          <p className="text-xs text-muted-foreground bg-muted/50 rounded-[10px] px-3 py-2">
+            Diese Vorlage trägt keine CME-Punkte. VNR Theorie und VNR Praxis
+            werden auf dem Zertifikat nicht ausgewiesen.
+          </p>
+        )}
 
         <div className="space-y-1.5">
           <Label htmlFor="cert_email">E-Mail</Label>
