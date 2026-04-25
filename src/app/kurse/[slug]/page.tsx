@@ -11,6 +11,8 @@ import { Lernplattform } from "../_components/sections/lernplattform";
 import { CtaBanner } from "../_components/sections/cta-banner";
 import { Testimonials } from "../_components/sections/testimonials";
 import { Faq } from "../_components/sections/faq";
+import { CurriculumCallout } from "../_components/sections/curriculum-callout";
+import { LocationInfo } from "../_components/sections/location-info";
 import { CourseCardsPage } from "../_components/widget/course-cards-page";
 
 export const dynamic = "force-dynamic";
@@ -161,6 +163,77 @@ export default async function KursPage({
     ...(hasCourseInstance.length > 0 ? { hasCourseInstance } : {}),
   };
 
+  // BreadcrumbList JSON-LD — helps Google render the breadcrumb trail
+  // and gives AI search clearer hierarchy signals.
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "EPHIA",
+        item: "https://ephia.de",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Kurse",
+        item: `${siteUrl}/kurse`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: content.breadcrumbLabel || content.meta.title,
+        item: courseUrl,
+      },
+    ],
+  };
+
+  // FAQPage JSON-LD — only when the page actually has FAQ items.
+  const faqJsonLd =
+    content.faq.items.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: content.faq.items.map((item) => ({
+            "@type": "Question",
+            name: item.question,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: item.answer,
+            },
+          })),
+        }
+      : null;
+
+  // LocalBusiness JSON-LD — only when the landing has a `location`
+  // block (city-targeted pages like Botox-Kurs Berlin).
+  const localBusinessJsonLd = content.location
+    ? {
+        "@context": "https://schema.org",
+        "@type": "EducationalOrganization",
+        name: `EPHIA — ${content.location.venueName}`,
+        url: courseUrl,
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: content.location.street,
+          postalCode: content.location.postalCode,
+          addressLocality: content.location.city,
+          addressCountry: content.location.country || "DE",
+        },
+        ...(content.location.geo
+          ? {
+              geo: {
+                "@type": "GeoCoordinates",
+                latitude: content.location.geo.latitude,
+                longitude: content.location.geo.longitude,
+              },
+            }
+          : {}),
+      }
+    : null;
+
   return (
     <>
       <script
@@ -168,6 +241,22 @@ export default async function KursPage({
         // JSON.stringify output is trusted — no user input flows in here
         dangerouslySetInnerHTML={{ __html: JSON.stringify(courseJsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      {faqJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+      )}
+      {localBusinessJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
+        />
+      )}
       <Hero
         content={content.hero}
         // When the hero CTA fires a direct Stripe checkout, append the
@@ -179,10 +268,14 @@ export default async function KursPage({
             : undefined
         }
       />
+      {content.curriculumLink && (
+        <CurriculumCallout content={content.curriculumLink} />
+      )}
       <Lernziele content={content.lernziele} />
       {!content.hideBookingWidget && (
         <CourseCardsPage template={template} sessions={sessions ?? []} />
       )}
+      {content.location && <LocationInfo content={content.location} />}
       {/* Pure-online courses skip the Gruppenbuchungen pitch — group
           discounts only make sense when there's an onsite Praxiskurs. */}
       {!content.hideBookingWidget && (
