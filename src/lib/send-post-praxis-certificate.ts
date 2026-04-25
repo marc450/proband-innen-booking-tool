@@ -239,6 +239,10 @@ async function sendCertificateEmail(opts: {
     body: JSON.stringify({
       from: "EPHIA <customerlove@ephia.de>",
       to: [to],
+      // BCC the shared mailbox so the message lands in customerlove's
+      // Gmail inbox and surfaces in the contact profile's EmailHistory
+      // (which queries Gmail by recipient address).
+      bcc: ["customerlove@ephia.de"],
       subject,
       html,
       attachments: [{ filename, content: base64 }],
