@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { CourseCard } from "./course-card";
 import { PrerequisiteConfirmationDialog } from "./prerequisite-confirmation-dialog";
 import { PremiumCard, BADGE_COLORS } from "./premium-card";
 import type { IncludedCourse } from "./premium-card";
 import type { CourseTemplate, CourseSession, CourseType } from "@/lib/types";
+import { getCurriculumForCourseKey } from "@/lib/curricula";
 
 // Shared base for the Medizinische Hautpflege Onlinekurs so the modal
 // looks identical on every package (Zahnmedizin, Dermalfiller, etc.).
@@ -920,6 +923,35 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
           );
         })()}
 
+        {/* Curriculum banner. When this course belongs to a curriculum
+            (e.g. Botulinum), surface it as a small white-on-blue button
+            below the cards that links to the curriculum overview. */}
+        {(() => {
+          const curriculum = getCurriculumForCourseKey(template.course_key || "");
+          if (!curriculum) return null;
+          return (
+            <div className="mt-12 md:mt-16 max-w-2xl mx-auto">
+              <Link
+                href={`/kurse/curriculum-${curriculum.slug}`}
+                className="block w-full bg-white/10 backdrop-blur-sm rounded-[10px] p-6 text-left hover:bg-white/15 transition-colors group"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-white font-bold text-lg mb-1">
+                      Dieses Kursangebot ist Teil des {curriculum.title}
+                    </p>
+                    <p className="text-white/80 text-sm">
+                      Spare {curriculum.discountPercent}% mit dem Komplettpaket
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0 text-white/80 group-hover:text-white transition-colors">
+                    <ArrowRight className="w-6 h-6" aria-hidden="true" />
+                  </div>
+                </div>
+              </Link>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Prerequisite-confirmation dialog. Mounted once at the section

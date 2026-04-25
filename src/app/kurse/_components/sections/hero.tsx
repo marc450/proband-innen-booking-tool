@@ -52,7 +52,7 @@ export function Hero({
               </p>
             )}
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-[1.15]">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-[1.15] whitespace-pre-line">
               {content.heading}
             </h1>
 

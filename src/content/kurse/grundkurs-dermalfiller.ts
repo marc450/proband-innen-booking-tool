@@ -93,7 +93,6 @@ export const grundkursDermalfiller: CourseLandingContent = {
 
   inhalt: {
     heading: "INHALT ONLINEKURS",
-    intro: "Der Onlinekurs ist im Kombikurs inkludiert.",
     chapters: [
       {
         number: 1,

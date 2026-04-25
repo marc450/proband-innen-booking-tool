@@ -209,24 +209,6 @@ export interface CourseLocationContent {
 }
 
 /**
- * "This course is part of the X curriculum" callout, rendered as a
- * compact banner near the top of the page. Links the visitor to the
- * full curriculum overview.
- */
-export interface CourseCurriculumLink {
-  /** Pill text, e.g. "Curriculum Botulinum". */
-  pill: string;
-  /** Headline, e.g. "Teil des Curriculum Botulinum". */
-  heading: string;
-  /** One- or two-sentence description of the curriculum context. */
-  description: string;
-  /** Link target, e.g. "/kurse/curriculum-botulinum". */
-  ctaHref: string;
-  /** CTA label, e.g. "Curriculum entdecken". */
-  ctaLabel: string;
-}
-
-/**
  * Complete typed content for one course landing page.
  * The `courseKey` MUST match a row in `course_templates.course_key`
  * so the booking widget can fetch the right sessions.
@@ -266,11 +248,6 @@ export interface CourseLandingContent {
    * city-targeted landings like `/kurse/botox-kurs-berlin`.
    */
   location?: CourseLocationContent;
-  /**
-   * Optional "part of curriculum X" callout. Renders a compact banner
-   * near the top of the page that links to the full curriculum.
-   */
-  curriculumLink?: CourseCurriculumLink;
   /**
    * Optional human-readable label for the BreadcrumbList JSON-LD.
    * Defaults to `meta.title` when omitted.

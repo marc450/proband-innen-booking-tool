@@ -11,7 +11,6 @@ import { Lernplattform } from "../_components/sections/lernplattform";
 import { CtaBanner } from "../_components/sections/cta-banner";
 import { Testimonials } from "../_components/sections/testimonials";
 import { Faq } from "../_components/sections/faq";
-import { CurriculumCallout } from "../_components/sections/curriculum-callout";
 import { LocationInfo } from "../_components/sections/location-info";
 import { CourseCardsPage } from "../_components/widget/course-cards-page";
 
@@ -270,9 +269,6 @@ export default async function KursPage({
             : undefined
         }
       />
-      {content.curriculumLink && (
-        <CurriculumCallout content={content.curriculumLink} />
-      )}
       <Lernziele content={content.lernziele} />
       {!content.hideBookingWidget && (
         <CourseCardsPage template={template} sessions={sessions ?? []} />

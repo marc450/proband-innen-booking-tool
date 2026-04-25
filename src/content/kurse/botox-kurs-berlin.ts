@@ -11,7 +11,6 @@ import { grundkursBotulinum } from "./grundkurs-botulinum";
  * copy on top so we don't trip Google's near-duplicate filter:
  *   - Hero, description, lernziele intro: Berlin-flavoured
  *   - LocationInfo: HY STUDIO venue + transit + "Warum Berlin"
- *   - CurriculumCallout: links to Curriculum Botulinum
  *   - FAQ: prepended with Berlin-specific Q&A
  *
  * Inhalt / Lernplattform / Testimonials are inherited verbatim because
@@ -32,28 +31,19 @@ export const botoxKursBerlin: CourseLandingContent = {
   },
 
   hero: {
-    heading: "BOTOX-KURS IN BERLIN",
+    heading: "BOTOX-KURS\nIN BERLIN",
     socialProof: "Über 300 zertifizierte Ärzt:innen",
     subheadline:
-      "Praxisnahe Botox-Fortbildung für approbierte Ärzt:innen, mitten in Berlin-Mitte.",
+      "Praxisnahe Botox-Fortbildung für approbierte Ärzt:innen, mitten in Berlin.",
     stats: [
       { icon: "MapPin", label: "Standort", value: "HY STUDIO Berlin-Mitte" },
       { icon: "Award", label: "Akkreditiert", value: "22 CME-Punkte + Zertifikat" },
       { icon: "GraduationCap", label: "Level", value: "Einsteigerkurs" },
     ],
     description:
-      "Unser Botox-Kurs in Berlin ist Dein praxisnaher Einstieg in die ästhetische Medizin mit Botulinumtoxin. Du lernst Anatomie, Indikationen und Injektionstechnik im Online-Modul, behandelst anschließend echte Proband:innen unter Aufsicht im HY STUDIO an der Rosa-Luxemburg-Straße und gehst mit 22 CME-Punkten und EPHIA Zertifikat nach Hause. Der Kurs richtet sich ausschließlich an approbierte Ärzt:innen und Zahnmediziner:innen.",
+      "Unser Botox-Kurs ist Dein praxisnaher Einstieg in die ästhetische Medizin mit Botulinum. Du lernst Anatomie, Indikationen und Injektionstechnik im Online-Modul, behandelst anschließend echte Proband:innen unter Aufsicht im HY STUDIO an der Rosa-Luxemburg-Straße und gehst mit 22 CME-Punkten und EPHIA-Zertifikat nach Hause. Der Kurs richtet sich ausschließlich an approbierte Ärzt:innen.",
     videoPath: grundkursBotulinum.hero.videoPath,
     videoPoster: grundkursBotulinum.hero.videoPoster,
-  },
-
-  curriculumLink: {
-    pill: "Curriculum Botulinum",
-    heading: "Teil unseres Curriculum Botulinum",
-    description:
-      "Dieser Botox-Kurs in Berlin ist der Einstieg in unser strukturiertes Botulinum-Curriculum: vom Grundkurs über Aufbaukurse bis zur Masterclass und der EPHIA Botulinum Specialist Zertifizierung.",
-    ctaLabel: "Curriculum entdecken",
-    ctaHref: "/kurse/curriculum-botulinum",
   },
 
   lernziele: {
@@ -73,10 +63,7 @@ export const botoxKursBerlin: CourseLandingContent = {
     ctaHref: "mailto:customerlove@ephia.de?subject=Gruppenbuchung%20Botox-Kurs%20Berlin",
   },
 
-  inhalt: {
-    ...grundkursBotulinum.inhalt,
-    heading: "INHALT DES BOTOX-KURSES IN BERLIN",
-  },
+  inhalt: grundkursBotulinum.inhalt,
 
   location: {
     city: "Berlin",
