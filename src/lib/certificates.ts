@@ -182,13 +182,28 @@ function sharesCourseFamily(a: string, b: string): boolean {
   return stem(a) === stem(b);
 }
 
+/** Strip Latin-style specialisation suffixes from an academic title so
+ *  the cert reads "Dr. Marc Wyss" instead of "Dr. med. dent. Marc Wyss".
+ *  Anything BEFORE "Dr." (e.g. "Prof.", "PD") is preserved; only the
+ *  qualifiers AFTER it are dropped. Titles without a "Dr." word are
+ *  passed through unchanged so e.g. "Prof." or "Mag." aren't mangled.
+ */
+function simplifyTitleForCertificate(title: string): string {
+  const match = title.match(/^(.*?\bDr)\.?\b/i);
+  if (!match) return title.trim();
+  return `${match[1].trim()}.`;
+}
+
 export function formatParticipantName(parts: {
   title?: string | null;
   firstName?: string | null;
   lastName?: string | null;
 }): string {
   const t = parts.title?.trim();
-  const effectiveTitle = !t || t.toLowerCase() === "kein titel" ? null : t;
+  const effectiveTitle =
+    !t || t.toLowerCase() === "kein titel"
+      ? null
+      : simplifyTitleForCertificate(t);
   return [effectiveTitle, parts.firstName?.trim(), parts.lastName?.trim()]
     .filter(Boolean)
     .join(" ");
