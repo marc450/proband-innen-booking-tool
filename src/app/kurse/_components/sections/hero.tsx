@@ -91,7 +91,13 @@ export function Hero({
               {content.description}
             </p>
 
-            <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
+            <div
+              className={`mt-8 flex flex-col gap-4 ${
+                content.ctaStacked
+                  ? "items-start"
+                  : "sm:flex-row sm:items-center sm:gap-5"
+              }`}
+            >
               <HeroCta
                 label={content.ctaOverride?.label || "Zu den Kursangeboten"}
                 href={content.ctaOverride?.href || "#kursangebote"}

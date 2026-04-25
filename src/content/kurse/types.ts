@@ -42,6 +42,13 @@ export interface CourseHeroContent {
   /** Optional social proof pill shown above the heading, e.g. "300+ zertifizierte Ärzt:innen" */
   socialProof?: string;
   /**
+   * When true, render the hero CTA and social-proof pill stacked
+   * vertically on every breakpoint instead of side-by-side. Use this
+   * when the social-proof line is too long to read comfortably next
+   * to the button on desktop.
+   */
+  ctaStacked?: boolean;
+  /**
    * Override for the hero CTA.
    *   label      – button text (defaults to "Zu den Kursangeboten")
    *   href       – in-page anchor (defaults to "#kursangebote"); ignored

@@ -35,8 +35,9 @@ export const botoxKursFuerAnfaenger: CourseLandingContent = {
   },
 
   hero: {
-    heading: "BOTOX-KURS\nFÜR EINSTEIGER:INNEN",
+    heading: "BOTOX-KURS FÜR\nEINSTEIGER:INNEN",
     socialProof: "Über 300 Ärzt:innen haben bei uns ihren Einstieg gemacht",
+    ctaStacked: true,
     subheadline:
       "Strukturierter Einstieg in die ästhetische Medizin für approbierte Ärzt:innen ohne Vorerfahrung.",
     stats: [
@@ -87,7 +88,7 @@ export const botoxKursFuerAnfaenger: CourseLandingContent = {
         number: 2,
         icon: "Users",
         format: "Praxistag · 6h",
-        title: "Behandeln an echten Proband:innen",
+        title: "Praxistag an Proband:innen",
         description:
           "Du behandelst unter Aufsicht echte Proband:innen in kleinen Gruppen mit max. 7 Teilnehmer:innen. Geübt wird mit Botulinum, nicht mit NaCl. Direktes Feedback von erfahrenen Dozent:innen.",
       },
@@ -100,21 +101,6 @@ export const botoxKursFuerAnfaenger: CourseLandingContent = {
           "Nach dem Kurs bleibst Du Teil unserer Ärzt:innen-Community. Du kannst Fälle besprechen, Fragen stellen und bekommst Rückendeckung von Dozent:innen, wenn es zählt.",
       },
     ],
-    prerequisites: {
-      bringsHeading: "Was Du mitbringst",
-      brings: [
-        "Abgeschlossenes Medizinstudium und Approbation",
-        "Bereitschaft, an echten Proband:innen zu lernen",
-        "Lust, Schritt für Schritt neue Skills aufzubauen",
-      ],
-      notRequiredHeading: "Was wir nicht voraussetzen",
-      notRequired: [
-        "Vorerfahrung in ästhetischer Medizin",
-        "Erfahrung mit Botulinum, Fillern oder anderen Injektionen",
-        "Eigene Patient:innen für den Praxistag (wir stellen Proband:innen)",
-        "Auffrischung der Anatomie (machen wir gemeinsam im Onlinekurs)",
-      ],
-    },
   },
 
   lernplattform: grundkursBotulinum.lernplattform,
