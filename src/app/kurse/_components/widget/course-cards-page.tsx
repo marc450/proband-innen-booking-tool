@@ -936,14 +936,9 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                 className="block w-full bg-white/10 backdrop-blur-sm rounded-[10px] p-6 text-left hover:bg-white/15 transition-colors group"
               >
                 <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-white font-bold text-lg mb-1">
-                      Dieses Kursangebot ist Teil des {curriculum.title}
-                    </p>
-                    <p className="text-white/80 text-sm">
-                      Spare {curriculum.discountPercent}% mit dem Komplettpaket
-                    </p>
-                  </div>
+                  <p className="text-white font-bold text-lg">
+                    Dieses Kursangebot ist Teil des {curriculum.title}
+                  </p>
                   <div className="flex-shrink-0 text-white/80 group-hover:text-white transition-colors">
                     <ArrowRight className="w-6 h-6" aria-hidden="true" />
                   </div>

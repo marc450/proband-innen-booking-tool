@@ -49,7 +49,7 @@ export const botoxKursBerlin: CourseLandingContent = {
   lernziele: {
     heading: "LERNZIELE",
     intro:
-      "Nach unserem Botox-Kurs in Berlin kannst Du Deine ersten Patient:innen sicher, fundiert und diskriminierungssensibel mit Botulinumtoxin behandeln. Im Fokus stehen folgende Lernziele:",
+      "Nach unserem Botox-Kurs in Berlin kannst Du Deine ersten Patient:innen sicher, fundiert und diskriminierungssensibel mit Botulinum behandeln. Im Fokus stehen folgende Lernziele:",
     items: grundkursBotulinum.lernziele.items,
   },
 
@@ -82,11 +82,11 @@ export const botoxKursBerlin: CourseLandingContent = {
     heading: "STANDORT & ANFAHRT IN BERLIN",
     paragraphs: [
       "Der Praxisteil unseres Botox-Kurses findet im HY STUDIO an der Rosa-Luxemburg-Straße 20 in Berlin-Mitte statt. Das Studio liegt fußläufig zum Alexanderplatz, ist mit allen wichtigen ÖPNV-Linien Berlins direkt erreichbar und bietet helle, ruhige Behandlungsräume mit professioneller Ausstattung.",
-      "Die kleinen Gruppen (max. 6 Teilnehmer:innen pro Praxiskurs) ermöglichen eine 1:1-Betreuung durch unsere Dozent:innen. Du behandelst Deine eigene:n Proband:in oder eine:n von uns gestellte:n und bekommst direktes Feedback.",
+      "Die kleinen Gruppen (max. 7 Teilnehmer:innen pro Praxiskurs) ermöglichen eine 1:1-Betreuung durch unsere Dozent:innen. Du behandelst Deine eigene:n Proband:in oder eine:n von uns gestellte:n und bekommst direktes Feedback.",
     ],
     whyHeading: "Warum Berlin als Lernort für ästhetische Medizin?",
     whyParagraphs: [
-      "Berlin ist eines der wichtigsten Zentren der ästhetischen Medizin in Deutschland. Die hohe Dichte an Praxen, eine extrem diverse Patient:innenschaft und eine aktive Fortbildungsszene machen die Stadt zum idealen Ort für Deine ersten Schritte mit Botulinumtoxin.",
+      "Berlin ist eines der wichtigsten Zentren der ästhetischen Medizin in Deutschland. Die hohe Dichte an Praxen, eine extrem diverse Patient:innenschaft und eine aktive Fortbildungsszene machen die Stadt zum idealen Ort für Deine ersten Schritte mit Botulinum.",
       "Die Ärztekammer Berlin akkreditiert unseren Kurs mit 22 CME-Punkten. Die Praxiseinheit findet in einer Stadt statt, in der Du nach dem Kurs unmittelbar Anschluss an ein wachsendes Netzwerk von Kolleg:innen findest, sei es über unsere EPHIA Community, über Berliner Ärzt:innen-Treffen oder über Folgekurse direkt vor Ort.",
     ],
     mapsQuery: "HY STUDIO Rosa-Luxemburg-Straße 20 Berlin",
@@ -123,7 +123,7 @@ export const botoxKursBerlin: CourseLandingContent = {
         question:
           "Kann ich den Botox-Kurs in Berlin auch ohne Approbation buchen?",
         answer:
-          "Nein. Unser Botox-Kurs in Berlin richtet sich ausschließlich an approbierte Ärzt:innen und Zahnmediziner:innen. Diese Voraussetzung ist sowohl rechtlich als auch fachlich notwendig, da Botulinumtoxin in Deutschland verschreibungspflichtig ist und die Behandlung medizinisches Grundwissen voraussetzt. Wenn Du Patient:in bist und in Berlin eine Botox-Behandlung suchst, melde Dich gerne über unsere Proband:innen-Plattform: dort kannst Du Dich für vergünstigte Behandlungen unter Aufsicht durch unsere Ärzt:innen registrieren.",
+          "Nein. Unser Botox-Kurs in Berlin richtet sich ausschließlich an approbierte Ärzt:innen und Zahnmediziner:innen. Diese Voraussetzung ist sowohl rechtlich als auch fachlich notwendig, da Botulinum in Deutschland verschreibungspflichtig ist und die Behandlung medizinisches Grundwissen voraussetzt. Wenn Du Patient:in bist und in Berlin eine Botox-Behandlung suchst, melde Dich gerne über unsere Proband:innen-Plattform: dort kannst Du Dich für vergünstigte Behandlungen unter Aufsicht durch unsere Ärzt:innen registrieren.",
       },
       {
         question:

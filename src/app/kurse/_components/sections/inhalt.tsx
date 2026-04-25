@@ -10,7 +10,11 @@ export function Inhalt({ content }: { content: CourseInhaltContent }) {
   return (
     <section className="bg-[#FAEBE1] py-16 md:py-24">
       <div className="max-w-4xl mx-auto px-5 md:px-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-center tracking-wide mb-4">
+        <h2
+          className={`text-3xl md:text-4xl font-bold text-center tracking-wide ${
+            content.intro ? "mb-4" : "mb-10 md:mb-14"
+          }`}
+        >
           {content.heading}
         </h2>
         {content.intro && (
