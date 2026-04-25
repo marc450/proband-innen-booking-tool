@@ -30,24 +30,6 @@ const HERO = {
     "Unser Kursangebot ist umfangreich. Das Curriculum hilft Dir, Dich zu orientieren und systematisch zu lernen, statt Kurse zufällig aneinanderzureihen.",
 };
 
-const REASONS: Array<{ label: string; description: string }> = [
-  {
-    label: "Aufeinander aufbauend",
-    description:
-      "Jeder Kurs setzt da an, wo der vorherige aufhört. Du baust Wissen systematisch auf, statt Lücken stehen zu lassen.",
-  },
-  {
-    label: "Klare Orientierung",
-    description:
-      "Statt im großen Kursangebot verloren zu gehen, weißt Du nach jedem Schritt, was als nächstes sinnvoll ist.",
-  },
-  {
-    label: "Sicherheit auf jedem Niveau",
-    description:
-      "Du gehst nie weiter, bevor das Fundament sitzt. So bleibst Du im Praxisalltag immer sicher und souverän.",
-  },
-];
-
 const PERSONAS = {
   heading: "FÜR WEN IST DAS CURRICULUM?",
   intro:
@@ -362,46 +344,15 @@ export default async function CurriculumBotulinumPage() {
 
   return (
     <>
-      {/* Hero + "Wozu" merged into one section so the page opens with
-          a single coherent intro: title → description → quick-scan
-          pills → three reasoning cards. White cards on the rose bg
-          give the cards their own surface without breaking the page
-          into a separate section. */}
       <section className="bg-[#FAEBE1] pt-20 pb-20 md:pt-28 md:pb-28">
         <div className="max-w-6xl mx-auto px-5 md:px-8">
-          {/* Intro */}
-          <div className="max-w-3xl mx-auto text-center mb-20 md:mb-24">
+          <div className="max-w-3xl mx-auto text-center">
             <h1 className={`${TYPO.h1} text-4xl md:text-5xl lg:text-6xl mb-8`}>
               {HERO.heading}
             </h1>
             <p className="text-base md:text-lg text-black/75 leading-relaxed">
               {HERO.description}
             </p>
-          </div>
-
-          {/* Reasons — typographic triad, no cards. Small kicker above
-              each headline absorbs the old pill row. */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12">
-            {REASONS.map((r, i) => {
-              const kickers = [
-                "4 KURSE",
-                "ONLINE + PRAXIS",
-                "EINSTIEG → MASTERCLASS",
-              ];
-              return (
-                <div key={r.label} className="text-left">
-                  <p className="text-[11px] md:text-xs font-bold tracking-[0.2em] text-[#0066FF] mb-3">
-                    {kickers[i]}
-                  </p>
-                  <h3 className="text-xl md:text-2xl font-bold tracking-tight text-black mb-3">
-                    {r.label}
-                  </h3>
-                  <p className="text-sm md:text-base text-black/75 leading-relaxed">
-                    {r.description}
-                  </p>
-                </div>
-              );
-            })}
           </div>
         </div>
       </section>

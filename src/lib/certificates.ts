@@ -54,7 +54,7 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
   {
     slug: "grundkurs-botulinum",
     label: "Grundkurs Botulinum",
-    courseKeys: ["grundkurs-botulinum"],
+    courseKeys: ["grundkurs_botulinum"],
     layout: {
       page: 1,
       // A4 landscape, 842 x 595 pt. Name sits centred over the dotted
