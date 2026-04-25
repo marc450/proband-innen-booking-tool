@@ -762,7 +762,11 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap">{booking.slots?.courses?.title || "—"}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {booking.slots?.courses?.treatment_title ||
+                      booking.slots?.courses?.title ||
+                      "—"}
+                  </TableCell>
                   <TableCell className="whitespace-nowrap">
                     {booking.slots?.start_time
                       ? format(new Date(booking.slots.start_time), "dd.MM.yyyy HH:mm", { locale: de })
