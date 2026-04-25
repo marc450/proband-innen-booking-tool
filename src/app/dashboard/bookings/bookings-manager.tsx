@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { BookingStatus, BookingWithDetails } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -82,12 +83,49 @@ function StatusBadgeDropdown({
   onStatusChange: (bookingId: string, newStatus: BookingStatus) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  // Coords for the portal-rendered menu, recomputed each time it opens
+  // and when the page scrolls/resizes. Rendered via createPortal because
+  // the bookings table sits inside an overflow-x-auto wrapper that
+  // would otherwise clip the dropdown to the row's height.
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
+  // Recompute the menu position from the trigger's bounding box. Using
+  // viewport-relative coords + position: fixed lets the menu sit on top
+  // of the table regardless of overflow / scrolling on parents.
+  useEffect(() => {
+    if (!open) return;
+    const reposition = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setCoords({ top: rect.bottom + 4, left: rect.left });
+    };
+    reposition();
+    // Close on scroll instead of trying to keep the menu glued to the
+    // moving trigger — feels closer to native <select> and avoids
+    // janky reposition during table scroll.
+    const onScroll = () => setOpen(false);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", reposition);
+    return () => {
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", reposition);
+    };
+  }, [open]);
+
+  // Outside-click close: include both the trigger and the menu (the
+  // menu lives in a portal, so a single ref is no longer enough).
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        triggerRef.current &&
+        !triggerRef.current.contains(target) &&
+        menuRef.current &&
+        !menuRef.current.contains(target)
+      ) {
         setOpen(false);
       }
     };
@@ -106,8 +144,9 @@ function StatusBadgeDropdown({
   }
 
   return (
-    <div className="relative" ref={ref}>
+    <>
       <button
+        ref={triggerRef}
         type="button"
         onClick={(e) => {
           e.stopPropagation();
@@ -120,25 +159,33 @@ function StatusBadgeDropdown({
           {isCharging ? "..." : statusLabels[booking.status]}
         </Badge>
       </button>
-      {open && (
-        <div className="absolute z-50 mt-1 left-0 bg-popover border border-border rounded-md shadow-md py-1 min-w-[130px]">
-          {allStatuses.map((s) => (
-            <button
-              key={s}
-              type="button"
-              className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-muted text-left"
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpen(false);
-                if (s !== booking.status) onStatusChange(booking.id, s);
-              }}
-            >
-              <Badge variant={statusVariants[s]}>{statusLabels[s]}</Badge>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+      {open &&
+        coords &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{ position: "fixed", top: coords.top, left: coords.left }}
+            className="z-50 bg-popover border border-border rounded-md shadow-md py-1 min-w-[130px]"
+          >
+            {allStatuses.map((s) => (
+              <button
+                key={s}
+                type="button"
+                className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-muted text-left"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpen(false);
+                  if (s !== booking.status) onStatusChange(booking.id, s);
+                }}
+              >
+                <Badge variant={statusVariants[s]}>{statusLabels[s]}</Badge>
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 
