@@ -216,16 +216,31 @@ export function CoursesOverview({
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs text-gray-400">
-                        {courseSlots.length} Slot{courseSlots.length !== 1 ? "s" : ""}
-                      </span>
-                      <ChevronDown
-                        className={`w-4 h-4 text-gray-400 transition-transform ${
-                          isExpanded ? "rotate-180" : ""
-                        }`}
-                      />
-                    </div>
+                    {(() => {
+                      const totalCapacity = courseSlots.reduce((sum, s) => sum + s.capacity, 0);
+                      const totalBooked = courseSlots.reduce(
+                        (sum, s) => sum + (slotBookings[s.id]?.length || 0),
+                        0,
+                      );
+                      const isFull = totalCapacity > 0 && totalBooked >= totalCapacity;
+                      return (
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span
+                            className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                              isFull ? "text-emerald-600 bg-emerald-50" : "text-gray-600 bg-gray-100"
+                            }`}
+                          >
+                            <Users className="w-3 h-3 inline mr-0.5" />
+                            {totalBooked}/{totalCapacity}
+                          </span>
+                          <ChevronDown
+                            className={`w-4 h-4 text-gray-400 transition-transform ${
+                              isExpanded ? "rotate-180" : ""
+                            }`}
+                          />
+                        </div>
+                      );
+                    })()}
                   </div>
                 </button>
 

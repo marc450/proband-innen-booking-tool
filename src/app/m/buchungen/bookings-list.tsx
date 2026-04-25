@@ -377,7 +377,7 @@ export function BookingsList({
           {/* Status bottom sheet */}
           {statusSheet && (
             <div
-              className="fixed inset-0 z-50 bg-black/40"
+              className="fixed inset-0 z-[60] bg-black/40"
               onClick={() => setStatusSheet(null)}
             >
               <div
