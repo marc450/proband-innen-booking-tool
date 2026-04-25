@@ -148,7 +148,16 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
                   </button>
                 </div>
                 {namePopoverOpen && (
-                  <div ref={namePopoverRef} className="absolute top-full left-0 mt-2 bg-popover border rounded-lg shadow-lg p-4 space-y-3 z-10 w-[240px]">
+                  <div
+                    ref={namePopoverRef}
+                    className="absolute top-full left-0 mt-2 bg-popover border rounded-lg shadow-lg p-4 space-y-3 z-20 w-[280px]"
+                  >
+                    {patient.email && (
+                      <div className="text-[11px] text-muted-foreground break-all bg-muted/50 rounded px-2 py-1.5">
+                        <span className="uppercase tracking-wider font-medium">E-Mail</span>
+                        <div className="text-foreground break-all">{patient.email}</div>
+                      </div>
+                    )}
                     <div>
                       <label className="text-xs text-muted-foreground">Vorname</label>
                       <input
