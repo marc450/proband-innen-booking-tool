@@ -34,6 +34,12 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 // certificate. Onlinekurs is excluded by design.
 const CERTIFIABLE_COURSE_TYPES = ["Praxiskurs", "Kombikurs", "Premium"] as const;
 
+// Hard cutoff: sessions whose praxis day is before this date never get
+// a certificate, even if VNRs are filled in afterwards. Prevents the
+// rollout from retroactively backfilling old courses that pre-date the
+// feature. Bump this when you want to certify a specific older course.
+const EARLIEST_CERT_SESSION_DATE = "2026-04-25";
+
 interface SendResult {
   sent: number;
   skippedNoCert: number;
@@ -85,12 +91,10 @@ export async function sendPostPraxisCertificates(
   const result: SendResult = { sent: 0, skippedNoCert: 0, skippedNoVnr: 0, errors: 0 };
 
   const today = new Date().toISOString().slice(0, 10);
-  const windowStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
 
-  // Pull sessions whose praxis day is 1–30 days in the past. The template
-  // is joined so we can read vnr_theorie + course_key in one hop.
+  // Sessions whose praxis day has already passed (date_iso < today) but
+  // not before the rollout cutoff. The lower bound stops us from
+  // retroactively certifying courses that pre-date this feature.
   const { data: sessions, error: sessErr } = await supabase
     .from("course_sessions")
     .select(
@@ -99,7 +103,7 @@ export async function sendPostPraxisCertificates(
          id, title, course_label_de, course_key, vnr_theorie
        )`,
     )
-    .gte("date_iso", windowStart)
+    .gte("date_iso", EARLIEST_CERT_SESSION_DATE)
     .lt("date_iso", today);
 
   if (sessErr) {
@@ -239,10 +243,6 @@ async function sendCertificateEmail(opts: {
     body: JSON.stringify({
       from: "EPHIA <customerlove@ephia.de>",
       to: [to],
-      // BCC the shared mailbox so the message lands in customerlove's
-      // Gmail inbox and surfaces in the contact profile's EmailHistory
-      // (which queries Gmail by recipient address).
-      bcc: ["customerlove@ephia.de"],
       subject,
       html,
       attachments: [{ filename, content: base64 }],
