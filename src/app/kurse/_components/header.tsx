@@ -10,9 +10,10 @@ import { Menu, X, ChevronDown } from "lucide-react";
 // rendered by /kurse/werde-proband-in but middleware rewrites both "/"
 // and "/werde-proband-in" on proband-innen.ephia.de to it without
 // touching the URL bar — so usePathname can return any of the three.
-// We hide the entire kurse header on those routes so visitors don't
-// get distracted by Login or other navigation away from the funnel.
-const HEADERLESS_PATHS = new Set([
+// On those routes we render a stripped header (logo only) so visitors
+// stay focused on the funnel and don't get pulled into Login or other
+// marketing navigation.
+const LOGO_ONLY_PATHS = new Set([
   "/",
   "/werde-proband-in",
   "/kurse/werde-proband-in",
@@ -73,10 +74,35 @@ export function Header() {
     setMobileExpanded((current) => (current === label ? null : label));
   };
 
-  // Werde Proband:in is a single-funnel page — the kurse layout still
-  // mounts this header above it, but we render nothing so the page
-  // starts clean at the top.
-  if (pathname && HEADERLESS_PATHS.has(pathname)) return null;
+  // Werde Proband:in funnel start: keep the bar + logo for brand
+  // continuity, drop the nav and the Login CTA so nothing pulls the
+  // visitor out of the funnel.
+  if (pathname && LOGO_ONLY_PATHS.has(pathname)) {
+    return (
+      <header className="sticky top-0 z-40 bg-[#FAEBE1]/95 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-5 md:px-8">
+          <div className="flex items-center h-14 md:h-16">
+            <Link
+              href="https://kurse.ephia.de/"
+              className="flex items-center shrink-0"
+              aria-label="EPHIA"
+            >
+              <Image
+                src="/logos/ephia-logo.png"
+                alt="EPHIA"
+                width={2394}
+                height={589}
+                priority
+                quality={95}
+                sizes="220px"
+                className="h-8 md:h-9 w-auto"
+              />
+            </Link>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="sticky top-0 z-40 bg-[#FAEBE1]/95 backdrop-blur-sm">
