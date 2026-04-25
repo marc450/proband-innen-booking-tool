@@ -209,6 +209,49 @@ export interface CourseLocationContent {
 }
 
 /**
+ * Persona-targeted "Dein Lernweg" content block. Used on landing pages
+ * that pitch the SAME course as another landing page but to a specific
+ * persona (e.g. Anfänger:innen, Zahnärzt:innen, Quereinsteiger:innen).
+ * Provides ~30-40% unique copy on top of the shared course content so
+ * Google doesn't filter the page as a near-duplicate.
+ *
+ * Renders a 3-step roadmap and an optional "Was Du mitbringst" /
+ * "Was wir nicht voraussetzen" two-column block.
+ */
+export interface CourseLearningPathStep {
+  /** 1-indexed step number, displayed in the medallion. */
+  number: number;
+  /** Lucide icon name (BookOpen, Users, MessageCircleHeart, …). */
+  icon?: string;
+  /** Tiny pill above the title, e.g. "Onlinekurs · 10h". Optional. */
+  format?: string;
+  /** Step title, e.g. "Theorie in Deinem Tempo". */
+  title: string;
+  /** One-paragraph step description. */
+  description: string;
+}
+
+export interface CourseLearningPathPrereqs {
+  /** Heading for the "what you bring" column. */
+  bringsHeading: string;
+  brings: string[];
+  /** Heading for the "not required" column. */
+  notRequiredHeading: string;
+  notRequired: string[];
+}
+
+export interface CourseLearningPathContent {
+  /** Section heading, e.g. "DEIN LERNWEG". */
+  heading: string;
+  /** Optional paragraph below the heading. */
+  intro?: string;
+  /** Three-step roadmap (typically 3 entries). */
+  steps: CourseLearningPathStep[];
+  /** Optional two-column prerequisites block, rendered below the steps. */
+  prerequisites?: CourseLearningPathPrereqs;
+}
+
+/**
  * Complete typed content for one course landing page.
  * The `courseKey` MUST match a row in `course_templates.course_key`
  * so the booking widget can fetch the right sessions.
@@ -248,6 +291,13 @@ export interface CourseLandingContent {
    * city-targeted landings like `/kurse/botox-kurs-berlin`.
    */
   location?: CourseLocationContent;
+  /**
+   * Optional persona-targeted "Dein Lernweg" block. When set, the page
+   * renders a 3-step roadmap and a prerequisites two-column block.
+   * Used by audience-targeted landings like
+   * `/kurse/botox-kurs-fuer-anfaenger`.
+   */
+  learningPath?: CourseLearningPathContent;
   /**
    * Optional human-readable label for the BreadcrumbList JSON-LD.
    * Defaults to `meta.title` when omitted.

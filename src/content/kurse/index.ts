@@ -9,6 +9,7 @@ import { aufbaukursBotulinumPerioraleZone } from "./aufbaukurs-botulinum-periora
 import { aufbaukursBiostimulationSkinbooster } from "./aufbaukurs-biostimulation-skinbooster";
 import { masterclassBotulinum } from "./masterclass-botulinum";
 import { botoxKursBerlin } from "./botox-kurs-berlin";
+import { botoxKursFuerAnfaenger } from "./botox-kurs-fuer-anfaenger";
 
 /**
  * Registry of all course landing page content, keyed by URL slug.
@@ -30,6 +31,7 @@ const registry: Record<string, CourseLandingContent> = {
   [aufbaukursBiostimulationSkinbooster.slug]: aufbaukursBiostimulationSkinbooster,
   [masterclassBotulinum.slug]: masterclassBotulinum,
   [botoxKursBerlin.slug]: botoxKursBerlin,
+  [botoxKursFuerAnfaenger.slug]: botoxKursFuerAnfaenger,
 };
 
 export function getCourseContent(slug: string): CourseLandingContent | null {

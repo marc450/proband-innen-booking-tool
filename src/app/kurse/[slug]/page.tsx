@@ -12,6 +12,7 @@ import { CtaBanner } from "../_components/sections/cta-banner";
 import { Testimonials } from "../_components/sections/testimonials";
 import { Faq } from "../_components/sections/faq";
 import { LocationInfo } from "../_components/sections/location-info";
+import { LearningPath } from "../_components/sections/learning-path";
 import { CourseCardsPage } from "../_components/widget/course-cards-page";
 
 export const dynamic = "force-dynamic";
@@ -274,6 +275,7 @@ export default async function KursPage({
         <CourseCardsPage template={template} sessions={sessions ?? []} />
       )}
       {content.location && <LocationInfo content={content.location} />}
+      {content.learningPath && <LearningPath content={content.learningPath} />}
       {/* Pure-online courses skip the Gruppenbuchungen pitch — group
           discounts only make sense when there's an onsite Praxiskurs. */}
       {!content.hideBookingWidget && (
