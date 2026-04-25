@@ -27,6 +27,7 @@ import {
   ShieldCheck,
   TrendingUp,
   ShoppingBag,
+  Globe,
   LucideIcon,
 } from "lucide-react";
 
@@ -97,6 +98,14 @@ const navGroups: NavGroup[] = [
       { href: "/dashboard/inbox", label: "Inbox" },
       { href: "/dashboard/campaigns", label: "Kampagnen" },
       { href: "/dashboard/transactional-emails", label: "Transaktional" },
+    ],
+  },
+  {
+    key: "pages",
+    label: "Pages",
+    icon: Globe,
+    items: [
+      { href: "/dashboard/landingpages", label: "Landing Pages" },
     ],
   },
   {
