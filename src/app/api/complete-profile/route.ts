@@ -73,6 +73,20 @@ export async function POST(req: NextRequest) {
         .eq("email", normalizedEmail);
     }
 
+    // Legacy import: doctors carried over from the pre-migration ops
+    // system already received the booking confirmation, the community
+    // invite and the Proband:innen-Info email; they are already enrolled
+    // in LearnWorlds and exist in HubSpot. Completing the profile here
+    // is purely a data capture step, so skip the entire post-purchase
+    // flow and the Slack ping.
+    if (booking.legacy_import) {
+      await supabase
+        .from("course_bookings")
+        .update({ profile_complete: true })
+        .eq("id", booking.id);
+      return NextResponse.json({ ok: true });
+    }
+
     // Get session metadata for post-purchase flow
     const metadata = booking.stripe_checkout_session_id
       ? await getMetadataFromStripe(booking.stripe_checkout_session_id)
