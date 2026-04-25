@@ -1,7 +1,30 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bold, Italic, Underline, Link as LinkIcon, List, ListOrdered, Indent, Outdent, RemoveFormatting, ChevronDown } from "lucide-react";
+import { Bold, Italic, Underline, Link as LinkIcon, List, ListOrdered, Indent, Outdent, RemoveFormatting, ChevronDown, Smile } from "lucide-react";
+
+// Curated emoji palette for the toolbar picker. The set is small on
+// purpose — the goal is a one-click "drop a smiley into a customer
+// email" experience, not a full Unicode browser. Mobile users get the
+// native OS picker via the on-screen keyboard, so this button is
+// hidden below the md breakpoint.
+const EMOJIS: string[] = [
+  // Smileys
+  "😊", "😄", "😉", "🙂", "😇", "😍", "🥰", "😎",
+  "🤔", "😅", "😂", "🤩", "😢", "🥺", "😴", "🤗",
+  // Gestures
+  "👋", "👍", "👎", "🙌", "🙏", "💪", "✋", "👌",
+  "🤝", "✊", "🫶", "🫡", "🤲", "✍️", "👀", "👏",
+  // Love / sparkle
+  "❤️", "💙", "💚", "💛", "💜", "🧡", "🤍", "🩷",
+  "✨", "💖", "💕", "💗", "💞", "⭐", "🌟", "💫",
+  // Celebration / nature
+  "🎉", "🎊", "🥳", "🎈", "🎁", "🍾", "🌸", "🌷",
+  // Status / energy
+  "✅", "❌", "⚠️", "💡", "🔥", "💯", "⚡", "🚀",
+  // EPHIA-context
+  "💉", "🩺", "⚕️", "📅", "⏰", "📧", "📞", "🏥",
+];
 
 interface Props {
   value: string;
@@ -66,6 +89,8 @@ export function RichTextEditor({
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
   const linkRef = useRef<HTMLDivElement>(null);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const emojiRef = useRef<HTMLDivElement>(null);
   const savedSelectionRef = useRef<Range | null>(null);
 
   useEffect(() => {
@@ -89,7 +114,7 @@ export function RichTextEditor({
 
   // Close dropdowns on outside click
   useEffect(() => {
-    if (!showFontSize && !showLinkInput) return;
+    if (!showFontSize && !showLinkInput && !showEmoji) return;
     const handler = (e: MouseEvent) => {
       if (showFontSize && fontSizeRef.current && !fontSizeRef.current.contains(e.target as Node)) {
         setShowFontSize(false);
@@ -97,10 +122,13 @@ export function RichTextEditor({
       if (showLinkInput && linkRef.current && !linkRef.current.contains(e.target as Node)) {
         setShowLinkInput(false);
       }
+      if (showEmoji && emojiRef.current && !emojiRef.current.contains(e.target as Node)) {
+        setShowEmoji(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [showFontSize, showLinkInput]);
+  }, [showFontSize, showLinkInput, showEmoji]);
 
   const handleInput = () => {
     if (!ref.current) return;
@@ -161,6 +189,28 @@ export function RichTextEditor({
     // Also remove font size tags
     exec("fontSize", "3");
     ref.current?.focus();
+  };
+
+  const handleEmojiOpen = () => {
+    // Save the cursor position so the emoji ends up where the user
+    // was typing, even though clicking the toolbar moves focus.
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      savedSelectionRef.current = sel.getRangeAt(0).cloneRange();
+    }
+    setShowEmoji((v) => !v);
+  };
+
+  const handleEmojiInsert = (emoji: string) => {
+    ref.current?.focus();
+    const sel = window.getSelection();
+    if (savedSelectionRef.current && sel) {
+      sel.removeAllRanges();
+      sel.addRange(savedSelectionRef.current);
+    }
+    document.execCommand("insertText", false, emoji);
+    setShowEmoji(false);
+    handleInput();
   };
 
   return (
@@ -229,6 +279,31 @@ export function RichTextEditor({
           <Indent className="h-3.5 w-3.5" />
         </ToolbarButton>
         <div className="w-px h-4 bg-gray-200 mx-1" />
+        {/* Emoji picker — desktop-only. Mobile uses the OS keyboard. */}
+        <div ref={emojiRef} className="relative hidden md:block">
+          <ToolbarButton onClick={handleEmojiOpen} title="Emoji einfügen">
+            <Smile className="h-3.5 w-3.5" />
+          </ToolbarButton>
+          {showEmoji && (
+            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-2 w-[272px]">
+              <div className="grid grid-cols-8 gap-0.5">
+                {EMOJIS.map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    onMouseDown={(evt) => {
+                      evt.preventDefault();
+                      handleEmojiInsert(e);
+                    }}
+                    className="h-7 w-7 flex items-center justify-center rounded hover:bg-gray-100 text-base leading-none transition-colors"
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
         <div ref={linkRef} className="relative">
           <ToolbarButton onClick={handleLinkOpen} title="Link einfügen (⌘K)">
             <LinkIcon className="h-3.5 w-3.5" />
