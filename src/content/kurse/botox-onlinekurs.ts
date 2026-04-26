@@ -35,7 +35,7 @@ export const botoxOnlinekurs: CourseLandingContent = {
 
   hero: {
     heading: "BOTOX-ONLINEKURS",
-    socialProof: "Über 300 Ärzt:innen mit EPHIA-Onlinekurs zertifiziert",
+    socialProof: "Über 300 Ärzt:innen wurden mit unserem Botox-Onlinekurs zertifiziert",
     ctaStacked: true,
     subheadline:
       "Mit {cme_online} CME-Punkten der höchstakkreditierte Botulinum-Onlinekurs im DACH-Raum.",
