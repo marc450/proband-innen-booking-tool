@@ -5,7 +5,7 @@ import { ContactForm } from "./contact-form";
 import { faqKontakt } from "@/content/kurse/faq-kontakt";
 
 export const metadata: Metadata = {
-  title: "FAQ & Kontakt — EPHIA",
+  title: "FAQ & Kontakt | EPHIA",
   description:
     "Häufige Fragen zu unseren Kursen in ästhetischer Medizin (Botulinum, Dermalfiller, Biostimulation, Skinbooster) und direkter Kontakt zum EPHIA-Team.",
   alternates: { canonical: "https://kurse.ephia.de/kurse/faq-kontakt" },

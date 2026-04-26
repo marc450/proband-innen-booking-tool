@@ -13,7 +13,7 @@ import {
 import { TYPO } from "../_components/typography";
 
 export const metadata: Metadata = {
-  title: "Unsere Didaktik — EPHIA",
+  title: "Unsere Didaktik | EPHIA",
   description:
     "Die EPHIA Didaktik: hohe Ausbildungsqualität, inklusive ästhetische Praxis und ein ganzheitlicher Lernansatz, der Dich zur handlungssicheren Fachperson macht.",
   alternates: { canonical: "https://kurse.ephia.de/kurse/didaktik" },

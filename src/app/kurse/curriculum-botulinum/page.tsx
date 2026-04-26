@@ -12,9 +12,9 @@ import { Testimonials } from "../_components/sections/testimonials";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Curriculum Botulinum — EPHIA",
+  title: "Curriculum Botulinum | EPHIA",
   description:
-    "Dein strukturierter Weg zur Spezialisierung in der Botulinum-Therapie. Vier aufeinander aufbauende Kurse vom Einstieg bis zur Masterclass — und die Möglichkeit zur EPHIA Botulinum Specialist Zertifizierung.",
+    "Dein strukturierter Weg zur Spezialisierung in der Botulinum-Therapie. Vier aufeinander aufbauende Kurse vom Einstieg bis zur Masterclass, plus die Möglichkeit zur EPHIA Botulinum Specialist Zertifizierung.",
   alternates: {
     canonical: "https://kurse.ephia.de/kurse/curriculum-botulinum",
   },

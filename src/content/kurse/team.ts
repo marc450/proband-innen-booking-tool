@@ -10,7 +10,7 @@ import type { TeamPageContent } from "./team-types";
  */
 export const teamContent: TeamPageContent = {
   meta: {
-    title: "Team & Dozent:innen — EPHIA",
+    title: "Team & Dozent:innen | EPHIA",
     description:
       "Lerne die Menschen hinter EPHIA kennen: unser Team aus Dozent:innen, Operations und unser wissenschaftliches Review-Board.",
   },

@@ -12,7 +12,7 @@ import {
 import { TYPO } from "../_components/typography";
 
 export const metadata: Metadata = {
-  title: "Unsere Community — EPHIA",
+  title: "Unsere Community | EPHIA",
   description:
     "Die EPHIA Community: Ärzt:innen, die sich trauen, Fragen zu stellen. WhatsApp-Austausch, regelmäßige Meetups und Community-Events für Kolleg:innen, die ästhetische Medizin anders denken.",
   alternates: { canonical: "https://kurse.ephia.de/kurse/community" },

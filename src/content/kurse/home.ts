@@ -9,7 +9,7 @@ import type { HomeContent } from "./home-types";
  */
 export const homeContent: HomeContent = {
   meta: {
-    title: "EPHIA — Akademie für ästhetische Medizin",
+    title: "EPHIA | Akademie für ästhetische Medizin",
     description:
       "Deine Lernplattform für inklusive ästhetische Medizin. LÄK-zertifizierte Lehrgänge, On- & Offlinekurse und eine aktive Ärzt:innen-Community.",
     ogImage: "/kurse/home/og-image.jpg",

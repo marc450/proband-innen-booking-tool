@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { TYPO } from "../_components/typography";
 
 export const metadata: Metadata = {
-  title: "Unsere Vision — EPHIA",
+  title: "Unsere Vision | EPHIA",
   description:
     "Warum wir EPHIA gegründet haben: inklusive, zugängliche ästhetische Medizin. Bildungsstandards neu definieren. Technische Exzellenz mit sozialer Kompetenz verbinden.",
   alternates: { canonical: "https://kurse.ephia.de/kurse/vision" },

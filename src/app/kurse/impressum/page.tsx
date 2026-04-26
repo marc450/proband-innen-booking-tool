@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Impressum — EPHIA",
+  title: "Impressum | EPHIA",
   description:
     "Impressum der EPHIA Medical GmbH, Dorfstraße 30, 15913 Märkische Heide.",
   alternates: { canonical: "https://www.ephia.de/impressum" },

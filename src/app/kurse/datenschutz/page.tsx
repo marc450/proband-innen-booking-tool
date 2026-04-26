@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Datenschutz — EPHIA",
+  title: "Datenschutz | EPHIA",
   description:
     "Datenschutzerklärung der EPHIA Medical GmbH. Informationen zur Erhebung, Verarbeitung und Nutzung personenbezogener Daten.",
   alternates: { canonical: "https://www.ephia.de/privacy" },

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Allgemeine Geschäftsbedingungen — EPHIA",
+  title: "Allgemeine Geschäftsbedingungen | EPHIA",
   description:
     "Allgemeine Geschäftsbedingungen (AGB) der EPHIA Medical GmbH i.G. für digitale und praktische Fortbildungsangebote.",
   alternates: { canonical: "https://www.ephia.de/terms" },
