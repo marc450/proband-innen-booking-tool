@@ -105,8 +105,8 @@ export const botoxOnlinekurs: CourseLandingContent = {
       },
       {
         quote:
-          "Mir hat besonders gefallen, dass der Onlinekurs nicht nur Wissen vermittelt, sondern auch die Haltung dahinter, diskriminierungssensibel, evidenzbasiert, patient:innenzentriert. Die CME-Akkreditierung und das EPHIA-Zertifikat machen ihn zum Standard im DACH-Raum.",
-        name: "Dr. Lena Roth",
+          "Ehrlich gesagt war ich skeptisch, ob ein Onlinekurs allein wirklich Sicherheit gibt. Was mich überzeugt hat: die Behandlungsvideos sind so detailliert, dass ich nach mehrfachem Anschauen jeden Injektionspunkt nachvollziehen konnte. Die Tests am Kapitelende fand ich fair, kein reines Abfragen.",
+        name: "Lena Roth",
         title: "Dermatologie",
       },
     ],
