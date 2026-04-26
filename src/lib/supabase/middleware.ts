@@ -49,17 +49,31 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Cache user role in a cookie so the layout doesn't need a DB call
+  // Cache user role + kursbetreuung flag in cookies so layouts don't
+  // need a DB call. Both cookies are refreshed together so they can't
+  // drift apart for a signed-in user.
   if (user) {
     const existingRole = request.cookies.get("x-user-role")?.value;
-    if (!existingRole) {
+    const existingKursbetreuung = request.cookies.get("x-is-kursbetreuung")?.value;
+    // Refresh whenever either cookie is missing so users with a stale
+    // role-only cookie pick up the new kursbetreuung flag without
+    // having to log out and back in.
+    if (!existingRole || existingKursbetreuung === undefined) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, is_kursbetreuung")
         .eq("id", user.id)
         .single();
       const role = profile?.role ?? "admin";
+      const isKursbetreuung = profile?.is_kursbetreuung === true;
       supabaseResponse.cookies.set("x-user-role", role, {
+        path: "/",
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        maxAge: 3600,
+      });
+      supabaseResponse.cookies.set("x-is-kursbetreuung", isKursbetreuung ? "1" : "0", {
         path: "/",
         httpOnly: true,
         secure: true,
@@ -69,6 +83,7 @@ export async function updateSession(request: NextRequest) {
     }
   } else {
     supabaseResponse.cookies.delete("x-user-role");
+    supabaseResponse.cookies.delete("x-is-kursbetreuung");
   }
 
   return supabaseResponse;

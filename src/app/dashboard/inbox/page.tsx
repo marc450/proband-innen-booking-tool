@@ -1,19 +1,21 @@
 import { redirect } from "next/navigation";
-import { isAdmin } from "@/lib/auth";
+import { canAccessInbox } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatPersonName } from "@/lib/utils";
 import { InboxManager } from "./inbox-manager";
 
 export default async function InboxPage() {
-  if (!(await isAdmin())) redirect("/dashboard");
+  if (!(await canAccessInbox())) redirect("/dashboard");
 
   const supabase = await createClient();
 
-  // Fetch team members for assignment dropdown
+  // Fetch team members for the assignment dropdown. Both admins and
+  // kursbetreuung users can be assigned threads, so the list is the
+  // union of the two cohorts.
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, title, first_name, last_name, role")
-    .eq("role", "admin")
+    .select("id, title, first_name, last_name, role, is_kursbetreuung")
+    .or("role.eq.admin,is_kursbetreuung.eq.true")
     .order("last_name", { ascending: true });
 
   // Get current user ID

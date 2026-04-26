@@ -26,9 +26,10 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  // Read role from cookie (set by middleware) — no DB call needed
+  // Read role + flags from cookies (set by middleware) — no DB call needed
   const cookieStore = await cookies();
   const role = (cookieStore.get("x-user-role")?.value ?? "admin") as "admin" | "nutzer";
+  const isKursbetreuung = cookieStore.get("x-is-kursbetreuung")?.value === "1";
   const theme = (cookieStore.get("x-theme")?.value ?? "light") as "light" | "dark";
 
   return (
@@ -38,7 +39,12 @@ export default async function DashboardLayout({
       className={`min-h-screen text-foreground ${theme === "dark" ? "dark" : ""}`}
     >
       <DashboardBodyTheme theme={theme} />
-      <DashboardNav userEmail={session.user.email || ""} role={role} theme={theme} />
+      <DashboardNav
+        userEmail={session.user.email || ""}
+        role={role}
+        isKursbetreuung={isKursbetreuung}
+        theme={theme}
+      />
       <main className="ml-14 px-8 py-6">{children}</main>
     </div>
   );

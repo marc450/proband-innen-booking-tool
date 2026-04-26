@@ -36,6 +36,13 @@ type NavItem = {
   label: string;
   exact?: boolean;
   adminOnly?: boolean;
+  /**
+   * When true, allow users with `is_kursbetreuung = true` to see this
+   * item even if it's `adminOnly`. Used to grant kursbetreuung access
+   * to specific items inside otherwise admin-only groups (e.g. the
+   * shared customerlove inbox).
+   */
+  kursbetreuungAllowed?: boolean;
   /** Restrict this item to a specific list of user emails (lowercase). */
   emailAllowlist?: string[];
 };
@@ -91,13 +98,19 @@ const navGroups: NavGroup[] = [
     key: "emails",
     label: "E-Mails",
     icon: Mail,
-    // Whole group is admin-only: Nutzer:innen must not access the shared
-    // customerlove inbox or outbound email campaigns.
-    adminOnly: true,
+    // Visibility decided per-item: kursbetreuung users see only the
+    // shared customerlove Inbox; Kampagnen and Transaktional stay
+    // admin-only. Nutzer:innen without kursbetreuung see no items and
+    // therefore no group icon.
     items: [
-      { href: "/dashboard/inbox", label: "Inbox" },
-      { href: "/dashboard/campaigns", label: "Kampagnen" },
-      { href: "/dashboard/transactional-emails", label: "Transaktional" },
+      {
+        href: "/dashboard/inbox",
+        label: "Inbox",
+        adminOnly: true,
+        kursbetreuungAllowed: true,
+      },
+      { href: "/dashboard/campaigns", label: "Kampagnen", adminOnly: true },
+      { href: "/dashboard/transactional-emails", label: "Transaktional", adminOnly: true },
     ],
   },
   {
@@ -150,10 +163,12 @@ const HOVER_DELAY_MS = 150;
 export function DashboardNav({
   userEmail,
   role,
+  isKursbetreuung = false,
   theme = "light",
 }: {
   userEmail: string;
   role: "admin" | "nutzer";
+  isKursbetreuung?: boolean;
   theme?: "light" | "dark";
 }) {
   const [currentTheme, setCurrentTheme] = useState<"light" | "dark">(theme);
@@ -186,10 +201,10 @@ export function DashboardNav({
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Unread email indicator
+  // Unread email indicator (admins + kursbetreuung users see the inbox).
   const [hasUnread, setHasUnread] = useState(false);
   useEffect(() => {
-    if (role !== "admin") return;
+    if (role !== "admin" && !isKursbetreuung) return;
     const checkUnread = async () => {
       try {
         const res = await fetch("/api/gmail/threads?maxResults=1&q=is:unread");
@@ -203,14 +218,26 @@ export function DashboardNav({
     checkUnread();
     const interval = setInterval(checkUnread, 60_000);
     return () => clearInterval(interval);
-  }, [role]);
+  }, [role, isKursbetreuung]);
 
   const currentEmailLower = (userEmail || "").toLowerCase();
   const emailAllowed = (list?: string[]) => !list || list.includes(currentEmailLower);
 
-  const visibleGroups = navGroups.filter(
-    (g) => (!g.adminOnly || role === "admin") && emailAllowed(g.emailAllowlist),
-  );
+  const isItemVisible = (item: NavItem) => {
+    if (!emailAllowed(item.emailAllowlist)) return false;
+    if (!item.adminOnly) return true;
+    if (role === "admin") return true;
+    if (item.kursbetreuungAllowed && isKursbetreuung) return true;
+    return false;
+  };
+
+  const visibleGroups = navGroups.filter((g) => {
+    if (!emailAllowed(g.emailAllowlist)) return false;
+    if (g.adminOnly && role !== "admin") return false;
+    // Hide groups that have no items the current user can actually
+    // see — avoids dead group icons when every child is admin-only.
+    return g.items.some(isItemVisible);
+  });
 
   const isItemActive = (item: NavItem) => {
     // Split path and query so we can compare both parts. Two nav entries may
@@ -231,10 +258,7 @@ export function DashboardNav({
   };
 
   const isGroupActive = (group: NavGroup) =>
-    group.items
-      .filter((i) => !i.adminOnly || role === "admin")
-      .filter((i) => emailAllowed(i.emailAllowlist))
-      .some(isItemActive);
+    group.items.filter(isItemVisible).some(isItemActive);
 
   const handleEnter = (key: string) => {
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
@@ -382,9 +406,7 @@ export function DashboardNav({
           {visibleGroups.map((group) => {
             const Icon = group.icon;
             const active = isGroupActive(group);
-            const items = group.items
-              .filter((i) => !i.adminOnly || role === "admin")
-              .filter((i) => emailAllowed(i.emailAllowlist));
+            const items = group.items.filter(isItemVisible);
             const isSingle = items.length === 1;
             const firstHref = items[0]?.href;
 

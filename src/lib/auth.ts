@@ -19,3 +19,18 @@ export async function getUserRole(): Promise<UserRole> {
 export async function isAdmin(): Promise<boolean> {
   return (await getUserRole()) === "admin";
 }
+
+// Reads the cached `is_kursbetreuung` profile flag set by
+// updateSession() in src/lib/supabase/middleware.ts. Independent of
+// the role, a "nutzer" can ALSO be kursbetreuung.
+export async function isKursbetreuung(): Promise<boolean> {
+  const store = await cookies();
+  return store.get("x-is-kursbetreuung")?.value === "1";
+}
+
+// Visibility gate for the shared customerlove inbox. Both admins and
+// kursbetreuung users are allowed; everyone else is redirected away.
+export async function canAccessInbox(): Promise<boolean> {
+  if (await isAdmin()) return true;
+  return await isKursbetreuung();
+}
