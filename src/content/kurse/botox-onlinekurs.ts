@@ -138,7 +138,7 @@ export const botoxOnlinekurs: CourseLandingContent = {
       {
         question: "Muss ich approbierte Ärzt:in sein, um den Botox-Onlinekurs zu buchen?",
         answer:
-          "Ja. Unser Botox-Onlinekurs richtet sich ausschließlich an approbierte Ärzt:innen und Zahnärzt:innen. Diese Voraussetzung ist sowohl rechtlich als auch fachlich notwendig, da Botulinum in Deutschland verschreibungspflichtig ist und die sichere Anwendung medizinisches Grundwissen voraussetzt.",
+          "Ja. Unser Botox-Onlinekurs richtet sich ausschließlich an approbierte Ärzt:innen. Diese Voraussetzung ist sowohl rechtlich als auch fachlich notwendig, da Botulinum in Deutschland verschreibungspflichtig ist und die sichere Anwendung medizinisches Grundwissen voraussetzt.",
       },
       {
         question: "Bekomme ich eine Rechnung für meinen Arbeitgeber?",
