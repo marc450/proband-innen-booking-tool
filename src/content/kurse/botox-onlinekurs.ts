@@ -40,7 +40,7 @@ export const botoxOnlinekurs: CourseLandingContent = {
     subheadline:
       "Mit {cme_online} CME-Punkten der höchstakkreditierte Botulinum-Onlinekurs im DACH-Raum.",
     stats: [
-      { icon: "Clock", label: "Format", value: "Onlinekurs · ca. 10h Inhalt" },
+      { icon: "Clock", label: "Format", value: "ca. 10h Inhalt" },
       { icon: "Award", label: "Akkreditiert", value: "{cme_online} CME-Punkte + Zertifikat" },
       { icon: "GraduationCap", label: "Level", value: "Einsteigerkurs" },
     ],
