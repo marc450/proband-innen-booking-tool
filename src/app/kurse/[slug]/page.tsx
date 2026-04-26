@@ -102,13 +102,20 @@ export default async function KursPage({
   // Template-token substitution. Lets content files reference live
   // template values (e.g. `{cme_online}` in the hero subheadline) so a
   // CME number bump in Supabase auto-updates everywhere it's quoted.
+  // course_templates.cme_online stores values like "10 CME" (string,
+  // suffix included). Tokens resolve to the leading number only so
+  // content templates can append units freely (e.g.
+  // "{cme_online} CME-Punkten" → "10 CME-Punkten").
+  const cmeNumber = (raw: string | null): string | null => {
+    if (raw == null) return null;
+    const m = String(raw).match(/\d+/);
+    return m ? m[0] : null;
+  };
   const tokens: Record<string, string> = {};
-  if (template.cme_online != null) {
-    tokens["{cme_online}"] = String(template.cme_online);
-  }
-  if (template.cme_kombi != null) {
-    tokens["{cme_kombi}"] = String(template.cme_kombi);
-  }
+  const cmeOnlineNum = cmeNumber(template.cme_online);
+  if (cmeOnlineNum != null) tokens["{cme_online}"] = cmeOnlineNum;
+  const cmeKombiNum = cmeNumber(template.cme_kombi);
+  if (cmeKombiNum != null) tokens["{cme_kombi}"] = cmeKombiNum;
   const sub = (s: string): string => {
     let out = s;
     for (const [k, v] of Object.entries(tokens)) {
