@@ -3,21 +3,26 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
 
-// Pathnames that map to the Werde Proband:in funnel start. The page is
-// rendered by /kurse/werde-proband-in but middleware rewrites both "/"
-// and "/werde-proband-in" on proband-innen.ephia.de to it without
-// touching the URL bar — so usePathname can return any of the three.
-// On those routes we render a stripped header (logo only) so visitors
-// stay focused on the funnel and don't get pulled into Login or other
-// marketing navigation.
-const LOGO_ONLY_PATHS = new Set([
+// Pathnames that map to the Werde Proband:in funnel start when served
+// from the booking domain. usePathname returns "/" and "/werde-proband-in"
+// here because middleware rewrites both to /kurse/werde-proband-in
+// without touching the URL bar — and "/kurse/werde-proband-in" itself
+// for direct hits.
+const FUNNEL_PATHS = new Set([
   "/",
   "/werde-proband-in",
   "/kurse/werde-proband-in",
 ]);
+
+// Production host that serves the funnel. We must scope by host because
+// kurse.ephia.de also has a "/" page (the marketing home) and that
+// page must keep the full header. Local dev and Railway previews stay
+// on the full header by default — to test the minimal variant locally,
+// hit /kurse/werde-proband-in directly (it falls outside this rule).
+const FUNNEL_HOST = "proband-innen.ephia.de";
 
 type SubLink = {
   label: string;
@@ -70,6 +75,25 @@ export function Header() {
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const pathname = usePathname();
 
+  // Detect the booking-domain funnel client-side: SSR renders the full
+  // header by default (so kurse.ephia.de and any preview host always
+  // get it), then on mount we read window.location and swap to the
+  // minimal variant only when we're on the production booking host
+  // AND on a funnel pathname. The brief flash on the funnel page
+  // itself is acceptable — it's the only place the swap fires.
+  const [isFunnel, setIsFunnel] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onFunnelHost = window.location.hostname === FUNNEL_HOST;
+    const onFunnelPath = !!pathname && FUNNEL_PATHS.has(pathname);
+    // One-time browser-only detection on mount; the linter assumes
+    // setState-in-effect is a cascading-render anti-pattern, but here
+    // it's the canonical way to read window.location safely after
+    // hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsFunnel(onFunnelHost && onFunnelPath);
+  }, [pathname]);
+
   const toggleMobileSection = (label: string) => {
     setMobileExpanded((current) => (current === label ? null : label));
   };
@@ -77,7 +101,7 @@ export function Header() {
   // Werde Proband:in funnel start: keep the bar + logo for brand
   // continuity, drop the nav and the Login CTA so nothing pulls the
   // visitor out of the funnel.
-  if (pathname && LOGO_ONLY_PATHS.has(pathname)) {
+  if (isFunnel) {
     return (
       <header className="sticky top-0 z-40 bg-[#FAEBE1]/95 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-5 md:px-8">
