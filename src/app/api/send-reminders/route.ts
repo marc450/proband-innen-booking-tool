@@ -49,13 +49,21 @@ export async function GET(req: NextRequest) {
     }
 
     // ── Profile completion reminders for Auszubildende ──
-    // Send reminder to users who haven't completed their profile 30+ minutes after booking
+    // Send reminder to users who haven't completed their profile 30+ minutes after booking.
+    // Legacy imports are explicitly excluded: their profile_complete = false
+    // because they were carried over from the pre-launch ops setup, not
+    // because they just booked through Stripe and forgot to fill in the form.
+    // The reminder copy ("damit wir Deinen Kurs freischalten können") is
+    // wrong for them — they already have course access. The 2026-04-26
+    // legacy-apology batch handled the historical 64 affected; this filter
+    // makes sure no future cron run repeats the mistake.
     const thirtyMinAgo = new Date(now.getTime() - 30 * 60 * 1000).toISOString();
     const { data: incompleteBookings } = await supabase
       .from("course_bookings")
       .select("id, email, first_name")
       .eq("profile_complete", false)
       .eq("profile_reminder_sent", false)
+      .eq("legacy_import", false)
       .lt("created_at", thirtyMinAgo);
 
     if (incompleteBookings && incompleteBookings.length > 0) {
