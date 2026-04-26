@@ -84,23 +84,26 @@ export function CtaBannerButton({
       type="button"
       onClick={onClick}
       disabled={loading}
-      className="inline-flex items-center gap-3 text-[1.1rem] font-bold text-[#0066FF] bg-white hover:bg-white/90 rounded-[10px] px-6 py-3.5 transition-colors disabled:opacity-70 disabled:cursor-wait"
+      className="relative inline-flex items-center gap-3 text-[1.1rem] font-bold text-[#0066FF] bg-white hover:bg-white/90 rounded-[10px] px-6 py-3.5 transition-colors disabled:opacity-70 disabled:cursor-wait"
     >
-      {loading ? (
-        <>
+      {/* Idle content stays in flow even while loading so the button
+          width doesn't collapse. The loader overlays it absolutely. */}
+      <span
+        className={`inline-flex items-center gap-3 ${loading ? "invisible" : ""}`}
+      >
+        <span>{label}</span>
+        {priceSuffix && (
+          <>
+            <span className="h-5 w-px bg-[#0066FF]/30" aria-hidden="true" />
+            <span className="font-semibold">{priceSuffix}</span>
+          </>
+        )}
+      </span>
+      {loading && (
+        <span className="absolute inset-0 flex items-center justify-center gap-3">
           <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
           <span>Wird geladen...</span>
-        </>
-      ) : (
-        <>
-          <span>{label}</span>
-          {priceSuffix && (
-            <>
-              <span className="h-5 w-px bg-[#0066FF]/30" aria-hidden="true" />
-              <span className="font-semibold">{priceSuffix}</span>
-            </>
-          )}
-        </>
+        </span>
       )}
     </button>
   );

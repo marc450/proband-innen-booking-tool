@@ -45,7 +45,7 @@ export const botoxOnlinekurs: CourseLandingContent = {
       { icon: "GraduationCap", label: "Level", value: "Einsteigerkurs" },
     ],
     description:
-      "Unser Botox-Onlinekurs vermittelt Dir die theoretischen Grundlagen der ästhetischen Botulinum-Anwendung. Du lernst Anatomie, Produktkunde, Indikationen, diskriminierungssensible Beratung und Komplikationsmanagement, mit dichten Behandlungsvideos zu jeder Zone. Inhalte sind selbstgesteuert, ortsunabhängig im DACH-Raum und mit CME-Test am Kapitelende. Voraussetzung ist Deine Approbation als Ärzt:in oder Zahnärzt:in.",
+      "Unser Botox-Onlinekurs vermittelt Dir die theoretischen Grundlagen der ästhetischen Botulinum-Anwendung. Du lernst Anatomie, Produktkunde, Indikationen, diskriminierungssensible Beratung und Komplikationsmanagement, mit dichten Behandlungsvideos zu jeder Zone. Inhalte sind selbstgesteuert, ortsunabhängig im DACH-Raum und mit CME-Test am Kapitelende. Voraussetzung ist Deine Approbation als Ärzt:in.",
     videoPath: grundkursBotulinum.hero.videoPath,
     videoPoster: grundkursBotulinum.hero.videoPoster,
     ctaOverride: {
