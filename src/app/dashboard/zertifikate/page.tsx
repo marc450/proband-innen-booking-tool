@@ -6,7 +6,6 @@ import {
 } from "@/lib/certificates";
 import { CertificateTestForm } from "./certificate-test-form";
 import { CertCronDryRun } from "./cert-cron-dryrun";
-import { LegacyApologyButton } from "./legacy-apology-button";
 
 export const dynamic = "force-dynamic";
 
@@ -45,16 +44,6 @@ export default async function ZertifikateTestPage() {
           welches Zertifikat versendet würde — ohne tatsächlich zu senden.
         </p>
         <CertCronDryRun defaultDate={defaultDryRunDate} />
-      </div>
-
-      <div>
-        <h2 className="text-lg font-bold">Vorfall 26.04.2026</h2>
-        <p className="text-sm text-muted-foreground mt-1 mb-4">
-          Einmaliger Korrektur-Versand für die 64 Legacy-Buchungen, die durch
-          den manuellen Cron-Test versehentlich die falsche
-          &quot;Profil vervollständigen&quot;-E-Mail erhalten haben.
-        </p>
-        <LegacyApologyButton />
       </div>
     </div>
   );
