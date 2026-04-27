@@ -31,6 +31,7 @@ const HAUPTSEITEN: PageGroup = {
     { title: "Startseite", path: "/kurse" },
     { title: "Unsere Kurse", path: "/kurse/unsere-kurse" },
     { title: "Curriculum Botulinum", path: "/kurse/curriculum-botulinum" },
+    { title: "CME-Online-Seminare", path: "/kurse/cme-online-seminare" },
     { title: "Unsere Didaktik", path: "/kurse/didaktik" },
     { title: "Unsere Vision", path: "/kurse/vision" },
     { title: "Unsere Community", path: "/kurse/community" },
