@@ -169,6 +169,173 @@ Defined in `~/.claude/EPHIA_DESIGN_SYSTEM.md` — short version:
 
 ---
 
+## Voice & Copy
+
+This section governs every user-facing string: landing pages, course
+cards, booking funnel, transactional emails, campaigns, dashboard
+labels, Slack templates, push notifications.
+
+EPHIA does not sell courses. EPHIA sells **medical decision-making**.
+Every line of copy must read as if written by a physician for a
+physician — never as marketing for a beauty service.
+
+### Nordstern (internal compass)
+
+> Wer ästhetische Medizin macht, muss Medizin liefern.
+
+Not a claim, not a headline. The internal test. Every meaningful copy
+decision must pass it. If a line could appear on a Beauty-Salon page,
+it fails.
+
+### Claim
+
+Primary:
+> EPHIA. Deine Akademie für verantwortungsvolle ästhetische Medizin.
+
+Allowed variants (use only when length forces it):
+> EPHIA. Ästhetische Medizin mit Haltung.
+> EPHIA. Die Akademie für verantwortungsvolle ästhetische Medizin.
+
+Use the claim in: site footer, bios, sales material, sign-offs, any
+context where EPHIA must be placed in a category.
+
+### Lead headline (Auszubildende funnel)
+
+> Vom ersten Kurs zur eigenen Praxis.
+
+The path-promise headline. Use on the Auszubildende landing hero
+(`src/app/courses/[courseKey]/`), in curriculum sections, and in paid
+territories that need the career arc in one line.
+
+### Three language principles
+
+**1. Medizinische Klarheit.** Talk about indication, risk assessment,
+anatomy, aftercare, complication management — not about looks.
+
+| Use                                              | Avoid                                  |
+|--------------------------------------------------|----------------------------------------|
+| Indikation, Kontraindikation, Evidenz            | Glow, Boost, perfect, natural look     |
+| Anatomie, Risikomanagement, Aufklärung           | Beauty, Anti-Aging, Lift, fresh look   |
+| Nachsorge, Entscheidungslogik, Dosierung         | Wow result, flawless, transformation   |
+
+**2. Struktur statt Hype.** Explain, order, justify. Never inflate.
+
+| Use                                              | Avoid                                  |
+|--------------------------------------------------|----------------------------------------|
+| strukturiert, fundiert, nachvollziehbar          | Game-Changer, Next Level, revolutionär |
+| systematisch, praxisnah, aufbauend               | Hack, ultimativ, Geheimnis             |
+| begründet, seriös                                | Life-changing, must-have               |
+
+**3. Respekt vor der Praxisrealität.** Name the physician's actual
+working life. Don't exploit it.
+
+| Use                                              | Avoid                                  |
+|--------------------------------------------------|----------------------------------------|
+| Klinikalltag, Zeitdruck, Verantwortung           | Hustle, Boss-Life, Mindset             |
+| Approbation, zweites Standbein                   | Business-Coaching-Sprech               |
+| fachliche Glaubwürdigkeit, Patient:innen         | leeres Empowerment, Selbstoptimierung  |
+
+Emotion, humor, sharp turns are allowed and welcome — as long as they
+come from clinical reality, not from ad-speak.
+
+### Core messages (cross-channel)
+
+Reusable as headlines, openers, captions, slide text. These pass the
+Nordstern by construction.
+
+**Medizin & Entscheidung**
+- Wer ästhetische Medizin macht, muss Medizin liefern.
+- Indikation vor Intervention.
+- Wir lehren Entscheidungslogik. Nicht Standardästhetik.
+- Struktur ersetzt Bauchgefühl.
+- Aufklärung ist Teil der Behandlung.
+
+**Haltung & Qualität**
+- Nicht alles, was möglich ist, ist sinnvoll.
+- Qualität beginnt vor der Behandlung.
+- Gute Ergebnisse brauchen gute Entscheidungen.
+- Inklusiv behandeln heißt Vielfalt mitdenken.
+
+**Praxis & Perspektive**
+- Vom ersten Kurs zur eigenen Praxis.
+- Ein Curriculum ist mehr als die Summe seiner Kurse.
+- Ein zweites Standbein braucht medizinische Substanz.
+- Privatpraxis beginnt nicht mit Marketing, sondern mit Kompetenz.
+
+### Proof system (which proof goes where)
+
+Trust signals are layered. Don't dump them all in one place.
+
+| Layer              | What it is                                  | Where to use it                  |
+|--------------------|---------------------------------------------|----------------------------------|
+| Marken-Proof       | Approbation requirement, CME, Dozent:innen  | Top funnel, hero, brand pages    |
+| Angebots-Proof     | Lernziele, Aufbau, Format, nächster Schritt | Course cards, course pages       |
+| Leistungs-Proof    | Reviews, Wiederbuchungen, Fallbeispiele     | Retargeting, sales sections      |
+| Vertrauens-Proof   | CME-Punkte, Termine, Preis, FAQ             | Just before/at checkout          |
+
+Leistungs-Proofs are used **only** when real and verifiable. Never
+fabricate to fill a slot.
+
+### Hooks (first two seconds)
+
+Group by motivation. Pick one motivation per asset.
+
+**Risikoreduktion**
+- Komplikationen beginnen oft mit der falschen Entscheidung.
+- Nicht jede Nachfrage ist eine Indikation.
+- Aufklärung schützt medizinisch, juristisch und menschlich.
+
+**Kompetenzaufbau**
+- Die beste Technik ist die, die Du begründen kannst.
+- Spritzen kann jede:r. Entscheidungen sicher treffen nur wenige.
+- Anatomie ist nicht optional.
+
+**Selbstbestimmung**
+- Du hast Medizin studiert. Nicht Schichtdienst.
+- Ein zweites Standbein braucht mehr als einen Wochenendkurs.
+- Privatpraxis beginnt mit Kompetenz.
+
+**Haltung**
+- Wer alles injiziert, entscheidet nichts.
+- Ästhetische Medizin ist kein Reparaturbetrieb.
+- Indikation vor Intervention.
+
+### Copy-Bauplan
+
+Every long-form unit (landing section, course page, ad set, post,
+email body) follows this order:
+
+> Haltung → medizinische Logik → Outcome → Proof → CTA
+
+1. **Haltung.** What do we stand for in this piece?
+2. **Medizinische Logik.** Which clinical decision/structure is at the center?
+3. **Outcome.** What can the physician do better, more safely, more clearly afterwards?
+4. **Proof.** Why is she allowed to believe it? (pick the right proof layer)
+5. **CTA.** What is the next sensible step?
+
+Short formats (single-image ad, push notification, badge) may compress
+to *Haltung → Outcome → CTA*, but never skip Haltung.
+
+### Do & Don't (quick reference)
+
+| Don't say                                  | Say instead                                              |
+|--------------------------------------------|----------------------------------------------------------|
+| Boost dein Wissen.                         | Bau Dein Wissen strukturiert auf.                        |
+| Perfekte Ergebnisse.                       | Nachvollziehbare Entscheidungen und sichere Behandlung.  |
+| Starte mit einem neuen Skill.              | Vom ersten Kurs zur eigenen Praxis.                      |
+| Beauty mit Verantwortung.                  | Ästhetische Medizin mit Haltung.                         |
+| Easy Pro für ästhetische Medizin werden.   | Lerne ästhetische Medizin. Aber medizinisch.             |
+
+### Hard exclusions
+
+- No Vorher/Nachher imagery and no Vorher/Nachher copy framing.
+- No patient-facing tone. EPHIA addresses **Ärzt:innen**, never Endkund:innen.
+- No "Botox" on main pages (allowed only on performance landing pages, see memory).
+- No promised outcomes. EPHIA promises decision capability, not results.
+- No "Mentoring", "Support", "Begleitung", "Community" unless that exact service is defined and delivered.
+
+---
+
 ## Do-not list
 
 - Do not introduce new hex values. Add them here first.
