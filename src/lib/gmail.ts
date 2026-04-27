@@ -394,13 +394,32 @@ export async function archiveSentMessage(opts: {
     .replace(/\//g, "_")
     .replace(/=+$/, "");
 
-  await gmailFetch("messages?internalDateSource=dateHeader", {
+  const inserted = (await gmailFetch("messages?internalDateSource=dateHeader", {
     method: "POST",
     body: JSON.stringify({
       raw: encodedMessage,
       labelIds: ["SENT"],
     }),
-  });
+  })) as { id?: string };
+
+  // Gmail's insert pipeline ignores the lack of INBOX in labelIds and
+  // still applies INBOX/UNREAD/IMPORTANT to inserted messages, which
+  // pollutes the customerlove inbox with copies of every transactional
+  // send. Strip those labels immediately so the message only lives in
+  // Sent. Best-effort: a failure here is logged but doesn't fail the
+  // archive operation as a whole.
+  if (inserted.id) {
+    try {
+      await gmailFetch(`messages/${inserted.id}/modify`, {
+        method: "POST",
+        body: JSON.stringify({
+          removeLabelIds: ["INBOX", "UNREAD", "IMPORTANT"],
+        }),
+      });
+    } catch (err) {
+      console.error("archiveSentMessage: label cleanup failed", err);
+    }
+  }
 }
 
 // Modify labels (mark read/unread, archive, etc.)
