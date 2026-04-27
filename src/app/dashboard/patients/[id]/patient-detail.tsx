@@ -52,11 +52,27 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
 
   const personName = [patient.first_name, patient.last_name].filter(Boolean).join(" ");
 
-  // Close popovers on outside click
+  // Force any focused input inside the popover to blur synchronously
+  // BEFORE we unmount it. Without this, React's synthetic `onBlur` is
+  // dropped when the input unmounts in the same tick as the close, and
+  // any pending autosave (e.g. a freshly typed Vorname) is lost.
+  const flushNamePopoverFocus = () => {
+    const el = document.activeElement;
+    if (
+      el instanceof HTMLElement &&
+      namePopoverRef.current?.contains(el)
+    ) {
+      el.blur();
+    }
+  };
+
+  // Close popovers on outside click. Per-input onBlur handles the save,
+  // so this just hides the popover (after flushing any focused input).
   useEffect(() => {
     if (!namePopoverOpen && !statusDropdownOpen) return;
     const handler = (e: MouseEvent) => {
       if (namePopoverOpen && namePopoverRef.current && !namePopoverRef.current.contains(e.target as Node)) {
+        flushNamePopoverFocus();
         setNamePopoverOpen(false);
       }
       if (statusDropdownOpen && statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
@@ -140,7 +156,10 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
                     {personName || "Unbekannt"}
                   </h1>
                   <button
-                    onClick={() => setNamePopoverOpen(!namePopoverOpen)}
+                    onClick={() => {
+                      if (namePopoverOpen) flushNamePopoverFocus();
+                      setNamePopoverOpen(!namePopoverOpen);
+                    }}
                     className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted shrink-0"
                     title="Name bearbeiten"
                   >
