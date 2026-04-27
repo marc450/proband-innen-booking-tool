@@ -40,7 +40,7 @@ export const lippenFillerKurs: CourseLandingContent = {
       "Online-Seminar, Praxis-Schulung oder Hybridkurs für sichere Lippenbehandlungen. Aufbaukurs für approbierte Ärzt:innen mit Grunderfahrung in der Dermalfiller-Anwendung.",
     stats: aufbaukursLippen.hero.stats,
     description:
-      "Wenn Du ein Lippen-Filler-Seminar, eine Lippen-Schulung oder einen vollständigen Lippen-Praxiskurs suchst, bist Du genau richtig: unser Aufbaukurs verbindet flexibles Online-Lernen mit einem Praxistag, an dem Du das Gelernte an echten Proband:innen anwendest. Im Online-Modul vertiefst Du Anatomie, Indikationen, Produktwahl und Injektionstechniken speziell für die Lippen, mit dichten Behandlungsvideos. Voraussetzung sind Approbation als Ärzt:in und Grunderfahrung mit Dermalfillern, idealerweise nach absolviertem Grundkurs Dermalfiller.",
+      "Wenn Du ein Lippen-Filler-Seminar, eine Lippen-Schulung oder einen vollständigen Lippen-Praxiskurs suchst, bist Du genau richtig: unser Aufbaukurs verbindet flexibles Online-Lernen mit einem Praxistag, an dem Du das Gelernte unter Aufsicht an echten Proband:innen anwendest. Im Online-Modul vertiefst Du Anatomie, Indikationen, Produktwahl und Injektionstechniken speziell für die Lippen, mit dichten Behandlungsvideos. Voraussetzung sind Approbation als Ärzt:in und Grunderfahrung mit Dermalfillern, idealerweise nach absolviertem Grundkurs Dermalfiller.",
     videoPath: aufbaukursLippen.hero.videoPath,
     videoPoster: aufbaukursLippen.hero.videoPoster,
   },
