@@ -103,22 +103,6 @@ const LEARNING_PATH = {
         "Am Ende absolvierst Du einen Lernerfolgstest. Bei Bestehen senden wir Dein Teilnahmezertifikat mit Veranstaltungsnummer (VNR) und übermitteln die Punkte über die Ärztekammer Berlin direkt an Dein CME-Konto.",
     },
   ],
-  prerequisites: {
-    bringsHeading: "Was Du brauchst",
-    brings: [
-      "Approbation als Ärzt:in oder Zahnärzt:in",
-      "Internet und ein Endgerät Deiner Wahl",
-      "Deine Einheitliche Fortbildungsnummer (EFN)",
-      "Etwa 7 bis 21 Stunden Zeit pro Seminar",
-    ],
-    notRequiredHeading: "Was Du nicht brauchst",
-    notRequired: [
-      "Vorerfahrung mit Botulinum, Dermalfillern oder ästhetischer Medizin",
-      "Spezielle Software oder Hardware",
-      "Anwesenheit zu festen Terminen",
-      "Reisen oder Urlaubstage zum Lernen",
-    ],
-  },
 };
 
 interface TemplateRow {
