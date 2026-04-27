@@ -422,4 +422,10 @@ export const grundkursMedizinischeHautpflege: CourseLandingContent = {
       },
     ],
   },
+
+  relatedCourses: [
+    "grundkurs-botulinum",
+    "grundkurs-dermalfiller",
+    "aufbaukurs-biostimulation-skinbooster",
+  ],
 };

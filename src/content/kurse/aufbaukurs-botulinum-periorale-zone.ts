@@ -421,4 +421,10 @@ export const aufbaukursBotulinumPerioraleZone: CourseLandingContent = {
       },
     ],
   },
+
+  relatedCourses: [
+    "grundkurs-botulinum",
+    "masterclass-botulinum",
+    "aufbaukurs-therapeutische-indikationen-botulinum",
+  ],
 };

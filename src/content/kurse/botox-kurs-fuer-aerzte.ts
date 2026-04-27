@@ -150,4 +150,9 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
   },
 
   breadcrumbLabel: "Botox-Kurs für Ärzt:innen",
+  relatedCourses: [
+    "botox-kurs-fuer-zahnaerzte",
+    "botox-kurs-fuer-anfaenger",
+    "botox-kurs-berlin",
+  ],
 };

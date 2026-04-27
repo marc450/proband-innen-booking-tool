@@ -470,4 +470,10 @@ export const grundkursDermalfiller: CourseLandingContent = {
       },
     ],
   },
+
+  relatedCourses: [
+    "grundkurs-botulinum",
+    "aufbaukurs-lippen",
+    "grundkurs-medizinische-hautpflege",
+  ],
 };

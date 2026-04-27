@@ -451,4 +451,10 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
       },
     ],
   },
+
+  relatedCourses: [
+    "grundkurs-botulinum",
+    "aufbaukurs-botulinum-periorale-zone",
+    "masterclass-botulinum",
+  ],
 };

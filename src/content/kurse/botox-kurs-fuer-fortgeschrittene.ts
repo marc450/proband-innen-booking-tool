@@ -202,4 +202,9 @@ export const botoxKursFuerFortgeschrittene: CourseLandingContent = {
   },
 
   breadcrumbLabel: "Botox-Kurs für Fortgeschrittene",
+  relatedCourses: [
+    "botox-kurs-fuer-aerzte",
+    "botox-kurs-fuer-anfaenger",
+    "botox-kurs-berlin",
+  ],
 };

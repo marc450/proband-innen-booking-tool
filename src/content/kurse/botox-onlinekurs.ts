@@ -149,4 +149,9 @@ export const botoxOnlinekurs: CourseLandingContent = {
   },
 
   breadcrumbLabel: "Botox-Onlinekurs",
+  relatedCourses: [
+    "botox-kurs-fuer-aerzte",
+    "botox-kurs-fuer-anfaenger",
+    "botox-kurs-fuer-fortgeschrittene",
+  ],
 };

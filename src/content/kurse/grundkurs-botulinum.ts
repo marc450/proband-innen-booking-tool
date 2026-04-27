@@ -487,4 +487,10 @@ export const grundkursBotulinum: CourseLandingContent = {
       },
     ],
   },
+
+  relatedCourses: [
+    "grundkurs-dermalfiller",
+    "aufbaukurs-lippen",
+    "masterclass-botulinum",
+  ],
 };

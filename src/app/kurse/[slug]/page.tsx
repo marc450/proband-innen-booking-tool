@@ -13,6 +13,7 @@ import { Testimonials } from "../_components/sections/testimonials";
 import { Faq } from "../_components/sections/faq";
 import { LocationInfo } from "../_components/sections/location-info";
 import { LearningPath } from "../_components/sections/learning-path";
+import { RelatedCourses } from "../_components/sections/related-courses";
 import { CourseCardsPage } from "../_components/widget/course-cards-page";
 
 export const dynamic = "force-dynamic";
@@ -342,6 +343,9 @@ export default async function KursPage({
       />
       <Testimonials content={content.testimonials} />
       <Faq content={faqContent} />
+      {content.relatedCourses && content.relatedCourses.length > 0 && (
+        <RelatedCourses slugs={content.relatedCourses} />
+      )}
     </>
   );
 }

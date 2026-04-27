@@ -334,4 +334,10 @@ export const aufbaukursTherapeutischeIndikationenBotulinum: CourseLandingContent
       },
     ],
   },
+
+  relatedCourses: [
+    "grundkurs-botulinum",
+    "masterclass-botulinum",
+    "aufbaukurs-botulinum-periorale-zone",
+  ],
 };

@@ -120,4 +120,9 @@ export const fillerKurs: CourseLandingContent = {
   },
 
   breadcrumbLabel: "Filler-Kurs für Ärzt:innen",
+  relatedCourses: [
+    "lippen-filler-kurs",
+    "grundkurs-dermalfiller",
+    "aufbaukurs-lippen",
+  ],
 };

@@ -255,4 +255,10 @@ export const aufbaukursBiostimulationSkinbooster: CourseLandingContent = {
       },
     ],
   },
+
+  relatedCourses: [
+    "grundkurs-medizinische-hautpflege",
+    "grundkurs-dermalfiller",
+    "aufbaukurs-lippen",
+  ],
 };

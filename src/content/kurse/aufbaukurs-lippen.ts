@@ -349,4 +349,10 @@ export const aufbaukursLippen: CourseLandingContent = {
       },
     ],
   },
+
+  relatedCourses: [
+    "grundkurs-dermalfiller",
+    "lippen-filler-kurs",
+    "aufbaukurs-botulinum-periorale-zone",
+  ],
 };

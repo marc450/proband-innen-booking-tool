@@ -310,4 +310,15 @@ export interface CourseLandingContent {
    * Defaults to `meta.title` when omitted.
    */
   breadcrumbLabel?: string;
+  /**
+   * Optional list of sibling course slugs rendered in a "Diese Kurse
+   * könnten Dich auch interessieren" section at the bottom of the page.
+   * Used to cross-link related landings so internal PageRank flows
+   * between siblings and Google sees clear topical clustering. Each
+   * slug must exist in the registry (`src/content/kurse/index.ts`).
+   * Performance landings should only link to other performance
+   * landings; main brand pages should only link to other main pages
+   * (CI rule: "Botox" stays inside the SEO surface).
+   */
+  relatedCourses?: string[];
 }
