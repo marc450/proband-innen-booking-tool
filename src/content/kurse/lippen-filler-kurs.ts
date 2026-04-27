@@ -28,7 +28,7 @@ export const lippenFillerKurs: CourseLandingContent = {
     title:
       "Lippen-Filler-Kurs für Ärzt:innen | Schulung, Seminar & Praxiskurs | EPHIA",
     description:
-      "Lippen-Filler-Kurs für approbierte Ärzt:innen mit Grunderfahrung in Dermalfillern: Online-Seminar, Praxis-Schulung und Hybrid-Kurs für Lippen und periorale Zone. Anatomie, Indikationen, Technik und Komplikationsmanagement, mit dichten Behandlungsvideos.",
+      "Lippen-Filler-Kurs für approbierte Ärzt:innen mit Grunderfahrung in Dermalfillern: Online-Seminar, Praxis-Schulung und Hybrid-Kurs für sichere Lippenbehandlungen. Anatomie, Indikationen, Technik und Komplikationsmanagement, mit dichten Behandlungsvideos.",
     ogImage: "/kurse/aufbaukurs_lippen/og-image.jpg",
   },
 
@@ -37,10 +37,10 @@ export const lippenFillerKurs: CourseLandingContent = {
     socialProof: "Über 300 Ärzt:innen wurden bei uns fortgebildet",
     ctaStacked: true,
     subheadline:
-      "Online-Seminar, Praxis-Schulung oder Hybridkurs für die Lippen und die periorale Zone. Aufbaukurs für approbierte Ärzt:innen mit Grunderfahrung in der Dermalfiller-Anwendung.",
+      "Online-Seminar, Praxis-Schulung oder Hybridkurs für sichere Lippenbehandlungen. Aufbaukurs für approbierte Ärzt:innen mit Grunderfahrung in der Dermalfiller-Anwendung.",
     stats: aufbaukursLippen.hero.stats,
     description:
-      "Egal ob Du ein Lippen-Filler-Seminar, eine Lippen-Schulung oder einen vollständigen Lippen-Praxiskurs suchst: unser Aufbaukurs vertieft Anatomie, Indikationen, Produktwahl und Injektionstechniken speziell für die periorale Zone. Im Online-Modul lernst Du mit dichten Behandlungsvideos, am Praxistag behandelst Du echte Proband:innen unter Aufsicht. Voraussetzung sind Approbation als Ärzt:in und Grunderfahrung mit Dermalfillern, idealerweise nach absolviertem Grundkurs Dermalfiller.",
+      "Egal ob Du ein Lippen-Filler-Seminar, eine Lippen-Schulung oder einen vollständigen Lippen-Praxiskurs suchst: unser Aufbaukurs verbindet flexibles Online-Lernen mit einem Praxistag an echten Proband:innen. Im Online-Modul vertiefst Du Anatomie, Indikationen, Produktwahl und Injektionstechniken speziell für die Lippen, mit dichten Behandlungsvideos. Am Praxistag behandelst Du unter Aufsicht. Voraussetzung sind Approbation als Ärzt:in und Grunderfahrung mit Dermalfillern, idealerweise nach absolviertem Grundkurs Dermalfiller.",
     videoPath: aufbaukursLippen.hero.videoPath,
     videoPoster: aufbaukursLippen.hero.videoPoster,
   },
@@ -48,7 +48,7 @@ export const lippenFillerKurs: CourseLandingContent = {
   lernziele: {
     heading: "LERNZIELE",
     intro:
-      "Unser Lippen-Filler-Kurs vertieft Deine Behandlungssicherheit in der perioralen Zone, fundiert, praxisnah und diskriminierungssensibel. Im Fokus stehen folgende Lernziele:",
+      "Unser Lippen-Filler-Kurs vertieft Deine Behandlungssicherheit an den Lippen, fundiert, praxisnah und diskriminierungssensibel. Im Fokus stehen folgende Lernziele:",
     items: aufbaukursLippen.lernziele.items,
   },
 
@@ -85,7 +85,7 @@ export const lippenFillerKurs: CourseLandingContent = {
         question:
           "Was ist der Unterschied zwischen Lippen-Filler-Seminar, Lippen-Schulung und Lippen-Praxiskurs?",
         answer:
-          "Die Begriffe werden im Sprachgebrauch unterschiedlich genutzt. Bei uns bezeichnet das Lippen-Filler-Seminar typischerweise die theoretischen Online-Inhalte (Anatomie der perioralen Zone, Indikationen, Behandlungsvideos), die Lippen-Schulung die Kombination aus Online-Modul und Praxistag, und der Lippen-Praxiskurs den reinen Hands-on-Teil. Inhaltlich bauen alle drei auf dem gleichen Curriculum auf. Welches Format zu Dir passt, hängt davon ab, ob Du nur die Theorie oder auch die praktische Anwendung trainieren möchtest.",
+          "Die Begriffe werden im Sprachgebrauch unterschiedlich genutzt. Bei uns bezeichnet das Lippen-Filler-Seminar typischerweise die theoretischen Online-Inhalte (Anatomie der Lippen, Indikationen, Behandlungsvideos), die Lippen-Schulung die Kombination aus Online-Modul und Praxistag, und der Lippen-Praxiskurs den reinen Hands-on-Teil. Inhaltlich bauen alle drei auf dem gleichen Curriculum auf. Welches Format zu Dir passt, hängt davon ab, ob Du nur die Theorie oder auch die praktische Anwendung trainieren möchtest.",
       },
       {
         question: "Ist der Lippen-Filler-Kurs für Einsteiger:innen geeignet?",
@@ -95,12 +95,12 @@ export const lippenFillerKurs: CourseLandingContent = {
       {
         question: "Wird im Praxisteil mit Hyaluron behandelt?",
         answer:
-          "Ja. Im Praxisteil arbeitest Du mit Hyaluronsäure-basierten Dermalfillern, also genau den Präparaten, die für Lippenbehandlungen üblich sind. Geübt wird nicht mit NaCl oder Wasserspritzen, sondern mit echten Filler-Produkten unter Aufsicht erfahrener Dozent:innen. So gewinnst Du ein realistisches Gefühl für Viskosität, Eindringtiefe und Gewebeantwort speziell in der perioralen Zone.",
+          "Ja. Im Praxisteil arbeitest Du mit Hyaluronsäure-basierten Dermalfillern, also genau den Präparaten, die für Lippenbehandlungen üblich sind. Geübt wird nicht mit NaCl oder Wasserspritzen, sondern mit echten Filler-Produkten unter Aufsicht erfahrener Dozent:innen. So gewinnst Du ein realistisches Gefühl für Viskosität, Eindringtiefe und Gewebeantwort an den Lippen.",
       },
       {
         question: "Welche Behandlungstechniken lerne ich im Lippen-Filler-Kurs?",
         answer:
-          "Wir vertiefen die für Lippen und die periorale Zone relevanten Techniken: lineare Retrograde, Mikrobolus, Tenting sowie die Auswahl zwischen Kanüle und Nadel. Zu jeder Technik gibt es ausführliche Behandlungsvideos und Schritt-für-Schritt-Anzeichnungen, damit Du den Ablauf sicher nachvollziehen und in Deinen Praxisalltag übertragen kannst.",
+          "Wir vertiefen die für die Lippen relevanten Techniken: lineare Retrograde, Mikrobolus, Tenting sowie die Auswahl zwischen Kanüle und Nadel. Zu jeder Technik gibt es ausführliche Behandlungsvideos und Schritt-für-Schritt-Anzeichnungen, damit Du den Ablauf sicher nachvollziehen und in Deinen Praxisalltag übertragen kannst.",
       },
       {
         question: "Bietet die Lippen-Schulung CME-Punkte?",
@@ -111,7 +111,7 @@ export const lippenFillerKurs: CourseLandingContent = {
         question:
           "Muss ich approbierte Ärzt:in sein, um am Lippen-Filler-Kurs teilzunehmen?",
         answer:
-          "Ja. Unser Lippen-Filler-Kurs richtet sich ausschließlich an approbierte Ärzt:innen. Diese Voraussetzung ist sowohl rechtlich als auch fachlich notwendig, da die Anwendung von Dermalfillern in der perioralen Zone fundiertes anatomisches Verständnis und sicheres Komplikationsmanagement voraussetzt.",
+          "Ja. Unser Lippen-Filler-Kurs richtet sich ausschließlich an approbierte Ärzt:innen. Diese Voraussetzung ist sowohl rechtlich als auch fachlich notwendig, da die Anwendung von Dermalfillern an den Lippen fundiertes anatomisches Verständnis und sicheres Komplikationsmanagement voraussetzt.",
       },
       ...aufbaukursLippen.faq.items.filter(
         (item) =>
