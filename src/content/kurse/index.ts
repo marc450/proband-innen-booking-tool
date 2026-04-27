@@ -9,6 +9,7 @@ import { aufbaukursBotulinumPerioraleZone } from "./aufbaukurs-botulinum-periora
 import { aufbaukursBiostimulationSkinbooster } from "./aufbaukurs-biostimulation-skinbooster";
 import { masterclassBotulinum } from "./masterclass-botulinum";
 import { botoxKursBerlin } from "./botox-kurs-berlin";
+import { botoxKursFuerAerzte } from "./botox-kurs-fuer-aerzte";
 import { botoxKursFuerAnfaenger } from "./botox-kurs-fuer-anfaenger";
 import { botoxKursFuerZahnaerzte } from "./botox-kurs-fuer-zahnaerzte";
 import { botoxOnlinekurs } from "./botox-onlinekurs";
@@ -37,6 +38,7 @@ const registry: Record<string, CourseLandingContent> = {
   [aufbaukursBiostimulationSkinbooster.slug]: aufbaukursBiostimulationSkinbooster,
   [masterclassBotulinum.slug]: masterclassBotulinum,
   [botoxKursBerlin.slug]: botoxKursBerlin,
+  [botoxKursFuerAerzte.slug]: botoxKursFuerAerzte,
   [botoxKursFuerAnfaenger.slug]: botoxKursFuerAnfaenger,
   [botoxKursFuerZahnaerzte.slug]: botoxKursFuerZahnaerzte,
   [botoxOnlinekurs.slug]: botoxOnlinekurs,

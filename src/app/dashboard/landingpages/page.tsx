@@ -35,7 +35,7 @@ const HAUPTSEITEN: PageGroup = {
     { title: "Unsere Didaktik", path: "/kurse/didaktik" },
     { title: "Unsere Vision", path: "/kurse/vision" },
     { title: "Unsere Community", path: "/kurse/community" },
-    { title: "Team & Dozent:innen", path: "/kurse/team" },
+    { title: "Team & Dozent:innen", path: "/team" },
     { title: "FAQ & Kontakt", path: "/kurse/faq-kontakt" },
     { title: "Werde Proband:in", path: "/kurse/werde-proband-in" },
   ],

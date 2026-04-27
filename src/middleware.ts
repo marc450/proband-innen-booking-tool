@@ -15,7 +15,7 @@ const BOOKING_ONLY_PATHS = ["/book", "/courses"];
 
 // Paths that kurse.ephia.de should pass through untouched (framework assets,
 // API routes, etc). Everything else on that host is treated as a /kurse slug.
-const KURSE_PASSTHROUGH_RE = /^\/(api|_next|kurse|merch|favicon\.ico|robots\.txt|sitemap\.xml)(\/|$)/;
+const KURSE_PASSTHROUGH_RE = /^\/(api|_next|kurse|merch|team|favicon\.ico|robots\.txt|sitemap\.xml)(\/|$)/;
 
 function withNoindex(response: NextResponse): NextResponse {
   response.headers.set("X-Robots-Tag", "noindex, nofollow");
@@ -84,6 +84,14 @@ export async function middleware(request: NextRequest) {
   if (hostname === KURSE_DOMAIN) {
     if (pathname === "/werde-proband-in" || pathname === "/kurse/werde-proband-in") {
       return NextResponse.redirect(`https://${BOOKING_DOMAIN}/`, 308);
+    }
+
+    // Team page lives at /team (not under the /kurse/ tree) so any old
+    // /kurse/team link redirects to the canonical URL.
+    if (pathname === "/kurse/team" || pathname.startsWith("/kurse/team/")) {
+      const url = request.nextUrl.clone();
+      url.pathname = pathname.replace(/^\/kurse\/team/, "/team");
+      return NextResponse.redirect(url, 308);
     }
 
     if (pathname === "/") {

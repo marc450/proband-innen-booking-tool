@@ -20,7 +20,7 @@ const STATIC_KURSE_PATHS = [
   "/kurse/didaktik",
   "/kurse/vision",
   "/kurse/community",
-  "/kurse/team",
+  "/team",
   "/kurse/faq-kontakt",
   "/kurse/werde-proband-in",
   "/kurse/impressum",
