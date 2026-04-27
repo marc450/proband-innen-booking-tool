@@ -60,6 +60,10 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(azubi.notes || "");
   const [savingNotes, setSavingNotes] = useState(false);
+  // Inline error surfaced below the email input. Cleared on successful
+  // save or when the user starts typing again. Kept local (no toast
+  // system in this app) so the rest of the page stays untouched.
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   // Name edit popover. Each input is independent (defaultValue + onBlur)
   // so editing Nachname commits via autosave on blur, identical to the
@@ -104,6 +108,45 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
     if (!error) {
       setAzubi((prev) => ({ ...prev, [field]: trimmed }));
     }
+  };
+
+  // Email edits are special: the value is used as the contact key in
+  // multiple places (email history Gmail query, future cert/reminder
+  // sends, deduplication on import). Past course_bookings rows stay
+  // pinned to whatever email they were booked with — only the
+  // auszubildende.email column is mutated here.
+  const saveEmail = async (raw: string, input?: HTMLInputElement | null) => {
+    const trimmed = raw.trim().toLowerCase();
+    const current = (azubi.email || "").toLowerCase();
+    if (trimmed === current) {
+      setEmailError(null);
+      return;
+    }
+    if (!trimmed) {
+      if (input) input.value = azubi.email || "";
+      setEmailError("E-Mail darf nicht leer sein.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      if (input) input.value = azubi.email || "";
+      setEmailError("Ungültiges E-Mail-Format.");
+      return;
+    }
+    const { error } = await supabase
+      .from("auszubildende")
+      .update({ email: trimmed })
+      .eq("id", azubi.id);
+    if (error) {
+      if (input) input.value = azubi.email || "";
+      setEmailError(
+        error.code === "23505"
+          ? "Diese E-Mail ist bereits einer anderen Person zugeordnet."
+          : `Speichern fehlgeschlagen: ${error.message}`,
+      );
+      return;
+    }
+    setAzubi((prev) => ({ ...prev, email: trimmed }));
+    setEmailError(null);
   };
 
   const handleStatusChange = async (status: string) => {
@@ -288,7 +331,19 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
                 <input defaultValue={azubi.gender || ""} placeholder="–" onBlur={(e) => autosave("gender", e.target.value)} className={fieldClass} />
 
                 <span className="text-xs text-muted-foreground">E-Mail</span>
-                <a href={`mailto:${azubi.email}`} className="text-primary hover:underline truncate text-sm">{azubi.email}</a>
+                <div className="min-w-0">
+                  <input
+                    type="email"
+                    defaultValue={azubi.email || ""}
+                    placeholder="–"
+                    onFocus={() => setEmailError(null)}
+                    onBlur={(e) => saveEmail(e.target.value, e.currentTarget)}
+                    className={`${fieldClass} text-primary`}
+                  />
+                  {emailError && (
+                    <div className="mt-1 text-[11px] text-red-600">{emailError}</div>
+                  )}
+                </div>
 
                 <span className="text-xs text-muted-foreground">Telefon</span>
                 <input defaultValue={azubi.phone || ""} placeholder="–" onBlur={(e) => autosave("phone", e.target.value)} className={fieldClass} />
