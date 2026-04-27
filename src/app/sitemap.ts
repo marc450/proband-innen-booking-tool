@@ -15,6 +15,7 @@ const STATIC_KURSE_PATHS = [
   "/kurse/unsere-kurse",
   "/kurse/curriculum-botulinum",
   "/kurse/cme-online-seminare",
+  "/kurse/cme-onlinekurse-botulinum",
   "/kurse/didaktik",
   "/kurse/vision",
   "/kurse/community",
