@@ -386,10 +386,6 @@ function CmeCourseTile({ entry }: { entry: TileWithCme }) {
             sizes="(min-width: 768px) 50vw, 100vw"
             className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
-          {/* Prominent CME badge top-right */}
-          <div className="absolute top-3 right-3 bg-[#0066FF] text-white rounded-[10px] px-3 py-1.5 text-xs md:text-sm font-bold shadow-md">
-            {cmeLabel}
-          </div>
         </div>
       )}
 
