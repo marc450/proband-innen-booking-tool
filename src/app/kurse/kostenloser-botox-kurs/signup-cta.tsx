@@ -135,16 +135,42 @@ export function SignupCta({
                   />
                 </div>
 
+                <label className="flex items-start gap-3 mt-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="consent"
+                    required
+                    className="mt-1 h-4 w-4 flex-shrink-0 rounded border-black/20 text-[#0066FF] focus:ring-[#0066FF]"
+                  />
+                  <span className="text-xs text-black/70 leading-relaxed">
+                    Ich akzeptiere die{" "}
+                    <a
+                      href="/kurse/agb"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#0066FF] underline hover:no-underline"
+                    >
+                      AGB
+                    </a>{" "}
+                    und die{" "}
+                    <a
+                      href="/kurse/datenschutz"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#0066FF] underline hover:no-underline"
+                    >
+                      Datenschutzerklärung
+                    </a>
+                    . Ich bestätige, dass ich approbierte:r Ärzt:in bin.
+                  </span>
+                </label>
+
                 <button
                   type="submit"
                   className="mt-2 inline-block w-full text-base font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-5 py-3.5 transition-colors"
                 >
                   Jetzt kostenlos starten
                 </button>
-
-                <p className="text-xs text-black/60 leading-relaxed">
-                  Mit dem Klick auf {`„Jetzt kostenlos starten"`} bestätigst Du, dass Du approbierte:r Ärzt:in bist und stimmst zu, dass wir Dir den Zugang per E-Mail zusenden.
-                </p>
               </form>
             </>
           )}
