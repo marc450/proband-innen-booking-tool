@@ -16,7 +16,7 @@ export const homeContent: HomeContent = {
   },
 
   hero: {
-    heading: "Deine Lernplattform für inklusive ästhetische Medizin",
+    heading: "Deine Akademie für verantwortungsvolle ästhetische Medizin.",
     checklist: [
       { text: "LÄK-zertifizierte Lehrgänge" },
       { text: "On- & Offlinekurse" },
