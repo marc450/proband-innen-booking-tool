@@ -40,7 +40,11 @@ export function LearningPath({
   return (
     <section className="bg-white py-16 md:py-24">
       <div className="max-w-7xl mx-auto px-5 md:px-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-left md:text-center tracking-wide mb-4">
+        <h2
+          className={`text-3xl md:text-4xl font-bold text-left md:text-center tracking-wide ${
+            content.intro ? "mb-4" : "mb-14 md:mb-16"
+          }`}
+        >
           {content.heading}
         </h2>
         {content.intro && (
