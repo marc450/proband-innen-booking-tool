@@ -10,6 +10,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/kurse/cme-onlinekurse-botulinum",
+        destination: "/kurse/cme-onlinekurse-botox",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

@@ -11,15 +11,17 @@ import { TYPO, titleCase } from "../_components/typography";
 export const dynamic = "force-dynamic";
 
 const SITE_URL = "https://kurse.ephia.de";
-const PAGE_PATH = "/kurse/cme-onlinekurse-botulinum";
+const PAGE_PATH = "/kurse/cme-onlinekurse-botox";
 const PAGE_URL = `${SITE_URL}${PAGE_PATH}`;
 
 const BLUE = "#0066FF";
 const CREAM = "#FAEBE1";
 const CORAL = "#BF785E";
 
-// Botulinum-only course_keys. Mirrors what the legacy LearnWorlds page
-// exposed, minus the Zahnmedizin tile (no CME for that audience).
+// Botox-themed performance landing page. Targets searches for "Botox-Kurs",
+// "CME Botox", "Botox-Online-Fortbildung". Course list is the same Botulinum
+// curriculum (Botox is the brand name; Botulinum is the medical term),
+// minus the Zahnmedizin tile because no CME is awarded for that audience.
 const BOTULINUM_COURSE_KEYS = new Set([
   "grundkurs_botulinum",
   "aufbaukurs_botulinum_periorale_zone",
@@ -29,14 +31,14 @@ const BOTULINUM_COURSE_KEYS = new Set([
 
 export const metadata: Metadata = {
   title:
-    "CME-Online-Kurse Botulinum für Ärzt:innen | Ärztekammer Berlin | EPHIA",
+    "CME-Online-Kurse Botox für Ärzt:innen | Ärztekammer Berlin | EPHIA",
   description:
-    "CME-Online-Kurse Botulinum für approbierte Ärzt:innen: Grundkurs, Aufbaukurse und Masterclass. Akkreditiert von der Ärztekammer Berlin, flexibel im eigenen Tempo.",
+    "CME-Online-Kurse Botox für approbierte Ärzt:innen: Grundkurs, Aufbaukurse und Masterclass zur Behandlung mit Botulinum. Akkreditiert von der Ärztekammer Berlin, flexibel im eigenen Tempo.",
   alternates: { canonical: PAGE_URL },
   openGraph: {
-    title: "CME-Online-Kurse Botulinum für Ärzt:innen | EPHIA",
+    title: "CME-Online-Kurse Botox für Ärzt:innen | EPHIA",
     description:
-      "CME-Punkte zur Botulinum-Behandlung online sammeln. Grundkurs, Aufbaukurse und Masterclass. Akkreditiert von der Ärztekammer Berlin.",
+      "CME-Punkte zur Botox-Behandlung online sammeln. Grundkurs, Aufbaukurse und Masterclass. Akkreditiert von der Ärztekammer Berlin.",
     type: "website",
     siteName: "EPHIA",
     locale: "de_DE",
@@ -46,19 +48,19 @@ export const metadata: Metadata = {
 
 const FAQ_ITEMS = [
   {
-    question: "Was ist ein CME-Online-Kurs Botulinum?",
+    question: "Was ist ein CME-Online-Kurs Botox?",
     answer:
-      "Ein CME-Online-Kurs Botulinum (Continuing Medical Education) ist eine ärztliche Online-Fortbildung zur Behandlung mit Botulinum, für die Du nach erfolgreichem Abschluss Punkte von der Ärztekammer gutgeschrieben bekommst. Bei EPHIA bestehen unsere Botulinum-Online-Kurse aus dichten Behandlungsvideos, anatomischen Darstellungen, fachlichen Lerntexten und einem abschließenden Lernerfolgstest, den Du in Deinem eigenen Tempo bearbeitest.",
+      "Ein CME-Online-Kurs Botox (Continuing Medical Education) ist eine ärztliche Online-Fortbildung zur Behandlung mit Botulinumtoxin (umgangssprachlich „Botox\"), für die Du nach erfolgreichem Abschluss Punkte von der Ärztekammer gutgeschrieben bekommst. Bei EPHIA bestehen unsere Botox-Online-Kurse aus dichten Behandlungsvideos, anatomischen Darstellungen, fachlichen Lerntexten und einem abschließenden Lernerfolgstest, den Du in Deinem eigenen Tempo bearbeitest.",
   },
   {
-    question: "Wie viele CME-Punkte sammle ich pro EPHIA-Botulinum-Kurs?",
+    question: "Wie viele CME-Punkte sammle ich pro EPHIA-Botox-Kurs?",
     answer:
-      "Die CME-Punkte variieren je nach Kursumfang. Unsere Botulinum-Online-Kurse sind aktuell mit jeweils zwischen 10 und 22 CME-Punkten akkreditiert. Die exakte Punktzahl pro Kurs findest Du auf der jeweiligen Kurskarte. Wenn Du den Online-Kurs mit dem dazugehörigen Praxiskurs kombinierst, addieren sich die Punkte beider Akkreditierungen.",
+      "Die CME-Punkte variieren je nach Kursumfang. Unsere Botox-Online-Kurse sind aktuell mit jeweils zwischen 10 und 22 CME-Punkten akkreditiert. Die exakte Punktzahl pro Kurs findest Du auf der jeweiligen Kurskarte. Wenn Du den Online-Kurs mit dem dazugehörigen Praxiskurs kombinierst, addieren sich die Punkte beider Akkreditierungen.",
   },
   {
-    question: "Welche Akkreditierung haben die EPHIA-Online-Kurse Botulinum?",
+    question: "Welche Akkreditierung haben die EPHIA-Online-Kurse zur Botox-Behandlung?",
     answer:
-      "Alle EPHIA-Online-Kurse zur Behandlung mit Botulinum sind durch die Landesärztekammer Berlin akkreditiert. Jeder Kurs hat eine eigene Veranstaltungsnummer (VNR), die auf Deinem Teilnahmezertifikat ausgewiesen wird. Über diese VNR erfolgt die automatische Übermittlung Deiner Punkte an Dein CME-Konto bei der Ärztekammer.",
+      "Alle EPHIA-Online-Kurse zur Behandlung mit Botulinumtoxin („Botox\") sind durch die Landesärztekammer Berlin akkreditiert. Jeder Kurs hat eine eigene Veranstaltungsnummer (VNR), die auf Deinem Teilnahmezertifikat ausgewiesen wird. Über diese VNR erfolgt die automatische Übermittlung Deiner Punkte an Dein CME-Konto bei der Ärztekammer.",
   },
   {
     question: "Wie werden CME-Punkte nach Abschluss gutgeschrieben?",
@@ -66,31 +68,36 @@ const FAQ_ITEMS = [
       "Nach erfolgreichem Abschluss des Lernerfolgstests gibst Du Deine Einheitliche Fortbildungsnummer (EFN) bei uns an. EPHIA übermittelt die Punkte direkt elektronisch an die Ärztekammer Berlin, die sie automatisch Deinem CME-Konto gutschreibt. Zusätzlich erhältst Du ein digitales Teilnahmezertifikat mit Veranstaltungsnummer (VNR), das Du jederzeit als Nachweis nutzen kannst.",
   },
   {
-    question: "Erfüllt ein CME-Online-Kurs Botulinum meine Fortbildungspflicht?",
+    question: "Erfüllt ein CME-Online-Kurs Botox meine Fortbildungspflicht?",
     answer:
-      "Ja. Approbierte Ärzt:innen müssen nach §95d SGB V innerhalb von fünf Jahren 250 CME-Punkte nachweisen. CME-Online-Kurse zur Behandlung mit Botulinum zählen vollumfänglich auf diese Pflicht und können flexibel im Praxis- oder Klinikalltag absolviert werden, ohne Reisezeit oder feste Präsenztermine.",
+      "Ja. Approbierte Ärzt:innen müssen nach §95d SGB V innerhalb von fünf Jahren 250 CME-Punkte nachweisen. CME-Online-Kurse zur Behandlung mit Botox zählen vollumfänglich auf diese Pflicht und können flexibel im Praxis- oder Klinikalltag absolviert werden, ohne Reisezeit oder feste Präsenztermine.",
   },
   {
-    question: "Ist Vorerfahrung mit Botulinum erforderlich?",
+    question: "Ist Vorerfahrung mit Botox erforderlich?",
     answer:
-      "Für den Grundkurs Botulinum ist keine Vorerfahrung notwendig. Er richtet sich an approbierte Ärzt:innen, die einen sicheren Einstieg in die Behandlung mit Botulinum suchen. Die Aufbaukurse setzen Grundkenntnisse voraus, die Masterclass richtet sich an Ärzt:innen, die regelmäßig mit Botulinum behandeln und ihr Können auf Expert:innen-Niveau heben möchten.",
+      "Für den Grundkurs ist keine Vorerfahrung mit Botox notwendig. Er richtet sich an approbierte Ärzt:innen, die einen sicheren Einstieg in die Behandlung mit Botulinumtoxin suchen. Die Aufbaukurse setzen Grundkenntnisse voraus, die Masterclass richtet sich an Ärzt:innen, die regelmäßig mit Botox behandeln und ihr Können auf Expert:innen-Niveau heben möchten.",
   },
   {
-    question: "Wie lange habe ich Zugriff auf die Botulinum-Online-Kurse?",
+    question: "Wie lange habe ich Zugriff auf die Botox-Online-Kurse?",
     answer:
       "Du hast 1,5 Jahre Zugriff auf Deine gebuchten Online-Kurse inklusive aller Updates und nachträglich ergänzter Behandlungsvideos. So kannst Du jederzeit Inhalte wiederholen, vor einer Behandlung gezielt nachschlagen oder bei Bedarf Pausen einlegen.",
+  },
+  {
+    question: "Was ist der Unterschied zwischen Botox und Botulinum?",
+    answer:
+      "„Botox\" ist der bekannteste Markenname (Allergan/AbbVie) für ein Präparat aus Botulinumtoxin Typ A. Im medizinischen Sprachgebrauch ist „Botulinum\" oder „Botulinumtoxin\" der korrekte Wirkstoffname. Inhaltlich behandeln unsere Kurse die Anwendung von Botulinumtoxin in der ästhetischen und therapeutischen Medizin, unabhängig vom Hersteller des verwendeten Präparats.",
   },
 ];
 
 const LEARNING_PATH = {
-  heading: "WIE FUNKTIONIERT EIN CME-ONLINE-KURS BOTULINUM?",
+  heading: "WIE FUNKTIONIERT EIN CME-ONLINE-KURS BOTOX?",
   steps: [
     {
       number: 1,
       icon: "BookOpen",
       title: "Buchen und sofort starten",
       description:
-        "Wähle den passenden Botulinum-Kurs und buche bequem online. Nach der Bezahlung erhältst Du sofort Zugang zur Lernplattform, ohne Wartezeit oder Aktivierung.",
+        "Wähle den passenden Botox-Kurs und buche bequem online. Nach der Bezahlung erhältst Du sofort Zugang zur Lernplattform, ohne Wartezeit oder Aktivierung.",
     },
     {
       number: 2,
@@ -153,7 +160,7 @@ function resolveCme(tpl: TemplateRow | null): {
   return { points: null, label: "CME beantragt" };
 }
 
-export default async function CmeOnlinekurseBotulinumPage() {
+export default async function CmeOnlinekurseBotoxPage() {
   const supabase = createAdminClient();
 
   // Pull all home tiles and filter to Botulinum-only courseKeys.
@@ -203,9 +210,9 @@ export default async function CmeOnlinekurseBotulinumPage() {
   const itemListJsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: "CME-Online-Kurse Botulinum für approbierte Ärzt:innen",
+    name: "CME-Online-Kurse Botox für approbierte Ärzt:innen",
     description:
-      "Übersicht aller CME-akkreditierten Online-Kurse zur Behandlung mit Botulinum von EPHIA.",
+      "Übersicht aller CME-akkreditierten Online-Kurse zur Behandlung mit Botulinumtoxin (Botox) von EPHIA.",
     url: PAGE_URL,
     mainEntity: {
       "@type": "ItemList",
@@ -261,7 +268,7 @@ export default async function CmeOnlinekurseBotulinumPage() {
       {
         "@type": "ListItem",
         position: 3,
-        name: "CME-Online-Kurse Botulinum",
+        name: "CME-Online-Kurse Botox",
         item: PAGE_URL,
       },
     ],
@@ -286,7 +293,7 @@ export default async function CmeOnlinekurseBotulinumPage() {
       <section className="bg-[#FAEBE1] pt-16 pb-16 md:pt-24 md:pb-20">
         <div className="max-w-4xl mx-auto px-5 md:px-8 text-center">
           <h1 className={`${TYPO.h1} text-4xl md:text-5xl lg:text-6xl mb-6`}>
-            CME-Online-Kurse Botulinum
+            CME-Online-Kurse Botox
             <br />
             für approbierte Ärzt:innen
           </h1>
@@ -295,7 +302,7 @@ export default async function CmeOnlinekurseBotulinumPage() {
             <strong className="font-bold text-black">
               {totalCme} CME-Punkte
             </strong>{" "}
-            zur Behandlung mit Botulinum online sammeln, akkreditiert von der Ärztekammer Berlin.
+            zur Behandlung mit Botox (Botulinumtoxin) online sammeln, akkreditiert von der Ärztekammer Berlin.
           </p>
 
           <a
@@ -316,7 +323,7 @@ export default async function CmeOnlinekurseBotulinumPage() {
       >
         <div className="max-w-7xl mx-auto px-5 md:px-8">
           <div className="text-center mb-12 max-w-3xl mx-auto">
-            <h2 className={`${TYPO.h2} mb-5`}>Unsere CME-akkreditierten Botulinum-Kurse</h2>
+            <h2 className={`${TYPO.h2} mb-5`}>Unsere CME-akkreditierten Botox-Kurse</h2>
             <p className={TYPO.bodyLead}>
               Vom Grundkurs bis zur Masterclass. Klicke auf eine Kurskarte für die vollständigen Inhalte, Behandlungsvideos und Termine.
             </p>
@@ -330,11 +337,11 @@ export default async function CmeOnlinekurseBotulinumPage() {
         </div>
       </section>
 
-      <Faq content={{ heading: "FAQ zu CME-Online-Kursen Botulinum", items: FAQ_ITEMS }} />
+      <Faq content={{ heading: "FAQ zu CME-Online-Kursen Botox", items: FAQ_ITEMS }} />
 
       <CtaBanner
         content={{
-          heading: "Bereit für Deine nächsten CME-Punkte mit Botulinum?",
+          heading: "Bereit für Deine nächsten CME-Punkte mit Botox?",
           ctaLabel: "Jetzt Kurs wählen",
           ctaHref: "#kurse",
         }}
@@ -389,7 +396,7 @@ function CmeCourseTile({ entry }: { entry: TileWithCme }) {
         <div className="relative aspect-[4/3] bg-black/5 overflow-hidden">
           <Image
             src={imagePath}
-            alt={tile.imageAlt ?? `${fullTitle}, CME-Online-Kurs Botulinum`}
+            alt={tile.imageAlt ?? `${fullTitle}, CME-Online-Kurs Botox`}
             fill
             quality={85}
             sizes="(min-width: 768px) 50vw, 100vw"
