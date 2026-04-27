@@ -281,7 +281,7 @@ export default async function CmeOnlineSeminarePage() {
             <strong className="font-bold text-black">
               {totalCme} CME-Punkte
             </strong>{" "}
-            online sammeln, akkreditiert von der Ärztekammer Berlin und flexibel im Praxisalltag absolvierbar.
+            online sammeln, akkreditiert von der Ärztekammer Berlin.
           </p>
 
           <a
