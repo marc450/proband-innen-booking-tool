@@ -10,6 +10,7 @@ import {
   buildPostPraxisEmailHtml,
   buildPostPraxisEmailSubject,
 } from "@/lib/post-praxis-email";
+import { archiveSentMessage } from "@/lib/gmail";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 
@@ -484,6 +485,21 @@ async function sendCertificateEmail(opts: {
   if (!res.ok) {
     const errText = await res.text();
     throw new Error(`Resend error: ${errText}`);
+  }
+
+  // Mirror into the customerlove Gmail Sent folder so the cert email
+  // shows up in the recipient's contact-profile email history. Best-
+  // effort — a Gmail outage must not retro-fail the Resend send (which
+  // would also undo the cert_sent_at write upstream).
+  try {
+    await archiveSentMessage({
+      to,
+      subject,
+      html,
+      attachments: [{ filename, content: base64, mimeType: "application/pdf" }],
+    });
+  } catch (err) {
+    console.error("archiveSentMessage failed (non-fatal):", err);
   }
 }
 

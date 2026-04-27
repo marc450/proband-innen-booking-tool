@@ -8,6 +8,7 @@ import {
   formatDateDe,
 } from "@/lib/course-email-templates";
 import { buildEmailHtml } from "@/lib/email-template";
+import { archiveSentMessage } from "@/lib/gmail";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const SLACK_WEBHOOK_URL_COURSES = process.env.SLACK_WEBHOOK_URL_COURSES;
@@ -63,6 +64,34 @@ export async function sendEmailViaResend(
     },
     body: JSON.stringify(payload),
   });
+
+  // Mirror into the customerlove Gmail Sent folder so the contact-profile
+  // email history (which queries Gmail directly) shows the send. Best-
+  // effort: a Gmail outage or missing token must never fail the actual
+  // Resend send above.
+  try {
+    await archiveSentMessage({
+      to,
+      subject,
+      html,
+      attachments: attachments?.map((a) => ({
+        filename: a.filename,
+        content: a.content,
+        mimeType: mimeTypeForFilename(a.filename),
+      })),
+    });
+  } catch (err) {
+    console.error("archiveSentMessage failed (non-fatal):", err);
+  }
+}
+
+function mimeTypeForFilename(name: string): string {
+  const lower = name.toLowerCase();
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+  if (lower.endsWith(".csv")) return "text/csv";
+  return "application/octet-stream";
 }
 
 // ── Compute end time from start + duration ──

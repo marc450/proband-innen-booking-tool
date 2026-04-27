@@ -314,6 +314,95 @@ export async function sendEmail(
   });
 }
 
+/**
+ * Mirror an email that was already sent via Resend into the
+ * customerlove@ephia.de Gmail Sent folder. Uses users.messages.insert
+ * with labelIds=["SENT"] and internalDateSource=dateHeader so contact-
+ * profile email histories (which query Gmail) pick the message up as
+ * an outbound thread instead of missing it entirely.
+ *
+ * Best-effort by design: callers should wrap in try/catch — a Gmail
+ * outage or token issue must never break the underlying Resend send.
+ */
+export async function archiveSentMessage(opts: {
+  to: string;
+  subject: string;
+  html: string;
+  attachments?: { filename: string; mimeType: string; content: string }[];
+  date?: Date;
+}): Promise<void> {
+  const { to, subject, html, attachments, date = new Date() } = opts;
+
+  const encodeHeader = (value: string): string => {
+    // eslint-disable-next-line no-control-regex
+    if (/^[\x00-\x7F]*$/.test(value)) return value;
+    return `=?UTF-8?B?${Buffer.from(value, "utf-8").toString("base64")}?=`;
+  };
+
+  const fromHeader = `EPHIA <${GMAIL_USER_EMAIL}>`;
+  const hasAttachments = !!attachments?.length;
+  const outerBoundary = `boundary_${Date.now()}`;
+  const innerBoundary = `inner_${Date.now()}`;
+  const contentType = hasAttachments
+    ? `multipart/mixed; boundary="${outerBoundary}"`
+    : `multipart/alternative; boundary="${outerBoundary}"`;
+
+  const rawHeaders = [
+    `From: ${fromHeader}`,
+    `To: ${to}`,
+    `Subject: ${encodeHeader(subject)}`,
+    `Date: ${date.toUTCString()}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: ${contentType}`,
+  ];
+
+  const parts: string[] = [rawHeaders.join("\r\n"), ""];
+
+  if (hasAttachments) {
+    parts.push(`--${outerBoundary}`);
+    parts.push(`Content-Type: multipart/alternative; boundary="${innerBoundary}"`);
+    parts.push("");
+    parts.push(`--${innerBoundary}`);
+    parts.push("Content-Type: text/html; charset=UTF-8");
+    parts.push("Content-Transfer-Encoding: base64");
+    parts.push("");
+    parts.push(Buffer.from(html).toString("base64"));
+    parts.push(`--${innerBoundary}--`);
+
+    for (const att of attachments!) {
+      parts.push(`--${outerBoundary}`);
+      parts.push(`Content-Type: ${att.mimeType}; name="${att.filename}"`);
+      parts.push(`Content-Disposition: attachment; filename="${att.filename}"`);
+      parts.push("Content-Transfer-Encoding: base64");
+      parts.push("");
+      parts.push(att.content);
+    }
+    parts.push(`--${outerBoundary}--`);
+  } else {
+    parts.push(`--${outerBoundary}`);
+    parts.push("Content-Type: text/html; charset=UTF-8");
+    parts.push("Content-Transfer-Encoding: base64");
+    parts.push("");
+    parts.push(Buffer.from(html).toString("base64"));
+    parts.push(`--${outerBoundary}--`);
+  }
+
+  const rawBody = parts.join("\r\n");
+  const encodedMessage = Buffer.from(rawBody)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
+  await gmailFetch("messages?internalDateSource=dateHeader", {
+    method: "POST",
+    body: JSON.stringify({
+      raw: encodedMessage,
+      labelIds: ["SENT"],
+    }),
+  });
+}
+
 // Modify labels (mark read/unread, archive, etc.)
 export async function modifyLabels(messageId: string, addLabels: string[] = [], removeLabels: string[] = []) {
   return gmailFetch(`messages/${messageId}/modify`, {
