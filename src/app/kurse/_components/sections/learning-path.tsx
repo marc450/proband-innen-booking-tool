@@ -1,4 +1,5 @@
 import {
+  Award,
   BookOpen,
   Users,
   MessageCircleHeart,
@@ -11,6 +12,8 @@ import {
   Compass,
   Heart,
   ScanFace,
+  Clock,
+  Zap,
   Check,
   Minus,
   type LucideIcon,
@@ -18,6 +21,7 @@ import {
 import type { CourseLearningPathContent } from "@/content/kurse/types";
 
 const ICON_MAP: Record<string, LucideIcon> = {
+  Award,
   BookOpen,
   Users,
   MessageCircleHeart,
@@ -30,6 +34,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Heart,
   ScanFace,
   Sparkles,
+  Clock,
+  Zap,
 };
 
 export function LearningPath({

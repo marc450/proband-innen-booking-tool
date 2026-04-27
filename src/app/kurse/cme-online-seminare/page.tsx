@@ -73,14 +73,14 @@ const LEARNING_PATH = {
   steps: [
     {
       number: 1,
-      icon: "BookOpen",
+      icon: "Zap",
       title: "Buchen und sofort starten",
       description:
         "Wähle das passende Format und buche bequem online. Nach der Bezahlung erhältst Du sofort Zugang zur Lernplattform, ohne Wartezeit oder Aktivierung.",
     },
     {
       number: 2,
-      icon: "ScanFace",
+      icon: "Clock",
       title: "Im eigenen Tempo lernen",
       description:
         "Studiere Behandlungsvideos, anatomische Darstellungen und kompakte Fachtexte, wann und wo es Dir passt. 1,5 Jahre Zugriff inklusive aller Updates.",
