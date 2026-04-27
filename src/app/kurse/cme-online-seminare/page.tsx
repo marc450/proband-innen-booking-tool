@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   title:
     "CME-Online-Seminare für Ärzt:innen | Ärztekammer-akkreditiert | EPHIA",
   description:
-    "CME-Online-Seminare für approbierte Ärzt:innen und Zahnärzt:innen: ästhetische Medizin, Botulinum, Dermalfiller, medizinische Hautpflege. Akkreditiert von der Ärztekammer Berlin, flexibel im eigenen Tempo.",
+    "CME-Online-Seminare für approbierte Ärzt:innen: ästhetische Medizin, Botulinum, Dermalfiller, medizinische Hautpflege. Akkreditiert von der Ärztekammer Berlin, flexibel im eigenen Tempo.",
   alternates: { canonical: PAGE_URL },
   openGraph: {
     title: "CME-Online-Seminare für Ärzt:innen | EPHIA",
@@ -62,11 +62,6 @@ const FAQ_ITEMS = [
       "Ja. Approbierte Ärzt:innen müssen nach §95d SGB V innerhalb von fünf Jahren 250 CME-Punkte nachweisen. CME-Online-Seminare zählen vollumfänglich auf diese Pflicht und können flexibel im Praxis- oder Klinikalltag absolviert werden, ohne Reisezeit oder feste Präsenztermine.",
   },
   {
-    question: "Sind die Online-Seminare auch für Zahnärzt:innen geeignet?",
-    answer:
-      "Ja. Mehrere unserer Seminare richten sich explizit an approbierte Zahnärzt:innen, insbesondere der Grundkurs Botulinum für Zahnmedizin. Die zahnärztliche Akkreditierung erfolgt über die Zahnärztekammer; das Lernen, der Test und das Zertifikat funktionieren analog zur ärztlichen CME.",
-  },
-  {
     question: "Wie lange habe ich Zugriff auf das Online-Seminar?",
     answer:
       "Du hast 1,5 Jahre Zugriff auf Deine Online-Seminare inklusive aller Updates und nachträglich ergänzter Behandlungsvideos. So kannst Du jederzeit Inhalte wiederholen, vor einer Behandlung gezielt nachschlagen oder bei Bedarf Pausen einlegen.",
@@ -75,32 +70,27 @@ const FAQ_ITEMS = [
 
 const LEARNING_PATH = {
   heading: "WIE FUNKTIONIERT EIN CME-ONLINE-SEMINAR?",
-  intro:
-    "Drei Schritte vom Kauf bis zur Punktegutschrift, vollständig digital und in Deinem Tempo.",
   steps: [
     {
       number: 1,
       icon: "BookOpen",
-      format: "Online buchen",
-      title: "Seminar auswählen und sofort starten",
+      title: "Buchen und sofort starten",
       description:
-        "Wähle aus unseren CME-Online-Seminaren das passende Format und buche bequem online. Direkt nach der Bezahlung erhältst Du Deinen Zugang zur Lernplattform, ohne Wartezeit oder Aktivierungsverzögerung.",
+        "Wähle das passende Format und buche bequem online. Nach der Bezahlung erhältst Du sofort Zugang zur Lernplattform, ohne Wartezeit oder Aktivierung.",
     },
     {
       number: 2,
       icon: "ScanFace",
-      format: "Selbstgesteuert lernen",
-      title: "In Deinem Tempo lernen",
+      title: "Im eigenen Tempo lernen",
       description:
-        "Studiere die Inhalte mit dichten Behandlungsvideos, anatomischen Darstellungen und kompakten Fachtexten, wann und wo es Dir passt. Du hast 1,5 Jahre Zugriff inkl. aller Updates und kannst jederzeit Pausen machen.",
+        "Studiere Behandlungsvideos, anatomische Darstellungen und kompakte Fachtexte, wann und wo es Dir passt. 1,5 Jahre Zugriff inklusive aller Updates.",
     },
     {
       number: 3,
       icon: "Award",
-      format: "Test & Punkte",
-      title: "Lernerfolgstest und CME-Gutschrift",
+      title: "Test und CME-Gutschrift",
       description:
-        "Am Ende absolvierst Du einen Lernerfolgstest. Bei Bestehen senden wir Dein Teilnahmezertifikat mit Veranstaltungsnummer (VNR) und übermitteln die Punkte über die Ärztekammer Berlin direkt an Dein CME-Konto.",
+        "Am Ende absolvierst Du einen Lernerfolgstest. Bei Bestehen erhältst Du Dein Zertifikat und Deine Punkte werden direkt an die Ärztekammer übermittelt.",
     },
   ],
 };
@@ -284,7 +274,7 @@ export default async function CmeOnlineSeminarePage() {
           <h1 className={`${TYPO.h1} text-4xl md:text-5xl lg:text-6xl mb-6`}>
             CME-Online-Seminare
             <br />
-            für approbierte Ärzt:innen und Zahnärzt:innen
+            für approbierte Ärzt:innen
           </h1>
           <p className="text-base md:text-[17px] leading-relaxed text-black/75 max-w-2xl mx-auto mb-10">
             Über{" "}
