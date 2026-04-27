@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { Award, Clock, GraduationCap, ShieldCheck } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { homeContent } from "@/content/kurse/home";
 import type { HomeCourseTile } from "@/content/kurse/home-types";
@@ -297,29 +296,19 @@ export default async function CmeOnlineSeminarePage() {
 
       {/* Hero */}
       <section className="bg-[#FAEBE1] pt-16 pb-16 md:pt-24 md:pb-20">
-        <div className="max-w-5xl mx-auto px-5 md:px-8 text-center">
-          <p className="text-xs md:text-sm font-semibold tracking-[0.2em] text-[#0066FF] mb-5">
-            CME-ONLINE-FORTBILDUNG · ÄRZTEKAMMER BERLIN
-          </p>
+        <div className="max-w-4xl mx-auto px-5 md:px-8 text-center">
           <h1 className={`${TYPO.h1} text-4xl md:text-5xl lg:text-6xl mb-6`}>
             CME-Online-Seminare
             <br />
             für approbierte Ärzt:innen und Zahnärzt:innen
           </h1>
-          <p className="text-base md:text-[17px] leading-relaxed text-black/75 max-w-3xl mx-auto mb-8">
+          <p className="text-base md:text-[17px] leading-relaxed text-black/75 max-w-2xl mx-auto mb-10">
             Über{" "}
             <strong className="font-bold text-black">
-              {totalCme} CME-Punkte online sammeln
-            </strong>
-            : ästhetische Medizin, Botulinum, Dermalfiller und medizinische Hautpflege. Unsere CME-Online-Seminare (auch CME-Online-Kurse oder CME-Online-Fortbildungen genannt) sind von der Ärztekammer Berlin akkreditiert und flexibel im Praxis- oder Klinikalltag absolvierbar, ohne Reisezeit oder feste Termine.
+              {totalCme} CME-Punkte
+            </strong>{" "}
+            online sammeln, akkreditiert von der Ärztekammer Berlin und flexibel im Praxisalltag absolvierbar.
           </p>
-
-          <div className="flex flex-wrap justify-center gap-4 md:gap-5 mb-10">
-            <HeroStat icon={Clock} label="Flexibel & ortsunabhängig lernen" />
-            <HeroStat icon={ShieldCheck} label="Ärztekammer Berlin akkreditiert" />
-            <HeroStat icon={Award} label={`${totalCme}+ CME-Punkte verfügbar`} />
-            <HeroStat icon={GraduationCap} label="Für approbierte Ärzt:innen" />
-          </div>
 
           <a
             href="#seminare"
@@ -365,27 +354,6 @@ export default async function CmeOnlineSeminarePage() {
         }}
       />
     </>
-  );
-}
-
-function HeroStat({
-  icon: Icon,
-  label,
-}: {
-  icon: typeof Clock;
-  label: string;
-}) {
-  return (
-    <div className="flex items-center gap-2 bg-white/70 rounded-[10px] px-4 py-2.5">
-      <Icon
-        className="w-4 h-4 text-[#0066FF] flex-shrink-0"
-        strokeWidth={2.5}
-        aria-hidden="true"
-      />
-      <span className="text-sm md:text-[15px] font-semibold text-black">
-        {label}
-      </span>
-    </div>
   );
 }
 
