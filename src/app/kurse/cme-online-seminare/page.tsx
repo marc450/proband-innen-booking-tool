@@ -143,10 +143,14 @@ function resolveCme(tpl: TemplateRow | null): {
 export default async function CmeOnlineSeminarePage() {
   const supabase = createAdminClient();
 
-  // Build tile list from the home content (same source unsere-kurse uses)
-  // and skip the group-inquiry tile, which has no courseKey.
+  // Build tile list from the home content (same source unsere-kurse uses).
+  // Skip the group-inquiry tile (no courseKey) and any dentist-only courses,
+  // since this landing is positioned for Ärzt:innen only.
   const sourceTiles = homeContent.courses.tiles.filter(
-    (t) => t.type !== "group-inquiry" && t.courseKey,
+    (t) =>
+      t.type !== "group-inquiry" &&
+      t.courseKey &&
+      !t.courseKey.toLowerCase().includes("zahn"),
   );
   const courseKeys = sourceTiles
     .map((t) => t.courseKey)
