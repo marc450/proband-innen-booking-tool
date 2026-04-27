@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Sparkles, Heart, Lightbulb, ArrowRight } from "lucide-react";
+import { grundkursBotulinum } from "@/content/kurse/grundkurs-botulinum";
 import { Faq } from "../_components/sections/faq";
+import { Lernplattform } from "../_components/sections/lernplattform";
 import { TYPO } from "../_components/typography";
 import { SignupCta } from "./signup-cta";
 
@@ -231,6 +233,11 @@ export default function KostenloserBotoxKursPage() {
           </div>
         </div>
       </section>
+
+      {/* Lernplattform peek — reuse the Grundkurs Botulinum block so the
+          free-tutorial visitor sees the same platform the paid course
+          uses. */}
+      <Lernplattform content={grundkursBotulinum.lernplattform} />
 
       {/* Bridge to Grundkurs Botulinum */}
       <section className="bg-[#FAEBE1] py-16 md:py-24">
