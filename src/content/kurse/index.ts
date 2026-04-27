@@ -15,6 +15,7 @@ import { botoxOnlinekurs } from "./botox-onlinekurs";
 import { botoxFortbildung } from "./botox-fortbildung";
 import { botoxKursFuerFortgeschrittene } from "./botox-kurs-fuer-fortgeschrittene";
 import { fillerKurs } from "./filler-kurs";
+import { lippenFillerKurs } from "./lippen-filler-kurs";
 
 /**
  * Registry of all course landing page content, keyed by URL slug.
@@ -42,6 +43,7 @@ const registry: Record<string, CourseLandingContent> = {
   [botoxFortbildung.slug]: botoxFortbildung,
   [botoxKursFuerFortgeschrittene.slug]: botoxKursFuerFortgeschrittene,
   [fillerKurs.slug]: fillerKurs,
+  [lippenFillerKurs.slug]: lippenFillerKurs,
 };
 
 export function getCourseContent(slug: string): CourseLandingContent | null {
