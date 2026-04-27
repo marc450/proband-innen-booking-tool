@@ -41,14 +41,14 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
     socialProof: "Über 300 zertifizierte Ärzt:innen",
     ctaStacked: true,
     subheadline:
-      "Praxisnaher Einstieg in die ästhetische Botulinum-Anwendung für approbierte Ärzt:innen, fundiert, diskriminierungssensibel und mit echten Proband:innen.",
+      "Praxisnahe Botox-Fortbildung für approbierte Ärzt:innen, fundiert, diskriminierungssensibel und mit echten Proband:innen.",
     stats: [
       { icon: "Clock", label: "Format", value: "10h Online + 6h Präsenz" },
       { icon: "Award", label: "Akkreditiert", value: "22 CME-Punkte + Zertifikat" },
       { icon: "GraduationCap", label: "Level", value: "Einsteigerkurs" },
     ],
     description:
-      "Du bist approbierte:r Ärzt:in und möchtest mit Botulinum-Behandlungen einsteigen? Unser Botox-Kurs für Ärzt:innen ist Dein strukturierter Weg vom ersten Onlinekurs bis zur sicheren Behandlung Deiner ersten Patient:innen. Im Online-Modul lernst Du Anatomie, Produktkunde und alle relevanten Indikationen Stirn, Glabella, Lachfalten, Brow-Lifting und Platysma. Am Praxistag behandelst Du dann echte Proband:innen unter Aufsicht, in kleinen Gruppen mit max. 7 Teilnehmer:innen. Voraussetzung ist Deine Approbation als Humanmediziner:in. Vorerfahrung in ästhetischer Medizin brauchst Du nicht.",
+      "Du bist approbierte:r Ärzt:in und möchtest mit Botox-Behandlungen einsteigen? Unser Botox-Kurs für Ärzt:innen ist Dein strukturierter Weg vom ersten Onlinekurs bis zur sicheren Behandlung Deiner ersten Patient:innen. Im Online-Modul lernst Du Anatomie, Produktkunde und alle relevanten Indikationen Stirn, Glabella, Lachfalten, Brow-Lifting und Platysma. Am Praxistag behandelst Du dann echte Proband:innen unter Aufsicht, in kleinen Gruppen mit max. 7 Teilnehmer:innen. Voraussetzung ist Deine Approbation als Humanmediziner:in. Vorerfahrung in ästhetischer Medizin brauchst Du nicht.",
     videoPath: grundkursBotulinum.hero.videoPath,
     videoPoster: grundkursBotulinum.hero.videoPoster,
   },
@@ -66,7 +66,7 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
   gruppenbuchungen: {
     heading: "GRUPPENBUCHUNGEN",
     description:
-      "Praxisteam, das gemeinsam in die ästhetische Botulinum-Anwendung einsteigen möchte? Gerne erstellen wir maßgeschneiderte Angebote für Dich und Deine Kolleg:innen. Sende uns dazu einfach eine Anfrage mit folgendem Inhalt: Anzahl Teilnehmer:innen (min. 4 Personen), gewünschter Kursinhalt, gewünschter Zeitraum.",
+      "Praxisteam, das gemeinsam die ersten Botox-Behandlungen anbieten möchte? Gerne erstellen wir maßgeschneiderte Angebote für Dich und Deine Kolleg:innen. Sende uns dazu einfach eine Anfrage mit folgendem Inhalt: Anzahl Teilnehmer:innen (min. 4 Personen), gewünschter Kursinhalt, gewünschter Zeitraum.",
     ctaLabel: "Jetzt Anfrage senden",
     ctaHref:
       "mailto:customerlove@ephia.de?subject=Gruppenbuchung%20Botox-Kurs%20%C3%84rzt:innen",
@@ -77,7 +77,7 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
   learningPath: {
     heading: "DEIN LERNWEG",
     intro:
-      "Vom ersten Onlinekurs bis zur ersten eigenen Patient:in: in drei klar strukturierten Schritten zum sicheren Einstieg in die ästhetische Botulinum-Behandlung.",
+      "Vom ersten Onlinekurs bis zur ersten eigenen Patient:in: in drei klar strukturierten Schritten zum sicheren Einstieg in die ästhetische Botox-Behandlung.",
     steps: [
       {
         number: 1,
@@ -143,7 +143,7 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
         question:
           "Worin unterscheidet sich der Kurs für Ärzt:innen von dem für Zahnärzt:innen?",
         answer:
-          "Der Kurs für Ärzt:innen deckt das volle ästhetische Indikationsspektrum ab: Stirn, Glabella, Lachfalten, Brow-Lifting und Platysma. Der Kurs für Zahnärzt:innen ist auf das zahnärztliche Behandlungsspektrum zugeschnitten, mit eigenen Kapiteln zu Bruxismus und Migräne, dafür ohne Lachfalten, Brow-Lifting und Platysma. Die Praxistage finden gemeinsam im selben Studio statt, der Onlinekurs ist jedoch fachgruppenspezifisch.",
+          "Der Botox-Kurs für Ärzt:innen deckt das volle ästhetische Indikationsspektrum ab: Stirn, Glabella, Lachfalten, Brow-Lifting und Platysma. Der Kurs für Zahnärzt:innen ist auf das zahnärztliche Behandlungsspektrum zugeschnitten, mit eigenen Kapiteln zu Bruxismus und Migräne, dafür ohne Lachfalten, Brow-Lifting und Platysma. Die Praxistage finden gemeinsam im selben Studio statt, der Onlinekurs ist jedoch fachgruppenspezifisch.",
       },
       ...grundkursBotulinum.faq.items,
     ],
