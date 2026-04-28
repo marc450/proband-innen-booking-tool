@@ -663,13 +663,13 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                 <CardTitle className="text-base">E-Mail Inhalt</CardTitle>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={() => {
                     setAiOpen((v) => !v);
                     setAiError(null);
                   }}
-                  className="gap-1.5"
+                  className="gap-1.5 bg-[#0066FF]/10 text-[#0066FF] hover:bg-[#0066FF]/15 hover:text-[#0066FF]"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
                   Mit KI erstellen
@@ -882,7 +882,12 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                   ))}
                 </div>
               )}
-              <Button variant="outline" size="sm" onClick={() => attachmentInputRef.current?.click()}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => attachmentInputRef.current?.click()}
+                className="bg-[#0066FF]/10 text-[#0066FF] hover:bg-[#0066FF]/15 hover:text-[#0066FF]"
+              >
                 <Paperclip className="h-3.5 w-3.5 mr-1" />
                 Anhang hinzufügen
               </Button>
@@ -1216,7 +1221,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                     aria-pressed={previewMode === m}
                     className={`px-2.5 py-1 rounded-[8px] font-medium transition-colors ${
                       previewMode === m
-                        ? "bg-foreground text-background"
+                        ? "bg-[#0066FF] text-white"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
