@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { encryptPatientFields, encryptBookingFields, hashEmail, hashPhone } from "@/lib/encryption";
+import { findPatientIdByAnyEmail } from "@/lib/contact-emails";
 import { buildEmailHtml, PATIENT_PREPARATION_BLOCK } from "@/lib/email-template";
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
@@ -38,14 +39,31 @@ export async function POST(req: NextRequest) {
 
     const displayTreatment = course?.treatment_title || slot.course_title || "EPHIA Kurs";
 
-    // Check blacklist
-    const { data: blacklisted } = await supabase
-      .from("patients")
-      .select("id, patient_status")
-      .or(`email_hash.eq.${emailHash},phone_hash.eq.${phoneHash}`)
-      .eq("patient_status", "blacklist");
+    // Check blacklist — split into two parallel lookups:
+    //   1. Email match via primary OR alias (covers the case where a
+    //      blacklisted patient books with a non-primary address)
+    //   2. Phone hash match against the legacy column
+    const [blacklistByEmailId, byPhone] = await Promise.all([
+      findPatientIdByAnyEmail(email),
+      supabase
+        .from("patients")
+        .select("id")
+        .eq("phone_hash", phoneHash)
+        .eq("patient_status", "blacklist")
+        .maybeSingle(),
+    ]);
 
-    if (blacklisted && blacklisted.length > 0) {
+    let blacklistedHit = !!byPhone.data;
+    if (!blacklistedHit && blacklistByEmailId) {
+      const { data: byEmail } = await supabase
+        .from("patients")
+        .select("patient_status")
+        .eq("id", blacklistByEmailId)
+        .maybeSingle();
+      blacklistedHit = byEmail?.patient_status === "blacklist";
+    }
+
+    if (blacklistedHit) {
       return NextResponse.json({ error: "Eine Buchung ist mit diesen Daten leider nicht möglich." }, { status: 403 });
     }
 
@@ -77,17 +95,16 @@ export async function POST(req: NextRequest) {
       phone,
     });
 
-    // Upsert patient
-    const { data: existingPatient } = await supabase
-      .from("patients")
-      .select("id")
-      .eq("email_hash", emailHash)
-      .maybeSingle();
-
+    // Upsert patient — match by primary OR alias so an alias-only
+    // booking attaches to the existing profile instead of spawning a
+    // duplicate. The patients.email_hash column is intentionally NOT
+    // updated when matched via alias; primary email is owned by the
+    // email-manager UI, not the booking flow.
+    const existingPatientId = await findPatientIdByAnyEmail(email);
     let patientId: string;
 
-    if (existingPatient) {
-      patientId = existingPatient.id;
+    if (existingPatientId) {
+      patientId = existingPatientId;
       await supabase
         .from("patients")
         .update({

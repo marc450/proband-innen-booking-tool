@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hashEmail, hashPhone } from "@/lib/encryption";
+import { findPatientIdByAnyEmail } from "@/lib/contact-emails";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,17 +13,20 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Check blacklist by email hash
+    // Check blacklist by email — looks up the patient via primary OR
+    // alias so a blacklisted person can't slip through by booking with
+    // a non-primary address.
     if (email) {
-      const emailH = hashEmail(email);
-      const { data: byEmail } = await supabase
-        .from("patients")
-        .select("patient_status")
-        .eq("email_hash", emailH)
-        .maybeSingle();
-
-      if (byEmail?.patient_status === "blacklist") {
-        return NextResponse.json({ eligible: false, reason: "blacklist" });
+      const patientId = await findPatientIdByAnyEmail(email);
+      if (patientId) {
+        const { data: byEmail } = await supabase
+          .from("patients")
+          .select("patient_status")
+          .eq("id", patientId)
+          .maybeSingle();
+        if (byEmail?.patient_status === "blacklist") {
+          return NextResponse.json({ eligible: false, reason: "blacklist" });
+        }
       }
     }
 

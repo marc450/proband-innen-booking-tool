@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import { findPatientIdByAnyEmail } from "@/lib/contact-emails";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
@@ -174,16 +175,20 @@ export async function POST(req: NextRequest) {
     const emailHash = email ? hashEmail(email) : null;
     const phoneHash = phone ? hashPhone(phone) : null;
 
-    // Blacklist check by email hash
-    if (emailHash) {
-      const { data: byEmail } = await supabase
-        .from("patients")
-        .select("patient_status")
-        .eq("email_hash", emailHash)
-        .maybeSingle();
-
-      if (byEmail?.patient_status === "blacklist") {
-        return NextResponse.json({ error: "Eine Buchung ist mit diesen Daten nicht möglich." }, { status: 403 });
+    // Blacklist check by email — looks up the patient via primary OR
+    // alias so a blacklisted person can't slip through by booking with
+    // a non-primary address.
+    if (email) {
+      const blacklistPatientId = await findPatientIdByAnyEmail(email);
+      if (blacklistPatientId) {
+        const { data: byEmail } = await supabase
+          .from("patients")
+          .select("patient_status")
+          .eq("id", blacklistPatientId)
+          .maybeSingle();
+        if (byEmail?.patient_status === "blacklist") {
+          return NextResponse.json({ error: "Eine Buchung ist mit diesen Daten nicht möglich." }, { status: 403 });
+        }
       }
     }
 
@@ -244,17 +249,17 @@ export async function POST(req: NextRequest) {
       notes: null,
     });
 
-    // Upsert patient by email_hash
+    // Upsert patient — match by primary OR alias so an alias-only
+    // booking attaches to the existing profile instead of spawning a
+    // duplicate. The patients.email_hash column (legacy primary) is
+    // intentionally NOT updated when matched via alias; primary email
+    // is owned by the email-manager UI, not the booking flow.
     let patientId: string | null = null;
-    if (emailHash) {
-      const { data: existingPatient } = await supabase
-        .from("patients")
-        .select("id")
-        .eq("email_hash", emailHash)
-        .maybeSingle();
+    if (email) {
+      const existingPatientId = await findPatientIdByAnyEmail(email);
 
-      if (existingPatient) {
-        patientId = existingPatient.id;
+      if (existingPatientId) {
+        patientId = existingPatientId;
         await supabase
           .from("patients")
           .update({
