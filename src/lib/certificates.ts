@@ -65,12 +65,17 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
     layout: {
       page: 1,
       // A4 landscape, 842 x 595 pt. Name sits centred over the dotted
-      // underline in the left column of page 1.
+      // underline in the left column of page 1. The name must always
+      // fit comfortably inside that underline — long titled names
+      // (e.g. "Dr. med. Markus von Schaewen") were running right up
+      // to its edges, so maxWidth is held at ~90% of the dotted line
+      // width to keep ~5% padding on each side. minSize gives the
+      // shrink-to-fit loop more headroom for very long names.
       centerX: 173,
       baselineY: 388,
-      maxWidth: 325,
+      maxWidth: 290,
       targetSize: 28,
-      minSize: 12,
+      minSize: 10,
       // VNR lines are baked as labels ("VNR Theorie:" / "VNR Praxis:")
       // in the footer. The number is stamped just after the colon on
       // the same baseline. Calibrated visually against the reference
@@ -101,9 +106,9 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       page: 1,
       centerX: 173,
       baselineY: 388,
-      maxWidth: 325,
+      maxWidth: 290,
       targetSize: 28,
-      minSize: 12,
+      minSize: 10,
     },
   },
 ];
