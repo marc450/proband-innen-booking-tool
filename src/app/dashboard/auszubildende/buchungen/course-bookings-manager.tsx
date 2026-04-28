@@ -27,6 +27,7 @@ import { SortableHead } from "@/components/table/sortable-head";
 import { useTableSort } from "@/hooks/use-table-sort";
 import Link from "next/link";
 import { formatPersonName } from "@/lib/utils";
+import { buildProfileCompletionUrl } from "@/lib/profile-link";
 import type { CourseBookingStatus } from "@/lib/types";
 
 interface BookingRow {
@@ -641,7 +642,11 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                           title="Link zur Profilvervollständigung kopieren"
                           onClick={(e) => {
                             e.stopPropagation();
-                            const url = `https://proband-innen.ephia.de/courses/success?booking_id=${booking.id}&email=${encodeURIComponent(booking.email || "")}`;
+                            if (!booking.email) return;
+                            const url = buildProfileCompletionUrl(
+                              booking.id,
+                              booking.email,
+                            );
                             navigator.clipboard.writeText(url);
                             setCopiedProfileLink(booking.id);
                             setTimeout(() => setCopiedProfileLink(null), 2000);

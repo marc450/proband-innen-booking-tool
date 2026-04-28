@@ -18,9 +18,12 @@ import {
   CheckCircle2,
   Mail,
   Loader2,
+  LinkIcon,
+  Check,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPersonName } from "@/lib/utils";
+import { buildProfileCompletionUrl } from "@/lib/profile-link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 
@@ -423,6 +426,11 @@ function LinkableName({
 }
 
 function ParticipantRow({ p }: { p: Participant }) {
+  // Per-row copy state for the profile-completion link. Each row owns
+  // its own flag so multiple "Unvollständig" rows can show the
+  // success tick without flapping each other.
+  const [copiedLink, setCopiedLink] = useState(false);
+
   const name =
     formatPersonName({
       title: p.title,
@@ -486,9 +494,32 @@ function ParticipantRow({ p }: { p: Participant }) {
         {p.auszubildendeId == null ? (
           <span className="text-xs text-muted-foreground">Nicht verknüpft</span>
         ) : p.profileComplete === false ? (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 rounded-full px-2 py-0.5">
-            <AlertTriangle className="w-3 h-3" />
-            Unvollständig
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 rounded-full px-2 py-0.5">
+              <AlertTriangle className="w-3 h-3" />
+              Unvollständig
+            </span>
+            {p.email && (
+              <button
+                type="button"
+                title="Profil-Vervollständigungs-Link kopieren"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!p.email) return;
+                  const url = buildProfileCompletionUrl(p.bookingId, p.email);
+                  navigator.clipboard.writeText(url);
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 2000);
+                }}
+                className="inline-flex items-center text-amber-700 hover:text-amber-900 transition-colors cursor-pointer"
+              >
+                {copiedLink ? (
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                ) : (
+                  <LinkIcon className="w-3.5 h-3.5" />
+                )}
+              </button>
+            )}
           </span>
         ) : (
           <span className="inline-flex items-center gap-1 text-xs text-emerald-700">

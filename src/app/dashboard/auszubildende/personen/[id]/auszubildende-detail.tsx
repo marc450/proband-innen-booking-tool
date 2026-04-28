@@ -15,7 +15,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Pencil, FileText, AlertTriangle, Ban, CheckCircle2, Mail, GitMerge } from "lucide-react";
+import { ArrowLeft, Pencil, FileText, AlertTriangle, Ban, CheckCircle2, Mail, GitMerge, Copy, Check } from "lucide-react";
+import { buildProfileCompletionUrl } from "@/lib/profile-link";
 import { EmailManagerModal } from "@/components/email-manager-modal";
 import { MergeContactModal } from "@/components/merge-contact-modal";
 import { useRouter } from "next/navigation";
@@ -31,6 +32,8 @@ interface BookingRow {
   status: CourseBookingStatus;
   created_at: string;
   stripe_invoice_pdf_url: string | null;
+  email: string | null;
+  profile_complete: boolean | null;
   course_sessions: { date_iso: string; label_de: string | null; instructor_name: string | null } | null;
   course_templates: { title: string; course_label_de: string | null } | null;
 }
@@ -67,6 +70,49 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
   // save or when the user starts typing again. Kept local (no toast
   // system in this app) so the rest of the page stays untouched.
   const [emailError, setEmailError] = useState<string | null>(null);
+  // Tracks whether the profile-completion link was just copied so we can
+  // flip the Copy icon to a Check for ~2s as user feedback (no toast
+  // system in this app).
+  const [profileLinkCopied, setProfileLinkCopied] = useState(false);
+
+  // Pick the most recent booking that's still missing a completed
+  // profile. Bookings are loaded sorted by created_at desc on the
+  // server, so the head of the array is the freshest. The link works
+  // identically for any of the contact's bookings — they all surface
+  // the same completion form, scoped by booking_id + email.
+  const incompleteBooking = bookings.find(
+    (b) => b.profile_complete === false && b.email,
+  );
+
+  const handleCopyProfileLink = async () => {
+    if (!incompleteBooking?.email) return;
+    const url = buildProfileCompletionUrl(
+      incompleteBooking.id,
+      incompleteBooking.email,
+    );
+    try {
+      await navigator.clipboard.writeText(url);
+      setProfileLinkCopied(true);
+      setTimeout(() => setProfileLinkCopied(false), 2000);
+    } catch {
+      // Clipboard API failed (rare — disabled by browser policy or no
+      // secure context). Fall back to a textarea-select trick so the
+      // staff member always gets the URL onto the clipboard.
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+        setProfileLinkCopied(true);
+        setTimeout(() => setProfileLinkCopied(false), 2000);
+      } finally {
+        ta.remove();
+      }
+    }
+  };
 
   // Name edit popover. Each input is independent (defaultValue + onBlur)
   // so editing Nachname commits via autosave on blur, identical to the
@@ -358,6 +404,31 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
                   </div>
                 )}
               </div>
+              {/* Profile-completion link copy. Surfaces only when at
+                  least one booking still needs the contact to fill in
+                  title / specialty / EFN / birthdate. The link drops
+                  the contact onto the same /courses/success screen the
+                  reminder email points at. */}
+              {incompleteBooking && (
+                <button
+                  type="button"
+                  onClick={handleCopyProfileLink}
+                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium rounded-[10px] px-2.5 py-1.5 bg-amber-50 text-amber-800 hover:bg-amber-100 transition-colors w-full justify-center"
+                  title="Profil-Vervollständigungs-Link in die Zwischenablage kopieren"
+                >
+                  {profileLinkCopied ? (
+                    <>
+                      <Check className="h-3.5 w-3.5" />
+                      Link kopiert
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5" />
+                      Profil-Link kopieren
+                    </>
+                  )}
+                </button>
+              )}
             </CardContent>
           </Card>
 
