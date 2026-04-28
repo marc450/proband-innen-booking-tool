@@ -1296,30 +1296,23 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                                 {slot.blocked ? (
                                   <span className="text-sm text-muted-foreground italic">{slot.blocked_note || "Gesperrt"}</span>
                                 ) : slotBookings.length > 0 ? slotBookings.map((b) => {
-                                  const isPrivate = b.booking_type === "private";
+                                  const isReferred = b.booking_type === "private";
                                   return (
                                     <div key={b.id} className="min-w-0">
-                                      <div className="flex items-center gap-1.5 min-w-0">
-                                        {b.patient_id ? (
-                                          <Link
-                                            href={`/dashboard/patients/${b.patient_id}`}
-                                            className="text-sm font-medium hover:underline truncate"
-                                            onClick={(e) => e.stopPropagation()}
-                                          >
-                                            {getPatientName(b)}
-                                          </Link>
-                                        ) : (
-                                          <span className="text-sm truncate">{getPatientName(b)}</span>
-                                        )}
-                                        {isPrivate && (
-                                          <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-wide text-[#0066FF] bg-[#0066FF]/10 rounded-full px-2 py-0.5 shrink-0">
-                                            Privat
-                                          </span>
-                                        )}
-                                      </div>
-                                      {isPrivate && b.referring_doctor && (
-                                        <div className="text-xs text-muted-foreground truncate">
-                                          via {b.referring_doctor}
+                                      {b.patient_id ? (
+                                        <Link
+                                          href={`/dashboard/patients/${b.patient_id}`}
+                                          className="text-sm font-medium hover:underline truncate block"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          {getPatientName(b)}
+                                        </Link>
+                                      ) : (
+                                        <span className="text-sm truncate block">{getPatientName(b)}</span>
+                                      )}
+                                      {isReferred && (
+                                        <div className="text-xs text-[#733D29] font-medium truncate">
+                                          Vermittelt von {b.referring_doctor || "Ärzt:in"}
                                         </div>
                                       )}
                                     </div>

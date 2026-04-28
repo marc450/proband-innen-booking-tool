@@ -121,6 +121,17 @@ export async function middleware(request: NextRequest) {
       return NextResponse.rewrite(new URL("/not-found", request.url));
     }
 
+    // The private booking funnel is only meant to be reached via
+    // doctor-emailed links. Tag every response with X-Robots-Tag so the
+    // URL is dropped from Google's index even if the bot somehow reaches
+    // it (e.g. via leaked link). Defense in depth: the layout also sets
+    // a noindex meta tag and robots.ts disallows the whole host.
+    if (pathname === "/book/privat" || pathname.startsWith("/book/privat/")) {
+      const response = NextResponse.next();
+      response.headers.set("X-Robots-Tag", "noindex, nofollow");
+      return response;
+    }
+
     if (pathname === "/" || pathname === "/werde-proband-in") {
       const url = request.nextUrl.clone();
       url.pathname = "/kurse/werde-proband-in";
