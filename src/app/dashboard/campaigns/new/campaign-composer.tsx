@@ -664,14 +664,13 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                 <Button
                   type="button"
                   variant="ghost"
-                  size="sm"
                   onClick={() => {
                     setAiOpen((v) => !v);
                     setAiError(null);
                   }}
-                  className="gap-1.5 bg-[#0066FF]/10 text-[#0066FF] hover:bg-[#0066FF]/15 hover:text-[#0066FF]"
+                  className="gap-2 bg-[#0066FF]/10 text-[#0066FF] hover:bg-[#0066FF]/15 hover:text-[#0066FF]"
                 >
-                  <Sparkles className="h-3.5 w-3.5" />
+                  <Sparkles className="h-4 w-4" />
                   Mit KI erstellen
                 </Button>
               </div>
@@ -884,11 +883,10 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
               )}
               <Button
                 variant="ghost"
-                size="sm"
                 onClick={() => attachmentInputRef.current?.click()}
-                className="bg-[#0066FF]/10 text-[#0066FF] hover:bg-[#0066FF]/15 hover:text-[#0066FF]"
+                className="gap-2 bg-[#0066FF]/10 text-[#0066FF] hover:bg-[#0066FF]/15 hover:text-[#0066FF]"
               >
-                <Paperclip className="h-3.5 w-3.5 mr-1" />
+                <Paperclip className="h-4 w-4" />
                 Anhang hinzufügen
               </Button>
             </CardContent>
