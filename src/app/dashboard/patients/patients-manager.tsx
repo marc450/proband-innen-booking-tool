@@ -220,15 +220,19 @@ export function PatientsManager({ initialPatients }: Props) {
 
       {/* Import preview modal */}
       <Dialog open={!!importRows} onOpenChange={(open) => { if (!open) { setImportRows(null); setImportResult(null); } }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Proband:innen importieren</DialogTitle>
           </DialogHeader>
           {importResult ? (
             <div className="py-4 space-y-3 text-sm">
-              <p className="text-green-600 font-medium">{importResult.inserted} Proband:innen erfolgreich importiert.</p>
+              <p className="text-emerald-700 font-semibold text-base">
+                {importResult.inserted} Proband:innen erfolgreich importiert.
+              </p>
               {importResult.skipped > 0 && (
-                <p className="text-muted-foreground">{importResult.skipped} bereits vorhanden (übersprungen).</p>
+                <p className="text-muted-foreground">
+                  {importResult.skipped} bereits vorhanden (übersprungen).
+                </p>
               )}
               {importResult.insertedEmails && importResult.insertedEmails.length > 0 && (
                 <Button
@@ -257,39 +261,49 @@ export function PatientsManager({ initialPatients }: Props) {
               )}
             </div>
           ) : importRows && (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                {importRows.length} Einträge gefunden. Vorschau (erste 5):
-              </p>
-              <div className="rounded border overflow-hidden">
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <p className="text-base font-semibold">
+                  {importRows.length} Einträge in der Datei gefunden
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  E-Mail-Adressen, die bereits existieren (auch als Alias auf
+                  einem anderen Profil), werden automatisch übersprungen.
+                </p>
+              </div>
+              <div className="rounded-[10px] border border-gray-200 overflow-hidden">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="bg-gray-50">
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>E-Mail</TableHead>
-                      <TableHead>Telefon</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead className="font-semibold">Name</TableHead>
+                      <TableHead className="font-semibold">E-Mail</TableHead>
+                      <TableHead className="font-semibold">Telefon</TableHead>
+                      <TableHead className="font-semibold">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {importRows.slice(0, 5).map((r, i) => (
                       <TableRow key={i}>
-                        <TableCell>{[r.first_name, r.last_name].filter(Boolean).join(" ") || "—"}</TableCell>
-                        <TableCell>{r.email}</TableCell>
-                        <TableCell>{r.phone || "—"}</TableCell>
+                        <TableCell className="font-medium">
+                          {[r.first_name, r.last_name].filter(Boolean).join(" ") || "—"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{r.email}</TableCell>
+                        <TableCell className="text-muted-foreground">{r.phone || "—"}</TableCell>
                         <TableCell>{statusLabels[r.patient_status]}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
+                {importRows.length > 5 && (
+                  <div className="px-4 py-2 text-xs text-muted-foreground bg-gray-50 border-t border-gray-200">
+                    + {importRows.length - 5} weitere Einträge (nicht angezeigt)
+                  </div>
+                )}
               </div>
-              {importRows.length > 5 && (
-                <p className="text-xs text-muted-foreground">... und {importRows.length - 5} weitere</p>
-              )}
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setImportRows(null); setImportResult(null); }}>
+            <Button variant="secondary" onClick={() => { setImportRows(null); setImportResult(null); }}>
               {importResult ? "Schließen" : "Abbrechen"}
             </Button>
             {!importResult && (

@@ -20,12 +20,18 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient();
 
-  // Fetch existing email hashes to detect duplicates
-  const { data: existing } = await supabase
-    .from("patients")
-    .select("email_hash");
+  // Dedup against BOTH the legacy patients.email_hash column AND the
+  // new patient_email_hashes aliases table. Without the second check
+  // we'd happily re-import an email that's already an alias on another
+  // patient, creating a real duplicate.
+  const [{ data: legacyExisting }, { data: aliasExisting }] = await Promise.all([
+    supabase.from("patients").select("email_hash"),
+    supabase.from("patient_email_hashes").select("email_hash"),
+  ]);
 
-  const existingHashes = new Set((existing || []).map((p) => p.email_hash));
+  const existingHashes = new Set<string>();
+  for (const p of legacyExisting || []) existingHashes.add(p.email_hash);
+  for (const a of aliasExisting || []) existingHashes.add(a.email_hash);
 
   const toInsert = rows.filter((r) => !existingHashes.has(hashEmail(r.email)));
   const skipped = rows.length - toInsert.length;
