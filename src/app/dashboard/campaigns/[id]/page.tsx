@@ -73,6 +73,7 @@ export default async function CampaignDetailPage({
         content_blocks: campaign.content_blocks,
         audience_type: campaign.audience_type,
         excluded_patient_ids: campaign.excluded_patient_ids,
+        included_patient_ids: campaign.included_patient_ids,
       }}
     />
   );

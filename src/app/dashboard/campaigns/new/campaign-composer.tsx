@@ -50,6 +50,7 @@ interface ExistingCampaign {
   content_blocks?: ContentBlock[] | null;
   audience_type?: AudienceType | null;
   excluded_patient_ids?: string[] | null;
+  included_patient_ids?: string[] | null;
 }
 
 interface Props {
@@ -202,14 +203,24 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
   const [manuallyExcluded, setManuallyExcluded] = useState<Set<string>>(
     () => new Set(existingCampaign?.excluded_patient_ids || []),
   );
+  // Optional explicit recipient list. When non-empty, eligibility is
+  // restricted to contacts in this set (intersected with the audience
+  // filter and the blacklist toggle). When empty, the legacy "all of
+  // audience minus excluded" behaviour kicks in. Populated primarily
+  // by pasting an email list (e.g. CSV from the patient import).
+  const [manuallyIncluded, setManuallyIncluded] = useState<Set<string>>(
+    () => new Set(existingCampaign?.included_patient_ids || []),
+  );
   const [scheduleMode, setScheduleMode] = useState<"now" | "later">("now");
   const [scheduledAt, setScheduledAt] = useState("");
   const [recipientSearch, setRecipientSearch] = useState("");
   const [showRecipients, setShowRecipients] = useState(false);
-  // Bulk-exclude by pasted email list (e.g. recovering from a partial send).
-  const [bulkExcludeText, setBulkExcludeText] = useState("");
-  const [bulkExcludeResult, setBulkExcludeResult] = useState<
-    { added: number; alreadyExcluded: number; notFound: string[] } | null
+  // Bulk-include by pasted email list (e.g. CSV of newly-imported
+  // patients): on apply, every matching contact lands in
+  // manuallyIncluded and the campaign is sent only to that set.
+  const [bulkIncludeText, setBulkIncludeText] = useState("");
+  const [bulkIncludeResult, setBulkIncludeResult] = useState<
+    { added: number; alreadyIncluded: number; notFound: string[] } | null
   >(null);
 
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -227,10 +238,15 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
   const [mobilePreviewConfirmed, setMobilePreviewConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Reset exclusions when audience changes
+  // Reset exclusions and inclusions when audience changes — both are
+  // keyed by composite contact IDs that may not exist in the new
+  // audience pool, so carrying them over would silently exclude
+  // (or fail to include) the wrong rows.
   const handleAudienceChange = (newAudience: AudienceType) => {
     setAudienceType(newAudience);
     setManuallyExcluded(new Set());
+    setManuallyIncluded(new Set());
+    setBulkIncludeResult(null);
     setRecipientSearch("");
   };
 
@@ -267,13 +283,18 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
     return Array.from(byEmail.values());
   }, [patients, auszubildende, audienceType]);
 
+  const includeMode = manuallyIncluded.size > 0;
   const eligibleContacts = useMemo(() => {
     return allContacts.filter((c) => {
       if (excludeBlacklisted && c.isBlacklisted) return false;
+      // Include mode: only contacts on the explicit list survive. The
+      // single-contact deselect (manuallyExcluded) still subtracts on
+      // top of the include set so users can drop one or two by hand.
+      if (includeMode && !manuallyIncluded.has(c.id)) return false;
       if (manuallyExcluded.has(c.id)) return false;
       return true;
     });
-  }, [allContacts, excludeBlacklisted, manuallyExcluded]);
+  }, [allContacts, excludeBlacklisted, manuallyExcluded, manuallyIncluded, includeMode]);
 
   const filteredRecipients = useMemo(() => {
     if (!recipientSearch) return allContacts;
@@ -292,18 +313,24 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
     });
   };
 
-  // Parse the pasted "exclude these addresses" textarea and move every
-  // matching contact into `manuallyExcluded`. Accepts any common separator
-  // (newline, comma, semicolon, tab, whitespace). Matching is gmail-alias
-  // aware via normalizeEmail, so googlemail.com ↔ gmail.com addresses line
-  // up with our stored rows.
-  const applyBulkExclude = () => {
-    const tokens = bulkExcludeText
+  // Parse the pasted "send only to these addresses" textarea and move
+  // every matching contact into `manuallyIncluded`. Accepts any common
+  // separator (newline, comma, semicolon, tab, whitespace) so a CSV
+  // column or a Slack/Mail copy-paste both work. Matching is
+  // gmail-alias aware via normalizeEmail, so googlemail.com ↔
+  // gmail.com addresses line up with our stored rows.
+  //
+  // While the include set is non-empty the campaign is restricted to
+  // those contacts (audience filter + blacklist toggle still apply on
+  // top). To return to "all of audience" the user clears the list via
+  // the dedicated button — no separate paste-undo required.
+  const applyBulkInclude = () => {
+    const tokens = bulkIncludeText
       .split(/[\s,;]+/)
       .map((t) => t.trim())
       .filter(Boolean);
     if (tokens.length === 0) {
-      setBulkExcludeResult(null);
+      setBulkIncludeResult(null);
       return;
     }
 
@@ -315,8 +342,8 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
 
     const notFound: string[] = [];
     let added = 0;
-    let alreadyExcluded = 0;
-    const next = new Set(manuallyExcluded);
+    let alreadyIncluded = 0;
+    const next = new Set(manuallyIncluded);
     for (const raw of tokens) {
       const key = normalizeEmail(raw);
       if (!key || !key.includes("@")) {
@@ -329,15 +356,21 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
         continue;
       }
       if (next.has(id)) {
-        alreadyExcluded += 1;
+        alreadyIncluded += 1;
       } else {
         next.add(id);
         added += 1;
       }
     }
-    setManuallyExcluded(next);
-    setBulkExcludeResult({ added, alreadyExcluded, notFound });
-    if (added > 0 || alreadyExcluded > 0) setBulkExcludeText("");
+    setManuallyIncluded(next);
+    setBulkIncludeResult({ added, alreadyIncluded, notFound });
+    if (added > 0 || alreadyIncluded > 0) setBulkIncludeText("");
+  };
+
+  const clearIncludeList = () => {
+    setManuallyIncluded(new Set());
+    setBulkIncludeResult(null);
+    setBulkIncludeText("");
   };
 
   // Content block management
@@ -458,6 +491,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
           contentBlocks,
           audienceType,
           excludedIds: Array.from(manuallyExcluded),
+          includedIds: Array.from(manuallyIncluded),
           excludeBlacklisted,
           scheduledAt: scheduleMode === "later" ? new Date(scheduledAt).toISOString() : null,
           attachments: attachmentPayloads.length > 0 ? attachmentPayloads : undefined,
@@ -493,6 +527,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
           contentBlocks,
           audienceType,
           excludedIds: Array.from(manuallyExcluded),
+          includedIds: Array.from(manuallyIncluded),
         }),
       });
       const result = await res.json();
@@ -823,52 +858,71 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                 </div>
               )}
 
-              {/* Bulk exclude by pasted email list. Useful when recovering
-                  from a partially-sent campaign: paste the addresses that
-                  already received the mail and we remove them from the
-                  selection before sending. */}
-              <details className="rounded-md border border-dashed border-muted-foreground/30">
+              {/* Bulk include by pasted email list. Primary use case:
+                  paste the CSV column emitted by the Proband:innen
+                  import flow to send a campaign just to the newly
+                  imported people. While the include set is non-empty
+                  the campaign is restricted to those contacts; the
+                  audience selector still applies as a domain filter
+                  on top, and individual deselect via click still works. */}
+              <details
+                className="rounded-md border border-dashed border-muted-foreground/30"
+                open={includeMode}
+              >
                 <summary className="cursor-pointer select-none px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground">
-                  Adressen per Liste ausschließen
+                  Empfänger:innen aus Liste auswählen{includeMode && ` (${manuallyIncluded.size} aktiv)`}
                 </summary>
                 <div className="px-3 pb-3 pt-1 space-y-2">
                   <p className="text-xs text-muted-foreground">
-                    Füge die E-Mail-Adressen ein, die nicht erneut angeschrieben werden sollen. Zeilenumbruch, Komma oder Leerzeichen sind alle erlaubt.
+                    Füge die E-Mail-Adressen ein, an die diese Kampagne
+                    gehen soll. Solange die Liste aktiv ist, gehen
+                    Mails nur an diese Personen. Zeilenumbruch, Komma
+                    oder Leerzeichen sind alle erlaubt.
                   </p>
                   <textarea
-                    value={bulkExcludeText}
+                    value={bulkIncludeText}
                     onChange={(e) => {
-                      setBulkExcludeText(e.target.value);
-                      setBulkExcludeResult(null);
+                      setBulkIncludeText(e.target.value);
+                      setBulkIncludeResult(null);
                     }}
                     placeholder="anna@example.com&#10;tobias@example.com, lisa@gmail.com"
                     className="w-full min-h-[96px] rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
                   />
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={applyBulkExclude}
-                      disabled={!bulkExcludeText.trim()}
+                      onClick={applyBulkInclude}
+                      disabled={!bulkIncludeText.trim()}
                     >
-                      Ausschließen
+                      Zur Liste hinzufügen
                     </Button>
-                    {bulkExcludeResult && (
+                    {includeMode && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearIncludeList}
+                      >
+                        Liste leeren ({manuallyIncluded.size})
+                      </Button>
+                    )}
+                    {bulkIncludeResult && (
                       <span className="text-xs text-muted-foreground">
-                        {bulkExcludeResult.added} ausgeschlossen
-                        {bulkExcludeResult.alreadyExcluded > 0 && `, ${bulkExcludeResult.alreadyExcluded} bereits`}
-                        {bulkExcludeResult.notFound.length > 0 && `, ${bulkExcludeResult.notFound.length} nicht gefunden`}
+                        {bulkIncludeResult.added} hinzugefügt
+                        {bulkIncludeResult.alreadyIncluded > 0 && `, ${bulkIncludeResult.alreadyIncluded} bereits`}
+                        {bulkIncludeResult.notFound.length > 0 && `, ${bulkIncludeResult.notFound.length} nicht gefunden`}
                       </span>
                     )}
                   </div>
-                  {bulkExcludeResult && bulkExcludeResult.notFound.length > 0 && (
+                  {bulkIncludeResult && bulkIncludeResult.notFound.length > 0 && (
                     <details className="text-xs">
                       <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
                         Nicht gefundene Adressen anzeigen
                       </summary>
                       <pre className="mt-1 max-h-32 overflow-y-auto rounded bg-muted/40 p-2 text-[11px] text-muted-foreground whitespace-pre-wrap break-all">
-                        {bulkExcludeResult.notFound.join("\n")}
+                        {bulkIncludeResult.notFound.join("\n")}
                       </pre>
                     </details>
                   )}

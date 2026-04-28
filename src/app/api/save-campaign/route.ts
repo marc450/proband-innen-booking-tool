@@ -53,7 +53,7 @@ async function uploadBlockImages(
 }
 
 export async function POST(req: NextRequest) {
-  const { id, name, subject, contentBlocks, audienceType, excludedIds } = await req.json();
+  const { id, name, subject, contentBlocks, audienceType, excludedIds, includedIds } = await req.json();
 
   if (!name && !subject) {
     return NextResponse.json({ error: "Name oder Betreff erforderlich." }, { status: 400 });
@@ -65,6 +65,9 @@ export async function POST(req: NextRequest) {
       : null;
   const safeExcluded = Array.isArray(excludedIds)
     ? (excludedIds as unknown[]).filter((v): v is string => typeof v === "string")
+    : [];
+  const safeIncluded = Array.isArray(includedIds)
+    ? (includedIds as unknown[]).filter((v): v is string => typeof v === "string")
     : [];
 
   const supabase = createAdminClient();
@@ -88,6 +91,7 @@ export async function POST(req: NextRequest) {
         content_blocks: safeBlocks,
         audience_type: safeAudience,
         excluded_patient_ids: safeExcluded,
+        included_patient_ids: safeIncluded,
         status: "draft",
       })
       .eq("id", id)
@@ -108,6 +112,7 @@ export async function POST(req: NextRequest) {
         content_blocks: contentBlocks || [],
         audience_type: safeAudience,
         excluded_patient_ids: safeExcluded,
+        included_patient_ids: safeIncluded,
         status: "draft",
       })
       .select("id")

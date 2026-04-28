@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
     contentBlocks,
     audienceType,
     excludedIds,
+    includedIds,
     excludeBlacklisted,
     scheduledAt,
     attachments: rawAttachments,
@@ -60,6 +61,7 @@ export async function POST(req: NextRequest) {
     contentBlocks: ContentBlock[];
     audienceType: AudienceType;
     excludedIds: string[];
+    includedIds?: string[];
     excludeBlacklisted: boolean;
     scheduledAt: string | null;
     attachments?: { filename: string; content: string }[];
@@ -75,6 +77,15 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient();
   const excludedSet = new Set(excludedIds || []);
+  // When includedIds is non-empty, the campaign is restricted to that
+  // explicit set (intersected with the audience and the blacklist
+  // filter). When empty, fall back to the legacy "audience minus
+  // excluded" behaviour. The single Set wraps both branches: undefined
+  // → no inclusion gate, defined → only IDs in the set are eligible.
+  const includedSet =
+    Array.isArray(includedIds) && includedIds.length > 0
+      ? new Set(includedIds)
+      : null;
   const emailsSeen = new Set<string>();
   const recipients: Recipient[] = [];
   // Track addresses that were filtered out so we can log/display why the
@@ -92,6 +103,7 @@ export async function POST(req: NextRequest) {
       if (p.patient_status === "inactive") continue;
       if (excludeBlacklisted && p.patient_status === "blacklist") continue;
       if (excludedSet.has(`p-${p.id}`)) continue;
+      if (includedSet && !includedSet.has(`p-${p.id}`)) continue;
       const cleaned = sanitizeRecipientEmail(p.email);
       if (!cleaned) {
         skippedInvalid.push(p.email);
@@ -116,6 +128,7 @@ export async function POST(req: NextRequest) {
       // Hard unsubscribe — same semantics as the patients branch above.
       if ((a.status as string | null) === "inactive") continue;
       if (excludedSet.has(`a-${a.id}`)) continue;
+      if (includedSet && !includedSet.has(`a-${a.id}`)) continue;
       const cleaned = sanitizeRecipientEmail(a.email);
       if (!cleaned) {
         skippedInvalid.push(a.email);
@@ -172,6 +185,7 @@ export async function POST(req: NextRequest) {
           recipient_count: recipients.length,
           recipient_emails: recipientEmails,
           excluded_patient_ids: Array.from(excludedSet),
+          included_patient_ids: includedSet ? Array.from(includedSet) : [],
           audience_type: audienceType,
           status,
           scheduled_at: scheduledAt || null,
