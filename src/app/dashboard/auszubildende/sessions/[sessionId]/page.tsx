@@ -109,7 +109,6 @@ export default async function SessionDetailPage({ params }: PageProps) {
       templateTitle={session.course_templates?.title || "Kurs"}
       courseLabelDe={session.course_templates?.course_label_de || null}
       dateIso={session.date_iso}
-      labelDe={session.label_de}
       instructorName={session.instructor_name}
       betreuerName={session.betreuer_name}
       address={session.address}
@@ -117,8 +116,6 @@ export default async function SessionDetailPage({ params }: PageProps) {
       durationMinutes={session.duration_minutes}
       maxSeats={session.max_seats}
       bookedSeats={session.booked_seats}
-      isLive={session.is_live}
-      cmeStatus={session.cme_status}
       participants={participants}
     />
   );
