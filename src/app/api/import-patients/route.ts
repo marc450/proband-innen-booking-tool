@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   const skipped = rows.length - toInsert.length;
 
   if (toInsert.length === 0) {
-    return NextResponse.json({ inserted: 0, skipped });
+    return NextResponse.json({ inserted: 0, skipped, insertedEmails: [] });
   }
 
   // Encrypt each row before inserting
@@ -59,5 +59,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ inserted: toInsert.length, skipped });
+  // Return the list of emails that were actually inserted so the
+  // dashboard can offer a CSV download. Useful for one-shot campaigns
+  // targeting just the newly imported patients (e.g. paste into the
+  // campaign composer's recipient picker).
+  return NextResponse.json({
+    inserted: toInsert.length,
+    skipped,
+    insertedEmails: toInsert.map((r) => r.email),
+  });
 }

@@ -72,7 +72,11 @@ export function PatientsManager({ initialPatients }: Props) {
   const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("created_at", "desc");
   const [importRows, setImportRows] = useState<ImportRow[] | null>(null);
   const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState<{ inserted: number; skipped: number } | null>(null);
+  const [importResult, setImportResult] = useState<{
+    inserted: number;
+    skipped: number;
+    insertedEmails?: string[];
+  } | null>(null);
   const [deletePatient, setDeletePatient] = useState<Patient | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null);
@@ -221,10 +225,35 @@ export function PatientsManager({ initialPatients }: Props) {
             <DialogTitle>Proband:innen importieren</DialogTitle>
           </DialogHeader>
           {importResult ? (
-            <div className="py-4 space-y-2 text-sm">
+            <div className="py-4 space-y-3 text-sm">
               <p className="text-green-600 font-medium">{importResult.inserted} Proband:innen erfolgreich importiert.</p>
               {importResult.skipped > 0 && (
                 <p className="text-muted-foreground">{importResult.skipped} bereits vorhanden (übersprungen).</p>
+              )}
+              {importResult.insertedEmails && importResult.insertedEmails.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // CSV: header row + one email per line. Wrap each address
+                    // in quotes so addresses with rare punctuation (e.g. a +
+                    // alias) survive Excel's auto-formatter without splitting.
+                    const csv = ["email", ...importResult.insertedEmails!.map((e) => `"${e.replace(/"/g, '""')}"`)].join("\n");
+                    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+                    const url = URL.createObjectURL(blob);
+                    const today = new Date().toISOString().slice(0, 10);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `EPHIA-neue-probandinnen-${today}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+                  }}
+                >
+                  Neue E-Mail-Adressen als CSV herunterladen
+                </Button>
               )}
             </div>
           ) : importRows && (
