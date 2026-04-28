@@ -15,8 +15,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Pencil, FileText, AlertTriangle, Ban, CheckCircle2, Mail } from "lucide-react";
+import { ArrowLeft, Pencil, FileText, AlertTriangle, Ban, CheckCircle2, Mail, GitMerge } from "lucide-react";
 import { EmailManagerModal } from "@/components/email-manager-modal";
+import { MergeContactModal } from "@/components/merge-contact-modal";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatPersonName } from "@/lib/utils";
 import { MEDICAL_SPECIALTIES } from "@/lib/medical-specialties";
@@ -79,6 +81,11 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
 
   // Multi-email manager modal
   const [emailModalOpen, setEmailModalOpen] = useState(false);
+
+  // Merge-with-another-contact modal
+  const [mergeModalOpen, setMergeModalOpen] = useState(false);
+
+  const router = useRouter();
 
   const personName = [azubi.first_name, azubi.last_name].filter(Boolean).join(" ");
   const isCompany = azubi.contact_type === "company";
@@ -215,14 +222,26 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
 
   return (
     <div className="space-y-4">
-      {/* Back link */}
-      <Link
-        href="/dashboard/auszubildende/personen"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Alle Ärzt:innen
-      </Link>
+      {/* Back link + actions */}
+      <div className="flex items-center justify-between">
+        <Link
+          href="/dashboard/auszubildende/personen"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Alle Ärzt:innen
+        </Link>
+        {isAdmin && (
+          <button
+            onClick={() => setMergeModalOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            title="Mit anderem Kontakt zusammenführen"
+          >
+            <GitMerge className="h-3.5 w-3.5" />
+            Profile zusammenführen
+          </button>
+        )}
+      </div>
 
       {/* 3-column HubSpot-style layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_320px] gap-5">
@@ -573,6 +592,27 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
         contactId={azubi.id}
         onPrimaryChange={(newPrimary) => {
           setAzubi((prev) => ({ ...prev, email: newPrimary }));
+        }}
+      />
+
+      <MergeContactModal
+        open={mergeModalOpen}
+        onOpenChange={setMergeModalOpen}
+        source="auszubildende"
+        primaryId={azubi.id}
+        primaryLabel={
+          formatPersonName({
+            title: azubi.title,
+            firstName: azubi.first_name,
+            lastName: azubi.last_name,
+          }) ||
+          azubi.email ||
+          "Dieser Kontakt"
+        }
+        onMerged={() => {
+          // Reload from the server so the merged data + new
+          // bookings/emails appear under this profile.
+          router.refresh();
         }}
       />
     </div>
