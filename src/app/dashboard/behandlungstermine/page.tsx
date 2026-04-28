@@ -34,7 +34,7 @@ export default async function BehandlungstermineePage() {
     supabase.from("slots").select("*").order("start_time", { ascending: true }),
     supabase
       .from("bookings")
-      .select("id, slot_id, status, patient_id, encrypted_data, encrypted_key, encryption_iv")
+      .select("id, slot_id, status, patient_id, booking_type, referring_doctor, encrypted_data, encrypted_key, encryption_iv")
       .neq("status", "cancelled"),
     supabase.from("course_templates").select("*").order("title", { ascending: true }),
     supabase
@@ -54,6 +54,8 @@ export default async function BehandlungstermineePage() {
       last_name: decrypted.last_name,
       status: decrypted.status,
       patient_id: row.patient_id,
+      booking_type: row.booking_type ?? null,
+      referring_doctor: row.referring_doctor ?? null,
     };
   });
 

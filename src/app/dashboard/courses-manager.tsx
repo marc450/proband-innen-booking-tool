@@ -35,6 +35,10 @@ export interface SlotBooking {
   last_name: string | null;
   status: BookingStatus;
   patient_id: string | null;
+  /** "standard" (public funnel) | "private" (doctor-referred). */
+  booking_type: string | null;
+  /** Name of the doctor who referred this Proband:in (private funnel only). */
+  referring_doctor: string | null;
 }
 
 interface Props {
@@ -1291,20 +1295,36 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                               <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                                 {slot.blocked ? (
                                   <span className="text-sm text-muted-foreground italic">{slot.blocked_note || "Gesperrt"}</span>
-                                ) : slotBookings.length > 0 ? slotBookings.map((b) => (
-                                  b.patient_id ? (
-                                    <Link
-                                      key={b.id}
-                                      href={`/dashboard/patients/${b.patient_id}`}
-                                      className="text-sm font-medium hover:underline truncate"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      {getPatientName(b)}
-                                    </Link>
-                                  ) : (
-                                    <span key={b.id} className="text-sm truncate">{getPatientName(b)}</span>
-                                  )
-                                )) : (
+                                ) : slotBookings.length > 0 ? slotBookings.map((b) => {
+                                  const isPrivate = b.booking_type === "private";
+                                  return (
+                                    <div key={b.id} className="min-w-0">
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        {b.patient_id ? (
+                                          <Link
+                                            href={`/dashboard/patients/${b.patient_id}`}
+                                            className="text-sm font-medium hover:underline truncate"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            {getPatientName(b)}
+                                          </Link>
+                                        ) : (
+                                          <span className="text-sm truncate">{getPatientName(b)}</span>
+                                        )}
+                                        {isPrivate && (
+                                          <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-wide text-[#0066FF] bg-[#0066FF]/10 rounded-full px-2 py-0.5 shrink-0">
+                                            Privat
+                                          </span>
+                                        )}
+                                      </div>
+                                      {isPrivate && b.referring_doctor && (
+                                        <div className="text-xs text-muted-foreground truncate">
+                                          via {b.referring_doctor}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                }) : (
                                   <span className="text-sm text-muted-foreground">—</span>
                                 )}
                               </div>
