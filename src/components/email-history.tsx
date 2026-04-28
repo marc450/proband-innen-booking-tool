@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   Mail,
@@ -10,6 +10,7 @@ import {
   X,
   Send,
   ChevronDown,
+  Paperclip,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,14 @@ export function EmailHistory({
   const [showBcc, setShowBcc] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  // Drives the dashed-ring overlay that appears while the user drags
+  // files over the composer. Tracks dragenter/dragleave with a
+  // counter so nested elements (the editor, inputs) don't flap the
+  // state on each pointer move.
+  const [dragDepth, setDragDepth] = useState(0);
+  const isDragOver = dragDepth > 0;
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
   const signature = useSignature();
 
   const fetchEmails = useCallback(async () => {
@@ -193,12 +202,41 @@ export function EmailHistory({
     setShowCc(false);
     setShowBcc(false);
     setSendError(null);
+    setAttachments([]);
+    setDragDepth(0);
+  };
+
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string).split(",")[1] || "");
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleAttachmentFiles = (files: FileList | File[] | null) => {
+    if (!files) return;
+    const arr = Array.from(files);
+    if (arr.length === 0) return;
+    setAttachments((prev) => [...prev, ...arr]);
   };
 
   const handleSend = async () => {
     setSending(true);
     setSendError(null);
     try {
+      // Convert each attached File to the { filename, mimeType, content }
+      // shape /api/gmail/send expects. Done client-side so the route can
+      // forward straight into Gmail's RFC822 builder without buffering
+      // the file bytes on disk.
+      const attachmentPayloads = await Promise.all(
+        attachments.map(async (file) => ({
+          filename: file.name,
+          mimeType: file.type || "application/octet-stream",
+          content: await fileToBase64(file),
+        })),
+      );
+
       const res = await fetch("/api/gmail/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -208,6 +246,7 @@ export function EmailHistory({
           htmlBody: `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;">${body}</div>`,
           cc: cc || undefined,
           bcc: bcc || undefined,
+          attachments: attachmentPayloads.length > 0 ? attachmentPayloads : undefined,
         }),
       });
       if (!res.ok) {
@@ -222,6 +261,7 @@ export function EmailHistory({
       setBcc("");
       setShowCc(false);
       setShowBcc(false);
+      setAttachments([]);
       // Give Gmail a moment to index the new thread before re-fetching.
       setTimeout(fetchEmails, 1200);
     } catch {
@@ -261,7 +301,33 @@ export function EmailHistory({
       <CardContent className="space-y-4">
         {/* Inline composer */}
         {canCompose && composing && (
-          <div className="border border-gray-200 rounded-[10px] p-4 space-y-3 bg-gray-50/40">
+          <div
+            className={`relative rounded-[10px] p-4 space-y-3 transition-colors ${
+              isDragOver
+                ? "bg-[#0066FF]/5 ring-2 ring-[#0066FF]/40"
+                : "bg-muted/40 ring-1 ring-black/5"
+            }`}
+            onDragEnter={(e) => {
+              if (!e.dataTransfer?.types.includes("Files")) return;
+              e.preventDefault();
+              setDragDepth((d) => d + 1);
+            }}
+            onDragOver={(e) => {
+              if (!e.dataTransfer?.types.includes("Files")) return;
+              e.preventDefault();
+            }}
+            onDragLeave={(e) => {
+              if (!e.dataTransfer?.types.includes("Files")) return;
+              e.preventDefault();
+              setDragDepth((d) => Math.max(0, d - 1));
+            }}
+            onDrop={(e) => {
+              if (!e.dataTransfer?.types.includes("Files")) return;
+              e.preventDefault();
+              setDragDepth(0);
+              handleAttachmentFiles(e.dataTransfer.files);
+            }}
+          >
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs text-muted-foreground min-w-0 truncate">
                 An:{" "}
@@ -357,27 +423,88 @@ export function EmailHistory({
               autoFocus
               className="min-h-[180px]"
             />
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {attachments.map((file, i) => (
+                  <span
+                    key={`${file.name}-${i}`}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-[10px] text-xs text-foreground shadow-sm ring-1 ring-black/5"
+                  >
+                    <Paperclip className="h-3 w-3 text-muted-foreground" />
+                    <span className="truncate max-w-[180px]">{file.name}</span>
+                    <span className="text-muted-foreground">
+                      {Math.round(file.size / 1024)} KB
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAttachments((prev) =>
+                          prev.filter((_, idx) => idx !== i),
+                        )
+                      }
+                      className="text-muted-foreground hover:text-destructive"
+                      title="Anhang entfernen"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <input
+              ref={attachmentInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                handleAttachmentFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
+
             {sendError && (
               <p className="text-xs text-destructive">{sendError}</p>
             )}
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={cancelComposer}>
-                Abbrechen
-              </Button>
+            <div className="flex items-center justify-between gap-2">
               <Button
+                type="button"
+                variant="ghost"
                 size="sm"
-                onClick={handleSend}
-                disabled={sending || !canSend}
-                className="bg-[#0066FF] hover:bg-[#0055DD]"
+                onClick={() => attachmentInputRef.current?.click()}
+                className="gap-1.5 text-muted-foreground hover:text-foreground"
+                title="Anhang hinzufügen (oder Datei in den Composer ziehen)"
               >
-                {sending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-                ) : (
-                  <Send className="h-3.5 w-3.5 mr-1.5" />
-                )}
-                Senden
+                <Paperclip className="h-3.5 w-3.5" />
+                Anhang hinzufügen
               </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={cancelComposer}>
+                  Abbrechen
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSend}
+                  disabled={sending || !canSend}
+                  className="bg-[#0066FF] hover:bg-[#0055DD]"
+                >
+                  {sending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                  ) : (
+                    <Send className="h-3.5 w-3.5 mr-1.5" />
+                  )}
+                  Senden
+                </Button>
+              </div>
             </div>
+
+            {isDragOver && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[10px] bg-[#0066FF]/5">
+                <div className="rounded-[10px] bg-white px-4 py-2 text-sm font-medium text-[#0066FF] shadow-sm ring-1 ring-[#0066FF]/30">
+                  Datei hier ablegen, um sie als Anhang hinzuzufügen
+                </div>
+              </div>
+            )}
           </div>
         )}
 
