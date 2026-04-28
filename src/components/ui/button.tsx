@@ -12,7 +12,11 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/90 font-bold",
         outline:
-          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground font-medium text-sm dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+          // bg-white instead of bg-background: --background is the
+          // rose page colour (#FAEBE1) on EPHIA, so an outline button
+          // rendered on a white card was disappearing into the page.
+          // bg-white pops cleanly on both white cards and rose pages.
+          "border-border bg-white hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground font-medium text-sm dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground font-medium text-sm",
         ghost:
