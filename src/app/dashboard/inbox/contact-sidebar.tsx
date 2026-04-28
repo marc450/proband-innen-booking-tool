@@ -9,8 +9,10 @@ import {
   BookOpen,
   Receipt,
   AlertTriangle,
+  Pencil,
 } from "lucide-react";
 import { EditableField } from "./editable-field";
+import { EmailManagerModal } from "@/components/email-manager-modal";
 
 export interface ContactDTO {
   source: "auszubildende" | "patient" | "unknown";
@@ -122,6 +124,7 @@ const SPECIALTIES = [
 export function ContactSidebar({ email, displayName }: Props) {
   const [data, setData] = useState<ContactPayload | null>(null);
   const [loading, setLoading] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
 
   useEffect(() => {
     if (!email) {
@@ -274,7 +277,15 @@ export function ContactSidebar({ email, displayName }: Props) {
               value={contact.lastName}
               onSave={(v) => saveField("last_name", v)}
             />
-            <EditableField label="E-Mail" value={contact.email} onSave={() => {}} readOnly />
+            <EmailRow
+              email={contact.email}
+              canManage={
+                !isUnknown &&
+                contact.id !== null &&
+                (contact.source === "auszubildende" || contact.source === "patient")
+              }
+              onClick={() => setEmailModalOpen(true)}
+            />
             <EditableField
               label="Telefon"
               value={contact.phone}
@@ -435,6 +446,20 @@ export function ContactSidebar({ email, displayName }: Props) {
         )}
       </section>
 
+      {!isUnknown && contact.id && (contact.source === "auszubildende" || contact.source === "patient") && (
+        <EmailManagerModal
+          open={emailModalOpen}
+          onOpenChange={setEmailModalOpen}
+          source={contact.source}
+          contactId={contact.id}
+          onPrimaryChange={(newPrimary) => {
+            setData((prev) =>
+              prev ? { ...prev, contact: { ...prev.contact, email: newPrimary } } : prev,
+            );
+          }}
+        />
+      )}
+
       {/* No-Shows */}
       <section className="p-5">
         <h3 className="text-xs font-bold uppercase tracking-wide text-gray-700 mb-3 flex items-center gap-1.5">
@@ -454,6 +479,42 @@ export function ContactSidebar({ email, displayName }: Props) {
         )}
       </section>
     </div>
+  );
+}
+
+// Email row that mirrors the EditableField visual but opens a manager
+// modal instead of inline-editing. The "primary" email is shown; aliases
+// are visible inside the modal.
+function EmailRow({
+  email,
+  canManage,
+  onClick,
+}: {
+  email: string;
+  canManage: boolean;
+  onClick: () => void;
+}) {
+  if (!canManage) {
+    return (
+      <div className="flex items-center justify-between py-2">
+        <span className="text-xs text-muted-foreground">E-Mail</span>
+        <span className="text-sm text-foreground truncate">{email}</span>
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full flex items-center justify-between py-2 group hover:bg-gray-50 -mx-2 px-2 rounded transition-colors"
+      title="E-Mail-Adressen verwalten"
+    >
+      <span className="text-xs text-muted-foreground">E-Mail</span>
+      <span className="flex items-center gap-1.5 min-w-0">
+        <span className="text-sm text-foreground truncate">{email}</span>
+        <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+      </span>
+    </button>
   );
 }
 

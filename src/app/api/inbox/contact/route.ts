@@ -68,11 +68,36 @@ async function assertStaff() {
 
 async function lookupAuszubildende(email: string): Promise<ContactDTO | null> {
   const admin = createAdminClient();
+  const normalised = email.trim().toLowerCase();
+
+  // Multi-email lookup: an email might be a primary or alias on any
+  // contact. Hit the new auszubildende_emails table first; fall back to
+  // the legacy auszubildende.email column for safety until the column is
+  // retired.
+  let contactId: string | null = null;
+  const { data: emailRow } = await admin
+    .from("auszubildende_emails")
+    .select("auszubildende_id")
+    .eq("email", normalised)
+    .maybeSingle();
+  if (emailRow) contactId = emailRow.auszubildende_id;
+
+  if (!contactId) {
+    const { data: legacy } = await admin
+      .from("auszubildende")
+      .select("id")
+      .ilike("email", email)
+      .limit(1)
+      .maybeSingle();
+    if (legacy) contactId = legacy.id;
+  }
+
+  if (!contactId) return null;
+
   const { data } = await admin
     .from("auszubildende")
     .select("*")
-    .ilike("email", email)
-    .limit(1)
+    .eq("id", contactId)
     .maybeSingle();
   if (!data) return null;
   return {
@@ -102,11 +127,35 @@ async function lookupAuszubildende(email: string): Promise<ContactDTO | null> {
 async function lookupPatient(email: string): Promise<ContactDTO | null> {
   const admin = createAdminClient();
   const emailHash = hashEmail(email);
+
+  // Multi-email lookup: hit patient_email_hashes first, fall back to the
+  // legacy patients.email_hash column. Same backfill story as
+  // auszubildende — once every patient is in the new table this fallback
+  // can go.
+  let patientId: string | null = null;
+  const { data: hashRow } = await admin
+    .from("patient_email_hashes")
+    .select("patient_id")
+    .eq("email_hash", emailHash)
+    .maybeSingle();
+  if (hashRow) patientId = hashRow.patient_id;
+
+  if (!patientId) {
+    const { data: legacy } = await admin
+      .from("patients")
+      .select("id")
+      .eq("email_hash", emailHash)
+      .limit(1)
+      .maybeSingle();
+    if (legacy) patientId = legacy.id;
+  }
+
+  if (!patientId) return null;
+
   const { data } = await admin
     .from("patients")
     .select("*")
-    .eq("email_hash", emailHash)
-    .limit(1)
+    .eq("id", patientId)
     .maybeSingle();
   if (!data) return null;
   let p;

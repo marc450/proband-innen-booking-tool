@@ -15,7 +15,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Pencil, FileText, AlertTriangle, Ban, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Pencil, FileText, AlertTriangle, Ban, CheckCircle2, Mail } from "lucide-react";
+import { EmailManagerModal } from "@/components/email-manager-modal";
 import Link from "next/link";
 import { formatPersonName } from "@/lib/utils";
 import { MEDICAL_SPECIALTIES } from "@/lib/medical-specialties";
@@ -75,6 +76,9 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
   // Status dropdown
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Multi-email manager modal
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
 
   const personName = [azubi.first_name, azubi.last_name].filter(Boolean).join(" ");
   const isCompany = azubi.contact_type === "company";
@@ -349,19 +353,17 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
                 <input defaultValue={azubi.gender || ""} placeholder="–" onBlur={(e) => autosave("gender", e.target.value)} className={fieldClass} />
 
                 <span className="text-xs text-muted-foreground">E-Mail</span>
-                <div className="min-w-0">
-                  <input
-                    type="email"
-                    defaultValue={azubi.email || ""}
-                    placeholder="–"
-                    onFocus={() => setEmailError(null)}
-                    onBlur={(e) => saveEmail(e.target.value, e.currentTarget)}
-                    className={`${fieldClass} text-primary`}
-                  />
-                  {emailError && (
-                    <div className="mt-1 text-[11px] text-red-600">{emailError}</div>
-                  )}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setEmailModalOpen(true)}
+                  className="min-w-0 text-left flex items-center gap-1.5 group hover:text-primary transition-colors"
+                  title="E-Mail-Adressen verwalten"
+                >
+                  <span className="text-sm text-primary truncate">
+                    {azubi.email || "–"}
+                  </span>
+                  <Mail className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                </button>
 
                 <span className="text-xs text-muted-foreground">Telefon</span>
                 <input defaultValue={azubi.phone || ""} placeholder="–" onBlur={(e) => autosave("phone", e.target.value)} className={fieldClass} />
@@ -563,6 +565,16 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
           </Card>
         </div>
       </div>
+
+      <EmailManagerModal
+        open={emailModalOpen}
+        onOpenChange={setEmailModalOpen}
+        source="auszubildende"
+        contactId={azubi.id}
+        onPrimaryChange={(newPrimary) => {
+          setAzubi((prev) => ({ ...prev, email: newPrimary }));
+        }}
+      />
     </div>
   );
 }
