@@ -30,7 +30,7 @@ export default async function ZertifikatgeneratorPage() {
       `id, date_iso, label_de, vnr_praxis,
        course_templates:template_id ( course_key, course_label_de, title, vnr_theorie )`,
     )
-    .order("date_iso", { ascending: false });
+    .order("date_iso", { ascending: true });
 
   type EmbeddedTemplate = {
     course_key: string | null;

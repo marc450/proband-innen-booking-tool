@@ -150,7 +150,7 @@ export function CertificateTestForm({ courseTypes }: Props) {
             id="cert_type"
             value={certSlug}
             onChange={(e) => setCertSlug(e.target.value)}
-            className="h-10 w-full rounded-[10px] border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="h-11 w-full rounded-[10px] border border-input bg-white px-4 text-base focus:outline-none focus:ring-2 focus:ring-ring"
           >
             {courseTypes.map((c) => (
               <option key={c.certSlug} value={c.certSlug}>
@@ -166,7 +166,7 @@ export function CertificateTestForm({ courseTypes }: Props) {
             id="cert_session"
             value={sessionId}
             onChange={(e) => setSessionId(e.target.value)}
-            className="h-10 w-full rounded-[10px] border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="h-11 w-full rounded-[10px] border border-input bg-white px-4 text-base focus:outline-none focus:ring-2 focus:ring-ring"
             disabled={!courseType || courseType.sessions.length === 0}
           >
             {courseType?.sessions.map((s) => (
@@ -226,7 +226,7 @@ export function CertificateTestForm({ courseTypes }: Props) {
           </Button>
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             onClick={handlePreview}
             disabled={!canSubmit}
           >
