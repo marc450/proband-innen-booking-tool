@@ -284,6 +284,17 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
   }, [patients, auszubildende, audienceType]);
 
   const includeMode = manuallyIncluded.size > 0;
+  // Count the include-set IDs that actually resolve to a contact in
+  // the current audience. Used to surface "13 in der Liste, davon 5
+  // zugeordnet" so a stale set (e.g. IDs left over from a draft saved
+  // under a different audience) is visible instead of silently
+  // collapsing the eligibility count to 0.
+  const resolvedIncludeCount = useMemo(() => {
+    if (!includeMode) return 0;
+    let count = 0;
+    for (const c of allContacts) if (manuallyIncluded.has(c.id)) count += 1;
+    return count;
+  }, [allContacts, manuallyIncluded, includeMode]);
   const eligibleContacts = useMemo(() => {
     return allContacts.filter((c) => {
       if (excludeBlacklisted && c.isBlacklisted) return false;
@@ -363,6 +374,24 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
       }
     }
     setManuallyIncluded(next);
+    // Adding an email to the include list is a stronger signal than
+    // any earlier per-contact deselect (e.g. from a saved draft or a
+    // previous session in pre-include-mode). Strip those IDs from
+    // manuallyExcluded so the eligibility filter doesn't silently
+    // drop the just-added contacts. Without this, dragging a saved
+    // draft with a long excluded_patient_ids list into include mode
+    // produces an "Empfänger:innen (0)" with no obvious cause.
+    setManuallyExcluded((prev) => {
+      let changed = false;
+      const cleaned = new Set(prev);
+      for (const id of next) {
+        if (cleaned.has(id)) {
+          cleaned.delete(id);
+          changed = true;
+        }
+      }
+      return changed ? cleaned : prev;
+    });
     setBulkIncludeResult({ added, alreadyIncluded, notFound });
     if (added > 0 || alreadyIncluded > 0) setBulkIncludeText("");
   };
@@ -870,7 +899,9 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                 open={includeMode}
               >
                 <summary className="cursor-pointer select-none px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground">
-                  Empfänger:innen aus Liste auswählen{includeMode && ` (${manuallyIncluded.size} aktiv)`}
+                  Empfänger:innen aus Liste auswählen
+                  {includeMode &&
+                    ` (${resolvedIncludeCount} von ${manuallyIncluded.size} zugeordnet)`}
                 </summary>
                 <div className="px-3 pb-3 pt-1 space-y-2">
                   <p className="text-xs text-muted-foreground">
@@ -941,7 +972,14 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
               {showRecipients && (
                 <div className="max-h-[300px] overflow-y-auto border rounded-md divide-y">
                   {allContacts.map((c) => {
-                    const isExcluded = manuallyExcluded.has(c.id) || (excludeBlacklisted && c.isBlacklisted);
+                    // Mirror the eligibility filter exactly so the checkbox
+                    // states match the count at the top. Without the
+                    // includeMode branch the ticks lied: contacts not on
+                    // the include list still rendered as checked.
+                    const isExcluded =
+                      manuallyExcluded.has(c.id) ||
+                      (excludeBlacklisted && c.isBlacklisted) ||
+                      (includeMode && !manuallyIncluded.has(c.id));
                     const displayName = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email;
 
                     return (
