@@ -42,9 +42,10 @@ export default async function SessionDetailPage({ params }: PageProps) {
     auszubildendeIds.length
       ? admin
           .from("course_bookings")
-          .select("auszubildende_id, session_id, status")
+          .select("auszubildende_id, session_id, status, course_type, created_at")
           .in("auszubildende_id", auszubildendeIds)
-      : Promise.resolve({ data: [] as Array<{ auszubildende_id: string | null; session_id: string | null; status: string }> }),
+          .order("created_at", { ascending: true })
+      : Promise.resolve({ data: [] as Array<{ auszubildende_id: string | null; session_id: string | null; status: string; course_type: string | null; created_at: string }> }),
   ]);
 
   type AzubiRow = {
@@ -68,12 +69,15 @@ export default async function SessionDetailPage({ params }: PageProps) {
   const azubiById = new Map<string, AzubiRow>();
   for (const row of (auszubildendeRows || []) as AzubiRow[]) azubiById.set(row.id, row);
 
-  const priorCountsById = new Map<string, number>();
+  const priorCourseTypesById = new Map<string, string[]>();
   for (const row of priorBookingRows || []) {
     if (!row.auszubildende_id) continue;
     if (row.session_id === sessionId) continue;
     if (!["booked", "completed"].includes(row.status)) continue;
-    priorCountsById.set(row.auszubildende_id, (priorCountsById.get(row.auszubildende_id) || 0) + 1);
+    if (!row.course_type) continue;
+    const list = priorCourseTypesById.get(row.auszubildende_id) || [];
+    list.push(row.course_type);
+    priorCourseTypesById.set(row.auszubildende_id, list);
   }
 
   const participants: Participant[] = bookings.map((b) => {
@@ -99,7 +103,7 @@ export default async function SessionDetailPage({ params }: PageProps) {
       amountPaid: b.amount_paid,
       bookingStatus: b.status,
       createdAt: b.created_at,
-      priorSessionsCount: b.auszubildende_id ? priorCountsById.get(b.auszubildende_id) || 0 : 0,
+      priorCourseTypes: b.auszubildende_id ? priorCourseTypesById.get(b.auszubildende_id) || [] : [],
     };
   });
 

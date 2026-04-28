@@ -12,7 +12,6 @@ import {
   Calendar,
   AlertTriangle,
   Building2,
-  Repeat,
   FileText,
   CheckCircle2,
   Mail,
@@ -49,7 +48,7 @@ export interface Participant {
   amountPaid: number | null;
   bookingStatus: string;
   createdAt: string;
-  priorSessionsCount: number;
+  priorCourseTypes: string[];
 }
 
 interface Props {
@@ -349,11 +348,19 @@ function ParticipantRow({ p }: { p: Participant }) {
         )}
       </TableCell>
       <TableCell className="text-sm">
-        {p.priorSessionsCount > 0 ? (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-full px-2 py-0.5">
-            <Repeat className="w-3 h-3" />
-            {p.priorSessionsCount}× wiederkehrend
-          </span>
+        {p.priorCourseTypes.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {p.priorCourseTypes.map((ct, idx) => (
+              <span
+                key={`${ct}-${idx}`}
+                className={`inline-flex items-center text-xs font-medium rounded-full px-2 py-0.5 ${
+                  COURSE_TYPE_COLOR[ct] || "bg-gray-100 text-gray-700"
+                }`}
+              >
+                {COURSE_TYPE_LABEL[ct] || ct}
+              </span>
+            ))}
+          </div>
         ) : (
           <span className="text-xs text-muted-foreground">Neu</span>
         )}
