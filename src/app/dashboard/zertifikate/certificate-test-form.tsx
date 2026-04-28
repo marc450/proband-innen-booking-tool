@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,29 +13,101 @@ import {
 } from "@/components/ui/select";
 import { AlertDialog } from "@/components/confirm-dialog";
 
-interface Props {
-  templates: { slug: string; label: string; requiresVnr: boolean }[];
+interface Variant {
+  slug: string;
+  label: string;
+  requiresVnr: boolean;
 }
 
-export function CertificateTestForm({ templates }: Props) {
-  const [templateSlug, setTemplateSlug] = useState(
-    templates[0]?.slug || "",
+export interface EligibleSession {
+  id: string;
+  dateIso: string;
+  labelDe: string;
+  courseLabel: string;
+  vnrTheorie: string;
+  vnrPraxis: string;
+  variants: { humanmedizin?: Variant; zahnmedizin?: Variant };
+}
+
+type Audience = "humanmedizin" | "zahnmedizin";
+
+interface Props {
+  sessions: EligibleSession[];
+}
+
+const MONTHS_DE_SHORT = [
+  "Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
+  "Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
+];
+
+function formatSessionLabel(s: EligibleSession): string {
+  const [y, m, d] = s.dateIso.split("-").map(Number);
+  if (!y || !m || !d) return s.labelDe;
+  return `${s.labelDe} (${String(d).padStart(2, "0")}. ${MONTHS_DE_SHORT[m - 1]} ${y})`;
+}
+
+export function CertificateTestForm({ sessions }: Props) {
+  const [sessionId, setSessionId] = useState(sessions[0]?.id || "");
+  const session = useMemo(
+    () => sessions.find((s) => s.id === sessionId),
+    [sessions, sessionId],
   );
+
+  // Which audience variants exist for the selected session. Drives the
+  // toggle visibility — if a session only registers a Humanmedizin
+  // cert, we hide the toggle entirely instead of offering a disabled
+  // dentist choice.
+  const availableAudiences: Audience[] = useMemo(() => {
+    if (!session) return [];
+    const out: Audience[] = [];
+    if (session.variants.humanmedizin) out.push("humanmedizin");
+    if (session.variants.zahnmedizin) out.push("zahnmedizin");
+    return out;
+  }, [session]);
+
+  const [audience, setAudience] = useState<Audience>(
+    availableAudiences[0] || "humanmedizin",
+  );
+
+  // Snap audience back to whatever's available when the session
+  // changes. Without this, switching from a Botulinum session (both
+  // variants) to a hypothetical Humanmedizin-only session while
+  // "zahnmedizin" was selected would leave variant=undefined and
+  // disable the buttons silently.
+  useEffect(() => {
+    if (availableAudiences.length === 0) return;
+    if (!availableAudiences.includes(audience)) {
+      setAudience(availableAudiences[0]);
+    }
+  }, [availableAudiences, audience]);
+
+  const variant: Variant | undefined = session?.variants[audience];
+
   const [name, setName] = useState("Dr. Marc Wyss");
   const [email, setEmail] = useState("wyss.a.marc@gmail.com");
-  const [vnrTheorie, setVnrTheorie] = useState("2761102025010470002");
-  const [vnrPraxis, setVnrPraxis] = useState("2761102025043200004");
+  const [vnrTheorie, setVnrTheorie] = useState(session?.vnrTheorie || "");
+  const [vnrPraxis, setVnrPraxis] = useState(session?.vnrPraxis || "");
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<{
     title: string;
     description: string;
   } | null>(null);
 
-  const selectedTemplate = templates.find((t) => t.slug === templateSlug);
-  const requiresVnr = selectedTemplate?.requiresVnr ?? true;
+  // Whenever the selected session changes, refresh the VNR fields to
+  // that session's defaults. Editing them is still allowed (rare but
+  // useful for one-offs), the auto-fill just guarantees the staff
+  // member starts from the right baseline instead of inheriting values
+  // from a previous session.
+  useEffect(() => {
+    if (!session) return;
+    setVnrTheorie(session.vnrTheorie);
+    setVnrPraxis(session.vnrPraxis);
+  }, [session?.id, session?.vnrTheorie, session?.vnrPraxis, session]);
+
+  const requiresVnr = variant?.requiresVnr ?? false;
 
   const canSubmit = !!(
-    templateSlug.trim() &&
+    variant &&
     name.trim() &&
     (!requiresVnr || (vnrTheorie.trim() && vnrPraxis.trim()))
   );
@@ -43,12 +115,13 @@ export function CertificateTestForm({ templates }: Props) {
   // Common bytes fetcher — both Vorschau and Herunterladen need the
   // rendered PDF blob, only the disposition differs after that.
   const fetchPdfBlob = async (): Promise<Blob | null> => {
+    if (!variant) return null;
     const res = await fetch("/api/test-certificate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name,
-        templateSlug,
+        templateSlug: variant.slug,
         vnrTheorie: requiresVnr ? vnrTheorie : "",
         vnrPraxis: requiresVnr ? vnrPraxis : "",
         preview: true,
@@ -71,8 +144,6 @@ export function CertificateTestForm({ templates }: Props) {
     if (!blob) return;
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank", "noopener");
-    // Release the object URL a minute later — long enough for the new
-    // tab to finish loading, short enough not to leak on long sessions.
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
   };
 
@@ -81,12 +152,8 @@ export function CertificateTestForm({ templates }: Props) {
     const blob = await fetchPdfBlob();
     if (!blob) return;
     const url = URL.createObjectURL(blob);
-    // Trigger an actual file download via a synthetic anchor with
-    // `download` set to a friendly filename. The participant name is
-    // sanitised for the filesystem (spaces → dashes, drop everything
-    // outside alphanumerics + dashes).
     const safeName = name.trim().replace(/\s+/g, "-").replace(/[^A-Za-z0-9\-]/g, "") || "Teilnehmer";
-    const safeTemplate = (selectedTemplate?.label || templateSlug).replace(/\s+/g, "-");
+    const safeTemplate = (variant?.label || "Zertifikat").replace(/\s+/g, "-");
     const a = document.createElement("a");
     a.href = url;
     a.download = `EPHIA-Zertifikat-${safeTemplate}-${safeName}.pdf`;
@@ -97,7 +164,7 @@ export function CertificateTestForm({ templates }: Props) {
   };
 
   const handleSend = async () => {
-    if (!canSubmit || !email.trim()) return;
+    if (!canSubmit || !email.trim() || !variant) return;
     setSending(true);
     try {
       const res = await fetch("/api/test-certificate", {
@@ -106,7 +173,7 @@ export function CertificateTestForm({ templates }: Props) {
         body: JSON.stringify({
           name,
           email,
-          templateSlug,
+          templateSlug: variant.slug,
           vnrTheorie: requiresVnr ? vnrTheorie : "",
           vnrPraxis: requiresVnr ? vnrPraxis : "",
         }),
@@ -128,6 +195,8 @@ export function CertificateTestForm({ templates }: Props) {
     }
   };
 
+  const showAudienceToggle = availableAudiences.length > 1;
+
   return (
     <>
       <form
@@ -138,24 +207,57 @@ export function CertificateTestForm({ templates }: Props) {
         }}
       >
         <div className="space-y-1.5">
-          <Label htmlFor="cert_template">Kursvorlage</Label>
-          <Select value={templateSlug} onValueChange={(v) => setTemplateSlug(v ?? "")}>
-            <SelectTrigger id="cert_template" className="h-10 w-full">
-              <SelectValue placeholder="Vorlage wählen..." />
+          <Label htmlFor="cert_session">Kurstermin</Label>
+          <Select value={sessionId} onValueChange={(v) => setSessionId(v ?? "")}>
+            <SelectTrigger id="cert_session" className="h-10 w-full">
+              <SelectValue placeholder="Kurstermin wählen..." />
             </SelectTrigger>
             <SelectContent>
-              {templates.map((t) => (
-                <SelectItem key={t.slug} value={t.slug}>
-                  {t.label}
+              {sessions.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {formatSessionLabel(s)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            Die Vorlage wird aus{" "}
-            <code className="text-[11px]">public/certificates/</code> geladen.
+            Liste enthält alle Kurstermine, deren Vorlage einen
+            Zertifikatstyp registriert hat.
           </p>
         </div>
+
+        {showAudienceToggle && (
+          <div className="space-y-1.5">
+            <Label>Zertifikatvariante</Label>
+            <div className="inline-flex rounded-[10px] bg-muted p-1">
+              <button
+                type="button"
+                onClick={() => setAudience("humanmedizin")}
+                className={`px-4 py-1.5 text-sm rounded-[8px] transition-colors ${
+                  audience === "humanmedizin"
+                    ? "bg-white shadow-sm font-medium"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Humanmedizin
+              </button>
+              <button
+                type="button"
+                onClick={() => setAudience("zahnmedizin")}
+                className={`px-4 py-1.5 text-sm rounded-[8px] transition-colors ${
+                  audience === "zahnmedizin"
+                    ? "bg-white shadow-sm font-medium"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Zahnmedizin
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {variant?.label}
+            </p>
+          </div>
+        )}
 
         <div className="space-y-1.5">
           <Label htmlFor="cert_name">
@@ -186,7 +288,7 @@ export function CertificateTestForm({ templates }: Props) {
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Stabil pro Kurs und Jahr (Onlineanteil).
+                Aus der Kursvorlage geladen, überschreibbar.
               </p>
             </div>
             <div className="space-y-1.5">
@@ -199,14 +301,14 @@ export function CertificateTestForm({ templates }: Props) {
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Ändert sich pro Kurstermin (Praxisanteil).
+                Aus dem Kurstermin geladen, überschreibbar.
               </p>
             </div>
           </div>
         ) : (
           <p className="text-xs text-muted-foreground bg-muted/50 rounded-[10px] px-3 py-2">
-            Diese Vorlage trägt keine CME-Punkte. VNR Theorie und VNR Praxis
-            werden auf dem Zertifikat nicht ausgewiesen.
+            Diese Zertifikatsvariante trägt keine CME-Punkte. VNR Theorie
+            und VNR Praxis werden auf dem Zertifikat nicht ausgewiesen.
           </p>
         )}
 
@@ -220,8 +322,9 @@ export function CertificateTestForm({ templates }: Props) {
             placeholder="wyss.a.marc@gmail.com"
           />
           <p className="text-xs text-muted-foreground">
-            Empfänger für den Testversand. Wird ignoriert, wenn Du auf
-            &quot;Vorschau&quot; klickst.
+            Empfänger:in für den Versand. Wird ignoriert, wenn Du auf
+            &quot;Vorschau im Browser&quot; oder &quot;Als PDF
+            herunterladen&quot; klickst.
           </p>
         </div>
 
