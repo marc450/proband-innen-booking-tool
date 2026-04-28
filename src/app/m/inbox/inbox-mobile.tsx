@@ -270,8 +270,11 @@ export function InboxMobile() {
   const buildQuery = useCallback((search: string, f: InboxFilter) => {
     const parts: string[] = [];
     if (search.trim()) parts.push(search.trim());
-    if (f === "unread") parts.push("is:unread");
-    if (f === "spam") parts.push("in:spam");
+    // Mirror dashboard inbox: scope to Inbox so archived Resend sends
+    // (Sent-only) don't leak into the view.
+    if (f === "unread") parts.push("is:unread in:inbox");
+    else if (f === "spam") parts.push("in:spam");
+    else parts.push("in:inbox");
     return parts.join(" ");
   }, []);
 

@@ -288,45 +288,39 @@ export function buildProbandinnenInfoEmail(firstName: string): string {
 }
 
 export function buildCommunityInviteEmail(firstName: string): string {
-  return `<div style="background-color:#fff; padding:20px; font-family:Arial, sans-serif;">
-  <div style="background-color:#fff; max-width:600px; margin:0 auto; padding:30px;">
-    <p style="margin:0 0 20px 0; font-size:16px; line-height:1.5;">
+  return `<div style="background-color:#fff; padding:0; font-family:Arial, sans-serif;">
+  <div style="background-color:#fff; max-width:600px; margin:0 auto; padding:8px; text-align:left; line-height:1.5;">
+    <p style="margin-top:0; margin-bottom:20px;">
       Hi ${firstName},<br><br>
-      wir möchten Dir in Deiner Einstiegsphase in die ästhetische Medizin eine verlässliche Anlaufstelle bieten – ob bei Fragen zu Indikationen, Behandlungsansätzen oder Abrechnung. Unsere Community ist das Herz von EPHIA: Hier diskutierst Du mit Kolleg:innen, erhältst Peer-Support und vertiefst Dein Wissen durch Materialien und Dozierende.<br><br>
-      Sei dabei in unserer exklusiven WhatsApp-Community für Fachleute der ästhetischen Medizin: Vernetze Dich, teile Insights und bleibe up-to-date!<br><br>
+      wir möchten Dir in Deiner Einstiegsphase in die ästhetische Medizin eine verlässliche Anlaufstelle bieten, ob bei Fragen zu Indikationen, Behandlungsansätzen oder Abrechnung. Unsere Community ist das Herz von EPHIA: Hier diskutierst Du mit Kolleg:innen, erhältst Peer-Support und vertiefst Dein Wissen durch Materialien und Dozierende.<br><br>
+      Sei dabei in unserer exklusiven WhatsApp-Community für Fachleute der ästhetischen Medizin: Vernetze Dich, teile Insights und bleibe up-to-date!
+    </p>
+
+    <p style="margin:0 0 24px 0;">
       <a href="https://chat.whatsapp.com/DfbOTDsWWksFQJhVOqdPJI" style="display:inline-block;background-color:#25D366;color:#fff;text-decoration:none;padding:12px 24px;border-radius:4px;font-weight:bold;">
         Jetzt der WhatsApp-Community beitreten
       </a>
     </p>
 
-    <h3 style="font-size:18px;color:#333;margin:30px 0 10px 0; text-align:left;">Darauf kannst Du Dich freuen:</h3>
-    <ul style="text-align:left;color:#555;font-size:15px;line-height:1.5; margin:0 0 20px 20px;">
-      <li>Kontinuierlicher Austausch zu fachspezifischen Themen im Chat</li>
-      <li>Regelmässige Online-Vorträge mit Gastreferent:innen</li>
-      <li>Jederzeit Unterstützung und Tipps von Tutoren und Kolleg:innen</li>
-      <li>Fallbesprechungen &amp; Updates zu neuen Trends und Studien</li>
+    <p style="margin:0 0 8px 0; font-weight:bold;">Darauf kannst Du Dich freuen:</p>
+    <ul style="list-style-type:disc; padding-left:24px; margin:0 0 20px 0;">
+      <li style="margin-bottom:4px;">Kontinuierlicher Austausch zu fachspezifischen Themen im Chat</li>
+      <li style="margin-bottom:4px;">Regelmässige Online-Vorträge mit Gastreferent:innen</li>
+      <li style="margin-bottom:4px;">Jederzeit Unterstützung und Tipps von Tutoren und Kolleg:innen</li>
+      <li style="margin-bottom:4px;">Fallbesprechungen &amp; Updates zu neuen Trends und Studien</li>
     </ul>
 
-    <p style="font-size:16px;line-height:1.5;color:#555; margin:0 0 20px 0;">
+    <p style="margin:0 0 20px 0;">
       Hast Du Fragen oder benötigst Hilfe beim Beitreten? Schreib uns gern an <a href="mailto:customerlove@ephia.de" style="color:#0066FF;text-decoration:none;">customerlove@ephia.de</a>.
     </p>
 
-    <p style="font-size:16px;line-height:1.5;color:#555; margin:0;">
+    <p style="margin:0 0 20px 0;">
       Wir freuen uns auf Deinen Input und den gemeinsamen Austausch!<br><br>
       Herzliche Grüße,<br>
       Dein EPHIA-Team
     </p>
-  </div>
 
-  <div style="max-width:600px; margin:0 auto 20px; text-align:left;">
-    <img src="${LOGO_URL}" alt="EPHIA-Logo" style="width:200px;">
-  </div>
-  <div style="max-width:600px; margin:0 auto; padding-bottom:20px; text-align:left; color:#9e9e9e; font-size:12px;">
-    <div style="margin-bottom:8px;">
-      EPHIA Medical GmbH<br>
-      Dorfstraße 30, 15913 Märkische Heide, Deutschland<br>
-      Geschäftsführerin: Dr. Sophia Wilk-Vollmann
-    </div>
+    ${FOOTER}
   </div>
 </div>`;
 }

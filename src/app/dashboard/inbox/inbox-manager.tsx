@@ -117,8 +117,13 @@ export function InboxManager({
     (search: string, f: InboxFilter) => {
       const parts: string[] = [];
       if (search.trim()) parts.push(search.trim());
-      if (f === "unread") parts.push("is:unread");
-      if (f === "spam") parts.push("in:spam");
+      // Scope the default and unread tabs to the Inbox label so the
+      // archived copies of transactional Resend sends (which live in
+      // Sent only after archiveSentMessage) don't leak into this view.
+      // Spam keeps its own scope; "Beantwortet" is filtered client-side.
+      if (f === "unread") parts.push("is:unread in:inbox");
+      else if (f === "spam") parts.push("in:spam");
+      else parts.push("in:inbox");
       return parts.join(" ");
     },
     []
