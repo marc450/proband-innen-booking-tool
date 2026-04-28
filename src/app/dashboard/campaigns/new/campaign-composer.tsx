@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { ArrowLeft, Send, Clock, ChevronDown, ChevronRight, Search, Plus, X, Link as LinkIcon, Type, Save, ImageIcon, Paperclip } from "lucide-react";
+import { ArrowLeft, Send, Clock, ChevronDown, ChevronRight, Search, Plus, X, Link as LinkIcon, Type, Save, ImageIcon, Paperclip, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 interface PatientOption {
@@ -222,6 +222,16 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
   const [bulkIncludeResult, setBulkIncludeResult] = useState<
     { added: number; alreadyIncluded: number; notFound: string[] } | null
   >(null);
+
+  // ── AI compose ───────────────────────────────────────────────────
+  // The "Mit KI erstellen" affordance lets the user describe the
+  // campaign in plain German; the API route generates a structured
+  // { subject, contentBlocks } draft. Inline UI (no separate modal)
+  // so the user sees the prompt sit next to the content it produces.
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const [attachments, setAttachments] = useState<File[]>([]);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
@@ -454,6 +464,38 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
     }
   };
 
+  const handleAiGenerate = async () => {
+    const prompt = aiPrompt.trim();
+    if (!prompt || aiGenerating) return;
+    setAiGenerating(true);
+    setAiError(null);
+    try {
+      const res = await fetch("/api/admin/ai-compose-campaign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, audienceType }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAiError(data.error || `HTTP ${res.status}`);
+        return;
+      }
+      // Replace, don't merge: the user explicitly asked for a fresh
+      // draft. Existing edits are lost — we surface a small warning
+      // in the UI so this isn't a surprise.
+      if (typeof data.subject === "string") setSubject(data.subject);
+      if (Array.isArray(data.contentBlocks) && data.contentBlocks.length > 0) {
+        setContentBlocks(data.contentBlocks);
+      }
+      setAiOpen(false);
+      setAiPrompt("");
+    } catch {
+      setAiError("Netzwerkfehler bei der Generierung.");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -617,9 +659,77 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
           {/* Email content */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">E-Mail Inhalt</CardTitle>
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle className="text-base">E-Mail Inhalt</CardTitle>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setAiOpen((v) => !v);
+                    setAiError(null);
+                  }}
+                  className="gap-1.5"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Mit KI erstellen
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {aiOpen && (
+                <div className="rounded-[10px] border border-dashed border-[#0066FF]/40 bg-[#0066FF]/5 p-3 space-y-2">
+                  <Label htmlFor="ai_prompt" className="text-xs">
+                    Beschreibe die Kampagne in einem Satz
+                  </Label>
+                  <textarea
+                    id="ai_prompt"
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder="z.B. Erstelle eine E-Mail an Ärzt:innen, dass sie ihre Proband:innen zur Buchung einladen können."
+                    className="w-full min-h-[80px] rounded-md border border-input bg-white px-3 py-2 text-sm placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                    disabled={aiGenerating}
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      onClick={handleAiGenerate}
+                      disabled={!aiPrompt.trim() || aiGenerating}
+                      size="sm"
+                      className="gap-1.5"
+                    >
+                      {aiGenerating ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5" />
+                      )}
+                      {aiGenerating ? "Generiere..." : "Generieren"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setAiOpen(false);
+                        setAiPrompt("");
+                        setAiError(null);
+                      }}
+                      disabled={aiGenerating}
+                    >
+                      Abbrechen
+                    </Button>
+                    <span className="text-[11px] text-muted-foreground">
+                      Ersetzt Betreff und Inhalt. Speichere zuerst als
+                      Entwurf, falls Du den aktuellen Stand behalten
+                      willst.
+                    </span>
+                  </div>
+                  {aiError && (
+                    <p className="text-xs text-red-600">{aiError}</p>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label>Betreff</Label>
                 <Input
