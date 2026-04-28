@@ -220,7 +220,7 @@ export function PatientsManager({ initialPatients }: Props) {
 
       {/* Import preview modal */}
       <Dialog open={!!importRows} onOpenChange={(open) => { if (!open) { setImportRows(null); setImportResult(null); } }}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent size="wide">
           <DialogHeader>
             <DialogTitle>Proband:innen importieren</DialogTitle>
           </DialogHeader>

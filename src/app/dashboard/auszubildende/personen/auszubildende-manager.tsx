@@ -357,7 +357,7 @@ export function AuszubildendeManager({
           }
         }}
       >
-        <DialogContent className="max-w-3xl">
+        <DialogContent size="wide">
           <DialogHeader>
             <DialogTitle>Ärzt:innen importieren</DialogTitle>
           </DialogHeader>
