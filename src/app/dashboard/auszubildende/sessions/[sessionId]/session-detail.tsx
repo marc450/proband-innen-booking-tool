@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   MapPin,
@@ -15,9 +16,13 @@ import {
   Repeat,
   FileText,
   CheckCircle2,
+  Mail,
+  Loader2,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPersonName } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
 
 export interface Participant {
   bookingId: string;
@@ -318,9 +323,16 @@ export function SessionDetail({
 
       {/* Participants table */}
       <div>
-        <h2 className="text-lg font-bold mb-3">
-          Teilnehmer:innen ({totalCount})
-        </h2>
+        <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+          <h2 className="text-lg font-bold">
+            Teilnehmer:innen ({totalCount})
+          </h2>
+          <CreateCampaignButton
+            sessionTitle={courseLabelDe || templateTitle}
+            dateIso={dateIso}
+            participants={participants}
+          />
+        </div>
         {totalCount === 0 ? (
           <div className="bg-white rounded-[10px] p-8 text-center text-sm text-muted-foreground">
             Noch keine Buchungen.
@@ -486,5 +498,89 @@ function ParticipantRow({ p }: { p: Participant }) {
         )}
       </TableCell>
     </TableRow>
+  );
+}
+
+// Creates a draft campaign in email_campaigns with the session's
+// participants pre-attached as included_patient_ids, then redirects to
+// the campaign edit page so the user can fill in subject + body. Only
+// participants with a linked auszubildende_id are addressable through
+// campaigns; orphan course bookings (no profile) are silently skipped.
+function CreateCampaignButton({
+  sessionTitle,
+  dateIso,
+  participants,
+}: {
+  sessionTitle: string;
+  dateIso: string;
+  participants: Participant[];
+}) {
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
+
+  const addressableIds = participants
+    .map((p) => p.auszubildendeId)
+    .filter((id): id is string => Boolean(id))
+    .map((id) => `a-${id}`);
+
+  const handleCreate = async () => {
+    if (creating || addressableIds.length === 0) return;
+    setCreating(true);
+    try {
+      const supabase = createClient();
+      const dateStr = new Date(dateIso).toLocaleDateString("de-DE", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      });
+      const { data, error } = await supabase
+        .from("email_campaigns")
+        .insert({
+          name: `${sessionTitle} | ${dateStr}`,
+          subject: "",
+          body_text: "",
+          content_blocks: [{ type: "text", text: "" }],
+          audience_type: "aerztinnen",
+          included_patient_ids: addressableIds,
+          excluded_patient_ids: [],
+          status: "draft",
+          recipient_count: 0,
+        })
+        .select("id")
+        .single();
+      if (error || !data) {
+        setCreating(false);
+        return;
+      }
+      router.push(`/dashboard/campaigns/${data.id}`);
+    } catch {
+      setCreating(false);
+    }
+  };
+
+  const disabled = creating || addressableIds.length === 0;
+
+  return (
+    <Button
+      onClick={handleCreate}
+      disabled={disabled}
+      title={
+        addressableIds.length === 0
+          ? "Keine Teilnehmer:innen mit verknüpftem Profil — Kampagne nicht möglich."
+          : `Kampagne mit ${addressableIds.length} Teilnehmer:in${addressableIds.length === 1 ? "" : "nen"} erstellen`
+      }
+    >
+      {creating ? (
+        <>
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          Erstelle...
+        </>
+      ) : (
+        <>
+          <Mail className="w-4 h-4 mr-2" />
+          Kampagne an Teilnehmer:innen
+        </>
+      )}
+    </Button>
   );
 }
