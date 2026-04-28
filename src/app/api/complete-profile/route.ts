@@ -73,6 +73,24 @@ export async function POST(req: NextRequest) {
         .eq("email", normalizedEmail);
     }
 
+    // Propagate profile_complete=true to ALL of this contact's
+    // course_bookings, not just the one that triggered the form. The
+    // flag is rendered per-booking in the dashboard ("Profil
+    // unvollständig" badge) and without this sync, sibling bookings
+    // for the same contact would still appear incomplete after the
+    // profile is filled in.
+    if (booking.auszubildende_id) {
+      await supabase
+        .from("course_bookings")
+        .update({ profile_complete: true })
+        .eq("auszubildende_id", booking.auszubildende_id);
+    } else if (normalizedEmail) {
+      await supabase
+        .from("course_bookings")
+        .update({ profile_complete: true })
+        .eq("email", normalizedEmail);
+    }
+
     // Legacy import: doctors carried over from the pre-migration ops
     // system already received the booking confirmation, the community
     // invite and the Proband:innen-Info email; they are already enrolled

@@ -379,11 +379,27 @@ export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { sk
     }
   }
 
-  // 5. Mark booking as profile_complete
-  await supabase
+  // 5. Mark booking as profile_complete. Propagate to every booking
+  // belonging to the same contact so siblings (e.g. earlier Aufbau
+  // online bookings) don't keep showing the "Profil unvollständig"
+  // badge in the dashboard once the profile is filled in.
+  const { data: bookingRow } = await supabase
     .from("course_bookings")
-    .update({ profile_complete: true })
-    .eq("id", data.bookingId);
+    .select("auszubildende_id, email")
+    .eq("id", data.bookingId)
+    .single();
+
+  if (bookingRow?.auszubildende_id) {
+    await supabase
+      .from("course_bookings")
+      .update({ profile_complete: true })
+      .eq("auszubildende_id", bookingRow.auszubildende_id);
+  } else {
+    await supabase
+      .from("course_bookings")
+      .update({ profile_complete: true })
+      .eq("id", data.bookingId);
+  }
 
   console.log(`Post-purchase flow completed for booking ${data.bookingId}`);
 }
