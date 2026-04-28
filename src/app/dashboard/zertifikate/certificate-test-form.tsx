@@ -112,10 +112,34 @@ export function CertificateTestForm({ courseTypes }: Props) {
 
   const handlePreview = async () => {
     if (!canSubmit) return;
+    // Chrome's popup blocker requires window.open to be called inside
+    // the same tick as the user gesture. Awaiting the PDF fetch first
+    // breaks that chain and the popup is silently dropped — which was
+    // the "click Vorschau, nothing happens" bug. Open a placeholder
+    // tab synchronously here, then navigate it once the blob is
+    // ready. We deliberately omit `noopener` so we can still drive the
+    // popup's location after the fetch resolves; the popup loads only
+    // our own same-origin PDF, so the window-opener risk is low.
+    const popup = window.open("", "_blank");
+    if (!popup) {
+      setResult({
+        title: "Vorschau wurde blockiert",
+        description:
+          "Pop-ups sind für diese Seite deaktiviert. Bitte erlaube Pop-ups oder nutze \"Als PDF herunterladen\".",
+      });
+      return;
+    }
+    popup.document.write(
+      '<!doctype html><title>EPHIA-Zertifikat (Vorschau)</title><p style="font-family:system-ui;padding:16px;color:#444;">Lade Zertifikat...</p>',
+    );
+
     const blob = await fetchPdfBlob();
-    if (!blob) return;
+    if (!blob) {
+      popup.close();
+      return;
+    }
     const url = URL.createObjectURL(blob);
-    window.open(url, "_blank", "noopener");
+    popup.location.replace(url);
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
   };
 
