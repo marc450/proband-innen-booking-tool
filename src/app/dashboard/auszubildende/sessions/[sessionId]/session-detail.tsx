@@ -224,7 +224,7 @@ export function SessionDetail({
       <div>
         <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
           <h2 className="text-lg font-bold">
-            Teilnehmer:innen ({totalCount})
+            Teilnehmer:innen
           </h2>
           <div className="flex items-center gap-2 flex-wrap">
             <ManualBookingButton sessionId={sessionId} />
