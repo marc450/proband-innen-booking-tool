@@ -129,7 +129,7 @@ function RecipientSearch({
       {showDropdown && dropdownRect && ReactDOM.createPortal(
         <div
           id="recipient-search-dropdown"
-          className="bg-white border rounded-md shadow-lg max-h-[240px] overflow-y-auto"
+          className="bg-white rounded-[10px] shadow-lg ring-1 ring-black/5 max-h-[240px] overflow-y-auto"
           style={{
             position: "fixed",
             top: dropdownRect.top,
@@ -151,7 +151,7 @@ function RecipientSearch({
                 onClick={() => {
                   if (!isBlacklistLocked) toggleExclude(c.id);
                 }}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-gray-50 transition-colors ${isBlacklistLocked ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted/50 transition-colors ${isBlacklistLocked ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
               >
                 <Checkbox
                   checked={!isExcluded}
@@ -159,7 +159,7 @@ function RecipientSearch({
                   className="pointer-events-none"
                 />
                 <span className="flex-1 min-w-0 truncate font-medium">{displayName}</span>
-                <span className="text-xs text-gray-500 truncate max-w-[180px]">{c.email}</span>
+                <span className="text-xs text-muted-foreground truncate max-w-[180px]">{c.email}</span>
                 {c.isBlacklisted && (
                   <span className="text-xs text-red-500 shrink-0">Blacklist</span>
                 )}
@@ -167,7 +167,7 @@ function RecipientSearch({
             );
           })}
           {filteredRecipients.length > 20 && (
-            <div className="px-3 py-1.5 text-xs text-gray-500 text-center">
+            <div className="px-3 py-1.5 text-xs text-muted-foreground text-center">
               +{filteredRecipients.length - 20} weitere Ergebnisse...
             </div>
           )}
@@ -678,7 +678,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
             </CardHeader>
             <CardContent className="space-y-4">
               {aiOpen && (
-                <div className="rounded-[10px] border border-dashed border-[#0066FF]/40 bg-[#0066FF]/5 p-3 space-y-2">
+                <div className="rounded-[10px] bg-[#0066FF]/5 ring-1 ring-[#0066FF]/20 p-3 space-y-2">
                   <Label htmlFor="ai_prompt" className="text-xs">
                     Beschreibe die Kampagne in einem Satz
                   </Label>
@@ -687,7 +687,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
                     placeholder="z.B. Erstelle eine E-Mail an Ärzt:innen, dass sie ihre Proband:innen zur Buchung einladen können."
-                    className="w-full min-h-[80px] rounded-md border border-input bg-white px-3 py-2 text-sm placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                    className="w-full min-h-[80px] rounded-[10px] border border-input bg-white px-3 py-2 text-sm placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
                     disabled={aiGenerating}
                   />
                   <div className="flex flex-wrap items-center gap-2">
@@ -755,14 +755,14 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                         {contentBlocks.length > 1 && (
                           <button
                             onClick={() => removeBlock(i)}
-                            className="absolute top-1 right-1 z-10 bg-white/80 hover:bg-white p-1 rounded-full text-gray-300 hover:text-gray-500 shadow-sm"
+                            className="absolute top-1 right-1 z-10 bg-white/80 hover:bg-white p-1 rounded-full text-muted-foreground hover:text-foreground shadow-sm"
                           >
                             <X className="h-3.5 w-3.5" />
                           </button>
                         )}
                       </div>
                     ) : block.type === "button" ? (
-                      <div className="flex items-center gap-2 bg-blue-50 rounded-lg p-2">
+                      <div className="flex items-center gap-2 bg-[#0066FF]/10 rounded-[10px] p-2">
                         <LinkIcon className="h-4 w-4 text-[#0066FF] flex-shrink-0" />
                         <Input
                           value={block.label}
@@ -778,21 +778,21 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                         />
                         <button
                           onClick={() => removeBlock(i)}
-                          className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+                          className="text-muted-foreground hover:text-destructive flex-shrink-0"
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     ) : block.type === "image" ? (
-                      <div className="relative bg-gray-50 rounded-lg p-2">
+                      <div className="relative bg-muted rounded-[10px] p-2">
                         <img
                           src={block.src}
                           alt={block.alt || ""}
-                          className="max-w-full max-h-[200px] rounded-lg object-contain"
+                          className="max-w-full max-h-[200px] rounded-[10px] object-contain"
                         />
                         <button
                           onClick={() => removeBlock(i)}
-                          className="absolute top-3 right-3 bg-white/80 hover:bg-white p-1 rounded-full text-gray-500 hover:text-gray-700 shadow-sm"
+                          className="absolute top-3 right-3 bg-white/80 hover:bg-white p-1 rounded-full text-muted-foreground hover:text-foreground shadow-sm"
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>
@@ -867,14 +867,14 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                   {attachments.map((file, i) => (
                     <span
                       key={i}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-700"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-muted rounded-[10px] text-xs text-foreground shadow-sm ring-1 ring-black/5"
                     >
-                      <Paperclip className="h-3 w-3 text-gray-400" />
+                      <Paperclip className="h-3 w-3 text-muted-foreground" />
                       <span className="truncate max-w-[150px]">{file.name}</span>
-                      <span className="text-gray-400">{Math.round(file.size / 1024)} KB</span>
+                      <span className="text-muted-foreground">{Math.round(file.size / 1024)} KB</span>
                       <button
                         onClick={() => setAttachments((prev) => prev.filter((_, idx) => idx !== i))}
-                        className="text-gray-400 hover:text-gray-600"
+                        className="text-muted-foreground hover:text-destructive"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -898,7 +898,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
             </CardHeader>
             <CardContent className="space-y-3">
               {/* Audience toggle */}
-              <div className="flex bg-muted rounded-lg p-1">
+              <div className="flex bg-muted rounded-[10px] p-1">
                 {([
                   { value: "probandinnen", label: "Proband:innen" },
                   { value: "aerztinnen", label: "Ärzt:innen" },
@@ -907,7 +907,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                   <button
                     key={value}
                     onClick={() => handleAudienceChange(value)}
-                    className={`flex-1 py-1.5 text-sm font-semibold rounded-md transition-colors ${
+                    className={`flex-1 py-1.5 text-sm font-semibold rounded-[8px] transition-colors ${
                       audienceType === value
                         ? "bg-white text-foreground shadow-sm"
                         : "text-muted-foreground"
@@ -973,19 +973,19 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                   <div className="text-xs font-medium text-muted-foreground">
                     {eligibleContacts.length} Empfänger:innen ausgewählt
                   </div>
-                  <div className="max-h-[180px] overflow-y-auto border rounded-md p-2 flex flex-wrap gap-1.5">
+                  <div className="max-h-[180px] overflow-y-auto rounded-[10px] shadow-sm ring-1 ring-black/5 p-2 flex flex-wrap gap-1.5">
                     {eligibleContacts.map((c) => {
                       const displayName = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email;
                       return (
                         <span
                           key={c.id}
-                          className="inline-flex items-center gap-1 bg-blue-50 text-[#0066FF] rounded-full pl-2.5 pr-1 py-0.5 text-xs font-medium"
+                          className="inline-flex items-center gap-1 bg-[#0066FF]/10 text-[#0066FF] rounded-full pl-2.5 pr-1 py-0.5 text-xs font-medium"
                         >
                           {displayName}
                           <button
                             type="button"
                             onClick={() => toggleExclude(c.id)}
-                            className="hover:bg-blue-100 rounded-full p-0.5 transition-colors"
+                            className="hover:bg-[#0066FF]/20 rounded-full p-0.5 transition-colors"
                             aria-label={`${displayName} entfernen`}
                           >
                             <X className="h-3 w-3" />
@@ -1005,7 +1005,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                   audience selector still applies as a domain filter
                   on top, and individual deselect via click still works. */}
               <details
-                className="rounded-md border border-dashed border-muted-foreground/30"
+                className="rounded-[10px] bg-muted/40"
                 open={includeMode}
               >
                 <summary className="cursor-pointer select-none px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground">
@@ -1027,7 +1027,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                       setBulkIncludeResult(null);
                     }}
                     placeholder="anna@example.com&#10;tobias@example.com, lisa@gmail.com"
-                    className="w-full min-h-[96px] rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                    className="w-full min-h-[96px] rounded-[10px] border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
                   />
                   <div className="flex items-center gap-2 flex-wrap">
                     <Button
@@ -1080,7 +1080,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
               </button>
 
               {showRecipients && (
-                <div className="max-h-[300px] overflow-y-auto border rounded-md divide-y">
+                <div className="max-h-[300px] overflow-y-auto rounded-[10px] shadow-sm ring-1 ring-black/5 divide-y">
                   {allContacts.map((c) => {
                     // Mirror the eligibility filter exactly so the checkbox
                     // states match the count at the top. Without the
@@ -1204,7 +1204,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
           <Card className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-hidden">
             <CardHeader className="pb-3 flex-shrink-0 flex-row items-center justify-between gap-3">
               <CardTitle className="text-base">Vorschau</CardTitle>
-              <div className="inline-flex rounded-md border border-input bg-background p-0.5 text-xs">
+              <div className="inline-flex rounded-[10px] shadow-sm ring-1 ring-black/5 bg-background p-0.5 text-xs">
                 {(["desktop", "mobile"] as const).map((m) => (
                   <button
                     key={m}
@@ -1214,7 +1214,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                       if (m === "mobile") setMobilePreviewConfirmed(true);
                     }}
                     aria-pressed={previewMode === m}
-                    className={`px-2.5 py-1 rounded-sm font-medium transition-colors ${
+                    className={`px-2.5 py-1 rounded-[8px] font-medium transition-colors ${
                       previewMode === m
                         ? "bg-foreground text-background"
                         : "text-muted-foreground hover:text-foreground"
@@ -1228,7 +1228,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
             <CardContent className="p-0 flex-1 min-h-0 overflow-y-auto">
               <div className="border-t">
                 {previewMode === "mobile" ? (
-                  <div className="bg-gray-100 p-4 flex justify-center">
+                  <div className="bg-muted p-4 flex justify-center">
                     <div className="w-[390px] max-w-full rounded-[28px] bg-black p-2 shadow-lg">
                       <div className="rounded-[22px] overflow-hidden bg-white">
                         <EmailPreview html={previewHtml} />
@@ -1265,7 +1265,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                 : `Die E-Mail wird jetzt an ${eligibleContacts.length} Empfänger:innen gesendet. Dieser Vorgang kann nicht rückgängig gemacht werden.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <label className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 cursor-pointer select-none">
+          <label className="flex items-start gap-2 rounded-[10px] bg-amber-50 ring-1 ring-amber-200 p-3 text-sm text-amber-900 cursor-pointer select-none">
             <Checkbox
               checked={mobilePreviewConfirmed}
               onCheckedChange={(v) => setMobilePreviewConfirmed(v === true)}

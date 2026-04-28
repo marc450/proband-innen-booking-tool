@@ -151,10 +151,13 @@ export function CampaignsManager({ campaigns: initialCampaigns, monthlyEmailsSen
   const monthlyLimit = Number(process.env.NEXT_PUBLIC_RESEND_MONTHLY_LIMIT) || 50000;
   const remaining = Math.max(0, monthlyLimit - monthlyEmailsSent);
   const usagePercent = Math.min(100, (monthlyEmailsSent / monthlyLimit) * 100);
+  // Soft tint chips, no border per the EPHIA borderless rule. The
+  // colour family escalates with usage so the chip still flags risk
+  // at a glance.
   const usageColor =
-    usagePercent >= 90 ? "text-red-700 bg-red-50 border-red-200"
-    : usagePercent >= 70 ? "text-amber-700 bg-amber-50 border-amber-200"
-    : "text-emerald-700 bg-emerald-50 border-emerald-200";
+    usagePercent >= 90 ? "text-red-700 bg-red-50"
+    : usagePercent >= 70 ? "text-amber-700 bg-amber-50"
+    : "text-emerald-700 bg-emerald-50";
 
   return (
     <div className="space-y-6">
@@ -168,7 +171,7 @@ export function CampaignsManager({ campaigns: initialCampaigns, monthlyEmailsSen
         filters={
           <>
             <div
-              className={`hidden md:inline-flex items-center gap-1.5 text-xs font-medium rounded-[10px] border px-2.5 h-9 ${usageColor}`}
+              className={`hidden md:inline-flex items-center gap-1.5 text-xs font-medium rounded-[10px] px-2.5 h-9 ${usageColor}`}
               title={`Resend-Kontingent: ${monthlyEmailsSent.toLocaleString("de-DE")} von ${monthlyLimit.toLocaleString("de-DE")} E-Mails diesen Monat versendet (nur Kampagnen).`}
             >
               <span className="opacity-70">Resend:</span>
@@ -256,7 +259,7 @@ export function CampaignsManager({ campaigns: initialCampaigns, monthlyEmailsSen
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => router.push(`/dashboard/campaigns/${c.id}`)}
-                        className="p-1.5 rounded hover:bg-gray-100 text-muted-foreground hover:text-foreground transition-colors"
+                        className="p-1.5 rounded-[8px] hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                         title={isDraft ? "Bearbeiten" : "Ansehen"}
                       >
                         {isDraft ? (
@@ -271,7 +274,7 @@ export function CampaignsManager({ campaigns: initialCampaigns, monthlyEmailsSen
                           handleDuplicate(c);
                         }}
                         disabled={duplicating === c.id}
-                        className="p-1.5 rounded hover:bg-gray-100 text-muted-foreground hover:text-foreground transition-colors"
+                        className="p-1.5 rounded-[8px] hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                         title="Duplizieren"
                       >
                         <Copy className="h-4 w-4" />
@@ -281,7 +284,7 @@ export function CampaignsManager({ campaigns: initialCampaigns, monthlyEmailsSen
                           e.stopPropagation();
                           setDeleteId(c.id);
                         }}
-                        className="p-1.5 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors"
+                        className="p-1.5 rounded-[8px] hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors"
                         title="Löschen"
                       >
                         <Trash2 className="h-4 w-4" />
