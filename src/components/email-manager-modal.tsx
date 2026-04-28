@@ -96,7 +96,12 @@ export function EmailManagerModal({
           makePrimary,
         }),
       });
-      const json = await res.json();
+      let json: { error?: string; ok?: boolean } = {};
+      try {
+        json = await res.json();
+      } catch {
+        json = { error: `Server hat keine JSON-Antwort gesendet (HTTP ${res.status})` };
+      }
       if (!res.ok) {
         setError(json.error || `HTTP ${res.status}`);
         return;
@@ -105,6 +110,12 @@ export function EmailManagerModal({
       setMakePrimary(false);
       await reload();
       if (makePrimary) onPrimaryChange?.(newEmail.trim().toLowerCase());
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? `Netzwerkfehler: ${err.message}`
+          : String(err),
+      );
     } finally {
       setAdding(false);
     }
