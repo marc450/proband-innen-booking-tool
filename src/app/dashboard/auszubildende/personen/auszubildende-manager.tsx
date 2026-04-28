@@ -357,7 +357,7 @@ export function AuszubildendeManager({
           }
         }}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Ärzt:innen importieren</DialogTitle>
           </DialogHeader>
@@ -370,7 +370,7 @@ export function AuszubildendeManager({
                 </p>
               ) : (
                 <>
-                  <p className="text-green-600 font-medium">
+                  <p className="text-emerald-700 font-semibold text-base">
                     {importResult.inserted} Ärzt:innen erfolgreich importiert.
                   </p>
                   {importResult.skipped > 0 && (
@@ -388,29 +388,35 @@ export function AuszubildendeManager({
             </div>
           ) : (
             importRows && (
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  {importRows.length} Einträge gefunden. Vorschau (erste 5):
-                </p>
-                <div className="rounded border overflow-hidden">
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <p className="text-base font-semibold">
+                    {importRows.length} Einträge in der Datei gefunden
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    E-Mail-Adressen, die bereits existieren (auch als Alias auf
+                    einem anderen Profil), werden automatisch übersprungen.
+                  </p>
+                </div>
+                <div className="rounded-[10px] border border-gray-200 overflow-hidden">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="bg-gray-50">
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>E-Mail</TableHead>
-                        <TableHead>Telefon</TableHead>
-                        <TableHead>Ort</TableHead>
+                        <TableHead className="font-semibold">Name</TableHead>
+                        <TableHead className="font-semibold">E-Mail</TableHead>
+                        <TableHead className="font-semibold">Telefon</TableHead>
+                        <TableHead className="font-semibold">Ort</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {importRows.slice(0, 5).map((r, i) => (
                         <TableRow key={i}>
-                          <TableCell>
+                          <TableCell className="font-medium">
                             {formatPersonName({ title: r.title, firstName: r.first_name, lastName: r.last_name }) || "–"}
                           </TableCell>
-                          <TableCell>{r.email}</TableCell>
-                          <TableCell>{r.phone || "–"}</TableCell>
-                          <TableCell>
+                          <TableCell className="text-muted-foreground">{r.email}</TableCell>
+                          <TableCell className="text-muted-foreground">{r.phone || "–"}</TableCell>
+                          <TableCell className="text-muted-foreground">
                             {[r.address_postal_code, r.address_city]
                               .filter(Boolean)
                               .join(" ") || "–"}
@@ -419,15 +425,12 @@ export function AuszubildendeManager({
                       ))}
                     </TableBody>
                   </Table>
+                  {importRows.length > 5 && (
+                    <div className="px-4 py-2 text-xs text-muted-foreground bg-gray-50 border-t border-gray-200">
+                      + {importRows.length - 5} weitere Einträge (nicht angezeigt)
+                    </div>
+                  )}
                 </div>
-                {importRows.length > 5 && (
-                  <p className="text-xs text-muted-foreground">
-                    ... und {importRows.length - 5} weitere
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Bestehende E-Mail-Adressen werden übersprungen (kein Überschreiben).
-                </p>
               </div>
             )
           )}
@@ -445,14 +448,14 @@ export function AuszubildendeManager({
             ) : (
               <>
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   onClick={() => setImportRows(null)}
                   disabled={importing}
                 >
                   Abbrechen
                 </Button>
                 <Button onClick={handleConfirmImport} disabled={importing}>
-                  {importing ? "Wird importiert..." : "Importieren"}
+                  {importing ? "Wird importiert..." : `${importRows?.length ?? 0} Ärzt:innen importieren`}
                 </Button>
               </>
             )}

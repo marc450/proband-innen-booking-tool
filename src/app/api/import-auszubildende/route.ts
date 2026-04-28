@@ -37,20 +37,32 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient();
 
-  // Option A (user's choice): skip any row whose email already exists
-  // on the auszubildende table. Compared case-insensitively because
-  // HubSpot and Stripe sometimes differ in case.
-  const { data: existing, error: fetchError } = await supabase
-    .from("auszubildende")
-    .select("email");
+  // Dedup against BOTH the legacy auszubildende.email column AND the
+  // new auszubildende_emails aliases table (PR 1). Without the second
+  // check we'd happily re-import an email that's already an alias on
+  // another contact, creating a real duplicate.
+  // Compared case-insensitively because HubSpot and Stripe sometimes
+  // differ in case.
+  const [
+    { data: legacyExisting, error: legacyFetchError },
+    { data: aliasExisting, error: aliasFetchError },
+  ] = await Promise.all([
+    supabase.from("auszubildende").select("email"),
+    supabase.from("auszubildende_emails").select("email"),
+  ]);
 
+  const fetchError = legacyFetchError || aliasFetchError;
   if (fetchError) {
     return NextResponse.json({ error: fetchError.message }, { status: 500 });
   }
 
-  const existingEmails = new Set(
-    (existing || []).map((r) => (r.email || "").toLowerCase().trim())
-  );
+  const existingEmails = new Set<string>();
+  for (const r of legacyExisting || []) {
+    if (r.email) existingEmails.add(r.email.toLowerCase().trim());
+  }
+  for (const a of aliasExisting || []) {
+    if (a.email) existingEmails.add(a.email.toLowerCase().trim());
+  }
 
   const seenInBatch = new Set<string>();
   const toInsert: Array<Record<string, unknown>> = [];
