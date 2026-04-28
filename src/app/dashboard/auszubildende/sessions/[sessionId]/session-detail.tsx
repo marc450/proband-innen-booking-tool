@@ -26,6 +26,8 @@ import { formatPersonName } from "@/lib/utils";
 import { buildProfileCompletionUrl } from "@/lib/profile-link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { ManualCourseBookingModal } from "@/components/manual-course-booking-modal";
+import { UserPlus } from "lucide-react";
 
 export interface Participant {
   bookingId: string;
@@ -111,6 +113,7 @@ function topEntries<T extends string>(map: Map<T, number>, limit = 4): Array<[T,
 }
 
 export function SessionDetail({
+  sessionId,
   templateTitle,
   courseLabelDe,
   dateIso,
@@ -330,11 +333,14 @@ export function SessionDetail({
           <h2 className="text-lg font-bold">
             Teilnehmer:innen ({totalCount})
           </h2>
-          <CreateCampaignButton
-            sessionTitle={courseLabelDe || templateTitle}
-            dateIso={dateIso}
-            participants={participants}
-          />
+          <div className="flex items-center gap-2 flex-wrap">
+            <ManualBookingButton sessionId={sessionId} />
+            <CreateCampaignButton
+              sessionTitle={courseLabelDe || templateTitle}
+              dateIso={dateIso}
+              participants={participants}
+            />
+          </div>
         </div>
         {totalCount === 0 ? (
           <div className="bg-white rounded-[10px] p-8 text-center text-sm text-muted-foreground">
@@ -613,5 +619,28 @@ function CreateCampaignButton({
         </>
       )}
     </Button>
+  );
+}
+
+// Legacy-cleanup helper. Opens a modal that lets the user search for an
+// Auszubildende:r and attach them directly to this session. Bypasses
+// the create_course_booking RPC entirely — no Stripe, no email, no
+// Slack, no capacity check.
+function ManualBookingButton({ sessionId }: { sessionId: string }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="secondary" onClick={() => setOpen(true)}>
+        <UserPlus className="w-4 h-4 mr-2" />
+        Manuell hinzufügen
+      </Button>
+      <ManualCourseBookingModal
+        open={open}
+        onOpenChange={setOpen}
+        sessionId={sessionId}
+        onCreated={() => router.refresh()}
+      />
+    </>
   );
 }
