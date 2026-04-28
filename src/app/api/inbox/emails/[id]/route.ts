@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { setAuszubildendePrimary, setPatientPrimary } from "../route";
+import { setAuszubildendePrimary, setPatientPrimary } from "@/lib/contact-emails";
 
 // Per-row email operations.
 //   PATCH /api/inbox/emails/<id>  body: { source, action: "setPrimary" }

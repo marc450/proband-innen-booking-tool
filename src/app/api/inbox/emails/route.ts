@@ -5,6 +5,7 @@ import {
   encryptFields,
   hashEmail,
 } from "@/lib/encryption";
+import { setAuszubildendePrimary, setPatientPrimary } from "@/lib/contact-emails";
 
 // Multi-email management for inbox contacts.
 //   GET ?source=auszubildende|patient&id=<contactId>  → list emails
@@ -178,58 +179,3 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ error: "Invalid source" }, { status: 400 });
 }
 
-// Promote one row to primary, demote any other primary, and sync the
-// legacy `auszubildende.email` column. Two sequential updates: the partial
-// unique index allows the brief window where neither row is primary, and
-// any failure between steps leaves the contact with no primary which is
-// recoverable on next write.
-async function setAuszubildendePrimary(
-  contactId: string,
-  emailRowId: string,
-  newPrimaryEmail: string,
-): Promise<void> {
-  const admin = createAdminClient();
-  await admin
-    .from("auszubildende_emails")
-    .update({ is_primary: false })
-    .eq("auszubildende_id", contactId)
-    .eq("is_primary", true);
-  await admin
-    .from("auszubildende_emails")
-    .update({ is_primary: true })
-    .eq("id", emailRowId);
-  // Keep the legacy `auszubildende.email` column in sync so older code
-  // paths (campaign sends, eligibility checks, etc.) keep working until
-  // the column is retired.
-  await admin
-    .from("auszubildende")
-    .update({ email: newPrimaryEmail })
-    .eq("id", contactId);
-}
-
-async function setPatientPrimary(
-  patientId: string,
-  emailRowId: string,
-  newPrimaryEmailHash: string,
-): Promise<void> {
-  const admin = createAdminClient();
-  await admin
-    .from("patient_email_hashes")
-    .update({ is_primary: false })
-    .eq("patient_id", patientId)
-    .eq("is_primary", true);
-  await admin
-    .from("patient_email_hashes")
-    .update({ is_primary: true })
-    .eq("id", emailRowId);
-  // Keep the legacy `patients.email_hash` column in sync. The patients
-  // table also has the email inside encrypted_data; updating that here
-  // would require decrypt-merge-encrypt and is intentionally deferred —
-  // primary lookup uses email_hash so this is enough.
-  await admin
-    .from("patients")
-    .update({ email_hash: newPrimaryEmailHash })
-    .eq("id", patientId);
-}
-
-export { setAuszubildendePrimary, setPatientPrimary };
