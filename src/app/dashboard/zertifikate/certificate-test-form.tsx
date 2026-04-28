@@ -4,13 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { AlertDialog } from "@/components/confirm-dialog";
 
 interface Variant {
@@ -208,21 +201,22 @@ export function CertificateTestForm({ sessions }: Props) {
       >
         <div className="space-y-1.5">
           <Label htmlFor="cert_session">Kurstermin</Label>
-          <Select value={sessionId} onValueChange={(v) => setSessionId(v ?? "")}>
-            <SelectTrigger id="cert_session" className="h-10 w-full">
-              <SelectValue placeholder="Kurstermin wählen..." />
-            </SelectTrigger>
-            <SelectContent>
-              {sessions.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {formatSessionLabel(s)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <select
+            id="cert_session"
+            value={sessionId}
+            onChange={(e) => setSessionId(e.target.value)}
+            className="h-10 w-full rounded-[10px] border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            {sessions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {formatSessionLabel(s)}
+              </option>
+            ))}
+          </select>
           <p className="text-xs text-muted-foreground">
             Liste enthält alle Kurstermine, deren Vorlage einen
-            Zertifikatstyp registriert hat.
+            Zertifikatstyp registriert hat. VNR Theorie und VNR Praxis
+            werden automatisch aus dem ausgewählten Termin geladen.
           </p>
         </div>
 
@@ -276,39 +270,20 @@ export function CertificateTestForm({ sessions }: Props) {
           </p>
         </div>
 
-        {requiresVnr ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="cert_vnr_theorie">VNR Theorie</Label>
-              <Input
-                id="cert_vnr_theorie"
-                value={vnrTheorie}
-                onChange={(e) => setVnrTheorie(e.target.value)}
-                placeholder="2761102025010470002"
-                required
-              />
-              <p className="text-xs text-muted-foreground">
-                Aus der Kursvorlage geladen, überschreibbar.
-              </p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="cert_vnr_praxis">VNR Praxis</Label>
-              <Input
-                id="cert_vnr_praxis"
-                value={vnrPraxis}
-                onChange={(e) => setVnrPraxis(e.target.value)}
-                placeholder="2761102025043200004"
-                required
-              />
-              <p className="text-xs text-muted-foreground">
-                Aus dem Kurstermin geladen, überschreibbar.
-              </p>
-            </div>
-          </div>
-        ) : (
+        {!requiresVnr ? (
           <p className="text-xs text-muted-foreground bg-muted/50 rounded-[10px] px-3 py-2">
             Diese Zertifikatsvariante trägt keine CME-Punkte. VNR Theorie
             und VNR Praxis werden auf dem Zertifikat nicht ausgewiesen.
+          </p>
+        ) : (!vnrTheorie.trim() || !vnrPraxis.trim()) && (
+          <p className="text-xs text-amber-700 bg-amber-50 rounded-[10px] px-3 py-2">
+            Für diesen Termin fehlt {!vnrTheorie.trim() && !vnrPraxis.trim()
+              ? "VNR Theorie und VNR Praxis"
+              : !vnrTheorie.trim()
+              ? "VNR Theorie"
+              : "VNR Praxis"}
+            . Bitte zuerst unter Einstellungen → Kurstermine bzw. Kurse
+            ergänzen, damit das Zertifikat erstellt werden kann.
           </p>
         )}
 
