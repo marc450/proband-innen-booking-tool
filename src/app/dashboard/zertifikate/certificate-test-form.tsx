@@ -40,9 +40,9 @@ export function CertificateTestForm({ templates }: Props) {
     (!requiresVnr || (vnrTheorie.trim() && vnrPraxis.trim()))
   );
 
-  const handlePreview = async () => {
-    if (!canSubmit) return;
-    // Opens the rendered PDF inline in a new tab for visual calibration.
+  // Common bytes fetcher — both Vorschau and Herunterladen need the
+  // rendered PDF blob, only the disposition differs after that.
+  const fetchPdfBlob = async (): Promise<Blob | null> => {
     const res = await fetch("/api/test-certificate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -57,16 +57,42 @@ export function CertificateTestForm({ templates }: Props) {
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setResult({
-        title: "Vorschau fehlgeschlagen",
+        title: "PDF konnte nicht erstellt werden",
         description: data.error || `HTTP ${res.status}`,
       });
-      return;
+      return null;
     }
-    const blob = await res.blob();
+    return await res.blob();
+  };
+
+  const handlePreview = async () => {
+    if (!canSubmit) return;
+    const blob = await fetchPdfBlob();
+    if (!blob) return;
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank", "noopener");
     // Release the object URL a minute later — long enough for the new
     // tab to finish loading, short enough not to leak on long sessions.
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  };
+
+  const handleDownload = async () => {
+    if (!canSubmit) return;
+    const blob = await fetchPdfBlob();
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    // Trigger an actual file download via a synthetic anchor with
+    // `download` set to a friendly filename. The participant name is
+    // sanitised for the filesystem (spaces → dashes, drop everything
+    // outside alphanumerics + dashes).
+    const safeName = name.trim().replace(/\s+/g, "-").replace(/[^A-Za-z0-9\-]/g, "") || "Teilnehmer";
+    const safeTemplate = (selectedTemplate?.label || templateSlug).replace(/\s+/g, "-");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `EPHIA-Zertifikat-${safeTemplate}-${safeName}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
   };
 
@@ -203,10 +229,18 @@ export function CertificateTestForm({ templates }: Props) {
           <Button
             type="button"
             variant="outline"
+            onClick={handleDownload}
+            disabled={!canSubmit || sending}
+          >
+            Als PDF herunterladen
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
             onClick={handlePreview}
             disabled={!canSubmit || sending}
           >
-            Vorschau (ohne Versand)
+            Vorschau im Browser
           </Button>
           <Button
             type="submit"
