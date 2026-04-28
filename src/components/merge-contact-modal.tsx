@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, AlertTriangle, ArrowRight, Search } from "lucide-react";
+import { formatPersonName } from "@/lib/utils";
 
 // Merge another contact INTO the contact this modal was opened from.
 // "primary" = current contact (kept). "merged" = picked target (deleted).
@@ -111,8 +112,13 @@ export function MergeContactModal({
   }, [query, target, source, primaryId]);
 
   const formatLabel = (r: SearchResult): string => {
-    const parts = [r.title, r.firstName, r.lastName].filter(Boolean);
-    return parts.length > 0 ? parts.join(" ") : r.email;
+    return (
+      formatPersonName({
+        title: r.title,
+        firstName: r.firstName,
+        lastName: r.lastName,
+      }) || r.email
+    );
   };
 
   const submitMerge = async () => {

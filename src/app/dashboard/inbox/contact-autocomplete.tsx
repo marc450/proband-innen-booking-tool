@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { formatPersonName } from "@/lib/utils";
 
 interface ContactResult {
   id: string;
@@ -275,8 +276,13 @@ export function ContactAutocomplete({
   }, [input, chips]);
 
   const formatName = (c: ContactResult) => {
-    const parts = [c.title, c.firstName, c.lastName].filter(Boolean);
-    return parts.join(" ") || c.email;
+    return (
+      formatPersonName({
+        title: c.title,
+        firstName: c.firstName,
+        lastName: c.lastName,
+      }) || c.email
+    );
   };
 
   return (
