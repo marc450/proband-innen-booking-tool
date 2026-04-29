@@ -214,11 +214,18 @@ export function PatientsManager({ initialPatients }: Props) {
         searchPlaceholder="Name, E-Mail, Telefon oder Ort..."
         actions={
           <>
-            <Button variant="outline" size="sm" onClick={() => setNewContactOpen(true)}>
+            <Button
+              onClick={() => setNewContactOpen(true)}
+              className="h-9 px-3.5 py-0 text-sm"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Neuer Kontakt
             </Button>
-            <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              className="h-9 px-3.5 py-0 text-sm font-medium bg-white border-input/60"
+            >
               <Upload className="h-4 w-4 mr-2" />
               Import Excel
             </Button>

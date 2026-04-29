@@ -328,9 +328,8 @@ export function AuszubildendeManager({
         actions={
           <>
             <Button
-              variant="outline"
               onClick={() => setNewContactOpen(true)}
-              className="h-9 px-3.5 py-0 text-sm font-medium bg-white border-input/60"
+              className="h-9 px-3.5 py-0 text-sm"
             >
               <Plus className="h-4 w-4 mr-2" />
               Neuer Kontakt
