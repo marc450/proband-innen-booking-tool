@@ -121,8 +121,12 @@ function buildSlackPayload(args: {
         elements: [
           {
             type: "button",
+            // Hardcoded: the inbox lives behind staff auth on the admin
+            // host. NEXT_PUBLIC_APP_URL points at the public booking
+            // domain (proband-innen.ephia.de), which doesn't render
+            // /dashboard/inbox at all.
             text: { type: "plain_text", text: "Im Dashboard öffnen" },
-            url: `${process.env.NEXT_PUBLIC_APP_URL || "https://admin.ephia.de"}/dashboard/inbox`,
+            url: "https://admin.ephia.de/dashboard/inbox",
           },
         ],
       },
