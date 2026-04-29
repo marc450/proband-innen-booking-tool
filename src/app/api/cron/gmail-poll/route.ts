@@ -87,26 +87,17 @@ function buildSlackPayload(args: {
   fromEmail: string;
   subject: string;
   preview: string;
-  messageId: string;
-  threadId: string;
 }) {
   const displayFrom = args.fromName
     ? `${args.fromName} <${args.fromEmail}>`
     : args.fromEmail;
-  const link = `https://mail.google.com/mail/u/0/#inbox/${args.threadId}`;
   return {
     // Bot identity (name + avatar) is set on the Slack app itself
     // ("Neue E-Mail!"). New-style Incoming Webhooks ignore any
     // username/icon_emoji override in the payload, so we don't bother.
-    text: `:incoming_envelope: Neue E-Mail`,
+    // The fallback `text` is what shows in notifications/desktop banners.
+    text: `Neue E-Mail von ${displayFrom}`,
     blocks: [
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `:incoming_envelope: *Neue E-Mail*`,
-        },
-      },
       {
         type: "section",
         fields: [
@@ -128,11 +119,6 @@ function buildSlackPayload(args: {
       {
         type: "actions",
         elements: [
-          {
-            type: "button",
-            text: { type: "plain_text", text: "In Gmail öffnen" },
-            url: link,
-          },
           {
             type: "button",
             text: { type: "plain_text", text: "Im Dashboard öffnen" },
@@ -212,8 +198,6 @@ export async function POST(req: Request) {
           fromEmail: extractEmailAddress(fromHeader),
           subject,
           preview,
-          messageId: m.id,
-          threadId: full.threadId,
         }),
       );
       await applyNotifiedLabel(token, m.id, labelId);
