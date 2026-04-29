@@ -27,7 +27,8 @@ import { SortableHead } from "@/components/table/sortable-head";
 import { useTableSort } from "@/hooks/use-table-sort";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { ChevronRight, AlertTriangle, Ban, Upload, Trash2 } from "lucide-react";
+import { ChevronRight, AlertTriangle, Ban, Upload, Trash2, Plus } from "lucide-react";
+import { NewContactModal } from "@/components/new-contact-modal";
 
 interface ImportRow {
   first_name: string | null;
@@ -80,6 +81,7 @@ export function PatientsManager({ initialPatients }: Props) {
   const [deletePatient, setDeletePatient] = useState<Patient | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null);
+  const [newContactOpen, setNewContactOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const supabase = createClient();
@@ -211,11 +213,23 @@ export function PatientsManager({ initialPatients }: Props) {
         onSearchChange={setSearchQuery}
         searchPlaceholder="Name, E-Mail, Telefon oder Ort..."
         actions={
-          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-            <Upload className="h-4 w-4 mr-2" />
-            Import Excel
-          </Button>
+          <>
+            <Button variant="outline" size="sm" onClick={() => setNewContactOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Neuer Kontakt
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="h-4 w-4 mr-2" />
+              Import Excel
+            </Button>
+          </>
         }
+      />
+
+      <NewContactModal
+        open={newContactOpen}
+        onOpenChange={setNewContactOpen}
+        defaultType="proband"
       />
 
       {/* Import preview modal */}

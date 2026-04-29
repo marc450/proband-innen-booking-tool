@@ -28,7 +28,8 @@ import {
 } from "@/components/ui/select";
 
 import { Badge } from "@/components/ui/badge";
-import { Upload, ChevronRight } from "lucide-react";
+import { Upload, ChevronRight, Plus } from "lucide-react";
+import { NewContactModal } from "@/components/new-contact-modal";
 import { TableHeaderBar } from "@/components/table/table-header-bar";
 import { SortableHead } from "@/components/table/sortable-head";
 import { useTableSort } from "@/hooks/use-table-sort";
@@ -102,6 +103,7 @@ export function AuszubildendeManager({
   const [importRows, setImportRows] = useState<ImportRow[] | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [newContactOpen, setNewContactOpen] = useState(false);
 
   const pageTitle = scope === "other" ? "Sonstige Kontakte" : "Ärzt:innen";
   const countLabel = scope === "other" ? "Kontakte" : "Ärzt:innen";
@@ -324,26 +326,42 @@ export function AuszubildendeManager({
           </>
         }
         actions={
-          scope === "auszubildende" ? (
-            <>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-              <Button
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                className="h-9 px-3.5 py-0 text-sm font-medium bg-white border-input/60"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Import CSV
-              </Button>
-            </>
-          ) : undefined
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setNewContactOpen(true)}
+              className="h-9 px-3.5 py-0 text-sm font-medium bg-white border-input/60"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Neuer Kontakt
+            </Button>
+            {scope === "auszubildende" && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-9 px-3.5 py-0 text-sm font-medium bg-white border-input/60"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import CSV
+                </Button>
+              </>
+            )}
+          </>
         }
+      />
+
+      <NewContactModal
+        open={newContactOpen}
+        onOpenChange={setNewContactOpen}
+        defaultType={scope === "other" ? "other" : "auszubildende"}
       />
 
       {/* Import preview / result dialog. Skips any email that already
