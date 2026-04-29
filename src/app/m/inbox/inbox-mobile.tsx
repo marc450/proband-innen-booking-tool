@@ -266,6 +266,7 @@ export function InboxMobile() {
   const [showComposeCc, setShowComposeCc] = useState(false);
   const [showComposeBcc, setShowComposeBcc] = useState(false);
   const [composeSending, setComposeSending] = useState(false);
+  const [composeError, setComposeError] = useState<string | null>(null);
 
   const buildQuery = useCallback((search: string, f: InboxFilter) => {
     const parts: string[] = [];
@@ -424,6 +425,7 @@ export function InboxMobile() {
 
   const handleComposeSend = async () => {
     setComposeSending(true);
+    setComposeError(null);
     try {
       const res = await fetch("/api/gmail/send", {
         method: "POST",
@@ -447,7 +449,20 @@ export function InboxMobile() {
         setShowComposeBcc(false);
         await drafts.deleteComposeDraft();
         fetchThreads();
+        return;
       }
+      // Non-2xx: surface the server-side reason instead of silently
+      // dropping the user's message.
+      let reason = `Senden fehlgeschlagen (HTTP ${res.status})`;
+      try {
+        const json = (await res.json()) as { error?: string };
+        if (json.error) reason = json.error;
+      } catch {}
+      setComposeError(reason);
+    } catch (e) {
+      setComposeError(
+        e instanceof Error ? e.message : "Netzwerkfehler beim Senden",
+      );
     } finally {
       setComposeSending(false);
     }
@@ -594,6 +609,11 @@ export function InboxMobile() {
             className="min-h-[300px]"
             autoFocus
           />
+          {composeError && (
+            <div className="text-sm text-red-600 bg-red-50 rounded-md px-3 py-2">
+              {composeError}
+            </div>
+          )}
         </div>
       </div>
     );

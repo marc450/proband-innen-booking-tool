@@ -49,6 +49,7 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [expandedMsgs, setExpandedMsgs] = useState<Set<string>>(new Set());
 
   // Track whether reply draft was explicitly deleted (prevents auto-save from re-creating it)
@@ -221,6 +222,7 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
   const handleSend = async () => {
     if (!lastMsg) return;
     setSending(true);
+    setSendError(null);
     try {
       const to = lastMsg.isInbound
         ? lastMsg.fromEmail
@@ -259,7 +261,20 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
         );
         const refreshData = await refreshRes.json();
         if (refreshRes.ok) setMessages(refreshData.thread.messages);
+        return;
       }
+      // Surface the actual reason instead of looking like the button
+      // does nothing.
+      let reason = `Senden fehlgeschlagen (HTTP ${res.status})`;
+      try {
+        const json = (await res.json()) as { error?: string };
+        if (json.error) reason = json.error;
+      } catch {}
+      setSendError(reason);
+    } catch (e) {
+      setSendError(
+        e instanceof Error ? e.message : "Netzwerkfehler beim Senden",
+      );
     } finally {
       setSending(false);
     }
@@ -545,6 +560,11 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
               autoFocus
               className="max-h-[200px]"
             />
+            {sendError && (
+              <div className="text-sm text-red-600 bg-red-50 rounded-md px-3 py-2">
+                {sendError}
+              </div>
+            )}
             <div className="flex justify-end">
               <button
                 onClick={handleSend}
