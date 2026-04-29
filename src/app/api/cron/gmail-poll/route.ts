@@ -95,12 +95,9 @@ function buildSlackPayload(args: {
     : args.fromEmail;
   const link = `https://mail.google.com/mail/u/0/#inbox/${args.threadId}`;
   return {
-    // username/icon_emoji override the webhook's default identity for
-    // legacy-style incoming webhooks. New webhooks ignore these and
-    // use whatever the Slack app config sets — so the matching app
-    // should be named "EPHIA Inbox" too.
-    username: "EPHIA Inbox",
-    icon_emoji: ":incoming_envelope:",
+    // Bot identity (name + avatar) is set on the Slack app itself
+    // ("Neue E-Mail!"). New-style Incoming Webhooks ignore any
+    // username/icon_emoji override in the payload, so we don't bother.
     text: `:incoming_envelope: Neue E-Mail`,
     blocks: [
       {
