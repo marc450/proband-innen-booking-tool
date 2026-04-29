@@ -91,6 +91,12 @@ function buildSlackPayload(args: {
   const displayFrom = args.fromName
     ? `${args.fromName} <${args.fromEmail}>`
     : args.fromEmail;
+  const subjectLine = args.subject || "(kein Betreff)";
+  const bodyLines = [
+    `*Von:* ${displayFrom}`,
+    `*Betreff:* ${subjectLine}`,
+  ];
+  if (args.preview) bodyLines.push(`*Inhalt:* ${args.preview}`);
   return {
     // Bot identity (name + avatar) is set on the Slack app itself
     // ("Neue E-Mail!"). New-style Incoming Webhooks ignore any
@@ -100,22 +106,11 @@ function buildSlackPayload(args: {
     blocks: [
       {
         type: "section",
-        fields: [
-          { type: "mrkdwn", text: `*Von:*\n${displayFrom}` },
-          { type: "mrkdwn", text: `*Betreff:*\n${args.subject || "(kein Betreff)"}` },
-        ],
+        text: {
+          type: "mrkdwn",
+          text: bodyLines.join("\n"),
+        },
       },
-      ...(args.preview
-        ? [
-            {
-              type: "section",
-              text: {
-                type: "mrkdwn",
-                text: `>${args.preview.replace(/\n/g, "\n>")}`,
-              },
-            },
-          ]
-        : []),
       {
         type: "actions",
         elements: [
@@ -127,6 +122,15 @@ function buildSlackPayload(args: {
             // /dashboard/inbox at all.
             text: { type: "plain_text", text: "Im Dashboard öffnen" },
             url: "https://admin.ephia.de/dashboard/inbox",
+          },
+        ],
+      },
+      {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: "_Bitte Haken setzen wenn beantwortet._",
           },
         ],
       },
