@@ -95,13 +95,19 @@ function buildSlackPayload(args: {
     : args.fromEmail;
   const link = `https://mail.google.com/mail/u/0/#inbox/${args.threadId}`;
   return {
-    text: `:incoming_envelope: Neue E-Mail an customerlove@ephia.de`,
+    // username/icon_emoji override the webhook's default identity for
+    // legacy-style incoming webhooks. New webhooks ignore these and
+    // use whatever the Slack app config sets — so the matching app
+    // should be named "EPHIA Inbox" too.
+    username: "EPHIA Inbox",
+    icon_emoji: ":incoming_envelope:",
+    text: `:incoming_envelope: Neue E-Mail`,
     blocks: [
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `:incoming_envelope: *Neue E-Mail an customerlove@ephia.de*`,
+          text: `:incoming_envelope: *Neue E-Mail*`,
         },
       },
       {
@@ -142,8 +148,14 @@ function buildSlackPayload(args: {
 }
 
 async function postToSlack(payload: object) {
-  const url = process.env.SLACK_WEBHOOK_URL;
-  if (!url) throw new Error("SLACK_WEBHOOK_URL not set");
+  // Dedicated webhook for the #customerlove channel. We deliberately do
+  // NOT fall back to SLACK_WEBHOOK_URL — that webhook posts into the
+  // Proband:innen booking channel and the wrong channel is worse than
+  // a missing notification. If the env var isn't set, we throw and the
+  // route returns the error in its response, the cron logs it, and
+  // nothing leaks into the wrong channel.
+  const url = process.env.SLACK_WEBHOOK_URL_CUSTOMERLOVE;
+  if (!url) throw new Error("SLACK_WEBHOOK_URL_CUSTOMERLOVE not set");
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
