@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Mail, Pencil, Search, RefreshCw, Trash2, X, Paperclip } from "lucide-react";
+import { Loader2, Mail, Pencil, Search, RefreshCw, Trash2, X, Paperclip, Send, Check } from "lucide-react";
 import { useSignature } from "@/hooks/use-signature";
 import { useDrafts } from "@/hooks/use-drafts";
 import { RichTextEditor } from "@/app/dashboard/inbox/rich-text-editor";
@@ -267,6 +267,7 @@ export function InboxMobile() {
   const [showComposeBcc, setShowComposeBcc] = useState(false);
   const [composeSending, setComposeSending] = useState(false);
   const [composeError, setComposeError] = useState<string | null>(null);
+  const [composeSent, setComposeSent] = useState(false);
 
   const buildQuery = useCallback((search: string, f: InboxFilter) => {
     const parts: string[] = [];
@@ -439,16 +440,24 @@ export function InboxMobile() {
         }),
       });
       if (res.ok) {
-        setComposing(false);
-        setComposeTo("");
-        setComposeSubject("");
-        setComposeBody("");
-        setComposeCc("");
-        setComposeBcc("");
-        setShowComposeCc(false);
-        setShowComposeBcc(false);
+        // Show the "Gesendet" check animation, hold briefly, then
+        // close compose and refresh the inbox. The setTimeout is the
+        // animation budget — short enough not to feel laggy.
+        setComposeSent(true);
+        setComposeSending(false);
         await drafts.deleteComposeDraft();
         fetchThreads();
+        setTimeout(() => {
+          setComposing(false);
+          setComposeTo("");
+          setComposeSubject("");
+          setComposeBody("");
+          setComposeCc("");
+          setComposeBcc("");
+          setShowComposeCc(false);
+          setShowComposeBcc(false);
+          setComposeSent(false);
+        }, 1200);
         return;
       }
       // Non-2xx: surface the server-side reason instead of silently
@@ -622,6 +631,35 @@ export function InboxMobile() {
             </div>
           )}
         </div>
+        {/* Sticky footer with primary Senden CTA. Sits above the
+            keyboard via the parent flex layout (min-h-dvh + flex-col)
+            so iOS Safari pushes everything up correctly. */}
+        <div className="px-4 py-3 border-t border-gray-100 bg-white pb-[max(env(safe-area-inset-bottom),12px)]">
+          <button
+            onClick={handleComposeSend}
+            disabled={composeSending || !composeTo.trim() || !composeSubject.trim()}
+            className="w-full bg-[#0066FF] text-white font-bold text-base py-3 rounded-[10px] disabled:opacity-50 flex items-center justify-center gap-2 active:bg-[#0055DD]"
+          >
+            {composeSending ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
+            Senden
+          </button>
+        </div>
+        {/* Success animation overlay. Mounts only on send success and
+            unmounts after the parent setTimeout closes the compose. */}
+        {composeSent && (
+          <div className="fixed inset-0 z-[60] bg-white/95 flex flex-col items-center justify-center gap-4 animate-in fade-in-0 duration-150">
+            <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center animate-in zoom-in-50 duration-300">
+              <Check className="w-10 h-10 text-emerald-600" strokeWidth={3} />
+            </div>
+            <p className="text-base font-bold text-emerald-700 animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+              Gesendet
+            </p>
+          </div>
+        )}
       </div>
     );
   }
