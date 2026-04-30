@@ -88,12 +88,22 @@ function buildSlackPayload(args: {
   subject: string;
   preview: string;
 }) {
-  const displayFrom = args.fromName
-    ? `${args.fromName} <${args.fromEmail}>`
+  // Slack auto-links anything that looks like an email address,
+  // regardless of angle brackets. Wrapping the address in backticks
+  // renders it in monospace and disables that auto-linking — Marc
+  // doesn't want a clickable mailto: in the notification.
+  const emailFormatted = `\`${args.fromEmail}\``;
+  const displayFromMrkdwn = args.fromName
+    ? `${args.fromName} ${emailFormatted}`
+    : emailFormatted;
+  // Plain-text variant for the OS notification banner / fallback,
+  // where Slack mrkdwn isn't rendered.
+  const displayFromPlain = args.fromName
+    ? `${args.fromName} (${args.fromEmail})`
     : args.fromEmail;
   const subjectLine = args.subject || "(kein Betreff)";
   const bodyLines = [
-    `*Von:* ${displayFrom}`,
+    `*Von:* ${displayFromMrkdwn}`,
     `*Betreff:* ${subjectLine}`,
   ];
   if (args.preview) bodyLines.push(`*Inhalt:* ${args.preview}`);
@@ -102,7 +112,7 @@ function buildSlackPayload(args: {
     // ("Neue E-Mail!"). New-style Incoming Webhooks ignore any
     // username/icon_emoji override in the payload, so we don't bother.
     // The fallback `text` is what shows in notifications/desktop banners.
-    text: `Neue E-Mail von ${displayFrom}`,
+    text: `Neue E-Mail von ${displayFromPlain}`,
     blocks: [
       {
         type: "section",
