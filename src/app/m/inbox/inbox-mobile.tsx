@@ -525,6 +525,7 @@ export function InboxMobile() {
               onChange={setComposeTo}
               placeholder="Name oder E-Mail..."
               className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8 text-sm"
+              autoFocus
             />
             {(!showComposeCc || !showComposeBcc) && (
               <div className="flex gap-2 flex-shrink-0">
@@ -600,6 +601,13 @@ export function InboxMobile() {
               onChange={(e) => setComposeSubject(e.target.value)}
               placeholder="Betreff"
               className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8 text-sm"
+              // Suppress iOS "AutoFill Contact" heuristic on this field —
+              // it was painting a yellow target rectangle in the empty
+              // band between the An row and Betr. row when Marc moved
+              // focus into Betr. The subject is never a contact.
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="sentences"
             />
           </div>
           <RichTextEditor
@@ -607,7 +615,6 @@ export function InboxMobile() {
             onChange={setComposeBody}
             placeholder="Deine Nachricht..."
             className="min-h-[300px]"
-            autoFocus
           />
           {composeError && (
             <div className="text-sm text-red-600 bg-red-50 rounded-md px-3 py-2">
