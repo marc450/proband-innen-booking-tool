@@ -110,6 +110,7 @@ const navGroups: NavGroup[] = [
         kursbetreuungAllowed: true,
       },
       { href: "/dashboard/campaigns", label: "Kampagnen", adminOnly: true },
+      { href: "/dashboard/email-templates", label: "Vorlagen", adminOnly: true },
       { href: "/dashboard/transactional-emails", label: "Transaktional", adminOnly: true },
     ],
   },
