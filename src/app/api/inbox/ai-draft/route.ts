@@ -313,7 +313,20 @@ export async function POST(req: NextRequest) {
 
   if (mode === "template") {
     sections.push(
-      `<modus>VORLAGEN-MODUS\nDu schreibst eine wiederverwendbare E-Mail-Vorlage, die später bei vielen Empfänger:innen eingefügt wird. Es gibt KEINE konkrete Empfänger:in.\n\n• Wo ein Vorname stehen soll, schreibe genau \`{{vorname}}\` (mit doppelten geschweiften Klammern, kleingeschrieben). Beispiel: \`<p>Hallo {{vorname}},</p>\`. Niemals einen erfundenen Namen einsetzen.\n• KEINE Grußformel und KEINE Signatur am Ende. Schreibe NIEMALS "Beste Grüße,", "Liebe Grüße,", "Herzliche Grüße," o.ä. Die Signatur (inklusive Grußformel + Name) wird beim Versenden automatisch angefügt. Die Vorlage endet mit dem letzten inhaltlichen Satz.\n• Schreibe so generisch, wie es die Anweisung verlangt, aber mit klarem konkreten Inhalt. Keine \`[Datum]\` oder \`[Termin]\` Platzhalter erfinden, außer die Anweisung verlangt es ausdrücklich. Nur \`{{vorname}}\` ist als Platzhalter etabliert.</modus>`,
+      `<modus>VORLAGEN-MODUS — KRITISCH
+
+Du schreibst eine wiederverwendbare E-Mail-Vorlage. Sie wird später bei vielen unterschiedlichen Empfänger:innen eingefügt. Es gibt KEINE konkrete Empfänger:in.
+
+PFLICHT-REGEL ZUM VORNAMEN:
+• Beginne JEDE Vorlage mit einer personalisierten Anrede unter Verwendung von \`{{Vorname}}\`. Beispiele: \`<p>Hallo {{Vorname}},</p>\`, \`<p>Liebe:r {{Vorname}},</p>\`. Bei förmlichem Ton, der eher Nachname-orientiert wäre, nutze trotzdem den Vornamen-Platzhalter, weil die Vorlage später für viele Personen eingesetzt wird.
+• Schreibe \`{{Vorname}}\` IMMER mit großem V, doppelten geschweiften Klammern, ohne Leerzeichen innerhalb. Genau so: \`{{Vorname}}\`.
+• Verwende den Platzhalter ÜBERALL, wo Du sonst den Vornamen der Empfänger:in nennen würdest, auch im Fließtext (z.B. "Wie besprochen, {{Vorname}}, hier sind die Unterlagen.").
+• Setze NIEMALS einen erfundenen Namen ein (kein "Hallo Anna,", kein "Liebe Maria,"). Nutze auch nicht generisch "Hallo," oder "Liebe Teilnehmer:in," wenn ein Vorname natürlich wäre.
+
+WEITERE REGELN:
+• KEINE Grußformel und KEINE Signatur am Ende. Schreibe NIEMALS "Beste Grüße,", "Liebe Grüße,", "Herzliche Grüße," o.ä. Die Signatur (inklusive Grußformel + Name) wird beim Versenden automatisch angefügt. Die Vorlage endet mit dem letzten inhaltlichen Satz.
+• Erfinde keine weiteren Platzhalter wie \`[Datum]\` oder \`[Termin]\`, außer die Anweisung verlangt es ausdrücklich. Aktuell ist nur \`{{Vorname}}\` etabliert.
+• Schreibe so generisch wie nötig, aber mit klarem, konkretem Inhalt — kein Lückentext mit Eckigen Klammern.</modus>`,
     );
   } else if (contact) {
     const lines: string[] = [];

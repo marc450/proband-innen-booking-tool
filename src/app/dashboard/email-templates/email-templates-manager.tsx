@@ -232,7 +232,7 @@ export function EmailTemplatesManager() {
                   }}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Variable: <code className="bg-gray-100 px-1.5 py-0.5 rounded text-[11px]">{"{{vorname}}"}</code> wird beim Versenden durch den Vornamen der Empfänger:in ersetzt. Funktioniert auch im Betreff. Persönliche Signatur bitte nicht in der Vorlage hinzufügen, die wird automatisch ergänzt.
+                  Variable: <code className="bg-gray-100 px-1.5 py-0.5 rounded text-[11px]">{"{{Vorname}}"}</code> wird beim Versenden durch den Vornamen der Empfänger:in ersetzt. Funktioniert auch im Betreff. Persönliche Signatur bitte nicht in der Vorlage hinzufügen, die wird automatisch ergänzt.
                 </p>
               </div>
 

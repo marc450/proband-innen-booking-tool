@@ -282,7 +282,7 @@ export function InboxMobile() {
     setComposeBody(picked.bodyHtml + sig);
     setTemplateNotice(
       picked.vornameMissing
-        ? "Vorname konnte nicht gefunden werden, bitte {{vorname}} manuell ersetzen."
+        ? "Vorname konnte nicht gefunden werden, bitte {{Vorname}} manuell ersetzen."
         : null,
     );
   };

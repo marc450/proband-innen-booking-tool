@@ -73,7 +73,7 @@ export function ComposePane({
     onBodyChange(picked.bodyHtml + sig);
     if (picked.vornameMissing) {
       setTemplateNotice(
-        "Vorname konnte nicht gefunden werden, bitte {{vorname}} manuell ersetzen.",
+        "Vorname konnte nicht gefunden werden, bitte {{Vorname}} manuell ersetzen.",
       );
     } else {
       setTemplateNotice(null);
