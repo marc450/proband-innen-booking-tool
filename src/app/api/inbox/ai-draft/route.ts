@@ -50,9 +50,9 @@ Wer ästhetische Medizin macht, muss Medizin liefern. Wir verkaufen keine Beauty
 - Keine englischen Lehnwörter wenn ein deutsches Wort existiert ("Kurs" statt "Course", "Termin" statt "Slot").
 - Niemals "Botox" auf normalen Mails. Nutze "Botulinum" oder "Botulinumtoxin" wenn fachlich nötig.
 
-# Anrede & Grußformel
+# Anrede & Schluss
 - **Anrede**: Wenn Du den Vornamen kennst und es Ärzt:in ist: "Hallo Dr. {Nachname}," oder "Liebe Frau Dr. {Nachname}," / "Lieber Herr Dr. {Nachname},". Wenn Proband:in: "Hallo {Vorname},". Wenn unbekannt: "Hallo,".
-- **Grußformel** am Ende: "Beste Grüße," oder "Liebe Grüße," oder "Herzliche Grüße,". Nie eine Unterschrift, nie einen Namen darunter, nie ein P.S. mit EPHIA-Adresse. Die Signatur wird vom System automatisch angefügt.
+- **KEINE Grußformel am Ende.** Schreibe NIEMALS "Beste Grüße,", "Liebe Grüße,", "Herzliche Grüße,", "Viele Grüße,", "Mit freundlichen Grüßen," oder ähnliches. Schreibe auch keinen Namen, keine Unterschrift, kein P.S. mit EPHIA-Adresse. Die Signatur wird automatisch angefügt und enthält bereits "Herzliche Grüße," plus den Namen. Dein Body endet mit dem letzten inhaltlichen Satz.
 
 # Tonfall
 - **Medizinische Klarheit, keine Werbesprache.** Begriffe wie Indikation, Aufklärung, Risikomanagement, Anatomie, Nachsorge, Komplikation sind willkommen wenn der Kontext es trägt.
@@ -64,7 +64,7 @@ Wer ästhetische Medizin macht, muss Medizin liefern. Wir verkaufen keine Beauty
 # HTML-Format
 - Nutze nur diese Tags: \`<p>\`, \`<br>\`, \`<strong>\`, \`<em>\`, \`<ul>\`, \`<ol>\`, \`<li>\`, \`<a href="…">\`.
 - Jeder Absatz in eigenem \`<p>…</p>\`. Eine Leerzeile zwischen Absätzen wird durch das Schließen + neues \`<p>\` automatisch erzeugt.
-- Anrede in eigenem \`<p>\`, Grußformel in eigenem \`<p>\` am Ende.
+- Anrede in eigenem \`<p>\`. Letzter Absatz ist der letzte inhaltliche Satz, KEIN Gruß.
 - KEIN \`<html>\`, \`<body>\`, \`<head>\`, KEINE \`<style>\`-Blöcke, KEINE \`class\`-Attribute.
 - Antworte AUSSCHLIESSLICH mit dem HTML-Body. Kein Markdown, kein \`\`\`-Codeblock, keine Erklärung.
 
@@ -75,7 +75,7 @@ Lies die bisherige Konversation. Übernimm Tonfall, Anrede und Detailtiefe der b
 Du sollst ihn gemäß der Anweisung **verfeinern**, nicht ersetzen. Behalte Ton, Aufbau und Inhalte bei, ändere nur was die Anweisung verlangt.
 
 # Wenn frühere eigene Mails an diese Person mitgegeben sind
-Nutze sie als Tonbeispiel: gleiche Anrede, gleiche Förmlichkeit, gleiche typische Abschiedsformel.`;
+Nutze sie als Tonbeispiel: gleiche Anrede, gleiche Förmlichkeit. Übernimm KEINE Grußformel daraus — die Signatur enthält sie bereits.`;
 
 interface ContactInfo {
   type: "auszubildende" | "patient";
@@ -313,7 +313,7 @@ export async function POST(req: NextRequest) {
 
   if (mode === "template") {
     sections.push(
-      `<modus>VORLAGEN-MODUS\nDu schreibst eine wiederverwendbare E-Mail-Vorlage, die später bei vielen Empfänger:innen eingefügt wird. Es gibt KEINE konkrete Empfänger:in.\n\n• Wo ein Vorname stehen soll, schreibe genau \`{{vorname}}\` (mit doppelten geschweiften Klammern, kleingeschrieben). Beispiel: \`<p>Hallo {{vorname}},</p>\`. Niemals einen erfundenen Namen einsetzen.\n• Schreibe KEINE Grußformel + Signatur am Ende. Die persönliche Signatur (Beste Grüße, Name) wird beim Versenden automatisch angefügt — die Vorlage darf nur den eigentlichen Inhalt + maximal eine Grußformel ohne Namen enthalten.\n• Schreibe so generisch, wie es die Anweisung verlangt, aber mit klarem konkreten Inhalt. Keine \`[Datum]\` oder \`[Termin]\` Platzhalter erfinden, außer die Anweisung verlangt es ausdrücklich. Nur \`{{vorname}}\` ist als Platzhalter etabliert.</modus>`,
+      `<modus>VORLAGEN-MODUS\nDu schreibst eine wiederverwendbare E-Mail-Vorlage, die später bei vielen Empfänger:innen eingefügt wird. Es gibt KEINE konkrete Empfänger:in.\n\n• Wo ein Vorname stehen soll, schreibe genau \`{{vorname}}\` (mit doppelten geschweiften Klammern, kleingeschrieben). Beispiel: \`<p>Hallo {{vorname}},</p>\`. Niemals einen erfundenen Namen einsetzen.\n• KEINE Grußformel und KEINE Signatur am Ende. Schreibe NIEMALS "Beste Grüße,", "Liebe Grüße,", "Herzliche Grüße," o.ä. Die Signatur (inklusive Grußformel + Name) wird beim Versenden automatisch angefügt. Die Vorlage endet mit dem letzten inhaltlichen Satz.\n• Schreibe so generisch, wie es die Anweisung verlangt, aber mit klarem konkreten Inhalt. Keine \`[Datum]\` oder \`[Termin]\` Platzhalter erfinden, außer die Anweisung verlangt es ausdrücklich. Nur \`{{vorname}}\` ist als Platzhalter etabliert.</modus>`,
     );
   } else if (contact) {
     const lines: string[] = [];
@@ -393,7 +393,7 @@ export async function POST(req: NextRequest) {
 
   if (userName && mode !== "template") {
     sections.push(
-      `<unterschrift_hinweis>Die Mail wird von "${userName}" gesendet. Beende mit Grußformel ohne Namen, die Signatur wird automatisch angefügt.</unterschrift_hinweis>`,
+      `<unterschrift_hinweis>Die Mail wird von "${userName}" gesendet. Die Signatur (inkl. Grußformel und Name) wird automatisch angefügt — schreibe selbst KEINE Grußformel und KEINEN Namen.</unterschrift_hinweis>`,
     );
   }
 
