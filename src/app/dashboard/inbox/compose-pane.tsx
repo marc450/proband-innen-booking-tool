@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { RichTextEditor, type AIDraftContext } from "./rich-text-editor";
 import { ContactAutocomplete } from "./contact-autocomplete";
 import { useFileDrop } from "./use-file-drop";
+import { TemplatePicker, type PickedTemplate } from "./template-picker";
 
 // Center-column compose view shown when the user clicks "Neue E-Mail".
 // Replaces the old modal dialog: the draft shows up as a synthetic item
@@ -53,8 +54,37 @@ export function ComposePane({
 }: Props) {
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
+  const [templateNotice, setTemplateNotice] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  // Picking a template: replace the body (preserving the trailing
+  // signature) and only override the subject if the user hasn't typed
+  // one yet — typed subjects almost always carry intent we shouldn't
+  // clobber. We also surface a soft notice if the picker couldn't fill
+  // the {{vorname}} token because no contact matched the recipient.
+  const handlePickTemplate = (picked: PickedTemplate) => {
+    if (picked.subject && !subject.trim()) {
+      onSubjectChange(picked.subject);
+    }
+    const sig = aiContext?.signatureHtml
+      ? `<br><br>${aiContext.signatureHtml}`
+      : "";
+    onBodyChange(picked.bodyHtml + sig);
+    if (picked.vornameMissing) {
+      setTemplateNotice(
+        "Vorname konnte nicht gefunden werden, bitte {{vorname}} manuell ersetzen.",
+      );
+    } else {
+      setTemplateNotice(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!templateNotice) return;
+    const t = setTimeout(() => setTemplateNotice(null), 8000);
+    return () => clearTimeout(t);
+  }, [templateNotice]);
 
   const canSend = !!to.trim() && !!subject.trim() && body.trim().length > 0;
 
@@ -243,8 +273,14 @@ export function ComposePane({
         </div>
       )}
 
+      {templateNotice && (
+        <div className="px-6 py-2 bg-amber-50 border-t border-amber-100 text-xs text-amber-800">
+          {templateNotice}
+        </div>
+      )}
+
       <div className="border-t border-gray-100 bg-white px-6 py-3 flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-1">
           <input
             ref={fileInputRef}
             type="file"
@@ -264,6 +300,7 @@ export function ComposePane({
           >
             <Paperclip className="h-4 w-4" />
           </button>
+          <TemplatePicker recipientEmail={to} onPick={handlePickTemplate} />
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onCancel}>

@@ -7,6 +7,7 @@ import { useSignature } from "@/hooks/use-signature";
 import { useDrafts } from "@/hooks/use-drafts";
 import { RichTextEditor } from "@/app/dashboard/inbox/rich-text-editor";
 import { ContactAutocomplete } from "@/app/dashboard/inbox/contact-autocomplete";
+import { TemplatePicker, type PickedTemplate } from "@/app/dashboard/inbox/template-picker";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
 
@@ -268,6 +269,29 @@ export function InboxMobile() {
   const [composeSending, setComposeSending] = useState(false);
   const [composeError, setComposeError] = useState<string | null>(null);
   const [composeSent, setComposeSent] = useState(false);
+  const [templateNotice, setTemplateNotice] = useState<string | null>(null);
+
+  // Apply a picked template: only override the subject if the user hasn't
+  // typed one (typed subjects almost always carry intent), then replace
+  // the body and re-append the signature suffix.
+  const handlePickTemplate = (picked: PickedTemplate) => {
+    if (picked.subject && !composeSubject.trim()) {
+      setComposeSubject(picked.subject);
+    }
+    const sig = signature?.html ? `<br><br>${signature.html}` : "";
+    setComposeBody(picked.bodyHtml + sig);
+    setTemplateNotice(
+      picked.vornameMissing
+        ? "Vorname konnte nicht gefunden werden, bitte {{vorname}} manuell ersetzen."
+        : null,
+    );
+  };
+
+  useEffect(() => {
+    if (!templateNotice) return;
+    const t = setTimeout(() => setTemplateNotice(null), 8000);
+    return () => clearTimeout(t);
+  }, [templateNotice]);
 
   const buildQuery = useCallback((search: string, f: InboxFilter) => {
     const parts: string[] = [];
@@ -618,6 +642,19 @@ export function InboxMobile() {
               autoCorrect="off"
               autoCapitalize="sentences"
             />
+          </div>
+          <div className="flex items-center justify-between">
+            <TemplatePicker
+              recipientEmail={composeTo}
+              onPick={handlePickTemplate}
+              direction="down"
+              variant="chip"
+            />
+            {templateNotice && (
+              <span className="text-[10px] text-amber-700 ml-2 truncate">
+                Vorname fehlt
+              </span>
+            )}
           </div>
           <RichTextEditor
             value={composeBody}
