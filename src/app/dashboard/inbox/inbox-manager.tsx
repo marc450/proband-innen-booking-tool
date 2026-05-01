@@ -398,6 +398,27 @@ export function InboxManager({
     setThreadMessages([]);
   }, [drafts.loading, drafts.composeDraft, signature]);
 
+  // Pencil button = always start a fresh email. Any existing saved
+  // draft is dropped so the user actually gets a blank composer with
+  // an empty recipient, regardless of what was previously drafted.
+  // The amber "Entwurf" row in the thread list remains the way to
+  // resume a saved draft via openCompose.
+  const openComposeFresh = useCallback(() => {
+    if (drafts.composeDraft) {
+      void drafts.deleteComposeDraft();
+    }
+    const sig = signature?.html ? `<br><br>${signature.html}` : "";
+    setComposeBody(sig);
+    setComposeTo("");
+    setComposeSubject("");
+    setComposeCc("");
+    setComposeBcc("");
+    setComposeAttachments([]);
+    setComposing(true);
+    setSelectedThread(null);
+    setThreadMessages([]);
+  }, [drafts, signature]);
+
   // Once drafts finish loading, fulfil any deferred compose-open request.
   useEffect(() => {
     if (drafts.loading) return;
@@ -440,7 +461,10 @@ export function InboxManager({
           Entwurf konnte nicht gespeichert werden: {drafts.lastError}
         </div>
       )}
-      <div className="flex-1 grid grid-cols-[320px_minmax(0,1fr)_360px] min-h-0">
+      {/* Below xl (1280px) we drop the contact sidebar and narrow the
+          thread list. This is the size hit by Chrome split-screen and
+          tablets, where the 3-pane layout would crush the conversation. */}
+      <div className="flex-1 grid grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)_360px] min-h-0">
         {/* Each grid child needs min-h-0 + overflow-hidden, otherwise the
             grid items default to min-height:auto and the inner
             overflow-y-auto containers can never scroll. */}
@@ -455,7 +479,7 @@ export function InboxManager({
             onFilterChange={handleFilterChange}
             selectedThreadId={selectedThread}
             onSelectThread={openThread}
-            onCompose={openCompose}
+            onCompose={openComposeFresh}
             onRefresh={handleRefresh}
             nextPageToken={nextPageToken}
             onLoadMore={handleLoadMore}
@@ -523,7 +547,7 @@ export function InboxManager({
             />
           )}
         </div>
-        <div className="min-h-0 overflow-hidden border-l border-gray-100 bg-white">
+        <div className="hidden xl:block min-h-0 overflow-hidden border-l border-gray-100 bg-white">
           <ContactSidebar email={contactEmail} displayName={contactDisplayName} />
         </div>
       </div>

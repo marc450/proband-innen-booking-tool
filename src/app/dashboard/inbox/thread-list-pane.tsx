@@ -174,7 +174,7 @@ export function ThreadListPane({
           }`}>
             <button
               onClick={onSelectDraft}
-              className="w-full text-left px-4 py-3 pr-9"
+              className="w-full text-left px-3 py-2 xl:px-4 xl:py-3 pr-9"
             >
               <div className="flex items-center justify-between gap-2 mb-0.5">
                 <span className="text-sm font-bold text-[#0066FF] truncate">
@@ -222,7 +222,7 @@ export function ThreadListPane({
                 <li key={t.id}>
                   <button
                     onClick={() => onSelectThread(t.id)}
-                    className={`w-full text-left px-4 py-3 border-b border-gray-50 transition-colors ${
+                    className={`w-full text-left px-3 py-2 xl:px-4 xl:py-3 border-b border-gray-50 transition-colors ${
                       selected
                         ? "bg-[#0066FF]/5 border-l-2 border-l-[#0066FF]"
                         : t.isUnread
@@ -230,7 +230,7 @@ export function ThreadListPane({
                           : "hover:bg-gray-50 border-l-2 border-l-transparent"
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <div className="flex items-center justify-between gap-2 mb-0.5 h-5">
                       <div className="flex items-center gap-2 min-w-0">
                         {t.isUnread && (
                           <span className="w-2 h-2 rounded-full bg-[#0066FF] flex-shrink-0" />
@@ -243,7 +243,7 @@ export function ThreadListPane({
                           {t.contactName || t.contactEmail || "Unbekannt"}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <div className="flex items-center gap-1.5 flex-shrink-0 h-5">
                         {assignments[t.id] && (() => {
                           const color = getAvatarColor(assignments[t.id].assignedTo);
                           return (

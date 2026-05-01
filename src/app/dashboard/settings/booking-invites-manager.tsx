@@ -546,11 +546,11 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
             <TableRow>
               <TableHead>Empfänger:in</TableHead>
               <TableHead>Kurs</TableHead>
-              <TableHead>Variante</TableHead>
-              <TableHead>Termin</TableHead>
+              <TableHead className="hidden xl:table-cell">Variante</TableHead>
+              <TableHead className="hidden xl:table-cell">Termin</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Notiz</TableHead>
-              <TableHead>Erstellt</TableHead>
+              <TableHead className="hidden xl:table-cell">Notiz</TableHead>
+              <TableHead className="hidden xl:table-cell">Erstellt</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
@@ -573,10 +573,10 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
                   <TableCell className="text-sm">
                     {invite.course_templates?.title || invite.template_id}
                   </TableCell>
-                  <TableCell className="text-sm">
+                  <TableCell className="hidden xl:table-cell text-sm">
                     {variantLabel(invite.course_type)}
                   </TableCell>
-                  <TableCell className="text-sm whitespace-nowrap">
+                  <TableCell className="hidden xl:table-cell text-sm whitespace-nowrap">
                     {invite.course_sessions?.label_de
                       ? invite.course_sessions.label_de
                       : invite.course_sessions?.date_iso
@@ -584,7 +584,7 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
                         : "–"}
                   </TableCell>
                   <TableCell>{statusBadge(invite)}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-[220px]">
+                  <TableCell className="hidden xl:table-cell text-xs text-muted-foreground max-w-[220px]">
                     {invite.admin_note ? (
                       <span className="line-clamp-2" title={invite.admin_note}>
                         {invite.admin_note}
@@ -593,7 +593,7 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
                       "–"
                     )}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                  <TableCell className="hidden xl:table-cell text-xs text-muted-foreground whitespace-nowrap">
                     {format(new Date(invite.created_at), "dd.MM.yyyy, HH:mm", { locale: de })}
                   </TableCell>
                   <TableCell>

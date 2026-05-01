@@ -779,26 +779,21 @@ export function InboxMobile() {
         </button>
       )}
 
-      {/* Compose FAB */}
+      {/* Compose FAB — always opens a fresh email. The "Entwurf"
+          banner above the thread list is the way to resume a saved
+          draft. */}
       <button
         onClick={() => {
           if (drafts.composeDraft) {
-            setComposeTo(drafts.composeDraft.to);
-            setComposeSubject(drafts.composeDraft.subject);
-            setComposeBody(drafts.composeDraft.body);
-            setComposeCc(drafts.composeDraft.cc || "");
-            setComposeBcc(drafts.composeDraft.bcc || "");
-            setShowComposeCc(!!drafts.composeDraft.cc);
-            setShowComposeBcc(!!drafts.composeDraft.bcc);
-          } else {
-            setComposeTo("");
-            setComposeSubject("");
-            setComposeBody(signature?.html ? `<br><br>${signature.html}` : "");
-            setComposeCc("");
-            setComposeBcc("");
-            setShowComposeCc(false);
-            setShowComposeBcc(false);
+            void drafts.deleteComposeDraft();
           }
+          setComposeTo("");
+          setComposeSubject("");
+          setComposeBody(signature?.html ? `<br><br>${signature.html}` : "");
+          setComposeCc("");
+          setComposeBcc("");
+          setShowComposeCc(false);
+          setShowComposeBcc(false);
           setComposing(true);
         }}
         className="fixed bottom-24 right-5 z-40 w-14 h-14 bg-[#0066FF] text-white rounded-full shadow-lg flex items-center justify-center active:bg-[#0055DD] transition-colors"
