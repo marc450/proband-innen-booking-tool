@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { DashboardNav } from "./nav";
 import { DashboardBodyTheme } from "./body-theme";
+import { SuppressPasswordManagers } from "./suppress-password-managers";
 
 export const metadata: Metadata = {
   title: "EPHIA Admin",
@@ -39,6 +40,7 @@ export default async function DashboardLayout({
       className={`min-h-screen text-foreground ${theme === "dark" ? "dark" : ""}`}
     >
       <DashboardBodyTheme theme={theme} />
+      <SuppressPasswordManagers />
       <DashboardNav
         userEmail={session.user.email || ""}
         role={role}

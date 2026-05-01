@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { BottomTabBar } from "./bottom-tab-bar";
+import { SuppressPasswordManagers } from "@/app/dashboard/suppress-password-managers";
 
 export const metadata = {
   title: "EPHIA Mobile",
@@ -28,10 +29,12 @@ export default async function MobileLayout({
 
   return (
     <div
+      data-admin-root
       className="min-h-dvh text-foreground pb-24"
       style={{ backgroundColor: "#F5F5F5" }}
       data-role={role}
     >
+      <SuppressPasswordManagers />
       <main className="px-4 pt-4">{children}</main>
       <BottomTabBar />
     </div>
