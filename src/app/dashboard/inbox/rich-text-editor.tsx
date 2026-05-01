@@ -417,7 +417,12 @@ export function RichTextEditor({
                 <span className="hidden md:inline">KI</span>
               </button>
               {showAi && (
-                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-[10px] shadow-lg z-50 p-3 w-[340px]">
+                // right-0 (not left-0): the KI button sits near the right
+                // edge of the toolbar, so anchoring the 340px popup to its
+                // left edge pushes it off-screen in tablet split-view and
+                // any narrow compose pane. Right-anchoring extends the
+                // popup leftward into the always-available compose width.
+                <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-[10px] shadow-lg z-50 p-3 w-[340px]">
                   <div className="flex items-center gap-1.5 mb-2">
                     <Sparkles className="h-3.5 w-3.5 text-[#0066FF]" />
                     <span className="text-xs font-bold text-gray-700">
