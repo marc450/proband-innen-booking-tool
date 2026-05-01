@@ -559,6 +559,17 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
               placeholder="Deine Antwort..."
               autoFocus
               className="max-h-[200px]"
+              aiContext={{
+                to: lastMsg
+                  ? lastMsg.isInbound
+                    ? lastMsg.fromEmail
+                    : lastMsg.to.split(",")[0].trim()
+                  : "",
+                subject: lastMsg?.subject || "",
+                threadId,
+                signatureHtml: signature?.html,
+                userName: signature?.userName,
+              }}
             />
             {sendError && (
               <div className="text-sm text-red-600 bg-red-50 rounded-md px-3 py-2">

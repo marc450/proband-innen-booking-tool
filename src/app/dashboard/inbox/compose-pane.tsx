@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2, Send, X, Paperclip, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RichTextEditor } from "./rich-text-editor";
+import { RichTextEditor, type AIDraftContext } from "./rich-text-editor";
 import { ContactAutocomplete } from "./contact-autocomplete";
 import { useFileDrop } from "./use-file-drop";
 
@@ -29,6 +29,8 @@ interface Props {
   onAttachmentsChange: (files: globalThis.File[]) => void;
   onSend: () => void;
   onCancel: () => void;
+  // Optional: when present, RichTextEditor renders the KI drafting button.
+  aiContext?: AIDraftContext;
 }
 
 export function ComposePane({
@@ -47,6 +49,7 @@ export function ComposePane({
   onAttachmentsChange,
   onSend,
   onCancel,
+  aiContext,
 }: Props) {
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
@@ -213,6 +216,7 @@ export function ComposePane({
             onChange={onBodyChange}
             placeholder="Deine Nachricht..."
             className="min-h-[360px]"
+            aiContext={aiContext}
           />
         </div>
       </div>

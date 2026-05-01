@@ -624,6 +624,13 @@ export function InboxMobile() {
             onChange={setComposeBody}
             placeholder="Deine Nachricht..."
             className="min-h-[300px]"
+            aiContext={{
+              to: composeTo,
+              subject: composeSubject,
+              threadId: null,
+              signatureHtml: signature?.html,
+              userName: signature?.userName,
+            }}
           />
           {composeError && (
             <div className="text-sm text-red-600 bg-red-50 rounded-md px-3 py-2">

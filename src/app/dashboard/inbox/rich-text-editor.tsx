@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bold, Italic, Underline, Link as LinkIcon, List, ListOrdered, Indent, Outdent, RemoveFormatting, ChevronDown, Smile } from "lucide-react";
+import { Bold, Italic, Underline, Link as LinkIcon, List, ListOrdered, Indent, Outdent, RemoveFormatting, ChevronDown, Smile, Sparkles, Loader2 } from "lucide-react";
 
 // Curated emoji palette for the toolbar picker. The set is small on
 // purpose — the goal is a one-click "drop a smiley into a customer
@@ -26,12 +26,27 @@ const EMOJIS: string[] = [
   "💉", "🩺", "⚕️", "📅", "⏰", "📧", "📞", "🏥",
 ];
 
+// Context the AI-draft button needs to call /api/inbox/ai-draft. Provided
+// by the parent so the button can ship recipient + thread context to the
+// model without the editor having to know about Gmail or contacts.
+export interface AIDraftContext {
+  to: string;
+  subject: string;
+  threadId?: string | null;
+  // The signature HTML is appended automatically after the AI body, and
+  // the editor strips it out of the "current draft" sent to the model so
+  // the AI never sees "Beste Grüße, Marc" as part of the draft to refine.
+  signatureHtml?: string;
+  userName?: string;
+}
+
 interface Props {
   value: string;
   onChange: (html: string) => void;
   placeholder?: string;
   autoFocus?: boolean;
   className?: string;
+  aiContext?: AIDraftContext;
 }
 
 function exec(command: string, value?: string) {
@@ -81,6 +96,7 @@ export function RichTextEditor({
   placeholder,
   autoFocus,
   className = "",
+  aiContext,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const latestHtmlRef = useRef<string | null>(null);
@@ -92,6 +108,11 @@ export function RichTextEditor({
   const [showEmoji, setShowEmoji] = useState(false);
   const emojiRef = useRef<HTMLDivElement>(null);
   const savedSelectionRef = useRef<Range | null>(null);
+  const [showAi, setShowAi] = useState(false);
+  const [aiInstruction, setAiInstruction] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const aiRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (ref.current && value !== latestHtmlRef.current) {
@@ -114,7 +135,7 @@ export function RichTextEditor({
 
   // Close dropdowns on outside click
   useEffect(() => {
-    if (!showFontSize && !showLinkInput && !showEmoji) return;
+    if (!showFontSize && !showLinkInput && !showEmoji && !showAi) return;
     const handler = (e: MouseEvent) => {
       if (showFontSize && fontSizeRef.current && !fontSizeRef.current.contains(e.target as Node)) {
         setShowFontSize(false);
@@ -125,10 +146,13 @@ export function RichTextEditor({
       if (showEmoji && emojiRef.current && !emojiRef.current.contains(e.target as Node)) {
         setShowEmoji(false);
       }
+      if (showAi && aiRef.current && !aiRef.current.contains(e.target as Node) && !aiBusy) {
+        setShowAi(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [showFontSize, showLinkInput, showEmoji]);
+  }, [showFontSize, showLinkInput, showEmoji, showAi, aiBusy]);
 
   const handleInput = () => {
     if (!ref.current) return;
@@ -199,6 +223,71 @@ export function RichTextEditor({
       savedSelectionRef.current = sel.getRangeAt(0).cloneRange();
     }
     setShowEmoji((v) => !v);
+  };
+
+  // Strip the auto-appended signature from the body before sending to the
+  // model. The composer initialises the body with `<br><br>${signatureHtml}`,
+  // so we look for that suffix and remove it. If the user edited the
+  // signature region we leave it alone (better to over-include than miss).
+  const stripSignature = (html: string): string => {
+    const sig = aiContext?.signatureHtml;
+    if (!sig) return html;
+    const candidates = [`<br><br>${sig}`, `<br/><br/>${sig}`, sig];
+    for (const c of candidates) {
+      if (html.endsWith(c)) return html.slice(0, html.length - c.length);
+    }
+    return html;
+  };
+
+  const stripVisibleHtml = (html: string) =>
+    html.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").trim();
+
+  const handleAiOpen = () => {
+    setAiError(null);
+    setAiInstruction("");
+    setShowAi(true);
+  };
+
+  const handleAiSubmit = async () => {
+    if (!aiContext) return;
+    const instruction = aiInstruction.trim();
+    if (!instruction || aiBusy) return;
+    setAiBusy(true);
+    setAiError(null);
+    try {
+      const currentDraft = stripSignature(value);
+      const res = await fetch("/api/inbox/ai-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: aiContext.to,
+          subject: aiContext.subject,
+          threadId: aiContext.threadId || null,
+          instruction,
+          currentDraft,
+          userName: aiContext.userName,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        html?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.html) {
+        setAiError(data.error || `Fehler (HTTP ${res.status})`);
+        setAiBusy(false);
+        return;
+      }
+      const sigSuffix = aiContext.signatureHtml
+        ? `<br><br>${aiContext.signatureHtml}`
+        : "";
+      onChange(data.html + sigSuffix);
+      setShowAi(false);
+      setAiInstruction("");
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : "Netzwerkfehler");
+    } finally {
+      setAiBusy(false);
+    }
   };
 
   const handleEmojiInsert = (emoji: string) => {
@@ -304,6 +393,93 @@ export function RichTextEditor({
             </div>
           )}
         </div>
+        {aiContext && (
+          <>
+            <div ref={aiRef} className="relative">
+              <button
+                type="button"
+                title={
+                  stripVisibleHtml(stripSignature(value))
+                    ? "Mit KI verfeinern"
+                    : "Mit KI verfassen"
+                }
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  if (showAi) {
+                    setShowAi(false);
+                  } else {
+                    handleAiOpen();
+                  }
+                }}
+                className="h-7 px-1.5 flex items-center gap-1 rounded text-[#0066FF] hover:bg-[#0066FF]/10 transition-colors text-xs font-semibold"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span className="hidden md:inline">KI</span>
+              </button>
+              {showAi && (
+                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-[10px] shadow-lg z-50 p-3 w-[340px]">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Sparkles className="h-3.5 w-3.5 text-[#0066FF]" />
+                    <span className="text-xs font-bold text-gray-700">
+                      {stripVisibleHtml(stripSignature(value))
+                        ? "Entwurf verfeinern"
+                        : "E-Mail mit KI verfassen"}
+                    </span>
+                  </div>
+                  <textarea
+                    value={aiInstruction}
+                    onChange={(e) => setAiInstruction(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault();
+                        void handleAiSubmit();
+                      }
+                      if (e.key === "Escape" && !aiBusy) {
+                        e.preventDefault();
+                        setShowAi(false);
+                      }
+                    }}
+                    placeholder={
+                      stripVisibleHtml(stripSignature(value))
+                        ? "z.B. kürzer, freundlicher, drei Termine vorschlagen..."
+                        : "z.B. Termin bestätigen, Absage höflich formulieren..."
+                    }
+                    autoFocus
+                    rows={3}
+                    disabled={aiBusy}
+                    className="w-full border border-gray-200 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0066FF] resize-none disabled:bg-gray-50"
+                  />
+                  {aiError && (
+                    <p className="text-xs text-red-600 mt-1.5">{aiError}</p>
+                  )}
+                  <div className="flex items-center justify-between mt-2 gap-2">
+                    <span className="text-[10px] text-gray-400">
+                      ⌘+Enter
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleAiSubmit}
+                      disabled={aiBusy || !aiInstruction.trim()}
+                      className="px-3 py-1.5 bg-[#0066FF] text-white text-sm rounded-[10px] font-bold hover:bg-[#0055DD] disabled:opacity-40 transition-colors flex items-center gap-1.5"
+                    >
+                      {aiBusy ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Schreibt...
+                        </>
+                      ) : stripVisibleHtml(stripSignature(value)) ? (
+                        "Verfeinern"
+                      ) : (
+                        "Entwerfen"
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="w-px h-4 bg-gray-200 mx-1" />
+          </>
+        )}
         <div ref={linkRef} className="relative">
           <ToolbarButton onClick={handleLinkOpen} title="Link einfügen (⌘K)">
             <LinkIcon className="h-3.5 w-3.5" />

@@ -650,6 +650,13 @@ export function ConversationPane({
               onChange={setReplyHtml}
               placeholder="Deine Antwort..."
               autoFocus
+              aiContext={{
+                to: replyTo,
+                subject: threadSubject,
+                threadId: threadId || null,
+                signatureHtml: signature?.html,
+                userName: signature?.userName,
+              }}
             />
 
             {/* Attachment chips */}

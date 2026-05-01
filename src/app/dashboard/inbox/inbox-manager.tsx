@@ -522,6 +522,13 @@ export function InboxManager({
               onAttachmentsChange={setComposeAttachments}
               onSend={handleComposeSend}
               onCancel={cancelCompose}
+              aiContext={{
+                to: composeTo,
+                subject: composeSubject,
+                threadId: null,
+                signatureHtml: signature?.html,
+                userName: signature?.userName,
+              }}
             />
           ) : (
             <ConversationPane
