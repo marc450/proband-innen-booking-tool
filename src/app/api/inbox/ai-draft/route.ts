@@ -271,6 +271,7 @@ export async function POST(req: NextRequest) {
     instruction?: string;
     currentDraft?: string;
     userName?: string;
+    mode?: "email" | "template";
   };
   try {
     body = await req.json();
@@ -278,6 +279,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  const mode: "email" | "template" =
+    body.mode === "template" ? "template" : "email";
   const to = (body.to || "").trim().toLowerCase();
   const subject = (body.subject || "").trim();
   const threadId = body.threadId || null;
@@ -292,15 +295,27 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const [contact, currentThread, pastOutbound] = await Promise.all([
-    to ? lookupContact(to) : Promise.resolve(null),
-    threadId ? fetchCurrentThread(threadId) : Promise.resolve([]),
-    to ? fetchPastOutbound(to, threadId || undefined) : Promise.resolve([]),
-  ]);
+  // Template mode skips Gmail/contact lookups: a Vorlage is generic, has
+  // no recipient, and uses {{vorname}} as a placeholder for the future
+  // recipient's first name.
+  const [contact, currentThread, pastOutbound] =
+    mode === "template"
+      ? [null, [] as never[], [] as never[]]
+      : await Promise.all([
+          to ? lookupContact(to) : Promise.resolve(null),
+          threadId ? fetchCurrentThread(threadId) : Promise.resolve([]),
+          to
+            ? fetchPastOutbound(to, threadId || undefined)
+            : Promise.resolve([]),
+        ]);
 
   const sections: string[] = [];
 
-  if (contact) {
+  if (mode === "template") {
+    sections.push(
+      `<modus>VORLAGEN-MODUS\nDu schreibst eine wiederverwendbare E-Mail-Vorlage, die später bei vielen Empfänger:innen eingefügt wird. Es gibt KEINE konkrete Empfänger:in.\n\n• Wo ein Vorname stehen soll, schreibe genau \`{{vorname}}\` (mit doppelten geschweiften Klammern, kleingeschrieben). Beispiel: \`<p>Hallo {{vorname}},</p>\`. Niemals einen erfundenen Namen einsetzen.\n• Schreibe KEINE Grußformel + Signatur am Ende. Die persönliche Signatur (Beste Grüße, Name) wird beim Versenden automatisch angefügt — die Vorlage darf nur den eigentlichen Inhalt + maximal eine Grußformel ohne Namen enthalten.\n• Schreibe so generisch, wie es die Anweisung verlangt, aber mit klarem konkreten Inhalt. Keine \`[Datum]\` oder \`[Termin]\` Platzhalter erfinden, außer die Anweisung verlangt es ausdrücklich. Nur \`{{vorname}}\` ist als Platzhalter etabliert.</modus>`,
+    );
+  } else if (contact) {
     const lines: string[] = [];
     if (contact.type === "auszubildende") {
       const nameParts = [contact.title, contact.firstName, contact.lastName]
@@ -365,17 +380,18 @@ export async function POST(req: NextRequest) {
   }
 
   const draftHasContent = stripHtmlForCheck(currentDraft).length > 0;
+  const targetLabel = mode === "template" ? "Vorlage" : "E-Mail-Body";
   if (draftHasContent) {
     sections.push(
-      `<aktueller_entwurf>\n${currentDraft}\n</aktueller_entwurf>\n\n<aufgabe>Verfeinere den aktuellen Entwurf gemäß folgender Anweisung. Behalte den Aufbau bei, ändere nur was die Anweisung verlangt:\n${instruction}</aufgabe>`,
+      `<aktueller_entwurf>\n${currentDraft}\n</aktueller_entwurf>\n\n<aufgabe>Verfeinere den aktuellen Entwurf der ${targetLabel} gemäß folgender Anweisung. Behalte den Aufbau bei, ändere nur was die Anweisung verlangt:\n${instruction}</aufgabe>`,
     );
   } else {
     sections.push(
-      `<aufgabe>Verfasse den E-Mail-Body gemäß folgender Anweisung der EPHIA-Mitarbeiter:in:\n${instruction}</aufgabe>`,
+      `<aufgabe>Verfasse die ${targetLabel} gemäß folgender Anweisung der EPHIA-Mitarbeiter:in:\n${instruction}</aufgabe>`,
     );
   }
 
-  if (userName) {
+  if (userName && mode !== "template") {
     sections.push(
       `<unterschrift_hinweis>Die Mail wird von "${userName}" gesendet. Beende mit Grußformel ohne Namen, die Signatur wird automatisch angefügt.</unterschrift_hinweis>`,
     );

@@ -38,6 +38,11 @@ export interface AIDraftContext {
   // the AI never sees "Beste Grüße, Marc" as part of the draft to refine.
   signatureHtml?: string;
   userName?: string;
+  // "email" (default) drafts an actual mail to a known recipient with
+  // contact + thread context. "template" drafts a reusable Vorlage in
+  // the templates editor: no contact lookup, no signature, AI is told
+  // to use {{vorname}} where personalisation belongs.
+  mode?: "email" | "template";
 }
 
 interface Props {
@@ -266,6 +271,7 @@ export function RichTextEditor({
           instruction,
           currentDraft,
           userName: aiContext.userName,
+          mode: aiContext.mode || "email",
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {

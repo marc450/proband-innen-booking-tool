@@ -224,6 +224,12 @@ export function EmailTemplatesManager() {
                   }
                   placeholder="Vorlagentext..."
                   className="min-h-[260px]"
+                  aiContext={{
+                    to: "",
+                    subject: editing.subject,
+                    threadId: null,
+                    mode: "template",
+                  }}
                 />
                 <p className="text-xs text-muted-foreground">
                   Variable: <code className="bg-gray-100 px-1.5 py-0.5 rounded text-[11px]">{"{{vorname}}"}</code> wird beim Versenden durch den Vornamen der Empfänger:in ersetzt. Funktioniert auch im Betreff. Persönliche Signatur bitte nicht in der Vorlage hinzufügen, die wird automatisch ergänzt.
