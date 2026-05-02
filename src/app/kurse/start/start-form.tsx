@@ -37,6 +37,7 @@ type Step =
       email: string;
       first_name: string | null;
     }
+  | { kind: "reset_requested"; email: string }
   | { kind: "not_a_customer"; email: string };
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -67,12 +68,19 @@ export function StartForm() {
           email={step.email}
           firstName={step.first_name}
           onBack={() => setStep({ kind: "email" })}
+          onForgot={() => setStep({ kind: "reset_requested", email: step.email })}
         />
       )}
       {step.kind === "needs_password" && (
         <SetPasswordStep
           email={step.email}
           firstName={step.first_name}
+          onBack={() => setStep({ kind: "email" })}
+        />
+      )}
+      {step.kind === "reset_requested" && (
+        <ResetRequestedStep
+          email={step.email}
           onBack={() => setStep({ kind: "email" })}
         />
       )}
@@ -164,15 +172,18 @@ function PasswordStep({
   email,
   firstName,
   onBack,
+  onForgot,
 }: {
   email: string;
   firstName: string | null;
   onBack: () => void;
+  onForgot: () => void;
 }) {
   const router = useRouter();
   const supabase = createClient();
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -193,6 +204,22 @@ function PasswordStep({
       return;
     }
     router.push("/mein-konto");
+  };
+
+  // Sends the Supabase recovery email and transitions to the
+  // "reset_requested" confirmation step. We don't surface errors here:
+  // even if the address has no auth user yet, we want to keep the UX
+  // identical so we don't leak account existence.
+  const handleForgot = async () => {
+    if (resetting) return;
+    setResetting(true);
+    try {
+      await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+    } finally {
+      onForgot();
+    }
   };
 
   return (
@@ -226,7 +253,49 @@ function PasswordStep({
       >
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Anmelden"}
       </button>
+      <button
+        type="button"
+        onClick={handleForgot}
+        disabled={resetting}
+        className="w-full text-sm text-[#0066FF] hover:underline font-medium disabled:opacity-60 flex items-center justify-center gap-1.5"
+      >
+        {resetting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+        Passwort vergessen?
+      </button>
     </form>
+  );
+}
+
+/* ──────────────── Step 2d: reset email sent ──────────────── */
+
+function ResetRequestedStep({
+  email,
+  onBack,
+}: {
+  email: string;
+  onBack: () => void;
+}) {
+  return (
+    <div className="space-y-5">
+      <EmailContext email={email} onBack={onBack} />
+      <div className="rounded-md bg-[#FAEBE1] border border-[#F0D0B8] px-3 py-3 space-y-2">
+        <p className="text-sm font-semibold text-black">
+          E-Mail unterwegs.
+        </p>
+        <p className="text-sm text-black/85 leading-relaxed">
+          Falls ein Konto mit dieser E-Mail existiert, haben wir Dir gerade
+          einen Link zum Zurücksetzen Deines Passworts geschickt. Schau auch
+          in Deinem Spam-Ordner nach.
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onBack}
+        className="w-full text-sm text-[#0066FF] hover:underline font-medium"
+      >
+        Zurück zur Anmeldung
+      </button>
+    </div>
   );
 }
 
