@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { read, utils } from "xlsx";
 import { Button } from "@/components/ui/button";
+import { HubSpotDealsImportButton } from "./hubspot-deals-import";
 import {
   Dialog,
   DialogContent,
@@ -351,6 +352,7 @@ export function AuszubildendeManager({
                   <Upload className="h-4 w-4 mr-2" />
                   Import CSV
                 </Button>
+                <HubSpotDealsImportButton scope={scope} />
               </>
             )}
           </>
