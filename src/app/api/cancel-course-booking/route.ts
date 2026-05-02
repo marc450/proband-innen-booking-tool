@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildEmailHtml } from "@/lib/email-template";
+import { archiveSentMessage } from "@/lib/gmail";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
+const CANCEL_SUBJECT = "Deine Buchung wurde storniert";
 
 async function stripePost(path: string, body: Record<string, string | number>) {
   const res = await fetch(`https://api.stripe.com/v1${path}`, {
@@ -82,10 +84,23 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({
             from: "EPHIA <customerlove@ephia.de>",
             to: booking.email,
-            subject: "Deine Buchung wurde storniert",
+            subject: CANCEL_SUBJECT,
             html: emailHtml,
           }),
         });
+
+        try {
+          await archiveSentMessage({
+            to: booking.email,
+            subject: CANCEL_SUBJECT,
+            html: emailHtml,
+          });
+        } catch (archiveErr) {
+          console.error(
+            "archiveSentMessage failed (non-fatal):",
+            archiveErr,
+          );
+        }
       }
 
       return NextResponse.json({ success: true, refunded: false });
@@ -168,10 +183,20 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           from: "EPHIA <customerlove@ephia.de>",
           to: booking.email,
-          subject: "Deine Buchung wurde storniert",
+          subject: CANCEL_SUBJECT,
           html: emailHtml,
         }),
       });
+
+      try {
+        await archiveSentMessage({
+          to: booking.email,
+          subject: CANCEL_SUBJECT,
+          html: emailHtml,
+        });
+      } catch (archiveErr) {
+        console.error("archiveSentMessage failed (non-fatal):", archiveErr);
+      }
     }
 
     return NextResponse.json({

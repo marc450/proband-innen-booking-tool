@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildEmailHtml } from "@/lib/email-template";
+import { archiveSentMessage } from "@/lib/gmail";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 
@@ -34,6 +35,7 @@ export async function POST(req: NextRequest) {
     </p>`,
   });
 
+  const subject = `Stornierung Deines Termins: ${courseTitle || "EPHIA"}`;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify({
       from: "EPHIA <customerlove@ephia.de>",
       to: [email],
-      subject: `Stornierung Deines Termins: ${courseTitle || "EPHIA"}`,
+      subject,
       html,
     }),
   });
@@ -52,6 +54,13 @@ export async function POST(req: NextRequest) {
     const err = await res.text();
     console.error("Failed to send cancellation email:", err);
     return NextResponse.json({ error: err }, { status: 500 });
+  }
+
+  // Mirror into Gmail Sent so the patient profile picks it up. Best-effort.
+  try {
+    await archiveSentMessage({ to: email, subject, html });
+  } catch (archiveErr) {
+    console.error("archiveSentMessage failed (non-fatal):", archiveErr);
   }
 
   return NextResponse.json({ ok: true });

@@ -4,6 +4,7 @@ import { decryptPatient } from "@/lib/encryption";
 import { buildEmailHtml } from "@/lib/email-template";
 import { sendProfileReminderEmail } from "@/lib/post-purchase";
 import { sendPostPraxisCertificates } from "@/lib/send-post-praxis-certificate";
+import { archiveSentMessage } from "@/lib/gmail";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -231,5 +232,13 @@ async function sendEmail(to: string, subject: string, html: string) {
   if (!res.ok) {
     const errText = await res.text();
     throw new Error(`Resend error: ${errText}`);
+  }
+
+  // Mirror into Gmail Sent so the patient profile picks up the
+  // reminder. Best-effort: a Gmail outage must not fail the cron job.
+  try {
+    await archiveSentMessage({ to, subject, html });
+  } catch (archiveErr) {
+    console.error("archiveSentMessage failed (non-fatal):", archiveErr);
   }
 }

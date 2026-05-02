@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildSessionChangeEmail, formatDateDe } from "@/lib/course-email-templates";
+import { archiveSentMessage } from "@/lib/gmail";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 
@@ -25,6 +26,7 @@ export async function POST(req: NextRequest) {
     instructor: instructor || "",
   });
 
+  const subject = `Terminänderung: ${courseName}`;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -34,7 +36,7 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify({
       from: "EPHIA <customerlove@ephia.de>",
       to: [email],
-      subject: `Terminänderung: ${courseName}`,
+      subject,
       html,
     }),
   });
@@ -42,6 +44,13 @@ export async function POST(req: NextRequest) {
   if (!res.ok) {
     const err = await res.text();
     return NextResponse.json({ error: err }, { status: 500 });
+  }
+
+  // Mirror into Gmail Sent so the auszubildende profile picks it up. Best-effort.
+  try {
+    await archiveSentMessage({ to: email, subject, html });
+  } catch (archiveErr) {
+    console.error("archiveSentMessage failed (non-fatal):", archiveErr);
   }
 
   return NextResponse.json({ ok: true });
