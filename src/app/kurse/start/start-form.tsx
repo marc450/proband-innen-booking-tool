@@ -288,10 +288,14 @@ function SetPasswordStep({
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <EmailContext email={email} onBack={onBack} />
-      <div className="rounded-md bg-[#FAEBE1] border border-[#F0D0B8] px-3 py-2.5">
+      <div className="rounded-md bg-[#FAEBE1] border border-[#F0D0B8] px-3 py-3 space-y-2">
+        <p className="text-sm font-semibold text-black">
+          Hallo {firstName ? <span>{firstName}</span> : "Du"}, willkommen zurück.
+        </p>
         <p className="text-sm text-black/85 leading-relaxed">
-          Hallo {firstName ? <span className="font-semibold">{firstName}</span> : "Du"}, willkommen zurück.
-          {" "}Setze hier ein Passwort, um künftig auf Deine Kurse zuzugreifen.
+          Wir haben unser Login-System neu aufgesetzt. Bitte setze einmalig
+          ein neues Passwort. Beim nächsten Mal brauchst Du nur diese E-Mail
+          und Dein neues Passwort, um auf Deine Kurse zuzugreifen.
         </p>
       </div>
       <div className="space-y-1.5">
