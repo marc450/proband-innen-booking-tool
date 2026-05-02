@@ -9,8 +9,8 @@ import { SignupCta } from "./signup-cta";
 
 export const dynamic = "force-static";
 
-const SITE_URL = "https://kurse.ephia.de";
-const PAGE_PATH = "/kurse/kostenloser-botox-kurs";
+const SITE_URL = "https://ephia.de";
+const PAGE_PATH = "/kostenloser-botox-kurs";
 const PAGE_URL = `${SITE_URL}${PAGE_PATH}`;
 
 export const metadata: Metadata = {

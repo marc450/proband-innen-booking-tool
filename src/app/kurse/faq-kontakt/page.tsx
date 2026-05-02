@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: "FAQ & Kontakt | EPHIA",
   description:
     "Häufige Fragen zu unseren Kursen in ästhetischer Medizin (Botulinum, Dermalfiller, Biostimulation, Skinbooster) und direkter Kontakt zum EPHIA-Team.",
-  alternates: { canonical: "https://kurse.ephia.de/kurse/faq-kontakt" },
+  alternates: { canonical: "https://ephia.de/faq-kontakt" },
 };
 
 export default function FaqKontaktPage() {

@@ -4,7 +4,7 @@ export const metadata: Metadata = {
   title: "Datenschutz | EPHIA",
   description:
     "Datenschutzerklärung der EPHIA Medical GmbH. Informationen zur Erhebung, Verarbeitung und Nutzung personenbezogener Daten.",
-  alternates: { canonical: "https://www.ephia.de/privacy" },
+  alternates: { canonical: "https://ephia.de/datenschutz" },
 };
 
 type Block =

@@ -49,7 +49,7 @@ export async function generateMetadata({
       ...(content.meta.ogImage ? { images: [content.meta.ogImage] } : {}),
     },
     alternates: {
-      canonical: `https://kurse.ephia.de/kurse/${content.slug}`,
+      canonical: `https://ephia.de/${content.slug}`,
     },
   };
 }
@@ -140,10 +140,10 @@ export default async function KursPage({
 
   // JSON-LD Course schema (+ hasCourseInstance per session) for Google Search
   // https://developers.google.com/search/docs/appearance/structured-data/course
-  // Marketing /kurse/* pages are canonically served from kurse.ephia.de,
-  // not the staff/booking subdomains.
-  const siteUrl = "https://kurse.ephia.de";
-  const courseUrl = `${siteUrl}/kurse/${content.slug}`;
+  // Canonical marketing host is ephia.de; clean URL form (no /kurse/ prefix)
+  // matches the canonical in metadata above and the sitemap entry.
+  const siteUrl = "https://ephia.de";
+  const courseUrl = `${siteUrl}/${content.slug}`;
   const priceCurrency = "EUR";
   const liveSessions = (sessions ?? []).filter((s) => s.is_live);
 
@@ -222,7 +222,7 @@ export default async function KursPage({
         "@type": "ListItem",
         position: 2,
         name: "Kurse",
-        item: `${siteUrl}/kurse`,
+        item: `${siteUrl}/unsere-kurse`,
       },
       {
         "@type": "ListItem",

@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "Unsere Vision | EPHIA",
   description:
     "Warum wir EPHIA gegründet haben: inklusive, zugängliche ästhetische Medizin. Bildungsstandards neu definieren. Technische Exzellenz mit sozialer Kompetenz verbinden.",
-  alternates: { canonical: "https://kurse.ephia.de/kurse/vision" },
+  alternates: { canonical: "https://ephia.de/vision" },
 };
 
 /**

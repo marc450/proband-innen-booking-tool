@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "Unsere Kurse | EPHIA",
   description:
     "Alle EPHIA Kurse auf einen Blick: LÄK-zertifizierte Fortbildungen in Botulinum, Dermalfillern, Skinboostern und mehr für approbierte Ärzt:innen.",
-  alternates: { canonical: "https://www.ephia.de/unsere-kurse" },
+  alternates: { canonical: "https://ephia.de/unsere-kurse" },
 };
 
 export default async function UnsereKursePage() {

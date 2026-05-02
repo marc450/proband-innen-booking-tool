@@ -4,7 +4,7 @@ export const metadata: Metadata = {
   title: "Impressum | EPHIA",
   description:
     "Impressum der EPHIA Medical GmbH, Dorfstraße 30, 15913 Märkische Heide.",
-  alternates: { canonical: "https://www.ephia.de/impressum" },
+  alternates: { canonical: "https://ephia.de/impressum" },
 };
 
 export default function ImpressumPage() {

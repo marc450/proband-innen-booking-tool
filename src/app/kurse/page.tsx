@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     ...(homeContent.meta.ogImage ? { images: [homeContent.meta.ogImage] } : {}),
   },
   alternates: {
-    canonical: "https://www.ephia.de/",
+    canonical: "https://ephia.de/",
   },
 };
 

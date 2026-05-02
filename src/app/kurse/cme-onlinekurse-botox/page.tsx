@@ -10,8 +10,8 @@ import { TYPO, titleCase } from "../_components/typography";
 
 export const dynamic = "force-dynamic";
 
-const SITE_URL = "https://kurse.ephia.de";
-const PAGE_PATH = "/kurse/cme-onlinekurse-botox";
+const SITE_URL = "https://ephia.de";
+const PAGE_PATH = "/cme-onlinekurse-botox";
 const PAGE_URL = `${SITE_URL}${PAGE_PATH}`;
 
 const BLUE = "#0066FF";

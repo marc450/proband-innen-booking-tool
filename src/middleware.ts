@@ -7,6 +7,13 @@ const BOOKING_DOMAIN = "proband-innen.ephia.de";
 // site. Serves the /kurse tree with clean URLs and is blocked from search
 // indexing until we cut over.
 const KURSE_DOMAIN = "kurse.ephia.de";
+// Production marketing domain. Serves the same tree as KURSE_DOMAIN but
+// is fully indexable and runs the LW migration redirect map below so old
+// LearnWorlds URLs preserve their Google rankings via 301s.
+const MARKETING_DOMAIN = "ephia.de";
+const WWW_MARKETING_DOMAIN = "www.ephia.de";
+// LMS subdomain (post-cutover home of the LearnWorlds course player).
+const LEARN_DOMAIN = "learn.ephia.de";
 
 // Routes that belong to the admin domain only
 const ADMIN_ONLY_PATHS = ["/dashboard", "/login", "/m"];
@@ -16,6 +23,49 @@ const BOOKING_ONLY_PATHS = ["/book", "/courses"];
 // Paths that kurse.ephia.de should pass through untouched (framework assets,
 // API routes, etc). Everything else on that host is treated as a /kurse slug.
 const KURSE_PASSTHROUGH_RE = /^\/(api|_next|kurse|merch|team|favicon\.ico|robots\.txt|sitemap\.xml)(\/|$)/;
+
+// LearnWorlds → Next.js URL migration redirect map. Every entry is a
+// pathname that ranks (or recently ranked) on Google for the old LW
+// marketing site at ephia.de and needs a 301 to its closest equivalent
+// on the new Next.js app, otherwise the URL drops out of search and we
+// lose organic clicks.
+//
+// Targets are absolute paths on the marketing host; the path-prefix
+// cases (/path-player*, /blog/*, /course/*) are handled in code below
+// since they need query-string preservation or wildcard matching.
+//
+// Source: GSC export of top ranking URLs as of cutover prep, plus
+// hand-mapped LMS-back-redirects for old course-player links.
+const LW_MIGRATION_REDIRECTS: Record<string, string> = {
+  // LW kept course pages at the bare slug; we live under /kurse/, so
+  // the rewrite inside marketing handler turns these into the right
+  // internal path automatically. Only entries below need an explicit
+  // 301 because the slug itself changed or the page lives outside
+  // /kurse/.
+
+  // Slug renames (LW slug → new clean slug)
+  "/botox-kurs-zahnaerzte": "/botox-kurs-fuer-zahnaerzte",
+  "/botox-schulung": "/botox-fortbildung",
+  "/botox-online-kurs": "/botox-onlinekurs",
+  "/aufbaukurs-therapeutische-indikationen":
+    "/aufbaukurs-therapeutische-indikationen-botulinum",
+  "/kurs-aesthetische-medizin": "/curriculum-botulinum",
+
+  // Pages that live at root (/team) instead of as a /kurse/ slug
+  "/unser-team": "/team",
+  "/dozent-innen": "/team",
+
+  // Renamed pages
+  "/unsere-vision": "/vision",
+  "/unsere-didaktik": "/didaktik",
+  "/datenschutz-proband-innen": "/datenschutz",
+  "/terms": "/agb",
+
+  // Old LW /course/ tree → new /kurse/ slugs
+  "/course/minikurs-botulinum": "/kostenloser-botox-kurs",
+  "/course/aufbaukurs-botulinum-periorale-zone":
+    "/aufbaukurs-botulinum-periorale-zone",
+};
 
 function withNoindex(response: NextResponse): NextResponse {
   response.headers.set("X-Robots-Tag", "noindex, nofollow");
@@ -107,6 +157,96 @@ export async function middleware(request: NextRequest) {
     }
 
     return withNoindex(NextResponse.next());
+  }
+
+  // On ephia.de / www.ephia.de: production marketing site.
+  //  1. www → bare-domain canonical 301 (concentrate SEO on one host).
+  //  2. LW migration redirect map — old slugs → new equivalents, 301.
+  //  3. /path-player + /start + /blog/* path-prefix redirects to LMS or home.
+  //  4. /werde-proband-in → booking domain (mirror kurse.ephia.de).
+  //  5. /kurse/team* → /team* (canonicalise the team URL).
+  //  6. Rewrite "/" → "/kurse" and "/{slug}" → "/kurse/{slug}" so the
+  //     marketing tree under src/app/kurse/* renders with clean URLs.
+  //  7. Pass everything else (kurse/, _next, api, team, …) through.
+  // No noindex on this host — it's the canonical, indexable home.
+  if (hostname === MARKETING_DOMAIN || hostname === WWW_MARKETING_DOMAIN) {
+    // 1. www → bare-domain canonical
+    if (hostname === WWW_MARKETING_DOMAIN) {
+      const target = new URL(
+        pathname + request.nextUrl.search,
+        `https://${MARKETING_DOMAIN}`,
+      );
+      return NextResponse.redirect(target, 301);
+    }
+
+    // 2. LW migration redirect map (exact pathname match → 301)
+    const mappedTarget = LW_MIGRATION_REDIRECTS[pathname];
+    if (mappedTarget) {
+      const target = mappedTarget.startsWith("http")
+        ? mappedTarget + request.nextUrl.search
+        : new URL(
+            mappedTarget + request.nextUrl.search,
+            `https://${MARKETING_DOMAIN}`,
+          ).toString();
+      return NextResponse.redirect(target, 301);
+    }
+
+    // 3. Path-prefix redirects
+    //    /path-player[*] and /start* — LMS lives on learn.ephia.de.
+    //    Preserve query string so the LW course-player params survive.
+    if (pathname === "/path-player" || pathname.startsWith("/path-player")) {
+      return NextResponse.redirect(
+        `https://${LEARN_DOMAIN}${pathname}${request.nextUrl.search}`,
+        301,
+      );
+    }
+    if (pathname === "/start" || pathname.startsWith("/start/")) {
+      return NextResponse.redirect(`https://${LEARN_DOMAIN}${pathname}`, 301);
+    }
+    //    /blog/* — old LW blog tree, no equivalent yet, redirect to home
+    //    so the URL doesn't drop into 404 land.
+    if (pathname === "/blog" || pathname.startsWith("/blog/")) {
+      return NextResponse.redirect(
+        new URL("/", `https://${MARKETING_DOMAIN}`),
+        301,
+      );
+    }
+
+    // 4. Werde Proband:in funnel lives on the booking domain
+    if (
+      pathname === "/werde-proband-in" ||
+      pathname === "/kurse/werde-proband-in"
+    ) {
+      return NextResponse.redirect(`https://${BOOKING_DOMAIN}/`, 308);
+    }
+
+    // 5. /kurse/team[*] → /team[*] (team page lives at root, not under
+    // /kurse). Mirror the canonicalisation we do on KURSE_DOMAIN.
+    if (pathname === "/kurse/team" || pathname.startsWith("/kurse/team/")) {
+      const url = request.nextUrl.clone();
+      url.pathname = pathname.replace(/^\/kurse\/team/, "/team");
+      return NextResponse.redirect(url, 308);
+    }
+
+    // 6. Root → /kurse home
+    if (pathname === "/") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/kurse";
+      return NextResponse.rewrite(url);
+    }
+
+    // 6b. Clean-URL rewrite: /{slug} → /kurse/{slug}. This is what makes
+    // ephia.de/grundkurs-botulinum render the same content as the
+    // internal /kurse/grundkurs-botulinum page, with the clean URL
+    // visible to the user and to Google.
+    if (!KURSE_PASSTHROUGH_RE.test(pathname)) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/kurse${pathname}`;
+      return NextResponse.rewrite(url);
+    }
+
+    // 7. Passthrough (kurse/, _next, api, team, robots.txt, sitemap.xml).
+    return NextResponse.next();
   }
 
   // On proband-innen.ephia.de: booking domain.

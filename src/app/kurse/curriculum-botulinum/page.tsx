@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   description:
     "Dein strukturierter Weg zur Spezialisierung in der Botulinum-Therapie. Vier aufeinander aufbauende Kurse vom Einstieg bis zur Masterclass, plus die Möglichkeit zur EPHIA Botulinum Specialist Zertifizierung.",
   alternates: {
-    canonical: "https://kurse.ephia.de/kurse/curriculum-botulinum",
+    canonical: "https://ephia.de/curriculum-botulinum",
   },
 };
 
