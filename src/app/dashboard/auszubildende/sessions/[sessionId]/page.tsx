@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { SessionDetail, type Participant } from "./session-detail";
+import { SessionDetail, type Participant, type PriorBooking } from "./session-detail";
 
 interface PageProps {
   params: Promise<{ sessionId: string }>;
@@ -42,11 +42,54 @@ export default async function SessionDetailPage({ params }: PageProps) {
     auszubildendeIds.length
       ? admin
           .from("course_bookings")
-          .select("auszubildende_id, session_id, status, course_type, created_at")
+          .select("auszubildende_id, session_id, template_id, status, course_type, created_at")
           .in("auszubildende_id", auszubildendeIds)
           .order("created_at", { ascending: true })
-      : Promise.resolve({ data: [] as Array<{ auszubildende_id: string | null; session_id: string | null; status: string; course_type: string | null; created_at: string }> }),
+      : Promise.resolve({ data: [] as Array<{ auszubildende_id: string | null; session_id: string | null; template_id: string | null; status: string; course_type: string | null; created_at: string }> }),
   ]);
+
+  // Resolve the actual course label + session date for each prior
+  // booking so the Historie cell can show "Aufbaukurs Botulinum 14.05.25"
+  // instead of just a "Kombi" pill. Two parallel lookups (templates +
+  // sessions) keyed by id.
+  const priorTemplateIds = Array.from(
+    new Set(
+      (priorBookingRows || [])
+        .map((r) => r.template_id)
+        .filter((v): v is string => !!v),
+    ),
+  );
+  const priorSessionIds = Array.from(
+    new Set(
+      (priorBookingRows || [])
+        .map((r) => r.session_id)
+        .filter((v): v is string => !!v && v !== sessionId),
+    ),
+  );
+  const [{ data: priorTemplateRows }, { data: priorSessionRows }] = await Promise.all([
+    priorTemplateIds.length
+      ? admin
+          .from("course_templates")
+          .select("id, title, course_label_de")
+          .in("id", priorTemplateIds)
+      : Promise.resolve({ data: [] as Array<{ id: string; title: string | null; course_label_de: string | null }> }),
+    priorSessionIds.length
+      ? admin
+          .from("course_sessions")
+          .select("id, date_iso")
+          .in("id", priorSessionIds)
+      : Promise.resolve({ data: [] as Array<{ id: string; date_iso: string | null }> }),
+  ]);
+
+  const templateLabelById = new Map<string, string>();
+  for (const t of priorTemplateRows || []) {
+    const label = t.course_label_de || t.title;
+    if (label) templateLabelById.set(t.id, label);
+  }
+  const sessionDateById = new Map<string, string>();
+  for (const s of priorSessionRows || []) {
+    if (s.date_iso) sessionDateById.set(s.id, s.date_iso);
+  }
 
   type AzubiRow = {
     id: string;
@@ -69,15 +112,23 @@ export default async function SessionDetailPage({ params }: PageProps) {
   const azubiById = new Map<string, AzubiRow>();
   for (const row of (auszubildendeRows || []) as AzubiRow[]) azubiById.set(row.id, row);
 
-  const priorCourseTypesById = new Map<string, string[]>();
+  const priorBookingsById = new Map<string, PriorBooking[]>();
   for (const row of priorBookingRows || []) {
     if (!row.auszubildende_id) continue;
     if (row.session_id === sessionId) continue;
     if (!["booked", "completed"].includes(row.status)) continue;
     if (!row.course_type) continue;
-    const list = priorCourseTypesById.get(row.auszubildende_id) || [];
-    list.push(row.course_type);
-    priorCourseTypesById.set(row.auszubildende_id, list);
+    const list = priorBookingsById.get(row.auszubildende_id) || [];
+    list.push({
+      courseType: row.course_type,
+      courseTitle: row.template_id
+        ? templateLabelById.get(row.template_id) ?? null
+        : null,
+      sessionDateIso: row.session_id
+        ? sessionDateById.get(row.session_id) ?? null
+        : null,
+    });
+    priorBookingsById.set(row.auszubildende_id, list);
   }
 
   const participants: Participant[] = bookings.map((b) => {
@@ -103,7 +154,7 @@ export default async function SessionDetailPage({ params }: PageProps) {
       amountPaid: b.amount_paid,
       bookingStatus: b.status,
       createdAt: b.created_at,
-      priorCourseTypes: b.auszubildende_id ? priorCourseTypesById.get(b.auszubildende_id) || [] : [],
+      priorBookings: b.auszubildende_id ? priorBookingsById.get(b.auszubildende_id) || [] : [],
     };
   });
 

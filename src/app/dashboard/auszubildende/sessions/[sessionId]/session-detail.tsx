@@ -48,7 +48,23 @@ export interface Participant {
   amountPaid: number | null;
   bookingStatus: string;
   createdAt: string;
-  priorCourseTypes: string[];
+  // Past bookings of this Ärzt:in for any other session — surfaced as
+  // "Historie" on the participant row so the betreuer can tell at a
+  // glance whether they've been here before. Empty for first-time
+  // visitors. Sorted oldest → newest by the page-level fetcher.
+  priorBookings: PriorBooking[];
+}
+
+export interface PriorBooking {
+  courseType: string;
+  // Resolved course label, e.g. "Aufbaukurs Botulinum — Therap.
+  // Indikationen". Falls back to the bare course type when the
+  // template is unknown (legacy imports etc).
+  courseTitle: string | null;
+  // ISO date of the practical session, when the prior booking is tied
+  // to a Praxis/Kombi/Premium session. null for Onlinekurs which has
+  // no session row.
+  sessionDateIso: string | null;
 }
 
 interface Props {
@@ -348,19 +364,44 @@ function ParticipantRow({ p }: { p: Participant }) {
         )}
       </TableCell>
       <TableCell className="text-sm">
-        {p.priorCourseTypes.length > 0 ? (
-          <div className="flex flex-wrap gap-1">
-            {p.priorCourseTypes.map((ct, idx) => (
-              <span
-                key={`${ct}-${idx}`}
-                className={`inline-flex items-center text-xs font-medium rounded-full px-2 py-0.5 ${
-                  COURSE_TYPE_COLOR[ct] || "bg-gray-100 text-gray-700"
-                }`}
-              >
-                {COURSE_TYPE_LABEL[ct] || ct}
-              </span>
-            ))}
-          </div>
+        {p.priorBookings.length > 0 ? (
+          <ul className="flex flex-col gap-1.5">
+            {p.priorBookings.map((pb, idx) => {
+              const dateLabel = pb.sessionDateIso
+                ? new Date(pb.sessionDateIso).toLocaleDateString("de-DE", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "2-digit",
+                  })
+                : null;
+              return (
+                <li
+                  key={`${pb.courseType}-${idx}`}
+                  className="flex items-center gap-1.5 min-w-0"
+                >
+                  <span
+                    className={`inline-flex items-center text-[10px] font-medium rounded-full px-1.5 py-0.5 flex-shrink-0 ${
+                      COURSE_TYPE_COLOR[pb.courseType] ||
+                      "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {COURSE_TYPE_LABEL[pb.courseType] || pb.courseType}
+                  </span>
+                  <span
+                    className="text-xs text-foreground truncate"
+                    title={pb.courseTitle ?? undefined}
+                  >
+                    {pb.courseTitle || "Unbekannter Kurs"}
+                  </span>
+                  {dateLabel && (
+                    <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                      {dateLabel}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         ) : (
           <span className="text-xs text-muted-foreground">Neu</span>
         )}
