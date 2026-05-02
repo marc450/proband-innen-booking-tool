@@ -278,7 +278,11 @@ export function InboxMobile() {
     if (picked.subject && !composeSubject.trim()) {
       setComposeSubject(picked.subject);
     }
-    const sig = signature?.html ? `<br><br>${signature.html}` : "";
+    // Single <br>: the template body ends in a closing <p> with mb-2,
+    // so <br><br> would add an extra visible empty line above the
+    // signature. Compare with the empty-compose init which uses <br><br>
+    // to give the cursor breathing room.
+    const sig = signature?.html ? `<br>${signature.html}` : "";
     setComposeBody(picked.bodyHtml + sig);
     setTemplateNotice(
       picked.vornameMissing

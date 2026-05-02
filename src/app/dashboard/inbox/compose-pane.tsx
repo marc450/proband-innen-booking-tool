@@ -67,8 +67,11 @@ export function ComposePane({
     if (picked.subject && !subject.trim()) {
       onSubjectChange(picked.subject);
     }
+    // Single <br> here, not <br><br>: the template body already ends in
+    // a closing <p> with mb-2 margin, so a double break adds an extra
+    // visible empty line between the last sentence and the signature.
     const sig = aiContext?.signatureHtml
-      ? `<br><br>${aiContext.signatureHtml}`
+      ? `<br>${aiContext.signatureHtml}`
       : "";
     onBodyChange(picked.bodyHtml + sig);
     if (picked.vornameMissing) {
