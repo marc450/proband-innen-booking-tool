@@ -58,21 +58,31 @@ export async function POST(req: NextRequest) {
   //    as check-email — the customer might have set their alias as
   //    primary email after they bought the course.
   let auszubildendeId: string | null = null;
+  let firstName: string | null = null;
 
   const { data: aliasHit } = await admin
     .from("auszubildende_emails")
-    .select("auszubildende_id")
+    .select("auszubildende_id, auszubildende:auszubildende_id(first_name)")
     .eq("email", email)
-    .maybeSingle();
-  if (aliasHit) auszubildendeId = aliasHit.auszubildende_id;
+    .maybeSingle<{
+      auszubildende_id: string;
+      auszubildende: { first_name: string | null } | null;
+    }>();
+  if (aliasHit) {
+    auszubildendeId = aliasHit.auszubildende_id;
+    firstName = aliasHit.auszubildende?.first_name ?? null;
+  }
 
   if (!auszubildendeId) {
     const { data: legacy } = await admin
       .from("auszubildende")
-      .select("id")
+      .select("id, first_name")
       .ilike("email", email)
       .maybeSingle();
-    if (legacy) auszubildendeId = legacy.id;
+    if (legacy) {
+      auszubildendeId = legacy.id;
+      firstName = legacy.first_name ?? null;
+    }
   }
 
   if (!auszubildendeId) {
@@ -110,10 +120,14 @@ export async function POST(req: NextRequest) {
   // ── Create the Supabase Auth user with the chosen password.
   //    email_confirm:true marks the email as already verified AND
   //    suppresses Supabase's automatic confirmation email.
+  //    user_metadata.first_name is exposed to email templates as
+  //    {{ .Data.first_name }} (e.g. for the "Hi Marc," greeting in the
+  //    recovery email).
   const { data: created, error: createErr } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
+    user_metadata: firstName ? { first_name: firstName } : undefined,
   });
   if (createErr || !created.user) {
     return NextResponse.json(

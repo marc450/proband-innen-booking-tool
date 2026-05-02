@@ -8,10 +8,11 @@ import { createClient } from "@/lib/supabase/client";
 
 // Three local UI states drive this page:
 //
-//   "verifying"   → on first paint, we exchange the recovery `code`
-//                   for a session via Supabase PKCE. While waiting, we
-//                   show a spinner. If the code is missing, expired,
-//                   or the exchange fails we drop into "invalid".
+//   "verifying"   → on first paint, we consume the recovery
+//                   `token_hash` via supabase.auth.verifyOtp() to
+//                   establish a session. While waiting, we show a
+//                   spinner. If the token is missing, expired, or
+//                   already used we drop into "invalid".
 //
 //   "ready"       → recovery session is established. Show the
 //                   new-password form. updateUser() commits the change.
@@ -19,6 +20,11 @@ import { createClient } from "@/lib/supabase/client";
 //   "invalid"     → recovery link could not be consumed. Offer a way
 //                   back to /start so the user can request a fresh
 //                   reset email.
+//
+// We use the token-hash flow (not PKCE) because it works cross-browser:
+// the user can open the recovery email in a different browser than the
+// one that initiated the reset and the link still verifies. PKCE
+// requires a verifier in the originating browser's storage.
 //
 // We don't need to read the user's email here; the recovery session
 // already identifies them server-side. updateUser({ password }) writes
@@ -41,15 +47,19 @@ export function ResetPasswordForm() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      // Recovery flow: Supabase sends an email whose link points to
-      // <SUPABASE>/auth/v1/verify?... and then redirects here with
-      // `?code=...`. createBrowserClient is configured for PKCE, so
-      // we trade the code for a session.
-      const code = searchParams.get("code");
-      if (code) {
-        const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
+      // Recovery email link points back here as
+      // /reset-password?token_hash=...&type=recovery. verifyOtp turns
+      // the hash into a real session. Cross-browser-safe: no verifier
+      // in localStorage required.
+      const tokenHash = searchParams.get("token_hash");
+      const type = searchParams.get("type");
+      if (tokenHash && type === "recovery") {
+        const { error: vErr } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: "recovery",
+        });
         if (cancelled) return;
-        if (exErr) {
+        if (vErr) {
           setState("invalid");
           return;
         }
@@ -57,10 +67,9 @@ export function ResetPasswordForm() {
         return;
       }
 
-      // No code in the URL. Either the user navigated here directly,
-      // or the session was already established (e.g. after a reload
-      // following a successful exchange). Check for an existing
-      // session and proceed accordingly.
+      // No recovery token in the URL. Either the user navigated here
+      // directly or the session was already established on a prior
+      // load. Check for an existing session and proceed accordingly.
       const { data } = await supabase.auth.getSession();
       if (cancelled) return;
       setState(data.session ? "ready" : "invalid");
