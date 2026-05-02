@@ -32,24 +32,12 @@ export default async function MeinKontoPage() {
 
   const admin = createAdminClient();
 
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  // Belt-and-braces: students only. The middleware admin-host gate
-  // already blocks staff roles from reaching this page on the wrong
-  // hostname; this check protects against staff accidentally landing
-  // here on ephia.de itself (which the middleware allows because it's
-  // not an admin path).
-  if (!profile || profile.role !== "student") {
-    redirect("/");
-  }
-
   // Resolve the contact via user_id (set when the customer set their
   // password through /api/auth/set-password). user_id is unique on
-  // auszubildende — at most one match.
+  // auszubildende — at most one match. Staff accounts who happen to
+  // also be in auszubildende (e.g. Marc, who's both an admin and a
+  // legacy-imported customer) see their own bookings here too — which
+  // is fine; the sensitive surface is admin.ephia.de, gated separately.
   const { data: contact } = await admin
     .from("auszubildende")
     .select("id, first_name, last_name, email")
