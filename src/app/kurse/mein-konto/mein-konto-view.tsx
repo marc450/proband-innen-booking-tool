@@ -38,8 +38,11 @@ function formatDate(iso: string | null): string | null {
 
 export function MeinKontoView({ firstName, bookings }: Props) {
   return (
-    <div className="min-h-[60vh] px-5 md:px-8 pt-12 pb-24">
-      <div className="max-w-7xl mx-auto">
+    // Match the kurse header's container: max-w-7xl with px-5 md:px-8
+    // INSIDE the max-width box, so the content edge lines up with the
+    // nav links instead of extending 40-64px past them.
+    <div className="min-h-[60vh] pt-12 pb-24">
+      <div className="max-w-7xl mx-auto px-5 md:px-8">
         <h1 className="text-2xl md:text-3xl font-bold text-black mb-2">
           Hi {firstName ?? "Du"}
         </h1>
