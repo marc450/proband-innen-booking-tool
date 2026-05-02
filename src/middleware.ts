@@ -201,16 +201,18 @@ export async function middleware(request: NextRequest) {
     }
 
     // 3. Path-prefix redirects
-    //    /path-player[*] and /start* — LMS lives on learn.ephia.de.
+    //    /path-player[*] — LMS course player lives on learn.ephia.de.
     //    Preserve query string so the LW course-player params survive.
+    //
+    //    /start is intentionally NOT redirected: it's now our customer
+    //    login surface (/kurse/start, served via the slug rewrite below).
+    //    Customers who land at ephia.de/start enter the email + password
+    //    flow on our domain; SSO bounces into LW on demand from there.
     if (pathname === "/path-player" || pathname.startsWith("/path-player")) {
       return NextResponse.redirect(
         `https://${LEARN_DOMAIN}${pathname}${request.nextUrl.search}`,
         301,
       );
-    }
-    if (pathname === "/start" || pathname.startsWith("/start/")) {
-      return NextResponse.redirect(`https://${LEARN_DOMAIN}${pathname}`, 301);
     }
     //    /blog/* — old LW blog tree, no equivalent yet, redirect to home
     //    so the URL doesn't drop into 404 land.
