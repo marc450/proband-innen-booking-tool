@@ -313,8 +313,12 @@ export function RichTextEditor({
         setAiBusy(false);
         return;
       }
+      // The AI body ends with </p>, which already gives a paragraph
+      // bottom margin. Adding two <br>s on top of that produces a
+      // visibly extra blank line before the signature — use a single
+      // <br> so the gap matches a normal hand-typed body.
       const sigSuffix = aiContext.signatureHtml
-        ? `<br><br>${aiContext.signatureHtml}`
+        ? `<br>${aiContext.signatureHtml}`
         : "";
       onChange(data.html + sigSuffix);
       setShowAi(false);
