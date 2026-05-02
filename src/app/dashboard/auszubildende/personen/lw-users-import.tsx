@@ -13,29 +13,27 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// Client-side importer for the "All Deals" XLSX export from HubSpot.
-// Self-contained — owns its file input, parsing logic, preview dialog,
-// API call, and result display. Lives next to the existing CSV importer
-// in auszubildende-manager.tsx and uses the same `xlsx` library.
-//
-// The HubSpot export columns we read:
-//   - Deal Name       → product_name
-//   - Amount          → amount (number)
-//   - Course Date     → course_date (only set on Praxis/Kombi)
-//   - Associated Contact → "Display Name (email@domain.com)" → split
-//   - Close Date      → purchased_at (preferred)
-//   - Create Date     → purchased_at fallback if Close Date missing
-//
-// All other columns (Deal Stage, …) are ignored. Rows without a
-// parseable email are silently skipped per the product decision.
+// Client-side importer for the LearnWorlds "Export Users" XLSX. Owns
+// its own file picker, parser, preview dialog, and API call. Replaces
+// the earlier HubSpot Deals importer — LW is now the single source for
+// legacy course enrollments, and the importer endpoint also runs a
+// per-customer dedup that supersedes overlapping HubSpot rows.
 
-interface DealRow {
-  contact_display: string;
+interface LwUserRow {
+  lw_user_id: string;
+  username: string;
   email: string;
-  product_name: string;
-  amount: number | null;
-  course_date: string | null;
-  purchased_at: string | null;
+  signup: string | null;
+  courses: string[];
+  title: string | null;
+  gender: string | null;
+  birthdate: string | null;
+  specialty: string | null;
+  efn: string | null;
+  address_line1: string | null;
+  address_postal_code: string | null;
+  address_city: string | null;
+  address_country: string | null;
 }
 
 interface ImportSummary {
@@ -43,12 +41,13 @@ interface ImportSummary {
   contacts_updated: number;
   bookings_inserted: number;
   bookings_skipped_duplicate: number;
+  hubspot_rows_superseded: number;
   rows_invalid: number;
   rows_total: number;
 }
 
-// Case-insensitive lookup of a column value in a row keyed by the
-// HubSpot header. Trims whitespace.
+// Case-insensitive header lookup. LW exports occasionally have
+// trailing whitespace on column names, so we trim.
 function getCell(
   row: Record<string, unknown>,
   ...candidates: string[]
@@ -65,60 +64,43 @@ function getCell(
   return "";
 }
 
-// "Dr. Antje Bodamer (a.bodamer@gmx.de)" → { display, email }
-// Returns null when the cell doesn't have an email in parens.
-function parseContactCell(
-  cell: string,
-): { display: string; email: string } | null {
-  const m = cell.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
-  if (!m) return null;
-  const email = m[2].trim().toLowerCase();
-  // Sanity: must look like an email.
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return null;
-  return { display: m[1].trim(), email };
-}
-
-// XLSX with cellDates:true returns Date objects. Convert to "YYYY-MM-DD"
-// for course_date (date-only) and ISO string for purchased_at (timestamp).
-function toIsoDate(v: string): string | null {
-  if (!v) return null;
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toISOString().slice(0, 10);
-}
+// LW exports look like "06 May 2024 13:11:42" or "16 May 1989" — both
+// parseable by `new Date(string)` in modern JS engines. Empty strings
+// and unparseable values return null so we skip the field rather than
+// poison the record with NaN dates.
 function toIsoTimestamp(v: string): string | null {
   if (!v) return null;
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return null;
   return d.toISOString();
 }
-
-function parseAmount(v: string): number | null {
+function toIsoDate(v: string): string | null {
   if (!v) return null;
-  // HubSpot amounts come through as numbers from xlsx (cellText:false),
-  // already in EUR. Defensive: strip non-numeric chars before parseFloat
-  // in case the cell happens to be a string with a currency symbol.
-  const cleaned = String(v).replace(/[^\d.,-]/g, "").replace(",", ".");
-  const n = parseFloat(cleaned);
-  return Number.isFinite(n) ? n : null;
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 10);
 }
+
+const NULL_IF_BLANK = (v: string): string | null => {
+  const t = v.trim();
+  return t.length ? t : null;
+};
 
 interface Props {
   scope: "auszubildende" | "other";
 }
 
-export function HubSpotDealsImportButton({ scope }: Props) {
+export function LwUsersImportButton({ scope }: Props) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [pendingRows, setPendingRows] = useState<DealRow[] | null>(null);
+  const [pendingRows, setPendingRows] = useState<LwUserRow[] | null>(null);
   const [pendingFilename, setPendingFilename] = useState<string>("");
   const [parseError, setParseError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<ImportSummary | null>(null);
   const [resultError, setResultError] = useState<string | null>(null);
 
-  // Only show this button on the auszubildende tab — HubSpot deals are
-  // always Ärzt:innen contacts, never miscellaneous "other" contacts.
+  // Only on the Ärzt:innen tab — LW users are always Ärzt:innen.
   if (scope !== "auszubildende") return null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,40 +128,58 @@ export function HubSpotDealsImportButton({ scope }: Props) {
           raw: true,
         });
 
-        let skippedNoEmail = 0;
-        const rows: DealRow[] = [];
+        const rows: LwUserRow[] = [];
         for (const r of json) {
-          const dealName = getCell(r, "Deal Name");
-          if (!dealName) continue; // empty row
-          const contactCell = getCell(r, "Associated Contact");
-          const parsed = parseContactCell(contactCell);
-          if (!parsed) {
-            skippedNoEmail++;
-            continue;
-          }
-          const closeDate = getCell(r, "Close Date");
-          const createDate = getCell(r, "Create Date");
-          const purchasedAt =
-            toIsoTimestamp(closeDate) ?? toIsoTimestamp(createDate);
+          const email = getCell(r, "email").toLowerCase();
+          if (!email) continue; // skip empty rows + rows missing email
+          const coursesRaw = getCell(r, "courses");
+          const courses = coursesRaw
+            ? coursesRaw
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean)
+            : [];
+
           rows.push({
-            contact_display: parsed.display,
-            email: parsed.email,
-            product_name: dealName,
-            amount: parseAmount(getCell(r, "Amount")),
-            course_date: toIsoDate(getCell(r, "Course Date")),
-            purchased_at: purchasedAt,
+            lw_user_id: getCell(r, "id"),
+            username: getCell(r, "username"),
+            email,
+            signup: toIsoTimestamp(getCell(r, "signup")),
+            courses,
+            title: NULL_IF_BLANK(
+              getCell(r, "1) Welche Titel sollten wir für Dich verwenden?"),
+            ),
+            gender: NULL_IF_BLANK(getCell(r, "2) Was ist Dein Geschlecht?")),
+            birthdate: toIsoDate(
+              getCell(r, "3) Wie lautet Dein Geburtsdatum?"),
+            ),
+            specialty: NULL_IF_BLANK(
+              getCell(r, "4) Was ist Deine Fachrichtung?"),
+            ),
+            // EFN field has a long question; match by prefix only.
+            efn: NULL_IF_BLANK(
+              (() => {
+                for (const k of Object.keys(r)) {
+                  if (k.trim().toLowerCase().startsWith("5) wie lautet deine efn")) {
+                    return String(r[k] ?? "").trim();
+                  }
+                }
+                return "";
+              })(),
+            ),
+            address_line1: NULL_IF_BLANK(getCell(r, "bf_address")),
+            address_postal_code: NULL_IF_BLANK(getCell(r, "bf_postalcode")),
+            address_city: NULL_IF_BLANK(getCell(r, "bf_city")),
+            address_country: NULL_IF_BLANK(getCell(r, "bf_country")),
           });
         }
 
         if (rows.length === 0) {
           setParseError(
-            "Keine gültigen Zeilen gefunden. Erwartete Spalten: Deal Name, Associated Contact, Amount, Close Date.",
+            "Keine gültigen Zeilen gefunden. Erwartete Spalten: id, email, username, courses, …",
           );
           setPendingRows([]);
           return;
-        }
-        if (skippedNoEmail > 0) {
-          // Don't block; just inform via the summary.
         }
         setPendingRows(rows);
       } catch (err) {
@@ -209,8 +209,8 @@ export function HubSpotDealsImportButton({ scope }: Props) {
     setResultError(null);
     try {
       const today = new Date().toISOString().slice(0, 10).replace(/-/g, "_");
-      const source = `hubspot_deals_${today}`;
-      const res = await fetch("/api/admin/import-hubspot-deals", {
+      const source = `lw_export_${today}`;
+      const res = await fetch("/api/admin/import-lw-users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ source, rows: pendingRows }),
@@ -230,7 +230,10 @@ export function HubSpotDealsImportButton({ scope }: Props) {
   };
 
   // Counts for the preview screen.
-  const uniqueEmails = new Set(pendingRows?.map((r) => r.email) ?? []);
+  const totalEnrollments = (pendingRows ?? []).reduce(
+    (sum, r) => sum + r.courses.length,
+    0,
+  );
 
   return (
     <>
@@ -247,7 +250,7 @@ export function HubSpotDealsImportButton({ scope }: Props) {
         className="h-9 px-3.5 py-0 text-sm font-medium bg-white border-input/60"
       >
         <FileSpreadsheet className="h-4 w-4 mr-2" />
-        HubSpot Deals
+        LW Users
       </Button>
 
       <Dialog
@@ -258,7 +261,7 @@ export function HubSpotDealsImportButton({ scope }: Props) {
       >
         <DialogContent className="sm:max-w-[560px]">
           <DialogHeader>
-            <DialogTitle>HubSpot Deals importieren</DialogTitle>
+            <DialogTitle>LearnWorlds Users importieren</DialogTitle>
           </DialogHeader>
 
           {parseError && (
@@ -274,16 +277,17 @@ export function HubSpotDealsImportButton({ scope }: Props) {
               </p>
               <div className="rounded-md border border-gray-200 bg-gray-50 p-3 space-y-1">
                 <div>
-                  <span className="font-medium">{pendingRows.length}</span> Deals erkannt
+                  <span className="font-medium">{pendingRows.length}</span> LW-Nutzer:innen
                 </div>
                 <div>
-                  <span className="font-medium">{uniqueEmails.size}</span> eindeutige Kontakte
+                  <span className="font-medium">{totalEnrollments}</span> Kurs-Enrollments
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Beim Importieren werden bestehende Kontakte mit passender E-Mail
-                wiederverwendet (kein Duplikat). Fehlende Vornamen, Nachnamen oder Titel
-                werden aus der Datei ergänzt. Es werden keine E-Mails verschickt.
+                Bestehende Kontakte mit passender E-Mail werden wiederverwendet (kein Duplikat).
+                Leere Profilfelder (Titel, Fachrichtung, EFN, Adresse, Geburtsdatum) werden aus
+                der LW-Datei ergänzt. HubSpot-Buchungen für Kontakte, die jetzt LW-Daten haben,
+                werden automatisch durch die LW-Slugs ersetzt. Es werden keine E-Mails verschickt.
               </p>
             </div>
           )}
@@ -297,6 +301,9 @@ export function HubSpotDealsImportButton({ scope }: Props) {
                   <div>Aktualisierte Kontakte (Felder ergänzt): <span className="font-semibold">{result.contacts_updated}</span></div>
                   <div>Neue Buchungen: <span className="font-semibold">{result.bookings_inserted}</span></div>
                   <div>Übersprungen (Duplikate): <span className="font-semibold">{result.bookings_skipped_duplicate}</span></div>
+                  {result.hubspot_rows_superseded > 0 && (
+                    <div>HubSpot-Buchungen ersetzt: <span className="font-semibold">{result.hubspot_rows_superseded}</span></div>
+                  )}
                   {result.rows_invalid > 0 && (
                     <div>Übersprungen (keine E-Mail): <span className="font-semibold">{result.rows_invalid}</span></div>
                   )}
