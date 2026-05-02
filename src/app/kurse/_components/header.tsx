@@ -212,7 +212,7 @@ export function Header() {
               ),
             )}
             <a
-              href="https://www.ephia.de/home"
+              href="https://ephia.de/start"
               className="text-sm font-semibold text-[#0066FF] border border-[#0066FF] hover:bg-[#0066FF]/10 rounded-[10px] px-5 py-2.5 transition-colors"
             >
               Login
@@ -293,7 +293,7 @@ export function Header() {
               ),
             )}
             <a
-              href="https://www.ephia.de/home"
+              href="https://ephia.de/start"
               className="mt-3 text-center text-base font-semibold text-[#0066FF] border border-[#0066FF] hover:bg-[#0066FF]/10 rounded-[10px] px-5 py-3 transition-colors"
             >
               Login
