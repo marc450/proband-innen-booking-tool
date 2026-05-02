@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 import { findPatientIdByAnyEmail } from "@/lib/contact-emails";
+import { archiveSentMessage } from "@/lib/gmail";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
@@ -441,6 +442,7 @@ export async function POST(req: NextRequest) {
   </div>
 </div>`;
 
+        const subject = `Buchungsbestätigung: ${courseTitle}`;
         await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
@@ -450,10 +452,23 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({
             from: "EPHIA <customerlove@ephia.de>",
             to: [email],
-            subject: `Buchungsbestätigung: ${courseTitle}`,
+            subject,
             html,
           }),
         });
+
+        // Mirror into the customerlove Gmail Sent folder so the
+        // patient profile email history (which queries Gmail) shows the
+        // booking confirmation. Best-effort: a Gmail outage must not
+        // fail the booking flow.
+        try {
+          await archiveSentMessage({ to: email, subject, html });
+        } catch (archiveErr) {
+          console.error(
+            "archiveSentMessage failed (non-fatal):",
+            archiveErr,
+          );
+        }
       } catch (emailErr) {
         console.error("Failed to send confirmation email:", emailErr);
       }

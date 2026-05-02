@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { encryptPatientFields, encryptBookingFields, hashEmail, hashPhone } from "@/lib/encryption";
 import { findPatientIdByAnyEmail } from "@/lib/contact-emails";
 import { buildEmailHtml, PATIENT_PREPARATION_BLOCK } from "@/lib/email-template";
+import { archiveSentMessage } from "@/lib/gmail";
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 
@@ -214,6 +215,7 @@ export async function POST(req: NextRequest) {
         extraContent: prepBlock,
       });
 
+      const subject = `Buchungsbestätigung: ${displayTreatment}`;
       await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -223,10 +225,18 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           from: "EPHIA <customerlove@ephia.de>",
           to: [email],
-          subject: `Buchungsbestätigung: ${displayTreatment}`,
+          subject,
           html,
         }),
       });
+
+      // Mirror into the customerlove Gmail Sent folder so the patient
+      // profile picks up the confirmation. Best-effort.
+      try {
+        await archiveSentMessage({ to: email, subject, html });
+      } catch (archiveErr) {
+        console.error("archiveSentMessage failed (non-fatal):", archiveErr);
+      }
     }
 
     // Send Slack notification

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { buildEmailHtml, type ContentBlock } from "@/lib/email-template";
 import { decryptPatient } from "@/lib/encryption";
 import { normalizeEmail } from "@/lib/email-normalize";
+import { archiveSentMessage } from "@/lib/gmail";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const BATCH_SIZE = 100;
@@ -226,21 +227,26 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
       const batch = recipients.slice(i, i + BATCH_SIZE);
 
-      const emails = batch.map((r) => {
-        const email: Record<string, unknown> = {
+      // Build (recipient, html, payload) so we can hand the same per-
+      // recipient HTML to both Resend (real send) and archiveSentMessage
+      // (Gmail mirror). Without retaining the html alongside, we'd have
+      // to rebuild it twice.
+      const items = batch.map((r) => {
+        const html = buildEmailHtml({
+          firstName: r.first_name || "Kolleg:in",
+          contentBlocks,
+        });
+        const payload: Record<string, unknown> = {
           from: "EPHIA <customerlove@ephia.de>",
           to: [r.email],
           subject,
-          html: buildEmailHtml({
-            firstName: r.first_name || "Kolleg:in",
-            contentBlocks,
-          }),
+          html,
           ...(sendAtParam ? { send_at: sendAtParam } : {}),
         };
         if (rawAttachments && rawAttachments.length > 0) {
-          email.attachments = rawAttachments;
+          payload.attachments = rawAttachments;
         }
-        return email;
+        return { recipient: r, html, payload };
       });
 
       const res = await fetch("https://api.resend.com/emails/batch", {
@@ -249,12 +255,41 @@ export async function POST(req: NextRequest) {
           Authorization: `Bearer ${RESEND_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(emails),
+        body: JSON.stringify(items.map((it) => it.payload)),
       });
 
       if (!res.ok) {
         const errBody = await res.text();
         throw new Error(`Resend batch error: ${errBody}`);
+      }
+
+      // Mirror each delivered recipient into the customerlove Gmail Sent
+      // folder so the contact-profile email history (which queries Gmail
+      // directly) shows the campaign.
+      //
+      // Scheduled campaigns are skipped here: Resend hasn't sent them
+      // yet, and archiving now would falsely date the Gmail entry.
+      // Once we wire a Resend `email.sent` webhook we can archive at
+      // actual delivery time instead.
+      //
+      // Sequential per recipient to stay under Gmail's per-user
+      // ~10 inserts/sec quota. Best-effort: a Gmail failure for one
+      // recipient is logged but doesn't fail the whole campaign.
+      if (!sendAtParam) {
+        for (const { recipient, html } of items) {
+          try {
+            await archiveSentMessage({
+              to: recipient.email,
+              subject,
+              html,
+            });
+          } catch (archiveErr) {
+            console.error(
+              `archiveSentMessage failed for ${recipient.email} (non-fatal):`,
+              archiveErr,
+            );
+          }
+        }
       }
 
       // Brief pause between batches
