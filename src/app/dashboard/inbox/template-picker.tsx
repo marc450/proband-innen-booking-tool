@@ -51,6 +51,66 @@ export function TemplatePicker({
   const [error, setError] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  // Viewport-relative position for the dropdown. We render with
+  // position: fixed because the editor toolbar lives inside the
+  // compose pane's overflow-y-auto scroll container, which clips
+  // horizontal overflow too. Anchored to the trigger's getBoundingClientRect,
+  // recomputed on resize and scroll while open. Horizontally we
+  // prefer left-anchoring (popup left edge = trigger left), but if
+  // that would overflow the right viewport edge we shift the popup
+  // left to fit, with an 8px margin on each side. So this works
+  // whether the trigger sits at the left or right of a narrow pane.
+  const POPUP_WIDTH = 320;
+  const POPUP_MAX_HEIGHT = 320;
+  const VIEWPORT_MARGIN = 8;
+  const [popupPos, setPopupPos] = useState<{ top: number; left: number } | null>(null);
+
+  const positionPopup = () => {
+    const btn = triggerRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Horizontal: left-anchor by default, shift left if it would
+    // overflow the right edge.
+    let left = rect.left;
+    if (left + POPUP_WIDTH + VIEWPORT_MARGIN > vw) {
+      left = Math.max(VIEWPORT_MARGIN, vw - POPUP_WIDTH - VIEWPORT_MARGIN);
+    }
+    if (left < VIEWPORT_MARGIN) left = VIEWPORT_MARGIN;
+
+    // Vertical: respect the requested direction, but flip if there's
+    // not enough room on that side of the trigger.
+    let top: number;
+    if (direction === "up") {
+      top = rect.top - POPUP_MAX_HEIGHT - 4;
+      if (top < VIEWPORT_MARGIN) top = rect.bottom + 4;
+    } else {
+      top = rect.bottom + 4;
+      if (top + POPUP_MAX_HEIGHT + VIEWPORT_MARGIN > vh) {
+        const flipped = rect.top - POPUP_MAX_HEIGHT - 4;
+        if (flipped >= VIEWPORT_MARGIN) top = flipped;
+      }
+    }
+
+    setPopupPos({ top, left });
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    positionPopup();
+    const handle = () => positionPopup();
+    window.addEventListener("resize", handle);
+    window.addEventListener("scroll", handle, true);
+    return () => {
+      window.removeEventListener("resize", handle);
+      window.removeEventListener("scroll", handle, true);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const ensureLoaded = async () => {
     if (templates !== null) return;
@@ -133,6 +193,7 @@ export function TemplatePicker({
   return (
     <div ref={wrapperRef} className={`relative ${className}`}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={handleToggle}
         disabled={picking}
@@ -147,11 +208,16 @@ export function TemplatePicker({
         <span>Vorlage</span>
         <ChevronDown className="h-3 w-3" />
       </button>
-      {open && (
+      {open && popupPos && (
         <div
-          className={`absolute ${
-            direction === "up" ? "bottom-full mb-1" : "top-full mt-1"
-          } left-0 bg-white border border-gray-200 rounded-[10px] shadow-lg z-50 p-1 min-w-[280px] max-w-[380px] max-h-[320px] overflow-y-auto`}
+          style={{
+            position: "fixed",
+            top: popupPos.top,
+            left: popupPos.left,
+            width: `min(${POPUP_WIDTH}px, calc(100vw - ${VIEWPORT_MARGIN * 2}px))`,
+            maxHeight: POPUP_MAX_HEIGHT,
+          }}
+          className="bg-white border border-gray-200 rounded-[10px] shadow-lg z-50 p-1 overflow-y-auto"
         >
           {loading && (
             <div className="flex items-center justify-center py-4 text-xs text-gray-500">
