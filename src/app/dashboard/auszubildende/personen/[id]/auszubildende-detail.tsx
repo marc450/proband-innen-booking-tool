@@ -607,7 +607,12 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, legacyBooki
           </Card>
 
           {/* Emails */}
-          <EmailHistory email={azubi.email} displayName={personName || undefined} canCompose={isAdmin} />
+          <EmailHistory
+            email={azubi.email}
+            displayName={personName || undefined}
+            canCompose={isAdmin}
+            aiMode="auszubildende"
+          />
         </div>
 
         {/* ===== RIGHT: Stats + Buchungsverlauf ===== */}

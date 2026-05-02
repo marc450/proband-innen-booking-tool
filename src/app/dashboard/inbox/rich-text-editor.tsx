@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Bold, Italic, Underline, Link as LinkIcon, List, ListOrdered, Indent, Outdent, RemoveFormatting, ChevronDown, Smile, Sparkles, Loader2 } from "lucide-react";
 import { TemplatePicker, type PickedTemplate } from "./template-picker";
+import { resolveTemplateVars } from "@/lib/template-vars";
 
 // Curated emoji palette for the toolbar picker. The set is small on
 // purpose — the goal is a one-click "drop a smiley into a customer
@@ -44,6 +45,18 @@ export interface AIDraftContext {
   // the templates editor: no contact lookup, no signature, AI is told
   // to use {{vorname}} where personalisation belongs.
   mode?: "email" | "template";
+  // When set, `{{Vorname}}` in the AI's response is replaced with this
+  // value client-side BEFORE the body is inserted into the editor.
+  // Used by the Proband:innen contact-detail composer: we run the AI
+  // in `template` mode (zero PII to Anthropic), then fill the visible
+  // first name from already-on-screen state. The recipient's name
+  // never leaves the staff's browser.
+  vornameSubstitution?: string;
+  // Optional hint rendered under the AI instruction textarea. Use it
+  // to remind staff about call-site-specific constraints, e.g. on the
+  // Proband:innen detail page: "do not paste personal data into the
+  // briefing because the briefing IS shipped to the model".
+  instructionHint?: string;
 }
 
 // Context the toolbar Vorlagen-Picker needs: the recipient address
@@ -326,14 +339,23 @@ export function RichTextEditor({
         setAiBusy(false);
         return;
       }
+      // For the Proband:innen contact-detail flow we run the AI in
+      // template mode (no PII to the model) and the response contains
+      // `{{Vorname}}` placeholders. Resolve them now from already-
+      // visible-on-screen state so the staff sees a ready-to-send body.
+      const personalised = aiContext.vornameSubstitution
+        ? resolveTemplateVars(data.html, {
+            vorname: aiContext.vornameSubstitution,
+          })
+        : data.html;
       // The AI body ends with </p>, which already gives a paragraph
       // bottom margin. Adding two <br>s on top of that produces a
-      // visibly extra blank line before the signature — use a single
+      // visibly extra blank line before the signature, use a single
       // <br> so the gap matches a normal hand-typed body.
       const sigSuffix = aiContext.signatureHtml
         ? `<br>${aiContext.signatureHtml}`
         : "";
-      onChange(data.html + sigSuffix);
+      onChange(personalised + sigSuffix);
       setShowAi(false);
       setAiInstruction("");
     } catch (e) {
@@ -525,6 +547,11 @@ export function RichTextEditor({
                     disabled={aiBusy}
                     className="w-full border border-gray-200 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0066FF] resize-none disabled:bg-gray-50"
                   />
+                  {aiContext.instructionHint && (
+                    <p className="text-[11px] text-gray-500 mt-1.5 leading-snug">
+                      {aiContext.instructionHint}
+                    </p>
+                  )}
                   {aiError && (
                     <p className="text-xs text-red-600 mt-1.5">{aiError}</p>
                   )}

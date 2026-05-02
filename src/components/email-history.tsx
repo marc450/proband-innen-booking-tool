@@ -15,7 +15,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RichTextEditor } from "@/app/dashboard/inbox/rich-text-editor";
+import {
+  RichTextEditor,
+  type AIDraftContext,
+} from "@/app/dashboard/inbox/rich-text-editor";
 import { ContactAutocomplete } from "@/app/dashboard/inbox/contact-autocomplete";
 import { useSignature } from "@/hooks/use-signature";
 
@@ -50,12 +53,27 @@ export function EmailHistory({
   email,
   displayName,
   canCompose = true,
+  aiMode,
+  firstName,
 }: {
   email: string;
   displayName?: string;
   // Nutzer:innen can view past threads but must not send mail from a
   // profile. Default true keeps admin-only call sites unaffected.
   canCompose?: boolean;
+  // Opt-in AI assist for the composer. When set, the toolbar shows a
+  // "KI" button.
+  // - "auszubildende": full email mode, the API looks up the
+  //   Ärzt:in's contact card and ships it as context.
+  // - "patient": template mode, NO patient PII is sent to the model.
+  //   The body comes back with `{{Vorname}}` placeholders, which the
+  //   editor substitutes client-side from `firstName` before
+  //   inserting. Required for DSGVO compliance on E2EE patient data.
+  aiMode?: "auszubildende" | "patient";
+  // Used only with aiMode="patient" to substitute the placeholder
+  // client-side. Pass the patient's first name (already visible on
+  // the detail page); it is never sent to the AI.
+  firstName?: string;
 }) {
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -275,6 +293,28 @@ export function EmailHistory({
 
   const canSend = !!subject.trim() && body.trim().length > 0;
 
+  // Build AI context only when the parent opted in. For patients we
+  // route through `template` mode and pass `to: ""` so the API skips
+  // the contact lookup entirely, decrypts nothing, and the LLM call
+  // contains zero PII. The visible first name is substituted into
+  // the response client-side.
+  const aiContext: AIDraftContext | undefined = aiMode
+    ? {
+        to: aiMode === "patient" ? "" : email,
+        subject,
+        threadId: null,
+        signatureHtml: signature?.html,
+        userName: signature?.userName,
+        mode: aiMode === "patient" ? "template" : "email",
+        vornameSubstitution:
+          aiMode === "patient" ? firstName?.trim() || undefined : undefined,
+        instructionHint:
+          aiMode === "patient"
+            ? "Aus Datenschutzgründen bitte keine personenbezogenen Daten ins Briefing schreiben. Die KI kennt diese Person nicht und nutzt automatisch den Platzhalter {{Vorname}}, der beim Einfügen ersetzt wird."
+            : undefined,
+      }
+    : undefined;
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -422,6 +462,7 @@ export function EmailHistory({
               placeholder="Deine Nachricht..."
               autoFocus
               className="min-h-[180px]"
+              aiContext={aiContext}
             />
             {attachments.length > 0 && (
               <div className="flex flex-wrap gap-2">

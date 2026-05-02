@@ -340,6 +340,8 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
               email={patient.email}
               displayName={personName || undefined}
               canCompose={isAdmin}
+              aiMode="patient"
+              firstName={patient.first_name || undefined}
             />
           )}
         </div>
