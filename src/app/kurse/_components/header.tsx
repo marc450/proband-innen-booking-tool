@@ -242,7 +242,7 @@ export function Header() {
               ),
             )}
             <a
-              href={isLoggedIn ? "https://ephia.de/mein-konto" : "https://ephia.de/start"}
+              href={isLoggedIn ? "/mein-konto" : "/start"}
               className="text-sm font-semibold text-[#0066FF] border border-[#0066FF] hover:bg-[#0066FF]/10 rounded-[10px] px-5 py-2.5 transition-colors"
             >
               {isLoggedIn ? "Mein Konto" : "Login"}
@@ -323,7 +323,7 @@ export function Header() {
               ),
             )}
             <a
-              href={isLoggedIn ? "https://ephia.de/mein-konto" : "https://ephia.de/start"}
+              href={isLoggedIn ? "/mein-konto" : "/start"}
               className="mt-3 text-center text-base font-semibold text-[#0066FF] border border-[#0066FF] hover:bg-[#0066FF]/10 rounded-[10px] px-5 py-3 transition-colors"
             >
               {isLoggedIn ? "Mein Konto" : "Login"}
