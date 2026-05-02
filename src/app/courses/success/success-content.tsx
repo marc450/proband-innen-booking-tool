@@ -50,28 +50,23 @@ export function SuccessContent({ booking, profileComplete }: Props) {
   const [error, setError] = useState("");
   const reminderSentRef = useRef(false);
 
-  // Send reminder email when user closes/leaves page without completing profile
-  // Uses beforeunload only (not visibilitychange which fires too eagerly on redirects)
-  // Minimum 30s on page before the reminder can fire to avoid false triggers
+  // Send a profile-completion reminder if the user has been on the
+  // success page for 5 minutes without finishing the form. Using a
+  // straight setTimeout (not beforeunload) so the reminder also fires
+  // when the user just leaves the tab open without acting. Cleanup
+  // cancels the timer if the profile gets completed in time, and
+  // unmounting (e.g. tab close) destroys the timer with the page.
   useEffect(() => {
     if (!booking || profileComplete || done) return;
 
-    const mountedAt = Date.now();
-
-    const triggerReminder = () => {
+    const timer = setTimeout(() => {
       if (reminderSentRef.current || done) return;
-      // Don't fire if user has been on the page less than 30 seconds
-      if (Date.now() - mountedAt < 30_000) return;
       reminderSentRef.current = true;
       const payload = JSON.stringify({ bookingId: booking.id, email: booking.email });
       navigator.sendBeacon("/api/send-profile-reminder", payload);
-    };
+    }, 5 * 60 * 1000);
 
-    window.addEventListener("beforeunload", triggerReminder);
-
-    return () => {
-      window.removeEventListener("beforeunload", triggerReminder);
-    };
+    return () => clearTimeout(timer);
   }, [booking, profileComplete, done]);
 
   // Auto-reload when booking hasn't arrived yet (webhook race condition).
