@@ -10,7 +10,16 @@ export const metadata: Metadata = {
 type Block =
   | { type: "p"; text: string }
   | { type: "h3"; text: string }
-  | { type: "ul"; items: string[] };
+  | { type: "ul"; items: string[] }
+  | {
+      // Paragraph with one trailing inline link, used where the
+      // privacy policy needs to point to an external document
+      // (e.g. Anthropic's published DPA URL).
+      type: "p-link";
+      text: string;
+      linkText: string;
+      linkHref: string;
+    };
 
 type Section = {
   title: string;
@@ -217,6 +226,12 @@ const SECTIONS: Section[] = [
         type: "p",
         text: "Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an effizienter Geschäftskorrespondenz). Die Übermittlung in die USA erfolgt auf Grundlage der EU-Standardvertragsklauseln (Art. 46 Abs. 2 lit. c DSGVO), die im Auftragsverarbeitungsvertrag mit Anthropic vereinbart sind.",
       },
+      {
+        type: "p-link",
+        text: "Den vollständigen Auftragsverarbeitungsvertrag von Anthropic findest Du unter:",
+        linkText: "anthropic.com/legal/data-processing-addendum",
+        linkHref: "https://www.anthropic.com/legal/data-processing-addendum",
+      },
     ],
   },
   {
@@ -265,6 +280,21 @@ function renderBlock(block: Block, idx: number) {
           <li key={i}>{item}</li>
         ))}
       </ul>
+    );
+  }
+  if (block.type === "p-link") {
+    return (
+      <p key={idx} className="text-base leading-relaxed mb-4">
+        {block.text}{" "}
+        <a
+          href={block.linkHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#0066FF] underline"
+        >
+          {block.linkText}
+        </a>
+      </p>
     );
   }
   return (
