@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 // Pathnames that map to the Werde Proband:in funnel start when served
 // from the booking domain. usePathname returns "/" and "/werde-proband-in"
@@ -93,6 +94,35 @@ export function Header() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsFunnel(onFunnelHost && onFunnelPath);
   }, [pathname]);
+
+  // Auth-aware Login CTA. SSR renders the unauthenticated state; on
+  // mount we ask the Supabase client whether a session exists. Brief
+  // flash from "Login" to "Mein Konto" on first paint for logged-in
+  // users is acceptable — the alternative (server-side session check
+  // in the layout) would force this page off the static cache, which
+  // matters more for SEO than the flash matters for UX.
+  //
+  // We also subscribe to auth-state changes so logging out via
+  // /mein-konto's "Abmelden" button immediately flips the CTA back to
+  // "Login" without a page reload.
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  useEffect(() => {
+    const supabase = createClient();
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!cancelled) setIsLoggedIn(!!data.session);
+    })();
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setIsLoggedIn(!!session);
+      },
+    );
+    return () => {
+      cancelled = true;
+      subscription.subscription.unsubscribe();
+    };
+  }, []);
 
   const toggleMobileSection = (label: string) => {
     setMobileExpanded((current) => (current === label ? null : label));
@@ -212,10 +242,10 @@ export function Header() {
               ),
             )}
             <a
-              href="https://ephia.de/start"
+              href={isLoggedIn ? "https://ephia.de/mein-konto" : "https://ephia.de/start"}
               className="text-sm font-semibold text-[#0066FF] border border-[#0066FF] hover:bg-[#0066FF]/10 rounded-[10px] px-5 py-2.5 transition-colors"
             >
-              Login
+              {isLoggedIn ? "Mein Konto" : "Login"}
             </a>
           </nav>
 
@@ -293,10 +323,10 @@ export function Header() {
               ),
             )}
             <a
-              href="https://ephia.de/start"
+              href={isLoggedIn ? "https://ephia.de/mein-konto" : "https://ephia.de/start"}
               className="mt-3 text-center text-base font-semibold text-[#0066FF] border border-[#0066FF] hover:bg-[#0066FF]/10 rounded-[10px] px-5 py-3 transition-colors"
             >
-              Login
+              {isLoggedIn ? "Mein Konto" : "Login"}
             </a>
           </nav>
         </div>

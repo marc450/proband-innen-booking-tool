@@ -23,10 +23,23 @@ interface Props {
   legacyBookings: LegacyBookingRow[];
 }
 
-function sourceLabel(source: string) {
-  if (source.startsWith("lw_export")) return "Online-Kurs";
-  if (source.startsWith("hubspot_deals")) return "Praxis / Kombi";
-  return source;
+// Classify a booking by looking at its product/slug, not just the
+// import source. LW exports lump every enrollment under one source
+// (lw_export_*) but the slugs themselves carry the kind: "praxiskurs"
+// substrings, "hybrid", date-suffixed slugs (live event identifiers)
+// vs the default "online" interpretation. HubSpot product names are
+// in German marketing form; we look for the same indicator words.
+function courseKind(productName: string): string {
+  const s = productName.toLowerCase();
+  if (s.includes("praxiskurs") || s.includes("praxis-kurs")) return "Praxiskurs";
+  if (s.includes("kombikurs") || s.includes("kombi-kurs")) return "Kombikurs";
+  if (s.includes("hybrid")) return "Hybrid";
+  if (s.includes("cap ") || s.includes("schatten")) return "Merch";
+  if (s.includes("online")) return "Online-Kurs";
+  // A six-or-more-digit run usually means a date suffix on a LW
+  // praxiskurs slug like grundkurs-botulinum-praxiskurs-21062025.
+  if (/\d{6,}/.test(s)) return "Praxiskurs";
+  return "Kurs";
 }
 
 function formatDate(iso: string | null) {
@@ -90,7 +103,7 @@ export function MeinKontoView({ firstName, email, legacyBookings }: Props) {
                     {b.product_name}
                   </p>
                   <p className="text-xs text-black/60 mt-1">
-                    {sourceLabel(b.source)}
+                    {courseKind(b.product_name)}
                     {b.course_date && (
                       <> · Kursdatum: {formatDate(b.course_date)}</>
                     )}
