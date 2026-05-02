@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Send, X, Paperclip, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,13 @@ import { TemplatePicker, type PickedTemplate } from "./template-picker";
 // Replaces the old modal dialog: the draft shows up as a synthetic item
 // in the left column and the editor fills the middle pane, so the
 // contact sidebar on the right can follow the recipient in real time.
+
+// Quick-CC pills for the two recipients staff add to CC most often.
+// One click opens the CC field (if collapsed) and appends the address.
+const QUICK_CC = [
+  { name: "Marc", email: "marc@ephia.de" },
+  { name: "Sophia", email: "sophia@ephia.de" },
+] as const;
 
 interface Props {
   to: string;
@@ -54,6 +61,26 @@ export function ComposePane({
 }: Props) {
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
+
+  // Parse the CC string (comma/semicolon separated, may include chips
+  // like "Name <email>") into bare lowercase emails so we can hide a
+  // quick-CC pill once that person is already on the list.
+  const ccEmails = useMemo(() => {
+    return cc
+      .split(/[,;]/)
+      .map((part) => {
+        const m = part.match(/<([^>]+)>/);
+        return (m ? m[1] : part).trim().toLowerCase();
+      })
+      .filter(Boolean);
+  }, [cc]);
+
+  const addToCc = (email: string) => {
+    if (ccEmails.includes(email.toLowerCase())) return;
+    setShowCc(true);
+    const trimmed = cc.trim().replace(/[,;]\s*$/, "");
+    onCcChange(trimmed ? `${trimmed}, ${email}` : email);
+  };
   const [templateNotice, setTemplateNotice] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -156,28 +183,39 @@ export function ComposePane({
               placeholder="Name oder E-Mail..."
               className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8"
             />
-            {(!showCc || !showBcc) && (
-              <div className="flex gap-2 flex-shrink-0">
-                {!showCc && (
-                  <button
-                    type="button"
-                    onClick={() => setShowCc(true)}
-                    className="text-xs text-[#0066FF] hover:underline font-medium"
-                  >
-                    CC
-                  </button>
-                )}
-                {!showBcc && (
-                  <button
-                    type="button"
-                    onClick={() => setShowBcc(true)}
-                    className="text-xs text-[#0066FF] hover:underline font-medium"
-                  >
-                    BCC
-                  </button>
-                )}
-              </div>
-            )}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {QUICK_CC.filter(
+                (p) => !ccEmails.includes(p.email.toLowerCase()),
+              ).map((p) => (
+                <button
+                  key={p.email}
+                  type="button"
+                  onClick={() => addToCc(p.email)}
+                  title={`${p.name} in CC: ${p.email}`}
+                  className="text-xs text-[#0066FF] hover:underline font-medium"
+                >
+                  + {p.name}
+                </button>
+              ))}
+              {!showCc && (
+                <button
+                  type="button"
+                  onClick={() => setShowCc(true)}
+                  className="text-xs text-[#0066FF] hover:underline font-medium"
+                >
+                  CC
+                </button>
+              )}
+              {!showBcc && (
+                <button
+                  type="button"
+                  onClick={() => setShowBcc(true)}
+                  className="text-xs text-[#0066FF] hover:underline font-medium"
+                >
+                  BCC
+                </button>
+              )}
+            </div>
           </div>
 
           {/* CC row */}
