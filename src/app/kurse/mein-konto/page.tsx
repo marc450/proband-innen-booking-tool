@@ -36,9 +36,15 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-// Mirrors the SQL functions in migration 053. Kept in TS so the
+// Mirrors the SQL functions in migration 054. Kept in TS so the
 // resolver doesn't have to round-trip to the DB for slug → key
 // derivation on every booking.
+//
+// Order matters: longer suffixes first so "-onlinekurs" matches before
+// the bare "-online" on slugs that have the longer form. Real LW
+// slugs in the current import use the bare "-online" / "-praxis" /
+// "-kombi" variants (e.g. grundkurs-dermalfiller-online); the longer
+// "-kurs" forms are kept as defensive fallbacks for older imports.
 const LW_TYPE_SUFFIXES = [
   "-praxiskurs",
   "-praxis-kurs",
@@ -47,6 +53,9 @@ const LW_TYPE_SUFFIXES = [
   "-kombikurs",
   "-kombi-kurs",
   "-hybrid",
+  "-online",
+  "-praxis",
+  "-kombi",
 ];
 const LW_LEVEL_PREFIXES = ["grundkurs-", "aufbaukurs-"];
 
@@ -70,8 +79,8 @@ function deriveCourseKey(productName: string): string | null {
 
 function deriveCourseType(productName: string): CourseType {
   const s = productName.toLowerCase();
-  if (s.includes("praxiskurs") || s.includes("praxis-kurs")) return "Praxiskurs";
-  if (s.includes("kombikurs") || s.includes("kombi-kurs")) return "Kombikurs";
+  if (s.includes("praxis")) return "Praxiskurs";
+  if (s.includes("kombi")) return "Kombikurs";
   if (s.includes("hybrid")) return "Hybrid";
   if (s.includes("cap ") || s.includes("schatten")) return "Merch";
   if (s.includes("online")) return "Onlinekurs";
