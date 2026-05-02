@@ -1,6 +1,12 @@
 @AGENTS.md
 @BRAND_MANUAL.md
 
+## Conversation Language (Claude → Marc)
+- **Always reply to Marc in English**, even though the codebase, brand manual, and all user-facing copy are in German.
+- Do NOT drift into German just because the surrounding context (file names, commit messages, prompts, error strings) is German.
+- This applies to chat responses, commit messages explaining what changed for Marc, and any other direct communication. The `git log` history with German commit subjects is fine to keep, but the conversational text around it stays English.
+- User-facing text in the app, emails, and UI strings stays German per the rules below.
+
 ## LearnWorlds Embed (DO NOT EDIT without explicit permission)
 - `src/app/courses/[courseKey]/**` is the LearnWorlds iframe embed page
 - NEVER modify any file under `src/app/courses/[courseKey]/` (including `course-card.tsx`, `course-cards-page.tsx`, `premium-card.tsx`, `termin-update-modal.tsx`, etc.) unless the user explicitly asks you to touch the embed
