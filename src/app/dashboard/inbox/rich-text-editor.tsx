@@ -118,6 +118,36 @@ export function RichTextEditor({
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const aiRef = useRef<HTMLDivElement>(null);
+  const aiButtonRef = useRef<HTMLButtonElement>(null);
+  // Viewport-relative position for the AI popup. We use position: fixed
+  // because the compose pane scrolls inside an overflow-y-auto container
+  // which implicitly clips horizontal overflow too — an absolutely
+  // positioned popup gets cut off as soon as it extends past the
+  // scroller's edges. Fixed positioning escapes the clip; we just need
+  // to recompute on resize / scroll while open.
+  const [aiPopupPos, setAiPopupPos] = useState<{ top: number; right: number } | null>(null);
+
+  const positionAiPopup = () => {
+    const btn = aiButtonRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    setAiPopupPos({
+      top: rect.bottom + 4,
+      right: Math.max(8, window.innerWidth - rect.right),
+    });
+  };
+
+  useEffect(() => {
+    if (!showAi) return;
+    positionAiPopup();
+    const handle = () => positionAiPopup();
+    window.addEventListener("resize", handle);
+    window.addEventListener("scroll", handle, true);
+    return () => {
+      window.removeEventListener("resize", handle);
+      window.removeEventListener("scroll", handle, true);
+    };
+  }, [showAi]);
 
   useEffect(() => {
     if (ref.current && value !== latestHtmlRef.current) {
@@ -403,6 +433,7 @@ export function RichTextEditor({
           <>
             <div ref={aiRef} className="relative">
               <button
+                ref={aiButtonRef}
                 type="button"
                 title={
                   stripVisibleHtml(stripSignature(value))
@@ -422,13 +453,19 @@ export function RichTextEditor({
                 <Sparkles className="h-3.5 w-3.5" />
                 <span className="hidden md:inline">KI</span>
               </button>
-              {showAi && (
-                // right-0 (not left-0): the KI button sits near the right
-                // edge of the toolbar, so anchoring the 340px popup to its
-                // left edge pushes it off-screen in tablet split-view and
-                // any narrow compose pane. Right-anchoring extends the
-                // popup leftward into the always-available compose width.
-                <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-[10px] shadow-lg z-50 p-3 w-[340px]">
+              {showAi && aiPopupPos && (
+                // Fixed positioning so the popup escapes the compose
+                // pane's overflow-y-auto scroll container, which clips
+                // horizontal overflow too. Anchored to the button's
+                // viewport rect.
+                <div
+                  style={{
+                    position: "fixed",
+                    top: aiPopupPos.top,
+                    right: aiPopupPos.right,
+                    width: "min(340px, calc(100vw - 16px))",
+                  }}
+                  className="bg-white border border-gray-200 rounded-[10px] shadow-lg z-50 p-3">
                   <div className="flex items-center gap-1.5 mb-2">
                     <Sparkles className="h-3.5 w-3.5 text-[#0066FF]" />
                     <span className="text-xs font-bold text-gray-700">
