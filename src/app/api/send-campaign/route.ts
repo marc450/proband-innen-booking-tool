@@ -242,6 +242,17 @@ export async function POST(req: NextRequest) {
           subject,
           html,
           ...(sendAtParam ? { send_at: sendAtParam } : {}),
+          // Scheduled sends: tag so the Resend webhook archives the
+          // message into Gmail Sent at actual delivery time. Immediate
+          // sends archive inline below — no tag needed (and no tag
+          // means the webhook ignores them, preventing double-archive).
+          ...(sendAtParam
+            ? {
+                tags: [
+                  { name: "ephia-archive", value: "campaign-scheduled" },
+                ],
+              }
+            : {}),
         };
         if (rawAttachments && rawAttachments.length > 0) {
           payload.attachments = rawAttachments;
