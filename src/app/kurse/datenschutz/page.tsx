@@ -203,7 +203,24 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: "8. Änderungen dieser Datenschutzerklärung",
+    title: "8. Einsatz von KI-gestützten Hilfswerkzeugen",
+    blocks: [
+      {
+        type: "p",
+        text: "Zur effizienten Bearbeitung der E-Mail-Korrespondenz mit Ärzt:innen, die unsere Kurse besuchen, setzen wir das Sprachmodell Claude der Anthropic, PBC (548 Market Street PMB 90375, San Francisco, CA 94104, USA) als Hilfswerkzeug für das Verfassen von E-Mail-Entwürfen ein. Verarbeitet werden dabei Name, Kontaktdaten, Fachrichtung sowie der Inhalt der mit der jeweiligen Ärzt:in geführten Korrespondenz.",
+      },
+      {
+        type: "p",
+        text: "Personenbezogene Daten von Proband:innen werden nicht an Anthropic übermittelt. Die KI-Funktion ist im System für die Korrespondenz mit Proband:innen technisch deaktiviert.",
+      },
+      {
+        type: "p",
+        text: "Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an effizienter Geschäftskorrespondenz). Die Übermittlung in die USA erfolgt auf Grundlage der EU-Standardvertragsklauseln (Art. 46 Abs. 2 lit. c DSGVO), die im Auftragsverarbeitungsvertrag mit Anthropic vereinbart sind.",
+      },
+    ],
+  },
+  {
+    title: "9. Änderungen dieser Datenschutzerklärung",
     blocks: [
       {
         type: "p",
@@ -212,7 +229,7 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: "9. Deine Rechte und Kontaktmöglichkeiten",
+    title: "10. Deine Rechte und Kontaktmöglichkeiten",
     blocks: [
       {
         type: "p",

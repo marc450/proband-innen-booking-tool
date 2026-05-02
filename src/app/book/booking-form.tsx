@@ -401,12 +401,18 @@ export function BookingForm({ slot, guidePrice }: BookingFormProps) {
                   </div>
 
                   <div>
-                    <h4 className="font-semibold">8. Änderungen dieser Datenschutzerklärung</h4>
+                    <h4 className="font-semibold">8. Einsatz von KI-gestützten Hilfswerkzeugen</h4>
+                    <p className="mt-1">Zur Bearbeitung der E-Mail-Korrespondenz mit Ärzt:innen setzen wir das KI-Sprachmodell Claude (Anthropic, PBC, USA) als Hilfswerkzeug ein. Daten von Proband:innen werden nicht an Anthropic übermittelt; die KI-Funktion ist für die Korrespondenz mit Proband:innen technisch deaktiviert.</p>
+                    <p className="mt-1">Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO. Drittlandtransfer abgesichert durch EU-Standardvertragsklauseln im Auftragsverarbeitungsvertrag mit Anthropic.</p>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold">9. Änderungen dieser Datenschutzerklärung</h4>
                     <p className="mt-1">Wir behalten uns das Recht vor, diese Datenschutzerklärung jederzeit für die Zukunft zu ändern. Die aktuellste Version ist stets auf unserer Webseite abrufbar.</p>
                   </div>
 
                   <div>
-                    <h4 className="font-semibold">9. Deine Rechte und Kontaktmöglichkeiten</h4>
+                    <h4 className="font-semibold">10. Deine Rechte und Kontaktmöglichkeiten</h4>
                     <p className="mt-1">In Bezug auf die Verarbeitung Deiner personenbezogenen Daten stehen Dir umfassende Rechte zur Verfügung: Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Widerspruch sowie Datenübertragbarkeit.</p>
                     <p className="mt-1">Um eines Deiner Rechte in Anspruch zu nehmen oder weitere Informationen zu erhalten, kontaktiere uns bitte unter customerlove@ephia.de.</p>
                   </div>

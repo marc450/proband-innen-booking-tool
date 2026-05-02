@@ -398,7 +398,13 @@ export function PrivatBookingForm({ slot }: Props) {
                   </div>
 
                   <div>
-                    <h4 className="font-semibold">7. Deine Rechte</h4>
+                    <h4 className="font-semibold">7. Einsatz von KI-gestützten Hilfswerkzeugen</h4>
+                    <p className="mt-1">Zur Bearbeitung der E-Mail-Korrespondenz mit Ärzt:innen setzen wir das KI-Sprachmodell Claude (Anthropic, PBC, USA) ein. Daten von Proband:innen werden nicht an Anthropic übermittelt; die KI-Funktion ist für die Korrespondenz mit Proband:innen technisch deaktiviert.</p>
+                    <p className="mt-1">Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO. Drittlandtransfer abgesichert durch EU-Standardvertragsklauseln im Auftragsverarbeitungsvertrag mit Anthropic.</p>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold">8. Deine Rechte</h4>
                     <p className="mt-1">Du hast Recht auf Auskunft, Berichtigung, Löschung und Widerspruch. Kontakt: customerlove@ephia.de</p>
                   </div>
                 </div>
