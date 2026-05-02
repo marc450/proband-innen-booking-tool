@@ -64,7 +64,7 @@ export async function updateSession(request: NextRequest) {
         .select("role, is_kursbetreuung")
         .eq("id", user.id)
         .single();
-      const role = profile?.role ?? "admin";
+      const role = profile?.role ?? "nutzer";
       const isKursbetreuung = profile?.is_kursbetreuung === true;
       supabaseResponse.cookies.set("x-user-role", role, {
         path: "/",

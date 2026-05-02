@@ -50,7 +50,7 @@ export default async function SettingsPage() {
     title: profileMap.get(u.id)?.title ?? null,
     first_name: profileMap.get(u.id)?.first_name ?? null,
     last_name: profileMap.get(u.id)?.last_name ?? null,
-    role: (profileMap.get(u.id)?.role ?? "admin") as "admin" | "nutzer",
+    role: (profileMap.get(u.id)?.role ?? "nutzer") as "admin" | "nutzer",
     is_dozent: profileMap.get(u.id)?.is_dozent ?? false,
     is_kursbetreuung: profileMap.get(u.id)?.is_kursbetreuung ?? false,
     created_at: u.created_at,

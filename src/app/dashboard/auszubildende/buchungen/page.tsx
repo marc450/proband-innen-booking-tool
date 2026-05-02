@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function CourseBookingsPage() {
   const supabase = createAdminClient();
   const cookieStore = await cookies();
-  const isAdmin = (cookieStore.get("x-user-role")?.value ?? "admin") === "admin";
+  const isAdmin = cookieStore.get("x-user-role")?.value === "admin";
 
   const { data: bookings } = await supabase
     .from("course_bookings")

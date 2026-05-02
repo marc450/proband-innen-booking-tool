@@ -24,7 +24,7 @@ async function assertAdmin() {
     .eq("id", user.id)
     .single();
 
-  if (!profile || profile.role === "admin") return user;
+  if (profile?.role === "admin") return user;
   return null;
 }
 

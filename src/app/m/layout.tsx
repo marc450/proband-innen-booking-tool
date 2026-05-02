@@ -23,7 +23,7 @@ export default async function MobileLayout({
   }
 
   const cookieStore = await cookies();
-  const role = (cookieStore.get("x-user-role")?.value ?? "admin") as
+  const role = (cookieStore.get("x-user-role")?.value ?? "nutzer") as
     | "admin"
     | "nutzer";
 

@@ -13,7 +13,7 @@ import { cookies } from "next/headers";
 export default async function BehandlungstermineePage() {
   const supabase = await createClient();
   const cookieStore = await cookies();
-  const isAdmin = (cookieStore.get("x-user-role")?.value ?? "admin") === "admin";
+  const isAdmin = cookieStore.get("x-user-role")?.value === "admin";
 
   // Auto-expire past courses: set any course with a past date to offline
   const today = new Date().toISOString().slice(0, 10); // yyyy-MM-dd

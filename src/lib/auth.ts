@@ -7,13 +7,14 @@ export type UserRole = "admin" | "nutzer";
 // components / route handlers can read it; client components must receive
 // it via props.
 //
-// Defaults to "admin" if the cookie is missing so new installs / first
-// login don't accidentally hide features from the initial admin user.
-// Middleware writes a concrete value as soon as the user has a profile.
+// Defaults to "nutzer" (not admin) when the cookie is missing or invalid.
+// This is the safe default: anyone whose profile we can't resolve is
+// treated as a non-admin. Confirmed admin users always get an explicit
+// "admin" cookie set by updateSession() on every authenticated request.
 export async function getUserRole(): Promise<UserRole> {
   const store = await cookies();
   const value = store.get("x-user-role")?.value;
-  return value === "nutzer" ? "nutzer" : "admin";
+  return value === "admin" ? "admin" : "nutzer";
 }
 
 export async function isAdmin(): Promise<boolean> {

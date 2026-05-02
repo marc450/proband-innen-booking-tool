@@ -29,7 +29,7 @@ export default async function DashboardLayout({
 
   // Read role + flags from cookies (set by middleware) — no DB call needed
   const cookieStore = await cookies();
-  const role = (cookieStore.get("x-user-role")?.value ?? "admin") as "admin" | "nutzer";
+  const role = (cookieStore.get("x-user-role")?.value ?? "nutzer") as "admin" | "nutzer";
   const isKursbetreuung = cookieStore.get("x-is-kursbetreuung")?.value === "1";
   const theme = (cookieStore.get("x-theme")?.value ?? "light") as "light" | "dark";
 

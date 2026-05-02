@@ -8,7 +8,7 @@ import { cookies } from "next/headers";
 export default async function BookingsPage() {
   const supabase = await createClient();
   const cookieStore = await cookies();
-  const isAdmin = (cookieStore.get("x-user-role")?.value ?? "admin") === "admin";
+  const isAdmin = cookieStore.get("x-user-role")?.value === "admin";
 
   const [{ data: bookings }, { data: courses }] = await Promise.all([
     supabase

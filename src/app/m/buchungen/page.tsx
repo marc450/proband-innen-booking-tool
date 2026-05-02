@@ -10,7 +10,7 @@ export default async function MobileBookingsPage() {
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
   const cookieStore = await cookies();
-  const isAdmin = (cookieStore.get("x-user-role")?.value ?? "admin") === "admin";
+  const isAdmin = cookieStore.get("x-user-role")?.value === "admin";
 
   const [{ data: bookings }, { data: courseBookings }] = await Promise.all([
     // Proband:innen bookings
