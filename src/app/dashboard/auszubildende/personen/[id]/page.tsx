@@ -22,16 +22,24 @@ export default async function AuszubildendeDetailPage({
 
   if (!azubi) notFound();
 
-  const { data: bookings } = await supabase
-    .from("course_bookings")
-    .select("*, course_sessions(date_iso, label_de, instructor_name), course_templates:template_id(title, course_label_de)")
-    .eq("auszubildende_id", id)
-    .order("created_at", { ascending: false });
+  const [{ data: bookings }, { data: legacyBookings }] = await Promise.all([
+    supabase
+      .from("course_bookings")
+      .select("*, course_sessions(date_iso, label_de, instructor_name), course_templates:template_id(title, course_label_de)")
+      .eq("auszubildende_id", id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("legacy_bookings")
+      .select("id, product_name, amount_eur, course_date, purchased_at, source, created_at")
+      .eq("auszubildende_id", id)
+      .order("purchased_at", { ascending: false, nullsFirst: false }),
+  ]);
 
   return (
     <AuszubildendeDetail
       azubi={azubi}
       bookings={bookings ?? []}
+      legacyBookings={legacyBookings ?? []}
       isAdmin={isAdmin}
     />
   );

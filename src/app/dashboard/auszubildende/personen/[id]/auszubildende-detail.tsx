@@ -38,9 +38,25 @@ interface BookingRow {
   course_templates: { title: string; course_label_de: string | null } | null;
 }
 
+// Imported historical purchases — live in legacy_bookings, distinct
+// from the live course_bookings table. Includes both HubSpot deals
+// (German marketing names, EUR amounts, course dates for Praxis) and
+// LW user-export rows (slug-form course names, no amount, signup as
+// purchased_at). The `source` column tells them apart.
+interface LegacyBookingRow {
+  id: string;
+  product_name: string;
+  amount_eur: number | null;
+  course_date: string | null;
+  purchased_at: string | null;
+  source: string;
+  created_at: string;
+}
+
 interface Props {
   azubi: Auszubildende;
   bookings: BookingRow[];
+  legacyBookings: LegacyBookingRow[];
   isAdmin?: boolean;
 }
 
@@ -60,7 +76,7 @@ const statusVariants: Record<CourseBookingStatus, "default" | "secondary" | "des
 
 const fieldClass = "bg-transparent border-0 p-0 text-sm text-foreground focus:outline-none focus:ring-0 placeholder:text-muted-foreground/50 w-full";
 
-export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = true }: Props) {
+export function AuszubildendeDetail({ azubi: initialAzubi, bookings, legacyBookings, isAdmin = true }: Props) {
   const supabase = createClient();
   const [azubi, setAzubi] = useState(initialAzubi);
   const [editingNotes, setEditingNotes] = useState(false);
@@ -247,6 +263,23 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
   const formatAmount = (cents: number | null) => {
     if (!cents) return "–";
     return `€${(cents / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })}`;
+  };
+
+  // legacy_bookings.amount_eur is stored as numeric(10,2) in EUR (not
+  // cents — the HubSpot export was already in EUR), so it bypasses the
+  // /100 step that the live-bookings formatter does.
+  const formatLegacyEur = (eur: number | null) => {
+    if (eur === null || eur === undefined) return "–";
+    return `€${Number(eur).toLocaleString("de-DE", { minimumFractionDigits: 2 })}`;
+  };
+
+  // Map the import source into a human-readable badge label. Imports
+  // tagged with a date suffix (lw_export_2026_05_02, hubspot_deals_…)
+  // collapse to "LearnWorlds" / "HubSpot" so the badge stays short.
+  const sourceLabel = (source: string) => {
+    if (source.startsWith("lw_export")) return "LearnWorlds";
+    if (source.startsWith("hubspot_deals")) return "HubSpot";
+    return source;
   };
 
   const formatDate = (iso: string) => {
@@ -653,6 +686,51 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, isAdmin = t
               )}
             </CardContent>
           </Card>
+
+          {/* Legacy bookings — historical data imported from HubSpot
+              and LearnWorlds. Distinct from `bookings` above (live
+              course_bookings table) because legacy purchases include
+              products that aren't in our current offering anymore. */}
+          {legacyBookings.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Historische Buchungen
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y">
+                  {legacyBookings.map((lb) => (
+                    <div key={lb.id} className="px-4 py-3 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium truncate" title={lb.product_name}>
+                          {lb.product_name}
+                        </span>
+                        <Badge variant="secondary" className="shrink-0 text-[10px]">
+                          {sourceLabel(lb.source)}
+                        </Badge>
+                      </div>
+                      {lb.course_date && (
+                        <div className="text-xs text-muted-foreground">
+                          Kursdatum: {formatDate(lb.course_date)}
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>
+                          {lb.purchased_at
+                            ? `Gekauft am ${formatDate(lb.purchased_at)}`
+                            : "–"}
+                        </span>
+                        {isAdmin && lb.amount_eur !== null && (
+                          <span>{formatLegacyEur(lb.amount_eur)}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
