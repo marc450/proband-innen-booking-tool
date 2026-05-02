@@ -96,6 +96,16 @@ const COURSE_TYPE_COLOR: Record<string, string> = {
   Premium: "bg-fuchsia-100 text-fuchsia-700",
 };
 
+// Outline-only variant used in the Historie cell for FUTURE bookings,
+// so the Dozent:in can tell at a glance which courses already count
+// as experience and which are merely scheduled.
+const COURSE_TYPE_COLOR_FUTURE: Record<string, string> = {
+  Onlinekurs: "border border-sky-300 text-sky-700",
+  Praxiskurs: "border border-violet-300 text-violet-700",
+  Kombikurs: "border border-amber-300 text-amber-700",
+  Premium: "border border-fuchsia-300 text-fuchsia-700",
+};
+
 function formatLongDate(iso: string) {
   return new Date(iso).toLocaleDateString("de-DE", {
     weekday: "long",
@@ -364,47 +374,7 @@ function ParticipantRow({ p }: { p: Participant }) {
         )}
       </TableCell>
       <TableCell className="text-sm">
-        {p.priorBookings.length > 0 ? (
-          <ul className="flex flex-col gap-1.5">
-            {p.priorBookings.map((pb, idx) => {
-              const dateLabel = pb.sessionDateIso
-                ? new Date(pb.sessionDateIso).toLocaleDateString("de-DE", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "2-digit",
-                  })
-                : null;
-              return (
-                <li
-                  key={`${pb.courseType}-${idx}`}
-                  className="flex items-center gap-1.5 min-w-0"
-                >
-                  <span
-                    className={`inline-flex items-center text-[10px] font-medium rounded-full px-1.5 py-0.5 flex-shrink-0 ${
-                      COURSE_TYPE_COLOR[pb.courseType] ||
-                      "bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    {COURSE_TYPE_LABEL[pb.courseType] || pb.courseType}
-                  </span>
-                  <span
-                    className="text-xs text-foreground truncate"
-                    title={pb.courseTitle ?? undefined}
-                  >
-                    {pb.courseTitle || "Unbekannter Kurs"}
-                  </span>
-                  {dateLabel && (
-                    <span className="text-[10px] text-muted-foreground flex-shrink-0">
-                      {dateLabel}
-                    </span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <span className="text-xs text-muted-foreground">Neu</span>
-        )}
+        <PriorBookingsList priorBookings={p.priorBookings} />
       </TableCell>
       <TableCell>
         {p.auszubildendeId == null ? (
@@ -445,6 +415,84 @@ function ParticipantRow({ p }: { p: Participant }) {
         )}
       </TableCell>
     </TableRow>
+  );
+}
+
+// Renders the Historie cell content. Splits the participant's prior
+// bookings into "already attended" and "still scheduled" so the
+// Dozent:in can read off real experience at a glance:
+//   - Past bookings: filled colored type pill, full-strength text.
+//   - Future bookings: outlined type pill + muted title + "geplant"
+//     suffix; no Praxis date counts as evergreen Onlinekurs and is
+//     treated as past (the participant already has access).
+function PriorBookingsList({ priorBookings }: { priorBookings: PriorBooking[] }) {
+  if (priorBookings.length === 0) {
+    return <span className="text-xs text-muted-foreground">Neu</span>;
+  }
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const isPastBooking = (pb: PriorBooking) =>
+    !pb.sessionDateIso || pb.sessionDateIso < todayIso;
+
+  const sorted = [...priorBookings].sort((a, b) => {
+    const aPast = isPastBooking(a);
+    const bPast = isPastBooking(b);
+    if (aPast !== bPast) return aPast ? -1 : 1; // past first
+    if (aPast) {
+      // Newest past at the top — most recent experience first.
+      return (b.sessionDateIso || "").localeCompare(a.sessionDateIso || "");
+    }
+    // Soonest future at the top.
+    return (a.sessionDateIso || "").localeCompare(b.sessionDateIso || "");
+  });
+
+  return (
+    <ul className="flex flex-col gap-1.5">
+      {sorted.map((pb, idx) => {
+        const past = isPastBooking(pb);
+        const dateLabel = pb.sessionDateIso
+          ? new Date(pb.sessionDateIso).toLocaleDateString("de-DE", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "2-digit",
+            })
+          : null;
+        const pillClass = past
+          ? COURSE_TYPE_COLOR[pb.courseType] || "bg-gray-100 text-gray-700"
+          : COURSE_TYPE_COLOR_FUTURE[pb.courseType] ||
+            "border border-gray-300 text-gray-600";
+        return (
+          <li
+            key={`${pb.courseType}-${idx}`}
+            className="flex items-center gap-1.5 min-w-0"
+          >
+            <span
+              className={`inline-flex items-center text-[10px] font-medium rounded-full px-1.5 py-0.5 flex-shrink-0 ${pillClass}`}
+            >
+              {COURSE_TYPE_LABEL[pb.courseType] || pb.courseType}
+            </span>
+            <span
+              className={`text-xs truncate ${
+                past ? "text-foreground" : "text-muted-foreground"
+              }`}
+              title={pb.courseTitle ?? undefined}
+            >
+              {pb.courseTitle || "Unbekannter Kurs"}
+            </span>
+            {dateLabel && (
+              <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                {dateLabel}
+              </span>
+            )}
+            {!past && (
+              <span className="text-[10px] text-muted-foreground italic flex-shrink-0">
+                geplant
+              </span>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
