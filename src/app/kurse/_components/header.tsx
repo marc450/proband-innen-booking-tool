@@ -107,7 +107,7 @@ export function Header() {
         <div className="max-w-7xl mx-auto px-5 md:px-8">
           <div className="flex items-center h-14 md:h-16">
             <Link
-              href="https://kurse.ephia.de/"
+              href="https://ephia.de/"
               className="flex items-center shrink-0"
               aria-label="EPHIA"
             >

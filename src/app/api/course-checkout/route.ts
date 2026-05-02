@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
     let grossPrice: number;
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen.ephia.de";
     const successUrl = `${baseUrl}/courses/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = "https://www.ephia.de";
+    const cancelUrl = "https://ephia.de";
 
     const isDentist = courseKey === "grundkurs_botulinum_zahnmedizin";
 

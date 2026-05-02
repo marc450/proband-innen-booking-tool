@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     const grossPrice = template.price_gross_online || 0;
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen.ephia.de";
     const successUrl = `${baseUrl}/courses/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = "https://www.ephia.de";
+    const cancelUrl = "https://ephia.de";
 
     const unitAmount = Math.round(grossPrice * 100);
     if (unitAmount <= 0) {

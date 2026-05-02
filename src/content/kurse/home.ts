@@ -163,19 +163,19 @@ export const homeContent: HomeContent = {
       {
         icon: "GraduationCap",
         title: "Fachlich & didaktisch hochwertige Ausbildung",
-        href: "https://www.ephia.de/unsere-didaktik",
+        href: "/didaktik",
         ctaLabel: "Mehr erfahren",
       },
       {
         icon: "Heart",
         title: "Patient:innenzentrierte, inklusive Medizin",
-        href: "https://www.ephia.de/unsere-vision",
+        href: "/vision",
         ctaLabel: "Mehr erfahren",
       },
       {
         icon: "Users",
         title: "Förderung unserer Ärzt:innen-Community",
-        href: "https://www.ephia.de/community",
+        href: "/community",
         ctaLabel: "Mehr erfahren",
       },
     ],

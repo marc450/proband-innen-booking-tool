@@ -57,7 +57,7 @@ function praxiskursInfoBox({
       <div style="margin-top:10px; padding-top:8px; border-top:1px solid #F0D0B8;">
         <p style="margin:0;">
           <span style="font-weight:bold;">Dein:e Dozent:in:</span>
-          <a href="https://www.ephia.de/dozent-innen" style="color:#0066FF; text-decoration:none;">${instructor}</a>
+          <a href="https://ephia.de/team" style="color:#0066FF; text-decoration:none;">${instructor}</a>
         </p>
       </div>
     </div>`;

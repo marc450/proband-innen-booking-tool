@@ -250,7 +250,7 @@ export function GroupInquiryDialog({
               <span className="text-sm text-black/75 leading-relaxed">
                 Ich habe die{" "}
                 <a
-                  href="https://www.ephia.de/privacy"
+                  href="/datenschutz"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[#0066FF] font-semibold underline underline-offset-2 hover:text-[#0055DD]"
