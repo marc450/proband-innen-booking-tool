@@ -36,15 +36,20 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-// Mirrors the SQL functions in migration 054. Kept in TS so the
+// Mirrors the SQL functions in migration 055. Kept in TS so the
 // resolver doesn't have to round-trip to the DB for slug → key
 // derivation on every booking.
 //
-// Order matters: longer suffixes first so "-onlinekurs" matches before
-// the bare "-online" on slugs that have the longer form. Real LW
-// slugs in the current import use the bare "-online" / "-praxis" /
-// "-kombi" variants (e.g. grundkurs-dermalfiller-online); the longer
-// "-kurs" forms are kept as defensive fallbacks for older imports.
+// LW slugs and course_templates.course_key share the same level prefix
+// (grundkurs/aufbaukurs/masterclass) but differ in two ways:
+//   - slugs use hyphens, course_keys use underscores
+//   - slugs carry a type suffix (-online / -praxis / -kombi / -hybrid,
+//     plus the older -onlinekurs etc. variants) and may carry a date
+//     suffix on praxis sessions
+//
+// Order matters in the suffix list: longer suffixes first so
+// "-onlinekurs" matches before the bare "-online" on slugs that have
+// the longer form.
 const LW_TYPE_SUFFIXES = [
   "-praxiskurs",
   "-praxis-kurs",
@@ -57,7 +62,6 @@ const LW_TYPE_SUFFIXES = [
   "-praxis",
   "-kombi",
 ];
-const LW_LEVEL_PREFIXES = ["grundkurs-", "aufbaukurs-"];
 
 function deriveCourseKey(productName: string): string | null {
   let s = productName.toLowerCase().trim();
@@ -68,12 +72,10 @@ function deriveCourseKey(productName: string): string | null {
       break;
     }
   }
-  for (const pre of LW_LEVEL_PREFIXES) {
-    if (s.startsWith(pre)) {
-      s = s.slice(pre.length);
-      break;
-    }
-  }
+  // course_templates.course_key uses underscores throughout. We DON'T
+  // strip the level prefix — templates carry it (e.g. grundkurs_botulinum)
+  // because the same root word can have a separate template per level.
+  s = s.replace(/-/g, "_");
   return s || null;
 }
 
