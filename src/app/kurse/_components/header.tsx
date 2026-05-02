@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -71,10 +71,18 @@ const NAV_LINKS: NavLink[] = [
   { label: "FAQ & Kontakt", href: "/kurse/faq-kontakt" },
 ];
 
+// Path that hosts the customer dashboard. The middleware rewrites
+// kurse.ephia.de/mein-konto and ephia.de/mein-konto to /kurse/mein-konto
+// internally, so we match both the bare path (what the URL bar shows)
+// and the rewritten one (what usePathname returns under some
+// preview hosts).
+const MEIN_KONTO_PATHS = new Set(["/mein-konto", "/kurse/mein-konto"]);
+
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const pathname = usePathname();
+  const router = useRouter();
 
   // Detect the booking-domain funnel client-side: SSR renders the full
   // header by default (so kurse.ephia.de and any preview host always
@@ -123,6 +131,28 @@ export function Header() {
       subscription.subscription.unsubscribe();
     };
   }, []);
+
+  const onMeinKonto = !!pathname && MEIN_KONTO_PATHS.has(pathname);
+
+  // Three-state CTA: logged-out → "Login" (→ /start), logged-in →
+  // "Mein Konto" (→ /mein-konto), logged-in & already on /mein-konto
+  // → "Abmelden" (signs out and bounces to /start). The button stays
+  // in the same visual slot in the header — the label and behavior
+  // are what change.
+  const ctaLabel = !isLoggedIn
+    ? "Login"
+    : onMeinKonto
+    ? "Abmelden"
+    : "Mein Konto";
+  const ctaHref = !isLoggedIn ? "/start" : onMeinKonto ? null : "/mein-konto";
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setIsLoggedIn(false);
+    router.replace("/start");
+    router.refresh();
+  };
 
   const toggleMobileSection = (label: string) => {
     setMobileExpanded((current) => (current === label ? null : label));
@@ -241,12 +271,22 @@ export function Header() {
                 </a>
               ),
             )}
-            <a
-              href={isLoggedIn ? "/mein-konto" : "/start"}
-              className="text-sm font-semibold text-[#0066FF] border border-[#0066FF] hover:bg-[#0066FF]/10 rounded-[10px] px-5 py-2.5 transition-colors"
-            >
-              {isLoggedIn ? "Mein Konto" : "Login"}
-            </a>
+            {ctaHref ? (
+              <a
+                href={ctaHref}
+                className="text-sm font-semibold text-[#0066FF] border border-[#0066FF] hover:bg-[#0066FF]/10 rounded-[10px] px-5 py-2.5 transition-colors"
+              >
+                {ctaLabel}
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="text-sm font-semibold text-[#0066FF] border border-[#0066FF] hover:bg-[#0066FF]/10 rounded-[10px] px-5 py-2.5 transition-colors"
+              >
+                {ctaLabel}
+              </button>
+            )}
           </nav>
 
           {/* Mobile toggle */}
@@ -322,12 +362,25 @@ export function Header() {
                 </a>
               ),
             )}
-            <a
-              href={isLoggedIn ? "/mein-konto" : "/start"}
-              className="mt-3 text-center text-base font-semibold text-[#0066FF] border border-[#0066FF] hover:bg-[#0066FF]/10 rounded-[10px] px-5 py-3 transition-colors"
-            >
-              {isLoggedIn ? "Mein Konto" : "Login"}
-            </a>
+            {ctaHref ? (
+              <a
+                href={ctaHref}
+                className="mt-3 text-center text-base font-semibold text-[#0066FF] border border-[#0066FF] hover:bg-[#0066FF]/10 rounded-[10px] px-5 py-3 transition-colors"
+              >
+                {ctaLabel}
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileOpen(false);
+                  void handleSignOut();
+                }}
+                className="mt-3 text-center text-base font-semibold text-[#0066FF] border border-[#0066FF] hover:bg-[#0066FF]/10 rounded-[10px] px-5 py-3 transition-colors"
+              >
+                {ctaLabel}
+              </button>
+            )}
           </nav>
         </div>
       )}

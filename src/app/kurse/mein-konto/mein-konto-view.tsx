@@ -1,48 +1,33 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import Image from "next/image";
 
-// Client view for /mein-konto. Lightweight v1 — list of past bookings
-// + sign-out. The richer features (LW progress, certificates,
-// click-to-launch SSO, basket UI) ship in follow-up commits once we've
-// verified the auth flow end-to-end.
+// Customer-facing dashboard view. The page (server component) hands us
+// a list of `EnrichedBooking` rows with image_url + display_title
+// already resolved against course_templates, so this view is purely
+// presentational. Sign-out lives in the header CTA on /mein-konto;
+// we don't render an in-page Abmelden button here.
 
-interface LegacyBookingRow {
+export interface EnrichedBooking {
   id: string;
-  product_name: string;
-  course_date: string | null;
-  purchased_at: string | null;
-  source: string;
+  productName: string;
+  displayTitle: string;
+  courseType: "Onlinekurs" | "Praxiskurs" | "Kombikurs" | "Hybrid" | "Merch" | "Kurs";
+  courseDate: string | null;
+  purchasedAt: string | null;
+  source: string | null;
+  imageUrl: string | null;
+  lwHref: string | null;
 }
 
 interface Props {
   firstName: string | null;
-  email: string;
-  legacyBookings: LegacyBookingRow[];
+  bookings: EnrichedBooking[];
 }
 
-// Classify a booking by looking at its product/slug, not just the
-// import source. LW exports lump every enrollment under one source
-// (lw_export_*) but the slugs themselves carry the kind: "praxiskurs"
-// substrings, "hybrid", date-suffixed slugs (live event identifiers)
-// vs the default "online" interpretation. HubSpot product names are
-// in German marketing form; we look for the same indicator words.
-function courseKind(productName: string): string {
-  const s = productName.toLowerCase();
-  if (s.includes("praxiskurs") || s.includes("praxis-kurs")) return "Praxiskurs";
-  if (s.includes("kombikurs") || s.includes("kombi-kurs")) return "Kombikurs";
-  if (s.includes("hybrid")) return "Hybrid";
-  if (s.includes("cap ") || s.includes("schatten")) return "Merch";
-  if (s.includes("online")) return "Online-Kurs";
-  // A six-or-more-digit run usually means a date suffix on a LW
-  // praxiskurs slug like grundkurs-botulinum-praxiskurs-21062025.
-  if (/\d{6,}/.test(s)) return "Praxiskurs";
-  return "Kurs";
-}
+const CORAL = "#BF785E";
 
-function formatDate(iso: string | null) {
+function formatDate(iso: string | null): string | null {
   if (!iso) return null;
   return new Date(iso).toLocaleDateString("de-DE", {
     day: "2-digit",
@@ -51,76 +36,106 @@ function formatDate(iso: string | null) {
   });
 }
 
-export function MeinKontoView({ firstName, email, legacyBookings }: Props) {
-  const router = useRouter();
-  const supabase = createClient();
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.replace("/");
-    router.refresh();
-  };
-
+export function MeinKontoView({ firstName, bookings }: Props) {
   return (
     <div className="min-h-[60vh] px-5 md:px-8 pt-12 pb-24">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex items-start justify-between gap-4 mb-2">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-black">
-              Hallo {firstName ?? "Du"}
-            </h1>
-            <p className="text-sm text-black/70 mt-1">
-              Eingeloggt als <span className="font-medium text-black">{email}</span>
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="text-sm text-black/70 hover:text-black flex items-center gap-1.5 mt-1.5"
-            title="Abmelden"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden md:inline">Abmelden</span>
-          </button>
-        </div>
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-2xl md:text-3xl font-bold text-black mb-2">
+          Hi {firstName ?? "Du"}
+        </h1>
 
-        <h2 className="text-lg font-bold text-black mt-10 mb-4">
+        <h2 className="text-lg font-bold text-black mt-10 mb-6">
           Deine Kurse
         </h2>
-        {legacyBookings.length === 0 ? (
+
+        {bookings.length === 0 ? (
           <div className="bg-white rounded-[10px] shadow-sm p-6 text-center text-sm text-black/70">
             Wir haben aktuell keine Kursbuchungen unter dieser E-Mail.
           </div>
         ) : (
-          <ul className="space-y-3">
-            {legacyBookings.map((b) => (
-              <li
-                key={b.id}
-                className="bg-white rounded-[10px] shadow-sm p-5 flex items-start justify-between gap-4"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-black truncate">
-                    {b.product_name}
-                  </p>
-                  <p className="text-xs text-black/60 mt-1">
-                    {courseKind(b.product_name)}
-                    {b.course_date && (
-                      <> · Kursdatum: {formatDate(b.course_date)}</>
-                    )}
-                    {!b.course_date && b.purchased_at && (
-                      <> · Gekauft: {formatDate(b.purchased_at)}</>
-                    )}
-                  </p>
-                </div>
-              </li>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
+            {bookings.map((b) => (
+              <BookingCard key={b.id} booking={b} />
             ))}
-          </ul>
+          </div>
         )}
 
-        <p className="text-xs text-black/50 mt-10 text-center">
+        <p className="text-xs text-black/50 mt-12 text-center">
           Die direkte Kurs-Anzeige und Lernfortschritt aus LearnWorlds folgen in den nächsten Tagen.
         </p>
       </div>
     </div>
+  );
+}
+
+function BookingCard({ booking }: { booking: EnrichedBooking }) {
+  const dateLabel = booking.courseDate
+    ? `Kursdatum: ${formatDate(booking.courseDate)}`
+    : booking.purchasedAt
+    ? `Gekauft: ${formatDate(booking.purchasedAt)}`
+    : null;
+
+  return (
+    <article className="bg-white rounded-[10px] overflow-hidden flex flex-col group shadow-sm">
+      {booking.imageUrl ? (
+        <div className="relative aspect-[4/3] bg-black/5 overflow-hidden">
+          <Image
+            src={booking.imageUrl}
+            alt={booking.displayTitle}
+            fill
+            quality={85}
+            sizes="(min-width: 768px) 50vw, 100vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+          />
+        </div>
+      ) : (
+        <div
+          className="aspect-[4/3] flex items-center justify-center"
+          style={{ backgroundColor: CORAL }}
+          aria-hidden="true"
+        >
+          <span className="text-white/90 text-xs font-semibold tracking-[0.2em]">
+            {booking.courseType.toUpperCase()}
+          </span>
+        </div>
+      )}
+
+      <div className="flex flex-col flex-1 p-6 md:p-8">
+        <h3 className="text-xl md:text-2xl font-bold tracking-wide leading-tight text-black text-balance">
+          {booking.displayTitle}
+        </h3>
+
+        <div className="flex flex-wrap items-center gap-1.5 mt-4">
+          <span className="text-[11px] font-semibold tracking-wide rounded-full px-2.5 py-1 bg-[#0066FF] text-white">
+            {booking.courseType}
+          </span>
+          {dateLabel && (
+            <span className="text-[11px] font-semibold tracking-wide rounded-full px-2.5 py-1 bg-black/5 text-black/70">
+              {dateLabel}
+            </span>
+          )}
+        </div>
+
+        {/* Spacer so the CTA sticks to the bottom of the card. */}
+        <div className="flex-1" />
+
+        <div className="mt-6">
+          {booking.lwHref ? (
+            <a
+              href={booking.lwHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-center w-full text-sm md:text-base font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-5 py-3 transition-colors"
+            >
+              Zum Kurs →
+            </a>
+          ) : (
+            <span className="block text-center w-full text-sm font-medium text-black/50 bg-black/[0.04] rounded-[10px] px-5 py-3">
+              Aus historischer Buchung
+            </span>
+          )}
+        </div>
+      </div>
+    </article>
   );
 }
