@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { RichTextEditor, type AIDraftContext } from "./rich-text-editor";
 import { ContactAutocomplete } from "./contact-autocomplete";
 import { useFileDrop } from "./use-file-drop";
-import { TemplatePicker, type PickedTemplate } from "./template-picker";
+import { type PickedTemplate } from "./template-picker";
 
 // Center-column compose view shown when the user clicks "Neue E-Mail".
 // Replaces the old modal dialog: the draft shows up as a synthetic item
@@ -288,6 +288,7 @@ export function ComposePane({
             placeholder="Deine Nachricht..."
             className="min-h-[360px]"
             aiContext={aiContext}
+            templateContext={{ recipientEmail: to, onPick: handlePickTemplate }}
           />
         </div>
       </div>
@@ -341,7 +342,6 @@ export function ComposePane({
           >
             <Paperclip className="h-4 w-4" />
           </button>
-          <TemplatePicker recipientEmail={to} onPick={handlePickTemplate} />
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onCancel}>

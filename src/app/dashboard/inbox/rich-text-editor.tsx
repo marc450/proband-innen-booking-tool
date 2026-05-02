@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Bold, Italic, Underline, Link as LinkIcon, List, ListOrdered, Indent, Outdent, RemoveFormatting, ChevronDown, Smile, Sparkles, Loader2 } from "lucide-react";
+import { TemplatePicker, type PickedTemplate } from "./template-picker";
 
 // Curated emoji palette for the toolbar picker. The set is small on
 // purpose — the goal is a one-click "drop a smiley into a customer
@@ -45,6 +46,16 @@ export interface AIDraftContext {
   mode?: "email" | "template";
 }
 
+// Context the toolbar Vorlagen-Picker needs: the recipient address
+// (for {{vorname}} resolution) and a callback that receives the
+// fully resolved template. Provided by the parent so the editor
+// stays unaware of how the result is wired back into the compose
+// state (subject, body, signature handling, etc.).
+export interface TemplatePickerContext {
+  recipientEmail: string;
+  onPick: (picked: PickedTemplate) => void;
+}
+
 interface Props {
   value: string;
   onChange: (html: string) => void;
@@ -52,6 +63,7 @@ interface Props {
   autoFocus?: boolean;
   className?: string;
   aiContext?: AIDraftContext;
+  templateContext?: TemplatePickerContext;
 }
 
 function exec(command: string, value?: string) {
@@ -102,6 +114,7 @@ export function RichTextEditor({
   autoFocus,
   className = "",
   aiContext,
+  templateContext,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const latestHtmlRef = useRef<string | null>(null);
@@ -433,6 +446,17 @@ export function RichTextEditor({
             </div>
           )}
         </div>
+        {templateContext && (
+          <>
+            <TemplatePicker
+              recipientEmail={templateContext.recipientEmail}
+              onPick={templateContext.onPick}
+              direction="down"
+              className="flex"
+            />
+            <div className="w-px h-4 bg-gray-200 mx-1" />
+          </>
+        )}
         {aiContext && (
           <>
             <div ref={aiRef} className="relative">
