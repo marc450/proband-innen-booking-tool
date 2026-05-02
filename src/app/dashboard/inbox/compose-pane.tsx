@@ -182,6 +182,12 @@ export function ComposePane({
               onChange={onToChange}
               placeholder="Name oder E-Mail..."
               className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8"
+              // Focus the recipient field on fresh compose so the user
+              // can start typing the name immediately. Gated on `to`
+              // being empty so resuming a saved draft (which already
+              // has a recipient) doesn't yank focus away from wherever
+              // the user wants to continue.
+              autoFocus={!to}
             />
             <div className="flex items-center gap-2 flex-shrink-0">
               {QUICK_CC.filter(
