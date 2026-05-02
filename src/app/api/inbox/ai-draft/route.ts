@@ -88,6 +88,54 @@ interface ContactInfo {
   patientStatus: string | null;
 }
 
+// Cheap pre-check that resolves an email to "auszubildende"
+// (Ärzt:in / business contact, AI allowed) vs "patient" (Probandin,
+// AI BLOCKED for data-protection reasons) vs unknown. Uses only
+// email_hash for the patient branch — never decrypts patient data,
+// so the LLM call site can refuse before any plaintext PII exists
+// in this request's lifetime.
+async function classifyRecipient(
+  email: string,
+): Promise<"auszubildende" | "patient" | "unknown"> {
+  const admin = createAdminClient();
+  const normalised = email.trim().toLowerCase();
+
+  // Auszubildende takes precedence: if the same address appears in
+  // both tables (rare but possible during data import), treat as
+  // Ärzt:in so AI assistance is allowed.
+  const { data: emailRow } = await admin
+    .from("auszubildende_emails")
+    .select("auszubildende_id")
+    .eq("email", normalised)
+    .maybeSingle();
+  if (emailRow) return "auszubildende";
+  const { data: legacyAuszubildende } = await admin
+    .from("auszubildende")
+    .select("id")
+    .ilike("email", email)
+    .limit(1)
+    .maybeSingle();
+  if (legacyAuszubildende) return "auszubildende";
+
+  // Patient lookup via the plaintext email_hash table — no decrypt.
+  const hash = hashEmail(email);
+  const { data: hashRow } = await admin
+    .from("patient_email_hashes")
+    .select("patient_id")
+    .eq("email_hash", hash)
+    .maybeSingle();
+  if (hashRow) return "patient";
+  const { data: legacyPatient } = await admin
+    .from("patients")
+    .select("id")
+    .eq("email_hash", hash)
+    .limit(1)
+    .maybeSingle();
+  if (legacyPatient) return "patient";
+
+  return "unknown";
+}
+
 async function lookupContact(email: string): Promise<ContactInfo | null> {
   const admin = createAdminClient();
   const normalised = email.trim().toLowerCase();
@@ -293,6 +341,25 @@ export async function POST(req: NextRequest) {
       { error: "instruction required" },
       { status: 400 },
     );
+  }
+
+  // Hard data-protection block: AI assistance is only for Ärzt:in
+  // correspondence. If the recipient resolves to a known Probandin we
+  // refuse the request before any patient data is decrypted, no Gmail
+  // thread is fetched, and nothing is sent to Anthropic. Template
+  // mode is exempt because templates have no real recipient (the
+  // model only sees {{vorname}}-style tokens).
+  if (mode !== "template" && to) {
+    const recipientType = await classifyRecipient(to);
+    if (recipientType === "patient") {
+      return NextResponse.json(
+        {
+          error:
+            "Aus Datenschutzgründen ist die KI-Funktion für E-Mails an Proband:innen deaktiviert. Bitte verfasse die Antwort manuell oder nutze eine Vorlage.",
+        },
+        { status: 403 },
+      );
+    }
   }
 
   // Template mode skips Gmail/contact lookups: a Vorlage is generic, has

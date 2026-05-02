@@ -439,6 +439,10 @@ export function BookingForm({ slot, guidePrice }: BookingFormProps) {
                 </Label>
               </div>
 
+              <div className="rounded-[10px] bg-muted/50 px-3 py-2.5 text-xs text-muted-foreground leading-relaxed">
+                Deine Daten werden ausschließlich für die Organisation Deines Termins verarbeitet. KI-gestützte Tools werden für die Verarbeitung Deiner Daten nicht eingesetzt.
+              </div>
+
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => setCurrentStep("agb")}>
                   Zurück
