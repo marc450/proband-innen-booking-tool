@@ -42,6 +42,20 @@ type Step =
 
 const MIN_PASSWORD_LENGTH = 8;
 
+// Where to send the user after a successful sign-in. Honors a `?next=`
+// query param so the LW SSO bridge (/api/auth/lw-sso) can bounce a
+// logged-out user through here and back to itself. Same-origin paths
+// only — anything else falls back to /mein-konto so we can't be
+// abused as an open redirect.
+function getPostLoginDestination(): string {
+  const fallback = "/mein-konto";
+  if (typeof window === "undefined") return fallback;
+  const next = new URLSearchParams(window.location.search).get("next");
+  if (!next) return fallback;
+  if (!next.startsWith("/") || next.startsWith("//")) return fallback;
+  return next;
+}
+
 export function StartForm() {
   const router = useRouter();
   const supabase = createClient();
@@ -53,7 +67,7 @@ export function StartForm() {
     let cancelled = false;
     (async () => {
       const { data } = await supabase.auth.getSession();
-      if (!cancelled && data.session) router.replace("/mein-konto");
+      if (!cancelled && data.session) router.replace(getPostLoginDestination());
     })();
     return () => {
       cancelled = true;
@@ -203,7 +217,7 @@ function PasswordStep({
       setLoading(false);
       return;
     }
-    router.push("/mein-konto");
+    router.push(getPostLoginDestination());
   };
 
   // Sends the Supabase recovery email and transitions to the
@@ -346,7 +360,7 @@ function SetPasswordStep({
         setError(signErr.message);
         return;
       }
-      router.push("/mein-konto");
+      router.push(getPostLoginDestination());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Netzwerkfehler.");
     } finally {

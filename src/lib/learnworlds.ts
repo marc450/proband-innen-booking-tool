@@ -307,3 +307,208 @@ export function buildProgressMap(
   }
   return map;
 }
+
+// ── OAuth2 client_credentials access token (for SSO) ─────────────────
+//
+// The static LEARNWORLDS_ACCESS_TOKEN above is fine for cron-style v2
+// calls (we tolerate occasional 401s and re-paste a fresh token), but
+// SSO is user-triggered: a stale token would break login mid-flow.
+// LW's OAuth2 client_credentials grant returns a token with
+// expires_in≈8000s. We cache in module memory and refresh ~5min before
+// expiry. A single in-flight refresh is shared via a promise so that
+// concurrent SSO requests don't all hit the token endpoint at once.
+//
+// Falls back to LEARNWORLDS_ACCESS_TOKEN if LEARNWORLDS_CLIENT_SECRET
+// isn't set, so the existing v2 path keeps working unchanged.
+
+interface CachedToken {
+  token: string;
+  expiresAt: number;
+}
+
+let cachedAccessToken: CachedToken | null = null;
+let inFlightRefresh: Promise<string> | null = null;
+
+const TOKEN_REFRESH_MARGIN_MS = 5 * 60_000;
+
+async function fetchAccessTokenViaClientCredentials(): Promise<CachedToken> {
+  const apiUrl = (RAW_API_URL ?? "").replace(/\/$/, "");
+  const clientId = process.env.LEARNWORLDS_CLIENT_ID;
+  const clientSecret = process.env.LEARNWORLDS_CLIENT_SECRET;
+  if (!apiUrl || !clientId || !clientSecret) {
+    throw new Error(
+      "LW OAuth2 client_credentials missing: need LEARNWORLDS_API_URL, " +
+        "LEARNWORLDS_CLIENT_ID, LEARNWORLDS_CLIENT_SECRET.",
+    );
+  }
+  // LW's quirk: body is form-urlencoded with a single field named
+  // `data` whose value is a JSON string. Same shape as the SSO POST.
+  const body = new URLSearchParams();
+  body.set(
+    "data",
+    JSON.stringify({
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: "client_credentials",
+    }),
+  );
+  const res = await fetch(`${apiUrl}/oauth2/access_token`, {
+    method: "POST",
+    headers: {
+      "Lw-Client": clientId,
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body,
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => "");
+    throw new Error(
+      `LW oauth2 ${res.status} ${res.statusText}: ${errBody.slice(0, 300)}`,
+    );
+  }
+  const json = (await res.json()) as {
+    success?: boolean;
+    tokenData?: { access_token?: string; expires_in?: number };
+    errors?: unknown;
+  };
+  const token = json.tokenData?.access_token;
+  const expiresIn = json.tokenData?.expires_in;
+  if (!token || typeof expiresIn !== "number") {
+    throw new Error(
+      `LW oauth2 response missing tokenData: ${JSON.stringify(json).slice(0, 300)}`,
+    );
+  }
+  return {
+    token,
+    expiresAt: Date.now() + expiresIn * 1000,
+  };
+}
+
+export async function getAccessToken(): Promise<string> {
+  // No client_secret → fall back to the long-lived static token used
+  // by the rest of this module. Lets the v2 wrapper keep working while
+  // we roll out OAuth2 just for SSO.
+  if (!process.env.LEARNWORLDS_CLIENT_SECRET) {
+    const staticToken = process.env.LEARNWORLDS_ACCESS_TOKEN;
+    if (!staticToken) {
+      throw new Error(
+        "LW access token missing: set either LEARNWORLDS_CLIENT_SECRET " +
+          "(for OAuth2 grant) or LEARNWORLDS_ACCESS_TOKEN (static fallback).",
+      );
+    }
+    return staticToken;
+  }
+  if (
+    cachedAccessToken &&
+    cachedAccessToken.expiresAt - Date.now() > TOKEN_REFRESH_MARGIN_MS
+  ) {
+    return cachedAccessToken.token;
+  }
+  if (inFlightRefresh) return inFlightRefresh;
+  inFlightRefresh = fetchAccessTokenViaClientCredentials()
+    .then((fresh) => {
+      cachedAccessToken = fresh;
+      return fresh.token;
+    })
+    .finally(() => {
+      inFlightRefresh = null;
+    });
+  return inFlightRefresh;
+}
+
+// ── SSO login ────────────────────────────────────────────────────────
+//
+// POST /admin/api/sso with either an email (creates user if new) or an
+// existing user_id (no creation, no profile overwrite). Returns a
+// short-lived signed URL that logs the user into LW and lands them at
+// `redirectUrl`. We hand that URL back to the caller, which does an
+// HTTP redirect.
+//
+// The endpoint is form-urlencoded with a single `data` field whose
+// value is a JSON string — same quirk as oauth2/access_token above.
+
+export interface SsoLoginInput {
+  // Where the user should land in LW after the SSO handshake. Must be
+  // a full URL.
+  redirectUrl: string;
+  // Provide ONE of the following two identifiers. user_id is preferred
+  // (no email-mismatch risk, no profile overwrite). email is used for
+  // first-time link-up; LW will create a new LW user if no match.
+  user_id?: string;
+  email?: string;
+  // Required when LW has to create a new user (i.e. when only email is
+  // passed and no LW user exists yet). When user_id is provided we
+  // omit username so we don't overwrite the user's LW-side profile.
+  username?: string;
+}
+
+export interface SsoLoginResult {
+  url: string;
+  user_id: string | null;
+}
+
+export async function ssoLogin(input: SsoLoginInput): Promise<SsoLoginResult> {
+  if (!input.redirectUrl) {
+    throw new Error("ssoLogin: redirectUrl required");
+  }
+  if (!input.user_id && !input.email) {
+    throw new Error("ssoLogin: either user_id or email required");
+  }
+  const apiUrl = (RAW_API_URL ?? "").replace(/\/$/, "");
+  const clientId = process.env.LEARNWORLDS_CLIENT_ID;
+  if (!apiUrl || !clientId) {
+    throw new Error("ssoLogin: LEARNWORLDS_API_URL and LEARNWORLDS_CLIENT_ID required");
+  }
+  const token = await getAccessToken();
+
+  // Build the JSON payload per the LW Custom SSO doc. user_id wins
+  // over email if both are passed — LW's doc explicitly says email is
+  // ignored when user_id is provided.
+  const payload: Record<string, string> = {
+    redirectUrl: input.redirectUrl,
+  };
+  if (input.user_id) {
+    payload.user_id = input.user_id;
+  } else if (input.email) {
+    payload.email = input.email;
+    if (input.username) payload.username = input.username;
+  }
+
+  const body = new URLSearchParams();
+  body.set("data", JSON.stringify(payload));
+
+  const res = await fetch(`${apiUrl}/sso`, {
+    method: "POST",
+    headers: {
+      "Lw-Client": clientId,
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body,
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => "");
+    throw new Error(
+      `LW sso ${res.status} ${res.statusText}: ${errBody.slice(0, 300)}`,
+    );
+  }
+  const json = (await res.json()) as {
+    success?: boolean;
+    url?: string;
+    user_id?: string;
+    errors?: unknown;
+  };
+  if (!json.success || !json.url) {
+    throw new Error(
+      `LW sso unsuccessful response: ${JSON.stringify(json).slice(0, 300)}`,
+    );
+  }
+  return {
+    url: json.url,
+    user_id: json.user_id ?? null,
+  };
+}
