@@ -35,6 +35,7 @@ import { SortableHead } from "@/components/table/sortable-head";
 import { useTableSort } from "@/hooks/use-table-sort";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
+import { parseDateOnly } from "@/lib/date";
 import { ArrowLeftRight, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -645,7 +646,7 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
                                   const c = selectableCourses.find((c) => c.id === slotChangeTargetCourseId);
                                   if (!c) return slotChangeTargetCourseId;
                                   return c.course_date
-                                    ? format(new Date(c.course_date), "dd.MM.yyyy", { locale: de })
+                                    ? format(parseDateOnly(c.course_date), "dd.MM.yyyy", { locale: de })
                                     : c.title;
                                 })()
                               : "Kursdatum wählen..."}
@@ -655,7 +656,7 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
                           {selectableCourses.map((c) => (
                             <SelectItem key={c.id} value={c.id}>
                               {c.course_date
-                                ? format(new Date(c.course_date), "dd.MM.yyyy", { locale: de })
+                                ? format(parseDateOnly(c.course_date), "dd.MM.yyyy", { locale: de })
                                 : c.title}
                             </SelectItem>
                           ))}

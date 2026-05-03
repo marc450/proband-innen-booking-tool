@@ -34,6 +34,7 @@ import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
 import { Check, Copy, Plus, Ban, Trash2, X, RotateCcw } from "lucide-react";
 import type { CourseTemplate, CourseSession, Auszubildende } from "@/lib/types";
 import { formatPersonName } from "@/lib/utils";
+import { parseDateOnly } from "@/lib/date";
 
 type AuszubildendePick = Pick<Auszubildende, "id" | "first_name" | "last_name" | "email" | "phone" | "title">;
 
@@ -580,7 +581,7 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
                     {invite.course_sessions?.label_de
                       ? invite.course_sessions.label_de
                       : invite.course_sessions?.date_iso
-                        ? format(new Date(invite.course_sessions.date_iso), "dd.MM.yyyy", { locale: de })
+                        ? format(parseDateOnly(invite.course_sessions.date_iso), "dd.MM.yyyy", { locale: de })
                         : "–"}
                   </TableCell>
                   <TableCell>{statusBadge(invite)}</TableCell>

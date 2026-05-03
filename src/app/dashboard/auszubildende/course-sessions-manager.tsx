@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Copy, Trash2, ArrowUpDown } from "lucide-react";
 import type { CourseTemplate, CourseSession, DozentUser } from "@/lib/types";
+import { parseDateOnly } from "@/lib/date";
 
 interface Props {
   initialTemplates: CourseTemplate[];
@@ -39,7 +40,7 @@ type SortDir = "asc" | "desc";
 const MONTHS_DE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
 function dateToLabelDe(dateIso: string): string {
-  const d = new Date(dateIso + "T12:00:00");
+  const d = parseDateOnly(dateIso);
   const day = String(d.getDate()).padStart(2, "0");
   const month = MONTHS_DE[d.getMonth()];
   const year = d.getFullYear();

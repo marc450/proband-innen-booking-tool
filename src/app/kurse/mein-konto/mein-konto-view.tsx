@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Clock, User, MapPin, Info, Users } from "lucide-react";
+import { parseDateOnly } from "@/lib/date";
 
 // Customer-facing dashboard view.
 //
@@ -79,14 +80,6 @@ const MONTHS_DE = [
 ];
 
 const WEEKDAYS_DE = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-
-// Date-only strings ("YYYY-MM-DD") would otherwise be parsed as UTC
-// midnight, which shifts to the previous day for any viewer west of
-// Greenwich. Anchor at local noon so the day/weekday/month read true
-// in every timezone.
-function parseDateOnly(iso: string): Date {
-  return new Date(iso + "T12:00:00");
-}
 
 function formatLongDate(iso: string | null): string | null {
   if (!iso) return null;
