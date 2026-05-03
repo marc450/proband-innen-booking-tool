@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildProgressMap, listUserCourses } from "@/lib/learnworlds";
+import { buildProgressMap, listUserProgress } from "@/lib/learnworlds";
 import {
   MeinKontoView,
   type EnrichedBooking,
@@ -471,8 +471,8 @@ export default async function MeinKontoPage() {
     // render without a progress bar.
     if (contact.lw_user_id && online.length > 0) {
       try {
-        const courses = await listUserCourses(contact.lw_user_id as string);
-        const progress = buildProgressMap(courses);
+        const rows = await listUserProgress(contact.lw_user_id as string);
+        const progress = buildProgressMap(rows);
         online = online.map((b) => {
           const slug = b.lwHref?.split("/course/")[1] ?? null;
           const pct = slug ? progress.get(slug) : undefined;

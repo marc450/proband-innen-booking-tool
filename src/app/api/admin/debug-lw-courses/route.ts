@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { listUserCourses, lwFetchRaw } from "@/lib/learnworlds";
+import { listUserProgress, lwFetchRaw } from "@/lib/learnworlds";
 
 // Admin-only diagnostic that dumps the raw LearnWorlds response for a
 // single contact's enrollments. Used when /mein-konto progress bars
@@ -98,38 +98,26 @@ export async function GET(req: NextRequest) {
   //   - GET /v2/users/{id}/progress              (aggregate, may 404)
   // Each probe is wrapped so a single 404 doesn't fail the whole
   // diagnostic.
-  let courses: unknown = null;
-  let coursesError: string | null = null;
+  // Both probes are read-only and survive 404s. The progress endpoint
+  // is what /mein-konto consumes; the courses endpoint is included
+  // for parity in case anyone wants to inspect enrollments.
+  const courses = await probeRaw(
+    `/v2/users/${encodeURIComponent(contact.lw_user_id)}/courses`,
+  );
+
+  let progress: unknown = null;
+  let progressError: string | null = null;
   try {
-    courses = await listUserCourses(contact.lw_user_id);
+    progress = await listUserProgress(contact.lw_user_id);
   } catch (err) {
-    coursesError = err instanceof Error ? err.message : String(err);
+    progressError = err instanceof Error ? err.message : String(err);
   }
-
-  // Pick the first course to probe per-course detail.
-  const firstCourseId =
-    Array.isArray(courses) && courses.length > 0
-      ? // LW returns enrollment objects with a nested `course` object.
-        ((courses[0] as { course?: { id?: string } })?.course?.id ?? null)
-      : null;
-
-  const courseDetail = await probeRaw(
-    firstCourseId
-      ? `/v2/users/${encodeURIComponent(contact.lw_user_id)}/courses/${encodeURIComponent(firstCourseId)}`
-      : null,
-  );
-
-  const aggregateProgress = await probeRaw(
-    `/v2/users/${encodeURIComponent(contact.lw_user_id)}/progress`,
-  );
 
   return NextResponse.json({
     contact,
     courses,
-    coursesError,
-    probedCourseId: firstCourseId,
-    courseDetail,
-    aggregateProgress,
+    progress,
+    progressError,
   });
 }
 

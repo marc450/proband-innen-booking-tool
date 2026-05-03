@@ -248,42 +248,52 @@ export async function findUserByEmail(email: string): Promise<LwUser | null> {
 
 // ── User courses + progress ──────────────────────────────────────────
 
-export interface LwUserCourse {
-  // The LW course identifier — for slug-based courses this matches
-  // the URL slug (e.g. "grundkurs-botulinum-online"). For older
-  // numeric-id courses it's the integer id as a string.
-  id: string;
-  title?: string;
-  // Progress percentage 0..100. LW sometimes returns this as a number,
-  // sometimes as a string; we coerce in getProgressMap.
-  progress_rate?: number | string;
-  // ISO timestamp of the last unit interaction. Useful for "Zuletzt:
-  // gestern" labels in v3.
-  last_accessed?: string;
+// LW returns enrolled courses at /v2/users/{id}/courses with course
+// metadata (title, image, description) but NO progress fields. We
+// don't currently need that endpoint — our DB already carries every
+// course's display data via course_templates — so we omit the helper.
+// If a future feature wants the LW-side metadata it can pull it back
+// in.
+
+// LW progress response shape, observed empirically against marc's
+// account on 2026-05-03. Only the fields we actually consume are
+// typed. progress_per_section_unit is the verbose unit-by-unit tree
+// we ignore for the progress bar.
+export interface LwUserProgress {
+  course_id: string;
   status?: string;
-  time_spent?: number | string;
+  progress_rate?: number | string;
+  average_score_rate?: number | string;
+  time_on_course?: number | string;
+  total_units?: number;
+  completed_units?: number;
+  completed_at?: number | null;
 }
 
-// Fetch every course the user is enrolled in, with progress fields.
-// One API call per /mein-konto load. Returns [] when the user has no
-// LW courses (or no LW account).
-export async function listUserCourses(lwUserId: string): Promise<LwUserCourse[]> {
+// Fetch progress for every course the user has touched. Returns []
+// when the user has no LW account or has never opened a course.
+// One API call per /mein-konto load.
+export async function listUserProgress(
+  lwUserId: string,
+): Promise<LwUserProgress[]> {
   if (!lwUserId) return [];
-  const result = await lwFetch<{ data?: LwUserCourse[] }>(
-    `/v2/users/${encodeURIComponent(lwUserId)}/courses`,
+  const result = await lwFetch<{ data?: LwUserProgress[] }>(
+    `/v2/users/${encodeURIComponent(lwUserId)}/progress`,
     { allow404: true },
   );
   return result?.data ?? [];
 }
 
-// Build a quick lookup of courseId → progress percent from a user
-// courses response. Centralises the type coercion (LW occasionally
+// Build a quick lookup of course_id → progress percent from a user
+// progress response. Centralises the type coercion (LW occasionally
 // serialises numbers as strings).
-export function buildProgressMap(courses: LwUserCourse[]): Map<string, number> {
+export function buildProgressMap(
+  rows: LwUserProgress[],
+): Map<string, number> {
   const map = new Map<string, number>();
-  for (const c of courses) {
-    if (!c.id) continue;
-    const raw = c.progress_rate;
+  for (const r of rows) {
+    if (!r.course_id) continue;
+    const raw = r.progress_rate;
     const pct =
       typeof raw === "number"
         ? raw
@@ -293,7 +303,7 @@ export function buildProgressMap(courses: LwUserCourse[]): Map<string, number> {
     if (!Number.isFinite(pct)) continue;
     // Clamp to [0, 100] — LW occasionally returns 100.0001 from
     // floating-point aggregation.
-    map.set(c.id, Math.max(0, Math.min(100, pct)));
+    map.set(r.course_id, Math.max(0, Math.min(100, pct)));
   }
   return map;
 }
