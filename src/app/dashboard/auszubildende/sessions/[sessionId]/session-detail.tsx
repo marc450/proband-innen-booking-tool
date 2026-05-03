@@ -344,14 +344,29 @@ function ParticipantRow({ p }: { p: Participant }) {
     <span className="font-medium">{name}</span>
   );
 
-  const courseTypeBadge = p.courseType ? (
-    <span
-      className={`text-xs font-medium rounded-full px-2 py-0.5 ${
-        COURSE_TYPE_COLOR[p.courseType] || "bg-gray-100 text-gray-700"
-      }`}
-    >
-      {COURSE_TYPE_LABEL[p.courseType] || p.courseType}
-    </span>
+  // Bundle types (Kombi, Premium) dissolve into their atomic parts so
+  // the column always reads as Online and/or Praxis. Mirrors the
+  // expansion in the page-level fetcher and the Historie cell.
+  const courseTypePills =
+    p.courseType === "Kombikurs" || p.courseType === "Premium"
+      ? ["Onlinekurs", "Praxiskurs"]
+      : p.courseType
+        ? [p.courseType]
+        : [];
+
+  const courseTypeBadge = courseTypePills.length > 0 ? (
+    <div className="flex flex-wrap gap-1">
+      {courseTypePills.map((type) => (
+        <span
+          key={type}
+          className={`text-xs font-medium rounded-full px-2 py-0.5 ${
+            COURSE_TYPE_COLOR[type] || "bg-gray-100 text-gray-700"
+          }`}
+        >
+          {COURSE_TYPE_LABEL[type] || type}
+        </span>
+      ))}
+    </div>
   ) : (
     <span className="text-xs text-muted-foreground">—</span>
   );
