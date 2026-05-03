@@ -79,9 +79,17 @@ const MONTHS_DE = [
 
 const WEEKDAYS_DE = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 
+// Date-only strings ("YYYY-MM-DD") would otherwise be parsed as UTC
+// midnight, which shifts to the previous day for any viewer west of
+// Greenwich. Anchor at local noon so the day/weekday/month read true
+// in every timezone.
+function parseDateOnly(iso: string): Date {
+  return new Date(iso + "T12:00:00");
+}
+
 function formatLongDate(iso: string | null): string | null {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString("de-DE", {
+  return parseDateOnly(iso).toLocaleDateString("de-DE", {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -193,7 +201,7 @@ function UpcomingCard({
   booking: EnrichedBooking;
   onProbandClick: () => void;
 }) {
-  const date = booking.courseDate ? new Date(booking.courseDate) : null;
+  const date = booking.courseDate ? parseDateOnly(booking.courseDate) : null;
   const dayNum = date?.getDate();
   const monthLabel = date ? MONTHS_DE[date.getMonth()] : null;
   const weekdayLabel = date ? WEEKDAYS_DE[date.getDay()] : null;
