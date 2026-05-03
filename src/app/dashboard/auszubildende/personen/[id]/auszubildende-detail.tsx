@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Pencil, FileText, AlertTriangle, Ban, CheckCircle2, Mail, GitMerge, Copy, Check } from "lucide-react";
+import { ArrowLeft, Pencil, FileText, AlertTriangle, Ban, CheckCircle2, Mail, GitMerge, Copy, Check, KeyRound, Send } from "lucide-react";
 import { buildProfileCompletionUrl } from "@/lib/profile-link";
 import { EmailManagerModal } from "@/components/email-manager-modal";
 import { MergeContactModal } from "@/components/merge-contact-modal";
@@ -558,6 +558,12 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, legacyBooki
             </CardContent>
           </Card>
 
+          <KontoCard
+            auszubildendeId={azubi.id}
+            userId={azubi.user_id}
+            email={azubi.email}
+          />
+
           <div className="text-xs text-muted-foreground px-1">
             Erstellt am {formatDateTime(azubi.created_at)}
           </div>
@@ -769,6 +775,276 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, legacyBooki
           router.refresh();
         }}
       />
+    </div>
+  );
+}
+
+/* ─────────────────────────── Konto card ─────────────────────────── */
+
+// Login + password management for an auszubildende. Renders to the
+// left column under Adresse. Two actions:
+//   - Passwort-Reset senden  → admin triggers a Supabase recovery
+//     email, customer fixes it themselves through /reset-password.
+//     The recommended path; same email the customer would get if they
+//     used the "Passwort vergessen?" link on /start.
+//   - Passwort manuell setzen → admin types the password directly.
+//     Escape hatch when the email flow won't work (delivery issues,
+//     phone support, etc.). No email is sent; we don't want to
+//     surprise a customer with "your password is now Hunter2".
+//
+// Both routes log to admin_actions (table created in migration 056).
+function KontoCard({
+  auszubildendeId,
+  userId,
+  email,
+}: {
+  auszubildendeId: string;
+  userId: string | null;
+  email: string;
+}) {
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMsg, setResetMsg] = useState<string | null>(null);
+  const [resetErr, setResetErr] = useState<string | null>(null);
+  const [setOpen, setSetOpen] = useState(false);
+  const hasLogin = Boolean(userId);
+
+  const handleSendReset = async () => {
+    setResetLoading(true);
+    setResetMsg(null);
+    setResetErr(null);
+    try {
+      const res = await fetch(
+        `/api/admin/auszubildende/${auszubildendeId}/password-reset`,
+        { method: "POST" },
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setResetErr(data.error ?? "Reset konnte nicht gesendet werden.");
+      } else {
+        setResetMsg(`Reset-E-Mail an ${data.email ?? email} verschickt.`);
+      }
+    } catch (e) {
+      setResetErr(e instanceof Error ? e.message : "Netzwerkfehler.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          Konto
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="text-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Login-Status</span>
+          {hasLogin ? (
+            <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+              Aktiv
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="bg-muted text-muted-foreground">
+              Nicht aktiviert
+            </Badge>
+          )}
+        </div>
+
+        {!hasLogin && (
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Diese Person hat noch kein Login-Konto. Sobald sie sich über{" "}
+            <span className="font-medium">/start</span> einmalig anmeldet,
+            kannst Du hier Passwörter zurücksetzen.
+          </p>
+        )}
+
+        {hasLogin && (
+          <>
+            <div className="flex flex-col gap-2 pt-1">
+              <Button
+                size="sm"
+                variant="default"
+                onClick={handleSendReset}
+                disabled={resetLoading}
+                className="justify-start"
+              >
+                <Send className="h-3.5 w-3.5 mr-2" />
+                {resetLoading ? "Wird gesendet…" : "Passwort-Reset senden"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setSetOpen(true)}
+                className="justify-start"
+              >
+                <KeyRound className="h-3.5 w-3.5 mr-2" />
+                Passwort manuell setzen
+              </Button>
+            </div>
+            {resetMsg && <p className="text-xs text-emerald-700">{resetMsg}</p>}
+            {resetErr && <p className="text-xs text-destructive">{resetErr}</p>}
+          </>
+        )}
+      </CardContent>
+
+      <SetPasswordDialog
+        open={setOpen}
+        onClose={() => setSetOpen(false)}
+        auszubildendeId={auszubildendeId}
+        email={email}
+      />
+    </Card>
+  );
+}
+
+function SetPasswordDialog({
+  open,
+  onClose,
+  auszubildendeId,
+  email,
+}: {
+  open: boolean;
+  onClose: () => void;
+  auszubildendeId: string;
+  email: string;
+}) {
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  // Reset transient state every time the dialog opens. We never
+  // persist passwords across opens, so leftover input from a previous
+  // session would only be a footgun.
+  useEffect(() => {
+    if (open) {
+      setPassword("");
+      setConfirm("");
+      setError(null);
+      setSuccess(false);
+    }
+  }, [open]);
+
+  if (!open) return null;
+
+  const matches = password === confirm;
+  const longEnough = password.length >= 8;
+  const canSubmit = matches && longEnough && !loading;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/admin/auszubildende/${auszubildendeId}/set-password`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password }),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Konnte nicht gesetzt werden.");
+      } else {
+        setSuccess(true);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Netzwerkfehler.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8 bg-black/40"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Passwort manuell setzen"
+    >
+      <div
+        className="bg-white rounded-lg shadow-xl w-full max-w-md p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-semibold mb-1">Passwort manuell setzen</h3>
+        <p className="text-xs text-muted-foreground mb-4">
+          Für Login-E-Mail{" "}
+          <span className="font-medium text-foreground">{email}</span>.
+          Es wird keine E-Mail an die Person verschickt. Bitte teile das
+          Passwort selbst mit (z.B. telefonisch).
+        </p>
+
+        {success ? (
+          <div className="space-y-4">
+            <p className="text-sm text-emerald-700 bg-emerald-50 rounded-md px-3 py-2">
+              Passwort wurde gesetzt.
+            </p>
+            <div className="flex justify-end">
+              <Button size="sm" variant="default" onClick={onClose}>
+                Schließen
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Neues Passwort
+              </label>
+              <input
+                type="password"
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                autoFocus
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Mindestens 8 Zeichen.
+              </p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Passwort wiederholen
+              </label>
+              <input
+                type="password"
+                autoComplete="new-password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                required
+                minLength={8}
+                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              {confirm.length > 0 && !matches && (
+                <p className="text-[11px] text-destructive mt-1">
+                  Passwörter stimmen nicht überein.
+                </p>
+              )}
+            </div>
+            {error && (
+              <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
+                {error}
+              </p>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button size="sm" variant="outline" type="button" onClick={onClose}>
+                Abbrechen
+              </Button>
+              <Button size="sm" type="submit" disabled={!canSubmit}>
+                {loading ? "Wird gesetzt…" : "Passwort setzen"}
+              </Button>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   );
 }
