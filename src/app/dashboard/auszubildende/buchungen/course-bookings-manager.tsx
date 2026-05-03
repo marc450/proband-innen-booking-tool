@@ -21,7 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ConfirmDialog } from "@/components/confirm-dialog";
+import { ConfirmDialog, AlertDialog } from "@/components/confirm-dialog";
 import { TableHeaderBar } from "@/components/table/table-header-bar";
 import { SortableHead } from "@/components/table/sortable-head";
 import { useTableSort } from "@/hooks/use-table-sort";
@@ -173,6 +173,10 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
   const [cancelBooking, setCancelBooking] = useState<BookingRow | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState("");
+  // Surfaced when the cancellation succeeded but the confirmation email
+  // could not be sent (Resend reject, missing recipient, etc.). Lets
+  // staff intervene manually instead of finding out from the customer.
+  const [emailWarning, setEmailWarning] = useState<string | null>(null);
 
   // Profile link copied feedback
   const [copiedProfileLink, setCopiedProfileLink] = useState<string | null>(null);
@@ -312,7 +316,20 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
       setBookings((prev) =>
         prev.map((b) => (b.id === cancelBooking.id ? { ...b, status: "cancelled" as CourseBookingStatus } : b))
       );
+      const recipientEmail = cancelBooking.email || "Kund:in";
       setCancelBooking(null);
+
+      // Surface email-send failures so staff can react instead of
+      // assuming silence means success.
+      if (data?.email && data.email.sent === false) {
+        const reason: string = data.email.reason || "unknown";
+        const detail: string | undefined = data.email.detail;
+        const message =
+          reason === "no-recipient"
+            ? "Keine E-Mail-Adresse hinterlegt, daher konnte keine Stornierungsmail versendet werden."
+            : `Resend hat die Stornierungsmail an ${recipientEmail} abgelehnt${detail ? `: ${detail}` : "."}. Bitte schicke der Person manuell Bescheid.`;
+        setEmailWarning(message);
+      }
     } catch {
       setCancelError("Unerwarteter Fehler. Bitte versuche es erneut.");
     } finally {
@@ -921,6 +938,13 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!emailWarning}
+        title="Stornierung gespeichert, E-Mail nicht versendet"
+        description={emailWarning || ""}
+        onClose={() => setEmailWarning(null)}
+      />
     </div>
   );
 }
