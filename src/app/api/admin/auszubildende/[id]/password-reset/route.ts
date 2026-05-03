@@ -81,18 +81,14 @@ export async function POST(
   }
   const loginEmail = authUserRes.user.email;
 
-  // The redirectTo URL must be allowlisted in Supabase Auth → URL
-  // Configuration. We've already added kurse.ephia.de, ephia.de and
-  // localhost for the customer-initiated flow.
-  //
-  // Pre-cutover (until ephia.de starts serving our Next.js app),
-  // ephia.de still points at LearnWorlds and 404s on /reset-password.
-  // We use kurse.ephia.de which has been live the whole time and
-  // hosts the actual reset-password page.
-  //
-  // Post-cutover this can flip to https://ephia.de/reset-password —
-  // the middleware will rewrite both hosts to /kurse/reset-password
-  // and serve the same page.
+  // POST_CUTOVER_FLIP — see project_lw_migration_checklist.md.
+  // Pre-cutover, ephia.de still points at LearnWorlds and 404s on
+  // /reset-password, so we route the recovery link through
+  // kurse.ephia.de which has hosted the page the whole time. Both
+  // hosts are in the Supabase Auth redirect allowlist. After ephia.de
+  // serves the Next.js app, change this back to
+  // "https://ephia.de/reset-password" — the middleware rewrites both
+  // hosts to /kurse/reset-password and serves the same page.
   const redirectTo = "https://kurse.ephia.de/reset-password";
 
   const { error: resetErr } = await admin.auth.resetPasswordForEmail(loginEmail, {
