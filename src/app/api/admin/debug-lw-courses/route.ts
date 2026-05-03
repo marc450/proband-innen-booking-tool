@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { listUserCourses } from "@/lib/learnworlds";
+import { listUserCourses, lwFetchRaw } from "@/lib/learnworlds";
 
 // Admin-only diagnostic that dumps the raw LearnWorlds response for a
 // single contact's enrollments. Used when /mein-konto progress bars
@@ -91,13 +91,57 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  // Pull the enrollment list. We then probe two additional shapes so
+  // we can see where progress data actually lives:
+  //   - GET /v2/users/{id}/courses/{course_id}  (detail of a single
+  //     enrollment — most LMSes attach progress here)
+  //   - GET /v2/users/{id}/progress              (aggregate, may 404)
+  // Each probe is wrapped so a single 404 doesn't fail the whole
+  // diagnostic.
+  let courses: unknown = null;
+  let coursesError: string | null = null;
   try {
-    const courses = await listUserCourses(contact.lw_user_id);
-    return NextResponse.json({ contact, courses });
+    courses = await listUserCourses(contact.lw_user_id);
   } catch (err) {
-    return NextResponse.json({
-      contact,
-      error: err instanceof Error ? err.message : String(err),
-    });
+    coursesError = err instanceof Error ? err.message : String(err);
+  }
+
+  // Pick the first course to probe per-course detail.
+  const firstCourseId =
+    Array.isArray(courses) && courses.length > 0
+      ? // LW returns enrollment objects with a nested `course` object.
+        ((courses[0] as { course?: { id?: string } })?.course?.id ?? null)
+      : null;
+
+  const courseDetail = await probeRaw(
+    firstCourseId
+      ? `/v2/users/${encodeURIComponent(contact.lw_user_id)}/courses/${encodeURIComponent(firstCourseId)}`
+      : null,
+  );
+
+  const aggregateProgress = await probeRaw(
+    `/v2/users/${encodeURIComponent(contact.lw_user_id)}/progress`,
+  );
+
+  return NextResponse.json({
+    contact,
+    courses,
+    coursesError,
+    probedCourseId: firstCourseId,
+    courseDetail,
+    aggregateProgress,
+  });
+}
+
+// Tiny inline fetcher used only for probing — bypasses the typed
+// listUserCourses helper so we can see whatever LW actually returns,
+// 404 included. Still goes through lwFetch so the destructive-call
+// guards are in force (they only fire on DELETE; this is GET-only).
+async function probeRaw(path: string | null): Promise<unknown> {
+  if (!path) return { skipped: true, reason: "no path" };
+  try {
+    return await lwFetchRaw(path);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : String(err) };
   }
 }

@@ -216,6 +216,15 @@ async function lwFetch<T>(path: string, init: LwFetchOptions = {}): Promise<T | 
   return (await res.json()) as T;
 }
 
+// Raw GET-only probe for the admin debug endpoint. Returns whatever
+// LW returns (parsed JSON), no type coercion, no schema assumptions.
+// Restricted to GET so the destructive-call guards never trigger from
+// debug code paths. Don't use this in production — it's for the
+// /api/admin/debug-lw-courses diagnostic only.
+export async function lwFetchRaw(path: string): Promise<unknown> {
+  return lwFetch<unknown>(path);
+}
+
 // ── User lookup ──────────────────────────────────────────────────────
 
 export interface LwUser {
