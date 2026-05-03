@@ -156,11 +156,6 @@ export function MeinKontoView({ firstName, upcoming, online, done }: Props) {
           </Section>
         )}
 
-        {!empty && (
-          <p className="text-xs text-black/50 mt-12 text-center">
-            Lernfortschritt und Zertifikate aus LearnWorlds folgen in den nächsten Tagen.
-          </p>
-        )}
       </div>
 
       <ProbandBuddyDialog open={probandOpen} onClose={() => setProbandOpen(false)} />
