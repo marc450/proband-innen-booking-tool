@@ -56,6 +56,23 @@ function getPostLoginDestination(): string {
   return next;
 }
 
+// Navigate post-login. For internal page routes we use the SPA router;
+// for API routes (e.g. /api/auth/lw-sso, the LW bounce) we force a
+// real navigation since the App Router can't render API responses
+// client-side.
+function navigatePostLogin(
+  router: ReturnType<typeof useRouter>,
+  mode: "push" | "replace",
+): void {
+  const dest = getPostLoginDestination();
+  if (dest.startsWith("/api/")) {
+    window.location.href = dest;
+    return;
+  }
+  if (mode === "replace") router.replace(dest);
+  else router.push(dest);
+}
+
 export function StartForm() {
   const router = useRouter();
   const supabase = createClient();
@@ -67,7 +84,7 @@ export function StartForm() {
     let cancelled = false;
     (async () => {
       const { data } = await supabase.auth.getSession();
-      if (!cancelled && data.session) router.replace(getPostLoginDestination());
+      if (!cancelled && data.session) navigatePostLogin(router, "replace");
     })();
     return () => {
       cancelled = true;
@@ -217,7 +234,7 @@ function PasswordStep({
       setLoading(false);
       return;
     }
-    router.push(getPostLoginDestination());
+    navigatePostLogin(router, "push");
   };
 
   // Sends the Supabase recovery email and transitions to the
@@ -360,7 +377,7 @@ function SetPasswordStep({
         setError(signErr.message);
         return;
       }
-      router.push(getPostLoginDestination());
+      navigatePostLogin(router, "push");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Netzwerkfehler.");
     } finally {
