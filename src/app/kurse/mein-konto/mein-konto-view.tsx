@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { Clock, User, MapPin, Info, Users } from "lucide-react";
 
 // Customer-facing dashboard view.
 //
@@ -237,38 +238,60 @@ function UpcomingCard({
           {booking.displayTitle}
         </h3>
 
+        {/* Practical details — icon column drops the "Start:/Dozent:in:/Ort:"
+            labels, the icon IS the label. Same vertical rhythm so the
+            three rows scan as a single block. */}
         {(booking.startTime || booking.location || booking.instructor) && (
-          <ul className="text-sm text-black/70 leading-relaxed space-y-0.5">
+          <ul className="text-sm text-black/75 space-y-2">
             {booking.startTime && (
-              <li>
-                <span className="font-medium text-black">Start:</span> {booking.startTime.slice(0, 5)} Uhr
+              <li className="flex items-center gap-2.5">
+                <Clock className="w-4 h-4 text-black/40 flex-shrink-0" aria-hidden="true" />
+                <span>
+                  <span className="sr-only">Start: </span>
+                  {booking.startTime.slice(0, 5)} Uhr
+                </span>
               </li>
             )}
             {booking.instructor && (
-              <li>
-                <span className="font-medium text-black">Dozent:in:</span> {booking.instructor}
+              <li className="flex items-center gap-2.5">
+                <User className="w-4 h-4 text-black/40 flex-shrink-0" aria-hidden="true" />
+                <span>
+                  <span className="sr-only">Dozent:in: </span>
+                  {booking.instructor}
+                </span>
               </li>
             )}
             {booking.location && (
-              <li>
-                <span className="font-medium text-black">Ort:</span> {booking.location}
+              <li className="flex items-start gap-2.5">
+                <MapPin className="w-4 h-4 mt-0.5 text-black/40 flex-shrink-0" aria-hidden="true" />
+                <span>
+                  <span className="sr-only">Ort: </span>
+                  {booking.location}
+                </span>
               </li>
             )}
           </ul>
         )}
 
-        {/* Soft prereq reminder — guidance only, not enforced. The
-            online theory course must be completed before the
-            in-person session so the customer can practice on the day
-            instead of catching up on basics. */}
-        <p className="text-sm text-black/70 leading-relaxed">
-          <span className="font-medium text-black">Bitte beachte:</span> Schließe
-          den dazugehörigen Onlinekurs vor Deinem Praxistermin ab.
-        </p>
-
-        <p className="text-sm text-black/70 leading-relaxed">
-          Bring eine:n Freund:in mit als Proband:in. Optional, aber sehr beliebt.
-        </p>
+        {/* Notes block — softer treatment so it visually separates
+            from the practical details above without a border (we stay
+            border-free per brand). Each note has its own coloured icon
+            so it's obvious at a glance which is "FYI" vs which is the
+            Proband-Buddy nudge. */}
+        <div className="rounded-[10px] bg-black/[0.03] p-3.5 mt-1 space-y-2.5 text-sm text-black/75">
+          <div className="flex items-start gap-2.5">
+            <Info className="w-4 h-4 mt-0.5 text-[#0066FF] flex-shrink-0" aria-hidden="true" />
+            <p>
+              Schließe den dazugehörigen Onlinekurs vor Deinem Praxistermin ab.
+            </p>
+          </div>
+          <div className="flex items-start gap-2.5">
+            <Users className="w-4 h-4 mt-0.5 text-[#BF785E] flex-shrink-0" aria-hidden="true" />
+            <p>
+              Bring eine:n Freund:in mit als Proband:in. Optional, aber sehr beliebt.
+            </p>
+          </div>
+        </div>
 
         <div className="mt-2">
           <button
