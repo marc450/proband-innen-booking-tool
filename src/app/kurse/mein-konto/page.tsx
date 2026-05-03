@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildProgressMap, listUserCourses } from "@/lib/learnworlds";
 import {
   MeinKontoView,
   type EnrichedBooking,
@@ -295,7 +296,7 @@ export default async function MeinKontoPage() {
 
   const { data: contact } = await admin
     .from("auszubildende")
-    .select("id, first_name, last_name, email")
+    .select("id, first_name, last_name, email, lw_user_id")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -462,6 +463,27 @@ export default async function MeinKontoPage() {
       const db = new Date(b.courseDate ?? b.purchasedAt ?? 0).getTime();
       return db - da;
     });
+
+    // ── 3) Attach LW progress to online cards ──
+    // Single API call per page load. If the customer has no lw_user_id
+    // (HubSpot-only contact, or a new Stripe purchase before we wire
+    // checkout to provision an LW user), skip silently — cards just
+    // render without a progress bar.
+    if (contact.lw_user_id && online.length > 0) {
+      try {
+        const courses = await listUserCourses(contact.lw_user_id as string);
+        const progress = buildProgressMap(courses);
+        online = online.map((b) => {
+          const slug = b.lwHref?.split("/course/")[1] ?? null;
+          const pct = slug ? progress.get(slug) : undefined;
+          return pct !== undefined ? { ...b, progressPct: pct } : b;
+        });
+      } catch (err) {
+        // LW API outage / token expiry / rate limit: don't fail the
+        // whole dashboard. Log + render the cards without progress.
+        console.error("[mein-konto] LW progress fetch failed:", err);
+      }
+    }
   }
 
   return (

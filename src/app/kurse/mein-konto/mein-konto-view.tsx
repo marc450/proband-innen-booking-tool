@@ -11,8 +11,9 @@ import Image from "next/image";
 //      title + image, and the Proband-Buddy CTA (no reschedule per
 //      product decision).
 //   2. Deine Onlinekurse — image cards in a 1/2/3-col grid. Single
-//      "Zum Kurs →" CTA out to LW. Progress bar is a placeholder
-//      until v3 wires up the LW API.
+//      "Zum Kurs →" CTA out to LW. Progress bar pulls from the LW
+//      v2 API (one call per page load) when the customer has an
+//      lw_user_id set on auszubildende.
 //   3. Abgeschlossen — compact list rows. "Past attendance is assumed"
 //      rule applies: anything past + not cancelled is rendered as
 //      participated.
@@ -43,6 +44,12 @@ export interface EnrichedBooking {
   location: string | null;
   startTime: string | null;
   instructor: string | null;
+  // Online-only: % completion from the LW v2 API. Null when the
+  // customer has no lw_user_id, when the course doesn't appear in
+  // their LW enrollments, or when the LW API call failed (we fall
+  // back to a card without a progress bar instead of failing the
+  // whole page).
+  progressPct?: number | null;
 }
 
 interface Props {
@@ -293,6 +300,30 @@ function UpcomingCard({
 
 /* ──────────────── Online course tile ──────────────── */
 
+function ProgressBar({ pct }: { pct: number }) {
+  const clamped = Math.max(0, Math.min(100, pct));
+  const label =
+    clamped === 0
+      ? "Noch nicht gestartet"
+      : clamped >= 100
+        ? "Abgeschlossen"
+        : `${Math.round(clamped)}% abgeschlossen`;
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-black/60 font-medium">{label}</span>
+        <span className="text-black/40 tabular-nums">{Math.round(clamped)}%</span>
+      </div>
+      <div className="w-full h-1.5 rounded-full bg-black/[0.06] overflow-hidden">
+        <div
+          className="h-full rounded-full bg-[#0066FF] transition-[width] duration-500"
+          style={{ width: `${clamped}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 function OnlineCard({ booking }: { booking: EnrichedBooking }) {
   return (
     <article className="bg-white rounded-[10px] overflow-hidden flex flex-col group shadow-sm">
@@ -324,9 +355,17 @@ function OnlineCard({ booking }: { booking: EnrichedBooking }) {
           {booking.displayTitle}
         </h3>
 
-        {/* Spacer pushes the CTA to the bottom of the card. The progress
-            bar is a placeholder for v3 once we have the LW API call. */}
+        {/* Spacer pushes the progress + CTA to the bottom of the card. */}
         <div className="flex-1" />
+
+        {/* Progress bar lights up when LW returned a percent for this
+            course. We render it for any value 0..100 (including 0) so
+            customers see "you haven't started yet" as an empty bar
+            rather than nothing. We hide the bar entirely only when
+            progressPct is null/undefined (no data available). */}
+        {typeof booking.progressPct === "number" && (
+          <ProgressBar pct={booking.progressPct} />
+        )}
 
         {booking.lwHref ? (
           <a
@@ -335,7 +374,11 @@ function OnlineCard({ booking }: { booking: EnrichedBooking }) {
             rel="noopener noreferrer"
             className="block text-center w-full text-sm md:text-base font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-5 py-3 transition-colors"
           >
-            Zum Kurs →
+            {booking.progressPct === 100
+              ? "Kurs ansehen →"
+              : booking.progressPct && booking.progressPct > 0
+                ? "Weiterlernen →"
+                : "Zum Kurs →"}
           </a>
         ) : (
           <span className="block text-center w-full text-sm font-medium text-black/50 bg-black/[0.04] rounded-[10px] px-5 py-3">
