@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 import { AvailableSlot, Course } from "@/lib/types";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import {
+  formatBerlinLongDate,
+  formatBerlinLongDateWithWeekday,
+  formatBerlinTime,
+  parseDateOnly,
+} from "@/lib/date";
 import { Calendar, ChevronDown, Clock, Info, MapPin, Users } from "lucide-react";
 import Link from "next/link";
 import { BookingForm } from "../booking-form";
@@ -52,11 +56,11 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
               <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-3 text-sm text-black/70">
                 <span className="flex items-center gap-1.5">
                   <Calendar className="h-4 w-4" />
-                  {format(new Date(selectedSlot.start_time), "dd. MMMM yyyy", { locale: de })}
+                  {formatBerlinLongDate(selectedSlot.start_time)}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Clock className="h-4 w-4" />
-                  {format(new Date(selectedSlot.start_time), "HH:mm")} Uhr
+                  {formatBerlinTime(selectedSlot.start_time)} Uhr
                 </span>
               </div>
             </div>
@@ -89,7 +93,7 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                 {dateEntries.map(({ course: dateCourse, slots: dateSlots }) => {
                   const isExpanded = expandedCourseId === dateCourse.id;
                   const dateLabel = dateCourse.course_date
-                    ? format(new Date(dateCourse.course_date + "T00:00:00"), "EEEE, dd. MMMM yyyy", { locale: de })
+                    ? formatBerlinLongDateWithWeekday(parseDateOnly(dateCourse.course_date))
                     : "Datum wird bekannt gegeben";
                   const totalCapacity = dateSlots.reduce((s, sl) => s + sl.remaining_capacity, 0);
 
@@ -162,7 +166,7 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                                   <div className="flex items-center gap-1.5 shrink-0">
                                     <Clock className="h-4 w-4 text-black/55" />
                                     <span className="text-sm md:text-base font-bold text-black whitespace-nowrap">
-                                      {format(new Date(slot.start_time), "HH:mm")} Uhr
+                                      {formatBerlinTime(slot.start_time)} Uhr
                                     </span>
                                   </div>
                                   <span className="text-xs md:text-sm text-black/60 whitespace-nowrap">

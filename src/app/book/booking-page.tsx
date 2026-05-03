@@ -4,8 +4,7 @@ import { useState } from "react";
 import { AvailableSlot, Course } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { formatBerlinDate, formatBerlinLongDate, formatBerlinTime } from "@/lib/date";
 import { Calendar, Clock, Users } from "lucide-react";
 import { BookingForm } from "./booking-form";
 
@@ -50,11 +49,11 @@ export function BookingPage({ courses, slots }: BookingPageProps) {
                 <CardDescription className="flex items-center gap-4 mt-1">
                   <span className="flex items-center gap-1.5">
                     <Calendar className="h-3.5 w-3.5" />
-                    {format(new Date(selectedSlot.start_time), "dd. MMMM yyyy", { locale: de })}
+                    {formatBerlinLongDate(selectedSlot.start_time)}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <Clock className="h-3.5 w-3.5" />
-                    {format(new Date(selectedSlot.start_time), "HH:mm")} Uhr
+                    {formatBerlinTime(selectedSlot.start_time)} Uhr
                   </span>
                 </CardDescription>
               </CardHeader>
@@ -90,13 +89,13 @@ export function BookingPage({ courses, slots }: BookingPageProps) {
                           <div className="flex items-center gap-1.5">
                             <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                             <span className="text-sm font-medium">
-                              {format(new Date(slot.start_time), "dd.MM.yyyy")}
+                              {formatBerlinDate(slot.start_time)}
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                             <span className="text-sm">
-                              {format(new Date(slot.start_time), "HH:mm")} Uhr
+                              {formatBerlinTime(slot.start_time)} Uhr
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5">

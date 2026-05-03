@@ -10,8 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { EmailHistory } from "@/components/email-history";
 import { ArrowLeft, Pencil, AlertTriangle, Ban, CheckCircle2 } from "lucide-react";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { formatBerlinDate, formatBerlinDateTime, formatBerlinTime } from "@/lib/date";
 
 const bookingStatusLabels: Record<BookingStatus, string> = {
   booked: "Gebucht",
@@ -119,13 +118,8 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
     setSavingNotes(false);
   };
 
-  const formatDate = (iso: string) => {
-    return format(new Date(iso), "dd.MM.yyyy", { locale: de });
-  };
-
-  const formatDateTime = (iso: string) => {
-    return format(new Date(iso), "dd.MM.yyyy HH:mm", { locale: de });
-  };
+  const formatDate = formatBerlinDate;
+  const formatDateTime = formatBerlinDateTime;
 
   const totalBookings = bookings.length;
   const attended = bookings.filter((b) => b.status === "attended").length;
@@ -394,8 +388,8 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         {booking.slots?.start_time && (
                           <>
-                            <span>{format(new Date(booking.slots.start_time), "dd.MM.yyyy", { locale: de })}</span>
-                            <span>{format(new Date(booking.slots.start_time), "HH:mm", { locale: de })} Uhr</span>
+                            <span>{formatBerlinDate(booking.slots.start_time)}</span>
+                            <span>{formatBerlinTime(booking.slots.start_time)} Uhr</span>
                           </>
                         )}
                       </div>

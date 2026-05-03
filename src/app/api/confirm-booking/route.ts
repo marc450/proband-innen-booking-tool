@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 import { findPatientIdByAnyEmail } from "@/lib/contact-emails";
 import { archiveSentMessage } from "@/lib/gmail";
+import { formatBerlinLongDateWithWeekday, parseDateOnly } from "@/lib/date";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
@@ -350,9 +351,7 @@ export async function POST(req: NextRequest) {
     let formattedTime = "";
     try {
       if (courseDate) {
-        formattedDate = new Date(courseDate).toLocaleDateString("de-DE", {
-          weekday: "long", day: "numeric", month: "long", year: "numeric"
-        });
+        formattedDate = formatBerlinLongDateWithWeekday(parseDateOnly(courseDate));
       }
       if (startTime) {
         formattedTime = new Date(startTime).toLocaleTimeString("de-DE", {

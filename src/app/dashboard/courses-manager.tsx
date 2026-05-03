@@ -25,6 +25,7 @@ import {
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
+import { formatBerlinTime } from "@/lib/date";
 import { Plus, Trash2, Copy, ChevronDown, ChevronRight, Edit, Upload, Ban, CheckCircle2 } from "lucide-react";
 
 export interface SlotBooking {
@@ -512,7 +513,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
     const originalSlots = slots.filter((s) => s.course_id === duplicatingCourse.id);
     const newSlots = originalSlots.map((s) => ({
       course_id: newCourse.id,
-      start_time: buildStartTime(duplicateDate, format(new Date(s.start_time), "HH:mm")),
+      start_time: buildStartTime(duplicateDate, formatBerlinTime(s.start_time)),
       end_time: null,
       capacity: s.capacity,
     }));
@@ -1202,7 +1203,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                       : <span className="italic">Kein Datum</span>}
                     {activeSlots.length > 0 && (
                       <span className="ml-2 text-foreground font-medium">
-                        ab {format(new Date(activeSlots[0].start_time), "HH:mm")} Uhr
+                        ab {formatBerlinTime(activeSlots[0].start_time)} Uhr
                       </span>
                     )}
                   </span>
@@ -1280,7 +1281,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                               className={`flex items-center gap-4 py-2 px-2 rounded-md ${slot.blocked ? "bg-red-50/60" : "bg-muted/40"}`}
                             >
                               <span className={`w-28 shrink-0 text-sm font-medium ${slot.blocked ? "line-through text-muted-foreground" : ""}`}>
-                                {format(new Date(slot.start_time), "HH:mm")} Uhr
+                                {formatBerlinTime(slot.start_time)} Uhr
                               </span>
 
                               <div className="w-24 shrink-0">
@@ -1339,7 +1340,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                                     onClick={() => {
                                       setSelectedCourseId(course.id);
                                       setEditingSlotId(slot.id);
-                                      setSlotTime(format(new Date(slot.start_time), "HH:mm"));
+                                      setSlotTime(formatBerlinTime(slot.start_time));
                                       setSlotCapacity(String(slot.capacity));
                                       setSlotDialogOpen(true);
                                     }}

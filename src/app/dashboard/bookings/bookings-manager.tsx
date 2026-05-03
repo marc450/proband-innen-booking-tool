@@ -35,7 +35,12 @@ import { SortableHead } from "@/components/table/sortable-head";
 import { useTableSort } from "@/hooks/use-table-sort";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { parseDateOnly } from "@/lib/date";
+import {
+  parseDateOnly,
+  berlinDateIso,
+  formatBerlinTime,
+  formatBerlinDateTime,
+} from "@/lib/date";
 import { ArrowLeftRight, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -228,7 +233,7 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
       return false;
     }
     if (filterDate) {
-      const slotDate = format(new Date(b.slots?.start_time), "yyyy-MM-dd");
+      const slotDate = berlinDateIso(b.slots?.start_time);
       if (slotDate !== filterDate) return false;
     }
     if (searchQuery) {
@@ -621,7 +626,7 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
                 </div>
                 <div className="text-muted-foreground">
                   Aktuell: {slotChangePending.slots?.courses?.title} —{" "}
-                  {format(new Date(slotChangePending.slots.start_time), "dd.MM.yyyy HH:mm", { locale: de })}
+                  {formatBerlinDateTime(slotChangePending.slots.start_time)}
                 </div>
               </div>
 
@@ -680,7 +685,7 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
                                 ? (() => {
                                     const s = slotsForCourse.find((s) => s.id === slotChangeTargetSlotId);
                                     return s
-                                      ? `${format(new Date(s.start_time), "HH:mm", { locale: de })} Uhr — ${s.remaining_capacity} Platz${s.remaining_capacity !== 1 ? "ätze" : ""} frei`
+                                      ? `${formatBerlinTime(s.start_time)} Uhr — ${s.remaining_capacity} Platz${s.remaining_capacity !== 1 ? "ätze" : ""} frei`
                                       : "Termin wählen...";
                                   })()
                                 : "Termin wählen..."}
@@ -689,7 +694,7 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
                           <SelectContent className="w-[--radix-select-trigger-width]">
                             {slotsForCourse.map((s) => (
                               <SelectItem key={s.id} value={s.id}>
-                                {format(new Date(s.start_time), "HH:mm", { locale: de })} Uhr
+                                {formatBerlinTime(s.start_time)} Uhr
                                 {" — "}
                                 {`${s.remaining_capacity} Platz${s.remaining_capacity !== 1 ? "ätze" : ""} frei`}
                               </SelectItem>
@@ -817,7 +822,7 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
                     {booking.slots?.start_time
-                      ? format(new Date(booking.slots.start_time), "dd.MM.yyyy HH:mm", { locale: de })
+                      ? formatBerlinDateTime(booking.slots.start_time)
                       : "—"}
                   </TableCell>
                   <TableCell>
