@@ -60,6 +60,23 @@ function currentUrl(req: NextRequest): string {
   return req.nextUrl.pathname + req.nextUrl.search;
 }
 
+// Reconstruct the public-facing origin from forwarded headers. Behind
+// Railway's edge proxy `publicOrigin(req)` resolves to the internal
+// `http://localhost:8080` because that's what the Node server sees as
+// its bind address — using it would 302 the browser to localhost. The
+// edge proxy sets x-forwarded-host / x-forwarded-proto, so reading
+// headers directly gives us the user-visible origin.
+function publicOrigin(req: NextRequest): string {
+  const host =
+    req.headers.get("x-forwarded-host") ??
+    req.headers.get("host") ??
+    req.nextUrl.host;
+  const proto =
+    req.headers.get("x-forwarded-proto") ??
+    (req.nextUrl.protocol.replace(":", "") || "https");
+  return `${proto}://${host}`;
+}
+
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const action = (sp.get("action") ?? "login").toLowerCase();
@@ -69,7 +86,7 @@ export async function GET(req: NextRequest) {
   //    the user's password; bounce them to our own reset flow.
   if (action === "passwordreset" || action === "password_reset") {
     const email = sp.get("email") ?? "";
-    const resetUrl = new URL("/kurse/reset-password", req.nextUrl.origin);
+    const resetUrl = new URL("/kurse/reset-password", publicOrigin(req));
     if (email) resetUrl.searchParams.set("email", email);
     return NextResponse.redirect(resetUrl);
   }
@@ -80,7 +97,7 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user || !user.email) {
     const next = currentUrl(req);
-    const startUrl = new URL("/kurse/start", req.nextUrl.origin);
+    const startUrl = new URL("/kurse/start", publicOrigin(req));
     if (isSafeRelativePath(next)) startUrl.searchParams.set("next", next);
     return NextResponse.redirect(startUrl);
   }
