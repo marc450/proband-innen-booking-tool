@@ -41,7 +41,7 @@ export const CURRICULUM_COURSE_CONTENT: Record<string, CurriculumCourseContent> 
       "Max. 7 Teilnehmer:innen",
       "Standort: Berlin-Mitte",
     ],
-    landingPage: "https://www.ephia.de/grundkurs-botulinum",
+    landingPage: "https://ephia.de/grundkurs-botulinum",
   },
 
   grundkurs_medizinische_hautpflege: {
@@ -60,7 +60,7 @@ export const CURRICULUM_COURSE_CONTENT: Record<string, CurriculumCourseContent> 
       "Für med. Fachpersonal mit Grundkenntnissen in Hautphysiologie",
     ],
     praxiskursFeatures: null,
-    landingPage: "https://www.ephia.de/grundkurs-medizinische-hautpflege",
+    landingPage: "https://ephia.de/grundkurs-medizinische-hautpflege",
   },
 
   aufbaukurs_therapeutische_indikationen_botulinum: {
@@ -85,7 +85,7 @@ export const CURRICULUM_COURSE_CONTENT: Record<string, CurriculumCourseContent> 
       "Erfahrene Dozent:innen-Begleitung",
       "Standort: Berlin-Mitte",
     ],
-    landingPage: "https://www.ephia.de/aufbaukurs-therapeutische-indikationen",
+    landingPage: "https://ephia.de/aufbaukurs-therapeutische-indikationen-botulinum",
   },
 
   masterclass_botulinum: {
@@ -107,6 +107,6 @@ export const CURRICULUM_COURSE_CONTENT: Record<string, CurriculumCourseContent> 
       "Erfahrene Dozent:innen-Begleitung",
       "Standort: Berlin-Mitte",
     ],
-    landingPage: "https://www.ephia.de/masterclass-botulinum",
+    landingPage: "https://ephia.de/masterclass-botulinum",
   },
 };
