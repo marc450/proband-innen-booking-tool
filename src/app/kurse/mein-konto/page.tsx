@@ -160,16 +160,21 @@ function pickLwSlug(tpl: TemplateRow | undefined, type: CourseType): string | nu
   }
 }
 
+// Prefer the template's bare title ("Grundkurs Botulinum") over the
+// type-decorated name ("Onlinekurs Botulinum"). The card already
+// renders a type pill above the title, so repeating "Onlinekurs" in
+// the title would be visual stutter. Falls back to the type-decorated
+// name only if title isn't set.
 function pickDisplayTitle(
   tpl: TemplateRow | undefined,
   type: CourseType,
   fallback: string,
 ): string {
   if (!tpl) return fallback;
+  if (tpl.title) return tpl.title;
   if (type === "Onlinekurs" && tpl.name_online) return tpl.name_online;
   if (type === "Praxiskurs" && tpl.name_praxis) return tpl.name_praxis;
   if (type === "Kombikurs" && tpl.name_kombi) return tpl.name_kombi;
-  if (tpl.title) return tpl.title;
   return fallback;
 }
 

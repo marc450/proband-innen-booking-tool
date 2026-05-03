@@ -11,7 +11,7 @@ import Image from "next/image";
 //      title + image, and the Proband-Buddy CTA (no reschedule per
 //      product decision).
 //   2. Deine Onlinekurse — image cards in a 1/2/3-col grid. Single
-//      "Weiterlernen →" CTA out to LW. Progress bar is a placeholder
+//      "Zum Kurs →" CTA out to LW. Progress bar is a placeholder
 //      until v3 wires up the LW API.
 //   3. Abgeschlossen — compact list rows. "Past attendance is assumed"
 //      rule applies: anything past + not cancelled is rendered as
@@ -335,7 +335,7 @@ function OnlineCard({ booking }: { booking: EnrichedBooking }) {
             rel="noopener noreferrer"
             className="block text-center w-full text-sm md:text-base font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-5 py-3 transition-colors"
           >
-            Weiterlernen →
+            Zum Kurs →
           </a>
         ) : (
           <span className="block text-center w-full text-sm font-medium text-black/50 bg-black/[0.04] rounded-[10px] px-5 py-3">
