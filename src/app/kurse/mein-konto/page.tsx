@@ -243,7 +243,10 @@ function makeEnriched(args: {
       purchasedAt,
       source,
       imageUrl,
-      lwHref: slug ? `https://learn.ephia.de/course/${slug}` : null,
+      lwHref: slug
+        ? `/api/auth/lw-sso?redirectUrl=${encodeURIComponent(`https://learn.ephia.de/course/${slug}`)}`
+        : null,
+      lwSlug: slug,
       location: type === "Onlinekurs" ? null : location,
       startTime: type === "Onlinekurs" ? null : startTime,
       instructor: type === "Onlinekurs" ? null : instructor,
@@ -474,8 +477,7 @@ export default async function MeinKontoPage() {
         const rows = await listUserProgress(contact.lw_user_id as string);
         const progress = buildProgressMap(rows);
         online = online.map((b) => {
-          const slug = b.lwHref?.split("/course/")[1] ?? null;
-          const pct = slug ? progress.get(slug) : undefined;
+          const pct = b.lwSlug ? progress.get(b.lwSlug) : undefined;
           return pct !== undefined ? { ...b, progressPct: pct } : b;
         });
       } catch (err) {

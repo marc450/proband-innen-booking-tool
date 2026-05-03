@@ -40,6 +40,10 @@ export interface EnrichedBooking {
   source: string | null;
   imageUrl: string | null;
   lwHref: string | null;
+  // LW course slug, kept separately so we can look up progress against
+  // it without parsing it back out of lwHref (which now routes through
+  // our SSO bridge and no longer contains the bare /course/<slug> path).
+  lwSlug: string | null;
   // Populated for Praxiskurs cards sourced from course_bookings +
   // course_sessions. Legacy bookings pre-date the structured-session
   // schema and leave these null.
