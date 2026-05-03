@@ -35,7 +35,11 @@ export default async function SessionDetailPage({ params }: PageProps) {
     new Set(bookings.map((b) => b.auszubildende_id).filter((v): v is string => !!v)),
   );
 
-  const [{ data: auszubildendeRows }, { data: priorBookingRows }] = await Promise.all([
+  const [
+    { data: auszubildendeRows },
+    { data: priorBookingRows },
+    { data: priorLegacyRows },
+  ] = await Promise.all([
     auszubildendeIds.length
       ? admin.from("auszubildende").select("*").in("id", auszubildendeIds)
       : Promise.resolve({ data: [] as unknown[] }),
@@ -46,6 +50,17 @@ export default async function SessionDetailPage({ params }: PageProps) {
           .in("auszubildende_id", auszubildendeIds)
           .order("created_at", { ascending: true })
       : Promise.resolve({ data: [] as Array<{ auszubildende_id: string | null; session_id: string | null; template_id: string | null; status: string; course_type: string | null; created_at: string }> }),
+    // legacy_bookings = LearnWorlds / HubSpot historical purchases
+    // imported into the database. They never made it into
+    // course_bookings, so unless we fold them in here a participant's
+    // Historie understates her experience by everything she ever
+    // bought via LW. All entries are treated as Onlinekurs.
+    auszubildendeIds.length
+      ? admin
+          .from("legacy_bookings")
+          .select("auszubildende_id, product_name, course_date, purchased_at")
+          .in("auszubildende_id", auszubildendeIds)
+      : Promise.resolve({ data: [] as Array<{ auszubildende_id: string | null; product_name: string | null; course_date: string | null; purchased_at: string | null }> }),
   ]);
 
   // Resolve the actual course label + session date for each prior
@@ -145,6 +160,20 @@ export default async function SessionDetailPage({ params }: PageProps) {
     ];
   };
 
+  // Slug → friendly title for legacy LW bookings. The product_name is
+  // stored as a slug like "grundkurs-dermalfiller-online"; convert to
+  // "Grundkurs Dermalfiller" by dropping the "-online" suffix and
+  // title-casing each segment. Good enough for all current LW slugs;
+  // reaches into our domain glossary if we later add a lookup table.
+  const prettifyLegacySlug = (slug: string): string => {
+    return slug
+      .replace(/-online$/i, "")
+      .split("-")
+      .filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+  };
+
   const priorBookingsById = new Map<string, PriorBooking[]>();
   for (const row of priorBookingRows || []) {
     if (!row.auszubildende_id) continue;
@@ -153,6 +182,22 @@ export default async function SessionDetailPage({ params }: PageProps) {
     if (!row.course_type) continue;
     const list = priorBookingsById.get(row.auszubildende_id) || [];
     for (const expanded of expandBooking(row)) list.push(expanded);
+    priorBookingsById.set(row.auszubildende_id, list);
+  }
+
+  // Fold in legacy_bookings as Onlinekurs entries so LW imports count
+  // toward "Historie". They have no concept of a Praxis session, so
+  // sessionDateIso stays null and the row is treated as past
+  // (evergreen) by the renderer.
+  for (const row of priorLegacyRows || []) {
+    if (!row.auszubildende_id) continue;
+    if (!row.product_name) continue;
+    const list = priorBookingsById.get(row.auszubildende_id) || [];
+    list.push({
+      courseType: "Onlinekurs",
+      courseTitle: prettifyLegacySlug(row.product_name),
+      sessionDateIso: null,
+    });
     priorBookingsById.set(row.auszubildende_id, list);
   }
   // Dedupe per-auszubildende on (type, title, date). Kills the obvious
