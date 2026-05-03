@@ -88,21 +88,6 @@ function formatLongDate(iso: string | null): string | null {
   });
 }
 
-function daysUntil(iso: string): number {
-  const target = new Date(iso);
-  const today = new Date();
-  target.setHours(0, 0, 0, 0);
-  today.setHours(0, 0, 0, 0);
-  return Math.round((target.getTime() - today.getTime()) / 86400000);
-}
-
-function inDaysLabel(iso: string): string {
-  const n = daysUntil(iso);
-  if (n === 0) return "Heute";
-  if (n === 1) return "Morgen";
-  return `In ${n} Tagen`;
-}
-
 export function MeinKontoView({ firstName, upcoming, online, done }: Props) {
   const [probandOpen, setProbandOpen] = useState(false);
   const empty = upcoming.length === 0 && online.length === 0 && done.length === 0;
@@ -233,19 +218,13 @@ function UpcomingCard({
         </div>
       )}
 
-      {/* Right: details */}
+      {/* Right: details. Title + session details + soft prereq +
+          single Proband-Buddy CTA. We removed the Praxiskurs / "in N
+          Tagen" pills (date already on the tear-off, type implied by
+          this whole section being titled "Anstehende Termine") and
+          the "Zum Kurs" CTA (the Praxiskurs is an in-person event,
+          not an LW page worth opening). */}
       <div className="flex flex-col flex-1 p-6 md:p-8 gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-semibold tracking-wide rounded-full px-2.5 py-1 bg-[#0066FF] text-white">
-            {booking.courseType}
-          </span>
-          {booking.courseDate && (
-            <span className="text-[11px] font-semibold tracking-wide rounded-full px-2.5 py-1 bg-black/5 text-black/70">
-              {inDaysLabel(booking.courseDate)}
-            </span>
-          )}
-        </div>
-
         <h3 className="text-xl md:text-2xl font-bold tracking-wide leading-tight text-black text-balance">
           {booking.displayTitle}
         </h3>
@@ -270,21 +249,20 @@ function UpcomingCard({
           </ul>
         )}
 
+        {/* Soft prereq reminder — guidance only, not enforced. The
+            online theory course must be completed before the
+            in-person session so the customer can practice on the day
+            instead of catching up on basics. */}
+        <p className="text-sm text-black/70 leading-relaxed">
+          <span className="font-medium text-black">Bitte beachte:</span> Schließe
+          den dazugehörigen Onlinekurs vor Deinem Praxistermin ab.
+        </p>
+
         <p className="text-sm text-black/70 leading-relaxed">
           Bring eine:n Freund:in mit als Proband:in. Optional, aber sehr beliebt.
         </p>
 
-        <div className="mt-2 flex flex-col sm:flex-row gap-3">
-          {booking.lwHref && (
-            <a
-              href={booking.lwHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center text-sm md:text-base font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-5 py-3 transition-colors"
-            >
-              Zum Kurs →
-            </a>
-          )}
+        <div className="mt-2">
           <button
             type="button"
             onClick={onProbandClick}
