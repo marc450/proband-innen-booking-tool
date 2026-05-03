@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SessionDetail, type Participant, type PriorBooking } from "./session-detail";
+import { prettifyLegacyCourseSlug } from "@/lib/legacy-course-slugs";
 
 interface PageProps {
   params: Promise<{ sessionId: string }>;
@@ -160,20 +161,6 @@ export default async function SessionDetailPage({ params }: PageProps) {
     ];
   };
 
-  // Slug → friendly title for legacy LW bookings. The product_name is
-  // stored as a slug like "grundkurs-dermalfiller-online"; convert to
-  // "Grundkurs Dermalfiller" by dropping the "-online" suffix and
-  // title-casing each segment. Good enough for all current LW slugs;
-  // reaches into our domain glossary if we later add a lookup table.
-  const prettifyLegacySlug = (slug: string): string => {
-    return slug
-      .replace(/-online$/i, "")
-      .split("-")
-      .filter(Boolean)
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ");
-  };
-
   const priorBookingsById = new Map<string, PriorBooking[]>();
   for (const row of priorBookingRows || []) {
     if (!row.auszubildende_id) continue;
@@ -195,7 +182,7 @@ export default async function SessionDetailPage({ params }: PageProps) {
     const list = priorBookingsById.get(row.auszubildende_id) || [];
     list.push({
       courseType: "Onlinekurs",
-      courseTitle: prettifyLegacySlug(row.product_name),
+      courseTitle: prettifyLegacyCourseSlug(row.product_name),
       sessionDateIso: null,
     });
     priorBookingsById.set(row.auszubildende_id, list);
