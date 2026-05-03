@@ -37,6 +37,12 @@ export interface EnrichedBooking {
   source: string | null;
   imageUrl: string | null;
   lwHref: string | null;
+  // Populated for Praxiskurs cards sourced from course_bookings +
+  // course_sessions. Legacy bookings pre-date the structured-session
+  // schema and leave these null.
+  location: string | null;
+  startTime: string | null;
+  instructor: string | null;
 }
 
 interface Props {
@@ -236,6 +242,26 @@ function UpcomingCard({
         <h3 className="text-xl md:text-2xl font-bold tracking-wide leading-tight text-black text-balance">
           {booking.displayTitle}
         </h3>
+
+        {(booking.startTime || booking.location || booking.instructor) && (
+          <ul className="text-sm text-black/70 leading-relaxed space-y-0.5">
+            {booking.startTime && (
+              <li>
+                <span className="font-medium text-black">Start:</span> {booking.startTime.slice(0, 5)} Uhr
+              </li>
+            )}
+            {booking.instructor && (
+              <li>
+                <span className="font-medium text-black">Dozent:in:</span> {booking.instructor}
+              </li>
+            )}
+            {booking.location && (
+              <li>
+                <span className="font-medium text-black">Ort:</span> {booking.location}
+              </li>
+            )}
+          </ul>
+        )}
 
         <p className="text-sm text-black/70 leading-relaxed">
           Bring eine:n Freund:in mit als Proband:in. Optional, aber sehr beliebt.
