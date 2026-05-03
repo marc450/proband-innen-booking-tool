@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Roboto } from "next/font/google";
 import "./globals.css";
+import { CookieConsent } from "@/components/cookie-consent";
 
 const roboto = Roboto({
   variable: "--font-sans",
@@ -31,7 +32,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="de" className={`${roboto.variable} h-full antialiased scroll-smooth`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <CookieConsent />
+      </body>
     </html>
   );
 }
