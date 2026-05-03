@@ -112,6 +112,39 @@ export default async function SessionDetailPage({ params }: PageProps) {
   const azubiById = new Map<string, AzubiRow>();
   for (const row of (auszubildendeRows || []) as AzubiRow[]) azubiById.set(row.id, row);
 
+  // Expand each booking down to atomic Onlinekurs / Praxiskurs entries
+  // so the Historie cell never shows a "Kombi" or "Premium" pill: those
+  // bundles dissolve into their parts. Kombi and Premium both bind one
+  // Praxis session AND grant access to the matching Online course; we
+  // surface that as one Praxis row (with date) plus one evergreen
+  // Online row (no date). Plain Praxis / Online bookings pass through
+  // unchanged.
+  const expandBooking = (row: {
+    template_id: string | null;
+    session_id: string | null;
+    course_type: string | null;
+  }): PriorBooking[] => {
+    const title = row.template_id
+      ? templateLabelById.get(row.template_id) ?? null
+      : null;
+    const date = row.session_id
+      ? sessionDateById.get(row.session_id) ?? null
+      : null;
+    if (row.course_type === "Kombikurs" || row.course_type === "Premium") {
+      return [
+        { courseType: "Onlinekurs", courseTitle: title, sessionDateIso: null },
+        { courseType: "Praxiskurs", courseTitle: title, sessionDateIso: date },
+      ];
+    }
+    return [
+      {
+        courseType: row.course_type ?? "Onlinekurs",
+        courseTitle: title,
+        sessionDateIso: date,
+      },
+    ];
+  };
+
   const priorBookingsById = new Map<string, PriorBooking[]>();
   for (const row of priorBookingRows || []) {
     if (!row.auszubildende_id) continue;
@@ -119,16 +152,23 @@ export default async function SessionDetailPage({ params }: PageProps) {
     if (!["booked", "completed"].includes(row.status)) continue;
     if (!row.course_type) continue;
     const list = priorBookingsById.get(row.auszubildende_id) || [];
-    list.push({
-      courseType: row.course_type,
-      courseTitle: row.template_id
-        ? templateLabelById.get(row.template_id) ?? null
-        : null,
-      sessionDateIso: row.session_id
-        ? sessionDateById.get(row.session_id) ?? null
-        : null,
-    });
+    for (const expanded of expandBooking(row)) list.push(expanded);
     priorBookingsById.set(row.auszubildende_id, list);
+  }
+  // Dedupe per-auszubildende on (type, title, date). Kills the obvious
+  // collision: Online row from a Kombi expansion + a separate
+  // Onlinekurs booking for the same template both reduce to "Online,
+  // Title, no date" — keep one.
+  for (const [id, list] of priorBookingsById) {
+    const seen = new Set<string>();
+    const deduped: PriorBooking[] = [];
+    for (const pb of list) {
+      const key = `${pb.courseType}|${pb.courseTitle ?? ""}|${pb.sessionDateIso ?? ""}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      deduped.push(pb);
+    }
+    priorBookingsById.set(id, deduped);
   }
 
   const participants: Participant[] = bookings.map((b) => {
