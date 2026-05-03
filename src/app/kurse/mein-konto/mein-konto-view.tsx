@@ -374,11 +374,20 @@ function OnlineCard({ booking }: { booking: EnrichedBooking }) {
             rel="noopener noreferrer"
             className="block text-center w-full text-sm md:text-base font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-5 py-3 transition-colors"
           >
+            {/* CTA reads progress when we have it, falls back to a
+                neutral label otherwise:
+                  100   → Zum Kurs (review / certificate)
+                  1..99 → Weiterlernen (resume)
+                  0     → Kurs starten (first click)
+                  null  → Zum Kurs (no progress data; don't guess) */}
             {booking.progressPct === 100
-              ? "Kurs ansehen →"
-              : booking.progressPct && booking.progressPct > 0
+              ? "Zum Kurs →"
+              : typeof booking.progressPct === "number" &&
+                  booking.progressPct > 0
                 ? "Weiterlernen →"
-                : "Zum Kurs →"}
+                : booking.progressPct === 0
+                  ? "Kurs starten →"
+                  : "Zum Kurs →"}
           </a>
         ) : (
           <span className="block text-center w-full text-sm font-medium text-black/50 bg-black/[0.04] rounded-[10px] px-5 py-3">
