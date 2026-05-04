@@ -172,6 +172,11 @@ export interface Booking {
   patient_id?: string | null;
   booking_type?: string;
   referring_doctor?: string;
+  // Per-booking notes, encrypted in encrypted_data alongside the rest
+  // of the PII. Distinct from patients.notes which follows the
+  // patient across all their bookings; this captures session-specific
+  // observations ("kam zu spät", "Behandlung abgebrochen", etc.).
+  notes: string | null;
   created_at: string;
 }
 

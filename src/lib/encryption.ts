@@ -167,6 +167,7 @@ export function decryptBooking(row: any): Booking & { email_hash?: string } {
       address_city: string | null;
       stripe_customer_id: string | null;
       stripe_payment_method_id: string | null;
+      notes: string | null;
     }>(row.encrypted_data, row.encrypted_key, row.encryption_iv);
 
     return {
@@ -188,6 +189,7 @@ export function decryptBooking(row: any): Booking & { email_hash?: string } {
       patient_id: row.patient_id ?? null,
       booking_type: row.booking_type ?? undefined,
       referring_doctor: row.referring_doctor ?? undefined,
+      notes: fields.notes ?? row.notes ?? null,
       created_at: row.created_at,
       email_hash: row.email_hash ?? undefined,
     };
@@ -245,6 +247,7 @@ export function encryptBookingFields(booking: {
   address_city?: string | null;
   stripe_customer_id?: string | null;
   stripe_payment_method_id?: string | null;
+  notes?: string | null;
 }): EncryptedPayload & { email_hash: string } {
   const encrypted = encryptFields({
     name: booking.name,
@@ -257,6 +260,7 @@ export function encryptBookingFields(booking: {
     address_city: booking.address_city || null,
     stripe_customer_id: booking.stripe_customer_id || null,
     stripe_payment_method_id: booking.stripe_payment_method_id || null,
+    notes: booking.notes || null,
   });
 
   return {

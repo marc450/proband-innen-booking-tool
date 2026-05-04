@@ -56,6 +56,7 @@ export default async function BehandlungstermineePage() {
       patient_id: row.patient_id,
       booking_type: row.booking_type ?? null,
       referring_doctor: row.referring_doctor ?? null,
+      notes: decrypted.notes ?? null,
     };
   });
 

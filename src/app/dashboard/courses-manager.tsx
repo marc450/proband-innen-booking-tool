@@ -26,7 +26,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { formatBerlinTime } from "@/lib/date";
-import { Plus, Trash2, Copy, ChevronDown, ChevronRight, Edit, Upload, Ban, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, Copy, ChevronDown, ChevronRight, Edit, Upload, Ban, CheckCircle2, StickyNote, Loader2 } from "lucide-react";
 
 export interface SlotBooking {
   id: string;
@@ -40,6 +40,9 @@ export interface SlotBooking {
   booking_type: string | null;
   /** Name of the doctor who referred this Proband:in (private funnel only). */
   referring_doctor: string | null;
+  /** Per-booking notes, decrypted from the booking's encrypted_data
+   *  blob server-side. Distinct from patient-level notes. */
+  notes: string | null;
 }
 
 interface Props {
@@ -95,7 +98,57 @@ function getCoursePill(treatmentTitle: string | null, title: string): string {
 export function CoursesManager({ initialCourses, initialSlots, initialBookings, templates, dozentUsers, isAdmin = true }: Props) {
   const [courses, setCourses] = useState(initialCourses);
   const [slots, setSlots] = useState(initialSlots);
-  const [bookings] = useState(initialBookings);
+  const [bookings, setBookings] = useState(initialBookings);
+
+  // Per-booking notes editor (encrypted via /api/update-booking-notes).
+  // Distinct from patient-level notes — captures session-specific
+  // observations like "kam zu spät" or "Behandlung abgebrochen".
+  const [notesBookingId, setNotesBookingId] = useState<string | null>(null);
+  const [notesValue, setNotesValue] = useState("");
+  const [notesSaving, setNotesSaving] = useState(false);
+  const [notesError, setNotesError] = useState<string | null>(null);
+
+  const openNotesEditor = (bookingId: string, current: string | null) => {
+    setNotesBookingId(bookingId);
+    setNotesValue(current || "");
+    setNotesError(null);
+  };
+
+  const closeNotesEditor = () => {
+    setNotesBookingId(null);
+    setNotesValue("");
+    setNotesError(null);
+  };
+
+  const saveBookingNotes = async () => {
+    if (!notesBookingId || notesSaving) return;
+    setNotesSaving(true);
+    setNotesError(null);
+    try {
+      const res = await fetch("/api/update-booking-notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: notesBookingId,
+          notes: notesValue.trim() || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Speichern fehlgeschlagen.");
+      // Reflect the change locally so the icon flips state immediately
+      // without a page reload.
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === notesBookingId ? { ...b, notes: notesValue.trim() || null } : b,
+        ),
+      );
+      closeNotesEditor();
+    } catch (err) {
+      setNotesError(err instanceof Error ? err.message : "Unbekannter Fehler.");
+    } finally {
+      setNotesSaving(false);
+    }
+  };
 
   // Expanded courses
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
@@ -613,6 +666,40 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
       />
 
       {/* Block slot dialog */}
+      <Dialog open={!!notesBookingId} onOpenChange={(open) => { if (!open) closeNotesEditor(); }}>
+        <DialogContent className="bg-card sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Notiz zur Buchung</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="booking-notes">Notiz</Label>
+            <textarea
+              id="booking-notes"
+              value={notesValue}
+              onChange={(e) => setNotesValue(e.target.value)}
+              placeholder="z.B. Kam 10 Min zu spät; Behandlung mit Vera abgebrochen wegen Kreislauf."
+              rows={5}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              autoFocus
+            />
+            <p className="text-xs text-muted-foreground">
+              Verschlüsselt gespeichert. Nur das Team sieht diese Notiz.
+            </p>
+            {notesError && (
+              <p className="text-sm text-destructive">{notesError}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeNotesEditor} disabled={notesSaving}>
+              Abbrechen
+            </Button>
+            <Button onClick={saveBookingNotes} disabled={notesSaving}>
+              {notesSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Speichern"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!blockSlotId} onOpenChange={(open) => { if (!open) { setBlockSlotId(null); setBlockNote(""); } }}>
         <DialogContent className="bg-card sm:max-w-[400px]">
           <DialogHeader>
@@ -1298,24 +1385,38 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                                   <span className="text-sm text-muted-foreground italic">{slot.blocked_note || "Gesperrt"}</span>
                                 ) : slotBookings.length > 0 ? slotBookings.map((b) => {
                                   const isReferred = b.booking_type === "private";
+                                  const hasNotes = !!(b.notes && b.notes.trim());
                                   return (
-                                    <div key={b.id} className="min-w-0">
-                                      {b.patient_id ? (
-                                        <Link
-                                          href={`/dashboard/patients/${b.patient_id}`}
-                                          className="text-sm font-medium hover:underline truncate block"
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          {getPatientName(b)}
-                                        </Link>
-                                      ) : (
-                                        <span className="text-sm truncate block">{getPatientName(b)}</span>
-                                      )}
-                                      {isReferred && (
-                                        <div className="text-xs text-[#733D29] font-medium truncate">
-                                          Vermittelt von {b.referring_doctor || "Ärzt:in"}
-                                        </div>
-                                      )}
+                                    <div key={b.id} className="min-w-0 flex items-start gap-1.5">
+                                      <div className="min-w-0 flex-1">
+                                        {b.patient_id ? (
+                                          <Link
+                                            href={`/dashboard/patients/${b.patient_id}`}
+                                            className="text-sm font-medium hover:underline truncate block"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            {getPatientName(b)}
+                                          </Link>
+                                        ) : (
+                                          <span className="text-sm truncate block">{getPatientName(b)}</span>
+                                        )}
+                                        {isReferred && (
+                                          <div className="text-xs text-[#733D29] font-medium truncate">
+                                            Vermittelt von {b.referring_doctor || "Ärzt:in"}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openNotesEditor(b.id, b.notes ?? null);
+                                        }}
+                                        className={`shrink-0 rounded-md p-1 transition-colors ${hasNotes ? "text-amber-600 hover:bg-amber-50" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                                        title={hasNotes ? "Notiz bearbeiten" : "Notiz hinzufügen"}
+                                      >
+                                        <StickyNote className="h-3.5 w-3.5" />
+                                      </button>
                                     </div>
                                   );
                                 }) : (
