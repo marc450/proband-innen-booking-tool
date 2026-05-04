@@ -256,8 +256,8 @@ export function MerchCheckoutLauncher({
               </div>
 
               {showDeliveryQuestion && (
-                <div className="space-y-3">
-                  <label className="text-sm font-medium">
+                <div className="space-y-4">
+                  <label className="text-sm font-medium block">
                     Versand oder Abholung beim Community Event?
                   </label>
                   <div className="grid grid-cols-2 gap-3">
