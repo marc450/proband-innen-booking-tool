@@ -5,6 +5,7 @@ import { Loader2, Send, X, Reply, Paperclip, FileText, Image, File, UserCircle, 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "./rich-text-editor";
+import { type PickedTemplate } from "./template-picker";
 import { useFileDrop } from "./use-file-drop";
 import type { ReplyDraft } from "@/hooks/use-drafts";
 
@@ -98,6 +99,7 @@ export function ConversationPane({
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
   const [sending, setSending] = useState(false);
+  const [templateNotice, setTemplateNotice] = useState<string | null>(null);
   const [assignDropdownOpen, setAssignDropdownOpen] = useState(false);
   const assignDropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -230,6 +232,29 @@ export function ConversationPane({
   const replyTo = lastMsg?.isInbound
     ? lastMsg.fromEmail
     : lastMsg?.to.split(",")[0].trim();
+
+  // Picking a template inside the reply composer: replace the body
+  // (preserving the trailing signature) and surface a soft notice
+  // when {{Vorname}} couldn't be filled. We deliberately don't touch
+  // the subject — replies inherit the thread subject and the send
+  // path prepends the "Re:" prefix on its own.
+  const handlePickTemplate = (picked: PickedTemplate) => {
+    const sig = signature?.html ? `<br>${signature.html}` : "";
+    setReplyHtml(picked.bodyHtml + sig);
+    if (picked.vornameMissing) {
+      setTemplateNotice(
+        "Vorname konnte nicht gefunden werden, bitte {{Vorname}} manuell ersetzen.",
+      );
+    } else {
+      setTemplateNotice(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!templateNotice) return;
+    const t = setTimeout(() => setTemplateNotice(null), 8000);
+    return () => clearTimeout(t);
+  }, [templateNotice]);
 
   const fileToBase64 = (file: globalThis.File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -657,7 +682,17 @@ export function ConversationPane({
                 signatureHtml: signature?.html,
                 userName: signature?.userName,
               }}
+              templateContext={{
+                recipientEmail: replyTo ?? "",
+                onPick: handlePickTemplate,
+              }}
             />
+
+            {templateNotice && (
+              <div className="bg-amber-50 border border-amber-100 rounded-md px-3 py-2 text-xs text-amber-800">
+                {templateNotice}
+              </div>
+            )}
 
             {/* Attachment chips */}
             {replyAttachments.length > 0 && (
