@@ -11,14 +11,13 @@ interface Props {
 
 // How much description to show inline before truncating. Characters,
 // not paragraphs — counted across the whole text — so a single very
-// long paragraph still gets cut off. The first paragraph break beyond
-// this point is the actual cut.
-//
-// Tuned so the text column fills enough vertical space to land the
-// CTA roughly level with the bottom of the thumbnail strip on the
-// product detail page. ~800 chars typically pulls in 2 short
-// paragraphs or 1 long one before hitting "mehr lesen".
-const PREVIEW_CHAR_TARGET = 800;
+// long paragraph still gets cut off. With the hard-cut algorithm
+// below, the actual rendered preview is reliably close to this number
+// (no more "give up if the next paragraph would overflow"), so the
+// constant maps directly to vertical height in the text column.
+// Tuned so the CTA on /merch/[slug] lands close to the bottom edge
+// of the thumbnail strip on the right.
+const PREVIEW_CHAR_TARGET = 400;
 
 /**
  * Renders a product Beschreibung with a "...mehr lesen" link. Click
