@@ -3,11 +3,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { ImageIcon } from "lucide-react";
 import type { MerchProduct, MerchProductVariant } from "@/lib/types";
+import { EphiaHilft } from "./_components/ephia-hilft";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
   title: "EPHIA Merch",
-  description: "Merch von EPHIA. Mit jeder Cap unterstützen wir die Jenny De la Torre-Stiftung.",
+  description: "Merch von EPHIA. Den gesamten Erlös spenden wir an die Jenny De la Torre-Stiftung.",
 };
 
 /**
@@ -74,7 +75,7 @@ export default async function MerchIndexPage() {
 
   return (
     <div>
-      <div className="max-w-6xl mx-auto px-5 md:px-8 py-16 md:py-20">
+      <div className="max-w-4xl mx-auto px-5 md:px-8 py-16 md:py-20">
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-bold">EPHIA Merch</h1>
           <p className="mt-3 text-black/70 max-w-2xl mx-auto">
@@ -88,7 +89,7 @@ export default async function MerchIndexPage() {
             <p className="text-black/70">Aktuell keine Produkte verfügbar.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
             {tiles.map((t) => (
               <Link
                 key={t.key}
@@ -105,7 +106,7 @@ export default async function MerchIndexPage() {
                       alt={t.color ? `${t.productTitle} ${t.color}` : t.productTitle}
                       fill
                       quality={85}
-                      sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                      sizes="(min-width: 640px) 50vw, 100vw"
                       // object-cover (default center positioning): the
                       // 4:3 frame is fully filled, content is cropped
                       // equally from top + bottom of the source. The
@@ -145,6 +146,7 @@ export default async function MerchIndexPage() {
         )}
       </div>
 
+      <EphiaHilft />
     </div>
   );
 }

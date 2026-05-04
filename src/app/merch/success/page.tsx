@@ -14,10 +14,10 @@ export default async function MerchSuccessPage() {
         <h1 className="text-2xl md:text-3xl font-bold mb-3">Vielen Dank für Deine Bestellung!</h1>
         <p className="text-sm md:text-base text-black/75 mb-6">
           Wir haben Deine Zahlung erhalten und senden Dir gleich eine Bestätigung
-          per E-Mail. Deine Cap geht in den nächsten 3–7 Werktagen auf den Weg zu Dir.
+          per E-Mail.
         </p>
         <p className="text-sm text-black/60 mb-6">
-          Mit Deinem Kauf unterstützt Du die Jenny De la Torre-Stiftung mit 10 €.
+          Mit Deinem Kauf unterstützt Du die Jenny De la Torre-Stiftung.
           Danke, dass Du dabei bist.
         </p>
         <Link

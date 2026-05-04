@@ -34,12 +34,6 @@ interface Props {
    * variant.
    */
   buttonText?: string;
-  /**
-   * When true the modal subtitle mentions the 10 EUR donation to the
-   * Jenny De la Torre-Stiftung. Only set for products that actually
-   * trigger the donation (the cap). Other merch keeps a neutral subtitle.
-   */
-  donates?: boolean;
 }
 
 /**
@@ -58,7 +52,6 @@ export function MerchCheckoutLauncher({
   stock,
   quantity = 1,
   buttonText,
-  donates = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -225,20 +218,18 @@ export function MerchCheckoutLauncher({
               <span className="text-xs text-black/50">
                 {delivery === "pickup"
                   ? "Abholung beim Community Event · kein Versand"
-                  : donates
-                    ? `Versand 2,90 € · Spende 10 € an De la Torre-Stiftung pro Cap${quantity > 1 ? ` (${quantity}× = ${(quantity * 10).toLocaleString("de-DE")} €)` : ""}`
-                    : "Versand 2,90 €"}
+                  : "Versand 2,90 €"}
               </span>
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
+            <form onSubmit={handleSubmit} className="space-y-7">
+              <div className="space-y-3">
                 <label className="text-sm font-medium">Bist Du Ärzt:in?</label>
                 <p className="text-xs text-black/55">
                   Nur für unsere interne Einordnung. Hat keinen Einfluss auf
                   Preis, Versand oder Deine Bestellung.
                 </p>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <button
                     type="button"
                     onClick={() => setIsDoctor("yes")}
@@ -265,11 +256,11 @@ export function MerchCheckoutLauncher({
               </div>
 
               {showDeliveryQuestion && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <label className="text-sm font-medium">
                     Versand oder Abholung beim Community Event?
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
                       onClick={() => setDelivery("shipping")}
@@ -290,7 +281,7 @@ export function MerchCheckoutLauncher({
                           : "border-input bg-white hover:bg-gray-50"
                       }`}
                     >
-                      Abholung beim Community Event
+                      Abholung
                     </button>
                   </div>
                   {delivery === "pickup" && (

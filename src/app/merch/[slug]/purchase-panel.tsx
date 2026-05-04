@@ -31,7 +31,6 @@ export function PurchasePanel({
   variants,
   productTitle,
   productSlug,
-  donates = false,
 }: {
   variants: Variant[];
   productTitle: string;
@@ -39,9 +38,6 @@ export function PurchasePanel({
    *  decide whether to offer the community-event pickup option (only
    *  the SONJA X EPHIA t-shirt, see lib/merch-pickup.ts). */
   productSlug: string;
-  /** Forwarded to the launcher so only donating products (the cap)
-   *  mention the 10 EUR Jenny De la Torre-Stiftung line in the modal. */
-  donates?: boolean;
 }) {
   // Strip virtual "one-size" from the picker. It's not a real size the
   // buyer chooses, just a placeholder we store so the schema can handle
@@ -160,7 +156,6 @@ export function PurchasePanel({
         stock={selected.stock}
         quantity={quantity}
         buttonText={selected.stock > 0 ? "Jetzt bestellen" : undefined}
-        donates={donates}
       />
     </div>
   );
