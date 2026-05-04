@@ -74,6 +74,8 @@ export function PurchasePanel({
 
   const maxQty = Math.min(selected.stock, MAX_QUANTITY_PER_ORDER);
   const showQuantity = selected.stock > 1;
+  const unitCents = selected.price_gross_cents;
+  const totalCents = unitCents * quantity;
 
   return (
     <div className="space-y-4">
@@ -148,11 +150,22 @@ export function PurchasePanel({
         </div>
       )}
 
+      <div className="flex items-baseline justify-between gap-3 pt-2">
+        <span className="text-3xl font-bold text-black tabular-nums">
+          {formatEur(totalCents)}
+        </span>
+        {quantity > 1 && (
+          <span className="text-sm text-black/55 tabular-nums">
+            {quantity} × {formatEur(unitCents)}
+          </span>
+        )}
+      </div>
+
       <MerchCheckoutLauncher
         variantId={selected.id}
         productTitle={productTitle}
         variantLabel={selected.color || selected.name}
-        priceCents={selected.price_gross_cents}
+        priceCents={unitCents}
         stock={selected.stock}
         quantity={quantity}
         buttonText={selected.stock > 0 ? "Jetzt bestellen" : undefined}
@@ -160,6 +173,16 @@ export function PurchasePanel({
       />
     </div>
   );
+}
+
+// German-formatted EUR string from a cents value. Single shared
+// Intl formatter to avoid recreating one on every render.
+const EUR_FORMAT = new Intl.NumberFormat("de-DE", {
+  style: "currency",
+  currency: "EUR",
+});
+function formatEur(cents: number): string {
+  return EUR_FORMAT.format(cents / 100);
 }
 
 // Map common t-shirt size labels to an ordering index so the picker
