@@ -46,9 +46,6 @@ export function EphiaHilft() {
             </a>
             .
           </p>
-          <p className="font-semibold">
-            Mit jedem Kauf trägst Du dazu bei, diese Arbeit zu unterstützen.
-          </p>
         </div>
       </div>
     </section>
