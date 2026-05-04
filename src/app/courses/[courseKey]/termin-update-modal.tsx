@@ -165,7 +165,7 @@ export function TerminUpdateModal({ onClose }: Props) {
                   <label htmlFor="privacy" className="text-sm text-gray-600 cursor-pointer leading-relaxed">
                     Ich habe die{" "}
                     <a
-                      href="https://www.ephia.de/privacy"
+                      href="https://ephia.de/datenschutz"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[#0066FF] underline"

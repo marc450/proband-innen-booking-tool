@@ -142,7 +142,7 @@ export async function GET(req: NextRequest) {
   const redirectUrl =
     lwRedirect && /^https?:\/\//i.test(lwRedirect)
       ? lwRedirect
-      : "https://www.ephia.de/";
+      : "https://learn.ephia.de/";
 
   // ── 4. Call LW. user_id wins if we have it; otherwise email +
   //    username so LW creates a fresh user when needed.

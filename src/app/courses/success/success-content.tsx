@@ -133,7 +133,7 @@ export function SuccessContent({ booking, profileComplete }: Props) {
           Wenn Du bereits einen Account bei uns hast, dann kannst Du Dich direkt einloggen und mit dem Lernen beginnen.
         </p>
         <a
-          href="https://www.ephia.de/start"
+          href="https://learn.ephia.de/start"
           className="inline-block bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-lg py-3.5 px-8 rounded-[10px] transition-colors"
         >
           Zum Login
