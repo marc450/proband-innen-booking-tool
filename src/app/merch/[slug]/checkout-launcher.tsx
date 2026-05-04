@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Heart, Loader2, MapPin, X } from "lucide-react";
+import { Loader2, MapPin, X } from "lucide-react";
 import {
   COMMUNITY_PICKUP_EVENT,
   isPickupOpen,
@@ -183,7 +183,6 @@ export function MerchCheckoutLauncher({
             ? `Ausverkauft: ${variantLabel}`
             : `${buttonText ?? `Schickt sie mir in ${variantLabel}!`} · ${subtotalLabel}`}
         </span>
-        {!soldOut && <Heart className="h-4 w-4" />}
       </button>
 
       {open && (
