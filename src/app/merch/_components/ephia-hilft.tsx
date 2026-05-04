@@ -33,7 +33,7 @@ export function EphiaHilft() {
             viele Betroffene ist der Zugang zum regulären Gesundheitssystem mit
             hohen Hürden verbunden oder faktisch nicht möglich.
           </p>
-          <p>
+          <p className="font-bold">
             Deshalb spenden wir den gesamten Erlös aus dem Verkauf unserer
             Merch-Artikel an die{" "}
             <a
