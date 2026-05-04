@@ -40,7 +40,7 @@ export function ProductsManager({ initialProducts, initialVariants }: Props) {
   // Product dialog
   const [editing, setEditing] = useState<MerchProduct | null>(null);
   const [showDialog, setShowDialog] = useState(false);
-  const [pForm, setPForm] = useState<{ slug: string; title: string; subtitle: string; description: string; image_url: string; image_url_2: string; image_url_3: string; is_active: boolean }>({
+  const [pForm, setPForm] = useState<{ slug: string; title: string; subtitle: string; description: string; image_url: string; image_url_2: string; image_url_3: string; image_url_4: string; image_url_5: string; image_url_6: string; is_active: boolean }>({
     slug: "",
     title: "",
     subtitle: "",
@@ -48,6 +48,9 @@ export function ProductsManager({ initialProducts, initialVariants }: Props) {
     image_url: "",
     image_url_2: "",
     image_url_3: "",
+    image_url_4: "",
+    image_url_5: "",
+    image_url_6: "",
     is_active: true,
   });
 
@@ -91,6 +94,9 @@ export function ProductsManager({ initialProducts, initialVariants }: Props) {
       image_url: p?.image_url ?? "",
       image_url_2: p?.image_url_2 ?? "",
       image_url_3: p?.image_url_3 ?? "",
+      image_url_4: p?.image_url_4 ?? "",
+      image_url_5: p?.image_url_5 ?? "",
+      image_url_6: p?.image_url_6 ?? "",
       is_active: p?.is_active ?? true,
     });
     setShowDialog(true);
@@ -109,6 +115,9 @@ export function ProductsManager({ initialProducts, initialVariants }: Props) {
       image_url: pForm.image_url.trim() || null,
       image_url_2: pForm.image_url_2.trim() || null,
       image_url_3: pForm.image_url_3.trim() || null,
+      image_url_4: pForm.image_url_4.trim() || null,
+      image_url_5: pForm.image_url_5.trim() || null,
+      image_url_6: pForm.image_url_6.trim() || null,
       is_active: pForm.is_active,
     };
 
@@ -449,6 +458,21 @@ export function ProductsManager({ initialProducts, initialVariants }: Props) {
             <div className="space-y-1.5">
               <Label>Bild-URL 3 (optional)</Label>
               <Input value={pForm.image_url_3} onChange={(e) => setPForm((f) => ({ ...f, image_url_3: e.target.value }))} placeholder="https://..." />
+              <p className="text-xs text-muted-foreground">Zusätzliche Ansicht, erscheint als Thumbnail unter dem Hauptbild.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Bild-URL 4 (optional)</Label>
+              <Input value={pForm.image_url_4} onChange={(e) => setPForm((f) => ({ ...f, image_url_4: e.target.value }))} placeholder="https://..." />
+              <p className="text-xs text-muted-foreground">Zusätzliche Ansicht, erscheint als Thumbnail unter dem Hauptbild.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Bild-URL 5 (optional)</Label>
+              <Input value={pForm.image_url_5} onChange={(e) => setPForm((f) => ({ ...f, image_url_5: e.target.value }))} placeholder="https://..." />
+              <p className="text-xs text-muted-foreground">Zusätzliche Ansicht, erscheint als Thumbnail unter dem Hauptbild.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Bild-URL 6 (optional)</Label>
+              <Input value={pForm.image_url_6} onChange={(e) => setPForm((f) => ({ ...f, image_url_6: e.target.value }))} placeholder="https://..." />
               <p className="text-xs text-muted-foreground">Zusätzliche Ansicht, erscheint als Thumbnail unter dem Hauptbild.</p>
             </div>
             <div className="space-y-1.5">

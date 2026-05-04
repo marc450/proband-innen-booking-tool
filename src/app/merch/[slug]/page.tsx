@@ -65,13 +65,16 @@ export default async function MerchProductPage({
   const selected = variantsForColor[0] || null;
 
   // Build the gallery image list: variant-specific image first (if set),
-  // then product images 1-3. Dedupe and drop empties. Always at least one
+  // then product images 1-6. Dedupe and drop empties. Always at least one
   // entry when any image is configured.
   const galleryImages = [
     selected?.image_url,
     p.image_url,
     p.image_url_2,
     p.image_url_3,
+    p.image_url_4,
+    p.image_url_5,
+    p.image_url_6,
   ]
     .map((x) => (typeof x === "string" ? x.trim() : ""))
     .filter((x, i, arr) => x && arr.indexOf(x) === i);

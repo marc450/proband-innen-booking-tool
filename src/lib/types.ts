@@ -281,10 +281,14 @@ export interface MerchProduct {
   description: string | null;
   /** Primary / hero image. */
   image_url: string | null;
-  /** Optional additional images (up to 2 more, migration 037). Rendered as
-   *  thumbnails on the product detail page that swap the hero on click. */
+  /** Optional additional images (up to 5 more, migrations 037 + 054).
+   *  Rendered as thumbnails on the product detail page that swap the
+   *  hero on click. */
   image_url_2: string | null;
   image_url_3: string | null;
+  image_url_4: string | null;
+  image_url_5: string | null;
+  image_url_6: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
