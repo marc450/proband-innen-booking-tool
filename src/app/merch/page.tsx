@@ -99,17 +99,19 @@ export default async function MerchIndexPage() {
                 className="bg-white rounded-[10px] overflow-hidden flex flex-col group transition-shadow hover:shadow-lg"
               >
                 {t.imageUrl ? (
-                  <div className="relative aspect-[4/3] bg-white overflow-hidden">
+                  <div className="relative aspect-[4/3] bg-black/5 overflow-hidden">
                     <Image
                       src={t.imageUrl}
                       alt={t.color ? `${t.productTitle} ${t.color}` : t.productTitle}
                       fill
                       quality={85}
                       sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-                      // object-contain preserves source aspect ratio so
-                      // nothing gets cropped. White letterbox space
-                      // around portrait shots, square photos, etc.
-                      className="object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+                      // object-cover (default center positioning): the
+                      // 4:3 frame is fully filled, content is cropped
+                      // equally from top + bottom of the source. The
+                      // detail-page gallery uses object-contain so the
+                      // full image is still reachable from there.
+                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                     />
                   </div>
                 ) : (
