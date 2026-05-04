@@ -113,9 +113,7 @@ export function PurchasePanel({
 
       {showQuantity && (
         <div>
-          <p className="text-xs font-bold tracking-wide uppercase text-black/60 mb-2.5">
-            Anzahl
-          </p>
+          <p className="text-xs font-medium text-black/70 mb-2">Anzahl</p>
           <div className="inline-flex items-center gap-3 bg-white rounded-full p-1.5 shadow-sm">
             <button
               type="button"

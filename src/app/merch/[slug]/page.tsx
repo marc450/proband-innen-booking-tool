@@ -87,11 +87,6 @@ export default async function MerchProductPage({
       <section className="max-w-6xl mx-auto px-5 md:px-8 pt-16 md:pt-20 pb-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
           <div>
-            {p.subtitle && (
-              <p className="text-sm font-bold tracking-wider text-[#0066FF] uppercase mb-3">
-                {p.subtitle.replace(/"/g, "")}
-              </p>
-            )}
             <h1 className="text-4xl md:text-5xl font-bold leading-tight">{p.title}</h1>
             {selected?.color && (
               <p className="mt-3 text-sm font-medium text-black/70">

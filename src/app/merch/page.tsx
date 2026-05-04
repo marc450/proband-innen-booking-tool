@@ -120,11 +120,6 @@ export default async function MerchIndexPage() {
                   </div>
                 )}
                 <div className="p-5 flex-1 flex flex-col">
-                  {t.productSubtitle && (
-                    <p className="text-xs font-bold tracking-wider text-[#0066FF] uppercase mb-1">
-                      {t.productSubtitle.replace(/"/g, "")}
-                    </p>
-                  )}
                   <h2 className="text-xl font-bold">
                     {t.productTitle}
                     {t.color ? ` · ${t.color}` : ""}
