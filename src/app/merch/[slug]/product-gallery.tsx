@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ImageIcon } from "lucide-react";
 
 interface Props {
@@ -12,13 +12,45 @@ interface Props {
 }
 
 /**
- * Hero image with up to 3 thumbnails below. Clicking a thumbnail swaps
+ * Hero image with up to N thumbnails below. Clicking a thumbnail swaps
  * the hero. Falls back to a placeholder icon when no images are given.
  * Single-image products skip the thumbnail strip entirely.
+ *
+ * The hero is a plain <img> so the rendered box adapts to the source's
+ * natural aspect ratio (Next/Image's `fill` mode would require a fixed
+ * container aspect, which we don't have because image dimensions
+ * aren't stored in the DB). To avoid the box collapsing to zero
+ * height between clicks (which made the new image "disappear before
+ * loading"), we preload the next source via `new Image()` and only
+ * swap the rendered src once the browser has it decoded. The thumb
+ * selection ring still updates instantly.
  */
 export function ProductGallery({ images, alt, priority }: Props) {
   const [activeIdx, setActiveIdx] = useState(0);
-  const active = images[activeIdx];
+  const [renderedSrc, setRenderedSrc] = useState(() => images[0] ?? "");
+
+  // Preload the requested image, then promote it to renderedSrc when
+  // it has finished decoding so the hero never goes blank between
+  // clicks. If the requested image is already what we're rendering
+  // (or already cached), the swap happens on the same tick.
+  useEffect(() => {
+    const target = images[activeIdx];
+    if (!target || target === renderedSrc) return;
+    const preloader = new window.Image();
+    let cancelled = false;
+    preloader.onload = () => {
+      if (!cancelled) setRenderedSrc(target);
+    };
+    preloader.onerror = () => {
+      // If the preload fails for any reason, fall back to the direct
+      // swap so the user isn't stuck on the old image forever.
+      if (!cancelled) setRenderedSrc(target);
+    };
+    preloader.src = target;
+    return () => {
+      cancelled = true;
+    };
+  }, [activeIdx, images, renderedSrc]);
 
   if (images.length === 0) {
     return (
@@ -30,16 +62,9 @@ export function ProductGallery({ images, alt, priority }: Props) {
 
   return (
     <div className="space-y-3">
-      {/* Hero: plain <img> so the rendered box adapts to the
-        * source's natural aspect ratio. Next/Image's `fill` mode
-        * would force us to fix the container to a known aspect, and
-        * we don't have image dimensions in the DB to compute it
-        * per-product. The thumbnail strip below stays Next/Image
-        * because thumbs share a uniform square frame. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        key={active}
-        src={active}
+        src={renderedSrc}
         alt={alt}
         loading={priority ? "eager" : "lazy"}
         decoding="async"
