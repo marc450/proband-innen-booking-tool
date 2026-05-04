@@ -13,7 +13,12 @@ interface Props {
 // not paragraphs — counted across the whole text — so a single very
 // long paragraph still gets cut off. The first paragraph break beyond
 // this point is the actual cut.
-const PREVIEW_CHAR_TARGET = 240;
+//
+// Tuned so the text column fills enough vertical space to land the
+// CTA roughly level with the bottom of the thumbnail strip on the
+// product detail page. ~800 chars typically pulls in 2 short
+// paragraphs or 1 long one before hitting "mehr lesen".
+const PREVIEW_CHAR_TARGET = 800;
 
 /**
  * Renders a product Beschreibung with a "...mehr lesen" link. Click
