@@ -85,8 +85,8 @@ export default async function MerchProductPage({
   return (
     <div>
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-5 md:px-8 pt-16 md:pt-20 pb-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
+      <section className="max-w-6xl mx-auto px-5 md:px-8 pt-8 md:pt-20 pb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-16 items-center">
           <div>
             {/* Replace ASCII hyphens with non-breaking hyphens (U+2011)
               * so titles like "SONJA X EPHIA T-Shirt" don't break in

@@ -71,7 +71,12 @@ export function ProductGallery({ images, alt, priority }: Props) {
         className="w-full h-auto block bg-white rounded-[10px]"
       />
       {images.length > 1 && (
-        <div className="flex gap-3">
+        // Horizontally scrollable on mobile when more thumbs are
+        // configured than fit the viewport (6 × 64px + gaps already
+        // overflows ~390px). On md+ everything fits in the gallery
+        // column so the scrollbar is moot. -mx pushes the scroll area
+        // edge-to-edge inside the section padding for a cleaner look.
+        <div className="flex gap-3 overflow-x-auto -mx-5 px-5 md:mx-0 md:px-0 md:overflow-visible">
           {images.map((src, i) => {
             const isActive = i === activeIdx;
             return (
@@ -81,7 +86,7 @@ export function ProductGallery({ images, alt, priority }: Props) {
                 onClick={() => setActiveIdx(i)}
                 aria-label={`Bild ${i + 1} anzeigen`}
                 aria-current={isActive}
-                className={`relative aspect-square w-20 md:w-24 shrink-0 bg-white rounded-[10px] overflow-hidden cursor-pointer transition-all ${
+                className={`relative aspect-square w-16 md:w-24 shrink-0 bg-white rounded-[10px] overflow-hidden cursor-pointer transition-all ${
                   isActive
                     ? "ring-2 ring-[#0066FF]"
                     : "ring-1 ring-black/10 hover:ring-black/30 opacity-85 hover:opacity-100"
