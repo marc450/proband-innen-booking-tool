@@ -74,9 +74,11 @@ export function ProductGallery({ images, alt, priority }: Props) {
         // Horizontally scrollable on mobile when more thumbs are
         // configured than fit the viewport (6 × 64px + gaps already
         // overflows ~390px). On md+ everything fits in the gallery
-        // column so the scrollbar is moot. -mx pushes the scroll area
-        // edge-to-edge inside the section padding for a cleaner look.
-        <div className="flex gap-3 overflow-x-auto -mx-5 px-5 md:mx-0 md:px-0 md:overflow-visible">
+        // column so the scrollbar is moot. We deliberately do NOT use
+        // a negative margin to push edge-to-edge — that widens the
+        // strip past the viewport and bleeds into a body horizontal
+        // overflow that drifts the sticky header inward.
+        <div className="flex gap-3 overflow-x-auto md:overflow-visible">
           {images.map((src, i) => {
             const isActive = i === activeIdx;
             return (
