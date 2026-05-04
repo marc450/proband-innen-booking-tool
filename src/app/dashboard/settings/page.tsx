@@ -35,26 +35,36 @@ export default async function SettingsPage() {
   if (profile && profile.role !== "admin") redirect("/dashboard");
 
   const adminClient = createAdminClient();
+
+  // Only staff (admin / nutzer) belong in this table. Customer accounts
+  // created via the LW SSO bridge get role='student' and must be excluded.
   const [{ data: { users: authUsers } }, { data: profiles }] = await Promise.all([
     adminClient.auth.admin.listUsers(),
-    adminClient.from("profiles").select("id, title, first_name, last_name, role, is_dozent, is_kursbetreuung"),
+    adminClient
+      .from("profiles")
+      .select("id, title, first_name, last_name, role, is_dozent, is_kursbetreuung")
+      .in("role", ["admin", "nutzer"]),
   ]);
 
-  const profileMap = new Map(
-    (profiles || []).map((p: any) => [p.id, p])
-  );
+  const authMap = new Map(authUsers.map((u) => [u.id, u]));
 
-  const users: AdminUser[] = authUsers.map((u) => ({
-    id: u.id,
-    email: u.email || "",
-    title: profileMap.get(u.id)?.title ?? null,
-    first_name: profileMap.get(u.id)?.first_name ?? null,
-    last_name: profileMap.get(u.id)?.last_name ?? null,
-    role: (profileMap.get(u.id)?.role ?? "nutzer") as "admin" | "nutzer",
-    is_dozent: profileMap.get(u.id)?.is_dozent ?? false,
-    is_kursbetreuung: profileMap.get(u.id)?.is_kursbetreuung ?? false,
-    created_at: u.created_at,
-  }));
+  const users: AdminUser[] = (profiles || [])
+    .map((p: any) => {
+      const auth = authMap.get(p.id);
+      if (!auth) return null;
+      return {
+        id: p.id,
+        email: auth.email || "",
+        title: p.title ?? null,
+        first_name: p.first_name ?? null,
+        last_name: p.last_name ?? null,
+        role: p.role as "admin" | "nutzer",
+        is_dozent: p.is_dozent ?? false,
+        is_kursbetreuung: p.is_kursbetreuung ?? false,
+        created_at: auth.created_at,
+      };
+    })
+    .filter((u: AdminUser | null): u is AdminUser => u !== null);
 
   // Fetch all course templates
   const { data: courseOfferingsData } = await supabase

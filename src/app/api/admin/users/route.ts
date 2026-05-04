@@ -24,29 +24,40 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
   const adminClient = createAdminClient();
+
+  // Only staff (admin / nutzer) belong in this table. Customer accounts
+  // created via the LW SSO bridge get role='student' and must be excluded.
+  const { data: profiles, error: profilesErr } = await adminClient
+    .from("profiles")
+    .select("id, title, first_name, last_name, role, is_dozent, is_kursbetreuung")
+    .in("role", ["admin", "nutzer"]);
+  if (profilesErr) return NextResponse.json({ error: profilesErr.message }, { status: 500 });
+
   const {
     data: { users: authUsers },
     error,
   } = await adminClient.auth.admin.listUsers();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const { data: profiles } = await adminClient
-    .from("profiles")
-    .select("id, title, first_name, last_name, role, is_dozent, is_kursbetreuung");
+  const authMap = new Map(authUsers.map((u) => [u.id, u]));
 
-  const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
-
-  const result = authUsers.map((u) => ({
-    id: u.id,
-    email: u.email || "",
-    title: profileMap.get(u.id)?.title ?? null,
-    first_name: profileMap.get(u.id)?.first_name ?? null,
-    last_name: profileMap.get(u.id)?.last_name ?? null,
-    role: (profileMap.get(u.id)?.role ?? "nutzer") as "admin" | "nutzer",
-    is_dozent: profileMap.get(u.id)?.is_dozent ?? false,
-    is_kursbetreuung: profileMap.get(u.id)?.is_kursbetreuung ?? false,
-    created_at: u.created_at,
-  }));
+  const result = (profiles || [])
+    .map((p) => {
+      const auth = authMap.get(p.id);
+      if (!auth) return null;
+      return {
+        id: p.id,
+        email: auth.email || "",
+        title: p.title ?? null,
+        first_name: p.first_name ?? null,
+        last_name: p.last_name ?? null,
+        role: p.role as "admin" | "nutzer",
+        is_dozent: p.is_dozent ?? false,
+        is_kursbetreuung: p.is_kursbetreuung ?? false,
+        created_at: auth.created_at,
+      };
+    })
+    .filter((u): u is NonNullable<typeof u> => u !== null);
 
   return NextResponse.json(result);
 }
