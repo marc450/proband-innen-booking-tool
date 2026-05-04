@@ -110,18 +110,22 @@ export function PurchasePanel({
       {showQuantity && (
         <div>
           <p className="text-xs font-medium text-black/70 mb-2">Anzahl</p>
-          <div className="inline-flex items-center gap-3 bg-white rounded-full p-1.5 shadow-sm">
+          {/* Stepper styled to match the Größe selector: rounded-[10px]
+            * cells, the current value gets the same selected-state
+            * tint (blue border + blue/5 fill + blue text) the size
+            * picker uses for the active size. */}
+          <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
               disabled={quantity <= 1}
-              className="w-9 h-9 rounded-full bg-[#0066FF] text-white flex items-center justify-center hover:bg-[#0055DD] disabled:bg-black/10 disabled:text-black/30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              className="rounded-[10px] border border-input bg-white text-black hover:border-foreground/40 disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer w-12 h-10 flex items-center justify-center"
               aria-label="Anzahl verringern"
             >
-              <Minus className="w-4 h-4" strokeWidth={3} />
+              <Minus className="w-4 h-4" />
             </button>
             <div
-              className="min-w-[2rem] text-center text-lg font-bold text-black tabular-nums"
+              className="rounded-[10px] border border-[#0066FF] bg-[#0066FF]/5 text-[#0066FF] w-14 h-10 flex items-center justify-center text-sm font-medium tabular-nums"
               aria-live="polite"
               aria-label={`Anzahl: ${quantity}`}
             >
@@ -131,10 +135,10 @@ export function PurchasePanel({
               type="button"
               onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
               disabled={quantity >= maxQty}
-              className="w-9 h-9 rounded-full bg-[#0066FF] text-white flex items-center justify-center hover:bg-[#0055DD] disabled:bg-black/10 disabled:text-black/30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              className="rounded-[10px] border border-input bg-white text-black hover:border-foreground/40 disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer w-12 h-10 flex items-center justify-center"
               aria-label="Anzahl erhöhen"
             >
-              <Plus className="w-4 h-4" strokeWidth={3} />
+              <Plus className="w-4 h-4" />
             </button>
           </div>
           {quantity >= maxQty && (
