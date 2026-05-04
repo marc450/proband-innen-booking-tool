@@ -106,11 +106,12 @@ export default async function MerchIndexPage() {
                       fill
                       quality={85}
                       sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-                      // object-top anchors the 4:3 crop to the top of the
-                      // source photo so the cap (which sits at the top of
-                      // the model shots) ends up centered in the tile,
-                      // instead of getting cut off above the model's torso.
-                      className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
+                      // Default object-center positioning: the 4:3 crop
+                      // pulls equally from top and bottom of the source.
+                      // For portrait model shots this means the product
+                      // (cap, shirt) ends up vertically centered in the
+                      // tile rather than glued to the top edge.
+                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                     />
                   </div>
                 ) : (
