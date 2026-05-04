@@ -99,19 +99,17 @@ export default async function MerchIndexPage() {
                 className="bg-white rounded-[10px] overflow-hidden flex flex-col group transition-shadow hover:shadow-lg"
               >
                 {t.imageUrl ? (
-                  <div className="relative aspect-[4/3] bg-black/5 overflow-hidden">
+                  <div className="relative aspect-[4/3] bg-white overflow-hidden">
                     <Image
                       src={t.imageUrl}
                       alt={t.color ? `${t.productTitle} ${t.color}` : t.productTitle}
                       fill
                       quality={85}
                       sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-                      // Default object-center positioning: the 4:3 crop
-                      // pulls equally from top and bottom of the source.
-                      // For portrait model shots this means the product
-                      // (cap, shirt) ends up vertically centered in the
-                      // tile rather than glued to the top edge.
-                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                      // object-contain preserves source aspect ratio so
+                      // nothing gets cropped. White letterbox space
+                      // around portrait shots, square photos, etc.
+                      className="object-contain transition-transform duration-500 group-hover:scale-[1.03]"
                     />
                   </div>
                 ) : (

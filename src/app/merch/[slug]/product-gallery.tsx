@@ -41,7 +41,11 @@ export function ProductGallery({ images, alt, sizes, priority }: Props) {
           quality={90}
           sizes={sizes}
           priority={priority}
-          className="object-cover"
+          // object-contain preserves the source aspect ratio so
+          // landscape exhibition shots and portrait product photos
+          // both render without cropping. White letterbox space
+          // appears around images that don't match the square frame.
+          className="object-contain"
         />
       </div>
       {images.length > 1 && (
@@ -67,7 +71,7 @@ export function ProductGallery({ images, alt, sizes, priority }: Props) {
                   fill
                   quality={70}
                   sizes="96px"
-                  className="object-cover"
+                  className="object-contain"
                 />
               </button>
             );
