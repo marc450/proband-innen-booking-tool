@@ -181,7 +181,7 @@ export function MerchCheckoutLauncher({
         <span>
           {soldOut
             ? `Ausverkauft: ${variantLabel}`
-            : buttonText ?? `Schickt sie mir in ${variantLabel}!`}
+            : `${buttonText ?? `Schickt sie mir in ${variantLabel}!`} · ${subtotalLabel}`}
         </span>
         {!soldOut && <Heart className="h-4 w-4" />}
       </button>

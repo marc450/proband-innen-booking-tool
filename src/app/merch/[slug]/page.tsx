@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { MerchProduct, MerchProductVariant } from "@/lib/types";
 import { PurchasePanel } from "./purchase-panel";
 import { ProductGallery } from "./product-gallery";
+import { ProductDescription } from "./product-description";
 
 export const dynamic = "force-dynamic";
 
@@ -110,22 +111,7 @@ export default async function MerchProductPage({
               />
             </div>
 
-            {p.description && (
-              /* Renders the full Beschreibung the admin typed in the
-                 product dialog. Preserves paragraph breaks the admin
-                 inserted with blank lines. */
-              <div className="mt-5 text-base md:text-lg text-black/75 leading-relaxed max-w-xl space-y-4">
-                {p.description
-                  .split(/\n{2,}/)
-                  .map((para) => para.trim())
-                  .filter(Boolean)
-                  .map((para, i) => (
-                    <p key={i} className="whitespace-pre-line">
-                      {para}
-                    </p>
-                  ))}
-              </div>
-            )}
+            {p.description && <ProductDescription text={p.description} />}
 
             <div className="mt-8 max-w-md">
               <PurchasePanel

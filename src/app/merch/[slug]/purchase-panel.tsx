@@ -79,8 +79,6 @@ export function PurchasePanel({
 
   const maxQty = Math.min(selected.stock, MAX_QUANTITY_PER_ORDER);
   const showQuantity = selected.stock > 1;
-  const unitCents = selected.price_gross_cents;
-  const totalCents = unitCents * quantity;
 
   return (
     <div className="space-y-4">
@@ -116,7 +114,7 @@ export function PurchasePanel({
       {showQuantity && (
         <div>
           <p className="text-xs font-bold tracking-wide uppercase text-black/60 mb-2.5">
-            Menge
+            Anzahl
           </p>
           <div className="inline-flex items-center gap-3 bg-white rounded-full p-1.5 shadow-sm">
             <button
@@ -124,14 +122,14 @@ export function PurchasePanel({
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
               disabled={quantity <= 1}
               className="w-9 h-9 rounded-full bg-[#0066FF] text-white flex items-center justify-center hover:bg-[#0055DD] disabled:bg-black/10 disabled:text-black/30 disabled:cursor-not-allowed cursor-pointer transition-colors"
-              aria-label="Menge verringern"
+              aria-label="Anzahl verringern"
             >
               <Minus className="w-4 h-4" strokeWidth={3} />
             </button>
             <div
               className="min-w-[2rem] text-center text-lg font-bold text-black tabular-nums"
               aria-live="polite"
-              aria-label={`Menge: ${quantity}`}
+              aria-label={`Anzahl: ${quantity}`}
             >
               {quantity}
             </div>
@@ -140,7 +138,7 @@ export function PurchasePanel({
               onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
               disabled={quantity >= maxQty}
               className="w-9 h-9 rounded-full bg-[#0066FF] text-white flex items-center justify-center hover:bg-[#0055DD] disabled:bg-black/10 disabled:text-black/30 disabled:cursor-not-allowed cursor-pointer transition-colors"
-              aria-label="Menge erhöhen"
+              aria-label="Anzahl erhöhen"
             >
               <Plus className="w-4 h-4" strokeWidth={3} />
             </button>
@@ -155,23 +153,12 @@ export function PurchasePanel({
         </div>
       )}
 
-      <div className="flex items-baseline justify-between gap-3 pt-2">
-        <span className="text-3xl font-bold text-black tabular-nums">
-          {formatEur(totalCents)}
-        </span>
-        {quantity > 1 && (
-          <span className="text-sm text-black/55 tabular-nums">
-            {quantity} × {formatEur(unitCents)}
-          </span>
-        )}
-      </div>
-
       <MerchCheckoutLauncher
         variantId={selected.id}
         productTitle={productTitle}
         productSlug={productSlug}
         variantLabel={selected.color || selected.name}
-        priceCents={unitCents}
+        priceCents={selected.price_gross_cents}
         stock={selected.stock}
         quantity={quantity}
         buttonText={selected.stock > 0 ? "Jetzt bestellen" : undefined}
@@ -179,16 +166,6 @@ export function PurchasePanel({
       />
     </div>
   );
-}
-
-// German-formatted EUR string from a cents value. Single shared
-// Intl formatter to avoid recreating one on every render.
-const EUR_FORMAT = new Intl.NumberFormat("de-DE", {
-  style: "currency",
-  currency: "EUR",
-});
-function formatEur(cents: number): string {
-  return EUR_FORMAT.format(cents / 100);
 }
 
 // Map common t-shirt size labels to an ordering index so the picker
