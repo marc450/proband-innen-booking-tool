@@ -59,28 +59,36 @@ export function ProductDescription({ text }: Props) {
 
   if (paragraphs.length === 0) return null;
 
-  // Build the preview: keep adding paragraphs until we'd exceed the
-  // target. If the first paragraph alone exceeds it, hard-cut on the
-  // nearest space before the limit and append an ellipsis.
+  // Build the preview: add whole paragraphs while we still have budget,
+  // and hard-cut the next paragraph at a word boundary if it alone would
+  // overflow. The previous algorithm bailed out as soon as a paragraph
+  // wouldn't fit, which made the preview way too short whenever the
+  // admin input had inconsistent paragraph breaks (a single short
+  // intro line followed by a huge wall-of-text paragraph). Hard-cutting
+  // keeps the preview visually balanced regardless of input shape.
   const preview: string[] = [];
   let charCount = 0;
-  let truncatedFirst = false;
+  let truncatedLast = false;
   for (const para of paragraphs) {
-    if (charCount === 0 && para.length > PREVIEW_CHAR_TARGET) {
-      const slice = para.slice(0, PREVIEW_CHAR_TARGET);
-      const lastSpace = slice.lastIndexOf(" ");
-      preview.push(slice.slice(0, lastSpace > 0 ? lastSpace : slice.length).trimEnd());
-      truncatedFirst = true;
-      break;
+    const remaining = PREVIEW_CHAR_TARGET - charCount;
+    if (remaining <= 0) break;
+    if (para.length <= remaining) {
+      preview.push(para);
+      charCount += para.length;
+      continue;
     }
-    if (charCount + para.length > PREVIEW_CHAR_TARGET && preview.length > 0) {
-      break;
-    }
-    preview.push(para);
-    charCount += para.length;
+    // Doesn't fit whole — hard-cut at the nearest word boundary, but
+    // only if that boundary is at least halfway into the remaining
+    // budget (otherwise we waste too much to a long unbroken token).
+    const slice = para.slice(0, remaining);
+    const lastSpace = slice.lastIndexOf(" ");
+    const cutAt = lastSpace > remaining * 0.5 ? lastSpace : remaining;
+    preview.push(para.slice(0, cutAt).trimEnd());
+    truncatedLast = true;
+    break;
   }
 
-  const hasMore = truncatedFirst || preview.length < paragraphs.length;
+  const hasMore = truncatedLast || preview.length < paragraphs.length;
 
   return (
     <>
@@ -90,7 +98,7 @@ export function ProductDescription({ text }: Props) {
             {i === preview.length - 1 && hasMore ? (
               <>
                 {para}
-                {truncatedFirst ? "…" : ""}{" "}
+                {truncatedLast ? "…" : ""}{" "}
                 <button
                   type="button"
                   onClick={() => setOpen(true)}
