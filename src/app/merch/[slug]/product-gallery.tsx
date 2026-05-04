@@ -7,9 +7,7 @@ import { ImageIcon } from "lucide-react";
 interface Props {
   images: string[];
   alt: string;
-  /** Next/Image `sizes` attribute for responsive loading. */
-  sizes: string;
-  /** Forward Next/Image priority to the currently-visible hero only. */
+  /** Forwards `loading="eager"` to the hero element only. */
   priority?: boolean;
 }
 
@@ -18,7 +16,7 @@ interface Props {
  * the hero. Falls back to a placeholder icon when no images are given.
  * Single-image products skip the thumbnail strip entirely.
  */
-export function ProductGallery({ images, alt, sizes, priority }: Props) {
+export function ProductGallery({ images, alt, priority }: Props) {
   const [activeIdx, setActiveIdx] = useState(0);
   const active = images[activeIdx];
 
@@ -32,22 +30,21 @@ export function ProductGallery({ images, alt, sizes, priority }: Props) {
 
   return (
     <div className="space-y-3">
-      <div className="relative aspect-square bg-white rounded-[10px] overflow-hidden">
-        <Image
-          key={active}
-          src={active}
-          alt={alt}
-          fill
-          quality={90}
-          sizes={sizes}
-          priority={priority}
-          // object-contain preserves the source aspect ratio so
-          // landscape exhibition shots and portrait product photos
-          // both render without cropping. White letterbox space
-          // appears around images that don't match the square frame.
-          className="object-contain"
-        />
-      </div>
+      {/* Hero: plain <img> so the rendered box adapts to the
+        * source's natural aspect ratio. Next/Image's `fill` mode
+        * would force us to fix the container to a known aspect, and
+        * we don't have image dimensions in the DB to compute it
+        * per-product. The thumbnail strip below stays Next/Image
+        * because thumbs share a uniform square frame. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        key={active}
+        src={active}
+        alt={alt}
+        loading={priority ? "eager" : "lazy"}
+        decoding="async"
+        className="w-full h-auto block bg-white rounded-[10px]"
+      />
       {images.length > 1 && (
         <div className="flex gap-3">
           {images.map((src, i) => {

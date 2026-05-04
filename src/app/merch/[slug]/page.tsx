@@ -106,7 +106,6 @@ export default async function MerchProductPage({
               <ProductGallery
                 images={galleryImages}
                 alt={galleryAlt}
-                sizes="100vw"
                 priority
               />
             </div>
@@ -150,7 +149,6 @@ export default async function MerchProductPage({
             <ProductGallery
               images={galleryImages}
               alt={galleryAlt}
-              sizes="(min-width: 768px) 50vw, 100vw"
             />
           </div>
         </div>
