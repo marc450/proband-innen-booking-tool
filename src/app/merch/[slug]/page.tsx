@@ -130,6 +130,7 @@ export default async function MerchProductPage({
             <div className="mt-8 max-w-md">
               <PurchasePanel
                 productTitle={p.title}
+                productSlug={p.slug}
                 donates={p.slug.includes("cap")}
                 variants={variantsForColor.map((v) => ({
                   id: v.id,

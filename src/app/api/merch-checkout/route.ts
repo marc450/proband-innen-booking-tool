@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  isPickupOpen,
+  isProductPickupEligible,
+} from "@/lib/merch-pickup";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 
@@ -19,10 +23,16 @@ const MAX_QUANTITY_PER_ORDER = 10;
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { variantId, isDoctor, quantity: rawQuantity } = body as {
+    const {
+      variantId,
+      isDoctor,
+      quantity: rawQuantity,
+      pickupAtEvent: rawPickupAtEvent,
+    } = body as {
       variantId?: string;
       isDoctor?: boolean;
       quantity?: number;
+      pickupAtEvent?: boolean;
     };
 
     // Name, email, phone, address are collected by Stripe Checkout (see
@@ -32,6 +42,7 @@ export async function POST(req: NextRequest) {
     if (!variantId || typeof isDoctor !== "boolean") {
       return NextResponse.json({ error: "Variante und Ärzt:in-Angabe sind erforderlich." }, { status: 400 });
     }
+    const pickupAtEventRequested = rawPickupAtEvent === true;
 
     // Quantity defaults to 1 (legacy callers + the cap's "one click"
     // flow). Coerce to a positive integer, clamp to [1, MAX] up front;
@@ -68,6 +79,18 @@ export async function POST(req: NextRequest) {
         { status: 409 },
       );
     }
+
+    // Re-validate the community-event pickup choice server-side so a
+    // tampered client can't claim pickup on a non-eligible product
+    // (e.g. the cap) or sneak it past the cutoff once the event has
+    // already started. If the request asks for pickup but the
+    // server-side checks fail, we fall back to regular shipping
+    // rather than rejecting outright — the buyer's intent ("I want
+    // this product") still resolves to a successful checkout.
+    const pickupAtEvent =
+      pickupAtEventRequested &&
+      isProductPickupEligible(product.slug) &&
+      isPickupOpen();
 
     const origin = req.headers.get("origin") || "https://kurse.ephia.de";
     const successUrl = `${origin}/merch/success?session_id={CHECKOUT_SESSION_ID}`;
@@ -108,27 +131,6 @@ export async function POST(req: NextRequest) {
       "line_items[0][price_data][product_data][name]": productName,
       "line_items[0][price_data][product_data][tax_code]": "txcd_99999999",
 
-      // Shipping address required.
-      "shipping_address_collection[allowed_countries][0]": "DE",
-      "shipping_address_collection[allowed_countries][1]": "AT",
-      "shipping_address_collection[allowed_countries][2]": "CH",
-
-      // Fixed shipping rate (V1 — admin can swap for dynamic rates later).
-      // Mark the 2,90 EUR as VAT-inclusive and tag with Stripe's shipping
-      // tax_code ("txcd_92010001") so automatic_tax splits the VAT portion
-      // consistently with the line item rather than treating shipping as
-      // tax-free.
-      "shipping_options[0][shipping_rate_data][type]": "fixed_amount",
-      "shipping_options[0][shipping_rate_data][fixed_amount][amount]": String(SHIPPING_GROSS_CENTS),
-      "shipping_options[0][shipping_rate_data][fixed_amount][currency]": "eur",
-      "shipping_options[0][shipping_rate_data][display_name]": SHIPPING_LABEL,
-      "shipping_options[0][shipping_rate_data][tax_behavior]": "inclusive",
-      "shipping_options[0][shipping_rate_data][tax_code]": "txcd_92010001",
-      "shipping_options[0][shipping_rate_data][delivery_estimate][minimum][unit]": "business_day",
-      "shipping_options[0][shipping_rate_data][delivery_estimate][minimum][value]": String(SHIPPING_DELIVERY_MIN_DAYS),
-      "shipping_options[0][shipping_rate_data][delivery_estimate][maximum][unit]": "business_day",
-      "shipping_options[0][shipping_rate_data][delivery_estimate][maximum][value]": String(SHIPPING_DELIVERY_MAX_DAYS),
-
       // Metadata drives the stripe-webhook handler.
       "metadata[orderType]": "merch",
       "metadata[variantId]": variant.id,
@@ -146,8 +148,43 @@ export async function POST(req: NextRequest) {
       // amount sanity check.
       "metadata[itemUnitGrossCents]": String(variant.price_gross_cents),
       "metadata[itemGrossCents]": String(variant.price_gross_cents * quantity),
-      "metadata[shippingGrossCents]": String(SHIPPING_GROSS_CENTS),
+      "metadata[shippingGrossCents]": String(pickupAtEvent ? 0 : SHIPPING_GROSS_CENTS),
+      "metadata[pickupAtEvent]": pickupAtEvent ? "true" : "false",
     };
+
+    if (pickupAtEvent) {
+      // Pickup orders skip Stripe's shipping flow entirely: no
+      // shipping_address_collection (we don't need a delivery
+      // address) and no shipping_options (no €2.90 line). Billing
+      // address is still collected because Stripe needs it for the
+      // tax-compliant invoice.
+    } else {
+      // Shipping address required.
+      params["shipping_address_collection[allowed_countries][0]"] = "DE";
+      params["shipping_address_collection[allowed_countries][1]"] = "AT";
+      params["shipping_address_collection[allowed_countries][2]"] = "CH";
+
+      // Fixed shipping rate (V1 — admin can swap for dynamic rates later).
+      // Mark the 2,90 EUR as VAT-inclusive and tag with Stripe's shipping
+      // tax_code ("txcd_92010001") so automatic_tax splits the VAT portion
+      // consistently with the line item rather than treating shipping as
+      // tax-free.
+      params["shipping_options[0][shipping_rate_data][type]"] = "fixed_amount";
+      params["shipping_options[0][shipping_rate_data][fixed_amount][amount]"] =
+        String(SHIPPING_GROSS_CENTS);
+      params["shipping_options[0][shipping_rate_data][fixed_amount][currency]"] = "eur";
+      params["shipping_options[0][shipping_rate_data][display_name]"] = SHIPPING_LABEL;
+      params["shipping_options[0][shipping_rate_data][tax_behavior]"] = "inclusive";
+      params["shipping_options[0][shipping_rate_data][tax_code]"] = "txcd_92010001";
+      params["shipping_options[0][shipping_rate_data][delivery_estimate][minimum][unit]"] =
+        "business_day";
+      params["shipping_options[0][shipping_rate_data][delivery_estimate][minimum][value]"] =
+        String(SHIPPING_DELIVERY_MIN_DAYS);
+      params["shipping_options[0][shipping_rate_data][delivery_estimate][maximum][unit]"] =
+        "business_day";
+      params["shipping_options[0][shipping_rate_data][delivery_estimate][maximum][value]"] =
+        String(SHIPPING_DELIVERY_MAX_DAYS);
+    }
 
     const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",

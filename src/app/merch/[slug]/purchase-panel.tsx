@@ -30,10 +30,15 @@ const MAX_QUANTITY_PER_ORDER = 10;
 export function PurchasePanel({
   variants,
   productTitle,
+  productSlug,
   donates = false,
 }: {
   variants: Variant[];
   productTitle: string;
+  /** Slug of the parent product. Forwarded to the launcher so it can
+   *  decide whether to offer the community-event pickup option (only
+   *  the SONJA X EPHIA t-shirt, see lib/merch-pickup.ts). */
+  productSlug: string;
   /** Forwarded to the launcher so only donating products (the cap)
    *  mention the 10 EUR Jenny De la Torre-Stiftung line in the modal. */
   donates?: boolean;
@@ -164,6 +169,7 @@ export function PurchasePanel({
       <MerchCheckoutLauncher
         variantId={selected.id}
         productTitle={productTitle}
+        productSlug={productSlug}
         variantLabel={selected.color || selected.name}
         priceCents={unitCents}
         stock={selected.stock}

@@ -1,11 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { Heart, Loader2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Heart, Loader2, MapPin, X } from "lucide-react";
+import {
+  COMMUNITY_PICKUP_EVENT,
+  isPickupOpen,
+  isProductPickupEligible,
+} from "@/lib/merch-pickup";
 
 interface Props {
   variantId: string;
   productTitle: string;
+  /** Slug of the parent product. Used to decide whether the
+   *  community-event pickup option should appear in the modal. */
+  productSlug?: string;
   variantLabel: string;
   priceCents: number;
   stock: number;
@@ -44,6 +52,7 @@ interface Props {
 export function MerchCheckoutLauncher({
   variantId,
   productTitle,
+  productSlug,
   variantLabel,
   priceCents,
   stock,
@@ -55,11 +64,43 @@ export function MerchCheckoutLauncher({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDoctor, setIsDoctor] = useState<"" | "yes" | "no">("");
+  const [delivery, setDelivery] = useState<"" | "shipping" | "pickup">("");
 
   const soldOut = stock <= 0;
 
+  // Whether the modal should ask "Versand oder Abholung?". Only shown
+  // for products on the eligibility list AND only while the pickup
+  // window is still open. We also re-check on a 60s interval so the
+  // option correctly disappears if a session sits idle past the
+  // cutoff (relevant for buyers who left the modal open near 19:30
+  // CEST on the event day).
+  const productAllowsPickup = isProductPickupEligible(productSlug);
+  const [pickupWindowOpen, setPickupWindowOpen] = useState(() =>
+    isPickupOpen(),
+  );
+  useEffect(() => {
+    if (!productAllowsPickup) return;
+    const tick = () => setPickupWindowOpen(isPickupOpen());
+    const id = window.setInterval(tick, 60_000);
+    return () => window.clearInterval(id);
+  }, [productAllowsPickup]);
+  const showDeliveryQuestion = productAllowsPickup && pickupWindowOpen;
+
+  // Default the delivery choice to "shipping" for any non-eligible
+  // product (cap, future merch) so the form is always submittable
+  // even when the question doesn't render. Eligible products start
+  // with no choice so the buyer is forced to make one.
+  useEffect(() => {
+    if (!showDeliveryQuestion) {
+      setDelivery("shipping");
+    } else {
+      setDelivery("");
+    }
+  }, [showDeliveryQuestion]);
+
   const reset = () => {
     setIsDoctor("");
+    setDelivery(showDeliveryQuestion ? "" : "shipping");
     setError(null);
     setSubmitting(false);
   };
@@ -72,6 +113,10 @@ export function MerchCheckoutLauncher({
       setError("Bitte eine Auswahl treffen.");
       return;
     }
+    if (showDeliveryQuestion && !delivery) {
+      setError("Bitte Versand oder Abholung wählen.");
+      return;
+    }
 
     setSubmitting(true);
 
@@ -82,6 +127,7 @@ export function MerchCheckoutLauncher({
       variantId,
       quantity,
       isDoctor: isDoctor === "yes",
+      pickupAtEvent: delivery === "pickup",
     });
     let lastNetErr: string | null = null;
     for (let attempt = 1; attempt <= 3; attempt++) {
@@ -178,9 +224,11 @@ export function MerchCheckoutLauncher({
               )}
               <br />
               <span className="text-xs text-black/50">
-                {donates
-                  ? `Versand 2,90 € · Spende 10 € an De la Torre-Stiftung pro Cap${quantity > 1 ? ` (${quantity}× = ${(quantity * 10).toLocaleString("de-DE")} €)` : ""}`
-                  : "Versand 2,90 €"}
+                {delivery === "pickup"
+                  ? "Abholung beim Community Event · kein Versand"
+                  : donates
+                    ? `Versand 2,90 € · Spende 10 € an De la Torre-Stiftung pro Cap${quantity > 1 ? ` (${quantity}× = ${(quantity * 10).toLocaleString("de-DE")} €)` : ""}`
+                    : "Versand 2,90 €"}
               </span>
             </p>
 
@@ -216,6 +264,54 @@ export function MerchCheckoutLauncher({
                   </button>
                 </div>
               </div>
+
+              {showDeliveryQuestion && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Versand oder Abholung beim Community Event?
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDelivery("shipping")}
+                      className={`rounded-[10px] border py-2.5 text-sm font-medium transition-colors cursor-pointer ${
+                        delivery === "shipping"
+                          ? "border-[#0066FF] bg-[#0066FF]/5 text-[#0066FF]"
+                          : "border-input bg-white hover:bg-gray-50"
+                      }`}
+                    >
+                      Versand (2,90 €)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDelivery("pickup")}
+                      className={`rounded-[10px] border py-2.5 text-sm font-medium transition-colors cursor-pointer ${
+                        delivery === "pickup"
+                          ? "border-[#0066FF] bg-[#0066FF]/5 text-[#0066FF]"
+                          : "border-input bg-white hover:bg-gray-50"
+                      }`}
+                    >
+                      Abholung beim Community Event
+                    </button>
+                  </div>
+                  {delivery === "pickup" && (
+                    <div className="rounded-[10px] bg-[#FAEBE1] px-3 py-3 text-xs text-[#733D29] space-y-1.5">
+                      <p className="font-semibold">EPHIA Community Event</p>
+                      <p>{COMMUNITY_PICKUP_EVENT.dateLabel}, {COMMUNITY_PICKUP_EVENT.timeLabel}</p>
+                      <p className="flex items-start gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                        <span>{COMMUNITY_PICKUP_EVENT.location}</span>
+                      </p>
+                    </div>
+                  )}
+                  {delivery === "shipping" && (
+                    <p className="text-xs text-black/55">
+                      Hinweis: Versand erfolgt erst nach dem Community Event am{" "}
+                      {COMMUNITY_PICKUP_EVENT.dateLabel}.
+                    </p>
+                  )}
+                </div>
+              )}
 
               {error && <p className="text-sm text-red-600">{error}</p>}
 

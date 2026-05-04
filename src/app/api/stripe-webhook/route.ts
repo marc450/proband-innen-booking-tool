@@ -680,6 +680,7 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
   const itemGrossCents = Number(metadata.itemGrossCents) || 0;
   const shippingGrossCents = Number(metadata.shippingGrossCents) || 0;
   const amountPaidCents = session.amount_total || itemGrossCents + shippingGrossCents;
+  const pickupAtEvent = metadata.pickupAtEvent === "true";
 
   const customerId =
     typeof session.customer === "string" ? session.customer : session.customer?.id || null;
@@ -735,6 +736,7 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
       shipping_country: shippingAddr.country || null,
       item_gross_cents: itemGrossCents,
       shipping_gross_cents: shippingGrossCents,
+      pickup_at_event: pickupAtEvent,
       amount_paid_cents: amountPaidCents,
       stripe_checkout_session_id: checkoutSessionId,
       stripe_payment_intent_id: paymentIntentId,
