@@ -17,6 +17,24 @@ const RECHNUNG_SECTION = `
       Deine Rechnung senden wir Dir in einer separaten E-Mail automatisch zu, sobald Deine Zahlung bestätigt wurde. Bitte beachte, dass dieser Prozess bei SEPA-Bezahlungen bis zu zwei Wochen dauern kann.
     </p>`;
 
+// Body of the "set your password" call-to-action, shared between the
+// Onlinekurs and Kombikurs confirmation emails so the copy stays in
+// lockstep. The customer is brand new in Supabase Auth at this point
+// (no auth user yet); /start runs the lazy-migration flow that asks
+// for an email + password and creates the account on submit.
+const LOGIN_SETUP_BODY = `
+    <p style="margin:0 0 16px;">
+      Mit Deiner Kursbuchung haben wir Deinen EPHIA-Zugang für Dich vorbereitet. Lege jetzt Dein Passwort fest, dann kannst Du direkt mit dem Lernen starten.
+    </p>
+    <p style="margin:0 0 20px;">
+      <a href="https://ephia.de/start" style="display:inline-block;background-color:#0066FF;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:bold;">
+        Jetzt Passwort festlegen
+      </a>
+    </p>
+    <p style="margin:0 0 20px;">
+      Hast Du bereits ein EPHIA-Konto, melde Dich einfach mit Deinen bestehenden Zugangsdaten an. Dein neuer Kurs erscheint automatisch in Deinem Dashboard.
+    </p>`;
+
 const MONTHS_DE_FULL = [
   "Januar", "Februar", "März", "April", "Mai", "Juni",
   "Juli", "August", "September", "Oktober", "November", "Dezember",
@@ -104,11 +122,7 @@ export function buildOnlinekursEmail(firstName: string, courseName: string): str
     </p>
 
     <h3 style="margin:16px 0 10px;font-size:16px;font-weight:bold;">So startest Du mit dem Kurs</h3>
-    <p style="margin:0 0 20px;">
-      Wenn Du noch keinen EPHIA-Account hast, legen wir ihn mit Deiner Kursbuchung für Dich an. Du erhältst eine separate E-Mail mit der Aufforderung, ein Passwort zu vergeben. Sobald Du Dein Passwort gesetzt hast, kannst Du Dich jederzeit über <a href="https://ephia.de/start" style="color:#0066FF;text-decoration:none;">ephia.de/start</a> einloggen und direkt mit dem Lernen beginnen.
-      <br><br>
-      Hast Du bereits einen Account bei uns, kannst Du Dich einfach mit Deinen bestehenden Zugangsdaten anmelden – Dein neuer Kurs ist dann automatisch in Deinem Dashboard sichtbar.
-    </p>
+    ${LOGIN_SETUP_BODY}
 
     <h3 style="margin:16px 0 10px;font-size:16px;font-weight:bold;">Tipps für Deine Lernreise</h3>
     <p style="margin:0 0 20px;">
@@ -188,11 +202,7 @@ export function buildKombikursEmail(firstName: string, courseName: string, praxi
     </p>
 
     ${opts?.hasOnlineCourse !== false ? `<h2 style="margin:16px 0 10px;font-size:20px;font-weight:bold;">Dein Onlinekurs</h2>
-    <p style="margin:0 0 20px;">
-      Im ersten Schritt legst Du Deinen Zugang auf EPHIA an. Dafür bitten wir Dich, ein Passwort für Deinen EPHIA-Account zu erstellen. Den entsprechenden Link hast Du bereits per E-Mail erhalten.
-      <br><br>
-      Falls Du schon ein Konto bei uns hast, kannst Du Dich einfach direkt <a href="https://ephia.de/start" style="color:#0066FF; text-decoration:none;">hier einloggen</a> und mit dem Lernen starten.
-    </p>` : ""}
+    ${LOGIN_SETUP_BODY}` : ""}
 
     <h2 style="margin:16px 0 10px;font-size:20px;font-weight:bold;">Dein Praxiskurs</h2>
     <p style="margin:0 0 20px;">Hier siehst Du alle wichtigen Daten zu Deinem Praxiskurs auf einen Blick:</p>
