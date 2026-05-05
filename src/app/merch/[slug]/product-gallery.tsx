@@ -1,56 +1,58 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { ImageIcon } from "lucide-react";
 
 interface Props {
   images: string[];
   alt: string;
-  /** Forwards `loading="eager"` to the hero element only. */
+  /** Forwards `priority` to the first hero image only. */
   priority?: boolean;
 }
 
 /**
- * Hero image with up to N thumbnails below. Clicking a thumbnail swaps
- * the hero. Falls back to a placeholder icon when no images are given.
- * Single-image products skip the thumbnail strip entirely.
+ * Hero image with up to N thumbnails below. Clicking a thumbnail (or
+ * swiping on touch devices) swaps the hero. Falls back to a placeholder
+ * icon when no images are given. Single-image products skip the
+ * thumbnail strip entirely.
  *
- * The hero is a plain <img> so the rendered box adapts to the source's
- * natural aspect ratio (Next/Image's `fill` mode would require a fixed
- * container aspect, which we don't have because image dimensions
- * aren't stored in the DB). To avoid the box collapsing to zero
- * height between clicks (which made the new image "disappear before
- * loading"), we preload the next source via `new Image()` and only
- * swap the rendered src once the browser has it decoded. The thumb
- * selection ring still updates instantly.
+ * All images are rendered as stacked next/image components inside an
+ * aspect-square container; the active one fades in and the rest sit at
+ * opacity-0. This means:
+ *   - the browser downloads the optimized AVIF/WebP version of every
+ *     gallery image (typically 30 to 80 KB each), so switching is
+ *     instant once the page has settled
+ *   - product photos with non-square aspect ratios get letterboxed via
+ *     object-contain rather than cropped (we don't store dimensions in
+ *     the DB, so a fixed aspect-square box is the simplest reliable
+ *     layout)
  */
 export function ProductGallery({ images, alt, priority }: Props) {
   const [activeIdx, setActiveIdx] = useState(0);
-  const [renderedSrc, setRenderedSrc] = useState(() => images[0] ?? "");
 
-  // Preload the requested image, then promote it to renderedSrc when
-  // it has finished decoding so the hero never goes blank between
-  // clicks. If the requested image is already what we're rendering
-  // (or already cached), the swap happens on the same tick.
-  useEffect(() => {
-    const target = images[activeIdx];
-    if (!target || target === renderedSrc) return;
-    const preloader = new window.Image();
-    let cancelled = false;
-    preloader.onload = () => {
-      if (!cancelled) setRenderedSrc(target);
-    };
-    preloader.onerror = () => {
-      // If the preload fails for any reason, fall back to the direct
-      // swap so the user isn't stuck on the old image forever.
-      if (!cancelled) setRenderedSrc(target);
-    };
-    preloader.src = target;
-    return () => {
-      cancelled = true;
-    };
-  }, [activeIdx, images, renderedSrc]);
+  // Touch swipe: track the X coord at touchstart, compute delta on
+  // touchend, advance one slot when the delta crosses the threshold.
+  // Y delta is intentionally ignored so vertical scroll keeps working
+  // when the user just brushes the gallery on the way to the rest of
+  // the page.
+  const touchStartX = useRef<number | null>(null);
+  const SWIPE_THRESHOLD_PX = 40;
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(dx) < SWIPE_THRESHOLD_PX) return;
+    if (dx < 0 && activeIdx < images.length - 1) {
+      setActiveIdx(activeIdx + 1);
+    } else if (dx > 0 && activeIdx > 0) {
+      setActiveIdx(activeIdx - 1);
+    }
+  };
 
   if (images.length === 0) {
     return (
@@ -62,14 +64,26 @@ export function ProductGallery({ images, alt, priority }: Props) {
 
   return (
     <div className="space-y-3">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={renderedSrc}
-        alt={alt}
-        loading={priority ? "eager" : "lazy"}
-        decoding="async"
-        className="w-full h-auto block bg-white rounded-[10px]"
-      />
+      <div
+        className="relative aspect-square bg-white rounded-[10px] overflow-hidden touch-pan-y"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {images.map((src, i) => (
+          <Image
+            key={src + i}
+            src={src}
+            alt={`${alt} ${i + 1}`}
+            fill
+            quality={85}
+            priority={priority && i === 0}
+            sizes="(max-width: 768px) 100vw, 600px"
+            className={`object-contain transition-opacity duration-200 ${
+              i === activeIdx ? "opacity-100" : "opacity-0"
+            }`}
+          />
+        ))}
+      </div>
       {images.length > 1 && (
         // Horizontally scrollable on mobile when more thumbs are
         // configured than fit the viewport (6 × 64px + gaps already
