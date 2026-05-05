@@ -140,7 +140,7 @@ export function OrdersManager({ initialOrders }: { initialOrders: MerchOrder[] }
               <TableHead>Produkt</TableHead>
               <TableHead>Variante</TableHead>
               <TableHead>Ärzt:in</TableHead>
-              <TableHead>Versandadresse</TableHead>
+              <TableHead>Lieferung</TableHead>
               <TableHead className="text-right">Betrag</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
@@ -184,8 +184,16 @@ export function OrdersManager({ initialOrders }: { initialOrders: MerchOrder[] }
                         <span className="text-xs text-muted-foreground">Nein</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-[240px]">
-                      {address || "–"}
+                    <TableCell className="text-xs max-w-[240px]">
+                      {o.pickup_at_event ? (
+                        <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">
+                          Abholung
+                        </Badge>
+                      ) : address ? (
+                        <span className="text-muted-foreground">{address}</span>
+                      ) : (
+                        <span className="text-muted-foreground">–</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       <div className="text-sm font-medium">

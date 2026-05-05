@@ -786,8 +786,14 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
         email ? `*E-Mail:* ${email}` : null,
         phone ? `*Telefon:* ${phone}` : null,
         `*Ärzt:in:* ${isDoctor ? "Ja" : "Nein"}`,
-        address ? `*Versand:* ${address}` : null,
-        betrag ? `*Betrag:* ${betrag} (inkl. Versand)` : null,
+        pickupAtEvent
+          ? `*Lieferart:* Abholung beim Community Event`
+          : address
+            ? `*Lieferart:* Versand · ${address}`
+            : `*Lieferart:* Versand`,
+        betrag
+          ? `*Betrag:* ${betrag}${pickupAtEvent ? "" : " (inkl. Versand)"}`
+          : null,
         stockError ? `⚠️ *Stock-Update fehlgeschlagen:* ${stockError}` : null,
       ].filter(Boolean);
       // Override sender identity so the post does not inherit the parent
@@ -821,15 +827,18 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
 
       const html = buildEmailHtml({
         firstName: firstName || "Du",
-        intro:
-          "vielen Dank für Deine Bestellung! Wir haben sie erhalten und schicken sie in den nächsten 3–7 Werktagen auf den Weg zu Dir.",
+        intro: pickupAtEvent
+          ? "vielen Dank für Deine Bestellung! Du hast Abholung beim nächsten EPHIA Community Event gewählt, Du musst also nichts weiter tun, wir bringen Deine Bestellung mit."
+          : "vielen Dank für Deine Bestellung! Wir haben sie erhalten und schicken sie in den nächsten 3 bis 7 Werktagen auf den Weg zu Dir.",
         infoRows: [
           {
             label: "Produkt",
             value: `${productTitle}${variantLabel ? ` (${variantLabel})` : ""}${quantity > 1 ? ` × ${quantity}` : ""}`,
           },
           { label: "Artikel", value: fmt(itemGrossCents) },
-          { label: "Versand", value: fmt(shippingGrossCents) },
+          pickupAtEvent
+            ? { label: "Lieferart", value: "Abholung beim Community Event" }
+            : { label: "Versand", value: fmt(shippingGrossCents) },
           { label: "Gesamt", value: fmt(amountPaidCents) },
         ],
         extraContent: `

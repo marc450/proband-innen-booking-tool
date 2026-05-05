@@ -329,6 +329,7 @@ export interface MerchOrder {
   shipping_country: string | null;
   item_gross_cents: number;
   shipping_gross_cents: number;
+  pickup_at_event: boolean;
   amount_paid_cents: number;
   stripe_checkout_session_id: string | null;
   stripe_payment_intent_id: string | null;
