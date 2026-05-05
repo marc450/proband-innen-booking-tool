@@ -25,19 +25,29 @@ const HOST_PROBAND = "https://proband-innen.ephia.de";
 
 const HAUPTSEITEN: PageGroup = {
   label: "Hauptseiten",
-  description: "Startseite und allgemeine Marketingseiten unter /kurse.",
+  description: "Startseite und allgemeine Marketingseiten auf ephia.de.",
   host: HOST_MARKETING,
   pages: [
-    { title: "Startseite", path: "/kurse" },
-    { title: "Unsere Kurse", path: "/kurse/unsere-kurse" },
-    { title: "Curriculum Botulinum", path: "/kurse/curriculum-botulinum" },
-    { title: "CME-Online-Seminare", path: "/kurse/cme-online-seminare" },
-    { title: "Unsere Didaktik", path: "/kurse/didaktik" },
-    { title: "Unsere Vision", path: "/kurse/vision" },
-    { title: "Unsere Community", path: "/kurse/community" },
+    { title: "Startseite", path: "/" },
+    { title: "Unsere Kurse", path: "/unsere-kurse" },
+    { title: "Curriculum Botulinum", path: "/curriculum-botulinum" },
+    { title: "CME-Online-Seminare", path: "/cme-online-seminare" },
+    { title: "Unsere Didaktik", path: "/didaktik" },
+    { title: "Unsere Vision", path: "/vision" },
+    { title: "Unsere Community", path: "/community" },
     { title: "Team & Dozent:innen", path: "/team" },
-    { title: "FAQ & Kontakt", path: "/kurse/faq-kontakt" },
-    { title: "Werde Proband:in", path: "/kurse/werde-proband-in" },
+    { title: "FAQ & Kontakt", path: "/faq-kontakt" },
+  ],
+};
+
+const BOTOX_LANDINGS: PageGroup = {
+  label: "Botox-Performance-Landingpages",
+  description:
+    "Eigenständige Landingpages für Botox-Suchanfragen. Inhaltlich Botulinum-Curriculum, mit Botox-Wording im Title/Hook.",
+  host: HOST_MARKETING,
+  pages: [
+    { title: "CME-Online-Kurse Botox", path: "/cme-onlinekurse-botox" },
+    { title: "Kostenloser Botox-Kurs", path: "/kostenloser-botox-kurs" },
   ],
 };
 
@@ -45,26 +55,25 @@ const RECHTLICHES: PageGroup = {
   label: "Rechtliches",
   host: HOST_MARKETING,
   pages: [
-    { title: "Impressum", path: "/kurse/impressum" },
-    { title: "Datenschutz", path: "/kurse/datenschutz" },
-    { title: "AGB", path: "/kurse/agb" },
+    { title: "Impressum", path: "/impressum" },
+    { title: "Datenschutz", path: "/datenschutz" },
+    { title: "AGB", path: "/agb" },
   ],
 };
 
-const SONSTIGE: PageGroup = {
-  label: "Sonstige Marketingseiten",
-  host: HOST_PROBAND,
-  pages: [
-    { title: "Einladung", path: "/einladung" },
-    { title: "Merch Shop", path: "/merch" },
-  ],
+const SHOP: PageGroup = {
+  label: "Shop",
+  host: HOST_MARKETING,
+  pages: [{ title: "Merch Shop", path: "/merch" }],
 };
 
 const FUNNELS: PageGroup = {
   label: "Buchungsfunnels",
-  description: "Öffentliche Buchungsstrecken für Proband:innen.",
+  description:
+    "Öffentliche Buchungsstrecken für Proband:innen auf proband-innen.ephia.de.",
   host: HOST_PROBAND,
   pages: [
+    { title: "Werde Proband:in (Startseite)", path: "/" },
     { title: "Standard Buchung (Proband:innen)", path: "/book" },
     { title: "Privat-Funnel (Empfehlung)", path: "/book/privat" },
   ],
@@ -79,12 +88,13 @@ function buildCourseGroup(): PageGroup {
         .replace(/\s*\|\s*EPHIA\s*$/i, "")
         .replace(/\s*—\s*EPHIA\s*$/i, "")
         .trim();
-      return { title: cleanTitle, path: `/kurse/${slug}` };
+      return { title: cleanTitle, path: `/${slug}` };
     })
     .sort((a, b) => a.title.localeCompare(b.title, "de"));
   return {
     label: "Kurs-Landingpages",
-    description: "Eine Landingpage pro Kursangebot, gerendert über /kurse/[slug].",
+    description:
+      "Eine Landingpage pro Kursangebot, gerendert über /kurse/[slug] und auf ephia.de unter dem clean Slug ausgespielt.",
     host: HOST_MARKETING,
     pages,
   };
@@ -93,9 +103,10 @@ function buildCourseGroup(): PageGroup {
 export default function LandingPagesPage() {
   const groups: PageGroup[] = [
     HAUPTSEITEN,
+    BOTOX_LANDINGS,
     buildCourseGroup(),
     RECHTLICHES,
-    SONSTIGE,
+    SHOP,
     FUNNELS,
   ];
 
