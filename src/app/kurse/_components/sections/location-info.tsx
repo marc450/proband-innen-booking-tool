@@ -9,7 +9,7 @@ export function LocationInfo({ content }: { content: CourseLocationContent }) {
 
   return (
     <section className="bg-white py-16 md:py-24">
-      <div className="max-w-5xl mx-auto px-5 md:px-8">
+      <div className="max-w-7xl mx-auto px-5 md:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-left md:text-center tracking-wide mb-10 md:mb-14">
           {content.heading}
         </h2>

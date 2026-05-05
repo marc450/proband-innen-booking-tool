@@ -159,7 +159,7 @@ export default async function WerdeProbandInPage() {
         <div className="lg:hidden">
           <BackgroundVideo videoPath={hero.videoPath} opacityPercent={22} />
         </div>
-        <div className="relative z-10 max-w-6xl mx-auto px-5 md:px-8">
+        <div className="relative z-10 max-w-7xl mx-auto px-5 md:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-14 items-center">
             <div className="text-center lg:text-left">
               <h1 className={`${TYPO.h1} text-black`}>{hero.heading}</h1>
@@ -192,7 +192,7 @@ export default async function WerdeProbandInPage() {
         id="so-laeufts-ab"
         className="bg-[#FAEBE1] py-16 md:py-20 scroll-mt-20"
       >
-        <div className="max-w-6xl mx-auto px-5 md:px-8">
+        <div className="max-w-7xl mx-auto px-5 md:px-8">
           <div className="text-center mb-12 md:mb-14 max-w-2xl mx-auto">
             <h2 className={`${TYPO.h2} text-black`}>So läuft&apos;s ab</h2>
             <p className={`${TYPO.bodyLead} mt-4`}>
@@ -229,7 +229,7 @@ export default async function WerdeProbandInPage() {
 
       {/* USPs — three value pillars. */}
       <section className="bg-[#FAEBE1] py-16 md:py-20">
-        <div className="max-w-6xl mx-auto px-5 md:px-8">
+        <div className="max-w-7xl mx-auto px-5 md:px-8">
           <div className="text-center mb-12 md:mb-14">
             <h2 className={`${TYPO.h2} text-black`}>Darum zu EPHIA</h2>
           </div>

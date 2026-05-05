@@ -52,7 +52,7 @@ export default function FaqKontaktPage() {
 
       {/* Contact — split two-column on desktop, stacked on mobile. */}
       <section className="bg-[#e6e8ec] py-16 md:py-24">
-        <div className="max-w-5xl mx-auto px-5 md:px-8 grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16">
+        <div className="max-w-7xl mx-auto px-5 md:px-8 grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16">
           <div className="space-y-6">
             <h2 className="text-2xl md:text-3xl font-bold">Kontaktiere uns</h2>
             <div className="space-y-5 text-sm md:text-base">

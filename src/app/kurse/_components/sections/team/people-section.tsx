@@ -30,7 +30,7 @@ export function PeopleSection({
           content.heading ? "py-20 md:py-28" : "pt-6 md:pt-10 pb-20 md:pb-28"
         }`}
       >
-        <div className="max-w-6xl mx-auto px-5 md:px-8">
+        <div className="max-w-7xl mx-auto px-5 md:px-8">
           {content.heading && (
             <div className="text-center mb-14 max-w-3xl mx-auto">
               <h2 className={`${TYPO.h2} text-black`}>{content.heading}</h2>

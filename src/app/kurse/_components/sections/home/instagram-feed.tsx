@@ -7,7 +7,7 @@ import { TYPO } from "../../typography";
 export function InstagramFeed({ content }: { content: HomeInstagramContent }) {
   return (
     <section className="bg-[#FAEBE1] py-16 md:py-24">
-      <div className="max-w-6xl mx-auto px-5 md:px-8">
+      <div className="max-w-7xl mx-auto px-5 md:px-8">
         <h2
           className={`${TYPO.h2} text-center ${
             content.subheading ? "mb-3" : "mb-10 md:mb-14"

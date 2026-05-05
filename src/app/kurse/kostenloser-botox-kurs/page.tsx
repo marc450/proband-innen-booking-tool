@@ -195,7 +195,7 @@ export default function KostenloserBotoxKursPage() {
 
       {/* What's inside */}
       <section className="bg-white py-16 md:py-24">
-        <div className="max-w-6xl mx-auto px-5 md:px-8">
+        <div className="max-w-7xl mx-auto px-5 md:px-8">
           <div className="text-center mb-12 max-w-3xl mx-auto">
             <h2 className={`${TYPO.h2} mb-5`}>Was Du im Botox-Tutorial lernst</h2>
             <p className={TYPO.bodyLead}>

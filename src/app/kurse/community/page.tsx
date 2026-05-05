@@ -131,7 +131,7 @@ export default function CommunityPage() {
 
       {/* Was uns ausmacht — three value pillars. */}
       <section className="bg-[#FAEBE1] py-16 md:py-20">
-        <div className="max-w-6xl mx-auto px-5 md:px-8">
+        <div className="max-w-7xl mx-auto px-5 md:px-8">
           <div className="text-center mb-12 md:mb-14">
             <h2 className={`${TYPO.h2} text-black`}>Was uns ausmacht</h2>
           </div>
@@ -165,7 +165,7 @@ export default function CommunityPage() {
 
       {/* Wie die Community lebt — three touchpoints. */}
       <section className="bg-[#FAEBE1] py-16 md:py-20">
-        <div className="max-w-6xl mx-auto px-5 md:px-8">
+        <div className="max-w-7xl mx-auto px-5 md:px-8">
           <div className="text-center mb-12 md:mb-14 max-w-2xl mx-auto">
             <h2 className={`${TYPO.h2} text-black`}>Wie die Community lebt</h2>
             <p className={`${TYPO.bodyLead} mt-4`}>
@@ -203,7 +203,7 @@ export default function CommunityPage() {
 
       {/* Ein Blick in unsere WhatsApp-Community — screenshots. */}
       <section className="bg-[#FAEBE1] py-16 md:py-20">
-        <div className="max-w-6xl mx-auto px-5 md:px-8">
+        <div className="max-w-7xl mx-auto px-5 md:px-8">
           <div className="text-center mb-12 md:mb-14 max-w-2xl mx-auto">
             <h2 className={`${TYPO.h2} text-black`}>
               Ein Blick in die WhatsApp-Community
@@ -252,7 +252,7 @@ export default function CommunityPage() {
 
       {/* Stimmen aus der Community — placeholder testimonials. */}
       <section className="bg-[#FAEBE1] py-16 md:py-20">
-        <div className="max-w-6xl mx-auto px-5 md:px-8">
+        <div className="max-w-7xl mx-auto px-5 md:px-8">
           <div className="text-center mb-12 md:mb-14">
             <h2 className={`${TYPO.h2} text-black`}>Stimmen aus der Community</h2>
           </div>

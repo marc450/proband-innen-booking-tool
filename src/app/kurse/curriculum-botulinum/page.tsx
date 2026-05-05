@@ -345,7 +345,7 @@ export default async function CurriculumBotulinumPage() {
   return (
     <>
       <section className="bg-[#FAEBE1] pt-20 pb-20 md:pt-28 md:pb-28">
-        <div className="max-w-6xl mx-auto px-5 md:px-8">
+        <div className="max-w-7xl mx-auto px-5 md:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className={`${TYPO.h1} text-4xl md:text-5xl lg:text-6xl mb-8`}>
               {HERO.heading}

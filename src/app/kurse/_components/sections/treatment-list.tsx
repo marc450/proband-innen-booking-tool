@@ -119,7 +119,7 @@ export function TreatmentList({ courses, slots }: TreatmentListProps) {
       id="behandlungen"
       className="bg-[#0066FF] py-16 md:py-20 scroll-mt-20"
     >
-      <div className="max-w-6xl mx-auto px-5 md:px-8">
+      <div className="max-w-7xl mx-auto px-5 md:px-8">
         <div className="text-center mb-12 md:mb-14 max-w-2xl mx-auto">
           <h2 className={`${TYPO.h2} text-white`}>Unsere Behandlungen</h2>
           <p className={`${TYPO.bodyLead} mt-4 text-white/85`}>

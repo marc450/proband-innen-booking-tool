@@ -121,7 +121,7 @@ export default function DidaktikPage() {
 
       {/* Ziele — three goal pillars. */}
       <section className="bg-[#FAEBE1] py-16 md:py-20">
-        <div className="max-w-6xl mx-auto px-5 md:px-8">
+        <div className="max-w-7xl mx-auto px-5 md:px-8">
           <div className="text-center mb-12 md:mb-14">
             <h2 className={`${TYPO.h2} text-black`}>Ziele</h2>
           </div>
@@ -135,7 +135,7 @@ export default function DidaktikPage() {
 
       {/* Methodik — six methods in two rows of three. */}
       <section className="bg-[#FAEBE1] py-16 md:py-20">
-        <div className="max-w-6xl mx-auto px-5 md:px-8">
+        <div className="max-w-7xl mx-auto px-5 md:px-8">
           <div className="text-center mb-12 md:mb-14 max-w-2xl mx-auto">
             <h2 className={`${TYPO.h2} text-black`}>Methodik</h2>
             <p className={`${TYPO.bodyLead} mt-4`}>So wirst Du mit uns besser!</p>

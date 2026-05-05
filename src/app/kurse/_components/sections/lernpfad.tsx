@@ -106,7 +106,7 @@ export function Lernpfad({
       id="lernpfad"
       className="bg-[#0066FF] py-20 md:py-28 relative overflow-hidden scroll-mt-24"
     >
-      <div className="max-w-6xl mx-auto px-5 md:px-8">
+      <div className="max-w-7xl mx-auto px-5 md:px-8">
         {/* Heading */}
         <div className="text-center mb-12 md:mb-16 max-w-2xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold tracking-wide uppercase mb-4 text-white">
