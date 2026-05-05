@@ -1,4 +1,5 @@
 import type { CourseProseSectionContent } from "@/content/kurse/types";
+import { EditorialDifferentiators } from "./editorial-differentiators";
 
 interface ProseSectionProps {
   content: CourseProseSectionContent;
@@ -28,31 +29,7 @@ export function ProseSection({ content, tone = "rose" }: ProseSectionProps) {
         )}
 
         {layout === "editorial" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-14 md:gap-y-16">
-            {content.items.map((item, i) => (
-              <div key={item.title} className="group relative">
-                <div
-                  className="font-black leading-none mb-5 select-none"
-                  style={{
-                    fontSize: "clamp(80px, 11vw, 140px)",
-                    WebkitTextStroke: "2px #0066FF",
-                    color: "transparent",
-                    letterSpacing: "-0.02em",
-                  }}
-                  aria-hidden="true"
-                >
-                  {String(i + 1).padStart(2, "0")}
-                </div>
-                <div className="h-[2px] w-12 bg-[#0066FF] mb-5 transition-all duration-300 group-hover:w-24" />
-                <h3 className="text-xl md:text-2xl font-bold tracking-tight mb-3">
-                  {item.title}
-                </h3>
-                <p className="text-base text-black/75 leading-relaxed">
-                  {item.description}
-                </p>
-              </div>
-            ))}
-          </div>
+          <EditorialDifferentiators items={content.items} />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {content.items.map((item) => (
