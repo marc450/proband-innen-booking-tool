@@ -300,7 +300,7 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
     const origin =
       typeof window !== "undefined"
         ? window.location.origin
-        : "https://kurse.ephia.de";
+        : "https://ephia.de";
     return `${origin}/einladung/${token}`;
   };
 
