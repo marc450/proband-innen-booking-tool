@@ -18,13 +18,14 @@ const RECHNUNG_SECTION = `
     </p>`;
 
 // Body of the "set your password" call-to-action, shared between the
-// Onlinekurs and Kombikurs confirmation emails so the copy stays in
-// lockstep. The customer is brand new in Supabase Auth at this point
-// (no auth user yet); /start runs the lazy-migration flow that asks
-// for an email + password and creates the account on submit.
+// Onlinekurs, Praxiskurs, and Kombikurs confirmation emails so the
+// copy stays in lockstep. The customer is brand new in Supabase Auth
+// at this point (no auth user yet); /start runs the lazy-migration
+// flow that asks for an email + password and creates the account on
+// submit.
 const LOGIN_SETUP_BODY = `
     <p style="margin:0 0 16px;">
-      Mit Deiner Kursbuchung haben wir Deinen EPHIA-Zugang für Dich vorbereitet. Lege jetzt Dein Passwort fest, dann kannst Du direkt mit dem Lernen starten.
+      Mit Deiner Kursbuchung haben wir Deinen EPHIA-Zugang für Dich vorbereitet. Lege jetzt Dein Passwort fest, dann findest Du Deinen Kurs jederzeit in Deinem persönlichen Dashboard.
     </p>
     <p style="margin:0 0 20px;">
       <a href="https://ephia.de/start" style="display:inline-block;background-color:#0066FF;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:bold;">
@@ -172,6 +173,10 @@ export function buildPraxiskursEmail(firstName: string, courseName: string, prax
     </p>
 
     ${opts?.hasOnlineCourse !== false ? VORAUSSETZUNG_SECTION : ""}
+
+    <h3 style="margin:16px 0 10px;font-size:16px;font-weight:bold;">Dein EPHIA-Zugang</h3>
+    ${LOGIN_SETUP_BODY}
+
     ${PROBANDINNEN_SECTION}
     ${RECHNUNG_SECTION}
 
