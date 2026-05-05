@@ -158,6 +158,7 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
     heading: "WAS UNSEREN BOTOX-KURS UNTERSCHEIDET",
     intro:
       "Viele Botulinum-Kurse für Ärzt:innen werden direkt oder indirekt von Pharmaunternehmen finanziert. Das ist nicht per se schlecht, prägt aber Inhalt, Indikationsbreite und Produkterwartung. Bei EPHIA arbeiten wir bewusst herstellerunabhängig, weil ästhetische Medizin medizinische Entscheidungen verlangt, nicht Produkterwartung.",
+    layout: "editorial",
     items: [
       {
         title: "Herstellerunabhängig und evidenzbasiert",
