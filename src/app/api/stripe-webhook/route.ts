@@ -679,7 +679,11 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
   // we apply the new key on existing rows.
   const itemGrossCents = Number(metadata.itemGrossCents) || 0;
   const shippingGrossCents = Number(metadata.shippingGrossCents) || 0;
-  const amountPaidCents = session.amount_total || itemGrossCents + shippingGrossCents;
+  // Use ?? not ||: a 100% discount code makes session.amount_total
+  // a legitimate 0, and || would treat that as missing and fall back
+  // to the pre-discount list price.
+  const amountPaidCents = session.amount_total ?? (itemGrossCents + shippingGrossCents);
+  const discountCents = session.total_details?.amount_discount ?? 0;
   const pickupAtEvent = metadata.pickupAtEvent === "true";
 
   const customerId =
@@ -769,9 +773,8 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
   if (SLACK_WEBHOOK_URL_REVENUE) {
     try {
       const variantLabel = [variantColor, variantSize].filter((x) => x && x !== "one-size").join(" / ");
-      const betrag = amountPaidCents
-        ? `€${(amountPaidCents / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })}`
-        : null;
+      const eur = (cents: number) =>
+        `€${(cents / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })}`;
       const address = [
         shippingAddr.line1,
         [shippingAddr.postal_code, shippingAddr.city].filter(Boolean).join(" "),
@@ -779,6 +782,11 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
       ]
         .filter(Boolean)
         .join(", ");
+      const betragSuffix = discountCents > 0
+        ? ` (${eur(discountCents)} Rabatt eingelöst)`
+        : pickupAtEvent
+          ? ""
+          : " (inkl. Versand)";
       const lines = [
         `🧢 *Neue Merch-Bestellung*`,
         `*Produkt:* ${productTitle}${variantLabel ? ` · ${variantLabel}` : ""}${quantity > 1 ? ` · *${quantity}×*` : ""}`,
@@ -791,14 +799,16 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
           : address
             ? `*Lieferart:* Versand · ${address}`
             : `*Lieferart:* Versand`,
-        betrag
-          ? `*Betrag:* ${betrag}${pickupAtEvent ? "" : " (inkl. Versand)"}`
-          : null,
+        `*Betrag:* ${eur(amountPaidCents)}${betragSuffix}`,
         stockError ? `⚠️ *Stock-Update fehlgeschlagen:* ${stockError}` : null,
       ].filter(Boolean);
-      // Override sender identity so the post does not inherit the parent
-      // Slack-app name ("Neue Kursbuchung!"). username + icon_emoji are
-      // honoured by classic Incoming Webhooks.
+      // username + icon_emoji are sent on a best-effort basis: classic
+      // Incoming Webhooks honour them, modern Slack-app webhooks (which
+      // is what we have today) silently ignore both fields and inherit
+      // the parent app's name ("Neue Kursbuchung!"). Fixing the visible
+      // header requires a Slack-side change: either rename the app or
+      // create a separate "EPHIA Merch" app with its own webhook URL
+      // and point SLACK_WEBHOOK_URL_REVENUE at it.
       await fetch(SLACK_WEBHOOK_URL_REVENUE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -821,9 +831,7 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
     try {
       const variantLabel = [variantColor, variantSize].filter((x) => x && x !== "one-size").join(" / ");
       const fmt = (cents: number) =>
-        cents
-          ? (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })
-          : "";
+        (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
       const html = buildEmailHtml({
         firstName: firstName || "Du",
@@ -839,6 +847,9 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
           pickupAtEvent
             ? { label: "Lieferart", value: "Abholung beim Community Event" }
             : { label: "Versand", value: fmt(shippingGrossCents) },
+          ...(discountCents > 0
+            ? [{ label: "Rabatt", value: `−${fmt(discountCents)}` }]
+            : []),
           { label: "Gesamt", value: fmt(amountPaidCents) },
         ],
         extraContent: `
