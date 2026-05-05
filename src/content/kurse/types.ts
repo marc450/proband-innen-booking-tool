@@ -259,6 +259,22 @@ export interface CourseLearningPathContent {
 }
 
 /**
+ * Generic titled-card list section. Used for prose-style blocks like
+ * "Für wen ist dieser Kurs?" (audience) and "Was unterscheidet uns?"
+ * (differentiators) where each item is a short heading plus paragraph.
+ */
+export interface CourseProseSectionItem {
+  title: string;
+  description: string;
+}
+
+export interface CourseProseSectionContent {
+  heading: string;
+  intro?: string;
+  items: CourseProseSectionItem[];
+}
+
+/**
  * Complete typed content for one course landing page.
  * The `courseKey` MUST match a row in `course_templates.course_key`
  * so the booking widget can fetch the right sessions.
@@ -305,6 +321,20 @@ export interface CourseLandingContent {
    * `/kurse/botox-kurs-fuer-anfaenger`.
    */
   learningPath?: CourseLearningPathContent;
+  /**
+   * Optional "Für wen ist dieser Kurs?" block. Rendered between
+   * Lernziele and the booking widget. Used to surface specialty-level
+   * (Facharztgruppe) framing for SEO and to widen the lexical field
+   * for "Ärzte"-style audience queries.
+   */
+  audience?: CourseProseSectionContent;
+  /**
+   * Optional "Was unterscheidet unseren Kurs?" block. Rendered between
+   * the LearningPath section and Gruppenbuchungen. Used to position
+   * EPHIA against herstellerfinanzierte Wochenendkurse, capture
+   * comparator queries, and reinforce the brand voice.
+   */
+  differentiators?: CourseProseSectionContent;
   /**
    * Optional human-readable label for the BreadcrumbList JSON-LD.
    * Defaults to `meta.title` when omitted.
