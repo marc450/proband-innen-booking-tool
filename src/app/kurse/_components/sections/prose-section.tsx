@@ -1,5 +1,4 @@
 import type { CourseProseSectionContent } from "@/content/kurse/types";
-import { EditorialDifferentiators } from "./editorial-differentiators";
 
 interface ProseSectionProps {
   content: CourseProseSectionContent;
@@ -15,6 +14,10 @@ export function ProseSection({ content, tone = "rose" }: ProseSectionProps) {
   const sectionBg = tone === "white" ? "bg-white" : "bg-[#FAEBE1]";
   const cardBg = tone === "white" ? "bg-[#FAEBE1]" : "bg-white";
   const layout = content.layout ?? "cards";
+  const gridCols =
+    layout === "two-col"
+      ? "grid-cols-1 md:grid-cols-2 max-w-5xl mx-auto"
+      : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
 
   return (
     <section className={`${sectionBg} py-16 md:py-24`}>
@@ -28,23 +31,19 @@ export function ProseSection({ content, tone = "rose" }: ProseSectionProps) {
           </p>
         )}
 
-        {layout === "editorial" ? (
-          <EditorialDifferentiators items={content.items} />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {content.items.map((item) => (
-              <div
-                key={item.title}
-                className={`${cardBg} rounded-[10px] p-6 md:p-7`}
-              >
-                <h3 className="text-lg font-bold mb-2">{item.title}</h3>
-                <p className="text-sm md:text-base text-black/75 leading-relaxed">
-                  {item.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className={`grid ${gridCols} gap-6 md:gap-8`}>
+          {content.items.map((item) => (
+            <div
+              key={item.title}
+              className={`${cardBg} rounded-[10px] p-6 md:p-7`}
+            >
+              <h3 className="text-lg font-bold mb-2">{item.title}</h3>
+              <p className="text-sm md:text-base text-black/75 leading-relaxed">
+                {item.description}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

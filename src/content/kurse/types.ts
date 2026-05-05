@@ -274,13 +274,14 @@ export interface CourseProseSectionContent {
   items: CourseProseSectionItem[];
   /**
    * Visual layout for the items. "cards" (default) is the standard
-   * 3-column white-card grid used across most course pages. "editorial"
-   * drops the cards entirely and lays the items out as a typographic
-   * spread with oversized outlined numerals — used to differentiate the
-   * "Was unterscheidet uns?" block on flagship landings where the
-   * generic card grid feels too uniform.
+   * 3-column white-card grid used across most course pages.
+   * "two-col" forces a 2-column grid, which lays out 4 items as a
+   * clean 2x2 (no lonely card on a second row) and keeps the same
+   * borderless rose/white card aesthetic as the rest of the page.
+   * Used for the "Was unterscheidet uns?" block, which is exactly 4
+   * items.
    */
-  layout?: "cards" | "editorial";
+  layout?: "cards" | "two-col";
 }
 
 /**
