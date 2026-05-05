@@ -66,12 +66,15 @@ export function CourseCard({
   const [selectedDate, setSelectedDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showTerminModal, setShowTerminModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Keep selected date in sync when sessions are refreshed (polling) and the
   // previously selected one is no longer available. Only reset if user had
   // actually selected something (don't auto-fill on initial load).
+  // Also clear any "Bitte wähle zuerst einen Termin" hint once a date is picked.
   useEffect(() => {
+    if (selectedDate) setErrorMessage(null);
     if (bookingType !== "dropdown" || !selectedDate) return;
     const stillValid = dates.some((d) => d.id === selectedDate && d.available);
     if (!stillValid) {
@@ -111,9 +114,10 @@ export function CourseCard({
   const handleBook = () => {
     if (bookingType === "dropdown") {
       if (!selectedDate) {
-        alert("Bitte wähle zuerst einen Termin aus.");
+        setErrorMessage("Bitte wähle zuerst einen Termin aus.");
         return;
       }
+      setErrorMessage(null);
       onBook?.(selectedDate);
     } else {
       onBook?.();
@@ -259,6 +263,14 @@ export function CourseCard({
                       );
                     })}
                   </div>
+                )}
+                {errorMessage && (
+                  <p
+                    role="alert"
+                    className="text-sm text-red-600 mt-2"
+                  >
+                    {errorMessage}
+                  </p>
                 )}
               </div>
 

@@ -366,10 +366,13 @@ export function PremiumCard({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [infoModal, setInfoModal] = useState<IncludedCourse | null>(null);
   const [showTerminModal, setShowTerminModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Keep selected date in sync with polled session data — clear if no longer available
+  // Keep selected date in sync with polled session data — clear if no longer available.
+  // Also clear any "Bitte wähle zuerst einen Termin" hint once the user picks one.
   useEffect(() => {
+    if (selectedDate) setErrorMessage(null);
     if (!selectedDate) return;
     const stillValid = dates.some((d) => d.id === selectedDate && d.available);
     if (!stillValid) {
@@ -407,9 +410,10 @@ export function PremiumCard({
 
   const handleBook = () => {
     if (!selectedDate) {
-      alert("Bitte wähle zuerst einen Termin.");
+      setErrorMessage("Bitte wähle zuerst einen Termin.");
       return;
     }
+    setErrorMessage(null);
     onBook(selectedDate);
   };
 
@@ -490,6 +494,14 @@ export function PremiumCard({
                     </button>
                   ))}
                 </div>
+              )}
+              {errorMessage && (
+                <p
+                  role="alert"
+                  className="text-sm text-red-600 mt-2"
+                >
+                  {errorMessage}
+                </p>
               )}
             </div>
 

@@ -327,6 +327,11 @@ function getAvailability(session: CourseSession) {
 export function CourseCardsPage({ template, sessions: initialSessions }: Props) {
   const [sessions, setSessions] = useState(initialSessions);
   const [loadingCheckout, setLoadingCheckout] = useState<string | null>(null);
+  // Banner shown above the cards when /api/course-checkout fails. The
+  // children (CourseCard, PremiumCard) handle their own validation
+  // hints inline; this state is only for server / network failures
+  // surfaced from this parent's checkout call.
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   // Pending Praxiskurs booking that's waiting on the prerequisite-confirmation
   // dialog. Holds the sessionId so we can resume the checkout when the user
   // confirms. Null when no confirmation flow is in progress.
@@ -387,12 +392,16 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
   const handleBooking = async (courseType: CourseType, sessionId?: string) => {
     const loadingKey = `${courseType}-${sessionId || "direct"}`;
     setLoadingCheckout(loadingKey);
+    setCheckoutError(null);
 
     const timeoutId = setTimeout(() => setLoadingCheckout(null), 10_000);
 
     try {
+      // Defensive guard: child cards already disable the booking button
+      // when no session is selected, so this branch should never fire
+      // in normal use. Bail silently rather than surfacing a UI error
+      // for an unreachable state.
       if (courseType !== "Onlinekurs" && !sessionId) {
-        alert("Bitte wähle zuerst einen Termin.");
         clearTimeout(timeoutId);
         setLoadingCheckout(null);
         return;
@@ -411,7 +420,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
       const data = await res.json();
 
       if (!res.ok || !data.url) {
-        alert(data.error || "Fehler beim Starten des Checkouts.");
+        setCheckoutError(data.error || "Fehler beim Starten des Checkouts.");
         clearTimeout(timeoutId);
         setLoadingCheckout(null);
         return;
@@ -419,7 +428,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
 
       redirectTo(data.url);
     } catch {
-      alert("Unerwarteter Fehler beim Starten des Checkouts.");
+      setCheckoutError("Unerwarteter Fehler beim Starten des Checkouts.");
       clearTimeout(timeoutId);
       setLoadingCheckout(null);
     }
@@ -605,6 +614,23 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
         >
           {pageHeader}
         </h2>
+
+        {checkoutError && (
+          <div
+            role="alert"
+            className="mb-8 max-w-2xl mx-auto bg-white text-red-700 rounded-[10px] px-5 py-4 shadow-md flex items-start justify-between gap-4"
+          >
+            <p className="text-sm md:text-base">{checkoutError}</p>
+            <button
+              type="button"
+              onClick={() => setCheckoutError(null)}
+              aria-label="Fehler schließen"
+              className="text-red-700 hover:text-red-900 font-bold text-lg leading-none cursor-pointer"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {(() => {
           const isPremiumLayout = template.course_key === "grundkurs_botulinum";
