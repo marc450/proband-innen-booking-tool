@@ -18,10 +18,27 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://ephia.de"),
   title: "EPHIA Booking",
   description: "Book your treatment slot for EPHIA aesthetic training courses",
   icons: {
     icon: "/favicon.svg",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "EPHIA",
+    images: [
+      {
+        url: "/logos/ephia-logo.png",
+        width: 2394,
+        height: 589,
+        alt: "EPHIA",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/logos/ephia-logo.png"],
   },
 };
 
