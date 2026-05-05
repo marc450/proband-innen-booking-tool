@@ -1,13 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ImageIcon } from "lucide-react";
 
 interface Props {
   images: string[];
   alt: string;
-  /** Forwards `priority` to the first hero image only. */
+  /** Forwards `loading="eager"` to the hero element only. */
   priority?: boolean;
 }
 
@@ -17,19 +17,52 @@ interface Props {
  * icon when no images are given. Single-image products skip the
  * thumbnail strip entirely.
  *
- * All images are rendered as stacked next/image components inside an
- * aspect-square container; the active one fades in and the rest sit at
- * opacity-0. This means:
- *   - the browser downloads the optimized AVIF/WebP version of every
- *     gallery image (typically 30 to 80 KB each), so switching is
- *     instant once the page has settled
- *   - product photos with non-square aspect ratios get letterboxed via
- *     object-contain rather than cropped (we don't store dimensions in
- *     the DB, so a fixed aspect-square box is the simplest reliable
- *     layout)
+ * The hero is a plain <img> so the rendered box adapts to the source's
+ * natural aspect ratio (next/image's `fill` mode would force a fixed
+ * aspect-square box and letterbox non-square uploads, which Marc has
+ * ruled out). The slow-switch problem is solved at a different layer:
+ *   1. on mount we kick off a `new window.Image()` for every sibling
+ *      so the browser caches them in parallel with the page settling
+ *   2. on click/swipe we still preload-then-swap so an un-cached
+ *      sibling (e.g. extremely slow network) doesn't flash blank
  */
 export function ProductGallery({ images, alt, priority }: Props) {
   const [activeIdx, setActiveIdx] = useState(0);
+  const [renderedSrc, setRenderedSrc] = useState(() => images[0] ?? "");
+
+  // Warm the browser cache for every non-active image on mount so the
+  // first thumbnail click is instant. Runs once per `images` reference
+  // change. We don't need to keep references because the browser's HTTP
+  // cache holds the result; the Image objects can be GC'd.
+  useEffect(() => {
+    if (images.length <= 1) return;
+    images.forEach((src, i) => {
+      if (i === 0) return;
+      const img = new window.Image();
+      img.src = src;
+    });
+  }, [images]);
+
+  // Belt-and-braces preload-then-swap on click/swipe: if the cache
+  // happens to be cold (extremely slow network, the warmer above
+  // hasn't finished yet), keep the previous image visible until the
+  // new one is decoded so the hero never flashes blank.
+  useEffect(() => {
+    const target = images[activeIdx];
+    if (!target || target === renderedSrc) return;
+    const preloader = new window.Image();
+    let cancelled = false;
+    preloader.onload = () => {
+      if (!cancelled) setRenderedSrc(target);
+    };
+    preloader.onerror = () => {
+      if (!cancelled) setRenderedSrc(target);
+    };
+    preloader.src = target;
+    return () => {
+      cancelled = true;
+    };
+  }, [activeIdx, images, renderedSrc]);
 
   // Touch swipe: track the X coord at touchstart, compute delta on
   // touchend, advance one slot when the delta crosses the threshold.
@@ -65,24 +98,18 @@ export function ProductGallery({ images, alt, priority }: Props) {
   return (
     <div className="space-y-3">
       <div
-        className="relative aspect-square bg-white rounded-[10px] overflow-hidden touch-pan-y"
+        className="touch-pan-y"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {images.map((src, i) => (
-          <Image
-            key={src + i}
-            src={src}
-            alt={`${alt} ${i + 1}`}
-            fill
-            quality={85}
-            priority={priority && i === 0}
-            sizes="(max-width: 768px) 100vw, 600px"
-            className={`object-contain transition-opacity duration-200 ${
-              i === activeIdx ? "opacity-100" : "opacity-0"
-            }`}
-          />
-        ))}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={renderedSrc}
+          alt={alt}
+          loading={priority ? "eager" : "lazy"}
+          decoding="async"
+          className="w-full h-auto block bg-white rounded-[10px]"
+        />
       </div>
       {images.length > 1 && (
         // Horizontally scrollable on mobile when more thumbs are
