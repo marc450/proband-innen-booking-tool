@@ -322,9 +322,15 @@ export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { sk
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          // *Typ:* lives on the first line so the same Slack app can
+          // post Kursbuchungen and Merch-Käufe to the same channel and
+          // still be distinguishable at a glance. The course-package
+          // level (Onlinekurs / Kombikurs / Komplettpaket) is moved to
+          // *Paket:* so it doesn't collide with the event-level type.
           text: [
+            `*Typ:* Kursbuchung`,
             `*Name:* ${data.fullName}`,
-            `*Typ:* ${data.courseType === "Premium" ? "Komplettpaket" : data.courseType}`,
+            `*Paket:* ${data.courseType === "Premium" ? "Komplettpaket" : data.courseType}`,
             `*Kurs:* ${courseLabelDe}`,
             data.sessionLabel ? `*Datum:* ${data.sessionLabel}` : null,
             seatsInfo ? `*Plätze:* ${seatsInfo}` : null,

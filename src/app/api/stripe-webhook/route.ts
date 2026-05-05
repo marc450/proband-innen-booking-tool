@@ -287,8 +287,9 @@ async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   text: [
+                    `*Typ:* Kursbuchung`,
                     `*Name:* ${fullName}`,
-                    `*Typ:* Komplettpaket (Curriculum)`,
+                    `*Paket:* Komplettpaket (Curriculum)`,
                     `*Kurse:* ${courseKeys.join(", ")}`,
                     betrag ? `*Betrag:* ${betrag}` : null,
                     `⚠️ *Profil noch nicht vollständig*`,
@@ -562,8 +563,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             text: [
+              `*Typ:* Kursbuchung`,
               `*Name:* ${fullName}`,
-              `*Typ:* ${courseType === "Premium" ? "Komplettpaket" : courseType}`,
+              `*Paket:* ${courseType === "Premium" ? "Komplettpaket" : courseType}`,
               `*Kurs:* ${courseLabelDe}`,
               sessionLabel ? `*Datum:* ${sessionLabel}` : null,
               seatsInfo ? `*Plätze:* ${seatsInfo}` : null,
@@ -790,7 +792,7 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
           ? ""
           : " (inkl. Versand)";
       const lines = [
-        `🧢 *Neue Merch-Bestellung*`,
+        `*Typ:* Merch-Kauf`,
         `*Produkt:* ${productTitle}${variantLabel ? ` · ${variantLabel}` : ""}${quantity > 1 ? ` · *${quantity}×*` : ""}`,
         fullName ? `*Name:* ${fullName}` : null,
         email ? `*E-Mail:* ${email}` : null,
