@@ -107,7 +107,11 @@ export async function POST(req: NextRequest) {
       cancel_url: cancelUrl,
       locale: "de",
       billing_address_collection: "required",
-      "phone_number_collection[enabled]": "true",
+      // Phone deliberately NOT collected for merch: the order is fulfilled
+      // via shipping address (or pickup at a Community Event) and we don't
+      // call buyers about merch. Kursbuchung flows still collect phone via
+      // their own checkout path.
+      "phone_number_collection[enabled]": "false",
       "automatic_tax[enabled]": "true",
       "tax_id_collection[enabled]": "true",
       "consent_collection[terms_of_service]": "required",

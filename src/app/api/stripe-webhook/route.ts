@@ -679,10 +679,12 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
   // we apply the new key on existing rows.
   const itemGrossCents = Number(metadata.itemGrossCents) || 0;
   const shippingGrossCents = Number(metadata.shippingGrossCents) || 0;
-  // Use ?? not ||: a 100% discount code makes session.amount_total
-  // a legitimate 0, and || would treat that as missing and fall back
-  // to the pre-discount list price.
-  const amountPaidCents = session.amount_total ?? (itemGrossCents + shippingGrossCents);
+  // For completed payment-mode sessions Stripe always sets amount_total
+  // (after discounts and inclusive taxes). Default to 0 if it's somehow
+  // missing — the previous fallback to the pre-discount list price
+  // produced wrong totals for 100% discount codes (the customer paid €0
+  // but Slack/merch_orders showed the list price).
+  const amountPaidCents = session.amount_total ?? 0;
   const discountCents = session.total_details?.amount_discount ?? 0;
   const pickupAtEvent = metadata.pickupAtEvent === "true";
 
@@ -792,7 +794,6 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
         `*Produkt:* ${productTitle}${variantLabel ? ` · ${variantLabel}` : ""}${quantity > 1 ? ` · *${quantity}×*` : ""}`,
         fullName ? `*Name:* ${fullName}` : null,
         email ? `*E-Mail:* ${email}` : null,
-        phone ? `*Telefon:* ${phone}` : null,
         `*Ärzt:in:* ${isDoctor ? "Ja" : "Nein"}`,
         pickupAtEvent
           ? `*Lieferart:* Abholung beim Community Event`
