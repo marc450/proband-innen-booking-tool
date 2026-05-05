@@ -30,12 +30,6 @@ export interface CourseTemplate {
   description_online: string | null;
   description_praxis: string | null;
   description_kombi: string | null;
-  success_url_online: string | null;
-  success_url_praxis: string | null;
-  success_url_kombi: string | null;
-  cancel_url_online: string | null;
-  cancel_url_praxis: string | null;
-  cancel_url_kombi: string | null;
   status: string | null;
   online_course_id: string | null;
   features_online: string[] | null;

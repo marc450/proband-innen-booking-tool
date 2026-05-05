@@ -111,12 +111,6 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       description_online: "",
       description_praxis: "",
       description_kombi: "",
-      success_url_online: "https://proband-innen.ephia.de/courses/success",
-      success_url_praxis: "https://proband-innen.ephia.de/courses/success",
-      success_url_kombi: "https://proband-innen.ephia.de/courses/success",
-      cancel_url_online: "",
-      cancel_url_praxis: "",
-      cancel_url_kombi: "",
       online_course_id: "",
       status: "draft",
       audience: "humanmediziner",
@@ -152,12 +146,6 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       description_online: o.description_online || "",
       description_praxis: o.description_praxis || "",
       description_kombi: o.description_kombi || "",
-      success_url_online: o.success_url_online || "",
-      success_url_praxis: o.success_url_praxis || "",
-      success_url_kombi: o.success_url_kombi || "",
-      cancel_url_online: o.cancel_url_online || "",
-      cancel_url_praxis: o.cancel_url_praxis || "",
-      cancel_url_kombi: o.cancel_url_kombi || "",
       online_course_id: o.online_course_id || "",
       status: o.status || "draft",
       audience: o.audience || "humanmediziner",
@@ -194,12 +182,6 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       description_online: form.description_online || null,
       description_praxis: form.description_praxis || null,
       description_kombi: form.description_kombi || null,
-      success_url_online: form.success_url_online || null,
-      success_url_praxis: form.success_url_praxis || null,
-      success_url_kombi: form.success_url_kombi || null,
-      cancel_url_online: form.cancel_url_online || null,
-      cancel_url_praxis: form.cancel_url_praxis || null,
-      cancel_url_kombi: form.cancel_url_kombi || null,
       online_course_id: form.online_course_id || null,
       status: form.status || "draft",
       audience: form.audience || null,
@@ -828,43 +810,6 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
                     onChange={(e) => updateField("description_kombi", e.target.value)}
                     rows={2}
                   />
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t" />
-
-            {/* ── URLs ── */}
-            <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">URLs</h3>
-              <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>Success Online</Label>
-                    <Input value={form.success_url_online} onChange={(e) => updateField("success_url_online", e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Success Praxis</Label>
-                    <Input value={form.success_url_praxis} onChange={(e) => updateField("success_url_praxis", e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Success Kombi</Label>
-                    <Input value={form.success_url_kombi} onChange={(e) => updateField("success_url_kombi", e.target.value)} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>Cancel Online</Label>
-                    <Input value={form.cancel_url_online} onChange={(e) => updateField("cancel_url_online", e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Cancel Praxis</Label>
-                    <Input value={form.cancel_url_praxis} onChange={(e) => updateField("cancel_url_praxis", e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Cancel Kombi</Label>
-                    <Input value={form.cancel_url_kombi} onChange={(e) => updateField("cancel_url_kombi", e.target.value)} />
-                  </div>
                 </div>
               </div>
             </div>
