@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
       isProductPickupEligible(product.slug) &&
       isPickupOpen();
 
-    const origin = req.headers.get("origin") || "https://kurse.ephia.de";
+    const origin = req.headers.get("origin") || "https://ephia.de";
     const successUrl = `${origin}/merch/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${origin}/merch/${product.slug}`;
 

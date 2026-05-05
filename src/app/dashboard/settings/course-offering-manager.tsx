@@ -611,7 +611,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
                   <Textarea
                     value={form.card_description}
                     onChange={(e) => updateField("card_description", e.target.value)}
-                    placeholder="Kurzer Beschreibungstext, der auf der Kurskachel unter dem Titel erscheint (kurse.ephia.de)"
+                    placeholder="Kurzer Beschreibungstext, der auf der Kurskachel unter dem Titel erscheint (ephia.de)"
                     rows={4}
                   />
                   <p className="text-[11px] text-muted-foreground">Steuert den Text auf der Kurskachel unter Titel und Badges</p>

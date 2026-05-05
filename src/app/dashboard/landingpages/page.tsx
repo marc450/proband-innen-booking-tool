@@ -12,7 +12,7 @@ type PageEntry = {
 type PageGroup = {
   label: string;
   description?: string;
-  /** Public host for every page in this group, e.g. "https://kurse.ephia.de". */
+  /** Public host for every page in this group, e.g. "https://ephia.de". */
   host: string;
   pages: PageEntry[];
 };
@@ -20,7 +20,7 @@ type PageGroup = {
 // Canonical public hosts for each marketing surface. Links in this
 // overview must open on the correct subdomain (NOT on admin.ephia.de),
 // otherwise users land on the staff host instead of the marketing site.
-const HOST_MARKETING = "https://kurse.ephia.de";
+const HOST_MARKETING = "https://ephia.de";
 const HOST_PROBAND = "https://proband-innen.ephia.de";
 
 const HAUPTSEITEN: PageGroup = {

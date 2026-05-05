@@ -285,7 +285,7 @@ export function ProductsManager({ initialProducts, initialVariants }: Props) {
         <div>
           <h1 className="text-2xl font-bold">Merch-Produkte</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Produkte und Lagerbestand für den Shop auf kurse.ephia.de/merch.
+            Produkte und Lagerbestand für den Shop auf ephia.de/merch.
           </p>
         </div>
         <Button onClick={() => openProductDialog(null)}>

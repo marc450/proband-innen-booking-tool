@@ -520,7 +520,7 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
           <tr><td style="background:#faebe1; padding:10px 14px; font-weight:600; width:180px;">Name</td><td style="padding:10px 14px;">${SAMPLE.firstName} ${SAMPLE.lastName}</td></tr>
           <tr><td style="background:#faebe1; padding:10px 14px; font-weight:600;">E-Mail</td><td style="padding:10px 14px;">anna@example.com</td></tr>
           <tr><td style="background:#faebe1; padding:10px 14px; font-weight:600;">Nachricht</td><td style="padding:10px 14px;">Hallo, wann findet der nächste Grundkurs Botulinum statt?</td></tr>
-          <tr><td style="background:#faebe1; padding:10px 14px; font-weight:600;">Seite</td><td style="padding:10px 14px;">https://kurse.ephia.de/faq-kontakt</td></tr>
+          <tr><td style="background:#faebe1; padding:10px 14px; font-weight:600;">Seite</td><td style="padding:10px 14px;">https://ephia.de/faq-kontakt</td></tr>
         </table>
       </div>
       <p style="text-align:center; color:#999; font-size:12px; margin-top:16px;">
