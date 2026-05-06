@@ -89,7 +89,11 @@ async function notifyAssigneeOnSlack(
       },
       body: JSON.stringify({
         channel: slackUserId,
-        text: `📩 *${assignerName}* hat Dir eine Konversation zugewiesen:\n„${threadSubject || "Kein Betreff"}"${senderEmail ? `\nVon: ${senderEmail}` : ""}\n<https://proband-innen.ephia.de/dashboard/inbox?thread=${threadId}|Zur Konversation>`,
+        // The inbox lives behind staff auth on admin.ephia.de.
+        // NEXT_PUBLIC_APP_URL points at the public booking domain
+        // (proband-innen.ephia.de), which rewrites /dashboard/* to
+        // /not-found, so it can't be used here.
+        text: `📩 *${assignerName}* hat Dir eine Konversation zugewiesen:\n„${threadSubject || "Kein Betreff"}"${senderEmail ? `\nVon: ${senderEmail}` : ""}\n<https://admin.ephia.de/dashboard/inbox?thread=${threadId}|Zur Konversation>`,
       }),
     });
   } catch {
