@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
-const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
+// Group inquiries are customerlove territory (someone needs to write back
+// from customerlove@ephia.de), so they post to the #customerlove Slack
+// channel via its dedicated webhook. The generic SLACK_WEBHOOK_URL goes
+// to #proband-innen, which is for booking confirmations only.
+const SLACK_WEBHOOK_URL_CUSTOMERLOVE =
+  process.env.SLACK_WEBHOOK_URL_CUSTOMERLOVE;
 
 interface GroupInquiryPayload {
   name: string;
@@ -138,9 +143,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (SLACK_WEBHOOK_URL) {
+    if (SLACK_WEBHOOK_URL_CUSTOMERLOVE) {
       try {
-        await fetch(SLACK_WEBHOOK_URL, {
+        await fetch(SLACK_WEBHOOK_URL_CUSTOMERLOVE, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
