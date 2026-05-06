@@ -71,7 +71,7 @@ const LW_MIGRATION_REDIRECTS: Record<string, string> = {
   // bookmarks, old transactional emails, the locked course-player embed
   // that we can't edit, and any backlinks pointing at the old URLs.
   "/home": "/",
-  "/login": "https://learn.ephia.de/start",
+  "/login": "/start",
   "/privacy": "/datenschutz",
   "/ueber-ephia": "/vision",
 };
