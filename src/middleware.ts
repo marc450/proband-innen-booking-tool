@@ -70,7 +70,7 @@ const LW_MIGRATION_REDIRECTS: Record<string, string> = {
   // mostly already uses the new paths, these entries cover external
   // bookmarks, old transactional emails, the locked course-player embed
   // that we can't edit, and any backlinks pointing at the old URLs.
-  "/home": "https://learn.ephia.de/home",
+  "/home": "/",
   "/login": "https://learn.ephia.de/start",
   "/privacy": "/datenschutz",
   "/ueber-ephia": "/vision",
