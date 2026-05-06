@@ -1351,7 +1351,8 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                       <div className="flex items-center gap-4 px-2 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                         <span className="w-28 shrink-0">Zeit</span>
                         <span className="w-24 shrink-0">Status</span>
-                        <span className="flex-1 min-w-0">Proband:in</span>
+                        <span className="w-56 shrink-0">Proband:in</span>
+                        <span className="flex-1 min-w-0">Notizen</span>
                         <span className="w-24 text-center shrink-0">Kapazität</span>
                         <span className="w-24 text-center shrink-0">Besetzung</span>
                         <span className="w-8 shrink-0" />
@@ -1380,44 +1381,62 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                                 }
                               </div>
 
-                              <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                              <div className="w-56 shrink-0 flex flex-col gap-0.5">
                                 {slot.blocked ? (
                                   <span className="text-sm text-muted-foreground italic">{slot.blocked_note || "Gesperrt"}</span>
                                 ) : slotBookings.length > 0 ? slotBookings.map((b) => {
                                   const isReferred = b.booking_type === "private";
-                                  const hasNotes = !!(b.notes && b.notes.trim());
                                   return (
-                                    <div key={b.id} className="min-w-0 flex items-start gap-1.5">
-                                      <div className="min-w-0 flex-1">
-                                        {b.patient_id ? (
-                                          <Link
-                                            href={`/dashboard/patients/${b.patient_id}`}
-                                            className="text-sm font-medium hover:underline truncate block"
-                                            onClick={(e) => e.stopPropagation()}
-                                          >
-                                            {getPatientName(b)}
-                                          </Link>
-                                        ) : (
-                                          <span className="text-sm truncate block">{getPatientName(b)}</span>
-                                        )}
-                                        {isReferred && (
-                                          <div className="text-xs text-[#733D29] font-medium truncate">
-                                            Vermittelt von {b.referring_doctor || "Ärzt:in"}
-                                          </div>
-                                        )}
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          openNotesEditor(b.id, b.notes ?? null);
-                                        }}
-                                        className={`shrink-0 rounded-md p-1 transition-colors ${hasNotes ? "text-amber-600 hover:bg-amber-50" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
-                                        title={hasNotes ? "Notiz bearbeiten" : "Notiz hinzufügen"}
-                                      >
-                                        <StickyNote className="h-3.5 w-3.5" />
-                                      </button>
+                                    <div key={b.id} className="min-w-0">
+                                      {b.patient_id ? (
+                                        <Link
+                                          href={`/dashboard/patients/${b.patient_id}`}
+                                          className="text-sm font-medium hover:underline truncate block"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          {getPatientName(b)}
+                                        </Link>
+                                      ) : (
+                                        <span className="text-sm truncate block">{getPatientName(b)}</span>
+                                      )}
+                                      {isReferred && (
+                                        <div className="text-xs text-[#733D29] font-medium truncate">
+                                          Vermittelt von {b.referring_doctor || "Ärzt:in"}
+                                        </div>
+                                      )}
                                     </div>
+                                  );
+                                }) : (
+                                  <span className="text-sm text-muted-foreground">—</span>
+                                )}
+                              </div>
+
+                              <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                                {slot.blocked ? (
+                                  <span className="text-sm text-muted-foreground">—</span>
+                                ) : slotBookings.length > 0 ? slotBookings.map((b) => {
+                                  const hasNotes = !!(b.notes && b.notes.trim());
+                                  // Whole row is the click target: large hit area
+                                  // and the user can read the note preview without
+                                  // hunting for an icon.
+                                  return (
+                                    <button
+                                      key={b.id}
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openNotesEditor(b.id, b.notes ?? null);
+                                      }}
+                                      title={hasNotes ? "Notiz bearbeiten" : "Notiz hinzufügen"}
+                                      className={`group min-w-0 flex items-center gap-1.5 text-left rounded-md px-1.5 py-0.5 -mx-1.5 transition-colors ${hasNotes ? "text-amber-700 hover:bg-amber-50" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                                    >
+                                      <StickyNote className="h-3.5 w-3.5 shrink-0" />
+                                      <span className="text-sm truncate">
+                                        {hasNotes ? b.notes : (
+                                          <span className="opacity-60 group-hover:opacity-100">Notiz hinzufügen</span>
+                                        )}
+                                      </span>
+                                    </button>
                                   );
                                 }) : (
                                   <span className="text-sm text-muted-foreground">—</span>
