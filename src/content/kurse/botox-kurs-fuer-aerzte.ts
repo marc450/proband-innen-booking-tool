@@ -110,6 +110,7 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
     heading: "FÜR WEN IST DIESER KURS?",
     intro:
       "Unser Botox-Kurs für Ärzt:innen richtet sich an approbierte Humanmediziner:innen, unabhängig vom Fachgebiet. Du musst nicht in der Dermatologie oder plastischen Chirurgie tätig sein, um sicher mit Botulinum zu behandeln. Was Du brauchst, ist eine fundierte Fortbildung mit klinischer Tiefe.",
+    layout: "carousel",
     items: [
       {
         title: "Allgemeinmedizin",

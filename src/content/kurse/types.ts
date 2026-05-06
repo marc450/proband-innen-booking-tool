@@ -280,8 +280,12 @@ export interface CourseProseSectionContent {
    * borderless rose/white card aesthetic as the rest of the page.
    * Used for the "Was unterscheidet uns?" block, which is exactly 4
    * items.
+   * "carousel" renders a horizontal scroll-snap carousel with arrow
+   * buttons (desktop) and dot indicators. Useful when there are
+   * 6+ items and a 3-col grid would either leave a lonely tail row
+   * or eat too much vertical space.
    */
-  layout?: "cards" | "two-col";
+  layout?: "cards" | "two-col" | "carousel";
 }
 
 /**
