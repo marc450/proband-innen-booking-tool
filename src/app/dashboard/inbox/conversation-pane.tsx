@@ -22,6 +22,7 @@ export interface ThreadMessage {
   fromName: string;
   to: string;
   cc: string;
+  replyTo?: string;
   subject: string;
   date: string;
   body: { html: string; text: string };
@@ -93,6 +94,7 @@ export function ConversationPane({
 }: Props) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyHtml, setReplyHtml] = useState("");
+  const [replyToValue, setReplyToValue] = useState("");
   const [replyCc, setReplyCc] = useState("");
   const [replyBcc, setReplyBcc] = useState("");
   const [replyAttachments, setReplyAttachments] = useState<globalThis.File[]>([]);
@@ -141,6 +143,7 @@ export function ConversationPane({
     if (replyDraft) {
       setReplyOpen(true);
       setReplyHtml(replyDraft.html);
+      setReplyToValue(replyDraft.to || "");
       setReplyCc(replyDraft.cc);
       setReplyBcc(replyDraft.bcc);
       setShowCc(replyDraft.showCc);
@@ -148,6 +151,7 @@ export function ConversationPane({
     } else {
       setReplyOpen(false);
       setReplyHtml("");
+      setReplyToValue("");
       setReplyCc("");
       setReplyBcc("");
       setShowCc(false);
@@ -167,6 +171,7 @@ export function ConversationPane({
       draftDeletedRef.current = true;
       setReplyOpen(false);
       setReplyHtml("");
+      setReplyToValue("");
       setReplyCc("");
       setReplyBcc("");
       setShowCc(false);
@@ -183,9 +188,9 @@ export function ConversationPane({
       draftDeletedRef.current = false;
       return;
     }
-    onReplyDraftChange?.(threadId, { html: replyHtml, cc: replyCc, bcc: replyBcc, showCc, showBcc });
+    onReplyDraftChange?.(threadId, { html: replyHtml, to: replyToValue, cc: replyCc, bcc: replyBcc, showCc, showBcc });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [replyHtml, replyCc, replyBcc, showCc, showBcc]);
+  }, [replyHtml, replyToValue, replyCc, replyBcc, showCc, showBcc]);
 
   // ⌘+Enter / Ctrl+Enter sends the reply from anywhere in the open reply
   // composer (matches Gmail/Outlook). Listener is only armed while the
@@ -198,6 +203,7 @@ export function ConversationPane({
       if (!(e.metaKey || e.ctrlKey)) return;
       if (sending) return;
       if (!replyHtml.trim()) return;
+      if (!(replyToValue || defaultReplyTo).trim()) return;
       e.preventDefault();
       void handleSend();
     };
@@ -211,9 +217,21 @@ export function ConversationPane({
   // Messages are sorted newest-first; the most recent is at index 0
   const lastMsg = messages[0];
 
+  // Default recipient for a new reply. Prefer the Reply-To header when present
+  // (e.g. contact-form mails arrive `From: customerlove@ephia.de` with the real
+  // sender in `Reply-To`); otherwise fall back to From for inbound, or the
+  // original To for outbound threads.
+  const defaultReplyTo = lastMsg
+    ? (lastMsg.replyTo && lastMsg.replyTo.trim()) ||
+      (lastMsg.isInbound
+        ? lastMsg.fromEmail
+        : lastMsg.to.split(",")[0].trim())
+    : "";
+
   const openReply = () => {
     const sig = signature?.html ? `<br><br>${signature.html}` : "";
     setReplyHtml(sig);
+    setReplyToValue(defaultReplyTo);
     // Auto-populate CC from the last message's CC header
     if (lastMsg?.cc) {
       setReplyCc(lastMsg.cc);
@@ -228,10 +246,6 @@ export function ConversationPane({
   };
 
   const threadSubject = useMemo(() => messages[0]?.subject || "", [messages]);
-
-  const replyTo = lastMsg?.isInbound
-    ? lastMsg.fromEmail
-    : lastMsg?.to.split(",")[0].trim();
 
   // Picking a template inside the reply composer: replace the body
   // (preserving the trailing signature) and surface a soft notice
@@ -272,7 +286,7 @@ export function ConversationPane({
     if (!lastMsg) return;
     setSending(true);
     try {
-      const to = replyTo;
+      const to = (replyToValue || defaultReplyTo).trim();
       const subject = lastMsg.subject.startsWith("Re:")
         ? lastMsg.subject
         : `Re: ${lastMsg.subject}`;
@@ -307,6 +321,7 @@ export function ConversationPane({
       if (res.ok) {
         setReplyOpen(false);
         setReplyHtml("");
+        setReplyToValue("");
         setReplyCc("");
         setReplyBcc("");
         setReplyAttachments([]);
@@ -575,42 +590,54 @@ export function ConversationPane({
               </div>
             )}
             {/* To + CC/BCC toggle */}
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="flex-shrink-0">An: {replyTo}</span>
-                {(!showCc || !showBcc) && (
-                  <div className="flex gap-2 flex-shrink-0">
-                    {!showCc && (
-                      <button
-                        type="button"
-                        onClick={() => setShowCc(true)}
-                        className="text-xs text-[#0066FF] hover:underline font-medium"
-                      >
-                        CC
-                      </button>
-                    )}
-                    {!showBcc && (
-                      <button
-                        type="button"
-                        onClick={() => setShowBcc(true)}
-                        className="text-xs text-[#0066FF] hover:underline font-medium"
-                      >
-                        BCC
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <label
+                htmlFor="reply-to"
+                className="font-medium text-gray-500 w-10 flex-shrink-0"
+              >
+                An
+              </label>
+              <Input
+                id="reply-to"
+                value={replyToValue}
+                onChange={(e) => setReplyToValue(e.target.value)}
+                placeholder="email@example.com"
+                type="email"
+                className="flex-1 border-0 !px-0 focus-visible:ring-0 h-7 text-xs"
+              />
+              {(!showCc || !showBcc) && (
+                <div className="flex gap-2 flex-shrink-0">
+                  {!showCc && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCc(true)}
+                      className="text-xs text-[#0066FF] hover:underline font-medium"
+                    >
+                      CC
+                    </button>
+                  )}
+                  {!showBcc && (
+                    <button
+                      type="button"
+                      onClick={() => setShowBcc(true)}
+                      className="text-xs text-[#0066FF] hover:underline font-medium"
+                    >
+                      BCC
+                    </button>
+                  )}
+                </div>
+              )}
               <button
                 onClick={() => {
                   setReplyOpen(false);
                   setReplyHtml("");
+                  setReplyToValue("");
                   setReplyCc("");
                   setReplyBcc("");
                   setShowCc(false);
                   setShowBcc(false);
                 }}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 flex-shrink-0"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -676,14 +703,14 @@ export function ConversationPane({
               placeholder="Deine Antwort..."
               autoFocus
               aiContext={{
-                to: replyTo,
+                to: replyToValue || defaultReplyTo,
                 subject: threadSubject,
                 threadId: threadId || null,
                 signatureHtml: signature?.html,
                 userName: signature?.userName,
               }}
               templateContext={{
-                recipientEmail: replyTo ?? "",
+                recipientEmail: replyToValue || defaultReplyTo,
                 onPick: handlePickTemplate,
               }}
             />
@@ -746,7 +773,7 @@ export function ConversationPane({
               </div>
               <Button
                 onClick={handleSend}
-                disabled={sending || !replyHtml.trim()}
+                disabled={sending || !replyHtml.trim() || !(replyToValue || defaultReplyTo).trim()}
                 className="bg-[#0066FF] hover:bg-[#0055DD]"
               >
                 {sending ? (

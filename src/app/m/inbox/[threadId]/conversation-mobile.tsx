@@ -44,6 +44,7 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
   const [loading, setLoading] = useState(true);
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyHtml, setReplyHtml] = useState("");
+  const [replyToValue, setReplyToValue] = useState("");
   const [replyCc, setReplyCc] = useState("");
   const [replyBcc, setReplyBcc] = useState("");
   const [showCc, setShowCc] = useState(false);
@@ -137,6 +138,7 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
     const saved = drafts.replyDrafts[threadId];
     if (saved && saved.html) {
       setReplyHtml(saved.html);
+      setReplyToValue(saved.to || "");
       setReplyCc(saved.cc || "");
       setReplyBcc(saved.bcc || "");
       setShowCc(saved.showCc);
@@ -152,19 +154,20 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
     if (!replyOpen || !replyHtml.trim() || draftDeletedRef.current) return;
     drafts.saveReplyDraft(threadId, {
       html: replyHtml,
+      to: replyToValue,
       cc: replyCc,
       bcc: replyBcc,
       showCc,
       showBcc,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [replyHtml, replyOpen, replyCc, replyBcc, showCc, showBcc]);
+  }, [replyHtml, replyOpen, replyToValue, replyCc, replyBcc, showCc, showBcc]);
 
   // Keep refs to latest reply state for the cleanup effect (avoids stale closures)
   const replyHtmlRef = useRef(replyHtml);
   replyHtmlRef.current = replyHtml;
-  const replyStateRef = useRef({ cc: replyCc, bcc: replyBcc, showCc, showBcc });
-  replyStateRef.current = { cc: replyCc, bcc: replyBcc, showCc, showBcc };
+  const replyStateRef = useRef({ to: replyToValue, cc: replyCc, bcc: replyBcc, showCc, showBcc });
+  replyStateRef.current = { to: replyToValue, cc: replyCc, bcc: replyBcc, showCc, showBcc };
 
   // Save reply draft on unmount / navigation away
   useEffect(() => {
@@ -175,6 +178,7 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
         const s = replyStateRef.current;
         drafts.saveReplyDraft(threadId, {
           html,
+          to: s.to,
           cc: s.cc,
           bcc: s.bcc,
           showCc: s.showCc,
@@ -188,9 +192,21 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
   const lastMsg = messages[messages.length - 1];
   const subject = messages[0]?.subject || "(kein Betreff)";
 
+  // Default recipient for a new reply. Prefer the Reply-To header when present
+  // (e.g. contact-form mails arrive `From: customerlove@ephia.de` with the real
+  // sender in `Reply-To`); otherwise fall back to From for inbound, or the
+  // original To for outbound threads.
+  const defaultReplyTo = lastMsg
+    ? (lastMsg.replyTo && lastMsg.replyTo.trim()) ||
+      (lastMsg.isInbound
+        ? lastMsg.fromEmail
+        : lastMsg.to.split(",")[0].trim())
+    : "";
+
   const openReply = () => {
     const sig = signature?.html ? `<br><br>${signature.html}` : "";
     setReplyHtml(sig);
+    setReplyToValue(defaultReplyTo);
     // Auto-populate CC from the last message's CC header (desktop parity)
     if (lastMsg?.cc) {
       setReplyCc(lastMsg.cc);
@@ -224,9 +240,7 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
     setSending(true);
     setSendError(null);
     try {
-      const to = lastMsg.isInbound
-        ? lastMsg.fromEmail
-        : lastMsg.to.split(",")[0].trim();
+      const to = (replyToValue || defaultReplyTo).trim();
       const reSubject = lastMsg.subject.startsWith("Re:")
         ? lastMsg.subject
         : `Re: ${lastMsg.subject}`;
@@ -250,6 +264,7 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
         draftDeletedRef.current = true;
         setReplyOpen(false);
         setReplyHtml("");
+        setReplyToValue("");
         setReplyCc("");
         setReplyBcc("");
         setShowCc(false);
@@ -479,13 +494,14 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
           </div>
         ) : (
           <div className="p-3 space-y-2">
-            <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
-              <span className="truncate min-w-0">
-                An:{" "}
-                {lastMsg?.isInbound
-                  ? lastMsg.fromEmail
-                  : lastMsg?.to.split(",")[0].trim()}
-              </span>
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <label htmlFor="reply-to-mobile" className="w-8 flex-shrink-0">An</label>
+              <ContactAutocomplete
+                value={replyToValue}
+                onChange={setReplyToValue}
+                placeholder="Name oder E-Mail..."
+                className="flex-1 border-0 !px-0 focus-visible:ring-0 h-8 text-sm"
+              />
               {(!showCc || !showBcc) && (
                 <div className="flex gap-2 flex-shrink-0">
                   {!showCc && (
@@ -560,11 +576,7 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
               autoFocus
               className="max-h-[200px]"
               aiContext={{
-                to: lastMsg
-                  ? lastMsg.isInbound
-                    ? lastMsg.fromEmail
-                    : lastMsg.to.split(",")[0].trim()
-                  : "",
+                to: replyToValue || defaultReplyTo,
                 subject: lastMsg?.subject || "",
                 threadId,
                 signatureHtml: signature?.html,
@@ -579,7 +591,7 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
             <div className="flex justify-end">
               <button
                 onClick={handleSend}
-                disabled={sending || !replyHtml.trim()}
+                disabled={sending || !replyHtml.trim() || !(replyToValue || defaultReplyTo).trim()}
                 className="bg-[#0066FF] text-white font-bold text-sm py-2 px-5 rounded-[10px] disabled:opacity-50 flex items-center gap-2 active:bg-[#0055DD]"
               >
                 {sending ? (

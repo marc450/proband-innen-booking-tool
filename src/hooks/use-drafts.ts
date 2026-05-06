@@ -15,6 +15,7 @@ export interface ComposeDraft {
 
 export interface ReplyDraft {
   html: string;
+  to: string;
   cc: string;
   bcc: string;
   showCc: boolean;
@@ -242,6 +243,7 @@ export function useDrafts(): UseDraftsReturn {
                 ...prev,
                 [row.thread_id!]: {
                   html: row.body || "",
+                  to: row.to || "",
                   cc: row.cc || "",
                   bcc: row.bcc || "",
                   showCc: row.show_cc,
@@ -379,7 +381,7 @@ export function useDrafts(): UseDraftsReturn {
                 user_id: user.id,
                 kind: "reply",
                 thread_id: threadId,
-                to: null,
+                to: draft.to || null,
                 subject: null,
                 body: safeHtml,
                 cc: draft.cc,

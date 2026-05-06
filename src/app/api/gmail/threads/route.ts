@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
           fromName: extractName(getHeader(msg, "From")) || extractEmailAddress(getHeader(msg, "From")),
           to: getHeader(msg, "To"),
           cc: getHeader(msg, "Cc"),
+          replyTo: extractEmailAddress(getHeader(msg, "Reply-To")),
           subject: getHeader(msg, "Subject"),
           date: new Date(Number(msg.internalDate)).toISOString(),
           body: getBody(msg),
