@@ -78,9 +78,21 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
             <h1 className="text-2xl md:text-3xl font-bold tracking-wide leading-tight text-black whitespace-nowrap overflow-hidden text-ellipsis">
               {course.treatment_title || course.title}
             </h1>
-            <p className="text-sm md:text-base text-black/70 leading-relaxed mt-3 mb-8">
-              Tippe auf ein Datum, um die verfügbaren Zeitfenster zu sehen.
+            <p className="text-sm md:text-base text-black/70 leading-relaxed mt-3 mb-6">
+              Du zahlst erst nach der Behandlung in der Praxis. Wähle Deinen Wunschtermin.
             </p>
+
+            <div className="bg-white rounded-[10px] p-5 md:p-6 mb-8">
+              <div className="flex items-start gap-3">
+                <Info className="h-5 w-5 shrink-0 mt-0.5 text-[#0066FF]" strokeWidth={2.25} />
+                <div className="text-sm md:text-base text-black/80 leading-relaxed">
+                  <p className="font-bold text-black mb-1.5">Bezahlung nach der Behandlung</p>
+                  <p>
+                    Keine Vorauszahlung. Du zahlst erst am Behandlungstag in der Praxis, direkt bei der behandelnden Ärzt:in. Die Abrechnung erfolgt nach der amtlichen <strong>Gebührenordnung für Ärzte (GOÄ)</strong>. Der Richtpreis bei jedem Kurs dient als Orientierung; der genaue Betrag richtet sich nach dem Behandlungsumfang. Bei der Buchung hinterlegst Du nur eine Zahlungsmethode zur Absicherung der Ausfallgebühr.
+                  </p>
+                </div>
+              </div>
+            </div>
 
             {dateEntries.length === 0 ? (
               <div className="bg-white rounded-[10px] p-10 text-center">
