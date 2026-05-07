@@ -216,6 +216,10 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
 
   // Slot change modal
   const [slotChangePending, setSlotChangePending] = useState<BookingWithHash | null>(null);
+  // Three-step funnel: title → course-instance (date) → slot (time). Title
+  // is the leftmost selector — once chosen, dates are filtered to that
+  // course type, and only after a date is picked do specific times appear.
+  const [slotChangeTargetTitle, setSlotChangeTargetTitle] = useState<string>("");
   const [slotChangeTargetCourseId, setSlotChangeTargetCourseId] = useState<string>("");
   const [slotChangeTargetSlotId, setSlotChangeTargetSlotId] = useState<string>("");
   const [slotsForCourse, setSlotsForCourse] = useState<AvailableSlotOption[]>([]);
@@ -489,10 +493,24 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
     setSlotChangeError(null);
     setSlotChangeTargetSlotId("");
     const courseId = booking.slots?.course_id || "";
+    const title = booking.slots?.courses?.title || "";
+    setSlotChangeTargetTitle(title);
     setSlotChangeTargetCourseId(courseId);
     if (courseId) {
       fetchSlotsForCourse(courseId, booking.slot_id, booking.email, booking.email_hash);
     }
+  };
+
+  const handleSlotChangeTitleSelect = (title: string) => {
+    setSlotChangeTargetTitle(title);
+    setSlotChangeError(null);
+    // Resetting downstream forces the staff member to re-pick a date and a
+    // slot under the new title. Without this, a stale courseId from the
+    // previous title would leak into the date-trigger label and confuse
+    // the funnel.
+    setSlotChangeTargetCourseId("");
+    setSlotChangeTargetSlotId("");
+    setSlotsForCourse([]);
   };
 
   const handleSlotChangeCourseSelect = (courseId: string) => {
@@ -651,39 +669,73 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
               </div>
 
               {(() => {
-                // Show all courses so staff can move a proband across
-                // treatment types (e.g., from Botulinum-Therap. Indikationen
-                // to Masseter) when the proband has expressed interest in
-                // a different slot. Same-title courses come first so the
-                // common case (same treatment, different date) stays
-                // ergonomic; everything else follows after.
+                // Three-step funnel for moving a slot:
+                //   1. Kurs       – the treatment type (course title)
+                //   2. Datum      – a course-instance with that title
+                //   3. Termin     – a free time slot on that date
+                // Each step pre-filters the next, so staff can move a
+                // proband from e.g. Botulinum-Therap. Indikationen to a
+                // Masseter slot without scrolling through every
+                // course-instance in one combined dropdown.
                 const currentCourseTitle = slotChangePending.slots?.courses?.title || "";
-                const sameTitle = courses.filter((c) => c.title === currentCourseTitle);
-                const otherTitles = courses.filter((c) => c.title !== currentCourseTitle);
-                const selectableCourses = [...sameTitle, ...otherTitles];
-                const labelFor = (c: { title: string; course_date: string | null }) =>
+                const allTitles = Array.from(new Set(courses.map((c) => c.title)));
+                const sortedTitles = [
+                  ...allTitles.filter((t) => t === currentCourseTitle),
+                  ...allTitles.filter((t) => t !== currentCourseTitle),
+                ];
+                const datesForTitle = slotChangeTargetTitle
+                  ? courses
+                      .filter((c) => c.title === slotChangeTargetTitle)
+                      .sort((a, b) => (a.course_date || "").localeCompare(b.course_date || ""))
+                  : [];
+                const dateLabel = (c: { title: string; course_date: string | null }) =>
                   c.course_date
-                    ? `${c.title} (${format(parseDateOnly(c.course_date), "dd.MM.yyyy", { locale: de })})`
+                    ? format(parseDateOnly(c.course_date), "dd.MM.yyyy", { locale: de })
                     : c.title;
                 return (
                   <>
                     <div className="space-y-2">
-                      <Label>Kurs & Datum</Label>
-                      <Select value={slotChangeTargetCourseId} onValueChange={(val) => { if (val) handleSlotChangeCourseSelect(val); }}>
+                      <Label>Kurs</Label>
+                      <Select
+                        value={slotChangeTargetTitle}
+                        onValueChange={(val) => { if (val) handleSlotChangeTitleSelect(val); }}
+                      >
+                        <SelectTrigger>
+                          <span className="truncate">
+                            {slotChangeTargetTitle || "Kurs wählen..."}
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent className="w-[--radix-select-trigger-width]">
+                          {sortedTitles.map((t) => (
+                            <SelectItem key={t} value={t}>{t}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Datum</Label>
+                      <Select
+                        value={slotChangeTargetCourseId}
+                        onValueChange={(val) => { if (val) handleSlotChangeCourseSelect(val); }}
+                        disabled={!slotChangeTargetTitle}
+                      >
                         <SelectTrigger>
                           <span className="truncate">
                             {slotChangeTargetCourseId
                               ? (() => {
-                                  const c = selectableCourses.find((c) => c.id === slotChangeTargetCourseId);
-                                  return c ? labelFor(c) : slotChangeTargetCourseId;
+                                  const c = datesForTitle.find((c) => c.id === slotChangeTargetCourseId);
+                                  return c ? dateLabel(c) : slotChangeTargetCourseId;
                                 })()
-                              : "Kurs wählen..."}
+                              : !slotChangeTargetTitle
+                                ? "Erst Kurs wählen..."
+                                : "Datum wählen..."}
                           </span>
                         </SelectTrigger>
                         <SelectContent className="w-[--radix-select-trigger-width]">
-                          {selectableCourses.map((c) => (
+                          {datesForTitle.map((c) => (
                             <SelectItem key={c.id} value={c.id}>
-                              {labelFor(c)}
+                              {dateLabel(c)}
                             </SelectItem>
                           ))}
                         </SelectContent>
