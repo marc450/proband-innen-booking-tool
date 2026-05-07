@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runPostPurchaseFlow, PostPurchaseData, CourseType } from "@/lib/post-purchase";
 import { normalizeEmail } from "@/lib/email-normalize";
+import { findAuszubildendeIdByAnyEmail } from "@/lib/contact-emails";
 
 export async function POST(req: NextRequest) {
   try {
@@ -44,8 +45,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, message: "Profil bereits vervollständigt." });
     }
 
-    // Update auszubildende profile
-    if (booking.auszubildende_id) {
+    // Update auszubildende profile. When the booking already carries an
+    // auszubildende_id, update by id directly. Otherwise resolve the
+    // email through the alias-aware helper so Gmail dot/alias variants
+    // still find the right contact.
+    let resolvedContactId: string | null = booking.auszubildende_id ?? null;
+    if (!resolvedContactId && normalizedEmail) {
+      resolvedContactId = await findAuszubildendeIdByAnyEmail(normalizedEmail);
+    }
+    if (resolvedContactId) {
       await supabase
         .from("auszubildende")
         .update({
@@ -56,21 +64,7 @@ export async function POST(req: NextRequest) {
           efn: efn || null,
           profile_complete: true,
         })
-        .eq("id", booking.auszubildende_id);
-    } else if (normalizedEmail) {
-      // Fallback: find by email (normalised form so Gmail dot/alias
-      // variants still resolve to the right row).
-      await supabase
-        .from("auszubildende")
-        .update({
-          title,
-          gender,
-          specialty,
-          birthdate,
-          efn: efn || null,
-          profile_complete: true,
-        })
-        .eq("email", normalizedEmail);
+        .eq("id", resolvedContactId);
     }
 
     // Propagate profile_complete=true to ALL of this contact's

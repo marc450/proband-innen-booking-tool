@@ -99,20 +99,41 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ inserted: 0, skipped, invalid });
   }
 
-  const { error: insertError } = await supabase
-    .from("auszubildende")
-    .insert(toInsert);
-
-  if (insertError) {
-    return NextResponse.json(
-      { error: insertError.message, inserted: 0, skipped, invalid },
-      { status: 500 }
-    );
+  // Two-step per row: insert auszubildende (without email — that lives on
+  // the alias table), then attach a primary alias row carrying the email.
+  // We do this in a loop instead of two bulk INSERTs because we need each
+  // returned auszubildende.id paired with its email, and PostgREST bulk
+  // inserts don't preserve order across rows.
+  let inserted = 0;
+  const failed: string[] = [];
+  for (const row of toInsert) {
+    const { email: rowEmail, ...rest } = row as { email: string } & Record<string, unknown>;
+    const { data: created, error: insertError } = await supabase
+      .from("auszubildende")
+      .insert(rest)
+      .select("id")
+      .single();
+    if (insertError || !created) {
+      failed.push(rowEmail);
+      continue;
+    }
+    const aliasInsert = await supabase.from("auszubildende_emails").insert({
+      auszubildende_id: created.id,
+      email: rowEmail,
+      is_primary: true,
+      source: "import",
+    });
+    if (aliasInsert.error) {
+      failed.push(rowEmail);
+      continue;
+    }
+    inserted++;
   }
 
   return NextResponse.json({
-    inserted: toInsert.length,
+    inserted,
     skipped,
     invalid,
+    failed: failed.length ? failed : undefined,
   });
 }

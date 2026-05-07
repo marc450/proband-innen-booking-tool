@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeEmail } from "@/lib/email-normalize";
+import { setPrimaryEmailForAuszubildende } from "@/lib/contact-emails";
 
 /**
  * POST /api/admin/restore-gmail-addresses
@@ -165,12 +166,9 @@ export async function POST(req: NextRequest) {
   const applied: Proposal[] = [];
   const failed: { id: string; error: string }[] = [];
   for (const p of proposals) {
-    const { error: updErr } = await admin
-      .from("auszubildende")
-      .update({ email: p.proposed_email })
-      .eq("id", p.id);
-    if (updErr) {
-      failed.push({ id: p.id, error: updErr.message });
+    const result = await setPrimaryEmailForAuszubildende(p.id, p.proposed_email, "restore");
+    if (!result.ok) {
+      failed.push({ id: p.id, error: result.error });
     } else {
       applied.push(p);
     }

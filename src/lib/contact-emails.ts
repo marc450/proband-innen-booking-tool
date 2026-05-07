@@ -63,21 +63,15 @@ export async function findAuszubildendeIdByAnyEmail(
   return (legacy?.id as string | undefined) ?? null;
 }
 
-// Centralised "upsert by email" for the contact table. Replaces the
-// scattered `.upsert({...}, { onConflict: "email" })` pattern, which
-// only sees the legacy `auszubildende.email` column and would miss a
-// contact whose primary was changed via the multi-email manager. This
-// helper looks up by alias first (so aliases also resolve back to the
-// canonical contact), updates the existing row when found, otherwise
-// inserts a new contact. The 046 sync trigger handles seeding the
-// alias row on insert; we never touch is_primary here.
-//
-// `fields.email` is ignored on update (the primary email is owned by
-// setAuszubildendePrimary). On insert it's used to seed the legacy
-// column so the trigger can mirror it into auszubildende_emails.
+// Centralised "upsert by email" for the contact table. Resolves the
+// contact via auszubildende_emails (alias OR primary), updating an
+// existing row by id when found and otherwise inserting a fresh
+// auszubildende plus a primary alias. fields.email is always ignored:
+// the primary is owned by auszubildende_emails.
 export async function upsertAuszubildendeByEmail(
   email: string,
   fields: Record<string, unknown>,
+  source: string = "auto",
 ): Promise<string | null> {
   const admin = createAdminClient();
   const lower = email.trim().toLowerCase();
@@ -85,34 +79,102 @@ export async function upsertAuszubildendeByEmail(
 
   const existingId = await findAuszubildendeIdByAnyEmail(lower);
 
+  const { email: _ignoredEmail, ...cleanFields } = fields;
+  void _ignoredEmail;
+
   if (existingId) {
-    const { email: _ignore, ...updateFields } = fields;
-    void _ignore;
-    if (Object.keys(updateFields).length > 0) {
-      await admin.from("auszubildende").update(updateFields).eq("id", existingId);
+    if (Object.keys(cleanFields).length > 0) {
+      await admin.from("auszubildende").update(cleanFields).eq("id", existingId);
     }
     return existingId;
   }
 
   const { data, error } = await admin
     .from("auszubildende")
-    .insert({ ...fields, email: lower })
+    .insert(cleanFields)
     .select("id")
     .single();
   if (error || !data) return null;
-  return data.id as string;
+
+  const newId = data.id as string;
+  await admin.from("auszubildende_emails").insert({
+    auszubildende_id: newId,
+    email: lower,
+    is_primary: true,
+    source,
+  });
+  return newId;
+}
+
+// Find-or-create the alias row for the given email on the given contact,
+// then promote it to primary. Wraps the find/insert/setAuszubildendePrimary
+// dance shared by the dashboard email editor, the LW restore tool, and
+// any other "set primary email by address" caller.
+export async function setPrimaryEmailForAuszubildende(
+  contactId: string,
+  email: string,
+  source: string = "manual",
+): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
+  const admin = createAdminClient();
+  const lower = email.trim().toLowerCase();
+  if (!lower) {
+    return { ok: false, error: "E-Mail darf nicht leer sein.", status: 400 };
+  }
+
+  const { data: existingAlias } = await admin
+    .from("auszubildende_emails")
+    .select("id, auszubildende_id")
+    .eq("email", lower)
+    .maybeSingle();
+
+  if (existingAlias && existingAlias.auszubildende_id !== contactId) {
+    return {
+      ok: false,
+      error: "Diese E-Mail ist bereits einer anderen Person zugeordnet.",
+      status: 409,
+    };
+  }
+
+  let aliasRowId: string;
+  if (existingAlias) {
+    aliasRowId = existingAlias.id as string;
+  } else {
+    const { data: inserted, error: insertError } = await admin
+      .from("auszubildende_emails")
+      .insert({
+        auszubildende_id: contactId,
+        email: lower,
+        is_primary: false,
+        source,
+      })
+      .select("id")
+      .single();
+    if (insertError || !inserted) {
+      return {
+        ok: false,
+        error: insertError?.message || "Insert failed.",
+        status: 500,
+      };
+    }
+    aliasRowId = inserted.id as string;
+  }
+
+  await setAuszubildendePrimary(contactId, aliasRowId, lower);
+  return { ok: true };
 }
 
 // Promote one auszubildende_emails row to primary, demote the previous
-// primary, and sync the legacy auszubildende.email column. Two sequential
-// updates: the partial unique index allows the brief window where neither
-// row is primary, and any failure between steps leaves the contact with
-// no primary which is recoverable on next write.
+// primary. Two sequential updates: the partial unique index allows the
+// brief window where neither row is primary, and any failure between
+// steps leaves the contact with no primary which is recoverable on
+// next write. The third parameter is kept for caller-facing clarity
+// only; the canonical primary email lives in auszubildende_emails.email.
 export async function setAuszubildendePrimary(
   contactId: string,
   emailRowId: string,
   newPrimaryEmail: string,
 ): Promise<void> {
+  void newPrimaryEmail;
   const admin = createAdminClient();
   await admin
     .from("auszubildende_emails")
@@ -123,10 +185,6 @@ export async function setAuszubildendePrimary(
     .from("auszubildende_emails")
     .update({ is_primary: true })
     .eq("id", emailRowId);
-  await admin
-    .from("auszubildende")
-    .update({ email: newPrimaryEmail })
-    .eq("id", contactId);
 }
 
 // Same shape for patients: promote, demote, sync legacy email_hash. The

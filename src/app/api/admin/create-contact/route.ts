@@ -103,7 +103,6 @@ export async function POST(req: NextRequest) {
   }
 
   const insertRow: Record<string, unknown> = {
-    email,
     first_name: firstName,
     last_name: blank(body.lastName),
     phone: blank(body.phone),
@@ -122,6 +121,19 @@ export async function POST(req: NextRequest) {
 
   if (error || !data) {
     return NextResponse.json({ error: error?.message || "Fehler beim Speichern" }, { status: 500 });
+  }
+
+  const aliasInsert = await supabase.from("auszubildende_emails").insert({
+    auszubildende_id: data.id,
+    email,
+    is_primary: true,
+    source: "manual",
+  });
+  if (aliasInsert.error) {
+    return NextResponse.json(
+      { error: aliasInsert.error.message },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ id: data.id, type: body.type });
