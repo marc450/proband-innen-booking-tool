@@ -229,7 +229,12 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
   const router = useRouter();
 
   const filteredBookings = bookings.filter((b) => {
-    if (filterCourse !== "all" && b.slots?.courses?.title !== courses.find(c => c.id === filterCourse)?.title) {
+    // Match the selected course-instance directly by id. Older code matched
+    // by title, which collapsed all instances of a recurring course (same
+    // title on different dates) into one filter — staff would pick the
+    // 10.05 instance and see bookings from the 17.05 instance too because
+    // both share the title "Aufbaukurs Biostimulation & Skinbooster".
+    if (filterCourse !== "all" && b.slots?.course_id !== filterCourse) {
       return false;
     }
     if (filterDate) {
@@ -752,18 +757,26 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
         filters={
           <>
             <Select value={filterCourse} onValueChange={(val) => { if (val) setFilterCourse(val); }}>
-              <SelectTrigger className="w-[200px] h-9">
+              <SelectTrigger className="w-[260px] h-9">
                 <span className="truncate">
                   {filterCourse === "all"
                     ? "Alle Kurse"
-                    : courses.find((c) => c.id === filterCourse)?.title ?? "Alle Kurse"}
+                    : (() => {
+                        const c = courses.find((c) => c.id === filterCourse);
+                        if (!c) return "Alle Kurse";
+                        return c.course_date
+                          ? `${c.title} (${format(parseDateOnly(c.course_date), "dd.MM.yyyy", { locale: de })})`
+                          : c.title;
+                      })()}
                 </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle Kurse</SelectItem>
                 {courses.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
-                    {c.title}
+                    {c.course_date
+                      ? `${c.title} (${format(parseDateOnly(c.course_date), "dd.MM.yyyy", { locale: de })})`
+                      : c.title}
                   </SelectItem>
                 ))}
               </SelectContent>
