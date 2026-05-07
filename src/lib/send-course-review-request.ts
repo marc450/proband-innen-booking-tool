@@ -1,7 +1,6 @@
 import { randomBytes } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildEmailHtml } from "@/lib/email-template";
-import { archiveSentMessage } from "@/lib/gmail";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const APP_URL =
@@ -267,19 +266,12 @@ export async function scheduleCourseReviewEmails(
         continue;
       }
 
-      // Mirror into Gmail Sent at scheduled time so the contact-profile
-      // email history reflects the queued send. Best-effort: a Gmail
-      // outage must not block the schedule. The Resend webhook (if set
-      // up later) can replace this with archive-on-actual-delivery.
-      try {
-        await archiveSentMessage({ to: booking.email, subject, html });
-      } catch (archiveErr) {
-        console.error(
-          `schedule-review-emails: archive failed for booking ${booking.id} (non-fatal):`,
-          archiveErr,
-        );
-      }
-
+      // We deliberately do NOT mirror into Gmail Sent here. Resend will
+      // fire this email at the future scheduled time, not now, so an
+      // archive at scheduling time would falsely date the entry. The
+      // resend-webhook route already has the archive-on-actual-delivery
+      // path for tagged sends; extending it to the
+      // "ephia-purpose=course-review-request" tag is a follow-up.
       result.scheduled++;
     } catch (err) {
       console.error(
