@@ -122,11 +122,9 @@ export function BookingForm({ slot, guidePrice }: BookingFormProps) {
       </div>
 
       {guidePrice && (
-        <div className="bg-muted/50 border rounded-md px-4 py-3">
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Die Bezahlung erfolgt nach der Behandlung vor Ort. Die Abrechnung erfolgt nach GOÄ. Der Richtpreis von <span className="font-semibold text-foreground">€{guidePrice}</span> dient als Orientierung. Der genaue Behandlungsumfang und die endgültigen Kosten werden im persönlichen Aufklärungsgespräch mit der behandelnden Ärzt:in festgelegt.
-          </p>
-        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed px-1">
+          Du zahlst <strong className="font-semibold text-foreground">erst nach der Behandlung</strong> vor Ort, direkt bei der behandelnden Ärzt:in. Die Abrechnung erfolgt nach <strong className="font-semibold text-foreground">GOÄ</strong> (Gebührenordnung für Ärzte). Der Richtpreis von <span className="font-semibold text-foreground">€{guidePrice}</span> dient als Orientierung; der genaue Betrag richtet sich nach dem Behandlungsumfang, der im persönlichen Aufklärungsgespräch festgelegt wird. Bei der Buchung wird nur eine Zahlungsmethode zur Absicherung der Ausfallgebühr hinterlegt, es wird jetzt nichts abgebucht.
+        </p>
       )}
 
       <Card className="shadow-sm">

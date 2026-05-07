@@ -364,15 +364,30 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
             b.id === cancelPending.id ? { ...b, status: "cancelled" } : b,
           ),
         );
+        // Awaited so we can surface delivery failures. Status is already
+        // flipped at this point — if the email fails, we tell the admin
+        // explicitly so they can notify the Proband:in manually instead
+        // of silently swallowing a Resend hiccup.
         if (emailPayload) {
-          // Best-effort. Fire-and-forget so Resend hiccups don't block.
-          fetch("/api/send-booking-cancellation-email", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(emailPayload),
-          }).catch(() => {
-            /* swallow — status is already updated */
-          });
+          try {
+            const emailRes = await fetch("/api/send-booking-cancellation-email", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(emailPayload),
+            });
+            if (!emailRes.ok) {
+              const data = await emailRes.json().catch(() => ({}));
+              setAlertState({
+                title: "Storniert, aber E-Mail nicht versendet",
+                description: `Die Stornierungs-E-Mail an ${emailPayload.email} konnte nicht gesendet werden${data.error ? `: ${data.error}` : "."} Bitte den/die Proband:in manuell informieren.`,
+              });
+            }
+          } catch (err) {
+            setAlertState({
+              title: "Storniert, aber E-Mail nicht versendet",
+              description: `Netzwerkfehler beim Senden der Stornierungs-E-Mail an ${emailPayload.email}${err instanceof Error ? `: ${err.message}` : ""}. Bitte den/die Proband:in manuell informieren.`,
+            });
+          }
         }
       }
     } finally {
