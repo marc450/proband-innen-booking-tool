@@ -77,7 +77,7 @@ src/
           course-bookings-manager.tsx # Bookings table with search/status
       settings/
         settings-content.tsx        # 4 tabs: Kursvorlagen, Benutzer, Kursangebot, Kurstermine
-        users-manager.tsx           # Staff user management (roles: admin/dozent)
+        users-manager.tsx           # Staff user management (roles: admin/nutzer)
         course-offering-manager.tsx # CRUD for Auszubildende course templates
         course-sessions-settings.tsx # Session management (reuses course-sessions-manager)
 
@@ -137,7 +137,7 @@ supabase/
 | `course_templates` | Reusable course definitions | `id`, `title`, `description`, `service_description`, `guide_price`, `image_url` |
 | `email_campaigns` | Campaign metadata | `id`, `course_id`, `subject`, `body_text`, `status` (draft/scheduled/sending/sent/failed), `scheduled_at`, `excluded_patient_ids` |
 | `dozenten` | Instructor profiles | `id`, `title`, `first_name`, `last_name` |
-| `profiles` | Staff user profiles | `id` (FK auth.users), `first_name`, `last_name`, `role` (admin/dozent), `is_dozent`, `title` |
+| `profiles` | Auth user profiles (staff + LW SSO customers) | `id` (FK auth.users), `first_name`, `last_name`, `role` (admin/nutzer/student), `is_dozent`, `is_kursbetreuung`, `title` |
 | `available_slots` | VIEW: slots + remaining capacity | All slot columns + `course_title`, `remaining_capacity` |
 | `course_sessions` | Auszubildende course dates | `id`, `template_id`, `date_iso`, `label_de`, `instructor_name`, `max_seats`, `booked_seats`, `address`, `start_time`, `duration_minutes`, `is_live` |
 | `course_bookings` | Auszubildende bookings (NO E2EE) | `id`, `session_id`, `template_id`, `course_type`, `first_name`, `last_name`, `email`, `phone`, `stripe_checkout_session_id`, `amount_paid`, `status`, `audience_tag` |
@@ -231,11 +231,15 @@ STRIPE_WEBHOOK_SECRET             # For verifying Stripe webhook signatures
 
 ## Auth & Roles
 
-- Auth via Supabase email/password (staff only — patients do not have accounts)
-- `src/middleware.ts` protects all `/dashboard/**` routes
-- `profiles.role`: `admin` or `dozent`
-- `profiles.is_dozent`: boolean (a user can be both admin AND dozent)
-- Instructors in the `dozenten` table are separate from auth users (no login)
+- Auth via Supabase email/password. Two populations share the same `auth.users` table: internal staff and Auszubildende customers logged in through the LW SSO bridge.
+- `src/middleware.ts` protects all `/dashboard/**` routes. `src/lib/supabase/middleware.ts` additionally hard-locks `admin.ephia.de` to staff roles.
+- `profiles.role`:
+  - `admin`: full staff powers (settings, user management, manual bookings, etc.).
+  - `nutzer`: regular staff. Default for new staff users. Counts as staff in the admin-host gate.
+  - `student`: public Auszubildende customer created by the LW SSO bridge or `/api/auth/set-password`. NOT staff. Bounced from `admin.ephia.de`. Used to gate post-purchase login on `ephia.de/start`.
+- `profiles.is_dozent`: orthogonal boolean. Marks a staff user as also being an instructor. Replaces the legacy `role='dozent'` value (removed in migration 059).
+- `profiles.is_kursbetreuung`: orthogonal boolean. Marks staff who run course supervision (cookie-cached alongside `role` in middleware so layouts can branch without a DB call).
+- Instructors in the `dozenten` table are separate from auth users (no login).
 
 ---
 
