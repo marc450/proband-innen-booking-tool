@@ -4,7 +4,7 @@ export interface CourseTemplate {
   treatment_title: string | null;
   description: string | null;
   service_description: string | null;
-  guide_price: string | null;
+  guide_price_cents: number | null;
   image_url: string | null;
   /**
    * Optional hero image shown only on Proband:innen-facing course cards
@@ -122,7 +122,7 @@ export interface Course {
   course_date: string | null; // ISO date string yyyy-MM-dd
   location: string | null;
   instructor: string | null;
-  guide_price: string | null;
+  guide_price_cents: number | null;
   service_description: string | null;
   image_url: string | null;
   status: "online" | "offline";

@@ -64,7 +64,7 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                 </span>
               </div>
             </div>
-            <BookingForm slot={selectedSlot} guidePrice={course.guide_price} />
+            <BookingForm slot={selectedSlot} guidePriceCents={course.guide_price_cents} />
           </div>
         ) : (
           <div>

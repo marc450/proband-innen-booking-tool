@@ -220,13 +220,13 @@ export function TreatmentList({ courses, slots }: TreatmentListProps) {
                     </p>
                   )}
 
-                  {group.firstCourse.guide_price && (
+                  {group.firstCourse.guide_price_cents != null && (
                     <div className="mt-5 mb-6">
                       <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-black/55">
                         Richtpreis
                       </p>
                       <p className="text-2xl font-bold text-black mt-0.5">
-                        EUR {group.firstCourse.guide_price.replace(/[€\s]/g, "")}
+                        EUR {(group.firstCourse.guide_price_cents / 100).toLocaleString("de-DE")}
                       </p>
                     </div>
                   )}
@@ -240,7 +240,7 @@ export function TreatmentList({ courses, slots }: TreatmentListProps) {
                       <ArrowRight className="w-4 h-4" strokeWidth={2.25} />
                     </Link>
 
-                    {group.firstCourse.guide_price && (
+                    {group.firstCourse.guide_price_cents != null && (
                       <p className="text-[11px] text-black/50 text-center mt-3">
                         *Bezahlung nach der Behandlung vor Ort. Abrechnung nach
                         GOÄ.

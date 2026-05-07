@@ -11,12 +11,12 @@ import { formatBerlinLongDate, formatBerlinTime } from "@/lib/date";
 
 interface BookingFormProps {
   slot: AvailableSlot;
-  guidePrice?: string | null;
+  guidePriceCents?: number | null;
 }
 
 type Step = "details" | "agb" | "privacy" | "confirm";
 
-export function BookingForm({ slot, guidePrice }: BookingFormProps) {
+export function BookingForm({ slot, guidePriceCents }: BookingFormProps) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -121,9 +121,9 @@ export function BookingForm({ slot, guidePrice }: BookingFormProps) {
         ))}
       </div>
 
-      {guidePrice && (
+      {guidePriceCents != null && (
         <p className="text-xs text-muted-foreground leading-relaxed px-1">
-          Du zahlst <strong className="font-semibold text-foreground">erst nach der Behandlung</strong> vor Ort, Abrechnung nach <strong className="font-semibold text-foreground">GOÄ</strong>. Der Richtpreis von <span className="font-semibold text-foreground">€{guidePrice}</span> dient als Orientierung; der genaue Betrag wird im Aufklärungsgespräch festgelegt.
+          Du zahlst <strong className="font-semibold text-foreground">erst nach der Behandlung</strong> vor Ort, Abrechnung nach <strong className="font-semibold text-foreground">GOÄ</strong>. Der Richtpreis von <span className="font-semibold text-foreground">€{(guidePriceCents / 100).toLocaleString("de-DE")}</span> dient als Orientierung; der genaue Betrag wird im Aufklärungsgespräch festgelegt.
         </p>
       )}
 

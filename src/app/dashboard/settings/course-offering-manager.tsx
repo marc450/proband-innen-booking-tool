@@ -94,7 +94,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       treatment_title: "",
       description: "",
       service_description: "",
-      guide_price: "",
+      guide_price_euros: "",
       image_url: "",
       image_url_probanden: "",
       course_key: "",
@@ -129,7 +129,8 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       treatment_title: o.treatment_title || "",
       description: o.description || "",
       service_description: o.service_description || "",
-      guide_price: o.guide_price || "",
+      guide_price_euros:
+        o.guide_price_cents != null ? (o.guide_price_cents / 100).toString() : "",
       image_url: o.image_url || "",
       image_url_probanden: o.image_url_probanden || "",
       course_key: o.course_key || "",
@@ -160,12 +161,15 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
   const handleSave = async () => {
     if (!form.title.trim()) return;
 
+    const parsedGuide = form.guide_price_euros.trim()
+      ? Math.round(parseFloat(form.guide_price_euros.replace(",", ".")) * 100)
+      : null;
     const payload = {
       title: form.title.trim(),
       treatment_title: form.treatment_title || null,
       description: form.description || null,
       service_description: form.service_description || null,
-      guide_price: form.guide_price || null,
+      guide_price_cents: Number.isFinite(parsedGuide as number) ? parsedGuide : null,
       image_url: form.image_url || null,
       image_url_probanden: form.image_url_probanden || null,
       course_key: form.course_key || null,
@@ -208,7 +212,7 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
             treatment_title: data.treatment_title,
             description: data.description,
             service_description: data.service_description,
-            guide_price: data.guide_price,
+            guide_price_cents: data.guide_price_cents,
             image_url: data.image_url,
           })
           .eq("template_id", data.id);
@@ -621,8 +625,13 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Richtpreis</Label>
-                  <Input value={form.guide_price} onChange={(e) => updateField("guide_price", e.target.value)} placeholder="z.B. 99€" />
+                  <Label>Richtpreis (EUR)</Label>
+                  <Input
+                    value={form.guide_price_euros}
+                    onChange={(e) => updateField("guide_price_euros", e.target.value)}
+                    placeholder="z.B. 99"
+                    inputMode="decimal"
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Kursbeschreibung</Label>

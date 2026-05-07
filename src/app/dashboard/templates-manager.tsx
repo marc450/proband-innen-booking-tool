@@ -44,7 +44,7 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
   const [treatmentTitle, setTreatmentTitle] = useState("");
   const [description, setDescription] = useState("");
   const [serviceDescription, setServiceDescription] = useState("");
-  const [guidePrice, setGuidePrice] = useState("");
+  const [guidePriceEuros, setGuidePriceEuros] = useState("");
   const [instructor, setInstructor] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -63,7 +63,7 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
     setTreatmentTitle("");
     setDescription("");
     setServiceDescription("");
-    setGuidePrice("");
+    setGuidePriceEuros("");
     setInstructor("");
     setImageUrl("");
     setImageUploadError(null);
@@ -140,12 +140,15 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
   const handleSave = async () => {
     if (!title.trim()) return;
 
+    const parsedGuide = guidePriceEuros.trim()
+      ? Math.round(parseFloat(guidePriceEuros.replace(",", ".")) * 100)
+      : null;
     const payload = {
       title: title.trim(),
       treatment_title: treatmentTitle.trim() || null,
       description: description || null,
       service_description: serviceDescription || null,
-      guide_price: guidePrice || null,
+      guide_price_cents: Number.isFinite(parsedGuide as number) ? parsedGuide : null,
       image_url: imageUrl || null,
     };
 
@@ -176,7 +179,7 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
             treatment_title: data.treatment_title,
             description: data.description,
             service_description: data.service_description,
-            guide_price: data.guide_price,
+            guide_price_cents: data.guide_price_cents,
             image_url: data.image_url,
           })
           .eq("template_id", data.id);
@@ -214,7 +217,9 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
     setTreatmentTitle(template.treatment_title || "");
     setDescription(template.description || "");
     setServiceDescription(template.service_description || "");
-    setGuidePrice(template.guide_price || "");
+    setGuidePriceEuros(
+      template.guide_price_cents != null ? (template.guide_price_cents / 100).toString() : "",
+    );
     setInstructor(template.instructor || "");
     setImageUrl(template.image_url || "");
     setDialogOpen(true);
@@ -277,12 +282,13 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
                 />
               </div>
               <div>
-                <Label htmlFor="tpl_price">Richtpreis</Label>
+                <Label htmlFor="tpl_price">Richtpreis (EUR)</Label>
                 <Input
                   id="tpl_price"
-                  value={guidePrice}
-                  onChange={(e) => setGuidePrice(e.target.value)}
-                  placeholder="z.B. 99€"
+                  value={guidePriceEuros}
+                  onChange={(e) => setGuidePriceEuros(e.target.value)}
+                  placeholder="z.B. 99"
+                  inputMode="decimal"
                 />
               </div>
             </div>
@@ -431,7 +437,9 @@ export function TemplatesManager({ initialTemplates, dozenten, onTemplatesChange
                       {tpl.service_description || "—"}
                     </td>
                     <td className="px-4 py-3 text-sm font-semibold">
-                      {tpl.guide_price || "—"}
+                      {tpl.guide_price_cents != null
+                        ? `${(tpl.guide_price_cents / 100).toLocaleString("de-DE")} €`
+                        : "—"}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Button
