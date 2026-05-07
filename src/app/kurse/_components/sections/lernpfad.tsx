@@ -1,24 +1,33 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowRight, Award, Compass, Trophy } from "lucide-react";
+import { ArrowRight, Award, Check, Compass, Trophy } from "lucide-react";
 
 export interface LernpfadStep {
   /** Step number, displayed as "01" / "02" / etc. */
   number: number;
   /** Course title, e.g. "Botulinum". */
   title: string;
-  /** Format pill, e.g. "Onlinekurs" or "Online- & Praxiskurs". */
-  format: string;
+  /**
+   * Format pills, one per format component. Each entry renders as its
+   * own pill so curricula that contain both an Onlinekurs and a
+   * Praxiskurs make that explicit instead of collapsing them into a
+   * single "Online- & Praxiskurs" label.
+   */
+  formats: string[];
   /**
    * CME pill text. Either a number-with-suffix (e.g. "22 CME") or a
    * status string (e.g. "CME beantragt"). Pass null to suppress the pill.
    */
   cme?: string | null;
-  /** Single-course price, formatted (e.g. "EUR 1.290"). */
-  price: string;
   /** One-line "what you'll learn here" description shown on the card. */
   benefit: string;
+  /**
+   * Bullet list of concrete content covered, shown under the benefit
+   * tagline. Each entry is a short noun phrase, e.g.
+   * "Anatomie & Wirkmechanismus".
+   */
+  contents: string[];
   /** Link target for the "Zu den Kursdetails" CTA. */
   href: string;
 }
@@ -215,11 +224,16 @@ function PathStep({
           {step.title}
         </h3>
 
-        {/* Pills row: format + CME */}
+        {/* Pills row: each format as its own pill, plus CME */}
         <div className="flex flex-wrap items-center gap-1.5 mb-4">
-          <span className="text-[11px] font-semibold tracking-wide rounded-full px-2.5 py-1 bg-[#0066FF]/10 text-[#0066FF]">
-            {step.format}
-          </span>
+          {step.formats.map((f) => (
+            <span
+              key={f}
+              className="text-[11px] font-semibold tracking-wide rounded-full px-2.5 py-1 bg-[#0066FF]/10 text-[#0066FF]"
+            >
+              {f}
+            </span>
+          ))}
           {step.cme && (
             <span className="inline-flex items-center gap-1 text-[11px] font-semibold tracking-wide rounded-full px-2.5 py-1 bg-[#FAEBE1] text-[#733D29]">
               <Award className="w-3 h-3" aria-hidden="true" />
@@ -228,28 +242,44 @@ function PathStep({
           )}
         </div>
 
-        {/* Benefit copy */}
-        <p className="text-sm md:text-base text-black/75 leading-relaxed mb-6">
+        {/* Benefit tagline */}
+        <p className="text-sm md:text-base text-black/75 leading-relaxed mb-4">
           {step.benefit}
         </p>
 
-        {/* Price + CTA — sit on the same row so the call to action and
-            the cost the buyer is committing to read as one unit. */}
-        <div className="flex items-center justify-between gap-3 pt-4 border-t border-black/[0.06]">
-          <span className="text-base md:text-lg font-bold text-black tabular-nums">
-            {step.price}
-          </span>
-          <a
-            href={step.href}
-            className="inline-flex items-center gap-1.5 text-sm font-bold text-[#0066FF] hover:text-[#0055DD] group"
-          >
-            Zu den Kursdetails
-            <ArrowRight
-              className="w-4 h-4 transition-transform group-hover:translate-x-0.5"
-              aria-hidden="true"
-            />
-          </a>
-        </div>
+        {/* Concrete contents — gives a stronger preview than the
+            tagline alone. Bullets stay short noun phrases so the eye
+            scans them quickly. */}
+        {step.contents.length > 0 && (
+          <ul className="space-y-1.5 mb-6">
+            {step.contents.map((c) => (
+              <li
+                key={c}
+                className="flex items-start gap-2 text-sm text-black/75 leading-relaxed"
+              >
+                <Check
+                  className="w-3.5 h-3.5 text-[#0066FF] shrink-0 mt-1"
+                  strokeWidth={3}
+                  aria-hidden="true"
+                />
+                <span>{c}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* CTA button — full-width primary so each step has a clear
+            next action. Brand CTA style: bold, blue, white text. */}
+        <a
+          href={step.href}
+          className="inline-flex items-center justify-center gap-1.5 w-full text-sm md:text-base font-bold rounded-[10px] bg-[#0066FF] text-white hover:bg-[#0055DD] py-3 px-4 transition-colors group"
+        >
+          Zu den Kursdetails
+          <ArrowRight
+            className="w-4 h-4 transition-transform group-hover:translate-x-0.5"
+            aria-hidden="true"
+          />
+        </a>
       </article>
     </li>
   );

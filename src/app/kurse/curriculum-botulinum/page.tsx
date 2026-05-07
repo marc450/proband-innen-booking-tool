@@ -199,14 +199,14 @@ const TESTIMONIALS = {
 
 /**
  * Static curriculum-step metadata that doesn't live in the DB
- * (format pill, slug for the per-course landing page, one-line
- * benefit). Title/price/CME are layered in server-side from
+ * (format pills, content bullets, slug for the per-course landing
+ * page, one-line benefit). Title/CME are layered in server-side from
  * `course_templates` so they stay in sync with whatever Marc edits in
  * the admin.
  */
 const STEP_META: Record<
   string,
-  Pick<LernpfadStep, "format" | "benefit" | "href"> & {
+  Pick<LernpfadStep, "formats" | "benefit" | "contents" | "href"> & {
     /** Override for the CME pill text. When unset, falls back to the DB. */
     cme?: string;
     /** Static title used if the DB title is unavailable (course not live). */
@@ -214,30 +214,54 @@ const STEP_META: Record<
   }
 > = {
   grundkurs_botulinum: {
-    format: "Online- & Praxiskurs",
+    formats: ["Onlinekurs", "Praxiskurs"],
     benefit:
       "Dein sicherer Einstieg: Anatomie, Indikationen, Beratung und die ersten Behandlungen unter Aufsicht.",
+    contents: [
+      "Anatomie & Wirkmechanismus von Botulinumtoxin",
+      "Indikationen, Kontraindikationen & Aufklärung",
+      "MD-Codes für die obere Gesichtshälfte",
+      "Erste Behandlungen an Proband:innen unter Aufsicht",
+    ],
     href: "/kurse/grundkurs-botulinum",
     fallbackTitle: "Botulinum",
   },
   grundkurs_medizinische_hautpflege: {
-    format: "Onlinekurs",
+    formats: ["Onlinekurs"],
     benefit:
       "Hautphysiologie, Akne, Rosazea und der Aufbau einer evidenzbasierten Pflegeroutine. Die Basis für jede ästhetische Behandlung.",
+    contents: [
+      "Hautphysiologie & Diagnostik",
+      "Akne, Rosazea & Pigmentstörungen",
+      "Aufbau einer evidenzbasierten Pflegeroutine",
+      "Beratung als Ergänzung zur ästhetischen Behandlung",
+    ],
     href: "/kurse/grundkurs-medizinische-hautpflege",
     fallbackTitle: "Medizinische Hautpflege",
   },
   aufbaukurs_therapeutische_indikationen_botulinum: {
-    format: "Online- & Praxiskurs",
+    formats: ["Onlinekurs", "Praxiskurs"],
     benefit:
       "Bruxismus, chronische Migräne, Hyperhidrose und mehr. Du öffnest Dir neue Behandlungsfelder mit therapeutischem Fokus.",
+    contents: [
+      "Bruxismus & muskuläre Verspannungen",
+      "Chronische Migräne nach PREEMPT",
+      "Hyperhidrose (Achseln, Hände, Füße)",
+      "Therapeutische Behandlungen unter Aufsicht",
+    ],
     href: "/kurse/aufbaukurs-therapeutische-indikationen-botulinum",
     fallbackTitle: "Therapeutische Indikationen Botulinum",
   },
   masterclass_botulinum: {
-    format: "Online- & Praxiskurs",
+    formats: ["Onlinekurs", "Praxiskurs"],
     benefit:
       "Full Face Analyse, fortgeschrittene Injektionstechniken und souveränes Komplikationsmanagement auf Expert:innen-Niveau.",
+    contents: [
+      "Full Face Analyse & individuelles Behandlungsdesign",
+      "Fortgeschrittene Injektionstechniken (Periorale Zone)",
+      "Komplikationsmanagement & Notfallprotokolle",
+      "Komplexe Fälle aus der Praxis",
+    ],
     href: "/kurse/masterclass-botulinum",
     fallbackTitle: "Masterclass Botulinum",
   },
@@ -251,21 +275,19 @@ export default async function CurriculumBotulinumPage() {
   const supabase = createAdminClient();
   const courseKeys = CURRICULUM_BOTULINUM.courses.map((c) => c.courseKey);
 
-  // Pull live template data (price, title, CME) so the curriculum
-  // steps stay in sync with whatever the admin edits per course.
+  // Pull live template data (title, CME) so the curriculum steps stay
+  // in sync with whatever the admin edits per course. Price intentionally
+  // not surfaced on the curriculum cards — pricing belongs on the
+  // per-course landing page where the buyer commits.
   const { data: templates } = await supabase
     .from("course_templates")
-    .select(
-      "course_key, title, price_gross_online, price_gross_kombi, cme_online, cme_kombi",
-    )
+    .select("course_key, title, cme_online, cme_kombi")
     .in("course_key", courseKeys);
 
   const templateMap = new Map<
     string,
     {
       title?: string | null;
-      price_gross_online?: number | null;
-      price_gross_kombi?: number | null;
       cme_online?: string | null;
       cme_kombi?: string | null;
     }
@@ -273,18 +295,13 @@ export default async function CurriculumBotulinumPage() {
   for (const t of templates ?? []) {
     templateMap.set(t.course_key as string, {
       title: t.title as string | null,
-      price_gross_online: (t.price_gross_online as number | null) ?? null,
-      price_gross_kombi: (t.price_gross_kombi as number | null) ?? null,
       cme_online: (t.cme_online as string | null) ?? null,
       cme_kombi: (t.cme_kombi as string | null) ?? null,
     });
   }
 
-  const formatPrice = (amount: number | null | undefined) =>
-    amount ? `EUR ${amount.toLocaleString("de-DE")}` : "Preis auf Anfrage";
-
-  // Build LernpfadStep[] in curriculum order. Pick the price/CME for
-  // the courseType configured on the curriculum (Onlinekurs vs Kombikurs).
+  // Build LernpfadStep[] in curriculum order. CME is picked for the
+  // courseType configured on the curriculum (Onlinekurs vs Kombikurs).
   const steps: LernpfadStep[] = CURRICULUM_BOTULINUM.courses
     .slice()
     .sort((a, b) => a.sort - b.sort)
@@ -292,9 +309,6 @@ export default async function CurriculumBotulinumPage() {
       const meta = STEP_META[c.courseKey];
       const tmpl = templateMap.get(c.courseKey);
       const isOnline = c.courseType === "Onlinekurs";
-      const price = isOnline
-        ? tmpl?.price_gross_online
-        : tmpl?.price_gross_kombi;
       // Per-course CME on the curriculum step. The Masterclass overrides
       // its CME to call out that the Onlinekurs (Periorale Zone) carries
       // 10 CME while the Praxis accreditation is still pending. Other
@@ -321,10 +335,10 @@ export default async function CurriculumBotulinumPage() {
       return {
         number: c.sort,
         title: tmpl?.title || meta.fallbackTitle,
-        format: meta.format,
+        formats: meta.formats,
         cme,
-        price: formatPrice(price),
         benefit: meta.benefit,
+        contents: meta.contents,
         href: meta.href,
       };
     });
