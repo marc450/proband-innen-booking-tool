@@ -40,6 +40,7 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(patient.notes || "");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   // Name edit popover
   const [namePopoverOpen, setNamePopoverOpen] = useState(false);
@@ -94,6 +95,47 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
     if (res.ok) {
       setPatient((prev) => ({ ...prev, [field]: trimmed }));
     }
+  };
+
+  // Email is part of the encrypted blob and also tracked as `email_hash`
+  // for dedup/blacklist lookups. The API re-encrypts the blob and rewrites
+  // the hash in one transaction. We validate format + lowercase before
+  // sending and roll the input value back on failure so the UI never
+  // shows an unsaved value.
+  const saveEmail = async (raw: string, input?: HTMLInputElement | null) => {
+    const trimmed = raw.trim().toLowerCase();
+    const current = (patient.email || "").toLowerCase();
+    if (trimmed === current) {
+      setEmailError(null);
+      return;
+    }
+    if (!trimmed) {
+      if (input) input.value = patient.email || "";
+      setEmailError("E-Mail darf nicht leer sein.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      if (input) input.value = patient.email || "";
+      setEmailError("Ungültiges E-Mail-Format.");
+      return;
+    }
+    const res = await fetch("/api/update-patient-fields", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ patientId: patient.id, fields: { email: trimmed } }),
+    });
+    if (!res.ok) {
+      if (input) input.value = patient.email || "";
+      const data = await res.json().catch(() => ({}));
+      setEmailError(
+        data.error
+          ? `Speichern fehlgeschlagen: ${data.error}`
+          : "Speichern fehlgeschlagen.",
+      );
+      return;
+    }
+    setPatient((prev) => ({ ...prev, email: trimmed }));
+    setEmailError(null);
   };
 
   const handleStatusChange = async (newStatus: PatientStatus) => {
@@ -253,7 +295,16 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
             <CardContent className="text-sm">
               <div className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-2 items-center">
                 <span className="text-xs text-muted-foreground">E-Mail</span>
-                <a href={`mailto:${patient.email}`} className="text-primary hover:underline truncate text-sm">{patient.email}</a>
+                <input
+                  type="email"
+                  defaultValue={patient.email || ""}
+                  placeholder="–"
+                  onBlur={(e) => saveEmail(e.target.value, e.currentTarget)}
+                  className={fieldClass}
+                />
+                {emailError && (
+                  <div className="col-span-2 text-xs text-destructive">{emailError}</div>
+                )}
 
                 <span className="text-xs text-muted-foreground">Telefon</span>
                 <input defaultValue={patient.phone || ""} placeholder="–" onBlur={(e) => autosave("phone", e.target.value)} className={fieldClass} />
