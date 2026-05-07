@@ -77,9 +77,9 @@ function getBadgeClasses(level: string) {
   return cls;
 }
 
-function formatPrice(amount: number | null) {
-  if (!amount) return "";
-  return `EUR ${amount.toLocaleString("de-DE")}`;
+function formatPrice(cents: number | null) {
+  if (cents == null) return "";
+  return `EUR ${(cents / 100).toLocaleString("de-DE")}`;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -302,8 +302,8 @@ export function CurriculumPage({ curriculum, templates, sessions: initialSession
 
   const getCoursePrice = (template: CourseTemplate) => {
     const config = getCourseConfig(template.course_key || "");
-    if (config?.courseType === "Onlinekurs") return template.price_gross_online;
-    return template.price_gross_kombi;
+    if (config?.courseType === "Onlinekurs") return template.price_gross_online_cents;
+    return template.price_gross_kombi_cents;
   };
 
   const getCourseCme = (template: CourseTemplate) => {

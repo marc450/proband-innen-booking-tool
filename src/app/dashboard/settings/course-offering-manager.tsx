@@ -41,9 +41,9 @@ interface Props {
 
 type SortKey = "status" | "name" | "online" | "praxis" | "kombi";
 
-function formatPrice(p: number | null | undefined) {
-  if (!p) return "–";
-  return `€${p.toLocaleString("de-DE")}`;
+function formatPrice(cents: number | null | undefined) {
+  if (cents == null) return "–";
+  return `€${(cents / 100).toLocaleString("de-DE")}`;
 }
 
 // Labels for the audience + level selects AND for the small indicators
@@ -102,9 +102,9 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       name_online: "",
       name_praxis: "",
       name_kombi: "",
-      price_gross_online: "",
-      price_gross_praxis: "",
-      price_gross_kombi: "",
+      price_gross_online_euros: "",
+      price_gross_praxis_euros: "",
+      price_gross_kombi_euros: "",
       vat_rate_online: "0.19",
       vat_rate_praxis: "0.19",
       vat_rate_kombi: "0.19",
@@ -138,9 +138,12 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       name_online: o.name_online || "",
       name_praxis: o.name_praxis || "",
       name_kombi: o.name_kombi || "",
-      price_gross_online: o.price_gross_online?.toString() || "",
-      price_gross_praxis: o.price_gross_praxis?.toString() || "",
-      price_gross_kombi: o.price_gross_kombi?.toString() || "",
+      price_gross_online_euros:
+        o.price_gross_online_cents != null ? (o.price_gross_online_cents / 100).toString() : "",
+      price_gross_praxis_euros:
+        o.price_gross_praxis_cents != null ? (o.price_gross_praxis_cents / 100).toString() : "",
+      price_gross_kombi_euros:
+        o.price_gross_kombi_cents != null ? (o.price_gross_kombi_cents / 100).toString() : "",
       vat_rate_online: o.vat_rate_online?.toString() || "0.19",
       vat_rate_praxis: o.vat_rate_praxis?.toString() || "0.19",
       vat_rate_kombi: o.vat_rate_kombi?.toString() || "0.19",
@@ -177,9 +180,15 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
       name_online: form.name_online || null,
       name_praxis: form.name_praxis || null,
       name_kombi: form.name_kombi || null,
-      price_gross_online: form.price_gross_online ? parseFloat(form.price_gross_online) : null,
-      price_gross_praxis: form.price_gross_praxis ? parseFloat(form.price_gross_praxis) : null,
-      price_gross_kombi: form.price_gross_kombi ? parseFloat(form.price_gross_kombi) : null,
+      price_gross_online_cents: form.price_gross_online_euros
+        ? Math.round(parseFloat(form.price_gross_online_euros.replace(",", ".")) * 100)
+        : null,
+      price_gross_praxis_cents: form.price_gross_praxis_euros
+        ? Math.round(parseFloat(form.price_gross_praxis_euros.replace(",", ".")) * 100)
+        : null,
+      price_gross_kombi_cents: form.price_gross_kombi_euros
+        ? Math.round(parseFloat(form.price_gross_kombi_euros.replace(",", ".")) * 100)
+        : null,
       vat_rate_online: form.vat_rate_online ? parseFloat(form.vat_rate_online) : null,
       vat_rate_praxis: form.vat_rate_praxis ? parseFloat(form.vat_rate_praxis) : null,
       vat_rate_kombi: form.vat_rate_kombi ? parseFloat(form.vat_rate_kombi) : null,
@@ -362,11 +371,11 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
         case "name":
           return (a.title || "").localeCompare(b.title || "") * dir;
         case "online":
-          return ((a.price_gross_online || 0) - (b.price_gross_online || 0)) * dir;
+          return ((a.price_gross_online_cents || 0) - (b.price_gross_online_cents || 0)) * dir;
         case "praxis":
-          return ((a.price_gross_praxis || 0) - (b.price_gross_praxis || 0)) * dir;
+          return ((a.price_gross_praxis_cents || 0) - (b.price_gross_praxis_cents || 0)) * dir;
         case "kombi":
-          return ((a.price_gross_kombi || 0) - (b.price_gross_kombi || 0)) * dir;
+          return ((a.price_gross_kombi_cents || 0) - (b.price_gross_kombi_cents || 0)) * dir;
         default:
           return 0;
       }
@@ -469,13 +478,13 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
 
                 {/* Prices */}
                 <TableCell className="text-sm text-muted-foreground">
-                  {formatPrice(o.price_gross_online)}
+                  {formatPrice(o.price_gross_online_cents)}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {formatPrice(o.price_gross_praxis)}
+                  {formatPrice(o.price_gross_praxis_cents)}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {formatPrice(o.price_gross_kombi)}
+                  {formatPrice(o.price_gross_kombi_cents)}
                 </TableCell>
 
                 {/* VNR Theorie — filled or red "Fehlt" pill */}
@@ -777,15 +786,15 @@ export function CourseOfferingManager({ initialOfferings }: Props) {
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <Label>Online</Label>
-                  <Input type="number" step="0.01" value={form.price_gross_online} onChange={(e) => updateField("price_gross_online", e.target.value)} />
+                  <Input type="number" step="0.01" value={form.price_gross_online_euros} onChange={(e) => updateField("price_gross_online_euros", e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Praxis</Label>
-                  <Input type="number" step="0.01" value={form.price_gross_praxis} onChange={(e) => updateField("price_gross_praxis", e.target.value)} />
+                  <Input type="number" step="0.01" value={form.price_gross_praxis_euros} onChange={(e) => updateField("price_gross_praxis_euros", e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Kombi</Label>
-                  <Input type="number" step="0.01" value={form.price_gross_kombi} onChange={(e) => updateField("price_gross_kombi", e.target.value)} />
+                  <Input type="number" step="0.01" value={form.price_gross_kombi_euros} onChange={(e) => updateField("price_gross_kombi_euros", e.target.value)} />
                 </div>
               </div>
             </div>

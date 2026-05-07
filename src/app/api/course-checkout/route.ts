@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
     // Select per-type fields
     let productName: string;
     let description: string;
-    let grossPrice: number;
+    let grossPriceCents: number;
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen.ephia.de";
     const successUrl = `${baseUrl}/courses/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = "https://ephia.de";
@@ -148,13 +148,13 @@ export async function POST(req: NextRequest) {
         ? `${template.name_online || template.title} (Zahnmedizin)`
         : template.name_online || template.title;
       description = template.description_online || "";
-      grossPrice = template.price_gross_online || 0;
+      grossPriceCents = template.price_gross_online_cents || 0;
     } else if (isPraxis) {
       productName = isDentist
         ? `${template.name_praxis || template.title} (Zahnmedizin) – ${sessionLabel}`
         : `${template.name_praxis || template.title} – ${sessionLabel}`;
       description = template.description_praxis || "";
-      grossPrice = template.price_gross_praxis || 0;
+      grossPriceCents = template.price_gross_praxis_cents || 0;
     } else if (isPremium) {
       const isDermalfiller = courseKey === "grundkurs_dermalfiller";
       const isLippen = courseKey === "aufbaukurs_lippen";
@@ -178,7 +178,7 @@ export async function POST(req: NextRequest) {
             : isTherapeutischeIndikationen
               ? "Online- & Praxiskurs Therapeutische Indikationen + Onlinekurs Grundkurs Botulinum + Onlinekurs Medizinische Hautpflege"
               : "4 Onlinekurse + Praxiskurs Botulinum";
-      // Hardcoded fallbacks when price_gross_premium isn't set in the DB.
+      // Hardcoded fallbacks when price_gross_premium_cents isn't set in the DB.
       // - Zahnmedizin: DB value required (falls through to 0 = 400 error).
       // - Dermalfiller: 1290 + 250 + 490 = 2030 → -10% bundle = 1827.
       // - Lippen: 1140 (Kombi) + 490 (Dermalfiller online) + 250 (Hautpflege)
@@ -186,12 +186,12 @@ export async function POST(req: NextRequest) {
       // - Therapeutische Indikationen: 1140 (Kombi) + 490 (Botulinum online)
       //          + 250 (Hautpflege) = 1880 → -10% bundle = 1692.
       // - Humanmedizin (Botulinum): 2220 default.
-      grossPrice = template.price_gross_premium || (
+      grossPriceCents = template.price_gross_premium_cents || (
         isDentist ? 0 :
-        isDermalfiller ? 2030 :
-        isLippen ? 2220 :
-        isTherapeutischeIndikationen ? 1880 :
-        2220
+        isDermalfiller ? 203000 :
+        isLippen ? 222000 :
+        isTherapeutischeIndikationen ? 188000 :
+        222000
       );
     } else {
       // Kombikurs
@@ -199,10 +199,10 @@ export async function POST(req: NextRequest) {
         ? `${template.name_kombi || template.title} (Zahnmedizin) – ${sessionLabel}`
         : `${template.name_kombi || template.title} – ${sessionLabel}`;
       description = template.description_kombi || "";
-      grossPrice = template.price_gross_kombi || 0;
+      grossPriceCents = template.price_gross_kombi_cents || 0;
     }
 
-    let unitAmount = Math.round(grossPrice * 100); // EUR to cents
+    let unitAmount = grossPriceCents;
 
     // Humanmedizin Premium: apply 10% discount (Zahnmedizin uses DB price directly)
     if (isPremium && !isDentist) {

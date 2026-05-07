@@ -20,10 +20,10 @@ export interface CourseTemplate {
   name_online: string | null;
   name_praxis: string | null;
   name_kombi: string | null;
-  price_gross_online: number | null;
-  price_gross_praxis: number | null;
-  price_gross_kombi: number | null;
-  price_gross_premium: number | null;
+  price_gross_online_cents: number | null;
+  price_gross_praxis_cents: number | null;
+  price_gross_kombi_cents: number | null;
+  price_gross_premium_cents: number | null;
   vat_rate_online: number | null;
   vat_rate_praxis: number | null;
   vat_rate_kombi: number | null;

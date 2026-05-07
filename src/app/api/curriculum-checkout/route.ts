@@ -117,34 +117,33 @@ export async function POST(req: NextRequest) {
     }
 
     // Calculate pricing (use per-course type price)
-    let totalGross = 0;
+    let totalGrossCents = 0;
     const courseNames: string[] = [];
 
     for (const course of curriculum.courses) {
       const template = templates.find((t: { course_key: string }) => t.course_key === course.courseKey);
       if (!template) continue;
 
-      const price = course.courseType === "Onlinekurs"
-        ? template.price_gross_online
-        : template.price_gross_kombi;
+      const priceCents = course.courseType === "Onlinekurs"
+        ? template.price_gross_online_cents
+        : template.price_gross_kombi_cents;
 
       const name = course.courseType === "Onlinekurs"
         ? (template.name_online || template.title)
         : (template.name_kombi || template.title);
 
-      if (!price || price <= 0) {
+      if (!priceCents || priceCents <= 0) {
         return NextResponse.json(
           { error: `Preis für ${name} nicht konfiguriert` },
           { status: 500 }
         );
       }
-      totalGross += price;
+      totalGrossCents += priceCents;
       courseNames.push(name);
     }
 
-    // Apply discount
-    const discountedGross = totalGross * (1 - curriculum.discountPercent / 100);
-    const unitAmount = Math.round(discountedGross * 100); // EUR to cents
+    // Apply discount (cents stay integer thanks to Math.round).
+    const unitAmount = Math.round(totalGrossCents * (1 - curriculum.discountPercent / 100));
 
     if (unitAmount <= 0) {
       return NextResponse.json({ error: "Preis nicht konfiguriert" }, { status: 500 });

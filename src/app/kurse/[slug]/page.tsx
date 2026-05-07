@@ -150,7 +150,7 @@ export default async function KursPage({
 
   const hasCourseInstance = [
     // An evergreen online instance (uses the Onlinekurs price if set)
-    ...(template.price_gross_online
+    ...(template.price_gross_online_cents
       ? [
           {
             "@type": "CourseInstance",
@@ -159,7 +159,7 @@ export default async function KursPage({
             inLanguage: "de",
             offers: {
               "@type": "Offer",
-              price: String(template.price_gross_online),
+              price: String(template.price_gross_online_cents / 100),
               priceCurrency,
               availability: "https://schema.org/InStock",
               url: courseUrl,
@@ -176,11 +176,13 @@ export default async function KursPage({
       startDate: s.date_iso,
       ...(s.address ? { location: { "@type": "Place", name: s.address } } : {}),
       inLanguage: "de",
-      ...(template.price_gross_praxis || template.price_gross_kombi
+      ...(template.price_gross_praxis_cents || template.price_gross_kombi_cents
         ? {
             offers: {
               "@type": "Offer",
-              price: String(template.price_gross_kombi ?? template.price_gross_praxis),
+              price: String(
+                (template.price_gross_kombi_cents ?? template.price_gross_praxis_cents ?? 0) / 100,
+              ),
               priceCurrency,
               availability:
                 s.booked_seats < s.max_seats
@@ -307,8 +309,8 @@ export default async function KursPage({
         // Onlinekurs price to the button label so users see the cost
         // before they click (matches the booking-widget cards' price UX).
         priceSuffix={
-          content.hero.ctaOverride?.directCheckoutCourseKey && template.price_gross_online
-            ? `EUR ${template.price_gross_online.toLocaleString("de-DE")}`
+          content.hero.ctaOverride?.directCheckoutCourseKey && template.price_gross_online_cents
+            ? `EUR ${(template.price_gross_online_cents / 100).toLocaleString("de-DE")}`
             : undefined
         }
       />
@@ -341,8 +343,8 @@ export default async function KursPage({
       <CtaBanner
         content={content.ctaBanner}
         priceSuffix={
-          content.ctaBanner.directCheckoutCourseKey && template.price_gross_online
-            ? `EUR ${template.price_gross_online.toLocaleString("de-DE")}`
+          content.ctaBanner.directCheckoutCourseKey && template.price_gross_online_cents
+            ? `EUR ${(template.price_gross_online_cents / 100).toLocaleString("de-DE")}`
             : undefined
         }
       />

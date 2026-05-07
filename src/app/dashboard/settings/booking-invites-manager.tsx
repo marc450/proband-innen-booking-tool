@@ -185,13 +185,13 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
     const t = templates.find((x) => x.id === templateId);
     if (!t) return COURSE_TYPES;
     const list: CourseType[] = [];
-    if (t.price_gross_online != null) list.push("Onlinekurs");
-    if (t.price_gross_praxis != null) list.push("Praxiskurs");
-    if (t.price_gross_kombi != null) list.push("Kombikurs");
+    if (t.price_gross_online_cents != null) list.push("Onlinekurs");
+    if (t.price_gross_praxis_cents != null) list.push("Praxiskurs");
+    if (t.price_gross_kombi_cents != null) list.push("Kombikurs");
     // Komplettpaket (Premium) is a bundle built on top of Kombi, so
     // include it whenever the course has either an explicit premium price
     // or at least a Kombi variant.
-    if (t.price_gross_premium != null || t.price_gross_kombi != null) list.push("Premium");
+    if (t.price_gross_premium_cents != null || t.price_gross_kombi_cents != null) list.push("Premium");
     return list.length > 0 ? list : COURSE_TYPES;
   }, [templateId, templates]);
 

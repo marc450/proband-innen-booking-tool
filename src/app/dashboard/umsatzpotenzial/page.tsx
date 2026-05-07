@@ -13,9 +13,9 @@ type TemplateRow = {
   id: string;
   title: string | null;
   course_label_de: string | null;
-  price_gross_kombi: number | null;
-  price_gross_praxis: number | null;
-  price_gross_online: number | null;
+  price_gross_kombi_cents: number | null;
+  price_gross_praxis_cents: number | null;
+  price_gross_online_cents: number | null;
   vat_rate_kombi: number | null;
   vat_rate_praxis: number | null;
   vat_rate_online: number | null;
@@ -31,8 +31,8 @@ type SessionRow = {
   is_live: boolean;
 };
 
-function fmtEur(n: number): string {
-  return n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+function fmtEur(cents: number): string {
+  return (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 }
 
 function fmtInt(n: number): string {
@@ -66,7 +66,7 @@ export default async function UmsatzpotenzialPage() {
     admin
       .from("course_templates")
       .select(
-        "id, title, course_label_de, price_gross_kombi, price_gross_praxis, price_gross_online, vat_rate_kombi, vat_rate_praxis, vat_rate_online",
+        "id, title, course_label_de, price_gross_kombi_cents, price_gross_praxis_cents, price_gross_online_cents, vat_rate_kombi, vat_rate_praxis, vat_rate_online",
       ),
   ]);
 
@@ -81,9 +81,9 @@ export default async function UmsatzpotenzialPage() {
   // back to Praxis, then Online. VAT rate comes from the matching column,
   // defaulting to 19 % if the template row has no rate.
   function pricingFor(t: TemplateRow): { pricePerSeat: number; vatRate: number; basis: "Kombikurs" | "Praxiskurs" | "Onlinekurs" | "–" } {
-    if (t.price_gross_kombi != null) return { pricePerSeat: t.price_gross_kombi, vatRate: t.vat_rate_kombi ?? 0.19, basis: "Kombikurs" };
-    if (t.price_gross_praxis != null) return { pricePerSeat: t.price_gross_praxis, vatRate: t.vat_rate_praxis ?? 0.19, basis: "Praxiskurs" };
-    if (t.price_gross_online != null) return { pricePerSeat: t.price_gross_online, vatRate: t.vat_rate_online ?? 0.19, basis: "Onlinekurs" };
+    if (t.price_gross_kombi_cents != null) return { pricePerSeat: t.price_gross_kombi_cents, vatRate: t.vat_rate_kombi ?? 0.19, basis: "Kombikurs" };
+    if (t.price_gross_praxis_cents != null) return { pricePerSeat: t.price_gross_praxis_cents, vatRate: t.vat_rate_praxis ?? 0.19, basis: "Praxiskurs" };
+    if (t.price_gross_online_cents != null) return { pricePerSeat: t.price_gross_online_cents, vatRate: t.vat_rate_online ?? 0.19, basis: "Onlinekurs" };
     return { pricePerSeat: 0, vatRate: 0.19, basis: "–" };
   }
 

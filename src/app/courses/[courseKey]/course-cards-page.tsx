@@ -180,9 +180,9 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
     }
   };
 
-  const formatPrice = (amount: number | null) => {
-    if (!amount) return "";
-    return `EUR ${amount.toLocaleString("de-DE")}`;
+  const formatPrice = (cents: number | null) => {
+    if (cents == null) return "";
+    return `EUR ${(cents / 100).toLocaleString("de-DE")}`;
   };
 
   // Course-specific overrides for header and card descriptions
@@ -209,9 +209,9 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
 
         {(() => {
           const isPremiumLayout = template.course_key === "grundkurs_botulinum";
-          const hasOnline = !!template.price_gross_online;
-          const hasPraxis = !!template.price_gross_praxis;
-          const hasKombi = !!template.price_gross_kombi;
+          const hasOnline = !!template.price_gross_online_cents;
+          const hasPraxis = !!template.price_gross_praxis_cents;
+          const hasKombi = !!template.price_gross_kombi_cents;
 
           // Resolve features from DB, falling back to defaults
           const onlineFeatures = toFeatures(template.features_online, defaultOnlinekursFeatures);
@@ -226,7 +226,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   <CourseCard
                     title="Onlinekurs"
                     description={onlineDescription}
-                    price={formatPrice(template.price_gross_online)}
+                    price={formatPrice(template.price_gross_online_cents)}
                     features={onlineFeatures}
                     bookingType="direct"
                     buttonText="Onlinekurs buchen"
@@ -240,7 +240,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   <CourseCard
                     title="Kombikurs"
                     description="Lerne die theoretischen Grundlagen online und die Praxis vor Ort an Proband:innen."
-                    price={formatPrice(template.price_gross_kombi)}
+                    price={formatPrice(template.price_gross_kombi_cents)}
                     features={kombiFeatures}
                     bookingType="dropdown"
                     dates={dynamicDates}
@@ -273,7 +273,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                 <CourseCard
                   title="Onlinekurs"
                   description="Erlerne die praxisnahe Theorie zur professionellen Behandlung von Patient:innen."
-                  price={formatPrice(template.price_gross_online)}
+                  price={formatPrice(template.price_gross_online_cents)}
                   features={onlineFeatures}
                   bookingType="direct"
                   buttonText="Onlinekurs buchen"
@@ -292,7 +292,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                       Wissen in der Praxis an.
                     </>
                   }
-                  price={formatPrice(template.price_gross_praxis)}
+                  price={formatPrice(template.price_gross_praxis_cents)}
                   features={praxisFeatures}
                   bookingType="dropdown"
                   dates={dynamicDates}
@@ -309,7 +309,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                 <CourseCard
                   title="Kombikurs"
                   description="Lerne die theoretischen Grundlagen online und die Praxis vor Ort an Proband:innen."
-                  price={formatPrice(template.price_gross_kombi)}
+                  price={formatPrice(template.price_gross_kombi_cents)}
                   features={kombiFeatures}
                   bookingType="dropdown"
                   dates={dynamicDates}

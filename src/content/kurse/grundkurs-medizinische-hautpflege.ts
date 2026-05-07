@@ -6,7 +6,7 @@ import type { CourseLandingContent } from "./types";
  * Pure-online course for all medical professions (Ärzt:innen and
  * Zahnärzt:innen). No Praxiskurs, no Komplettpaket — only the
  * Onlinekurs card is rendered on this page (the booking widget reads
- * price_gross_online / features_online from course_templates).
+ * price_gross_online_cents / features_online from course_templates).
  *
  * Prices, sessions, and availability are pulled dynamically from Supabase
  * via the booking widget — do NOT hardcode them here.

@@ -201,8 +201,8 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
     heading: "FAQ",
     // Pricing claims in items below are hardcoded (Onlinekurs 490 €,
     // Online- & Praxiskurs 1.290 €, Komplettpaket 1.998 €). The first
-    // two come from course_templates.price_gross_online /
-    // price_gross_kombi for grundkurs_botulinum; the third is the
+    // two come from course_templates.price_gross_online_cents /
+    // price_gross_kombi_cents for grundkurs_botulinum; the third is the
     // PremiumCard default in widget/premium-card.tsx. Keep these in
     // sync if Supabase prices change.
     items: [

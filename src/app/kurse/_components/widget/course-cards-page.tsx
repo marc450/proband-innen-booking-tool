@@ -434,9 +434,9 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
     }
   };
 
-  const formatPrice = (amount: number | null) => {
-    if (!amount) return "";
-    return `EUR ${amount.toLocaleString("de-DE")}`;
+  const formatPrice = (cents: number | null) => {
+    if (cents == null) return "";
+    return `EUR ${(cents / 100).toLocaleString("de-DE")}`;
   };
 
   // Course-specific overrides for header, descriptions and features
@@ -634,9 +634,9 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
 
         {(() => {
           const isPremiumLayout = template.course_key === "grundkurs_botulinum";
-          const hasOnline = !!template.price_gross_online;
-          const hasPraxis = !!template.price_gross_praxis;
-          const hasKombi = !!template.price_gross_kombi;
+          const hasOnline = !!template.price_gross_online_cents;
+          const hasPraxis = !!template.price_gross_praxis_cents;
+          const hasKombi = !!template.price_gross_kombi_cents;
 
           // Resolve features from DB, falling back to defaults.
           // For grundkurs_botulinum (Humanmedizin): strip "EPHIA-Zertifikat nach Abschluss"
@@ -738,7 +738,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   <CourseCard
                     title="Onlinekurs"
                     description={onlineDescription}
-                    price={formatPrice(template.price_gross_online)}
+                    price={formatPrice(template.price_gross_online_cents)}
                     features={onlineFeatures}
                     bookingType="direct"
                     buttonText="Onlinekurs buchen"
@@ -753,7 +753,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   <CourseCard
                     title="Online- & Praxiskurs"
                     description="Lerne die theoretischen Grundlagen online und die Praxis vor Ort an Proband:innen."
-                    price={formatPrice(template.price_gross_kombi)}
+                    price={formatPrice(template.price_gross_kombi_cents)}
                     features={premiumKombiFeatures}
                     bookingType="dropdown"
                     dates={dynamicDates}
@@ -787,7 +787,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
             template.course_key === "aufbaukurs_therapeutische_indikationen_botulinum";
           const hasKomplettpaket =
             !!overrides.hasKomplettpaket &&
-            (!!template.price_gross_premium || isDermalfiller || isLippen || isTherapeutischeIndikationen);
+            (!!template.price_gross_premium_cents || isDermalfiller || isLippen || isTherapeutischeIndikationen);
           const showPraxis = hasPraxis && !overrides.hidePraxis;
           const cardCount = [hasOnline, showPraxis, hasKombi, hasKomplettpaket].filter(Boolean).length;
           const gridCols = cardCount === 1 ? "lg:grid-cols-1 max-w-lg mx-auto" : cardCount === 2 ? "lg:grid-cols-2 max-w-4xl mx-auto" : "lg:grid-cols-3";
@@ -809,7 +809,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                 <CourseCard
                   title="Onlinekurs"
                   description={onlineDescription}
-                  price={formatPrice(template.price_gross_online)}
+                  price={formatPrice(template.price_gross_online_cents)}
                   features={onlineFeatures}
                   bookingType="direct"
                   buttonText="Onlinekurs buchen"
@@ -830,7 +830,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                       </>
                     )
                   }
-                  price={formatPrice(template.price_gross_praxis)}
+                  price={formatPrice(template.price_gross_praxis_cents)}
                   features={praxisFeatures}
                   bookingType="dropdown"
                   dates={dynamicDates}
@@ -858,7 +858,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                 <CourseCard
                   title="Online- & Praxiskurs"
                   description="Lerne die theoretischen Grundlagen online und die Praxis vor Ort an Proband:innen."
-                  price={formatPrice(template.price_gross_kombi)}
+                  price={formatPrice(template.price_gross_kombi_cents)}
                   features={overrides.kombiFeatures || defaultKombi}
                   bookingType="dropdown"
                   dates={dynamicDates}

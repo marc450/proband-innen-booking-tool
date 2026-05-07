@@ -65,7 +65,7 @@ export default async function EinladungPage({
   const { data: invite } = await admin
     .from("booking_invites")
     .select(
-      "token, template_id, session_id, course_type, recipient_email, recipient_name, stripe_promotion_code_id, expires_at, revoked, used_count, max_uses, course_templates(title, course_key, course_label_de, price_gross_online, price_gross_praxis, price_gross_kombi, price_gross_premium), course_sessions(label_de, date_iso)",
+      "token, template_id, session_id, course_type, recipient_email, recipient_name, stripe_promotion_code_id, expires_at, revoked, used_count, max_uses, course_templates(title, course_key, course_label_de, price_gross_online_cents, price_gross_praxis_cents, price_gross_kombi_cents, price_gross_premium_cents), course_sessions(label_de, date_iso)",
     )
     .eq("token", token)
     .maybeSingle();
@@ -145,39 +145,35 @@ export default async function EinladungPage({
         : invite.course_type;
 
   // Price logic mirrors src/app/api/course-checkout/route.ts so the user
-  // sees exactly what Stripe will charge. course_templates.price_gross_*
-  // columns are stored in EUR (not cents); cents = EUR * 100.
+  // sees exactly what Stripe will charge.
   const isDentist = courseKey === "grundkurs_botulinum_zahnmedizin";
   const isDermalfiller = courseKey === "grundkurs_dermalfiller";
   const isLippen = courseKey === "aufbaukurs_lippen";
   const isTherapeutischeIndikationen =
     courseKey === "aufbaukurs_therapeutische_indikationen_botulinum";
 
-  let grossPriceEur: number | null = null;
+  let basePriceCents: number | null = null;
   if (invite.course_type === "Onlinekurs") {
-    grossPriceEur = tmpl?.price_gross_online ?? null;
+    basePriceCents = tmpl?.price_gross_online_cents ?? null;
   } else if (invite.course_type === "Praxiskurs") {
-    grossPriceEur = tmpl?.price_gross_praxis ?? null;
+    basePriceCents = tmpl?.price_gross_praxis_cents ?? null;
   } else if (invite.course_type === "Kombikurs") {
-    grossPriceEur = tmpl?.price_gross_kombi ?? null;
+    basePriceCents = tmpl?.price_gross_kombi_cents ?? null;
   } else {
     // Premium / Komplettpaket. Hardcoded fallbacks match course-checkout
-    // exactly for consistency when price_gross_premium is null in DB.
-    grossPriceEur =
-      tmpl?.price_gross_premium ??
+    // exactly for consistency when price_gross_premium_cents is null in DB.
+    basePriceCents =
+      tmpl?.price_gross_premium_cents ??
       (isDentist
         ? null
         : isDermalfiller
-          ? 2030
+          ? 203000
           : isLippen
-            ? 2220
+            ? 222000
             : isTherapeutischeIndikationen
-              ? 1880
-              : 2220);
+              ? 188000
+              : 222000);
   }
-
-  let basePriceCents: number | null =
-    grossPriceEur != null ? Math.round(grossPriceEur * 100) : null;
 
   // Humanmedizin Premium gets a 10% bundle discount (Zahnmedizin uses the
   // DB price directly). This isn't a promo code, it's baked into the

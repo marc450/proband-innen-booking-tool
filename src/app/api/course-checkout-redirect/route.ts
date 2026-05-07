@@ -47,12 +47,11 @@ export async function GET(req: NextRequest) {
       ? `${template.name_online || template.title} (Zahnmedizin)`
       : template.name_online || template.title;
     const description = template.description_online || "";
-    const grossPrice = template.price_gross_online || 0;
+    const unitAmount = template.price_gross_online_cents || 0;
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen.ephia.de";
     const successUrl = `${baseUrl}/courses/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = "https://ephia.de";
 
-    const unitAmount = Math.round(grossPrice * 100);
     if (unitAmount <= 0) {
       return NextResponse.json({ error: "Preis nicht konfiguriert" }, { status: 500 });
     }
