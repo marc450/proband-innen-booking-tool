@@ -394,10 +394,11 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
       console.warn("Edit guard failed:", { editingCourse: !!editingCourse, editDate, editLocation, editInstructor });
       return;
     }
-    const updates = { course_date: editDate, location: editLocation, instructor: editInstructor };
+    const dateChanged = editDate !== editingCourse.course_date;
+    const courseUpdates = { course_date: editDate, location: editLocation, instructor: editInstructor };
     const { data, error } = await supabase
       .from("courses")
-      .update(updates)
+      .update(courseUpdates)
       .eq("id", editingCourse.id)
       .select()
       .single();
@@ -406,6 +407,36 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
       alert(`Fehler beim Speichern: ${error.message}`);
       return;
     }
+
+    // When course_date moves, every slot's start_time has to move with
+    // it. Otherwise the courses row shows the new date but the bookings
+    // list (which joins on slots.start_time) keeps the old day, and
+    // staff see e.g. course=10.05 / bookings=17.05. Mirror the
+    // duplicate-course flow which already sets start_time alongside
+    // course_date. Time-of-day in Berlin is preserved.
+    if (dateChanged) {
+      const courseSlots = slots.filter((s) => s.course_id === editingCourse.id);
+      const updatedSlots = await Promise.all(
+        courseSlots.map(async (slot) => {
+          const newStart = buildStartTime(editDate, formatBerlinTime(slot.start_time));
+          const { data: updated, error: slotErr } = await supabase
+            .from("slots")
+            .update({ start_time: newStart })
+            .eq("id", slot.id)
+            .select()
+            .single();
+          if (slotErr) {
+            console.error("Slot date sync failed for slot", slot.id, slotErr);
+            return slot;
+          }
+          return updated || slot;
+        }),
+      );
+      setSlots((prev) =>
+        prev.map((s) => updatedSlots.find((u) => u.id === s.id) || s),
+      );
+    }
+
     if (data) {
       setCourses((prev) => prev.map((c) => c.id === data.id ? data : c));
     }
@@ -632,6 +663,11 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                 <Input id="edit_location" value={editLocation} onChange={(e) => setEditLocation(e.target.value)} />
               </div>
             </div>
+            {editingCourse && editDate && editingCourse.course_date && editDate !== editingCourse.course_date && (
+              <p className="text-xs text-amber-700 bg-amber-50 rounded-md px-3 py-2">
+                Hinweis: Alle Slots und bestehenden Buchungen werden auf das neue Datum verschoben. Die Uhrzeiten bleiben erhalten.
+              </p>
+            )}
             <Button
               className="w-full"
               onClick={handleEditCourse}
