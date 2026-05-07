@@ -7,11 +7,23 @@ interface Props {
   token: string;
   defaultFirstName: string;
   courseTitle: string;
+  /**
+   * Preview mode shows the form exactly as a doctor sees it but
+   * short-circuits the submit so no review is written to the DB. Used
+   * by /bewertung/preview so staff can show stakeholders the form
+   * without minting a token or polluting course_reviews.
+   */
+  previewMode?: boolean;
 }
 
 const PRIMARY = "#0066FF";
 
-export function ReviewForm({ token, defaultFirstName, courseTitle }: Props) {
+export function ReviewForm({
+  token,
+  defaultFirstName,
+  courseTitle,
+  previewMode = false,
+}: Props) {
   const [rating, setRating] = useState<number>(0);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [firstName, setFirstName] = useState(defaultFirstName);
@@ -32,6 +44,15 @@ export function ReviewForm({ token, defaultFirstName, courseTitle }: Props) {
     if (!canSubmit) return;
     setSubmitting(true);
     setError(null);
+    if (previewMode) {
+      // Simulate the success state without hitting the API. Tiny delay
+      // so the button "Wird gesendet..." flicker matches reality.
+      setTimeout(() => {
+        setDone(true);
+        setSubmitting(false);
+      }, 250);
+      return;
+    }
     try {
       const res = await fetch("/api/submit-review", {
         method: "POST",
@@ -52,7 +73,7 @@ export function ReviewForm({ token, defaultFirstName, courseTitle }: Props) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Da ist etwas schiefgelaufen.");
     } finally {
-      setSubmitting(false);
+      if (!previewMode) setSubmitting(false);
     }
   }
 
