@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
   if (aliasHit) {
     const { data } = await admin
-      .from("auszubildende")
+      .from("v_auszubildende")
       .select("id, first_name")
       .eq("id", aliasHit.auszubildende_id)
       .maybeSingle();
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
   }
   if (!auszubildende) {
     const { data } = await admin
-      .from("auszubildende")
+      .from("v_auszubildende")
       .select("id, first_name")
       .ilike("email", email)
       .maybeSingle();

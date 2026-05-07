@@ -42,7 +42,7 @@ export default async function MobileSessionDetailPage({ params }: PageProps) {
 
   const [{ data: auszubildendeRows }, { data: priorBookingRows }] = await Promise.all([
     auszubildendeIds.length
-      ? admin.from("auszubildende").select("*").in("id", auszubildendeIds)
+      ? admin.from("v_auszubildende").select("*").in("id", auszubildendeIds)
       : Promise.resolve({ data: [] as unknown[] }),
     auszubildendeIds.length
       ? admin

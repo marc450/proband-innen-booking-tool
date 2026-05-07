@@ -234,7 +234,7 @@ async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
       const azubiId = await upsertAuszubildendeByEmail(email, azubiRow);
       const { data: azubi } = azubiId
         ? await supabase
-            .from("auszubildende")
+            .from("v_auszubildende")
             .select("id, profile_complete")
             .eq("id", azubiId)
             .single()
@@ -508,14 +508,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Check if this is a returning customer with a complete profile
   let isReturningCustomer = false;
   if (email) {
-    const { data: azubi } = await supabase
-      .from("auszubildende")
-      .select("profile_complete")
-      .eq("email", email)
-      .maybeSingle();
-
-    if (azubi?.profile_complete) {
-      isReturningCustomer = true;
+    const azubiId = await findAuszubildendeIdByAnyEmail(email);
+    if (azubiId) {
+      const { data: azubi } = await supabase
+        .from("v_auszubildende")
+        .select("profile_complete")
+        .eq("id", azubiId)
+        .maybeSingle();
+      if (azubi?.profile_complete) isReturningCustomer = true;
     }
   }
 
@@ -706,7 +706,7 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
       let existingContactType: string | null = null;
       if (existingId) {
         const { data: existing } = await supabase
-          .from("auszubildende")
+          .from("v_auszubildende")
           .select("contact_type")
           .eq("id", existingId)
           .maybeSingle();

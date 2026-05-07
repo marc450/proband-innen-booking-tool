@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
     .maybeSingle();
   if (aliasHit) {
     const { data } = await admin
-      .from("auszubildende")
+      .from("v_auszubildende")
       .select("id, first_name, last_name, lw_user_id")
       .eq("id", aliasHit.auszubildende_id)
       .maybeSingle();
@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
   }
   if (!auszubildende) {
     const { data } = await admin
-      .from("auszubildende")
+      .from("v_auszubildende")
       .select("id, first_name, last_name, lw_user_id")
       .ilike("email", userEmail)
       .maybeSingle();

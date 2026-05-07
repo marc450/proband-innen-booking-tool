@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
   let auszubildendeProfile = null;
   if (booking.auszubildende_id) {
     const { data: profile } = await supabase
-      .from("auszubildende")
+      .from("v_auszubildende")
       .select("*")
       .eq("id", booking.auszubildende_id)
       .single();

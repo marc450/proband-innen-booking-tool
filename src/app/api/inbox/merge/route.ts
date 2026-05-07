@@ -91,8 +91,8 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
 
   const [{ data: a }, { data: b }] = await Promise.all([
-    admin.from("auszubildende").select("*").eq("id", primaryId).maybeSingle(),
-    admin.from("auszubildende").select("*").eq("id", mergedId).maybeSingle(),
+    admin.from("v_auszubildende").select("*").eq("id", primaryId).maybeSingle(),
+    admin.from("v_auszubildende").select("*").eq("id", mergedId).maybeSingle(),
   ]);
 
   if (!a || !b) {

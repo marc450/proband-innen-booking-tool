@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
   try {
     const like = `%${q}%`;
     const { data: rows } = await admin
-      .from("auszubildende")
+      .from("v_auszubildende")
       .select(
         "id, first_name, last_name, email, phone, title, contact_type, company_name, vat_id, address_line1, address_postal_code, address_city, address_country"
       )

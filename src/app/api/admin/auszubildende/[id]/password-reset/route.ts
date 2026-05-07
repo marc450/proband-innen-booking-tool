@@ -48,7 +48,7 @@ export async function POST(
   const admin = createAdminClient();
 
   const { data: contact, error: contactErr } = await admin
-    .from("auszubildende")
+    .from("v_auszubildende")
     .select("id, email, user_id, first_name, last_name")
     .eq("id", id)
     .maybeSingle();

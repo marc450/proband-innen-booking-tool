@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
   // Load all gmail.com auszubildende. (Other providers were never
   // touched by the migration, so we don't scan them.)
   const { data: rows, error } = await admin
-    .from("auszubildende")
+    .from("v_auszubildende")
     .select("id, email, first_name, last_name")
     .ilike("email", "%@gmail.com");
 

@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
 
   if (audienceType === "aerztinnen" || audienceType === "alle") {
     const { data: azubis } = await supabase
-      .from("auszubildende")
+      .from("v_auszubildende")
       .select("id, email, first_name, contact_type, status");
     for (const a of azubis || []) {
       const ct = a.contact_type as string | null;

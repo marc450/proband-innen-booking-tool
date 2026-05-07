@@ -56,7 +56,7 @@ export async function findAuszubildendeIdByAnyEmail(
   if (alias) return alias.auszubildende_id as string;
 
   const { data: legacy } = await admin
-    .from("auszubildende")
+    .from("v_auszubildende")
     .select("id")
     .ilike("email", lower)
     .maybeSingle();

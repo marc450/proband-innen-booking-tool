@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
 
   if (!auszubildendeId) {
     const { data: legacy } = await admin
-      .from("auszubildende")
+      .from("v_auszubildende")
       .select("id, first_name")
       .ilike("email", email)
       .maybeSingle();

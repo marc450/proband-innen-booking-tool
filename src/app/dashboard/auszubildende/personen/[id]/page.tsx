@@ -15,7 +15,7 @@ export default async function AuszubildendeDetailPage({
   const supabase = createAdminClient();
 
   const { data: azubi } = await supabase
-    .from("auszubildende")
+    .from("v_auszubildende")
     .select("*")
     .eq("id", id)
     .single();

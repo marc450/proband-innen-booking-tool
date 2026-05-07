@@ -91,7 +91,7 @@ export default async function SettingsPage() {
   }
 
   const { data: auszubildendeData } = await adminClient
-    .from("auszubildende")
+    .from("v_auszubildende")
     .select("id, first_name, last_name, email, phone, title")
     .order("last_name", { ascending: true });
 

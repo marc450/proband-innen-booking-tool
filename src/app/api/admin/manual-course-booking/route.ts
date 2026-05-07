@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
   // booking row (matches what the public booking flow does, just
   // without Stripe).
   const { data: azubi, error: azubiErr } = await sb
-    .from("auszubildende")
+    .from("v_auszubildende")
     .select("id, email, first_name, last_name, phone, profile_complete")
     .eq("id", auszubildendeId)
     .maybeSingle();

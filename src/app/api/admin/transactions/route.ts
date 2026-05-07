@@ -188,7 +188,7 @@ export async function GET(request: NextRequest) {
       try {
         const admin = createAdminClient();
         const { data: rows } = await admin
-          .from("auszubildende")
+          .from("v_auszubildende")
           .select("id, email")
           .in("email", Array.from(emails));
         for (const r of rows ?? []) {

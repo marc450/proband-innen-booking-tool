@@ -15,7 +15,7 @@ export default async function MobileContactsPage() {
       .select("*")
       .order("created_at", { ascending: false }),
     adminSupabase
-      .from("auszubildende")
+      .from("v_auszubildende")
       .select("*")
       .order("last_name", { ascending: true }),
   ]);

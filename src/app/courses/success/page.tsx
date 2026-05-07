@@ -47,7 +47,7 @@ export default async function CourseSuccessPage({ searchParams }: Props) {
   // Check if auszubildende profile is already complete
   if (booking?.auszubildende_id) {
     const { data: azubi } = await supabase
-      .from("auszubildende")
+      .from("v_auszubildende")
       .select("profile_complete")
       .eq("id", booking.auszubildende_id)
       .single();

@@ -12,7 +12,7 @@ export default async function NewCampaignPage() {
   const [{ data: patients }, { data: auszubildende }] = await Promise.all([
     supabase.from("patients").select("*").order("created_at"),
     adminSupabase
-      .from("auszubildende")
+      .from("v_auszubildende")
       .select("id, email, first_name, last_name, status, contact_type")
       .order("last_name", { ascending: true }),
   ]);

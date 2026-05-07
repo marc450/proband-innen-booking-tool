@@ -57,27 +57,26 @@ export async function GET(req: NextRequest) {
   } | null = null;
 
   const { data: byPrimary } = await admin
-    .from("auszubildende")
+    .from("v_auszubildende")
     .select("id, first_name, last_name, email, lw_user_id")
     .ilike("email", email)
     .maybeSingle();
   contact = byPrimary;
 
   if (!contact) {
-    const { data: byAlias } = await admin
+    const { data: aliasHit } = await admin
       .from("auszubildende_emails")
-      .select("auszubildende:auszubildende_id(id, first_name, last_name, email, lw_user_id)")
+      .select("auszubildende_id")
       .eq("email", email)
-      .maybeSingle<{
-        auszubildende: {
-          id: string;
-          first_name: string | null;
-          last_name: string | null;
-          email: string | null;
-          lw_user_id: string | null;
-        } | null;
-      }>();
-    contact = byAlias?.auszubildende ?? null;
+      .maybeSingle();
+    if (aliasHit) {
+      const { data } = await admin
+        .from("v_auszubildende")
+        .select("id, first_name, last_name, email, lw_user_id")
+        .eq("id", aliasHit.auszubildende_id)
+        .maybeSingle();
+      contact = data;
+    }
   }
 
   if (!contact) {

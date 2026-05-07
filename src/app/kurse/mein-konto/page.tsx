@@ -298,7 +298,7 @@ export default async function MeinKontoPage() {
   const admin = createAdminClient();
 
   const { data: contact } = await admin
-    .from("auszubildende")
+    .from("v_auszubildende")
     .select("id, first_name, last_name, email, lw_user_id")
     .eq("user_id", user.id)
     .maybeSingle();

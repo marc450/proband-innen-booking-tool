@@ -110,7 +110,7 @@ async function classifyRecipient(
     .maybeSingle();
   if (emailRow) return "auszubildende";
   const { data: legacyAuszubildende } = await admin
-    .from("auszubildende")
+    .from("v_auszubildende")
     .select("id")
     .ilike("email", email)
     .limit(1)
@@ -149,7 +149,7 @@ async function lookupContact(email: string): Promise<ContactInfo | null> {
   if (emailRow) auszubildendeId = emailRow.auszubildende_id;
   if (!auszubildendeId) {
     const { data: legacy } = await admin
-      .from("auszubildende")
+      .from("v_auszubildende")
       .select("id")
       .ilike("email", email)
       .limit(1)
@@ -158,7 +158,7 @@ async function lookupContact(email: string): Promise<ContactInfo | null> {
   }
   if (auszubildendeId) {
     const { data } = await admin
-      .from("auszubildende")
+      .from("v_auszubildende")
       .select("first_name, last_name, title, company_name, specialty, gender")
       .eq("id", auszubildendeId)
       .maybeSingle();

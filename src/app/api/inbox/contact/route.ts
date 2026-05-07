@@ -84,7 +84,7 @@ async function lookupAuszubildende(email: string): Promise<ContactDTO | null> {
 
   if (!contactId) {
     const { data: legacy } = await admin
-      .from("auszubildende")
+      .from("v_auszubildende")
       .select("id")
       .ilike("email", email)
       .limit(1)
@@ -95,7 +95,7 @@ async function lookupAuszubildende(email: string): Promise<ContactDTO | null> {
   if (!contactId) return null;
 
   const { data } = await admin
-    .from("auszubildende")
+    .from("v_auszubildende")
     .select("*")
     .eq("id", contactId)
     .maybeSingle();

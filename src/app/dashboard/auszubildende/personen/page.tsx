@@ -21,7 +21,7 @@ export default async function AuszubildendePersonenPage({
   const supabase = createAdminClient();
 
   const { data: auszubildende } = await supabase
-    .from("auszubildende")
+    .from("v_auszubildende")
     .select("*")
     .order("last_name", { ascending: true });
 
