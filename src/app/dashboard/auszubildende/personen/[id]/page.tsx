@@ -30,7 +30,7 @@ export default async function AuszubildendeDetailPage({
       .order("created_at", { ascending: false }),
     supabase
       .from("legacy_bookings")
-      .select("id, product_name, amount_eur, course_date, purchased_at, source, created_at")
+      .select("id, product_name, amount_cents, course_date, purchased_at, source, created_at")
       .eq("auszubildende_id", id)
       .order("purchased_at", { ascending: false, nullsFirst: false }),
   ]);

@@ -46,7 +46,7 @@ interface BookingRow {
 interface LegacyBookingRow {
   id: string;
   product_name: string;
-  amount_eur: number | null;
+  amount_cents: number | null;
   course_date: string | null;
   purchased_at: string | null;
   source: string;
@@ -262,14 +262,6 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, legacyBooki
   const formatAmount = (cents: number | null) => {
     if (!cents) return "–";
     return `€${(cents / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })}`;
-  };
-
-  // legacy_bookings.amount_eur is stored as numeric(10,2) in EUR (not
-  // cents — the HubSpot export was already in EUR), so it bypasses the
-  // /100 step that the live-bookings formatter does.
-  const formatLegacyEur = (eur: number | null) => {
-    if (eur === null || eur === undefined) return "–";
-    return `€${Number(eur).toLocaleString("de-DE", { minimumFractionDigits: 2 })}`;
   };
 
   // Map the import source into a human-readable badge label. Imports
@@ -731,8 +723,8 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, legacyBooki
                             ? `Gekauft am ${formatDate(lb.purchased_at)}`
                             : "–"}
                         </span>
-                        {isAdmin && lb.amount_eur !== null && (
-                          <span>{formatLegacyEur(lb.amount_eur)}</span>
+                        {isAdmin && lb.amount_cents !== null && (
+                          <span>{formatAmount(lb.amount_cents)}</span>
                         )}
                       </div>
                     </div>
