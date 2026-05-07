@@ -4,6 +4,7 @@ import { decryptPatient } from "@/lib/encryption";
 import { buildEmailHtml } from "@/lib/email-template";
 import { sendProfileReminderEmail } from "@/lib/post-purchase";
 import { sendPostPraxisCertificates } from "@/lib/send-post-praxis-certificate";
+import { scheduleCourseReviewEmails } from "@/lib/send-course-review-request";
 import { archiveSentMessage } from "@/lib/gmail";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
@@ -30,6 +31,8 @@ export async function GET(req: NextRequest) {
     certificates: 0,
     certSkippedNoCert: 0,
     certSkippedNoVnr: 0,
+    reviewEmailsScheduled: 0,
+    reviewEmailsSkipped: 0,
     errors: 0,
   };
 
@@ -46,6 +49,21 @@ export async function GET(req: NextRequest) {
       results.errors += certResult.errors;
     } catch (certErr) {
       console.error("Post-praxis certificate pass failed:", certErr);
+      results.errors += 1;
+    }
+
+    // ── Course review request scheduling (Resend scheduled_at) ──
+    // Scans course_bookings whose course end falls within Resend's
+    // scheduling horizon and queues the review email to fire at the exact
+    // session end. Daily run keeps the rolling window populated; minute-
+    // level precision is Resend's job, not ours.
+    try {
+      const reviewResult = await scheduleCourseReviewEmails(supabase);
+      results.reviewEmailsScheduled = reviewResult.scheduled;
+      results.reviewEmailsSkipped = reviewResult.skipped;
+      results.errors += reviewResult.errors;
+    } catch (reviewErr) {
+      console.error("Course review scheduling pass failed:", reviewErr);
       results.errors += 1;
     }
 

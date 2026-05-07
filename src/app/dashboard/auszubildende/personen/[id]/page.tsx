@@ -35,11 +35,28 @@ export default async function AuszubildendeDetailPage({
       .order("purchased_at", { ascending: false, nullsFirst: false }),
   ]);
 
+  // Pull all reviews tied to this contact's bookings. Review rows live
+  // under booking_id, which is FK'd to course_bookings — we already have
+  // the full list above, so we can scope cheaply by booking_id IN(...).
+  const bookingIds = (bookings ?? []).map((b) => b.id);
+  const { data: reviews } = bookingIds.length
+    ? await supabase
+        .from("course_reviews")
+        .select(
+          `id, rating, first_name, body_text, internal_feedback,
+           is_published, submitted_at, published_at, booking_id, template_id,
+           course_templates:template_id ( title, course_label_de )`,
+        )
+        .in("booking_id", bookingIds)
+        .order("submitted_at", { ascending: false })
+    : { data: [] };
+
   return (
     <AuszubildendeDetail
       azubi={azubi}
       bookings={bookings ?? []}
       legacyBookings={legacyBookings ?? []}
+      reviews={reviews ?? []}
       isAdmin={isAdmin}
     />
   );

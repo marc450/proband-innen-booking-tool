@@ -29,3 +29,8 @@
   `supabase functions deploy <function-name>`
 - For public-facing functions (create-checkout-session, confirm-booking), use `--no-verify-jwt`
 - For staff-only functions (charge-no-show), do NOT use `--no-verify-jwt`
+
+## Admin Registries (keep in sync when adding new emails or pages)
+- **New transactional email**: register it in `src/lib/transactional-emails.ts` so it appears under `/dashboard/transactional-emails`. Pick the right `funnel`, mirror the live subject, and provide a `renderSample()` that calls the same template builder the live send uses.
+- **New public page**: add it to the appropriate `PageGroup` in `src/app/dashboard/landingpages/page.tsx` so staff can see and click it. Pick the right host (`HOST_MARKETING` for ephia.de, `HOST_PROBAND` for proband-innen.ephia.de) and add the page under an existing group or a new one.
+- These two registries are read-only catalogs; the rule is "if the user can receive it or visit it, it must be discoverable in the admin tool".

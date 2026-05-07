@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Pencil, FileText, AlertTriangle, Ban, CheckCircle2, Mail, GitMerge, Copy, Check, KeyRound, Send } from "lucide-react";
+import { ArrowLeft, Pencil, FileText, AlertTriangle, Ban, CheckCircle2, Mail, GitMerge, Copy, Check, KeyRound, Send, Star } from "lucide-react";
 import { buildProfileCompletionUrl } from "@/lib/profile-link";
 import { EmailManagerModal } from "@/components/email-manager-modal";
 import { MergeContactModal } from "@/components/merge-contact-modal";
@@ -53,10 +53,28 @@ interface LegacyBookingRow {
   created_at: string;
 }
 
+interface ReviewRow {
+  id: string;
+  rating: number;
+  first_name: string;
+  body_text: string | null;
+  internal_feedback: string | null;
+  is_published: boolean;
+  submitted_at: string;
+  published_at: string | null;
+  booking_id: string;
+  template_id: string;
+  course_templates:
+    | { title: string | null; course_label_de: string | null }
+    | { title: string | null; course_label_de: string | null }[]
+    | null;
+}
+
 interface Props {
   azubi: Auszubildende;
   bookings: BookingRow[];
   legacyBookings: LegacyBookingRow[];
+  reviews?: ReviewRow[];
   isAdmin?: boolean;
 }
 
@@ -76,7 +94,7 @@ const statusVariants: Record<CourseBookingStatus, "default" | "secondary" | "des
 
 const fieldClass = "bg-transparent border-0 p-0 text-sm text-foreground focus:outline-none focus:ring-0 placeholder:text-muted-foreground/50 w-full";
 
-export function AuszubildendeDetail({ azubi: initialAzubi, bookings, legacyBookings, isAdmin = true }: Props) {
+export function AuszubildendeDetail({ azubi: initialAzubi, bookings, legacyBookings, reviews = [], isAdmin = true }: Props) {
   const supabase = createClient();
   const [azubi, setAzubi] = useState(initialAzubi);
   const [editingNotes, setEditingNotes] = useState(false);
@@ -688,6 +706,74 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, legacyBooki
               )}
             </CardContent>
           </Card>
+
+          {/* Bewertungen — reviews this contact has submitted across courses.
+              Aggregated by booking_id on the server, scoped to bookings shown
+              above. Internal feedback is rendered inline (staff-only). */}
+          {reviews.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Bewertungen
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y">
+                  {reviews.map((review) => {
+                    const tpl = Array.isArray(review.course_templates)
+                      ? review.course_templates[0]
+                      : review.course_templates;
+                    const courseTitle =
+                      tpl?.course_label_de || tpl?.title || "Kurs unbekannt";
+                    return (
+                      <div key={review.id} className="px-4 py-3 space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((v) => (
+                              <Star
+                                key={v}
+                                className="h-3.5 w-3.5"
+                                fill={v <= review.rating ? "#0066FF" : "none"}
+                                stroke={v <= review.rating ? "#0066FF" : "#D1D5DB"}
+                                strokeWidth={1.5}
+                              />
+                            ))}
+                          </div>
+                          {review.is_published ? (
+                            <Badge className="bg-[#0066FF]/10 text-[#0066FF] hover:bg-[#0066FF]/10 text-[10px] shrink-0">
+                              Freigeschaltet
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px] shrink-0">
+                              Wartend
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {courseTitle} · {formatDate(review.submitted_at)}
+                        </div>
+                        {review.body_text && (
+                          <p className="text-sm text-foreground whitespace-pre-wrap">
+                            {review.body_text}
+                          </p>
+                        )}
+                        {review.internal_feedback && (
+                          <div className="mt-1 rounded-[10px] bg-[#FAEBE1] px-3 py-2">
+                            <div className="text-[10px] font-semibold uppercase tracking-wide text-[#733D29] mb-1">
+                              Anonymes Team-Feedback
+                            </div>
+                            <p className="text-xs text-[#733D29] whitespace-pre-wrap">
+                              {review.internal_feedback}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Legacy bookings — historical data imported from HubSpot
               and LearnWorlds. Distinct from `bookings` above (live

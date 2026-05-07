@@ -79,6 +79,20 @@ const FUNNELS: PageGroup = {
   ],
 };
 
+const REVIEWS: PageGroup = {
+  label: "Bewertungen",
+  description:
+    "Tokenbasierte Bewertungs-Seite für Auszubildende. Pro Buchung wird ein eigener Link generiert und in der Folge-Mail nach Kursende verschickt.",
+  host: HOST_PROBAND,
+  pages: [
+    {
+      title: "Bewertungsformular (Beispiel-Token)",
+      path: "/bewertung/beispiel-token",
+      note: "Link funktioniert nur mit echtem, generiertem Token.",
+    },
+  ],
+};
+
 function buildCourseGroup(): PageGroup {
   const pages: PageEntry[] = getAllCourseSlugs()
     .map((slug) => {
@@ -108,6 +122,7 @@ export default function LandingPagesPage() {
     RECHTLICHES,
     SHOP,
     FUNNELS,
+    REVIEWS,
   ];
 
   const total = groups.reduce((sum, g) => sum + g.pages.length, 0);

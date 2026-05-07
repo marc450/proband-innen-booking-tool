@@ -83,6 +83,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: "/dashboard/auszubildende/buchungen", label: "Ärzt:innen" },
       { href: "/dashboard/bookings", label: "Proband:innen" },
+      { href: "/dashboard/auszubildende/bewertungen", label: "Bewertungen" },
     ],
   },
   {

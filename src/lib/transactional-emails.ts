@@ -435,6 +435,35 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
     }),
   },
   {
+    id: "course-review-request",
+    funnel: "arzt-kursupdates",
+    name: "Bewertungs-Anfrage (nach Kursende)",
+    recipient: "Ärzt:in",
+    trigger:
+      "Resend-Scheduling: gefeuert genau zum Kursende (date_iso + start_time + duration_minutes). Geplant durch den täglichen send-reminders Cron.",
+    codeRef: "src/lib/send-course-review-request.ts",
+    description:
+      "Bittet um eine Bewertung mit 1-5 Sternen, kurzem öffentlichen Bewertungstext und optionalem anonymen Team-Feedback. Link führt zu /bewertung/[token]. Nur an verifizierte Buchungen.",
+    renderSample: () => ({
+      subject: `Wie war Dein ${SAMPLE.courseTitle}?`,
+      html: buildEmailHtml({
+        firstName: SAMPLE.firstName,
+        intro:
+          "vielen Dank, dass Du heute bei uns warst. Solange Dein Eindruck noch frisch ist, ist Dein Feedback für uns am wertvollsten. Bitte nimm Dir 1 Minute, bevor Du Dich auf den Heimweg machst.",
+        note:
+          "Deine Sterne und Dein kurzer Bewertungstext erscheinen später mit Deinem Vornamen auf unserer Kursseite. Das zusätzliche Team-Feedback bleibt anonym und erreicht nur uns intern.",
+        buttons: [
+          {
+            label: "Bewertung abgeben",
+            url: "https://proband-innen.ephia.de/bewertung/beispiel-token",
+          },
+        ],
+        closing:
+          "Wir lesen jede einzelne Antwort.<br><br>Herzliche Grüße,<br>Dein EPHIA-Team",
+      }),
+    }),
+  },
+  {
     id: "course-booking-cancellation",
     funnel: "arzt-kursupdates",
     name: "Kursbuchung storniert",
