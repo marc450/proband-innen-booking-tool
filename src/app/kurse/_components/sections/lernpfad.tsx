@@ -237,16 +237,15 @@ function PathStep({
           {step.title}
         </h3>
 
-        {/* Pills row: each format as its own pill, plus CME */}
+        {/* Pills row: combined format pill ("Onlinekurs & Praxiskurs"
+            for combined courses, just "Onlinekurs" when there's no
+            practical part) plus CME. */}
         <div className="flex flex-wrap items-center gap-1.5 mb-4">
-          {step.formats.map((f) => (
-            <span
-              key={f}
-              className="text-[11px] font-semibold tracking-wide rounded-full px-2.5 py-1 bg-[#0066FF]/10 text-[#0066FF]"
-            >
-              {f}
+          {step.formats.length > 0 && (
+            <span className="text-[11px] font-semibold tracking-wide rounded-full px-2.5 py-1 bg-[#0066FF]/10 text-[#0066FF]">
+              {step.formats.join(" & ")}
             </span>
-          ))}
+          )}
           {step.cme && (
             <span className="inline-flex items-center gap-1 text-[11px] font-semibold tracking-wide rounded-full px-2.5 py-1 bg-[#FAEBE1] text-[#733D29]">
               <Award className="w-3 h-3" aria-hidden="true" />

@@ -384,8 +384,11 @@ export default async function CurriculumBotulinumPage() {
           certificationName: "EPHIA Botulinum Specialist",
           certificationDescription: (
             <>
-              Wer alle vier Kurse des Curriculums erfolgreich abschließt,
-              erhält das{" "}
+              Wer alle vier Kurse erfolgreich abschließt,{" "}
+              <strong className="font-bold text-[#0066FF]">
+                inklusive aller drei Praxiskurse
+              </strong>
+              , erhält das{" "}
               <strong className="font-bold text-[#0066FF]">
                 EPHIA Botulinum Specialist Zertifikat
               </strong>{" "}
