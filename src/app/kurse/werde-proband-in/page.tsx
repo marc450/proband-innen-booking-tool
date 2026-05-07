@@ -124,7 +124,7 @@ export default async function WerdeProbandInPage() {
     supabase
       .from("courses")
       .select("*")
-      .eq("status", "online")
+      .eq("status", "published")
       .gte("course_date", today)
       .order("course_date", { ascending: true }),
     supabase

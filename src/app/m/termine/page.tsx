@@ -20,7 +20,7 @@ export default async function MobileTerminePage() {
     supabase
       .from("courses")
       .select("*")
-      .eq("status", "online")
+      .eq("status", "published")
       .order("course_date", { ascending: true }),
     supabase
       .from("slots")

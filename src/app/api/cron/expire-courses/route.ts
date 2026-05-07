@@ -18,14 +18,14 @@ export async function POST(req: Request) {
 
   const today = new Date().toISOString().split("T")[0]; // yyyy-MM-dd
 
-  // 1. Proband:innen courses — go offline the morning AFTER their date
+  // 1. Proband:innen courses — go back to draft the morning AFTER their date
   //    (slots already close 30 min before start_time at query level)
-  //    Uses lt = strictly before today, so course stays "Live" on its own day
+  //    Uses lt = strictly before today, so course stays "published" on its own day
   const { data: expiredCourses, error: coursesError } = await supabase
     .from("courses")
-    .update({ status: "offline" })
+    .update({ status: "draft" })
     .lt("course_date", today)
-    .eq("status", "online")
+    .eq("status", "published")
     .select("id, title, course_date");
 
   if (coursesError) {
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
   }
 
   console.log(
-    `expire-courses: ${expiredCourses?.length ?? 0} course(s) offline, ` +
+    `expire-courses: ${expiredCourses?.length ?? 0} course(s) moved to draft, ` +
     `${expiredSessions?.length ?? 0} session(s) offline`
   );
 

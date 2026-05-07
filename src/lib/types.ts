@@ -125,7 +125,7 @@ export interface Course {
   guide_price_cents: number | null;
   service_description: string | null;
   image_url: string | null;
-  status: "online" | "offline";
+  status: "published" | "draft";
   created_at: string;
 }
 

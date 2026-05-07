@@ -15,12 +15,13 @@ export default async function BehandlungstermineePage() {
   const cookieStore = await cookies();
   const isAdmin = cookieStore.get("x-user-role")?.value === "admin";
 
-  // Auto-expire past courses: set any course with a past date to offline
+  // Auto-expire past courses: any course whose date has passed is moved
+  // back to draft so it stops showing on the public list.
   const today = new Date().toISOString().slice(0, 10); // yyyy-MM-dd
   await supabase
     .from("courses")
-    .update({ status: "offline" })
-    .eq("status", "online")
+    .update({ status: "draft" })
+    .eq("status", "published")
     .lt("course_date", today);
 
   const [

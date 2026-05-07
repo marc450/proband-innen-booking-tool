@@ -1307,8 +1307,8 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                   className="flex items-center gap-4 flex-1 min-w-0 text-left"
                 >
                   <span className="shrink-0">
-                    {course.status === "offline"
-                      ? <Badge variant="secondary" className="text-xs">Offline</Badge>
+                    {course.status === "draft"
+                      ? <Badge variant="secondary" className="text-xs">Entwurf</Badge>
                       : <Badge variant="outline" className="text-xs text-green-700 border-green-300 bg-green-50">Live</Badge>
                     }
                   </span>
