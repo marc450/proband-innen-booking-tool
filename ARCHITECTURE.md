@@ -48,10 +48,16 @@ src/
         slot-selection.tsx
       success/page.tsx
 
-    courses/[courseKey]/             # PUBLIC: Auszubildende course landing page (iframe embed)
-      page.tsx                      # Server: fetches template + live sessions
-      course-cards-page.tsx         # Client: 3 cards (Onlinekurs/Praxiskurs/Kombikurs)
-      course-card.tsx               # Card component with date picker + checkout
+    courses/success/                 # PUBLIC: Stripe success URL for course-checkout
+      page.tsx                      # Server: post-purchase confirmation + profile completion
+      success-content.tsx           # Client: handoff to /start onboarding
+
+    kurse/                          # PUBLIC: Marketing site (served on ephia.de via middleware slug rewrite)
+      [slug]/page.tsx               # Per-course landing (renders <CourseCardsPage /> with 3 booking cards)
+      curriculum-botulinum/page.tsx # Botulinum curriculum overview (Lernpfad)
+      _components/
+        sections/                   # Hero, Lernziele, Faq, CtaBanner, Testimonials, ...
+        widget/course-cards-page.tsx # Booking widget: 3 cards (Onlinekurs/Praxiskurs/Kombikurs), calls /api/course-checkout
 
     dashboard/                      # PROTECTED: Staff admin interface (dropdown nav)
       layout.tsx
@@ -175,14 +181,16 @@ All patient PII is encrypted at rest. **Do not change encryption logic without c
 2. `POST /api/create-private-booking` → eligibility check → encrypt → RPC → email + Slack
 3. No Stripe involved
 
-### Auszubildende Course Booking (`/courses/[courseKey]`, embedded in LearnWorlds iframe)
-1. Doctor visits landing page (3 cards: Onlinekurs/Praxiskurs/Kombikurs)
-2. For Praxiskurs/Kombikurs: selects a date from dropdown (shows availability)
-3. Clicks "buchen" → `POST /api/course-checkout` → Stripe payment checkout (real charge)
-4. Stripe redirects to ephia.de thank-you page
-5. Stripe webhook `POST /api/stripe-webhook` fires on `checkout.session.completed`
-6. Webhook: RPC `create_course_booking()` (atomic seat management), sends confirmation email + WhatsApp community invite + Slack notification
-7. No E2EE — doctor PII stored in plaintext in `course_bookings`
+### Auszubildende Course Booking (per-course landing on `ephia.de/{slug}`)
+1. Doctor visits the per-course landing page (`src/app/kurse/[slug]/page.tsx`, served as `ephia.de/{slug}` via the middleware slug rewrite). Page renders `<CourseCardsPage />` from `src/app/kurse/_components/widget/` with 3 cards (Onlinekurs/Praxiskurs/Kombikurs).
+2. For Praxiskurs/Kombikurs: selects a date from dropdown (shows availability).
+3. Clicks "buchen" → `POST /api/course-checkout` → Stripe payment checkout (real charge).
+4. Stripe redirects to `/courses/success?session_id=...` (still served on the booking host; handles profile completion + handoff to `/start`).
+5. Stripe webhook `POST /api/stripe-webhook` fires on `checkout.session.completed`.
+6. Webhook: RPC `create_course_booking()` (atomic seat management), sends confirmation email + WhatsApp community invite + Slack notification.
+7. No E2EE — doctor PII stored in plaintext in `course_bookings`.
+
+The curriculum bundle flow (`/api/curriculum-checkout` → multiple bookings under one `bundleGroupId`) follows the same shape but is no longer linked from the live marketing site — `ephia.de/curriculum-botulinum` (`src/app/kurse/curriculum-botulinum/page.tsx`) is an overview/Lernpfad page that links into the individual per-course landings rather than offering a single bundle CTA.
 
 ### No-Show Penalty
 - Admin sets booking status to `no_show` in dashboard
