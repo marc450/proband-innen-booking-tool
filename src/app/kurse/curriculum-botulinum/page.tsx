@@ -4,10 +4,26 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { CURRICULUM_BOTULINUM } from "@/lib/curricula";
 import { TYPO } from "../_components/typography";
 import { Lernziele } from "../_components/sections/lernziele";
-import { Lernpfad, type LernpfadStep } from "../_components/sections/lernpfad";
+import { Lernpfad, type LernpfadStep, type LernpfadLernziel } from "../_components/sections/lernpfad";
 import { Faq } from "../_components/sections/faq";
 import { CtaBanner } from "../_components/sections/cta-banner";
 import { Testimonials } from "../_components/sections/testimonials";
+import { grundkursBotulinum } from "@/content/kurse/grundkurs-botulinum";
+import { grundkursMedizinischeHautpflege } from "@/content/kurse/grundkurs-medizinische-hautpflege";
+import { aufbaukursTherapeutischeIndikationenBotulinum } from "@/content/kurse/aufbaukurs-therapeutische-indikationen-botulinum";
+import { masterclassBotulinum } from "@/content/kurse/masterclass-botulinum";
+
+// Map each curriculum step's courseKey to the per-course content file
+// so the curriculum cards can pull the canonical Lernziele list without
+// duplicating it. If a course's content is reorganised, the curriculum
+// page follows automatically.
+const COURSE_CONTENT_BY_KEY = {
+  grundkurs_botulinum: grundkursBotulinum,
+  grundkurs_medizinische_hautpflege: grundkursMedizinischeHautpflege,
+  aufbaukurs_therapeutische_indikationen_botulinum:
+    aufbaukursTherapeutischeIndikationenBotulinum,
+  masterclass_botulinum: masterclassBotulinum,
+} as const;
 
 export const dynamic = "force-dynamic";
 
@@ -199,14 +215,15 @@ const TESTIMONIALS = {
 
 /**
  * Static curriculum-step metadata that doesn't live in the DB
- * (format pills, content bullets, slug for the per-course landing
- * page, one-line benefit). Title/CME are layered in server-side from
- * `course_templates` so they stay in sync with whatever Marc edits in
- * the admin.
+ * (format pills, slug for the per-course landing page, one-line
+ * benefit). Title/CME are layered in server-side from `course_templates`
+ * so they stay in sync with whatever Marc edits in the admin. The
+ * Lernziele list is pulled from the course content file via
+ * COURSE_CONTENT_BY_KEY so it doesn't have to be duplicated here.
  */
 const STEP_META: Record<
   string,
-  Pick<LernpfadStep, "formats" | "benefit" | "contents" | "href"> & {
+  Pick<LernpfadStep, "formats" | "benefit" | "href"> & {
     /** Override for the CME pill text. When unset, falls back to the DB. */
     cme?: string;
     /** Static title used if the DB title is unavailable (course not live). */
@@ -217,12 +234,6 @@ const STEP_META: Record<
     formats: ["Onlinekurs", "Praxiskurs"],
     benefit:
       "Dein sicherer Einstieg: Anatomie, Indikationen, Beratung und die ersten Behandlungen unter Aufsicht.",
-    contents: [
-      "Anatomie & Wirkmechanismus von Botulinumtoxin",
-      "Indikationen, Kontraindikationen & Aufklärung",
-      "MD-Codes für die obere Gesichtshälfte",
-      "Erste Behandlungen an Proband:innen unter Aufsicht",
-    ],
     href: "/kurse/grundkurs-botulinum",
     fallbackTitle: "Botulinum",
   },
@@ -230,12 +241,6 @@ const STEP_META: Record<
     formats: ["Onlinekurs"],
     benefit:
       "Hautphysiologie, Akne, Rosazea und der Aufbau einer evidenzbasierten Pflegeroutine. Die Basis für jede ästhetische Behandlung.",
-    contents: [
-      "Hautphysiologie & Diagnostik",
-      "Akne, Rosazea & Pigmentstörungen",
-      "Aufbau einer evidenzbasierten Pflegeroutine",
-      "Beratung als Ergänzung zur ästhetischen Behandlung",
-    ],
     href: "/kurse/grundkurs-medizinische-hautpflege",
     fallbackTitle: "Medizinische Hautpflege",
   },
@@ -243,12 +248,6 @@ const STEP_META: Record<
     formats: ["Onlinekurs", "Praxiskurs"],
     benefit:
       "Bruxismus, chronische Migräne, Hyperhidrose und mehr. Du öffnest Dir neue Behandlungsfelder mit therapeutischem Fokus.",
-    contents: [
-      "Bruxismus & muskuläre Verspannungen",
-      "Chronische Migräne nach PREEMPT",
-      "Hyperhidrose (Achseln, Hände, Füße)",
-      "Therapeutische Behandlungen unter Aufsicht",
-    ],
     href: "/kurse/aufbaukurs-therapeutische-indikationen-botulinum",
     fallbackTitle: "Therapeutische Indikationen Botulinum",
   },
@@ -256,12 +255,6 @@ const STEP_META: Record<
     formats: ["Onlinekurs", "Praxiskurs"],
     benefit:
       "Full Face Analyse, fortgeschrittene Injektionstechniken und souveränes Komplikationsmanagement auf Expert:innen-Niveau.",
-    contents: [
-      "Full Face Analyse & individuelles Behandlungsdesign",
-      "Fortgeschrittene Injektionstechniken (Periorale Zone)",
-      "Komplikationsmanagement & Notfallprotokolle",
-      "Komplexe Fälle aus der Praxis",
-    ],
     href: "/kurse/masterclass-botulinum",
     fallbackTitle: "Masterclass Botulinum",
   },
@@ -332,13 +325,23 @@ export default async function CurriculumBotulinumPage() {
           cme = FALLBACK_CME[c.courseKey] ?? null;
         }
       }
+      // Pull the canonical Lernziele from the course's own content file
+      // so the curriculum overview and the per-course page stay in sync.
+      const courseContent =
+        COURSE_CONTENT_BY_KEY[c.courseKey as keyof typeof COURSE_CONTENT_BY_KEY];
+      const lernziele: LernpfadLernziel[] =
+        courseContent?.lernziele.items.map((lz) => ({
+          label: lz.label,
+          description: lz.description,
+        })) ?? [];
+
       return {
         number: c.sort,
         title: tmpl?.title || meta.fallbackTitle,
         formats: meta.formats,
         cme,
         benefit: meta.benefit,
-        contents: meta.contents,
+        lernziele,
         href: meta.href,
       };
     });

@@ -1,7 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowRight, Award, Check, Compass, Trophy } from "lucide-react";
+import { ArrowRight, Award, Compass, Trophy } from "lucide-react";
+
+/**
+ * Single Lernziel rendered inside a curriculum-step card. Mirrors the
+ * `CourseLernziel` shape used on per-course landing pages so we can
+ * pass course content directly through to the curriculum overview.
+ */
+export interface LernpfadLernziel {
+  /** Short label, e.g. "Anatomie" — visible on the chip. */
+  label: string;
+  /** Full description — surfaces in the hover popover. */
+  description: string;
+}
 
 export interface LernpfadStep {
   /** Step number, displayed as "01" / "02" / etc. */
@@ -23,11 +35,12 @@ export interface LernpfadStep {
   /** One-line "what you'll learn here" description shown on the card. */
   benefit: string;
   /**
-   * Bullet list of concrete content covered, shown under the benefit
-   * tagline. Each entry is a short noun phrase, e.g.
-   * "Anatomie & Wirkmechanismus".
+   * Lernziele covered by the course — rendered as compact chips. Each
+   * chip shows the label; the full description appears in a popover on
+   * hover/focus/click. Pulled from the per-course content files so
+   * it's a single source of truth.
    */
-  contents: string[];
+  lernziele: LernpfadLernziel[];
   /** Link target for the "Zu den Kursdetails" CTA. */
   href: string;
 }
@@ -247,25 +260,24 @@ function PathStep({
           {step.benefit}
         </p>
 
-        {/* Concrete contents — gives a stronger preview than the
-            tagline alone. Bullets stay short noun phrases so the eye
-            scans them quickly. */}
-        {step.contents.length > 0 && (
-          <ul className="space-y-1.5 mb-6">
-            {step.contents.map((c) => (
-              <li
-                key={c}
-                className="flex items-start gap-2 text-sm text-black/75 leading-relaxed"
-              >
-                <Check
-                  className="w-3.5 h-3.5 text-[#0066FF] shrink-0 mt-1"
-                  strokeWidth={3}
-                  aria-hidden="true"
+        {/* Lernziele — hoverable chips. Label is visible at a glance,
+            the full description sits behind a popover so the card
+            stays compact even with 6+ Lernziele per course. */}
+        {step.lernziele.length > 0 && (
+          <div className="mb-6">
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-black/55 mb-2.5">
+              Lernziele
+            </h4>
+            <div className="flex flex-wrap gap-1.5">
+              {step.lernziele.map((lz) => (
+                <LernzielChip
+                  key={lz.label}
+                  label={lz.label}
+                  description={lz.description}
                 />
-                <span>{c}</span>
-              </li>
-            ))}
-          </ul>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* CTA button — full-width primary so each step has a clear
@@ -331,6 +343,59 @@ function Destination({ destination }: { destination: LernpfadDestination }) {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Hoverable Lernziel chip. Shows the short label on the chip; the full
+ * description appears in a popover anchored above the chip on hover,
+ * focus, or tap (for touch devices that don't fire mouseenter).
+ *
+ * Built without a Tooltip primitive (none in src/components/ui yet) so
+ * we can avoid pulling in @radix-ui/react-tooltip just for this surface.
+ * Uses a real `<button>` for native click + keyboard activation; the
+ * popover gets `role="tooltip"` so screen readers pick it up.
+ */
+function LernzielChip({
+  label,
+  description,
+}: {
+  label: string;
+  description: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const tooltipId = `lz-${label.replace(/\W+/g, "-").toLowerCase()}`;
+
+  return (
+    <span className="relative inline-block">
+      <button
+        type="button"
+        aria-describedby={open ? tooltipId : undefined}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onClick={() => setOpen((v) => !v)}
+        className="text-xs font-semibold tracking-wide rounded-full px-2.5 py-1 bg-[#FAEBE1] text-[#733D29] hover:bg-[#F0D0B8] transition-colors cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0066FF] focus-visible:ring-offset-1"
+      >
+        <span className="border-b border-dotted border-[#733D29]/40">
+          {label}
+        </span>
+      </button>
+      {open && (
+        <span
+          id={tooltipId}
+          role="tooltip"
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-60 max-w-[calc(100vw-2rem)] z-30 bg-[#733D29] text-white text-xs font-normal leading-relaxed normal-case tracking-normal rounded-md px-3 py-2.5 shadow-lg pointer-events-none"
+        >
+          {description}
+          <span
+            aria-hidden="true"
+            className="absolute top-full left-1/2 -translate-x-1/2 -mt-px w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-[#733D29]"
+          />
+        </span>
+      )}
+    </span>
   );
 }
 
