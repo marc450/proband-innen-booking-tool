@@ -74,14 +74,16 @@ export async function saveTokens(accessToken: string, refreshToken: string, expi
   const supabase = createAdminClient();
   const expiry = new Date(Date.now() + expiresIn * 1000).toISOString();
 
-  // Upsert: delete old, insert new
-  await supabase.from("gmail_tokens").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-  await supabase.from("gmail_tokens").insert({
-    access_token: accessToken,
-    refresh_token: refreshToken,
-    expiry,
-    email: GMAIL_USER_EMAIL,
-  });
+  await supabase.from("gmail_tokens").upsert(
+    {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      expiry,
+      email: GMAIL_USER_EMAIL,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "email" },
+  );
 }
 
 export async function getValidAccessToken(): Promise<string> {
