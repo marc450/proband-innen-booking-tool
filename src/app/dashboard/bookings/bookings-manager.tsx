@@ -651,38 +651,39 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
               </div>
 
               {(() => {
-                // Restrict the course dropdown to courses with the same
-                // title as the booking's current course. Staff only ever
-                // want to move a patient to a different slot of the same
-                // course type, not onto a completely different product.
+                // Show all courses so staff can move a proband across
+                // treatment types (e.g., from Botulinum-Therap. Indikationen
+                // to Masseter) when the proband has expressed interest in
+                // a different slot. Same-title courses come first so the
+                // common case (same treatment, different date) stays
+                // ergonomic; everything else follows after.
                 const currentCourseTitle = slotChangePending.slots?.courses?.title || "";
-                const selectableCourses = currentCourseTitle
-                  ? courses.filter((c) => c.title === currentCourseTitle)
-                  : courses;
+                const sameTitle = courses.filter((c) => c.title === currentCourseTitle);
+                const otherTitles = courses.filter((c) => c.title !== currentCourseTitle);
+                const selectableCourses = [...sameTitle, ...otherTitles];
+                const labelFor = (c: { title: string; course_date: string | null }) =>
+                  c.course_date
+                    ? `${c.title} (${format(parseDateOnly(c.course_date), "dd.MM.yyyy", { locale: de })})`
+                    : c.title;
                 return (
                   <>
                     <div className="space-y-2">
-                      <Label>Kursdatum</Label>
+                      <Label>Kurs & Datum</Label>
                       <Select value={slotChangeTargetCourseId} onValueChange={(val) => { if (val) handleSlotChangeCourseSelect(val); }}>
                         <SelectTrigger>
                           <span className="truncate">
                             {slotChangeTargetCourseId
                               ? (() => {
                                   const c = selectableCourses.find((c) => c.id === slotChangeTargetCourseId);
-                                  if (!c) return slotChangeTargetCourseId;
-                                  return c.course_date
-                                    ? format(parseDateOnly(c.course_date), "dd.MM.yyyy", { locale: de })
-                                    : c.title;
+                                  return c ? labelFor(c) : slotChangeTargetCourseId;
                                 })()
-                              : "Kursdatum wählen..."}
+                              : "Kurs wählen..."}
                           </span>
                         </SelectTrigger>
                         <SelectContent className="w-[--radix-select-trigger-width]">
                           {selectableCourses.map((c) => (
                             <SelectItem key={c.id} value={c.id}>
-                              {c.course_date
-                                ? format(parseDateOnly(c.course_date), "dd.MM.yyyy", { locale: de })
-                                : c.title}
+                              {labelFor(c)}
                             </SelectItem>
                           ))}
                         </SelectContent>
