@@ -37,6 +37,72 @@ export async function findPatientIdByAnyEmail(
   return (legacy?.id as string | undefined) ?? null;
 }
 
+// Resolve any auszubildende email (primary OR alias) to its contact id.
+// Mirrors findPatientIdByAnyEmail: alias table first, legacy column as
+// fallback for any contact that pre-dates the 046 sync trigger and was
+// never touched since.
+export async function findAuszubildendeIdByAnyEmail(
+  email: string,
+): Promise<string | null> {
+  const admin = createAdminClient();
+  const lower = email.trim().toLowerCase();
+  if (!lower) return null;
+
+  const { data: alias } = await admin
+    .from("auszubildende_emails")
+    .select("auszubildende_id")
+    .eq("email", lower)
+    .maybeSingle();
+  if (alias) return alias.auszubildende_id as string;
+
+  const { data: legacy } = await admin
+    .from("auszubildende")
+    .select("id")
+    .ilike("email", lower)
+    .maybeSingle();
+  return (legacy?.id as string | undefined) ?? null;
+}
+
+// Centralised "upsert by email" for the contact table. Replaces the
+// scattered `.upsert({...}, { onConflict: "email" })` pattern, which
+// only sees the legacy `auszubildende.email` column and would miss a
+// contact whose primary was changed via the multi-email manager. This
+// helper looks up by alias first (so aliases also resolve back to the
+// canonical contact), updates the existing row when found, otherwise
+// inserts a new contact. The 046 sync trigger handles seeding the
+// alias row on insert; we never touch is_primary here.
+//
+// `fields.email` is ignored on update (the primary email is owned by
+// setAuszubildendePrimary). On insert it's used to seed the legacy
+// column so the trigger can mirror it into auszubildende_emails.
+export async function upsertAuszubildendeByEmail(
+  email: string,
+  fields: Record<string, unknown>,
+): Promise<string | null> {
+  const admin = createAdminClient();
+  const lower = email.trim().toLowerCase();
+  if (!lower) return null;
+
+  const existingId = await findAuszubildendeIdByAnyEmail(lower);
+
+  if (existingId) {
+    const { email: _ignore, ...updateFields } = fields;
+    void _ignore;
+    if (Object.keys(updateFields).length > 0) {
+      await admin.from("auszubildende").update(updateFields).eq("id", existingId);
+    }
+    return existingId;
+  }
+
+  const { data, error } = await admin
+    .from("auszubildende")
+    .insert({ ...fields, email: lower })
+    .select("id")
+    .single();
+  if (error || !data) return null;
+  return data.id as string;
+}
+
 // Promote one auszubildende_emails row to primary, demote the previous
 // primary, and sync the legacy auszubildende.email column. Two sequential
 // updates: the partial unique index allows the brief window where neither

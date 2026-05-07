@@ -13,6 +13,7 @@ import {
   CourseType,
 } from "@/lib/post-purchase";
 import { normalizeEmail } from "@/lib/email-normalize";
+import { findAuszubildendeIdByAnyEmail, upsertAuszubildendeByEmail } from "@/lib/contact-emails";
 import Stripe from "stripe";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
@@ -220,7 +221,6 @@ async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
       // them, so a second checkout without an address doesn't blank out a
       // previously stored one.
       const azubiRow: Record<string, unknown> = {
-        email,
         first_name: firstName,
         last_name: lastName,
         phone: phone || null,
@@ -231,11 +231,14 @@ async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
       if (addressCountry) azubiRow.address_country = addressCountry;
       if (euVatId) azubiRow.vat_id = euVatId;
 
-      const { data: azubi } = await supabase
-        .from("auszubildende")
-        .upsert(azubiRow, { onConflict: "email" })
-        .select("id, profile_complete")
-        .single();
+      const azubiId = await upsertAuszubildendeByEmail(email, azubiRow);
+      const { data: azubi } = azubiId
+        ? await supabase
+            .from("auszubildende")
+            .select("id, profile_complete")
+            .eq("id", azubiId)
+            .single()
+        : { data: null };
 
       if (azubi) {
         // Link all bookings to the auszubildende
@@ -479,7 +482,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (email) {
     try {
       const azubiRow: Record<string, unknown> = {
-        email,
         first_name: firstName,
         last_name: lastName,
         phone: phone || null,
@@ -490,16 +492,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       if (addressCountry) azubiRow.address_country = addressCountry;
       if (euVatId) azubiRow.vat_id = euVatId;
 
-      const { data: azubi } = await supabase
-        .from("auszubildende")
-        .upsert(azubiRow, { onConflict: "email" })
-        .select("id")
-        .single();
+      const azubiId = await upsertAuszubildendeByEmail(email, azubiRow);
 
-      if (azubi && bookingId) {
+      if (azubiId && bookingId) {
         await supabase
           .from("course_bookings")
-          .update({ auszubildende_id: azubi.id })
+          .update({ auszubildende_id: azubiId })
           .eq("id", bookingId);
       }
     } catch (err) {
@@ -704,30 +702,29 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
   let auszubildendeId: string | null = null;
   if (email) {
     try {
-      const { data: existing } = await supabase
-        .from("auszubildende")
-        .select("contact_type")
-        .eq("email", email)
-        .maybeSingle();
+      const existingId = await findAuszubildendeIdByAnyEmail(email);
+      let existingContactType: string | null = null;
+      if (existingId) {
+        const { data: existing } = await supabase
+          .from("auszubildende")
+          .select("contact_type")
+          .eq("id", existingId)
+          .maybeSingle();
+        existingContactType = (existing?.contact_type as string | null) ?? null;
+      }
 
       const azubiRow: Record<string, unknown> = {
-        email,
         first_name: firstName || null,
         last_name: lastName || null,
         phone: phone || null,
       };
-      if (!existing) {
+      if (!existingId) {
         azubiRow.contact_type = isDoctor ? "auszubildende" : "other";
-      } else if (isDoctor && existing.contact_type !== "auszubildende") {
+      } else if (isDoctor && existingContactType !== "auszubildende") {
         azubiRow.contact_type = "auszubildende";
       }
 
-      const { data: azubi } = await supabase
-        .from("auszubildende")
-        .upsert(azubiRow, { onConflict: "email" })
-        .select("id")
-        .single();
-      if (azubi) auszubildendeId = azubi.id;
+      auszubildendeId = await upsertAuszubildendeByEmail(email, azubiRow);
     } catch (err) {
       console.error("Failed to upsert auszubildende for merch order:", err);
     }

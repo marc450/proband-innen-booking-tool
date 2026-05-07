@@ -201,8 +201,9 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, legacyBooki
   // Email edits are special: the value is used as the contact key in
   // multiple places (email history Gmail query, future cert/reminder
   // sends, deduplication on import). Past course_bookings rows stay
-  // pinned to whatever email they were booked with — only the
-  // auszubildende.email column is mutated here.
+  // pinned to whatever email they were booked with. We route through
+  // the primary-email API so the canonical write target is the
+  // auszubildende_emails alias table.
   const saveEmail = async (raw: string, input?: HTMLInputElement | null) => {
     const trimmed = raw.trim().toLowerCase();
     const current = (azubi.email || "").toLowerCase();
@@ -220,17 +221,15 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, legacyBooki
       setEmailError("Ungültiges E-Mail-Format.");
       return;
     }
-    const { error } = await supabase
-      .from("auszubildende")
-      .update({ email: trimmed })
-      .eq("id", azubi.id);
-    if (error) {
+    const res = await fetch(`/api/admin/auszubildende/${azubi.id}/primary-email`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: trimmed }),
+    });
+    if (!res.ok) {
       if (input) input.value = azubi.email || "";
-      setEmailError(
-        error.code === "23505"
-          ? "Diese E-Mail ist bereits einer anderen Person zugeordnet."
-          : `Speichern fehlgeschlagen: ${error.message}`,
-      );
+      const { error } = (await res.json().catch(() => ({}))) as { error?: string };
+      setEmailError(error || "Speichern fehlgeschlagen.");
       return;
     }
     setAzubi((prev) => ({ ...prev, email: trimmed }));

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { encryptPatientFields, hashEmail } from "@/lib/encryption";
+import { findAuszubildendeIdByAnyEmail } from "@/lib/contact-emails";
 import type { PatientStatus } from "@/lib/types";
 
 type ContactType = "auszubildende" | "proband" | "other" | "company";
@@ -93,11 +94,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Ungültiger Status." }, { status: 400 });
   }
 
-  const [{ data: legacy }, { data: aliases }] = await Promise.all([
-    supabase.from("auszubildende").select("id").ilike("email", email).maybeSingle(),
-    supabase.from("auszubildende_emails").select("auszubildende_id").ilike("email", email).maybeSingle(),
-  ]);
-  if (legacy || aliases) {
+  const existingId = await findAuszubildendeIdByAnyEmail(email);
+  if (existingId) {
     return NextResponse.json(
       { error: "Eine:r Kontakt mit dieser E-Mail existiert bereits." },
       { status: 409 },

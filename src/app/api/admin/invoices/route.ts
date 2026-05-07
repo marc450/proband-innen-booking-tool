@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeEmail } from "@/lib/email-normalize";
+import { upsertAuszubildendeByEmail } from "@/lib/contact-emails";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 
@@ -243,7 +243,6 @@ export async function POST(req: NextRequest) {
     //     caller passes createContact=false.
     if (createContact) {
       try {
-        const admin = createAdminClient();
         // Normalise so Gmail dot/alias variants hit the same row.
         const emailKey = normalizeEmail(email);
         // Persist the real contact_type (auszubildende/proband/other). We
@@ -253,7 +252,6 @@ export async function POST(req: NextRequest) {
         const persistedType: ContactType =
           contactType && contactType !== "company" ? contactType : "other";
         const row: Record<string, unknown> = {
-          email: emailKey,
           contact_type: persistedType,
           company_name: companyName?.trim() || null,
           vat_id: vatId?.trim() || null,
@@ -269,8 +267,7 @@ export async function POST(req: NextRequest) {
           row.address_postal_code = addressPostalCode.trim();
         if (addressCity?.trim()) row.address_city = addressCity.trim();
         if (addressCountry?.trim()) row.address_country = addressCountry.trim();
-        // Upsert on email so repeated sends don't create duplicates
-        await admin.from("auszubildende").upsert(row, { onConflict: "email" });
+        await upsertAuszubildendeByEmail(emailKey, row);
       } catch (contactErr) {
         // Don't fail the invoice just because the contact row couldn't be
         // stored — the Stripe invoice is the source of truth.

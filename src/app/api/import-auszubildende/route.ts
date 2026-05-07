@@ -37,29 +37,19 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient();
 
-  // Dedup against BOTH the legacy auszubildende.email column AND the
-  // new auszubildende_emails aliases table (PR 1). Without the second
-  // check we'd happily re-import an email that's already an alias on
-  // another contact, creating a real duplicate.
-  // Compared case-insensitively because HubSpot and Stripe sometimes
-  // differ in case.
-  const [
-    { data: legacyExisting, error: legacyFetchError },
-    { data: aliasExisting, error: aliasFetchError },
-  ] = await Promise.all([
-    supabase.from("auszubildende").select("email"),
-    supabase.from("auszubildende_emails").select("email"),
-  ]);
+  // Dedup against the auszubildende_emails alias table, which holds
+  // every primary email (mirrored by the 046 sync trigger) plus every
+  // alias. One query covers both. Compared case-insensitively because
+  // HubSpot and Stripe sometimes differ in case.
+  const { data: aliasExisting, error: aliasFetchError } = await supabase
+    .from("auszubildende_emails")
+    .select("email");
 
-  const fetchError = legacyFetchError || aliasFetchError;
-  if (fetchError) {
-    return NextResponse.json({ error: fetchError.message }, { status: 500 });
+  if (aliasFetchError) {
+    return NextResponse.json({ error: aliasFetchError.message }, { status: 500 });
   }
 
   const existingEmails = new Set<string>();
-  for (const r of legacyExisting || []) {
-    if (r.email) existingEmails.add(r.email.toLowerCase().trim());
-  }
   for (const a of aliasExisting || []) {
     if (a.email) existingEmails.add(a.email.toLowerCase().trim());
   }
