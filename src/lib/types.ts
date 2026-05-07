@@ -95,14 +95,6 @@ export interface CourseBooking {
   created_at: string;
 }
 
-export interface Dozent {
-  id: string;
-  title: string | null;
-  first_name: string;
-  last_name: string;
-  created_at: string;
-}
-
 // User with Dozent:in role — sourced from profiles table
 export interface DozentUser {
   id: string;
