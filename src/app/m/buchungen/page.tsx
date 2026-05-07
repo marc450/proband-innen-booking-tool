@@ -25,7 +25,7 @@ export default async function MobileBookingsPage() {
           courses (
             title,
             course_date,
-            instructor
+            instructor:profiles!instructor_id ( title, first_name, last_name )
           )
         )
       `)

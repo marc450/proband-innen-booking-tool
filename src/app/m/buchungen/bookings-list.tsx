@@ -124,8 +124,8 @@ export function BookingsList({
   // Group by course date
   const probandGrouped = new Map<string, BookingWithDetails[]>();
   for (const b of filteredProband) {
-    const date =
-      (b.slots?.courses as Record<string, string>)?.course_date || "Unbekannt";
+    const courses = b.slots?.courses as { course_date?: string | null } | undefined;
+    const date = courses?.course_date || "Unbekannt";
     if (!probandGrouped.has(date)) probandGrouped.set(date, []);
     probandGrouped.get(date)!.push(b);
   }

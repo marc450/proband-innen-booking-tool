@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AvailableSlot, Course } from "@/lib/types";
+import { formatInstructor } from "@/lib/utils";
 import {
   formatBerlinLongDate,
   formatBerlinLongDateWithWeekday,
@@ -127,10 +128,10 @@ export function PrivatSlotSelection({ course, allCourses, slots }: Props) {
                               <Users className="h-3.5 w-3.5 shrink-0" />
                               <span>{totalCapacity} {totalCapacity === 1 ? "Platz" : "Plätze"} frei</span>
                             </div>
-                            {dateCourse.instructor && (
+                            {formatInstructor(dateCourse.instructor) && (
                               <div className="flex items-center gap-2">
                                 <Clock className="h-3.5 w-3.5 shrink-0" />
-                                <span>Dozent:in: {dateCourse.instructor}</span>
+                                <span>Dozent:in: {formatInstructor(dateCourse.instructor)}</span>
                               </div>
                             )}
                             {dateCourse.location && (

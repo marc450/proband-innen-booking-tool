@@ -12,7 +12,11 @@ export interface CourseTemplate {
    * when null.
    */
   image_url_probanden: string | null;
-  instructor: string | null;
+  instructor_id: string | null;
+  /** Embedded via PostgREST when the select includes
+   * `instructor:profiles!instructor_id(...)`. Optional because
+   * narrow selects (id-only, list pages) skip the embed. */
+  instructor?: { title: string | null; first_name: string | null; last_name: string | null } | null;
   created_at: string;
   // Auszubildende-specific fields (nullable for Proband:innen templates)
   course_key: string | null;
@@ -113,7 +117,11 @@ export interface Course {
   description: string | null;
   course_date: string | null; // ISO date string yyyy-MM-dd
   location: string | null;
-  instructor: string | null;
+  instructor_id: string | null;
+  /** Embedded via PostgREST when the select includes
+   * `instructor:profiles!instructor_id(...)`. Optional because
+   * narrow selects (id-only, list pages) skip the embed. */
+  instructor?: { title: string | null; first_name: string | null; last_name: string | null } | null;
   guide_price_cents: number | null;
   service_description: string | null;
   image_url: string | null;
@@ -252,7 +260,7 @@ export interface BookingWithDetails extends Booking {
       // { title, instructor } — the patient-facing emails live behind
       // the bookings-page query which does fetch treatment_title.
       treatment_title?: string | null;
-      instructor: string | null;
+      instructor: { title: string | null; first_name: string | null; last_name: string | null } | null;
     };
   };
 }

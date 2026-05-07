@@ -19,7 +19,7 @@ export default async function MobileTerminePage() {
     // Behandlungstermine data
     supabase
       .from("courses")
-      .select("*")
+      .select("*, instructor:profiles!instructor_id(title, first_name, last_name)")
       .eq("status", "published")
       .order("course_date", { ascending: true }),
     supabase

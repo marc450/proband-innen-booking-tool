@@ -15,7 +15,7 @@ export default async function PrivatCourseBookingPage({
 
   const { data: course } = await supabase
     .from("courses")
-    .select("*")
+    .select("*, instructor:profiles!instructor_id(title, first_name, last_name)")
     .eq("id", courseId)
     .single();
 
@@ -27,7 +27,7 @@ export default async function PrivatCourseBookingPage({
   // Fetch all sibling courses with the same title, only future
   const { data: siblingCourses } = await supabase
     .from("courses")
-    .select("*")
+    .select("*, instructor:profiles!instructor_id(title, first_name, last_name)")
     .eq("title", course.title)
     .gte("course_date", today)
     .order("course_date", { ascending: true });

@@ -58,6 +58,12 @@ function formatDozentName(d: DozentUser): string {
   return [d.title, d.first_name, d.last_name].filter(Boolean).join(" ");
 }
 
+function makeDozentNameLookup(dozentUsers: DozentUser[]): (id: string | null | undefined) => string {
+  const map = new Map<string, string>();
+  for (const d of dozentUsers) map.set(d.id, formatDozentName(d));
+  return (id) => (id ? map.get(id) ?? "" : "");
+}
+
 // Visual pill color per (treatment × level). Each known combination gets a
 // distinct tone so Grundkurs Botulinum and Masterclass Botulinum don't blur
 // together at the top of the list. Uses Tailwind semantic colors on purpose
@@ -99,6 +105,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
   const [courses, setCourses] = useState(initialCourses);
   const [slots, setSlots] = useState(initialSlots);
   const [bookings, setBookings] = useState(initialBookings);
+  const dozentNameById = makeDozentNameLookup(dozentUsers);
 
   // Per-booking notes editor (encrypted via /api/update-booking-notes).
   // Distinct from patient-level notes — captures session-specific
@@ -323,7 +330,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
       description: template.description,
       service_description: template.service_description,
       guide_price_cents: template.guide_price_cents,
-      instructor: selectedInstructor || template.instructor || null,
+      instructor_id: selectedInstructor || template.instructor_id || null,
       image_url: courseImageUrl || template.image_url,
       course_date: courseDate,
       location: courseLocation || null,
@@ -385,7 +392,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
     setEditingCourse(course);
     setEditDate(course.course_date || "");
     setEditLocation(course.location || "");
-    setEditInstructor(course.instructor || "");
+    setEditInstructor(course.instructor_id || "");
     setEditDialogOpen(true);
   };
 
@@ -395,7 +402,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
       return;
     }
     const dateChanged = editDate !== editingCourse.course_date;
-    const courseUpdates = { course_date: editDate, location: editLocation, instructor: editInstructor };
+    const courseUpdates = { course_date: editDate, location: editLocation, instructor_id: editInstructor || null };
     const { data, error } = await supabase
       .from("courses")
       .update(courseUpdates)
@@ -552,7 +559,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
     setDuplicatingCourse(course);
     setDuplicateTemplateId(course.template_id || "");
     setDuplicateDate("");
-    setDuplicateInstructor(course.instructor || "");
+    setDuplicateInstructor(course.instructor_id || "");
     setDuplicateLocation(course.location || "");
     setDuplicateDialogOpen(true);
   };
@@ -580,7 +587,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
         description: template.description,
         service_description: template.service_description,
         guide_price_cents: template.guide_price_cents,
-        instructor: duplicateInstructor,
+        instructor_id: duplicateInstructor,
         image_url: template.image_url,
         course_date: duplicateDate,
         location: duplicateLocation,
@@ -639,14 +646,14 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                 <SelectTrigger className="mt-1 w-full">
                   <span className="flex flex-1 text-left line-clamp-1">
                     {editInstructor
-                      ? editInstructor
+                      ? dozentNameById(editInstructor)
                       : <span className="text-muted-foreground">Dozent:in auswählen...</span>
                     }
                   </span>
                 </SelectTrigger>
                 <SelectContent>
                   {dozentUsers.map((d) => (
-                    <SelectItem key={d.id} value={formatDozentName(d)}>
+                    <SelectItem key={d.id} value={d.id}>
                       {formatDozentName(d)}
                     </SelectItem>
                   ))}
@@ -804,14 +811,14 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                       <SelectTrigger className="h-10 w-full">
                         <span className="flex flex-1 text-left line-clamp-1">
                           {selectedInstructor && selectedInstructor !== "__none"
-                            ? selectedInstructor
+                            ? dozentNameById(selectedInstructor)
                             : <span className="text-muted-foreground">Dozent:in auswählen...</span>
                           }
                         </span>
                       </SelectTrigger>
                       <SelectContent>
                         {dozentUsers.map((d) => (
-                          <SelectItem key={d.id} value={formatDozentName(d)}>
+                          <SelectItem key={d.id} value={d.id}>
                             {formatDozentName(d)}
                           </SelectItem>
                         ))}
@@ -1057,14 +1064,14 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                 <SelectTrigger className="h-10 w-full">
                   <span className="flex flex-1 text-left line-clamp-1">
                     {duplicateInstructor
-                      ? duplicateInstructor
+                      ? dozentNameById(duplicateInstructor)
                       : <span className="text-muted-foreground">Dozent:in auswählen...</span>
                     }
                   </span>
                 </SelectTrigger>
                 <SelectContent>
                   {dozentUsers.map((d) => (
-                    <SelectItem key={d.id} value={formatDozentName(d)}>
+                    <SelectItem key={d.id} value={d.id}>
                       {formatDozentName(d)}
                     </SelectItem>
                   ))}
@@ -1209,16 +1216,20 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
           <SelectTrigger className="w-52 h-10 text-sm bg-white border border-gray-200 rounded-[10px] px-3">
             <span className="flex flex-1 text-left line-clamp-1">
               {filterDozent
-                ? filterDozent
+                ? dozentNameById(filterDozent)
                 : <span className="text-muted-foreground">Alle Dozent:innen</span>
               }
             </span>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__all">Alle Dozent:innen</SelectItem>
-            {Array.from(new Set(courses.map((c) => c.instructor).filter((i): i is string => !!i))).sort().map((name) => (
-              <SelectItem key={name} value={name}>{name}</SelectItem>
-            ))}
+            {Array.from(new Set(courses.map((c) => c.instructor_id).filter((i): i is string => !!i)))
+              .map((id) => ({ id, name: dozentNameById(id) }))
+              .filter((d) => !!d.name)
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((d) => (
+                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+              ))}
           </SelectContent>
         </Select>
         <Input
@@ -1249,7 +1260,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
         const filteredCourses = courses
           .filter((c) => {
             if (filterCourse && c.title !== filterCourse) return false;
-            if (filterDozent && c.instructor !== filterDozent) return false;
+            if (filterDozent && c.instructor_id !== filterDozent) return false;
             if (filterDate && c.course_date !== filterDate) return false;
             return true;
           })
@@ -1318,7 +1329,7 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                     </span>
                   </span>
                   <span className="[flex:2_1_0%] text-sm text-muted-foreground truncate">
-                    {course.instructor || <span className="italic opacity-50">Kein:e Dozent:in</span>}
+                    {dozentNameById(course.instructor_id) || <span className="italic opacity-50">Kein:e Dozent:in</span>}
                   </span>
                   <span className="[flex:2_1_0%] text-sm text-muted-foreground truncate">
                     {course.course_date

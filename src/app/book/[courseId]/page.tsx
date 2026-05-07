@@ -16,7 +16,7 @@ export default async function CourseBookingPage({
   // Fetch the requested course
   const { data: course } = await supabase
     .from("courses")
-    .select("*")
+    .select("*, instructor:profiles!instructor_id(title, first_name, last_name)")
     .eq("id", courseId)
     .single();
 
@@ -28,7 +28,7 @@ export default async function CourseBookingPage({
   // Fetch all sibling courses with the same title (different dates), only future
   const { data: siblingCourses } = await supabase
     .from("courses")
-    .select("*")
+    .select("*, instructor:profiles!instructor_id(title, first_name, last_name)")
     .eq("title", course.title)
     .gte("course_date", today)
     .order("course_date", { ascending: true });

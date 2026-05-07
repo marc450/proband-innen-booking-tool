@@ -11,7 +11,7 @@ export default async function PrivatBookPage() {
   const [{ data: courses }, { data: slots }, { data: templates }] = await Promise.all([
     supabase
       .from("courses")
-      .select("*")
+      .select("*, instructor:profiles!instructor_id(title, first_name, last_name)")
       .eq("status", "published")
       .gte("course_date", today)
       .order("course_date", { ascending: true }),

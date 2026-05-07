@@ -27,3 +27,19 @@ export function formatPersonName(parts: {
     .join(" ")
   return joined || undefined
 }
+
+/**
+ * Format an embedded `instructor` profile (the one PostgREST returns
+ * via `instructor:profiles!instructor_id(...)`) as a single name string.
+ * Returns null when the relation is null so callers can branch on it.
+ */
+export function formatInstructor(
+  instructor: { title: string | null; first_name: string | null; last_name: string | null } | null | undefined,
+): string | null {
+  if (!instructor) return null
+  return formatPersonName({
+    title: instructor.title,
+    firstName: instructor.first_name,
+    lastName: instructor.last_name,
+  }) ?? null
+}

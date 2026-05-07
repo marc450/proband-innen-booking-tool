@@ -31,7 +31,10 @@ export default async function BehandlungstermineePage() {
     { data: templates },
     { data: dozentUsers },
   ] = await Promise.all([
-    supabase.from("courses").select("*").order("created_at", { ascending: false }),
+    supabase
+      .from("courses")
+      .select("*, instructor:profiles!instructor_id(title, first_name, last_name)")
+      .order("created_at", { ascending: false }),
     supabase.from("slots").select("*").order("start_time", { ascending: true }),
     supabase
       .from("bookings")

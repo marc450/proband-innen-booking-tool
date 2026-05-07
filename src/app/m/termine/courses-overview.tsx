@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, MapPin, User, Clock, Users } from "lucide-react";
 import type { Course, Slot, CourseTemplate, CourseSession } from "@/lib/types";
+import { formatInstructor } from "@/lib/utils";
 
 export interface SlotBooking {
   id: string;
@@ -207,10 +208,10 @@ export function CoursesOverview({
                             {course.location}
                           </span>
                         )}
-                        {course.instructor && (
+                        {formatInstructor(course.instructor) && (
                           <span className="text-xs text-gray-500 flex items-center gap-1">
                             <User className="w-3 h-3" />
-                            {course.instructor}
+                            {formatInstructor(course.instructor)}
                           </span>
                         )}
                       </div>

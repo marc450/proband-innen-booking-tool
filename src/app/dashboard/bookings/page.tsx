@@ -22,7 +22,7 @@ export default async function BookingsPage() {
           courses (
             title,
             treatment_title,
-            instructor
+            instructor:profiles!instructor_id ( title, first_name, last_name )
           )
         )
       `)

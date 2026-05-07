@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { BookingStatus, BookingWithDetails } from "@/lib/types";
+import { formatInstructor } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -282,8 +283,8 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
           return dir * typA.localeCompare(typB);
         }
         case "arzt": {
-          const aI = (a.slots?.courses?.instructor || "").toLowerCase();
-          const bI = (b.slots?.courses?.instructor || "").toLowerCase();
+          const aI = (formatInstructor(a.slots?.courses?.instructor) || "").toLowerCase();
+          const bI = (formatInstructor(b.slots?.courses?.instructor) || "").toLowerCase();
           return dir * aI.localeCompare(bI, "de");
         }
         case "status": {
@@ -916,7 +917,7 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
                     )}
                   </TableCell>
                   <TableCell className="text-sm whitespace-nowrap">
-                    {booking.slots?.courses?.instructor || "—"}
+                    {formatInstructor(booking.slots?.courses?.instructor) || "—"}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
