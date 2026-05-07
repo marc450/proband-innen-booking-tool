@@ -697,18 +697,31 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
       ? session.payment_intent
       : session.payment_intent?.id || null;
 
-  // Upsert the customer into auszubildende so they land in Kontakte. Doctors
-  // go into the auszubildende bucket; non-doctors into "other" (Sonstige).
+  // Upsert the customer into auszubildende so they land in Kontakte. Doctor
+  // status is sticky: a customer who declared themselves a doctor on a prior
+  // touchpoint must not be silently downgraded to "other" because they didn't
+  // tick the box on a later merch purchase. Only the admin tool can downgrade.
   let auszubildendeId: string | null = null;
   if (email) {
     try {
+      const { data: existing } = await supabase
+        .from("auszubildende")
+        .select("contact_type")
+        .eq("email", email)
+        .maybeSingle();
+
       const azubiRow: Record<string, unknown> = {
         email,
         first_name: firstName || null,
         last_name: lastName || null,
         phone: phone || null,
-        contact_type: isDoctor ? "auszubildende" : "other",
       };
+      if (!existing) {
+        azubiRow.contact_type = isDoctor ? "auszubildende" : "other";
+      } else if (isDoctor && existing.contact_type !== "auszubildende") {
+        azubiRow.contact_type = "auszubildende";
+      }
+
       const { data: azubi } = await supabase
         .from("auszubildende")
         .upsert(azubiRow, { onConflict: "email" })
