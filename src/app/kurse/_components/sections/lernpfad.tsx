@@ -269,9 +269,13 @@ function PathStep({
         )}
 
         {/* CTA button — full-width primary so each step has a clear
-            next action. Brand CTA style: bold, blue, white text. */}
+            next action. Opens in a new tab so the visitor keeps the
+            curriculum overview open and can compare steps without losing
+            their place. Brand CTA style: bold, blue, white text. */}
         <a
           href={step.href}
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex items-center justify-center gap-1.5 w-full text-sm md:text-base font-bold rounded-[10px] bg-[#0066FF] text-white hover:bg-[#0055DD] py-3 px-4 transition-colors group"
         >
           Zu den Kursdetails
