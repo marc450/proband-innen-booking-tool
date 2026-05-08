@@ -447,7 +447,7 @@ export async function sendInPersonProfileLinkEmail(
   const html = buildEmailHtml({
     firstName,
     intro:
-      "wie eben am Kurs besprochen, hier kommt Dein Profil-Link. Bitte fülle Dein Profil jetzt aus, damit wir Deine CME-Punkte zuordnen und Dein Zertifikat ausstellen können.",
+      "hier ist der Link mit dem Du Dein Profil vervollständigen kannst, damit wir Deine CME-Punkte zuordnen und Dein Zertifikat ausstellen können.",
     buttons: [{ label: "Profil vervollständigen →", url: profileUrl }],
   });
 
