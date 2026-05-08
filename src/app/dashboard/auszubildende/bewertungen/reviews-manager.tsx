@@ -194,12 +194,17 @@ export function ReviewsManager({ initialReviews }: Props) {
       const scheduled = data?.reschedule?.scheduled ?? 0;
       const skipped = data?.reschedule?.skipped ?? 0;
       const errors = data?.reschedule?.errors ?? 0;
+      const errorSamples: string[] = data?.reschedule?.errorSamples ?? [];
+      const samplesSuffix =
+        errors > 0 && errorSamples.length > 0
+          ? ` Beispielfehler: ${errorSamples.map((s) => `"${s}"`).join("; ")}.`
+          : "";
       setRescheduleResult(
         `Fertig. ${cancelled} alte Mail(s) storniert${
           cancelFailed ? `, ${cancelFailed} fehlgeschlagen` : ""
         }, ${scheduled} neu eingeplant${
           skipped ? `, ${skipped} übersprungen` : ""
-        }${errors ? `, ${errors} Fehler` : ""}.`,
+        }${errors ? `, ${errors} Fehler` : ""}.${samplesSuffix}`,
       );
     } catch (err) {
       setRescheduleResult(

@@ -15,7 +15,15 @@ const SCHEDULE_WINDOW_DAYS = 25;
 // after they've already left and forgotten about it.
 const FIRE_BEFORE_END_MINUTES = 60;
 
+// Resend's default API rate limit is 2 requests/sec. Wait 600ms
+// between schedule calls so a batch reschedule of 40+ bookings
+// doesn't get half its sends 429'd.
+const RESEND_RATE_LIMIT_DELAY_MS = 600;
+
 const REVIEW_EMAIL_FROM = "EPHIA <customerlove@ephia.de>";
+
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 interface SessionRow {
   id: string;
@@ -41,6 +49,8 @@ interface ScheduleResult {
   scheduled: number;
   skipped: number;
   errors: number;
+  /** Up to first 3 error messages, surfaced for UI debugging. */
+  errorSamples: string[];
 }
 
 // Compute the wall-clock end of a course session.
@@ -161,7 +171,15 @@ export async function scheduleCourseReviewEmails(
   supabase: SupabaseClient,
   opts: { onlySessionId?: string } = {},
 ): Promise<ScheduleResult> {
-  const result: ScheduleResult = { scheduled: 0, skipped: 0, errors: 0 };
+  const result: ScheduleResult = {
+    scheduled: 0,
+    skipped: 0,
+    errors: 0,
+    errorSamples: [],
+  };
+  const captureError = (msg: string) => {
+    if (result.errorSamples.length < 3) result.errorSamples.push(msg);
+  };
   const nowMs = Date.now();
   const horizonMs = nowMs + SCHEDULE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
@@ -238,30 +256,49 @@ export async function scheduleCourseReviewEmails(
       const subject = buildReviewSubject(courseTitle);
       const html = buildReviewEmailHtml({ firstName, reviewUrl });
 
-      // Persist the token FIRST so a successful Resend call always has a
-      // matching DB row to validate against. If the persist fails we
-      // skip the send — better to leave the booking unscheduled than to
-      // send a token we can't honor.
+      // Persist the token FIRST so a successful Resend call always has
+      // a matching DB row to validate against. Unconditional update
+      // (not gated on `review_submit_token IS NULL`): if a previous
+      // attempt left a stale token from a failed Resend call, we
+      // overwrite it here with the fresh token, keeping the in-memory
+      // value and the DB row in sync. The SQL filter on
+      // `review_email_resend_id IS NULL` already prevents us from
+      // touching bookings whose email has actually been scheduled.
       const { error: tokenErr } = await supabase
         .from("course_bookings")
         .update({ review_submit_token: token })
-        .eq("id", booking.id)
-        .is("review_submit_token", null);
+        .eq("id", booking.id);
       if (tokenErr) {
         console.error(
           `schedule-review-emails: token persist failed for booking ${booking.id}`,
           tokenErr,
         );
+        captureError(`Token persist: ${tokenErr.message}`);
         result.errors++;
         continue;
       }
 
-      const resendId = await scheduleViaResend({
-        to: booking.email,
-        subject,
-        html,
-        scheduledAtIso: sendAt.toISOString(),
-      });
+      let resendId: string;
+      try {
+        resendId = await scheduleViaResend({
+          to: booking.email,
+          subject,
+          html,
+          scheduledAtIso: sendAt.toISOString(),
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(
+          `schedule-review-emails: Resend schedule failed for booking ${booking.id}`,
+          msg,
+        );
+        captureError(`Resend: ${msg}`);
+        result.errors++;
+        // Stay below Resend's 2 req/sec rate limit. We delay even on
+        // failure because 429s contribute to the throttling window.
+        await sleep(RESEND_RATE_LIMIT_DELAY_MS);
+        continue;
+      }
 
       const { error: markErr } = await supabase
         .from("course_bookings")
@@ -275,7 +312,9 @@ export async function scheduleCourseReviewEmails(
           `schedule-review-emails: mark failed for booking ${booking.id}`,
           markErr,
         );
+        captureError(`DB mark: ${markErr.message}`);
         result.errors++;
+        await sleep(RESEND_RATE_LIMIT_DELAY_MS);
         continue;
       }
 
@@ -286,7 +325,11 @@ export async function scheduleCourseReviewEmails(
       // path for tagged sends; extending it to the
       // "ephia-purpose=course-review-request" tag is a follow-up.
       result.scheduled++;
+      // Pace successive sends so we stay under Resend's 2 req/sec.
+      await sleep(RESEND_RATE_LIMIT_DELAY_MS);
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      captureError(`Unexpected: ${msg}`);
       console.error(
         `schedule-review-emails: unexpected error for booking ${booking.id}`,
         err,
