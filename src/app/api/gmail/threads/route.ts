@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listThreads, getThread, getHeader, extractEmailAddress, extractName, getBody, getAttachments, isInbound } from "@/lib/gmail";
+import { resolveContactNamesByEmail } from "@/lib/inbox-contact-names";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -68,7 +69,10 @@ export async function GET(request: NextRequest) {
             });
           }
 
-          // Get display name of the external contact
+          // Get display name of the external contact. We resolve the
+          // From-header name first; the DB-name pass below overrides
+          // it for emails we recognise so the thread list says
+          // "Natascha Beer" instead of "nasti2004@web.de".
           let contactName = "";
           let contactEmail = "";
           for (const msg of full.messages) {
@@ -85,6 +89,12 @@ export async function GET(request: NextRequest) {
             contactEmail = extractEmailAddress(toHeader);
             contactName = extractName(toHeader) || contactEmail;
           }
+          // Track whether the From header carried a real display name
+          // (i.e. something other than the bare email). If yes, that
+          // wins — it's what the contact chose to sign as. If not,
+          // we'll later overlay the DB name when we have one.
+          const headerHadName =
+            !!contactName && contactName !== contactEmail;
 
           return {
             id: t.id,
@@ -94,6 +104,7 @@ export async function GET(request: NextRequest) {
             lastFrom,
             contactName,
             contactEmail,
+            headerHadName,
             messageCount: full.messages.length,
             isUnread,
             lastMessageInbound,
@@ -105,8 +116,34 @@ export async function GET(request: NextRequest) {
       })
     );
 
+    // Overlay DB-known names: when the From header was bare (just the
+    // email, no display name) but the contact exists in our DB, swap
+    // in the stored Vorname/Nachname so the thread list reads
+    // "Natascha Beer" instead of "nasti2004@web.de". Single batched
+    // lookup across both auszubildende and patients tables — see
+    // src/lib/inbox-contact-names.ts.
+    const emailsToResolve = threadSummaries
+      .filter((t) => !t.headerHadName && !!t.contactEmail)
+      .map((t) => t.contactEmail);
+    if (emailsToResolve.length > 0) {
+      const nameMap = await resolveContactNamesByEmail(emailsToResolve);
+      for (const t of threadSummaries) {
+        if (t.headerHadName || !t.contactEmail) continue;
+        const dbName = nameMap.get(t.contactEmail.trim().toLowerCase());
+        if (dbName) t.contactName = dbName;
+      }
+    }
+
+    // Drop the internal `headerHadName` flag before serialising so the
+    // client schema (ThreadSummary) stays clean.
+    const sanitised = threadSummaries.map((t) => {
+      const { headerHadName: _omit, ...rest } = t;
+      void _omit;
+      return rest;
+    });
+
     return NextResponse.json({
-      threads: threadSummaries,
+      threads: sanitised,
       nextPageToken: result.nextPageToken,
       total: result.resultSizeEstimate,
     });
