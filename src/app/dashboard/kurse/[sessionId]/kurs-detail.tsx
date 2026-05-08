@@ -472,7 +472,7 @@ export function KursDetailClient({
             </TableHeader>
             <TableBody>
               {aerztBookings.map((b) => (
-                <TableRow key={b.id}>
+                <TableRow key={b.id} className="h-14">
                   <TableCell className="font-medium">
                     {[b.firstName, b.lastName].filter(Boolean).join(" ") || "—"}
                   </TableCell>
@@ -507,7 +507,7 @@ export function KursDetailClient({
       <section className="rounded-[10px] bg-card ring-1 ring-black/5 overflow-hidden">
         <div className="px-6 pt-6 pb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">
-            Proband:innen ({slots.length} {slots.length === 1 ? "Slot" : "Slots"})
+            Buchungen Proband:innen ({slots.length} {slots.length === 1 ? "Slot" : "Slots"})
           </h2>
           {satelliteId && (
             <Button size="sm" onClick={openAddSlot}>
@@ -542,7 +542,7 @@ export function KursDetailClient({
                 const slotBookings = bookings.filter((b) => b.slot_id === slot.id);
                 if (slotBookings.length === 0) {
                   return [
-                    <TableRow key={slot.id}>
+                    <TableRow key={slot.id} className="h-14">
                       <TableCell className="font-medium">
                         <button onClick={() => openEditSlot(slot)} className="hover:underline">
                           {formatBerlinTime(slot.start_time)}
@@ -568,7 +568,7 @@ export function KursDetailClient({
                   ];
                 }
                 return slotBookings.map((booking) => (
-                  <TableRow key={booking.id}>
+                  <TableRow key={booking.id} className="h-14">
                     <TableCell className="font-medium">
                       <button onClick={() => openEditSlot(slot)} className="hover:underline">
                         {formatBerlinTime(slot.start_time)}
