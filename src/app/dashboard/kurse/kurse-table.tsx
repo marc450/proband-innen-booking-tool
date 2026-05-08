@@ -40,10 +40,11 @@ export interface KurseRow {
 }
 
 type SortKey =
-  | "status"
+  | "aerzt_status"
+  | "proband_status"
   | "date"
   | "time"
-  | "duration"
+  | "endtime"
   | "course"
   | "instructor"
   | "betreuer"
@@ -56,10 +57,11 @@ type SortKey =
 type SortDir = "asc" | "desc";
 
 const COL_LABELS: Record<SortKey, string> = {
-  status: "Status",
+  aerzt_status: "Ärzt:innen",
+  proband_status: "Proband:innen",
   date: "Datum",
   time: "Startzeit",
-  duration: "Dauer",
+  endtime: "Endzeit",
   course: "Kurs",
   instructor: "Dozent:in",
   betreuer: "Kursbetreuung",
@@ -100,22 +102,39 @@ function startTimePill(t: string | null): { className: string; label: string } |
   return null;
 }
 
+function computeEndTime(
+  startTime: string | null,
+  durationMinutes: number | null,
+): string | null {
+  if (!startTime || !durationMinutes) return null;
+  const [h, m] = startTime.split(":").map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+  const total = h * 60 + m + durationMinutes;
+  const endH = Math.floor(total / 60) % 24;
+  const endM = total % 60;
+  return `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
+}
+
 function compare(a: KurseRow, b: KurseRow, key: SortKey, dir: SortDir): number {
   const sign = dir === "asc" ? 1 : -1;
   switch (key) {
-    case "status": {
-      // Sort by combined "fully bookable" score so kurses live on
-      // both sides float to the top, half-live next, fully off last.
-      const score = (r: KurseRow) =>
-        Number(r.isLive) + Number(r.probandLive === true);
-      return (score(b) - score(a)) * sign;
-    }
+    case "aerzt_status":
+      return (Number(b.isLive) - Number(a.isLive)) * sign;
+    case "proband_status":
+      return (
+        (Number(b.probandLive === true) - Number(a.probandLive === true)) *
+        sign
+      );
     case "date":
       return a.dateIso.localeCompare(b.dateIso) * sign;
     case "time":
       return (a.startTime ?? "").localeCompare(b.startTime ?? "") * sign;
-    case "duration":
-      return ((a.durationMinutes ?? 0) - (b.durationMinutes ?? 0)) * sign;
+    case "endtime":
+      return (
+        (computeEndTime(a.startTime, a.durationMinutes) ?? "").localeCompare(
+          computeEndTime(b.startTime, b.durationMinutes) ?? "",
+        ) * sign
+      );
     case "course":
       return a.courseTitle.localeCompare(b.courseTitle, "de") * sign;
     case "instructor":
@@ -236,13 +255,15 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
         )}
       </div>
       <div className="overflow-hidden rounded-[10px] ring-1 ring-black/5 bg-card">
+      <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <SortableHead sortKey="status" current={sortKey} dir={sortDir} onSort={onSort} />
+            <SortableHead sortKey="aerzt_status" current={sortKey} dir={sortDir} onSort={onSort} />
+            <SortableHead sortKey="proband_status" current={sortKey} dir={sortDir} onSort={onSort} />
             <SortableHead sortKey="date" current={sortKey} dir={sortDir} onSort={onSort} />
             <SortableHead sortKey="time" current={sortKey} dir={sortDir} onSort={onSort} />
-            <SortableHead sortKey="duration" current={sortKey} dir={sortDir} onSort={onSort} />
+            <SortableHead sortKey="endtime" current={sortKey} dir={sortDir} onSort={onSort} />
             <SortableHead sortKey="course" current={sortKey} dir={sortDir} onSort={onSort} />
             <SortableHead sortKey="instructor" current={sortKey} dir={sortDir} onSort={onSort} />
             <SortableHead sortKey="betreuer" current={sortKey} dir={sortDir} onSort={onSort} />
@@ -271,41 +292,35 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
                 className="hover:bg-muted/50 data-[soldout=true]:bg-[color:var(--soldout-bg)] data-[soldout=true]:hover:bg-[color:var(--soldout-bg-hover)]"
               >
                 <TableCell>
-                  <Link href={`/dashboard/kurse/${r.id}`} className="block space-y-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground w-[78px]">
-                        Ärzt:innen
+                  <Link href={`/dashboard/kurse/${r.id}`} className="block">
+                    <span
+                      className={`inline-block text-xs font-medium rounded-full px-2.5 py-0.5 ${
+                        r.isLive
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {r.isLive ? "Live" : "Offline"}
+                    </span>
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <Link href={`/dashboard/kurse/${r.id}`} className="block">
+                    {r.probandLive === null ? (
+                      <span className="text-xs italic text-muted-foreground">
+                        —
                       </span>
+                    ) : (
                       <span
                         className={`inline-block text-xs font-medium rounded-full px-2.5 py-0.5 ${
-                          r.isLive
+                          r.probandLive
                             ? "bg-emerald-100 text-emerald-700"
                             : "bg-gray-100 text-gray-600"
                         }`}
                       >
-                        {r.isLive ? "Live" : "Offline"}
+                        {r.probandLive ? "Live" : "Offline"}
                       </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground w-[78px]">
-                        Proband:innen
-                      </span>
-                      {r.probandLive === null ? (
-                        <span className="text-xs italic text-muted-foreground">
-                          —
-                        </span>
-                      ) : (
-                        <span
-                          className={`inline-block text-xs font-medium rounded-full px-2.5 py-0.5 ${
-                            r.probandLive
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-gray-100 text-gray-600"
-                          }`}
-                        >
-                          {r.probandLive ? "Live" : "Offline"}
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </Link>
                 </TableCell>
                 <TableCell>
@@ -326,7 +341,7 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
                 </TableCell>
                 <TableCell>
                   <Link href={`/dashboard/kurse/${r.id}`} className="block text-sm">
-                    {r.durationMinutes ? `${r.durationMinutes} min` : "—"}
+                    {computeEndTime(r.startTime, r.durationMinutes) ?? "—"}
                   </Link>
                 </TableCell>
                 <TableCell>
@@ -390,6 +405,7 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
           })}
         </TableBody>
       </Table>
+      </div>
       </div>
     </div>
   );
