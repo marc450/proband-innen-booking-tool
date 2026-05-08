@@ -98,7 +98,7 @@ export default async function KursDetailPage({
       ? admin
           .from("course_bookings")
           .select(
-            "id, auszubildende_id, course_type, course_templates:template_id(course_label_de, title)",
+            "id, auszubildende_id, course_type, created_at, course_templates:template_id(course_label_de, title), course_sessions:session_id(date_iso)",
           )
           .in("auszubildende_id", auszubildendeIds)
           .neq("status", "cancelled")
@@ -107,7 +107,9 @@ export default async function KursDetailPage({
             id: string;
             auszubildende_id: string;
             course_type: string | null;
+            created_at: string;
             course_templates: { course_label_de: string | null; title: string | null } | null;
+            course_sessions: { date_iso: string | null } | null;
           }>,
         }),
   ]);
@@ -116,14 +118,33 @@ export default async function KursDetailPage({
     (contactRows ?? []).map((c) => [c.id as string, (c.specialty as string | null) ?? null]),
   );
 
-  // Build "Bereits besuchte Kurse" = list of OTHER non-cancelled course
-  // titles per contact, excluding the booking on the current session.
+  // "Bereits besuchte Kurse": list other courses this contact has
+  // attended. For Praxis/Kombi/Premium, "attended" = the linked
+  // session's date_iso is in the past. Onlinekurs is evergreen access
+  // so the purchase date (created_at) is the relevant signal.
+  const todayBerlinIso = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Berlin",
+  }).format(new Date());
   const currentBookingIds = new Set((aerztBookings ?? []).map((b) => b.id as string));
   const priorTitlesByAuszubildendeId = new Map<string, string[]>();
   for (const row of priorRows ?? []) {
     if (currentBookingIds.has(row.id as string)) continue;
     const id = row.auszubildende_id as string | null;
     if (!id) continue;
+
+    const courseType = (row.course_type as string | null) ?? null;
+    let qualifies = false;
+    if (courseType === "Onlinekurs") {
+      const purchaseDay = ((row.created_at as string) ?? "").slice(0, 10);
+      qualifies = !!purchaseDay && purchaseDay < todayBerlinIso;
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sess = row.course_sessions as any;
+      const sessionDate = (sess?.date_iso as string | null) ?? null;
+      qualifies = !!sessionDate && sessionDate < todayBerlinIso;
+    }
+    if (!qualifies) continue;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const tmpl = row.course_templates as any;
     const name = tmpl?.course_label_de || tmpl?.title;
