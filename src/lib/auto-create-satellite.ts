@@ -32,28 +32,44 @@ interface PatternLookup {
 }
 
 // Find the slot pattern to apply: most-recent linked satellite for the
-// same template, fallback by course_key when none exists. Returns offset
-// minutes computed from the historical session's start_time so the
-// pattern is portable to any future session at any start time.
+// same template (preferring one whose source session shares the new
+// session's start_time, since admin sometimes trims slots for evening
+// sessions); falls back by course_key when the template has never had
+// a satellite. Returns offset minutes computed from the historical
+// session's start_time so the pattern is portable to any future session.
 async function lookupPattern(
   templateId: string,
   templateCourseKey: string | null,
+  targetStartTime: string,
 ): Promise<PatternLookup> {
   const admin = createAdminClient();
 
   const tryTemplate = async (id: string): Promise<SourceSlot[] | null> => {
-    const { data: candidate } = await admin
-      .from("courses")
-      .select("id, session_id, course_sessions!inner(start_time)")
-      .eq("template_id", id)
-      .not("session_id", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle<{
-        id: string;
-        session_id: string;
-        course_sessions: { start_time: string | null } | null;
-      }>();
+    // First pass: strict match on session.start_time so a 15:30 source
+    // wins over a 10:00 source for a new 15:30 session.
+    const findCandidate = async (filterByStart: boolean) => {
+      let query = admin
+        .from("courses")
+        .select("id, session_id, course_sessions!inner(start_time)")
+        .eq("template_id", id)
+        .not("session_id", "is", null);
+      if (filterByStart) {
+        query = query.eq("course_sessions.start_time", targetStartTime);
+      }
+      return query
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle<{
+          id: string;
+          session_id: string;
+          course_sessions: { start_time: string | null } | null;
+        }>();
+    };
+
+    let { data: candidate } = await findCandidate(true);
+    if (!candidate) {
+      ({ data: candidate } = await findCandidate(false));
+    }
     if (!candidate || !candidate.course_sessions?.start_time) return null;
 
     const sessionStartHhmm = candidate.course_sessions.start_time;
@@ -161,7 +177,11 @@ export async function createSatelliteForSession(
     return { ok: false, sessionId, reason: "template not found" };
   }
 
-  const lookup = await lookupPattern(template.id as string, template.course_key as string | null);
+  const lookup = await lookupPattern(
+    template.id as string,
+    template.course_key as string | null,
+    session.start_time as string,
+  );
   if (!lookup.source) {
     return { ok: false, sessionId, reason: "no source pattern available for this template" };
   }
