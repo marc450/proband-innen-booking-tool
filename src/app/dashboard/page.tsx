@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 
-// The dashboard landing page now redirects to the Kurstermine view
-// (Auszubildende course sessions). The old Behandlungstermine content
-// moved to /dashboard/behandlungstermine.
+// Default dashboard route lands on the unified Kurse table — the merge
+// of the old Auszubildende sessions overview and Behandlungstermine.
 export default function DashboardPage() {
-  redirect("/dashboard/auszubildende");
+  redirect("/dashboard/kurse");
 }

@@ -70,9 +70,9 @@ const COL_LABELS: Record<SortKey, string> = {
   vnr: "VNR",
 };
 
-// Stable per-template colour palette, copied from
-// /dashboard/auszubildende/course-sessions-overview so the unified
-// table stays visually consistent with the rest of the dashboard.
+// Stable per-template colour palette inherited from the retired
+// course-sessions-overview. Sorted alphabetically by template name so
+// the same template always gets the same hue across reloads.
 const COURSE_COLORS: { bg: string; text: string }[] = [
   { bg: "bg-blue-100", text: "text-blue-800" },
   { bg: "bg-emerald-100", text: "text-emerald-800" },
@@ -179,9 +179,8 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
     [rows, todayBerlinIso],
   );
 
-  // Per-template colour map. Mirrors the algorithm in
-  // course-sessions-overview so that the same template gets the same
-  // hue across both views during the transition.
+  // Per-template colour map. Sorts template ids by their display name
+  // so a given template always gets the same hue across reloads.
   const courseColorMap = useMemo(() => {
     const sortedNames = new Map<string, string>();
     for (const r of rows) {

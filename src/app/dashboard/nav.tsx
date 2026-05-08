@@ -91,8 +91,6 @@ const navGroups: NavGroup[] = [
     icon: CalendarDays,
     items: [
       { href: "/dashboard/kurse", label: "Kurse" },
-      { href: "/dashboard/auszubildende", label: "Kurstermine (alt)", exact: true },
-      { href: "/dashboard/behandlungstermine", label: "Behandlungstermine (alt)" },
     ],
   },
   {
