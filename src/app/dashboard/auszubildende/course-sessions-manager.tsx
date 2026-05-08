@@ -324,8 +324,10 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
     if (!error && data) {
       // Auto-create the Proband:innen satellite course for this session.
       // Same physical event, two database rows; the FK keeps them in sync
-      // going forward. Status starts as 'draft' so admin reviews and adds
-      // slots before the public booking page picks it up.
+      // going forward. The satellite is published by default — public
+      // visibility is gated by a 2-month rolling window on the public
+      // filters (kurse/werde-proband-in, /book/privat, /m/termine), so
+      // there's no need to leave new satellites in draft.
       const template = templates.find((t) => t.id === formTemplateId);
       const instructorProfile = dozentUsers.find(
         (d) => dozentDisplayName(d) === formInstructor,
@@ -343,7 +345,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
           course_date: formDateIso,
           location: formAddress || null,
           instructor_id: instructorProfile?.id || null,
-          status: "draft",
+          status: "published",
         });
       }
 

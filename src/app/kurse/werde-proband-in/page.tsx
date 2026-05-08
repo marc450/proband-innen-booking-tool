@@ -119,6 +119,12 @@ export default async function WerdeProbandInPage() {
   // /book/{courseId}, sodass Slot-Auswahl und Stripe-Flow unverändert sind.
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
+  // Proband:innen rolling visibility window: a course only surfaces on
+  // the public list within 2 calendar months of its date, so admin can
+  // create satellites further out without leaking them.
+  const horizonDate = new Date();
+  horizonDate.setMonth(horizonDate.getMonth() + 2);
+  const horizon = horizonDate.toISOString().slice(0, 10);
 
   const [{ data: coursesData }, { data: slotsData }, { data: templatesData }] = await Promise.all([
     supabase
@@ -126,6 +132,7 @@ export default async function WerdeProbandInPage() {
       .select("*, instructor:profiles!instructor_id(title, first_name, last_name)")
       .eq("status", "published")
       .gte("course_date", today)
+      .lte("course_date", horizon)
       .order("course_date", { ascending: true }),
     supabase
       .from("available_slots")

@@ -8,12 +8,20 @@ export default async function PrivatBookPage() {
   const supabase = await createClient();
 
   const today = new Date().toISOString().slice(0, 10);
+  // 2-month rolling visibility window — same rule as the public
+  // /kurse/werde-proband-in list. Keeps satellite courses hidden until
+  // they're 2 calendar months out from the course date.
+  const horizonDate = new Date();
+  horizonDate.setMonth(horizonDate.getMonth() + 2);
+  const horizon = horizonDate.toISOString().slice(0, 10);
+
   const [{ data: courses }, { data: slots }, { data: templates }] = await Promise.all([
     supabase
       .from("courses")
       .select("*, instructor:profiles!instructor_id(title, first_name, last_name)")
       .eq("status", "published")
       .gte("course_date", today)
+      .lte("course_date", horizon)
       .order("course_date", { ascending: true }),
     supabase
       .from("available_slots")
