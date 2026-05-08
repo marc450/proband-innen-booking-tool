@@ -193,11 +193,112 @@ export function KursDetailClient({
     setDeleteSlotId(null);
   };
 
+  // Stornierungs-Confirm + E-Mail-Versand. Im alten /dashboard/bookings
+  // gab es das schon; beim Merge in /dashboard/kurse/[sessionId] ging
+  // der ganze Flow verloren — Status flippte still ohne Benachrichtigung
+  // an die Proband:in. Hier nachgezogen, identische Logik wie im alten
+  // bookings-manager: Confirm-Dialog, E-Mail-Payload VOR dem Update
+  // einsammeln, dann update + /api/send-booking-cancellation-email.
+  const [cancelPending, setCancelPending] = useState<DetailBooking | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelAlert, setCancelAlert] = useState<{ title: string; description: string } | null>(null);
+
   const updateBookingStatus = async (booking: DetailBooking, newStatus: DetailBooking["status"]) => {
+    // Transition INTO cancelled triggers the email flow + Confirm-Dialog.
+    // Re-saves von "cancelled" → "cancelled" laufen still durch.
+    if (newStatus === "cancelled" && booking.status !== "cancelled") {
+      setCancelPending(booking);
+      return;
+    }
     setBookings((prev) =>
       prev.map((b) => (b.id === booking.id ? { ...b, status: newStatus } : b)),
     );
     await supabase.from("bookings").update({ status: newStatus }).eq("id", booking.id);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancelPending) return;
+    setCancelling(true);
+
+    // Capture everything the cancellation email needs BEFORE the update.
+    // Auch wenn das Status-Update den Datensatz nicht löscht: wir wollen
+    // alle Felder einmal sauber zusammenstellen, bevor die Buchung im
+    // UI auf "Storniert" steht.
+    const slot = slots.find((s) => s.id === cancelPending.slot_id);
+    const emailPayload = (() => {
+      if (!cancelPending.email || !slot?.start_time) return null;
+      const date = new Date(slot.start_time).toLocaleDateString("de-DE", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: "Europe/Berlin",
+      });
+      const time = new Date(slot.start_time).toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Europe/Berlin",
+      });
+      return {
+        email: cancelPending.email,
+        firstName: cancelPending.first_name || "",
+        courseTitle: session.templateTitle,
+        date,
+        time,
+        location: session.address || "",
+      };
+    })();
+
+    try {
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: "cancelled" })
+        .eq("id", cancelPending.id);
+      if (error) {
+        setCancelAlert({
+          title: "Stornierung fehlgeschlagen",
+          description: error.message || "DB-Update konnte nicht gespeichert werden.",
+        });
+        return;
+      }
+      setBookings((prev) =>
+        prev.map((b) => (b.id === cancelPending.id ? { ...b, status: "cancelled" } : b)),
+      );
+
+      // Awaited so we can surface delivery failures. Status ist hier
+      // schon geflippt — wenn die E-Mail fehlschlägt, sagen wir dem
+      // Admin Bescheid statt einen Resend-Hiccup zu schlucken.
+      if (emailPayload) {
+        try {
+          const emailRes = await fetch("/api/send-booking-cancellation-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(emailPayload),
+          });
+          if (!emailRes.ok) {
+            const data = await emailRes.json().catch(() => ({}));
+            setCancelAlert({
+              title: "Storniert, aber E-Mail nicht versendet",
+              description: `Die Stornierungs-E-Mail an ${emailPayload.email} konnte nicht gesendet werden${data.error ? `: ${data.error}` : "."} Bitte den/die Proband:in manuell informieren.`,
+            });
+          }
+        } catch (err) {
+          setCancelAlert({
+            title: "Storniert, aber E-Mail nicht versendet",
+            description: `Netzwerkfehler beim Senden der Stornierungs-E-Mail an ${emailPayload.email}${err instanceof Error ? `: ${err.message}` : ""}. Bitte den/die Proband:in manuell informieren.`,
+          });
+        }
+      } else if (!cancelPending.email) {
+        // Kein Email-Adresse hinterlegt — Admin sollte das wissen.
+        setCancelAlert({
+          title: "Storniert, keine E-Mail versendet",
+          description: "Diese Buchung hat keine E-Mail-Adresse. Bitte den/die Proband:in manuell informieren.",
+        });
+      }
+    } finally {
+      setCancelling(false);
+      setCancelPending(null);
+    }
   };
 
   const [aerztBookingsState, setAerztBookingsState] = useState<AerztBooking[]>(aerztBookings);
@@ -689,6 +790,35 @@ export function KursDetailClient({
         onConfirm={deleteSlot}
         onCancel={() => setDeleteSlotId(null)}
       />
+
+      {/* Booking → Storniert: Confirm-Dialog mit E-Mail-Hinweis */}
+      <ConfirmDialog
+        open={!!cancelPending}
+        title="Buchung stornieren"
+        description={
+          cancelPending
+            ? `Die Buchung von ${cancelPending.first_name || cancelPending.email || "diesem/dieser Proband:in"} (${session.templateTitle}) wird auf "Storniert" gesetzt. ${cancelPending.email ? "Der/die Proband:in erhält eine Stornierungs-E-Mail." : "Achtung: Keine E-Mail-Adresse hinterlegt, es wird keine Benachrichtigung versendet."}`
+            : ""
+        }
+        confirmLabel={cancelling ? "Wird storniert..." : "Stornieren & benachrichtigen"}
+        onConfirm={handleConfirmCancel}
+        onCancel={() => !cancelling && setCancelPending(null)}
+      />
+
+      {/* Hinweis nach Stornierung: E-Mail-Fehler oder fehlende Adresse */}
+      <Dialog open={!!cancelAlert} onOpenChange={(open) => !open && setCancelAlert(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{cancelAlert?.title}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+            {cancelAlert?.description}
+          </p>
+          <DialogFooter>
+            <Button onClick={() => setCancelAlert(null)}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
