@@ -316,9 +316,28 @@ export function KursDetailClient({
   const isActive = (s: string | null | undefined) =>
     !!s && ACTIVE_STATUSES.has(s);
 
+  // Aerzt-Stornierung: läuft NICHT direkt über das DB-Update, sondern
+  // über /api/cancel-course-booking, weil dort zusätzlich die Stripe-
+  // Erstattung (Credit Note bzw. Refund) ausgelöst und die
+  // Stornierungs-E-Mail an die Ärzt:in versendet wird. Direkter
+  // status='cancelled' im DB würde Refund + Mail komplett überspringen.
+  const [aerztCancelPending, setAerztCancelPending] = useState<AerztBooking | null>(null);
+  const [aerztCancelling, setAerztCancelling] = useState(false);
+
   const updateAerztStatus = async (bookingId: string, newStatus: string) => {
     const prevStatus =
       aerztBookingsState.find((b) => b.id === bookingId)?.status ?? null;
+
+    // Übergang nach "Storniert" geht über den API-Refund-Flow.
+    // Re-Saves von "cancelled" → "cancelled" laufen hier still durch.
+    if (newStatus === "cancelled" && prevStatus !== "cancelled") {
+      const booking = aerztBookingsState.find((b) => b.id === bookingId);
+      if (booking) {
+        setAerztCancelPending(booking);
+        return;
+      }
+    }
+
     const wasActive = isActive(prevStatus);
     const willBeActive = isActive(newStatus);
 
@@ -341,6 +360,67 @@ export function KursDetailClient({
       await supabase.rpc("decrement_booked_seats", { p_session_id: session.id });
     } else if (!wasActive && willBeActive) {
       await supabase.rpc("increment_booked_seats", { p_session_id: session.id });
+    }
+  };
+
+  const handleConfirmAerztCancel = async () => {
+    if (!aerztCancelPending) return;
+    setAerztCancelling(true);
+    const target = aerztCancelPending;
+    try {
+      const res = await fetch("/api/cancel-course-booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId: target.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setCancelAlert({
+          title: "Stornierung fehlgeschlagen",
+          description:
+            data?.error ||
+            `Die Stornierung konnte nicht durchgeführt werden (HTTP ${res.status}). Die Buchung bleibt unverändert.`,
+        });
+        return;
+      }
+
+      // Optimistic state update: API hat bereits status='cancelled',
+      // booked_seats decrement und Mail-Versand erledigt.
+      setAerztBookingsState((prev) =>
+        prev.map((b) => (b.id === target.id ? { ...b, status: "cancelled" } : b)),
+      );
+      if (isActive(target.status)) {
+        setAerztBookedSeats((n) => Math.max(n - 1, 0));
+      }
+
+      // Surface refund + e-mail outcome so admin weiß, ob Ärzt:in
+      // benachrichtigt wurde und ob/wo die Stornorechnung liegt.
+      const emailFailed = data?.email?.sent === false;
+      const emailReason = data?.email?.reason as string | undefined;
+      if (emailFailed) {
+        const detail =
+          emailReason === "no-recipient"
+            ? "Keine E-Mail-Adresse hinterlegt."
+            : `Versand fehlgeschlagen (${emailReason || "unbekannt"}).`;
+        setCancelAlert({
+          title: "Storniert, aber E-Mail nicht versendet",
+          description: `Die Buchung wurde storniert${data?.refunded ? " und die Zahlung erstattet" : ""}, aber die Bestätigungs-E-Mail an die Ärzt:in konnte nicht versendet werden: ${detail} Bitte manuell informieren.`,
+        });
+      } else if (data?.refunded && data?.creditNoteUrl) {
+        setCancelAlert({
+          title: "Storniert + Stornorechnung erstellt",
+          description: `Die Buchung wurde storniert und eine Stornorechnung in Stripe erstellt. Link zur Stornorechnung: ${data.creditNoteUrl}`,
+        });
+      }
+    } catch (err) {
+      setCancelAlert({
+        title: "Stornierung fehlgeschlagen",
+        description: `Netzwerkfehler beim Stornieren: ${err instanceof Error ? err.message : "unbekannt"}. Die Buchung bleibt unverändert.`,
+      });
+    } finally {
+      setAerztCancelling(false);
+      setAerztCancelPending(null);
     }
   };
 
@@ -803,6 +883,20 @@ export function KursDetailClient({
         confirmLabel={cancelling ? "Wird storniert..." : "Stornieren & benachrichtigen"}
         onConfirm={handleConfirmCancel}
         onCancel={() => !cancelling && setCancelPending(null)}
+      />
+
+      {/* Aerzt-Buchung → Storniert: Stripe-Refund + Mail */}
+      <ConfirmDialog
+        open={!!aerztCancelPending}
+        title="Buchung stornieren"
+        description={
+          aerztCancelPending
+            ? `Die Buchung von ${[aerztCancelPending.firstName, aerztCancelPending.lastName].filter(Boolean).join(" ") || aerztCancelPending.email || "dieser Ärzt:in"} (${session.templateTitle}) wird storniert. Falls eine Zahlung vorliegt, wird sie über Stripe erstattet (bei Rechnungen als Stornorechnung). ${aerztCancelPending.email ? "Die Ärzt:in erhält eine Bestätigungs-E-Mail." : "Achtung: Keine E-Mail-Adresse hinterlegt, es wird keine Benachrichtigung versendet."}`
+            : ""
+        }
+        confirmLabel={aerztCancelling ? "Wird storniert..." : "Stornieren & erstatten"}
+        onConfirm={handleConfirmAerztCancel}
+        onCancel={() => !aerztCancelling && setAerztCancelPending(null)}
       />
 
       {/* Hinweis nach Stornierung: E-Mail-Fehler oder fehlende Adresse */}
