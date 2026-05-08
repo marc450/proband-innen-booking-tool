@@ -90,6 +90,13 @@ export default async function KursePage() {
     const probands = satellite
       ? probandSeatsByCourseId.get(satellite.id as string) ?? { booked: 0, total: 0 }
       : null;
+    // Proband:innen bookability mirrors the satellite's `status`. The
+    // value is "published" when bookable, "draft" while a staff member
+    // is still preparing the page. No satellite = the row's whole
+    // Proband:innen funnel doesn't exist (rendered as `—`).
+    const probandLive = satellite
+      ? (satellite.status as string | null) === "published"
+      : null;
     return {
       id: s.id as string,
       templateId: (s.template_id as string | null) ?? null,
@@ -107,6 +114,7 @@ export default async function KursePage() {
       cmeStatus: (s.cme_status as string | null) ?? null,
       vnrPraxis: (s.vnr_praxis as string | null) ?? null,
       isLive: (s.is_live as boolean | null) ?? false,
+      probandLive,
     };
   });
 

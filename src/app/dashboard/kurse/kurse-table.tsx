@@ -28,7 +28,15 @@ export interface KurseRow {
   zahnmedizinerCount: number;
   cmeStatus: string | null;
   vnrPraxis: string | null;
+  /** course_sessions.is_live — controls the Auszubildenden booking widget. */
   isLive: boolean;
+  /**
+   * Bookability for Proband:innen, derived from the satellite
+   * `courses.status` (`published` = bookable, anything else = not).
+   * `null` means there's no satellite at all (Onlinekurs only,
+   * future session not yet wired up, etc.).
+   */
+  probandLive: boolean | null;
 }
 
 type SortKey =
@@ -95,8 +103,13 @@ function startTimePill(t: string | null): { className: string; label: string } |
 function compare(a: KurseRow, b: KurseRow, key: SortKey, dir: SortDir): number {
   const sign = dir === "asc" ? 1 : -1;
   switch (key) {
-    case "status":
-      return (Number(b.isLive) - Number(a.isLive)) * sign;
+    case "status": {
+      // Sort by combined "fully bookable" score so kurses live on
+      // both sides float to the top, half-live next, fully off last.
+      const score = (r: KurseRow) =>
+        Number(r.isLive) + Number(r.probandLive === true);
+      return (score(b) - score(a)) * sign;
+    }
     case "date":
       return a.dateIso.localeCompare(b.dateIso) * sign;
     case "time":
@@ -259,14 +272,41 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
                 className="hover:bg-muted/50 data-[soldout=true]:bg-[color:var(--soldout-bg)] data-[soldout=true]:hover:bg-[color:var(--soldout-bg-hover)]"
               >
                 <TableCell>
-                  <Link href={`/dashboard/kurse/${r.id}`} className="block">
-                    <span
-                      className={`inline-block text-xs font-medium rounded-full px-2.5 py-1 ${
-                        r.isLive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {r.isLive ? "Live" : "Offline"}
-                    </span>
+                  <Link href={`/dashboard/kurse/${r.id}`} className="block space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground w-[78px]">
+                        Ärzt:innen
+                      </span>
+                      <span
+                        className={`inline-block text-xs font-medium rounded-full px-2.5 py-0.5 ${
+                          r.isLive
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {r.isLive ? "Live" : "Offline"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground w-[78px]">
+                        Proband:innen
+                      </span>
+                      {r.probandLive === null ? (
+                        <span className="text-xs italic text-muted-foreground">
+                          —
+                        </span>
+                      ) : (
+                        <span
+                          className={`inline-block text-xs font-medium rounded-full px-2.5 py-0.5 ${
+                            r.probandLive
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {r.probandLive ? "Live" : "Offline"}
+                        </span>
+                      )}
+                    </div>
                   </Link>
                 </TableCell>
                 <TableCell>
