@@ -27,6 +27,12 @@ import { de } from "date-fns/locale";
 import { ArrowLeft, Send, Clock, ChevronDown, ChevronRight, Search, Plus, X, Link as LinkIcon, Type, Save, ImageIcon, Paperclip, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
 
+function formatElapsed(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 interface PatientOption {
   id: string;
   email: string;
@@ -251,6 +257,23 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
 
   // UI state
   const [sending, setSending] = useState(false);
+  // Tick-by-tick elapsed counter while sending. The whole point: a CSS
+  // spinner can keep spinning even if JS froze, so a counter that
+  // visibly increments every second is the strongest signal to the
+  // user that the page is genuinely alive and the synchronous send is
+  // still in flight (3 batches × ~50s Gmail-archive each = ~3 min).
+  const [sendStartedAt, setSendStartedAt] = useState<number | null>(null);
+  const [sendElapsed, setSendElapsed] = useState(0);
+  useEffect(() => {
+    if (!sending || sendStartedAt == null) {
+      setSendElapsed(0);
+      return;
+    }
+    const tick = () => setSendElapsed(Math.floor((Date.now() - sendStartedAt) / 1000));
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [sending, sendStartedAt]);
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
@@ -587,6 +610,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
   const handleSend = async () => {
     setConfirmOpen(false);
     setSending(true);
+    setSendStartedAt(Date.now());
     setError(null);
 
     try {
@@ -627,6 +651,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
       setError("Netzwerkfehler beim Senden.");
     } finally {
       setSending(false);
+      setSendStartedAt(null);
     }
   };
 
@@ -1265,10 +1290,23 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
             <Button
               onClick={() => setConfirmOpen(true)}
               disabled={!canSend || sending || saving}
-              className="flex-1"
+              className="flex-1 relative overflow-hidden"
             >
+              {sending && (
+                // Indeterminate stripe sliding across the button so even
+                // peripheral vision picks up "still working". The
+                // spinner + ticking counter inside the label do the
+                // explicit reassurance.
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,transparent_30%,rgba(255,255,255,0.35)_50%,transparent_70%)] bg-[length:200%_100%] animate-[shimmer_1.4s_linear_infinite]"
+                />
+              )}
               {sending ? (
-                "Wird gesendet..."
+                <span className="relative inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Wird gesendet… {formatElapsed(sendElapsed)}
+                </span>
               ) : scheduleMode === "later" ? (
                 <>
                   <Clock className="h-4 w-4 mr-2" />
@@ -1282,6 +1320,22 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
               )}
             </Button>
           </div>
+          {sending && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="rounded-[10px] bg-[#FAEBE1] px-4 py-3 text-sm text-[#733D29]"
+            >
+              <p className="font-medium">
+                Versand läuft… bitte den Tab offen lassen.
+              </p>
+              <p className="mt-1 text-xs text-[#733D29]/80">
+                Der Versand kann 2 bis 3 Minuten dauern. Du kannst gerne in
+                einem zweiten Tab unter „Kampagnen" den Status mitverfolgen,
+                aber schließe diesen Tab nicht und navigiere nicht weg.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Right: Preview */}

@@ -402,3 +402,12 @@ body:has([data-dashboard-root]) [data-slot="select-trigger"][data-size="default"
 }
 }
 
+/* Sliding shimmer used on long-running primary buttons (e.g. campaign
+   send) to make it obvious the system is still working. Paired with a
+   spinner and a live elapsed-time counter inside the button label.
+   Kept outside @layer so the keyframes resolve at the top level. */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
