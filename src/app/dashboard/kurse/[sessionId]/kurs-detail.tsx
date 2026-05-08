@@ -373,9 +373,9 @@ export function KursDetailClient({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Uhrzeit</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>E-Mail</TableHead>
+                <TableHead>Uhrzeit</TableHead>
                 <TableHead>Überweiser:in</TableHead>
                 <TableHead>Notizen</TableHead>
                 <TableHead className="w-[180px] text-right">Status</TableHead>
@@ -387,14 +387,14 @@ export function KursDetailClient({
                 if (slotBookings.length === 0) {
                   return [
                     <TableRow key={slot.id} className="h-14">
-                      <TableCell className="font-medium">
+                      <TableCell className="text-sm text-muted-foreground italic">Frei</TableCell>{/* Name */}
+                      <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* E-Mail */}
+                      <TableCell className="font-medium">{/* Uhrzeit */}
                         <button onClick={() => openEditSlot(slot)} className="hover:underline">
                           {formatBerlinTime(slot.start_time)}
                         </button>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground italic">Frei</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">—</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">—</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Überweiser:in */}
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Notizen */}
                       <TableCell className="w-[180px] text-right text-sm text-muted-foreground">—</TableCell>{/* Status */}
                     </TableRow>,
@@ -407,12 +407,7 @@ export function KursDetailClient({
                       .join(" ") || "—";
                   return (
                   <TableRow key={booking.id} className="h-14">
-                    <TableCell className="font-medium">
-                      <button onClick={() => openEditSlot(slot)} className="hover:underline">
-                        {formatBerlinTime(slot.start_time)}
-                      </button>
-                    </TableCell>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium">{/* Name */}
                       {booking.patient_id ? (
                         <Link
                           href={`/dashboard/patients/${booking.patient_id}`}
@@ -424,8 +419,13 @@ export function KursDetailClient({
                         fullName
                       )}
                     </TableCell>
-                    <TableCell className="text-sm">{booking.email}</TableCell>
-                    <TableCell className="text-sm">
+                    <TableCell className="text-sm">{booking.email}</TableCell>{/* E-Mail */}
+                    <TableCell className="font-medium">{/* Uhrzeit */}
+                      <button onClick={() => openEditSlot(slot)} className="hover:underline">
+                        {formatBerlinTime(slot.start_time)}
+                      </button>
+                    </TableCell>
+                    <TableCell className="text-sm">{/* Überweiser:in */}
                       {booking.referring_doctor ?? <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell>
