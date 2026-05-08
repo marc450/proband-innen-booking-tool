@@ -80,6 +80,10 @@ const navGroups: NavGroup[] = [
     key: "bookings",
     label: "Buchungen",
     icon: Receipt,
+    // Operative Buchungs-Übersichten sind admin-only. Nutzer:innen
+    // arbeiten über die Termin- und Kontakt-Seiten und brauchen die
+    // Buchungs-Liste nicht.
+    adminOnly: true,
     items: [
       { href: "/dashboard/auszubildende/buchungen", label: "Ärzt:innen" },
       { href: "/dashboard/bookings", label: "Proband:innen" },
@@ -117,6 +121,10 @@ const navGroups: NavGroup[] = [
     key: "pages",
     label: "Pages",
     icon: Globe,
+    // Übersicht aller öffentlichen Seiten ist admin-only — Nutzer:innen
+    // brauchen den Marketing-Sitemap-Zugriff für ihren operativen Alltag
+    // nicht.
+    adminOnly: true,
     items: [
       { href: "/dashboard/landingpages", label: "Landing Pages" },
     ],
