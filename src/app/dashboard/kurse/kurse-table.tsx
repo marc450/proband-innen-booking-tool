@@ -217,20 +217,17 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
             const aerztSoldOut = r.aerztMax > 0 && r.aerztBooked >= r.aerztMax;
             const probandSoldOut =
               r.probandTotal != null && r.probandTotal > 0 && r.probandBooked === r.probandTotal;
-            // Row counts as fully booked when both the doctor side and
-            // the proband side (when present) are full. Sessions that
-            // never had a proband satellite only need the doctor side.
-            const fullyBooked = aerztSoldOut && (r.probandTotal == null || probandSoldOut);
+            // Row highlight = doctor seats are full. Proband:innen
+            // status is independent and is not part of this signal.
+            // Uses --soldout-bg / --soldout-bg-hover CSS variables so
+            // the colour adapts cleanly to dark mode.
             const courseColor = (r.templateId && courseColorMap.get(r.templateId)) || COURSE_COLORS[0];
             const startPill = startTimePill(r.startTime);
             return (
               <TableRow
                 key={r.id}
-                className={
-                  fullyBooked
-                    ? "bg-emerald-50 hover:bg-emerald-100"
-                    : "hover:bg-muted/50"
-                }
+                data-soldout={aerztSoldOut ? "true" : undefined}
+                className="hover:bg-muted/50 data-[soldout=true]:bg-[color:var(--soldout-bg)] data-[soldout=true]:hover:bg-[color:var(--soldout-bg-hover)]"
               >
                 <TableCell>
                   <Link href={`/dashboard/kurse/${r.id}`} className="block">
