@@ -280,7 +280,11 @@ export function KursDetailClient({
                 <TableHead>Bereits besuchte Kurse</TableHead>
                 <TableHead>Spezialisierung</TableHead>
                 <TableHead>Profil</TableHead>
-                <TableHead className="w-[180px] text-right">Status</TableHead>
+                <TableHead className="w-[180px]">
+                  <div className="flex justify-end">
+                    <span className="w-[140px]">Status</span>
+                  </div>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -324,21 +328,23 @@ export function KursDetailClient({
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="w-[180px] text-right">
-                    <select
-                      value={b.status ?? "booked"}
-                      onChange={(e) => updateAerztStatus(b.id, e.target.value)}
-                      className="h-9 border border-input rounded-lg px-2 text-sm bg-transparent"
-                    >
-                      {AERZT_STATUS_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                      {b.status && !AERZT_STATUS_OPTIONS.some((o) => o.value === b.status) && (
-                        <option value={b.status}>{b.status}</option>
-                      )}
-                    </select>
+                  <TableCell className="w-[180px]">
+                    <div className="flex justify-end">
+                      <select
+                        value={b.status ?? "booked"}
+                        onChange={(e) => updateAerztStatus(b.id, e.target.value)}
+                        className="h-9 border border-input rounded-lg px-2 text-sm bg-transparent w-[140px]"
+                      >
+                        {AERZT_STATUS_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                        {b.status && !AERZT_STATUS_OPTIONS.some((o) => o.value === b.status) && (
+                          <option value={b.status}>{b.status}</option>
+                        )}
+                      </select>
+                    </div>
                   </TableCell>
                 </TableRow>
                 );
@@ -378,7 +384,11 @@ export function KursDetailClient({
                 <TableHead>Uhrzeit</TableHead>
                 <TableHead>Überweiser:in</TableHead>
                 <TableHead>Notizen</TableHead>
-                <TableHead className="w-[180px] text-right">Status</TableHead>
+                <TableHead className="w-[180px]">
+                  <div className="flex justify-end">
+                    <span className="w-[140px]">Status</span>
+                  </div>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -396,7 +406,11 @@ export function KursDetailClient({
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Überweiser:in */}
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Notizen */}
-                      <TableCell className="w-[180px] text-right text-sm text-muted-foreground">—</TableCell>{/* Status */}
+                      <TableCell className="w-[180px] text-sm text-muted-foreground">{/* Status */}
+                        <div className="flex justify-end">
+                          <span className="w-[140px]">—</span>
+                        </div>
+                      </TableCell>
                     </TableRow>,
                   ];
                 }
@@ -440,20 +454,22 @@ export function KursDetailClient({
                         className="text-sm h-9"
                       />
                     </TableCell>
-                    <TableCell className="w-[180px] text-right">
-                      <select
-                        value={booking.status}
-                        onChange={(e) =>
-                          updateBookingStatus(booking, e.target.value as DetailBooking["status"])
-                        }
-                        className="h-9 border border-input rounded-lg px-2 text-sm bg-transparent"
-                      >
-                        {BOOKING_STATUS_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
+                    <TableCell className="w-[180px]">
+                      <div className="flex justify-end">
+                        <select
+                          value={booking.status}
+                          onChange={(e) =>
+                            updateBookingStatus(booking, e.target.value as DetailBooking["status"])
+                          }
+                          className="h-9 border border-input rounded-lg px-2 text-sm bg-transparent w-[140px]"
+                        >
+                          {BOOKING_STATUS_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </TableCell>
                   </TableRow>
                   );
