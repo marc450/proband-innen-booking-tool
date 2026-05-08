@@ -288,6 +288,19 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
       .select()
       .single();
     if (!error && data) {
+      // Spin up the Proband:innen satellite (courses row + slots) for
+      // the duplicate, mirroring handleCreate above. Without this,
+      // duplicated sessions had no Patient:innen funnel because the
+      // satellite is what /book and /book/privat read against.
+      try {
+        await fetch("/api/admin/auto-create-session-satellite", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId: data.id }),
+        });
+      } catch (autoErr) {
+        console.error("auto-create satellite failed (duplicate)", autoErr);
+      }
       setSessions((prev) => [...prev, data].sort((a, b) => a.date_iso.localeCompare(b.date_iso)));
     }
   };
