@@ -74,6 +74,13 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  // Per-session "duplicate is in flight" guard. Prevents the spam-click
+  // problem where multiple inserts fire while the first one is still
+  // creating the session + satellite (Marc once produced 18 dupes this
+  // way before realising they all landed). One pending duplicate at a
+  // time is plenty.
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
 
   // Filters
   const [filterInstructor, setFilterInstructor] = useState("");
@@ -271,37 +278,54 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
 
   // Duplicate
   const duplicateSession = async (session: CourseSession) => {
-    const { data, error } = await supabase
-      .from("course_sessions")
-      .insert({
-        template_id: session.template_id,
-        date_iso: session.date_iso,
-        label_de: session.label_de,
-        instructor_name: session.instructor_name,
-        max_seats: session.max_seats,
-        booked_seats: 0,
-        address: session.address,
-        start_time: session.start_time,
-        duration_minutes: session.duration_minutes,
-        is_live: false,
-      })
-      .select()
-      .single();
-    if (!error && data) {
+    if (duplicatingId) return; // already running, ignore extra clicks
+    setDuplicatingId(session.id);
+    setDuplicateError(null);
+    try {
+      const { data, error } = await supabase
+        .from("course_sessions")
+        .insert({
+          template_id: session.template_id,
+          date_iso: session.date_iso,
+          label_de: session.label_de,
+          instructor_name: session.instructor_name,
+          max_seats: session.max_seats,
+          booked_seats: 0,
+          address: session.address,
+          start_time: session.start_time,
+          duration_minutes: session.duration_minutes,
+          is_live: false,
+        })
+        .select()
+        .single();
+      if (error || !data) {
+        setDuplicateError(error?.message || "Duplizieren fehlgeschlagen.");
+        return;
+      }
       // Spin up the Proband:innen satellite (courses row + slots) for
       // the duplicate, mirroring handleCreate above. Without this,
       // duplicated sessions had no Patient:innen funnel because the
       // satellite is what /book and /book/privat read against.
       try {
-        await fetch("/api/admin/auto-create-session-satellite", {
+        const res = await fetch("/api/admin/auto-create-session-satellite", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sessionId: data.id }),
         });
+        const json = await res.json().catch(() => null);
+        if (!res.ok || (json && json.ok === false)) {
+          // Surface the failure so admin sees it instead of a silent
+          // "no satellite" surprise on the detail page.
+          const reason = json?.reason || json?.error || `HTTP ${res.status}`;
+          setDuplicateError(`Satellit konnte nicht erstellt werden: ${reason}`);
+        }
       } catch (autoErr) {
         console.error("auto-create satellite failed (duplicate)", autoErr);
+        setDuplicateError("Satellit konnte nicht erstellt werden (Netzwerkfehler).");
       }
       setSessions((prev) => [...prev, data].sort((a, b) => a.date_iso.localeCompare(b.date_iso)));
+    } finally {
+      setDuplicatingId(null);
     }
   };
 
@@ -362,6 +386,18 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
       <div className="flex items-center justify-end">
         <Button onClick={() => setShowCreateDialog(true)}>Neuen Termin erstellen</Button>
       </div>
+
+      {duplicateError && (
+        <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800 flex items-start justify-between gap-4">
+          <span>{duplicateError}</span>
+          <button
+            onClick={() => setDuplicateError(null)}
+            className="text-red-600 hover:text-red-800 font-medium shrink-0"
+          >
+            Schliessen
+          </button>
+        </div>
+      )}
 
       <Table>
         <TableHeader>
@@ -778,10 +814,11 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => duplicateSession(session)}
-                      className="p-1.5 rounded hover:bg-gray-100 text-muted-foreground hover:text-foreground transition-colors"
-                      title="Duplizieren"
+                      disabled={duplicatingId !== null}
+                      className="p-1.5 rounded hover:bg-gray-100 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={duplicatingId === session.id ? "Wird dupliziert..." : "Duplizieren"}
                     >
-                      <Copy className="h-4 w-4" />
+                      <Copy className={`h-4 w-4 ${duplicatingId === session.id ? "animate-pulse" : ""}`} />
                     </button>
                     <button
                       onClick={() => setDeleteId(session.id)}
