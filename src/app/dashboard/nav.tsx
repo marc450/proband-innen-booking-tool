@@ -83,7 +83,6 @@ const navGroups: NavGroup[] = [
     items: [
       { href: "/dashboard/auszubildende/buchungen", label: "Ärzt:innen" },
       { href: "/dashboard/bookings", label: "Proband:innen" },
-      { href: "/dashboard/auszubildende/bewertungen", label: "Bewertungen" },
     ],
   },
   {
@@ -155,6 +154,7 @@ const navGroups: NavGroup[] = [
       { href: "/dashboard/settings?tab=einladungen", label: "Einladungen" },
       { href: "/dashboard/settings?tab=rechnungen", label: "Zahlungsverläufe" },
       { href: "/dashboard/settings?tab=benutzer", label: "Benutzer:innen" },
+      { href: "/dashboard/auszubildende/bewertungen", label: "Bewertungen" },
       { href: "/dashboard/zertifikate", label: "Zertifikatgenerator" },
     ],
   },
