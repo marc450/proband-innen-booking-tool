@@ -1256,6 +1256,19 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
         const today = new Date().toISOString().slice(0, 10);
         const bucket = (d: string | null | undefined) =>
           !d ? 2 : d >= today ? 0 : 1;
+        // Public Proband:innen visibility horizon: a satellite is only
+        // surfaced on /kurse/werde-proband-in and /book/privat when its
+        // course_date sits in [today, today + 2 months]. The status
+        // badge below reflects this, so admins can tell at a glance
+        // whether a course is actually visible to patients right now.
+        const horizonDate = new Date();
+        horizonDate.setMonth(horizonDate.getMonth() + 2);
+        const visibilityHorizon = horizonDate.toISOString().slice(0, 10);
+        const isPubliclyVisible = (c: Course) =>
+          c.status === "published"
+            && c.course_date != null
+            && c.course_date >= today
+            && c.course_date <= visibilityHorizon;
 
         const filteredCourses = courses
           .filter((c) => {
@@ -1320,7 +1333,9 @@ export function CoursesManager({ initialCourses, initialSlots, initialBookings, 
                   <span className="shrink-0">
                     {course.status === "draft"
                       ? <Badge variant="secondary" className="text-xs">Entwurf</Badge>
-                      : <Badge variant="outline" className="text-xs text-green-700 border-green-300 bg-green-50">Live</Badge>
+                      : isPubliclyVisible(course)
+                        ? <Badge variant="outline" className="text-xs text-green-700 border-green-300 bg-green-50">Live</Badge>
+                        : <Badge variant="outline" className="text-xs text-blue-700 border-blue-300 bg-blue-50">Geplant</Badge>
                     }
                   </span>
                   <span className="[flex:3_1_0%] min-w-0">
