@@ -8,12 +8,11 @@ export default async function PrivatBookPage() {
   const supabase = await createClient();
 
   const today = new Date().toISOString().slice(0, 10);
-  // 2-month rolling visibility window — same rule as the public
-  // /kurse/werde-proband-in list. Keeps satellite courses hidden until
-  // they're 2 calendar months out from the course date.
-  const horizonDate = new Date();
-  horizonDate.setMonth(horizonDate.getMonth() + 2);
-  const horizon = horizonDate.toISOString().slice(0, 10);
+  // The private (referral) funnel is doctor-driven: they book on
+  // behalf of a known patient and may want to schedule months ahead.
+  // We deliberately do NOT apply the 2-month rolling window here that
+  // the public /kurse/werde-proband-in listing uses; only past dates
+  // are excluded.
 
   const [{ data: courses }, { data: slots }, { data: templates }] = await Promise.all([
     supabase
@@ -21,7 +20,6 @@ export default async function PrivatBookPage() {
       .select("*, instructor:profiles!instructor_id(title, first_name, last_name)")
       .eq("status", "published")
       .gte("course_date", today)
-      .lte("course_date", horizon)
       .order("course_date", { ascending: true }),
     supabase
       .from("available_slots")
