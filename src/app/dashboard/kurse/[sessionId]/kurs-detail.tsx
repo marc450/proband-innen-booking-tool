@@ -26,7 +26,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { ArrowLeft, Calendar, Check, Clock, GraduationCap, Mail, MapPin, Plus, Trash2, User } from "lucide-react";
+import { ArrowLeft, Ban, Calendar, Check, Clock, GraduationCap, Mail, MapPin, Plus, Trash2, User } from "lucide-react";
 
 export interface DetailSlot {
   id: string;
@@ -144,12 +144,16 @@ export function KursDetailClient({
   const [editingSlot, setEditingSlot] = useState<DetailSlot | null>(null);
   const [slotTimeInput, setSlotTimeInput] = useState("");
   const [slotCapacityInput, setSlotCapacityInput] = useState("1");
+  const [slotBlockedInput, setSlotBlockedInput] = useState(false);
+  const [slotBlockNoteInput, setSlotBlockNoteInput] = useState("");
   const [deleteSlotId, setDeleteSlotId] = useState<string | null>(null);
 
   const openAddSlot = () => {
     setEditingSlot(null);
     setSlotTimeInput("");
     setSlotCapacityInput("1");
+    setSlotBlockedInput(false);
+    setSlotBlockNoteInput("");
     setSlotDialogOpen(true);
   };
 
@@ -157,6 +161,8 @@ export function KursDetailClient({
     setEditingSlot(slot);
     setSlotTimeInput(formatBerlinTime(slot.start_time));
     setSlotCapacityInput(String(slot.capacity));
+    setSlotBlockedInput(slot.blocked);
+    setSlotBlockNoteInput(slot.blocked_note ?? "");
     setSlotDialogOpen(true);
   };
 
@@ -164,15 +170,16 @@ export function KursDetailClient({
     if (!satelliteId || !slotTimeInput) return;
     const capacity = parseInt(slotCapacityInput) || 1;
     const startTime = buildBerlinTimestamp(session.dateIso, slotTimeInput);
+    const payload = {
+      start_time: startTime,
+      capacity,
+      blocked: slotBlockedInput,
+      blocked_note: slotBlockedInput ? slotBlockNoteInput.trim() || null : null,
+    };
     if (editingSlot) {
-      await supabase
-        .from("slots")
-        .update({ start_time: startTime, capacity })
-        .eq("id", editingSlot.id);
+      await supabase.from("slots").update(payload).eq("id", editingSlot.id);
     } else {
-      await supabase
-        .from("slots")
-        .insert({ course_id: satelliteId, start_time: startTime, capacity });
+      await supabase.from("slots").insert({ course_id: satelliteId, ...payload });
     }
     setSlotDialogOpen(false);
     refresh();
@@ -358,7 +365,7 @@ export function KursDetailClient({
       <section className="rounded-[10px] bg-card ring-1 ring-black/5 overflow-hidden">
         <div className="px-6 pt-6 pb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">
-            Buchungen Proband:innen ({bookings.length}/{slots.reduce((sum, sl) => sum + sl.capacity, 0)})
+            Buchungen Proband:innen ({bookings.length}/{slots.filter((s) => !s.blocked).reduce((sum, sl) => sum + sl.capacity, 0)})
           </h2>
           {satelliteId && (
             <Button size="sm" onClick={openAddSlot}>
@@ -394,6 +401,27 @@ export function KursDetailClient({
             <TableBody>
               {slots.flatMap((slot) => {
                 const slotBookings = bookings.filter((b) => b.slot_id === slot.id);
+                if (slot.blocked && slotBookings.length === 0) {
+                  return [
+                    <TableRow key={slot.id} className="h-14">
+                      <TableCell className="text-sm text-muted-foreground italic">{/* Name */}
+                        <span className="inline-flex items-center gap-1.5">
+                          <Ban className="h-3.5 w-3.5" />
+                          {slot.blocked_note ? `Gesperrt: ${slot.blocked_note}` : "Gesperrt"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* E-Mail */}
+                      <TableCell className="font-medium text-muted-foreground line-through">{/* Uhrzeit */}
+                        <button onClick={() => openEditSlot(slot)} className="hover:no-underline">
+                          {formatBerlinTime(slot.start_time)}
+                        </button>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Überweiser:in */}
+                      <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Notizen */}
+                      <TableCell className="w-[180px] text-right text-sm text-muted-foreground">—</TableCell>{/* Status */}
+                    </TableRow>,
+                  ];
+                }
                 if (slotBookings.length === 0) {
                   return [
                     <TableRow key={slot.id} className="h-14">
@@ -493,6 +521,7 @@ export function KursDetailClient({
                 type="time"
                 value={slotTimeInput}
                 onChange={(e) => setSlotTimeInput(e.target.value)}
+                disabled={slotBlockedInput}
               />
             </div>
             <div className="space-y-1.5">
@@ -502,7 +531,38 @@ export function KursDetailClient({
                 min={1}
                 value={slotCapacityInput}
                 onChange={(e) => setSlotCapacityInput(e.target.value)}
+                disabled={slotBlockedInput}
               />
+            </div>
+            <div className="space-y-1.5 pt-2 border-t">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={slotBlockedInput}
+                  onChange={(e) => {
+                    setSlotBlockedInput(e.target.checked);
+                    if (!e.target.checked) setSlotBlockNoteInput("");
+                  }}
+                  disabled={
+                    !!editingSlot && bookings.some((b) => b.slot_id === editingSlot.id)
+                  }
+                  className="h-4 w-4"
+                />
+                <span className="text-sm font-medium">Slot sperren</span>
+              </label>
+              {!!editingSlot && bookings.some((b) => b.slot_id === editingSlot.id) && (
+                <p className="text-xs text-muted-foreground pl-6">
+                  Slot mit Buchung kann nicht gesperrt werden.
+                </p>
+              )}
+              {slotBlockedInput && (
+                <Input
+                  className="mt-2"
+                  placeholder="Notiz (optional, z.B. Bereits extern gebucht)"
+                  value={slotBlockNoteInput}
+                  onChange={(e) => setSlotBlockNoteInput(e.target.value)}
+                />
+              )}
             </div>
           </div>
           <DialogFooter className="sm:justify-between">
