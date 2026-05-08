@@ -277,17 +277,17 @@ export async function middleware(request: NextRequest) {
       return NextResponse.rewrite(new URL("/not-found", request.url));
     }
 
-    // Doctor-facing post-purchase URLs that historically lived on this
-    // host get permanent-redirected to the marketing domain so emails
-    // already in inboxes (Stripe success links, profile-completion
-    // reminders, scheduled review-request emails) keep working without
-    // the doctor seeing the "proband-innen" subdomain. The Next.js
-    // routes themselves now serve from ephia.de.
+    // Doctor-facing routes that historically lived on this host get
+    // permanent-redirected to the marketing domain so emails already in
+    // inboxes (Stripe success links, profile-completion reminders,
+    // scheduled review-request emails) keep working without the doctor
+    // seeing the "proband-innen" subdomain. The Next.js routes
+    // themselves now serve from ephia.de.
     //
-    // Note: only `/courses/success` is redirected, NOT `/courses/...`
-    // generally — the LearnWorlds iframe embed under `/courses/[courseKey]`
-    // must remain reachable on this host because LW pulls it from here.
-    if (pathname === "/courses/success") {
+    // The whole `/courses/*` tree redirects: the only route still alive
+    // there is `/courses/success`, and the LearnWorlds iframe embed
+    // that used to live at `/courses/[courseKey]` has been retired.
+    if (pathname === "/courses" || pathname.startsWith("/courses/")) {
       const target = new URL(
         pathname + request.nextUrl.search,
         `https://${MARKETING_DOMAIN}`,

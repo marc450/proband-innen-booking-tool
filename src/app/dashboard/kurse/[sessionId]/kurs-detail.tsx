@@ -40,6 +40,9 @@ export interface DetailSlot {
 export interface DetailBooking {
   id: string;
   slot_id: string;
+  /** Patient row this booking is linked to. Used to deep-link the
+   *  contact name to /dashboard/patients/[patient_id]. */
+  patient_id: string | null;
   first_name: string | null;
   last_name: string | null;
   email: string;
@@ -53,6 +56,9 @@ export interface DetailBooking {
 
 interface AerztBooking {
   id: string;
+  /** Auszubildende:r row this booking is linked to. Used to deep-link
+   *  the contact name to /dashboard/auszubildende/personen/[id]. */
+  auszubildendeId: string | null;
   firstName: string | null;
   lastName: string | null;
   email: string | null;
@@ -278,10 +284,22 @@ export function KursDetailClient({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {aerztBookingsState.map((b) => (
+              {aerztBookingsState.map((b) => {
+                const fullName =
+                  [b.firstName, b.lastName].filter(Boolean).join(" ") || "—";
+                return (
                 <TableRow key={b.id} className="h-14">
                   <TableCell className="font-medium">
-                    {[b.firstName, b.lastName].filter(Boolean).join(" ") || "—"}
+                    {b.auszubildendeId ? (
+                      <Link
+                        href={`/dashboard/auszubildende/personen/${b.auszubildendeId}`}
+                        className="text-[#0066FF] hover:underline"
+                      >
+                        {fullName}
+                      </Link>
+                    ) : (
+                      fullName
+                    )}
                   </TableCell>
                   <TableCell className="text-sm">{b.email ?? "—"}</TableCell>
                   <TableCell className="text-sm">
@@ -323,7 +341,8 @@ export function KursDetailClient({
                     )}
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         )}
@@ -381,7 +400,12 @@ export function KursDetailClient({
                     </TableRow>,
                   ];
                 }
-                return slotBookings.map((booking) => (
+                return slotBookings.map((booking) => {
+                  const fullName =
+                    [booking.first_name, booking.last_name]
+                      .filter(Boolean)
+                      .join(" ") || "—";
+                  return (
                   <TableRow key={booking.id} className="h-14">
                     <TableCell className="font-medium">
                       <button onClick={() => openEditSlot(slot)} className="hover:underline">
@@ -389,7 +413,16 @@ export function KursDetailClient({
                       </button>
                     </TableCell>
                     <TableCell className="font-medium">
-                      {[booking.first_name, booking.last_name].filter(Boolean).join(" ") || "—"}
+                      {booking.patient_id ? (
+                        <Link
+                          href={`/dashboard/patients/${booking.patient_id}`}
+                          className="text-[#0066FF] hover:underline"
+                        >
+                          {fullName}
+                        </Link>
+                      ) : (
+                        fullName
+                      )}
                     </TableCell>
                     <TableCell className="text-sm">{booking.email}</TableCell>
                     <TableCell className="text-sm">
@@ -423,7 +456,8 @@ export function KursDetailClient({
                       </select>
                     </TableCell>
                   </TableRow>
-                ));
+                  );
+                });
               })}
             </TableBody>
           </Table>

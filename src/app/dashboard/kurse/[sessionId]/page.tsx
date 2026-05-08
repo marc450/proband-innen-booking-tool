@@ -49,7 +49,7 @@ export default async function KursDetailPage({
       const { data: bookingRows } = await admin
         .from("bookings")
         .select(
-          "id, slot_id, status, encrypted_data, encrypted_key, encryption_iv, booking_type, referring_doctor, created_at",
+          "id, slot_id, patient_id, status, encrypted_data, encrypted_key, encryption_iv, booking_type, referring_doctor, created_at",
         )
         .in(
           "slot_id",
@@ -62,6 +62,7 @@ export default async function KursDetailPage({
         return {
           id: decrypted.id,
           slot_id: decrypted.slot_id,
+          patient_id: (row.patient_id as string | null) ?? null,
           first_name: decrypted.first_name,
           last_name: decrypted.last_name,
           email: decrypted.email,
@@ -179,6 +180,7 @@ export default async function KursDetailPage({
       aerztBookings={
         (aerztBookings ?? []).map((b) => ({
           id: b.id as string,
+          auszubildendeId: (b.auszubildende_id as string | null) ?? null,
           firstName: (b.first_name as string | null) ?? null,
           lastName: (b.last_name as string | null) ?? null,
           email: (b.email as string | null) ?? null,
