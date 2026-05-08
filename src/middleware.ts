@@ -71,6 +71,10 @@ const LW_MIGRATION_REDIRECTS: Record<string, string> = {
   // Grundkurs Botulinum Zahnmedizin curriculum.
   "/bruxismus": "/grundkurs-botulinum-zahnmedizin",
 
+  // /cap was the very early merch store (literally just a cap at the
+  // time). The successor is the full /merch shop.
+  "/cap": "/merch",
+
   // Old LW /course/ tree → new /kurse/ slugs
   "/course/minikurs-botulinum": "/kostenloser-botox-kurs",
   "/course/aufbaukurs-botulinum-periorale-zone":
