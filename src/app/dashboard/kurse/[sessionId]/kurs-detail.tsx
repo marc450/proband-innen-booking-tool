@@ -280,7 +280,7 @@ export function KursDetailClient({
                 <TableHead>Bereits besuchte Kurse</TableHead>
                 <TableHead>Spezialisierung</TableHead>
                 <TableHead>Profil</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="w-[180px] text-right">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -324,7 +324,7 @@ export function KursDetailClient({
                       </div>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="w-[180px] text-right">
                     <select
                       value={b.status ?? "booked"}
                       onChange={(e) => updateAerztStatus(b.id, e.target.value)}
@@ -378,7 +378,7 @@ export function KursDetailClient({
                 <TableHead>E-Mail</TableHead>
                 <TableHead>Überweiser:in</TableHead>
                 <TableHead>Notizen</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="w-[180px] text-right">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -396,7 +396,7 @@ export function KursDetailClient({
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Notizen */}
-                      <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Status */}
+                      <TableCell className="w-[180px] text-right text-sm text-muted-foreground">—</TableCell>{/* Status */}
                     </TableRow>,
                   ];
                 }
@@ -440,7 +440,7 @@ export function KursDetailClient({
                         className="text-sm h-9"
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="w-[180px] text-right">
                       <select
                         value={booking.status}
                         onChange={(e) =>
