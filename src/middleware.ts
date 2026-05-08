@@ -66,6 +66,11 @@ const LW_MIGRATION_REDIRECTS: Record<string, string> = {
   "/datenschutz-proband-innen": "/datenschutz",
   "/terms": "/agb",
 
+  // Deprecated topical pages → nearest-match course landing.
+  // /bruxismus was an LW info page; the topic now lives inside the
+  // Grundkurs Botulinum Zahnmedizin curriculum.
+  "/bruxismus": "/grundkurs-botulinum-zahnmedizin",
+
   // Old LW /course/ tree → new /kurse/ slugs
   "/course/minikurs-botulinum": "/kostenloser-botox-kurs",
   "/course/aufbaukurs-botulinum-periorale-zone":
