@@ -312,7 +312,7 @@ export function KursDetailClient({
                   [b.firstName, b.lastName].filter(Boolean).join(" ") || "—";
                 return (
                 <TableRow key={b.id} className="h-14">
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium truncate" title={fullName}>
                     {b.auszubildendeId ? (
                       <Link
                         href={`/dashboard/auszubildende/personen/${b.auszubildendeId}`}
@@ -324,15 +324,32 @@ export function KursDetailClient({
                       fullName
                     )}
                   </TableCell>
-                  <TableCell className="text-sm">{b.email ?? "—"}</TableCell>
-                  <TableCell className="text-sm">
+                  <TableCell
+                    className="text-sm truncate"
+                    title={b.email ?? undefined}
+                  >
+                    {b.email ?? "—"}
+                  </TableCell>
+                  <TableCell
+                    className="text-sm truncate"
+                    title={
+                      b.priorCourses.length === 0
+                        ? undefined
+                        : b.priorCourses.join(", ")
+                    }
+                  >
                     {b.priorCourses.length === 0 ? (
                       <span className="text-muted-foreground">—</span>
                     ) : (
                       b.priorCourses.join(", ")
                     )}
                   </TableCell>
-                  <TableCell className="text-sm">{b.specialty ?? "—"}</TableCell>
+                  <TableCell
+                    className="text-sm truncate"
+                    title={b.specialty ?? undefined}
+                  >
+                    {b.specialty ?? "—"}
+                  </TableCell>
                   <TableCell>
                     {b.profileComplete ? (
                       <Badge variant="outline" className="text-emerald-700 border-emerald-300 bg-emerald-50">
@@ -472,7 +489,7 @@ export function KursDetailClient({
                       .join(" ") || "—";
                   return (
                   <TableRow key={booking.id} className="h-14">
-                    <TableCell className="font-medium">{/* Name */}
+                    <TableCell className="font-medium truncate" title={fullName}>{/* Name */}
                       {booking.patient_id ? (
                         <Link
                           href={`/dashboard/patients/${booking.patient_id}`}
@@ -484,13 +501,18 @@ export function KursDetailClient({
                         fullName
                       )}
                     </TableCell>
-                    <TableCell className="text-sm">{booking.email}</TableCell>{/* E-Mail */}
+                    <TableCell className="text-sm truncate" title={booking.email}>
+                      {booking.email}
+                    </TableCell>{/* E-Mail */}
                     <TableCell className="font-medium">{/* Uhrzeit */}
                       <button onClick={() => openEditSlot(slot)} className="hover:underline">
                         {formatBerlinTime(slot.start_time)}
                       </button>
                     </TableCell>
-                    <TableCell className="text-sm">{/* Überweiser:in */}
+                    <TableCell
+                      className="text-sm truncate"
+                      title={booking.referring_doctor ?? undefined}
+                    >{/* Überweiser:in */}
                       {booking.referring_doctor ?? <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell>
