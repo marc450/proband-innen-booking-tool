@@ -10,6 +10,11 @@ const APP_URL =
 // window so we never bump up against the limit and get a 422 back.
 const SCHEDULE_WINDOW_DAYS = 25;
 
+// Fire the review email 1h before course end. Doctors react to it
+// while still in the room (or right as they pack up), instead of
+// after they've already left and forgotten about it.
+const FIRE_BEFORE_END_MINUTES = 60;
+
 const REVIEW_EMAIL_FROM = "EPHIA <customerlove@ephia.de>";
 
 interface SessionRow {
@@ -92,7 +97,7 @@ function buildReviewEmailHtml(opts: {
   return buildEmailHtml({
     firstName: opts.firstName,
     intro:
-      "vielen Dank, dass Du heute bei uns warst. Solange Dein Eindruck noch frisch ist, ist Dein Feedback für uns am wertvollsten. Bitte nimm Dir 1 Minute, bevor Du Dich auf den Heimweg machst.",
+      "vielen Dank, dass Du heute bei uns bist. Solange Dein Eindruck noch frisch ist, ist Dein Feedback für uns am wertvollsten. Bitte nimm Dir 1 Minute, bevor Du gehst.",
     note:
       "Deine Sterne und Dein kurzer Bewertungstext erscheinen später mit Deinem Vornamen auf unserer Kursseite. Das zusätzliche Team-Feedback bleibt anonym und erreicht nur uns intern.",
     buttons: [
@@ -147,9 +152,9 @@ async function scheduleViaResend(opts: {
 // Daily-cron pass. Picks up bookings whose course end time falls in the
 // next SCHEDULE_WINDOW_DAYS, has not been scheduled yet, and belongs to a
 // non-cancelled live booking. For each: mint a token, schedule the email
-// via Resend at the exact end time, persist the resend_id + token. Resend
-// then fires the email within seconds of course end, regardless of when
-// the daily cron itself runs.
+// via Resend FIRE_BEFORE_END_MINUTES before course end, persist the
+// resend_id + token. Resend then fires the email at that scheduled time,
+// regardless of when the daily cron itself runs.
 //
 // Idempotent: bookings already carrying a review_email_resend_id are
 // filtered out, so re-runs only schedule freshly-eligible ones.
@@ -200,11 +205,15 @@ export async function scheduleCourseReviewEmails(
         result.skipped++;
         continue;
       }
-      // In the future and within Resend's horizon? Skip otherwise (past
-      // courses can't have their post-course email scheduled retroactively
-      // via scheduled_at; far-future courses must wait for a later pass).
-      const endMs = endAt.getTime();
-      if (endMs <= nowMs || endMs > horizonMs) {
+      // Fire 1h before course end so doctors react while still in the
+      // room. Past sessions (sendAt already in the past) can't be
+      // scheduled via Resend's scheduled_at; far-future ones must wait
+      // for a later pass.
+      const sendAt = new Date(
+        endAt.getTime() - FIRE_BEFORE_END_MINUTES * 60 * 1000,
+      );
+      const sendAtMs = sendAt.getTime();
+      if (sendAtMs <= nowMs || sendAtMs > horizonMs) {
         result.skipped++;
         continue;
       }
@@ -247,14 +256,14 @@ export async function scheduleCourseReviewEmails(
         to: booking.email,
         subject,
         html,
-        scheduledAtIso: endAt.toISOString(),
+        scheduledAtIso: sendAt.toISOString(),
       });
 
       const { error: markErr } = await supabase
         .from("course_bookings")
         .update({
           review_email_resend_id: resendId,
-          review_email_sent_at: endAt.toISOString(),
+          review_email_sent_at: sendAt.toISOString(),
         })
         .eq("id", booking.id);
       if (markErr) {

@@ -437,19 +437,19 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
   {
     id: "course-review-request",
     funnel: "arzt-kursupdates",
-    name: "Bewertungs-Anfrage (nach Kursende)",
+    name: "Bewertungs-Anfrage (1h vor Kursende)",
     recipient: "Ärzt:in",
     trigger:
-      "Resend-Scheduling: gefeuert genau zum Kursende (date_iso + start_time + duration_minutes). Geplant durch den täglichen send-reminders Cron.",
+      "Resend-Scheduling: gefeuert 1 Stunde vor Kursende (date_iso + start_time + duration_minutes − 60 min). Geplant durch den täglichen send-reminders Cron.",
     codeRef: "src/lib/send-course-review-request.ts",
     description:
-      "Bittet um eine Bewertung mit 1-5 Sternen, kurzem öffentlichen Bewertungstext und optionalem anonymen Team-Feedback. Link führt zu /bewertung/[token]. Nur an verifizierte Buchungen.",
+      "Bittet um eine Bewertung mit 1-5 Sternen, kurzem öffentlichen Bewertungstext und optionalem anonymen Team-Feedback. Erreicht den/die Ärzt:in noch im Kurs, damit die Bewertung frisch verfasst wird, bevor er/sie geht. Link führt zu /bewertung/[token]. Nur an verifizierte Buchungen.",
     renderSample: () => ({
       subject: `Wie war Dein ${SAMPLE.courseTitle}?`,
       html: buildEmailHtml({
         firstName: SAMPLE.firstName,
         intro:
-          "vielen Dank, dass Du heute bei uns warst. Solange Dein Eindruck noch frisch ist, ist Dein Feedback für uns am wertvollsten. Bitte nimm Dir 1 Minute, bevor Du Dich auf den Heimweg machst.",
+          "vielen Dank, dass Du heute bei uns bist. Solange Dein Eindruck noch frisch ist, ist Dein Feedback für uns am wertvollsten. Bitte nimm Dir 1 Minute, bevor Du gehst.",
         note:
           "Deine Sterne und Dein kurzer Bewertungstext erscheinen später mit Deinem Vornamen auf unserer Kursseite. Das zusätzliche Team-Feedback bleibt anonym und erreicht nur uns intern.",
         buttons: [
