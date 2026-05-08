@@ -90,40 +90,46 @@ export default async function KursDetailPage({
     new Set((aerztBookings ?? []).map((b) => b.auszubildende_id).filter((x): x is string => !!x)),
   );
 
-  const [{ data: contactRows }, { data: priorCountRows }] = await Promise.all([
+  const [{ data: contactRows }, { data: priorRows }] = await Promise.all([
     auszubildendeIds.length
       ? admin.from("v_auszubildende").select("id, specialty").in("id", auszubildendeIds)
       : Promise.resolve({ data: [] as Array<{ id: string; specialty: string | null }> }),
     auszubildendeIds.length
       ? admin
           .from("course_bookings")
-          .select("id, auszubildende_id")
+          .select(
+            "id, auszubildende_id, course_type, course_templates:template_id(course_label_de, title)",
+          )
           .in("auszubildende_id", auszubildendeIds)
           .neq("status", "cancelled")
-      : Promise.resolve({ data: [] as Array<{ id: string; auszubildende_id: string }> }),
+      : Promise.resolve({
+          data: [] as Array<{
+            id: string;
+            auszubildende_id: string;
+            course_type: string | null;
+            course_templates: { course_label_de: string | null; title: string | null } | null;
+          }>,
+        }),
   ]);
 
   const specialtyByAuszubildendeId = new Map<string, string | null>(
     (contactRows ?? []).map((c) => [c.id as string, (c.specialty as string | null) ?? null]),
   );
 
-  const totalBookingsByAuszubildendeId = new Map<string, number>();
-  for (const row of priorCountRows ?? []) {
+  // Build "Bereits besuchte Kurse" = list of OTHER non-cancelled course
+  // titles per contact, excluding the booking on the current session.
+  const currentBookingIds = new Set((aerztBookings ?? []).map((b) => b.id as string));
+  const priorTitlesByAuszubildendeId = new Map<string, string[]>();
+  for (const row of priorRows ?? []) {
+    if (currentBookingIds.has(row.id as string)) continue;
     const id = row.auszubildende_id as string | null;
     if (!id) continue;
-    totalBookingsByAuszubildendeId.set(id, (totalBookingsByAuszubildendeId.get(id) ?? 0) + 1);
-  }
-  // "Bereits besuchte Kurse" = total non-cancelled course bookings for
-  // this contact MINUS the one for the session being viewed.
-  const priorCountByBookingId = new Map<string, number>();
-  for (const b of aerztBookings ?? []) {
-    const id = b.auszubildende_id as string | null;
-    if (!id) {
-      priorCountByBookingId.set(b.id as string, 0);
-      continue;
-    }
-    const total = totalBookingsByAuszubildendeId.get(id) ?? 0;
-    priorCountByBookingId.set(b.id as string, Math.max(0, total - 1));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tmpl = row.course_templates as any;
+    const name = tmpl?.course_label_de || tmpl?.title;
+    if (!name) continue;
+    if (!priorTitlesByAuszubildendeId.has(id)) priorTitlesByAuszubildendeId.set(id, []);
+    priorTitlesByAuszubildendeId.get(id)!.push(name);
   }
 
   const [{ data: dozentUsers }, { data: betreuerUsers }] = await Promise.all([
@@ -179,7 +185,10 @@ export default async function KursDetailPage({
             b.auszubildende_id
               ? specialtyByAuszubildendeId.get(b.auszubildende_id as string) ?? null
               : null,
-          priorCourseCount: priorCountByBookingId.get(b.id as string) ?? 0,
+          priorCourses:
+            b.auszubildende_id
+              ? priorTitlesByAuszubildendeId.get(b.auszubildende_id as string) ?? []
+              : [],
           profileComplete: (b.profile_complete as boolean | null) ?? false,
         }))
       }

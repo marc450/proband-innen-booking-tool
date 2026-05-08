@@ -66,9 +66,16 @@ interface AerztBooking {
   courseType: string | null;
   status: string | null;
   specialty: string | null;
-  priorCourseCount: number;
+  priorCourses: string[];
   profileComplete: boolean;
 }
+
+const AERZT_STATUS_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "booked", label: "Gebucht" },
+  { value: "completed", label: "Abgeschlossen" },
+  { value: "cancelled", label: "Storniert" },
+  { value: "refunded", label: "Erstattet" },
+];
 
 interface SessionData {
   id: string;
@@ -231,6 +238,15 @@ export function KursDetailClient({
       prev.map((b) => (b.id === booking.id ? { ...b, status: newStatus } : b)),
     );
     await supabase.from("bookings").update({ status: newStatus }).eq("id", booking.id);
+  };
+
+  const [aerztBookingsState, setAerztBookingsState] = useState<AerztBooking[]>(aerztBookings);
+
+  const updateAerztStatus = async (bookingId: string, newStatus: string) => {
+    setAerztBookingsState((prev) =>
+      prev.map((b) => (b.id === bookingId ? { ...b, status: newStatus } : b)),
+    );
+    await supabase.from("course_bookings").update({ status: newStatus }).eq("id", bookingId);
   };
 
   const updateBookingNotes = async (booking: DetailBooking, newNotes: string) => {
@@ -444,16 +460,10 @@ export function KursDetailClient({
       <section className="rounded-[10px] bg-card ring-1 ring-black/5 overflow-hidden">
         <div className="px-6 pt-6 pb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">
-            Buchungen Ärzt:innen ({aerztBookings.length})
+            Buchungen Ärzt:innen ({aerztBookingsState.length})
           </h2>
-          <Link
-            href="/dashboard/auszubildende/buchungen"
-            className="text-xs text-muted-foreground hover:text-foreground"
-          >
-            Alle Ärzt:innen-Buchungen →
-          </Link>
         </div>
-        {aerztBookings.length === 0 ? (
+        {aerztBookingsState.length === 0 ? (
           <p className="px-6 pb-6 text-sm text-muted-foreground">
             Noch keine Buchungen für diese Session.
           </p>
@@ -470,18 +480,35 @@ export function KursDetailClient({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {aerztBookings.map((b) => (
+              {aerztBookingsState.map((b) => (
                 <TableRow key={b.id} className="h-14">
                   <TableCell className="font-medium">
                     {[b.firstName, b.lastName].filter(Boolean).join(" ") || "—"}
                   </TableCell>
                   <TableCell className="text-sm">{b.email ?? "—"}</TableCell>
-                  <TableCell className="text-sm tabular-nums">
-                    {b.priorCourseCount}
+                  <TableCell className="text-sm">
+                    {b.priorCourses.length === 0 ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : (
+                      b.priorCourses.join(", ")
+                    )}
                   </TableCell>
                   <TableCell className="text-sm">{b.specialty ?? "—"}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{b.status ?? "—"}</Badge>
+                    <select
+                      value={b.status ?? "booked"}
+                      onChange={(e) => updateAerztStatus(b.id, e.target.value)}
+                      className="h-9 border border-input rounded-lg px-2 text-sm bg-transparent"
+                    >
+                      {AERZT_STATUS_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                      {b.status && !AERZT_STATUS_OPTIONS.some((o) => o.value === b.status) && (
+                        <option value={b.status}>{b.status}</option>
+                      )}
+                    </select>
                   </TableCell>
                   <TableCell>
                     {b.profileComplete ? (
@@ -530,12 +557,11 @@ export function KursDetailClient({
             <TableHeader>
               <TableRow>
                 <TableHead>Uhrzeit</TableHead>
-                <TableHead>Plätze</TableHead>
-                <TableHead>Patient:in</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>E-Mail</TableHead>
+                <TableHead>Überweiser:in</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Notizen</TableHead>
-                <TableHead>Aktion</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -549,22 +575,11 @@ export function KursDetailClient({
                           {formatBerlinTime(slot.start_time)}
                         </button>
                       </TableCell>
-                      <TableCell className="text-sm tabular-nums">{slot.capacity}</TableCell>
                       <TableCell className="text-sm text-muted-foreground italic">Frei</TableCell>
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeleteSlotId(slot.id)}
-                          className="h-8 w-8 p-0"
-                          title="Slot löschen"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">—</TableCell>
                     </TableRow>,
                   ];
                 }
@@ -575,11 +590,13 @@ export function KursDetailClient({
                         {formatBerlinTime(slot.start_time)}
                       </button>
                     </TableCell>
-                    <TableCell className="text-sm tabular-nums">{slot.capacity}</TableCell>
                     <TableCell className="font-medium">
                       {[booking.first_name, booking.last_name].filter(Boolean).join(" ") || "—"}
                     </TableCell>
                     <TableCell className="text-sm">{booking.email}</TableCell>
+                    <TableCell className="text-sm">
+                      {booking.referring_doctor ?? <span className="text-muted-foreground">—</span>}
+                    </TableCell>
                     <TableCell>
                       <select
                         value={booking.status}
@@ -606,17 +623,6 @@ export function KursDetailClient({
                         placeholder="Notizen…"
                         className="text-sm h-9"
                       />
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled
-                        className="h-8 w-8 p-0"
-                        title="Slot mit Buchung kann nicht gelöscht werden"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </TableCell>
                   </TableRow>
                 ));
@@ -651,13 +657,38 @@ export function KursDetailClient({
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setSlotDialogOpen(false)}>
-              Abbrechen
-            </Button>
-            <Button onClick={saveSlot} disabled={!slotTimeInput}>
-              Speichern
-            </Button>
+          <DialogFooter className="sm:justify-between">
+            {editingSlot ? (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  const hasBooking = bookings.some((b) => b.slot_id === editingSlot.id);
+                  if (hasBooking) return;
+                  setSlotDialogOpen(false);
+                  setDeleteSlotId(editingSlot.id);
+                }}
+                disabled={bookings.some((b) => b.slot_id === editingSlot.id)}
+                title={
+                  bookings.some((b) => b.slot_id === editingSlot.id)
+                    ? "Slot mit Buchung kann nicht gelöscht werden"
+                    : "Slot löschen"
+                }
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Löschen
+              </Button>
+            ) : (
+              <span />
+            )}
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => setSlotDialogOpen(false)}>
+                Abbrechen
+              </Button>
+              <Button onClick={saveSlot} disabled={!slotTimeInput}>
+                Speichern
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
