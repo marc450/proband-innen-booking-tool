@@ -19,6 +19,7 @@ import {
   RichTextEditor,
   type AIDraftContext,
 } from "@/app/dashboard/inbox/rich-text-editor";
+import { type PickedTemplate } from "@/app/dashboard/inbox/template-picker";
 import { ContactAutocomplete } from "@/app/dashboard/inbox/contact-autocomplete";
 import { useSignature } from "@/hooks/use-signature";
 
@@ -99,6 +100,10 @@ export function EmailHistory({
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
+  // Soft notice surfaced after picking a template if the {{vorname}}
+  // token couldn't be resolved against the recipient. Auto-clears after
+  // a few seconds so it doesn't linger across drafts.
+  const [templateNotice, setTemplateNotice] = useState<string | null>(null);
   // Drives the dashed-ring overlay that appears while the user drags
   // files over the composer. Tracks dragenter/dragleave with a
   // counter so nested elements (the editor, inputs) don't flap the
@@ -293,6 +298,33 @@ export function EmailHistory({
 
   const canSend = !!subject.trim() && body.trim().length > 0;
 
+  // Vorlagen-Picker: when the user selects a template, the picker has
+  // already resolved {{vorname}} against the recipient. We replace the
+  // body (preserving the trailing signature) and only override the
+  // subject when the user hasn't typed one yet — typed subjects almost
+  // always carry intent we shouldn't clobber. Mirrors the inbox compose
+  // pane's handler so behavior is identical across surfaces.
+  const handlePickTemplate = (picked: PickedTemplate) => {
+    if (picked.subject && !subject.trim()) {
+      setSubject(picked.subject);
+    }
+    const sig = signature?.html ? `<br>${signature.html}` : "";
+    setBody(picked.bodyHtml + sig);
+    if (picked.vornameMissing) {
+      setTemplateNotice(
+        "Vorname konnte nicht gefunden werden, bitte {{Vorname}} manuell ersetzen.",
+      );
+    } else {
+      setTemplateNotice(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!templateNotice) return;
+    const t = setTimeout(() => setTemplateNotice(null), 8000);
+    return () => clearTimeout(t);
+  }, [templateNotice]);
+
   // Build AI context only when the parent opted in. For patients we
   // route through `template` mode and pass `to: ""` so the API skips
   // the contact lookup entirely, decrypts nothing, and the LLM call
@@ -463,7 +495,16 @@ export function EmailHistory({
               autoFocus
               className="min-h-[180px]"
               aiContext={aiContext}
+              templateContext={{
+                recipientEmail: email,
+                onPick: handlePickTemplate,
+              }}
             />
+            {templateNotice && (
+              <p className="text-xs text-amber-700 bg-amber-50 rounded-[10px] px-3 py-2">
+                {templateNotice}
+              </p>
+            )}
             {attachments.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {attachments.map((file, i) => (
