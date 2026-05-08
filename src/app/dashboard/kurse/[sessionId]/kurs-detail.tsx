@@ -26,7 +26,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, Copy, Plus, Trash2 } from "lucide-react";
 
 export interface DetailSlot {
   id: string;
@@ -65,9 +65,9 @@ interface AerztBooking {
   email: string | null;
   courseType: string | null;
   status: string | null;
-  audienceTag: string | null;
+  specialty: string | null;
+  priorCourseCount: number;
   profileComplete: boolean;
-  createdAt: string;
 }
 
 interface SessionData {
@@ -463,11 +463,10 @@ export function KursDetailClient({
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>E-Mail</TableHead>
-                <TableHead>Kursart</TableHead>
-                <TableHead>Zielgruppe</TableHead>
+                <TableHead>Bereits besuchte Kurse</TableHead>
+                <TableHead>Spezialisierung</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Profil</TableHead>
-                <TableHead>Gebucht</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -477,8 +476,10 @@ export function KursDetailClient({
                     {[b.firstName, b.lastName].filter(Boolean).join(" ") || "—"}
                   </TableCell>
                   <TableCell className="text-sm">{b.email ?? "—"}</TableCell>
-                  <TableCell className="text-sm">{b.courseType ?? "—"}</TableCell>
-                  <TableCell className="text-sm">{b.audienceTag ?? "—"}</TableCell>
+                  <TableCell className="text-sm tabular-nums">
+                    {b.priorCourseCount}
+                  </TableCell>
+                  <TableCell className="text-sm">{b.specialty ?? "—"}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{b.status ?? "—"}</Badge>
                   </TableCell>
@@ -488,13 +489,13 @@ export function KursDetailClient({
                         vollständig
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">
-                        unvollständig
-                      </Badge>
+                      <div className="inline-flex items-center gap-1.5">
+                        <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">
+                          unvollständig
+                        </Badge>
+                        <CopyProfileLinkButton bookingId={b.id} email={b.email ?? ""} />
+                      </div>
                     )}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {format(new Date(b.createdAt), "dd.MM.yyyy", { locale: de })}
                   </TableCell>
                 </TableRow>
               ))}
@@ -507,7 +508,7 @@ export function KursDetailClient({
       <section className="rounded-[10px] bg-card ring-1 ring-black/5 overflow-hidden">
         <div className="px-6 pt-6 pb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">
-            Buchungen Proband:innen ({slots.length} {slots.length === 1 ? "Slot" : "Slots"})
+            Buchungen Proband:innen ({slots.length})
           </h2>
           {satelliteId && (
             <Button size="sm" onClick={openAddSlot}>
@@ -671,5 +672,36 @@ export function KursDetailClient({
         onCancel={() => setDeleteSlotId(null)}
       />
     </div>
+  );
+}
+
+// Small icon button that copies the customer's profile-completion link
+// to the clipboard. URL shape mirrors the one in
+// sendProfileReminderEmail (lib/post-purchase) so the recipient lands
+// on the same /courses/success page either way.
+function CopyProfileLinkButton({ bookingId, email }: { bookingId: string; email: string }) {
+  const [copied, setCopied] = useState(false);
+  const PUBLIC_HOST = "https://proband-innen.ephia.de";
+  const url = `${PUBLIC_HOST}/courses/success?booking_id=${bookingId}&email=${encodeURIComponent(email)}`;
+
+  const onCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (err) {
+      console.error("Clipboard write failed", err);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onCopy}
+      className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+      title={copied ? "Link kopiert" : "Profil-Link kopieren"}
+    >
+      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+    </button>
   );
 }

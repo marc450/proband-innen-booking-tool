@@ -78,11 +78,53 @@ export default async function KursDetailPage({
   const { data: aerztBookings } = await admin
     .from("course_bookings")
     .select(
-      "id, first_name, last_name, email, course_type, status, audience_tag, profile_complete, created_at",
+      "id, first_name, last_name, email, course_type, status, audience_tag, profile_complete, created_at, auszubildende_id",
     )
     .eq("session_id", sessionId)
     .neq("status", "cancelled")
     .order("created_at", { ascending: false });
+
+  // For each auszubildende_id on this session, look up their specialty
+  // and count how many other (non-cancelled) course bookings they have.
+  const auszubildendeIds = Array.from(
+    new Set((aerztBookings ?? []).map((b) => b.auszubildende_id).filter((x): x is string => !!x)),
+  );
+
+  const [{ data: contactRows }, { data: priorCountRows }] = await Promise.all([
+    auszubildendeIds.length
+      ? admin.from("v_auszubildende").select("id, specialty").in("id", auszubildendeIds)
+      : Promise.resolve({ data: [] as Array<{ id: string; specialty: string | null }> }),
+    auszubildendeIds.length
+      ? admin
+          .from("course_bookings")
+          .select("id, auszubildende_id")
+          .in("auszubildende_id", auszubildendeIds)
+          .neq("status", "cancelled")
+      : Promise.resolve({ data: [] as Array<{ id: string; auszubildende_id: string }> }),
+  ]);
+
+  const specialtyByAuszubildendeId = new Map<string, string | null>(
+    (contactRows ?? []).map((c) => [c.id as string, (c.specialty as string | null) ?? null]),
+  );
+
+  const totalBookingsByAuszubildendeId = new Map<string, number>();
+  for (const row of priorCountRows ?? []) {
+    const id = row.auszubildende_id as string | null;
+    if (!id) continue;
+    totalBookingsByAuszubildendeId.set(id, (totalBookingsByAuszubildendeId.get(id) ?? 0) + 1);
+  }
+  // "Bereits besuchte Kurse" = total non-cancelled course bookings for
+  // this contact MINUS the one for the session being viewed.
+  const priorCountByBookingId = new Map<string, number>();
+  for (const b of aerztBookings ?? []) {
+    const id = b.auszubildende_id as string | null;
+    if (!id) {
+      priorCountByBookingId.set(b.id as string, 0);
+      continue;
+    }
+    const total = totalBookingsByAuszubildendeId.get(id) ?? 0;
+    priorCountByBookingId.set(b.id as string, Math.max(0, total - 1));
+  }
 
   const [{ data: dozentUsers }, { data: betreuerUsers }] = await Promise.all([
     admin
@@ -133,9 +175,12 @@ export default async function KursDetailPage({
           email: (b.email as string | null) ?? null,
           courseType: (b.course_type as string | null) ?? null,
           status: (b.status as string | null) ?? null,
-          audienceTag: (b.audience_tag as string | null) ?? null,
+          specialty:
+            b.auszubildende_id
+              ? specialtyByAuszubildendeId.get(b.auszubildende_id as string) ?? null
+              : null,
+          priorCourseCount: priorCountByBookingId.get(b.id as string) ?? 0,
           profileComplete: (b.profile_complete as boolean | null) ?? false,
-          createdAt: b.created_at as string,
         }))
       }
       dozentUsers={(dozentUsers ?? []).map((d) => ({
