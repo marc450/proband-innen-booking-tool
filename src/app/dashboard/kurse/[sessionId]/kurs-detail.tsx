@@ -26,7 +26,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { ArrowLeft, Calendar, Check, Clock, Copy, MapPin, Plus, Trash2, User } from "lucide-react";
+import { ArrowLeft, Calendar, Check, Clock, Copy, GraduationCap, MapPin, Plus, Trash2, User } from "lucide-react";
 
 export interface DetailSlot {
   id: string;
@@ -235,7 +235,7 @@ export function KursDetailClient({
           )}
           {session.instructorName && (
             <span className="inline-flex items-center gap-1.5">
-              <User className="h-4 w-4" />
+              <GraduationCap className="h-4 w-4" />
               {session.instructorName}
             </span>
           )}
@@ -358,8 +358,8 @@ export function KursDetailClient({
                 <TableHead>Name</TableHead>
                 <TableHead>E-Mail</TableHead>
                 <TableHead>Überweiser:in</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead>Notizen</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -376,8 +376,8 @@ export function KursDetailClient({
                       <TableCell className="text-sm text-muted-foreground italic">Frei</TableCell>
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">—</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">—</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Notizen */}
+                      <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Status */}
                     </TableRow>,
                   ];
                 }
@@ -396,6 +396,18 @@ export function KursDetailClient({
                       {booking.referring_doctor ?? <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell>
+                      <Input
+                        defaultValue={booking.notes ?? ""}
+                        onBlur={(e) => {
+                          if (e.target.value !== (booking.notes ?? "")) {
+                            updateBookingNotes(booking, e.target.value);
+                          }
+                        }}
+                        placeholder="Notizen…"
+                        className="text-sm h-9"
+                      />
+                    </TableCell>
+                    <TableCell>
                       <select
                         value={booking.status}
                         onChange={(e) =>
@@ -409,18 +421,6 @@ export function KursDetailClient({
                           </option>
                         ))}
                       </select>
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        defaultValue={booking.notes ?? ""}
-                        onBlur={(e) => {
-                          if (e.target.value !== (booking.notes ?? "")) {
-                            updateBookingNotes(booking, e.target.value);
-                          }
-                        }}
-                        placeholder="Notizen…"
-                        className="text-sm h-9"
-                      />
                     </TableCell>
                   </TableRow>
                 ));
