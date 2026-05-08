@@ -9,7 +9,6 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -529,83 +528,64 @@ export function KursDetailClient({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[100px]">Uhrzeit</TableHead>
-                <TableHead className="w-[80px]">Plätze</TableHead>
+                <TableHead>Uhrzeit</TableHead>
+                <TableHead>Plätze</TableHead>
                 <TableHead>Patient:in</TableHead>
-                <TableHead className="w-[160px]">Status</TableHead>
+                <TableHead>E-Mail</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Notizen</TableHead>
-                <TableHead className="w-[80px] text-right">Aktion</TableHead>
+                <TableHead>Aktion</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {slots.map((slot) => {
+              {slots.flatMap((slot) => {
                 const slotBookings = bookings.filter((b) => b.slot_id === slot.id);
                 if (slotBookings.length === 0) {
-                  return (
+                  return [
                     <TableRow key={slot.id}>
-                      <TableCell>
-                        <button
-                          onClick={() => openEditSlot(slot)}
-                          className="font-medium hover:underline"
-                        >
+                      <TableCell className="font-medium">
+                        <button onClick={() => openEditSlot(slot)} className="hover:underline">
                           {formatBerlinTime(slot.start_time)}
                         </button>
                       </TableCell>
-                      <TableCell className="tabular-nums">{slot.capacity}</TableCell>
-                      <TableCell colSpan={3} className="text-sm text-muted-foreground italic">
-                        Frei
-                      </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-sm tabular-nums">{slot.capacity}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground italic">Frei</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">—</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">—</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">—</TableCell>
+                      <TableCell>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setDeleteSlotId(slot.id)}
                           className="h-8 w-8 p-0"
+                          title="Slot löschen"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </TableCell>
-                    </TableRow>
-                  );
+                    </TableRow>,
+                  ];
                 }
-                return slotBookings.map((booking, idx) => (
+                return slotBookings.map((booking) => (
                   <TableRow key={booking.id}>
-                    {idx === 0 ? (
-                      <>
-                        <TableCell rowSpan={slotBookings.length}>
-                          <button
-                            onClick={() => openEditSlot(slot)}
-                            className="font-medium hover:underline"
-                          >
-                            {formatBerlinTime(slot.start_time)}
-                          </button>
-                        </TableCell>
-                        <TableCell rowSpan={slotBookings.length} className="tabular-nums">
-                          {slot.capacity}
-                        </TableCell>
-                      </>
-                    ) : null}
-                    <TableCell>
-                      <div className="text-sm font-medium">
-                        {[booking.first_name, booking.last_name].filter(Boolean).join(" ") || "—"}
-                      </div>
-                      <div className="text-xs text-muted-foreground">{booking.email}</div>
-                      {booking.phone && (
-                        <div className="text-xs text-muted-foreground">{booking.phone}</div>
-                      )}
-                      {booking.referring_doctor && (
-                        <div className="text-xs text-muted-foreground">
-                          Überweiser:in: {booking.referring_doctor}
-                        </div>
-                      )}
+                    <TableCell className="font-medium">
+                      <button onClick={() => openEditSlot(slot)} className="hover:underline">
+                        {formatBerlinTime(slot.start_time)}
+                      </button>
                     </TableCell>
+                    <TableCell className="text-sm tabular-nums">{slot.capacity}</TableCell>
+                    <TableCell className="font-medium">
+                      {[booking.first_name, booking.last_name].filter(Boolean).join(" ") || "—"}
+                    </TableCell>
+                    <TableCell className="text-sm">{booking.email}</TableCell>
                     <TableCell>
                       <select
                         value={booking.status}
                         onChange={(e) =>
                           updateBookingStatus(booking, e.target.value as DetailBooking["status"])
                         }
-                        className="h-9 w-full border border-input rounded-lg px-2 text-sm bg-transparent"
+                        className="h-9 border border-input rounded-lg px-2 text-sm bg-transparent"
                       >
                         {BOOKING_STATUS_OPTIONS.map((o) => (
                           <option key={o.value} value={o.value}>
@@ -615,32 +595,28 @@ export function KursDetailClient({
                       </select>
                     </TableCell>
                     <TableCell>
-                      <Textarea
+                      <Input
                         defaultValue={booking.notes ?? ""}
                         onBlur={(e) => {
                           if (e.target.value !== (booking.notes ?? "")) {
                             updateBookingNotes(booking, e.target.value);
                           }
                         }}
-                        placeholder="Notizen..."
-                        rows={2}
-                        className="text-sm min-h-[56px]"
+                        placeholder="Notizen…"
+                        className="text-sm h-9"
                       />
                     </TableCell>
-                    {idx === 0 ? (
-                      <TableCell rowSpan={slotBookings.length} className="text-right align-top">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeleteSlotId(slot.id)}
-                          className="h-8 w-8 p-0"
-                          disabled={slotBookings.length > 0}
-                          title={slotBookings.length > 0 ? "Slot mit Buchung kann nicht gelöscht werden" : "Slot löschen"}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    ) : null}
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled
+                        className="h-8 w-8 p-0"
+                        title="Slot mit Buchung kann nicht gelöscht werden"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ));
               })}
