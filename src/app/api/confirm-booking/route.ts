@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { findPatientIdByAnyEmail } from "@/lib/contact-emails";
 import { archiveSentMessage } from "@/lib/gmail";
 import { formatBerlinLongDateWithWeekday, parseDateOnly } from "@/lib/date";
+import { isCourseDateBookableByProbands } from "@/lib/proband-visibility";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
@@ -124,6 +125,32 @@ export async function POST(req: NextRequest) {
 
     if (!slotId) {
       return NextResponse.json({ error: "Missing slotId in session metadata" }, { status: 400 });
+    }
+
+    // Server-side enforcement of the Proband:innen 2-month visibility
+    // window. The /book/[courseId] landing already 404s outside the
+    // window, but a determined caller could replay an old slotId or
+    // bypass the UI entirely. Reject here before we create the booking
+    // so the rule has the same teeth on every entry path. See
+    // lib/proband-visibility.ts for the canonical definition.
+    {
+      const { data: slotRow } = await supabase
+        .from("available_slots")
+        .select("course_date")
+        .eq("id", slotId)
+        .maybeSingle();
+      if (
+        !slotRow ||
+        !isCourseDateBookableByProbands(slotRow.course_date as string | null)
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Dieser Termin liegt außerhalb des aktuellen Buchungsfensters.",
+          },
+          { status: 410 },
+        );
+      }
     }
 
     // Get customer details from session

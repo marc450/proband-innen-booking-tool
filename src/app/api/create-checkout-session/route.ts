@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { isCourseDateBookableByProbands } from "@/lib/proband-visibility";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -9,6 +11,30 @@ export async function POST(req: NextRequest) {
 
     if (!slotId) {
       return NextResponse.json({ error: "slotId is required" }, { status: 400 });
+    }
+
+    // Reject before opening Stripe so patients with stale tabs / direct
+    // links don't end up paying for a slot we'd refuse in
+    // /api/confirm-booking afterwards. See lib/proband-visibility.ts.
+    {
+      const admin = createAdminClient();
+      const { data: slotRow } = await admin
+        .from("available_slots")
+        .select("course_date")
+        .eq("id", slotId)
+        .maybeSingle();
+      if (
+        !slotRow ||
+        !isCourseDateBookableByProbands(slotRow.course_date as string | null)
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Dieser Termin liegt außerhalb des aktuellen Buchungsfensters.",
+          },
+          { status: 410 },
+        );
+      }
     }
 
     const session = await stripe.checkout.sessions.create({

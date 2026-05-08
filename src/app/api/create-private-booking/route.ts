@@ -4,6 +4,7 @@ import { encryptPatientFields, encryptBookingFields, hashEmail, hashPhone } from
 import { findPatientIdByAnyEmail } from "@/lib/contact-emails";
 import { buildEmailHtml, PATIENT_PREPARATION_BLOCK } from "@/lib/email-template";
 import { archiveSentMessage } from "@/lib/gmail";
+import { isCourseDateBookableByProbands } from "@/lib/proband-visibility";
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 
@@ -28,6 +29,20 @@ export async function POST(req: NextRequest) {
 
     if (!slot) {
       return NextResponse.json({ error: "Zeitfenster nicht gefunden." }, { status: 404 });
+    }
+
+    // Server-side enforcement of the Proband:innen 2-month visibility
+    // window. The /book/privat/[courseId] landing already 404s outside
+    // the window, but this is the API a malicious or stale caller
+    // would hit directly. See lib/proband-visibility.ts.
+    if (!isCourseDateBookableByProbands(slot.course_date as string | null)) {
+      return NextResponse.json(
+        {
+          error:
+            "Dieser Termin liegt außerhalb des aktuellen Buchungsfensters.",
+        },
+        { status: 410 },
+      );
     }
 
     // Fetch treatment_title (public-facing "Behandlungsname") alongside
