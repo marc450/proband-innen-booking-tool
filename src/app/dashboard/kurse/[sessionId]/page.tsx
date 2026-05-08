@@ -21,7 +21,7 @@ export default async function KursDetailPage({
   const { data: session } = await admin
     .from("course_sessions")
     .select(
-      "id, template_id, date_iso, label_de, instructor_name, betreuer_name, max_seats, booked_seats, address, start_time, duration_minutes, is_live, cme_status, vnr_praxis, has_zahnmedizin, course_templates:template_id(id, title, course_label_de)",
+      "id, date_iso, start_time, address, course_templates:template_id(id, title, course_label_de)",
     )
     .eq("id", sessionId)
     .maybeSingle();
@@ -153,24 +153,10 @@ export default async function KursDetailPage({
     priorTitlesByAuszubildendeId.get(id)!.push(name);
   }
 
-  const [{ data: dozentUsers }, { data: betreuerUsers }] = await Promise.all([
-    admin
-      .from("profiles")
-      .select("id, title, first_name, last_name")
-      .eq("is_dozent", true)
-      .order("last_name", { ascending: true }),
-    admin
-      .from("profiles")
-      .select("id, title, first_name, last_name")
-      .eq("is_kursbetreuung", true)
-      .order("last_name", { ascending: true }),
-  ]);
-
   return (
     <KursDetailClient
       session={{
         id: session.id as string,
-        templateId: (session.template_id as string | null) ?? null,
         templateTitle:
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ((session.course_templates as any)?.course_label_de ||
@@ -178,18 +164,8 @@ export default async function KursDetailPage({
             (session.course_templates as any)?.title ||
             "—") as string,
         dateIso: session.date_iso as string,
-        labelDe: (session.label_de as string | null) ?? null,
         startTime: (session.start_time as string | null) ?? null,
-        durationMinutes: (session.duration_minutes as number | null) ?? null,
         address: (session.address as string | null) ?? null,
-        instructorName: (session.instructor_name as string | null) ?? null,
-        betreuerName: (session.betreuer_name as string | null) ?? null,
-        maxSeats: (session.max_seats as number | null) ?? 0,
-        bookedSeats: (session.booked_seats as number | null) ?? 0,
-        isLive: (session.is_live as boolean | null) ?? false,
-        cmeStatus: (session.cme_status as string | null) ?? null,
-        vnrPraxis: (session.vnr_praxis as string | null) ?? null,
-        hasZahnmedizin: (session.has_zahnmedizin as boolean | null) ?? false,
       }}
       satelliteId={(satellite?.id as string | null) ?? null}
       slots={slots}
@@ -213,18 +189,6 @@ export default async function KursDetailPage({
           profileComplete: (b.profile_complete as boolean | null) ?? false,
         }))
       }
-      dozentUsers={(dozentUsers ?? []).map((d) => ({
-        id: d.id as string,
-        title: (d.title as string | null) ?? null,
-        firstName: (d.first_name as string | null) ?? null,
-        lastName: (d.last_name as string | null) ?? null,
-      }))}
-      betreuerUsers={(betreuerUsers ?? []).map((d) => ({
-        id: d.id as string,
-        title: (d.title as string | null) ?? null,
-        firstName: (d.first_name as string | null) ?? null,
-        lastName: (d.last_name as string | null) ?? null,
-      }))}
     />
   );
 }
