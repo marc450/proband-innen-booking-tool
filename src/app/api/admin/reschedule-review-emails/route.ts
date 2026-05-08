@@ -1,9 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { scheduleCourseReviewEmails } from "@/lib/send-course-review-request";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
-const CRON_SECRET = process.env.CRON_SECRET;
+
+async function requireStaff() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (!profile) return null;
+  if (profile.role !== "admin" && profile.role !== "nutzer") return null;
+  return user;
+}
 
 interface FutureScheduled {
   id: string;
@@ -23,13 +39,12 @@ interface FutureScheduled {
 // otherwise fire under the old rule. This route lets us cleanly
 // migrate the queue.
 //
-// Auth: Bearer CRON_SECRET, same pattern as /api/send-reminders.
-export async function POST(req: NextRequest) {
-  if (CRON_SECRET) {
-    const authHeader = req.headers.get("authorization");
-    if (authHeader !== `Bearer ${CRON_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+// Auth: requires staff role (admin or nutzer), same pattern as the
+// rest of the /api/admin/* routes. Triggered from a button in the
+// Bewertungen moderation UI.
+export async function POST(_req: NextRequest) {
+  if (!(await requireStaff())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
   if (!RESEND_API_KEY) {
     return NextResponse.json(

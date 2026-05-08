@@ -2,7 +2,15 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Star, Trash2, Eye, EyeOff, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Star,
+  Trash2,
+  Eye,
+  EyeOff,
+  ChevronDown,
+  ChevronUp,
+  RefreshCcw,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -96,6 +104,9 @@ export function ReviewsManager({ initialReviews }: Props) {
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
   const [expandedInternal, setExpandedInternal] = useState<Set<string>>(new Set());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmReschedule, setConfirmReschedule] = useState(false);
+  const [rescheduling, setRescheduling] = useState(false);
+  const [rescheduleResult, setRescheduleResult] = useState<string | null>(null);
 
   const counts = useMemo(() => {
     const pending = reviews.filter((r) => !r.is_published).length;
@@ -164,6 +175,42 @@ export function ReviewsManager({ initialReviews }: Props) {
     }
   }
 
+  async function rescheduleAll() {
+    setRescheduling(true);
+    setRescheduleResult(null);
+    try {
+      const res = await fetch("/api/admin/reschedule-review-emails", {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(
+          json.error || "Neuplanen fehlgeschlagen, bitte erneut versuchen.",
+        );
+      }
+      const data = await res.json();
+      const cancelled = data?.cancelStats?.cancelled ?? 0;
+      const cancelFailed = data?.cancelStats?.cancelFailed ?? 0;
+      const scheduled = data?.reschedule?.scheduled ?? 0;
+      const skipped = data?.reschedule?.skipped ?? 0;
+      const errors = data?.reschedule?.errors ?? 0;
+      setRescheduleResult(
+        `Fertig. ${cancelled} alte Mail(s) storniert${
+          cancelFailed ? `, ${cancelFailed} fehlgeschlagen` : ""
+        }, ${scheduled} neu eingeplant${
+          skipped ? `, ${skipped} übersprungen` : ""
+        }${errors ? `, ${errors} Fehler` : ""}.`,
+      );
+    } catch (err) {
+      setRescheduleResult(
+        err instanceof Error ? err.message : "Da ist etwas schiefgelaufen.",
+      );
+    } finally {
+      setRescheduling(false);
+      setConfirmReschedule(false);
+    }
+  }
+
   function toggleExpand(id: string) {
     setExpandedInternal((prev) => {
       const next = new Set(prev);
@@ -175,14 +222,30 @@ export function ReviewsManager({ initialReviews }: Props) {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="text-2xl font-bold">Bewertungen</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Bewertungen aus den Kurs-Folge-Mails. Schalte einzelne Bewertungen
-          frei, um sie später auf der jeweiligen Kursseite anzuzeigen. Das
-          anonyme Team-Feedback wird nie veröffentlicht.
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold">Bewertungen</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Bewertungen aus den Kurs-Folge-Mails. Schalte einzelne Bewertungen
+            frei, um sie später auf der jeweiligen Kursseite anzuzeigen. Das
+            anonyme Team-Feedback wird nie veröffentlicht.
+          </p>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={rescheduling}
+          onClick={() => setConfirmReschedule(true)}
+        >
+          <RefreshCcw className="h-3.5 w-3.5 mr-1.5" />
+          {rescheduling ? "Plant neu..." : "Mails neu planen"}
+        </Button>
       </div>
+      {rescheduleResult && (
+        <div className="rounded-[10px] bg-white px-4 py-3 text-sm shadow-sm">
+          {rescheduleResult}
+        </div>
+      )}
 
       <div className="flex items-center gap-2">
         {(["all", "pending", "published"] as Filter[]).map((f) => {
@@ -348,6 +411,15 @@ export function ReviewsManager({ initialReviews }: Props) {
           if (confirmDeleteId) deleteReview(confirmDeleteId);
         }}
         onCancel={() => setConfirmDeleteId(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmReschedule}
+        title="Bewertungs-Mails neu planen"
+        description="Alle bereits gequeuten Bewertungs-Mails werden in Resend storniert und nach den aktuellen Regeln (1 Stunde vor Kursende) neu eingeplant. Bereits versendete Mails sind nicht betroffen."
+        confirmLabel="Jetzt neu planen"
+        onConfirm={rescheduleAll}
+        onCancel={() => setConfirmReschedule(false)}
       />
     </div>
   );
