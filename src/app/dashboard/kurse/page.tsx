@@ -39,12 +39,19 @@ export default async function KursePage() {
     sessionList.length
       ? admin
           .from("courses")
-          .select("id, session_id, status")
+          .select("id, session_id, status, course_date")
           .in(
             "session_id",
             sessionList.map((s) => s.id),
           )
-      : Promise.resolve({ data: [] as Array<{ id: string; session_id: string; status: string }> }),
+      : Promise.resolve({
+          data: [] as Array<{
+            id: string;
+            session_id: string;
+            status: string;
+            course_date: string | null;
+          }>,
+        }),
     sessionList.length
       ? admin
           .from("course_bookings")
@@ -84,19 +91,39 @@ export default async function KursePage() {
     probandSeatsByCourseId.set(s.course_id as string, cur);
   }
 
+  // Proband:innen rolling visibility horizon. Mirrors the public-facing
+  // logic in src/app/kurse/werde-proband-in/page.tsx and src/app/book/
+  // privat/page.tsx: a satellite is only surfaced to patients when its
+  // course_date sits in [today, today + 2 months]. The badge in the
+  // table reflects what patients actually see right now, not just the
+  // raw `status` flag.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const horizonDate = new Date();
+  horizonDate.setMonth(horizonDate.getMonth() + 2);
+  const horizonIso = horizonDate.toISOString().slice(0, 10);
+
   const rows: KurseRow[] = sessionList.map((s) => {
     const tmpl = templateById.get(s.template_id as string);
     const satellite = satelliteBySessionId.get(s.id as string);
     const probands = satellite
       ? probandSeatsByCourseId.get(satellite.id as string) ?? { booked: 0, total: 0 }
       : null;
-    // Proband:innen bookability mirrors the satellite's `status`. The
-    // value is "published" when bookable, "draft" while a staff member
-    // is still preparing the page. No satellite = the row's whole
-    // Proband:innen funnel doesn't exist (rendered as `—`).
-    const probandLive = satellite
-      ? (satellite.status as string | null) === "published"
-      : null;
+    // Proband:innen "Live" = published AND inside the 2-month window.
+    // Outside the window the row is technically published but invisible
+    // to patients, so we render it as Offline so admins aren't misled.
+    // No satellite at all = `null` (renders as `—`).
+    let probandLive: boolean | null;
+    if (!satellite) {
+      probandLive = null;
+    } else {
+      const status = (satellite.status as string | null) ?? null;
+      const courseDate = (satellite.course_date as string | null) ?? null;
+      probandLive =
+        status === "published" &&
+        courseDate != null &&
+        courseDate >= todayIso &&
+        courseDate <= horizonIso;
+    }
     return {
       id: s.id as string,
       templateId: (s.template_id as string | null) ?? null,
