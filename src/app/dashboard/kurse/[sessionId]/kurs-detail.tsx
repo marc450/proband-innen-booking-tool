@@ -26,7 +26,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { ArrowLeft, Ban, Calendar, Check, Clock, GraduationCap, Mail, MapPin, Plus, Trash2, User } from "lucide-react";
+import { ArrowLeft, Ban, Calendar, Check, Clock, Copy, GraduationCap, Mail, MapPin, Plus, Trash2, User } from "lucide-react";
+import { buildProfileCompletionUrl } from "@/lib/profile-link";
 
 export interface DetailSlot {
   id: string;
@@ -342,6 +343,7 @@ export function KursDetailClient({
                         <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">
                           unvollständig
                         </Badge>
+                        <CopyProfileLinkButton bookingId={b.id} email={b.email ?? ""} />
                         <SendProfileReminderButton bookingId={b.id} disabled={!b.email} />
                       </div>
                     )}
@@ -632,6 +634,67 @@ export function KursDetailClient({
         onCancel={() => setDeleteSlotId(null)}
       />
     </div>
+  );
+}
+
+// Small icon button that copies the doctor's profile-completion URL
+// onto the clipboard so staff can paste it into ad-hoc messages
+// (WhatsApp, Slack, manual emails). Mirrors the URL produced by
+// sendProfileReminderEmail so the click-target lands on the same page
+// as the automated reminder.
+function CopyProfileLinkButton({
+  bookingId,
+  email,
+}: {
+  bookingId: string;
+  email: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const disabled = !email;
+
+  const onCopy = async () => {
+    if (disabled) return;
+    const url = buildProfileCompletionUrl(bookingId, email);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // Clipboard API blocked (e.g. insecure context). Fall back to a
+      // hidden textarea + execCommand so staff still gets the URL onto
+      // the clipboard without us silently failing.
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      } finally {
+        ta.remove();
+      }
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onCopy}
+      disabled={disabled}
+      className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground disabled:cursor-not-allowed"
+      title={
+        disabled
+          ? "Keine E-Mail hinterlegt"
+          : copied
+            ? "Link kopiert"
+            : "Profil-Link kopieren"
+      }
+    >
+      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+    </button>
   );
 }
 
