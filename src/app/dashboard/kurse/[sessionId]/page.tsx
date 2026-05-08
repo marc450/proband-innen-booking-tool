@@ -21,7 +21,7 @@ export default async function KursDetailPage({
   const { data: session } = await admin
     .from("course_sessions")
     .select(
-      "id, date_iso, start_time, address, course_templates:template_id(id, title, course_label_de)",
+      "id, date_iso, start_time, duration_minutes, address, instructor_name, betreuer_name, max_seats, booked_seats, course_templates:template_id(id, title, course_label_de)",
     )
     .eq("id", sessionId)
     .maybeSingle();
@@ -165,7 +165,12 @@ export default async function KursDetailPage({
             "—") as string,
         dateIso: session.date_iso as string,
         startTime: (session.start_time as string | null) ?? null,
+        durationMinutes: (session.duration_minutes as number | null) ?? null,
         address: (session.address as string | null) ?? null,
+        instructorName: (session.instructor_name as string | null) ?? null,
+        betreuerName: (session.betreuer_name as string | null) ?? null,
+        maxSeats: (session.max_seats as number | null) ?? 0,
+        bookedSeats: (session.booked_seats as number | null) ?? 0,
       }}
       satelliteId={(satellite?.id as string | null) ?? null}
       slots={slots}

@@ -26,7 +26,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { ArrowLeft, Check, Copy, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Calendar, Check, Clock, Copy, MapPin, Plus, Trash2, User, Users } from "lucide-react";
 
 export interface DetailSlot {
   id: string;
@@ -75,7 +75,12 @@ interface SessionData {
   templateTitle: string;
   dateIso: string;
   startTime: string | null;
+  durationMinutes: number | null;
   address: string | null;
+  instructorName: string | null;
+  betreuerName: string | null;
+  maxSeats: number;
+  bookedSeats: number;
 }
 
 interface Props {
@@ -216,11 +221,43 @@ export function KursDetailClient({
 
       <div>
         <h1 className="text-2xl font-bold">{session.templateTitle}</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {format(new Date(`${session.dateIso}T12:00:00`), "EEEE, dd. MMMM yyyy", { locale: de })}
-          {session.startTime ? ` · ${session.startTime} Uhr` : ""}
-          {session.address ? ` · ${session.address}` : ""}
-        </p>
+        <div className="text-sm text-muted-foreground mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+          {session.maxSeats > 0 && (
+            <span className="inline-flex items-center gap-1.5">
+              <Users className="h-4 w-4" />
+              {session.bookedSeats}/{session.maxSeats} Plätze belegt
+            </span>
+          )}
+          <span className="inline-flex items-center gap-1.5">
+            <Calendar className="h-4 w-4" />
+            {format(new Date(`${session.dateIso}T12:00:00`), "EEEE, dd. MMMM yyyy", { locale: de })}
+          </span>
+          {session.startTime && (
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="h-4 w-4" />
+              {session.startTime}
+              {session.durationMinutes ? ` (${session.durationMinutes} Min)` : ""}
+            </span>
+          )}
+          {session.instructorName && (
+            <span className="inline-flex items-center gap-1.5">
+              <User className="h-4 w-4" />
+              {session.instructorName}
+            </span>
+          )}
+          {session.betreuerName && (
+            <span className="inline-flex items-center gap-1.5">
+              <User className="h-4 w-4" />
+              Kursbetreuung: {session.betreuerName}
+            </span>
+          )}
+          {session.address && (
+            <span className="inline-flex items-center gap-1.5">
+              <MapPin className="h-4 w-4" />
+              {session.address}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* ── Auszubildende Buchungen ────────────────────────────────── */}
