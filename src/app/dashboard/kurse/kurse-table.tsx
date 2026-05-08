@@ -152,6 +152,19 @@ function SortableHead({
 export function KurseTable({ rows }: { rows: KurseRow[] }) {
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [showPast, setShowPast] = useState(false);
+
+  // "Today" anchored to Europe/Berlin so a 1am click doesn't accidentally
+  // hide today's session because UTC is still on yesterday's date.
+  const todayBerlinIso = useMemo(
+    () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date()),
+    [],
+  );
+
+  const pastCount = useMemo(
+    () => rows.filter((r) => r.dateIso < todayBerlinIso).length,
+    [rows, todayBerlinIso],
+  );
 
   // Per-template colour map. Mirrors the algorithm in
   // course-sessions-overview so that the same template gets the same
@@ -180,10 +193,10 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
     }
   };
 
-  const sorted = useMemo(
-    () => [...rows].sort((a, b) => compare(a, b, sortKey, sortDir)),
-    [rows, sortKey, sortDir],
-  );
+  const sorted = useMemo(() => {
+    const filtered = showPast ? rows : rows.filter((r) => r.dateIso >= todayBerlinIso);
+    return [...filtered].sort((a, b) => compare(a, b, sortKey, sortDir));
+  }, [rows, sortKey, sortDir, showPast, todayBerlinIso]);
 
   if (rows.length === 0) {
     return (
@@ -194,7 +207,23 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-[10px] ring-1 ring-black/5 bg-card">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">
+          {sorted.length} {sorted.length === 1 ? "Termin" : "Termine"}
+          {!showPast && pastCount > 0 ? ` · ${pastCount} vergangene ausgeblendet` : ""}
+        </p>
+        {pastCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowPast((v) => !v)}
+            className="text-xs font-medium text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 transition-colors"
+          >
+            {showPast ? "Vergangene ausblenden" : `Vergangene anzeigen (${pastCount})`}
+          </button>
+        )}
+      </div>
+      <div className="overflow-hidden rounded-[10px] ring-1 ring-black/5 bg-card">
       <Table>
         <TableHeader>
           <TableRow>
@@ -322,6 +351,7 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
           })}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }
