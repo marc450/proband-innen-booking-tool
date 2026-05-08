@@ -171,16 +171,49 @@ export function KursDetailClient({
     if (!satelliteId || !slotTimeInput) return;
     const capacity = parseInt(slotCapacityInput) || 1;
     const startTime = buildBerlinTimestamp(session.dateIso, slotTimeInput);
+    const blockedNote = slotBlockedInput ? slotBlockNoteInput.trim() || null : null;
     const payload = {
       start_time: startTime,
       capacity,
       blocked: slotBlockedInput,
-      blocked_note: slotBlockedInput ? slotBlockNoteInput.trim() || null : null,
+      blocked_note: blockedNote,
     };
     if (editingSlot) {
       await supabase.from("slots").update(payload).eq("id", editingSlot.id);
+      setSlots((prev) =>
+        prev.map((s) =>
+          s.id === editingSlot.id
+            ? {
+                ...s,
+                start_time: startTime,
+                capacity,
+                blocked: slotBlockedInput,
+                blocked_note: blockedNote,
+              }
+            : s,
+        ),
+      );
     } else {
-      await supabase.from("slots").insert({ course_id: satelliteId, ...payload });
+      const { data } = await supabase
+        .from("slots")
+        .insert({ course_id: satelliteId, ...payload })
+        .select("id")
+        .single();
+      if (data) {
+        setSlots((prev) =>
+          [
+            ...prev,
+            {
+              id: data.id as string,
+              start_time: startTime,
+              end_time: null,
+              capacity,
+              blocked: slotBlockedInput,
+              blocked_note: blockedNote,
+            },
+          ].sort((a, b) => a.start_time.localeCompare(b.start_time)),
+        );
+      }
     }
     setSlotDialogOpen(false);
     refresh();
