@@ -148,6 +148,12 @@ export function KursDetailClient({
   const [slotBlockedInput, setSlotBlockedInput] = useState(false);
   const [slotBlockNoteInput, setSlotBlockNoteInput] = useState("");
   const [deleteSlotId, setDeleteSlotId] = useState<string | null>(null);
+  // Inline "Sperren" flow direkt aus der Slot-Tabelle (ohne den vollen
+  // Slot-bearbeiten-Dialog öffnen zu müssen). Der Notiz-Input ist
+  // optional, deckt aber den häufigsten Fall ("Bereits extern gebucht")
+  // direkt am Tisch ab.
+  const [blockSlotId, setBlockSlotId] = useState<string | null>(null);
+  const [blockNoteInput, setBlockNoteInput] = useState("");
 
   const openAddSlot = () => {
     setEditingSlot(null);
@@ -224,6 +230,41 @@ export function KursDetailClient({
     await supabase.from("slots").delete().eq("id", deleteSlotId);
     setSlots((prev) => prev.filter((sl) => sl.id !== deleteSlotId));
     setDeleteSlotId(null);
+  };
+
+  const openBlockSlot = (slotId: string) => {
+    setBlockSlotId(slotId);
+    setBlockNoteInput("");
+  };
+
+  const confirmBlockSlot = async () => {
+    if (!blockSlotId) return;
+    const note = blockNoteInput.trim() || null;
+    await supabase
+      .from("slots")
+      .update({ blocked: true, blocked_note: note })
+      .eq("id", blockSlotId);
+    setSlots((prev) =>
+      prev.map((sl) =>
+        sl.id === blockSlotId ? { ...sl, blocked: true, blocked_note: note } : sl,
+      ),
+    );
+    setBlockSlotId(null);
+    setBlockNoteInput("");
+    refresh();
+  };
+
+  const unblockSlot = async (slot: DetailSlot) => {
+    await supabase
+      .from("slots")
+      .update({ blocked: false, blocked_note: null })
+      .eq("id", slot.id);
+    setSlots((prev) =>
+      prev.map((sl) =>
+        sl.id === slot.id ? { ...sl, blocked: false, blocked_note: null } : sl,
+      ),
+    );
+    refresh();
   };
 
   // Stornierungs-Confirm + E-Mail-Versand. Im alten /dashboard/bookings
@@ -700,13 +741,33 @@ export function KursDetailClient({
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* E-Mail */}
                       <TableCell className="font-medium text-muted-foreground line-through">{/* Uhrzeit */}
-                        <button onClick={() => openEditSlot(slot)} className="hover:no-underline">
+                        <button onClick={() => openEditSlot(slot)} className="hover:underline">
                           {formatBerlinTime(slot.start_time)}
                         </button>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Überweiser:in */}
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Notizen */}
-                      <TableCell className="w-[180px] text-right text-sm text-muted-foreground">—</TableCell>{/* Status */}
+                      <TableCell className="w-[180px]">{/* Aktionen */}
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => unblockSlot(slot)}
+                            title="Slot wieder buchbar machen"
+                          >
+                            Entsperren
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeleteSlotId(slot.id)}
+                            title="Slot löschen"
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>,
                   ];
                 }
@@ -722,9 +783,26 @@ export function KursDetailClient({
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Überweiser:in */}
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Notizen */}
-                      <TableCell className="w-[180px] text-sm text-muted-foreground">{/* Status */}
-                        <div className="flex justify-end">
-                          <span className="w-[140px]">—</span>
+                      <TableCell className="w-[180px]">{/* Aktionen */}
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openBlockSlot(slot.id)}
+                            title="Slot für Buchungen sperren"
+                          >
+                            <Ban className="h-4 w-4 mr-1" />
+                            Sperren
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeleteSlotId(slot.id)}
+                            title="Slot löschen"
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>,
@@ -903,6 +981,52 @@ export function KursDetailClient({
         onConfirm={deleteSlot}
         onCancel={() => setDeleteSlotId(null)}
       />
+
+      {/* Inline-Sperren-Dialog: leichtgewichtiger Notiz-Prompt für die
+          häufigste Aktion direkt aus der Slot-Tabelle. Der vollständige
+          Slot-bearbeiten-Dialog kann weiterhin per Klick auf die Uhrzeit
+          geöffnet werden, wenn z.B. zusätzlich Zeit oder Plätze
+          geändert werden sollen. */}
+      <Dialog
+        open={!!blockSlotId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setBlockSlotId(null);
+            setBlockNoteInput("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Slot sperren</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="block-note-input">Notiz (optional)</Label>
+            <Input
+              id="block-note-input"
+              placeholder="z.B. Bereits extern gebucht"
+              value={blockNoteInput}
+              onChange={(e) => setBlockNoteInput(e.target.value)}
+              autoFocus
+            />
+            <p className="text-xs text-muted-foreground">
+              Die Notiz erscheint in der Slot-Liste neben &quot;Gesperrt&quot;.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setBlockSlotId(null);
+                setBlockNoteInput("");
+              }}
+            >
+              Abbrechen
+            </Button>
+            <Button onClick={confirmBlockSlot}>Sperren</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Booking → Storniert: Confirm-Dialog mit E-Mail-Hinweis */}
       <ConfirmDialog
