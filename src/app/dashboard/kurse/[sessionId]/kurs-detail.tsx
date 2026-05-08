@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ArrowLeft, Calendar, Check, Clock, Copy, GraduationCap, MapPin, Plus, Trash2, User } from "lucide-react";
+import { buildProfileCompletionUrl } from "@/lib/profile-link";
 
 export interface DetailSlot {
   id: string;
@@ -505,13 +506,11 @@ export function KursDetailClient({
 }
 
 // Small icon button that copies the customer's profile-completion link
-// to the clipboard. URL shape mirrors the one in
-// sendProfileReminderEmail (lib/post-purchase) so the recipient lands
-// on the same /courses/success page either way.
+// to the clipboard. Uses the shared buildProfileCompletionUrl helper so
+// the URL matches what sendProfileReminderEmail puts in the email.
 function CopyProfileLinkButton({ bookingId, email }: { bookingId: string; email: string }) {
   const [copied, setCopied] = useState(false);
-  const PUBLIC_HOST = "https://proband-innen.ephia.de";
-  const url = `${PUBLIC_HOST}/courses/success?booking_id=${bookingId}&email=${encodeURIComponent(email)}`;
+  const url = buildProfileCompletionUrl(bookingId, email);
 
   const onCopy = async () => {
     try {
