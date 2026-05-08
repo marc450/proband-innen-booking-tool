@@ -215,12 +215,24 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
   const [scheduledAt, setScheduledAt] = useState("");
   const [recipientSearch, setRecipientSearch] = useState("");
   const [showRecipients, setShowRecipients] = useState(false);
-  // Bulk-include by pasted email list (e.g. CSV of newly-imported
-  // patients): on apply, every matching contact lands in
-  // manuallyIncluded and the campaign is sent only to that set.
+  // Bulk-apply by pasted email list. Two modes:
+  //   - include: matched contacts go into manuallyIncluded; campaign is
+  //     restricted to that set (e.g. CSV of newly-imported patients).
+  //   - exclude: matched contacts go into manuallyExcluded AND a
+  //     separate bulkExcluded tracker so "Liste leeren" can drop just
+  //     the bulk-applied ones without nuking individual click-deselects.
+  //     Primary use case: recovering a half-sent campaign by excluding
+  //     the recipients Resend already delivered to.
+  const [bulkMode, setBulkMode] = useState<"include" | "exclude">("include");
   const [bulkIncludeText, setBulkIncludeText] = useState("");
-  const [bulkIncludeResult, setBulkIncludeResult] = useState<
-    { added: number; alreadyIncluded: number; notFound: string[] } | null
+  const [bulkExcluded, setBulkExcluded] = useState<Set<string>>(new Set());
+  const [bulkResult, setBulkResult] = useState<
+    {
+      mode: "include" | "exclude";
+      added: number;
+      alreadyApplied: number;
+      notFound: string[];
+    } | null
   >(null);
 
   // ── AI compose ───────────────────────────────────────────────────
@@ -256,7 +268,8 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
     setAudienceType(newAudience);
     setManuallyExcluded(new Set());
     setManuallyIncluded(new Set());
-    setBulkIncludeResult(null);
+    setBulkExcluded(new Set());
+    setBulkResult(null);
     setRecipientSearch("");
   };
 
@@ -334,24 +347,25 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
     });
   };
 
-  // Parse the pasted "send only to these addresses" textarea and move
-  // every matching contact into `manuallyIncluded`. Accepts any common
-  // separator (newline, comma, semicolon, tab, whitespace) so a CSV
-  // column or a Slack/Mail copy-paste both work. Matching is
-  // gmail-alias aware via normalizeEmail, so googlemail.com ↔
-  // gmail.com addresses line up with our stored rows.
+  // Parse the pasted email-list textarea and apply it. Accepts any
+  // common separator (newline, comma, semicolon, tab, whitespace) so
+  // a CSV column or a Slack/Mail copy-paste both work. Matching is
+  // gmail-alias aware via normalizeEmail.
   //
-  // While the include set is non-empty the campaign is restricted to
-  // those contacts (audience filter + blacklist toggle still apply on
-  // top). To return to "all of audience" the user clears the list via
-  // the dedicated button — no separate paste-undo required.
-  const applyBulkInclude = () => {
+  // Mode "include": matched contacts go into manuallyIncluded; while
+  // that set is non-empty the campaign is restricted to those
+  // contacts (audience filter + blacklist toggle still apply on top).
+  //
+  // Mode "exclude": matched contacts go into manuallyExcluded AND
+  // bulkExcluded so "Liste leeren" can later drop just the bulk-
+  // applied ones, leaving any individual click-deselects intact.
+  const applyBulk = () => {
     const tokens = bulkIncludeText
       .split(/[\s,;]+/)
       .map((t) => t.trim())
       .filter(Boolean);
     if (tokens.length === 0) {
-      setBulkIncludeResult(null);
+      setBulkResult(null);
       return;
     }
 
@@ -362,9 +376,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
     }
 
     const notFound: string[] = [];
-    let added = 0;
-    let alreadyIncluded = 0;
-    const next = new Set(manuallyIncluded);
+    const matchedIds: string[] = [];
     for (const raw of tokens) {
       const key = normalizeEmail(raw);
       if (!key || !key.includes("@")) {
@@ -376,39 +388,73 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
         notFound.push(raw);
         continue;
       }
-      if (next.has(id)) {
-        alreadyIncluded += 1;
-      } else {
-        next.add(id);
-        added += 1;
-      }
+      matchedIds.push(id);
     }
-    setManuallyIncluded(next);
-    // Adding an email to the include list is a stronger signal than
-    // any earlier per-contact deselect (e.g. from a saved draft or a
-    // previous session in pre-include-mode). Strip those IDs from
-    // manuallyExcluded so the eligibility filter doesn't silently
-    // drop the just-added contacts. Without this, dragging a saved
-    // draft with a long excluded_patient_ids list into include mode
-    // produces an "Empfänger:innen (0)" with no obvious cause.
-    setManuallyExcluded((prev) => {
-      let changed = false;
-      const cleaned = new Set(prev);
-      for (const id of next) {
-        if (cleaned.has(id)) {
-          cleaned.delete(id);
-          changed = true;
+
+    if (bulkMode === "include") {
+      let added = 0;
+      let alreadyApplied = 0;
+      const next = new Set(manuallyIncluded);
+      for (const id of matchedIds) {
+        if (next.has(id)) alreadyApplied += 1;
+        else {
+          next.add(id);
+          added += 1;
         }
       }
-      return changed ? cleaned : prev;
-    });
-    setBulkIncludeResult({ added, alreadyIncluded, notFound });
-    if (added > 0 || alreadyIncluded > 0) setBulkIncludeText("");
+      setManuallyIncluded(next);
+      // Adding an email to the include list is a stronger signal than
+      // any earlier per-contact deselect (e.g. from a saved draft or
+      // a previous session in pre-include-mode). Strip those IDs from
+      // manuallyExcluded so the eligibility filter doesn't silently
+      // drop the just-added contacts.
+      setManuallyExcluded((prev) => {
+        let changed = false;
+        const cleaned = new Set(prev);
+        for (const id of next) {
+          if (cleaned.has(id)) {
+            cleaned.delete(id);
+            changed = true;
+          }
+        }
+        return changed ? cleaned : prev;
+      });
+      setBulkResult({ mode: "include", added, alreadyApplied, notFound });
+      if (added > 0 || alreadyApplied > 0) setBulkIncludeText("");
+    } else {
+      let added = 0;
+      let alreadyApplied = 0;
+      const nextBulk = new Set(bulkExcluded);
+      const nextExcl = new Set(manuallyExcluded);
+      for (const id of matchedIds) {
+        if (nextBulk.has(id)) alreadyApplied += 1;
+        else {
+          nextBulk.add(id);
+          added += 1;
+        }
+        nextExcl.add(id);
+      }
+      setBulkExcluded(nextBulk);
+      setManuallyExcluded(nextExcl);
+      setBulkResult({ mode: "exclude", added, alreadyApplied, notFound });
+      if (added > 0 || alreadyApplied > 0) setBulkIncludeText("");
+    }
   };
 
-  const clearIncludeList = () => {
-    setManuallyIncluded(new Set());
-    setBulkIncludeResult(null);
+  const clearBulkList = () => {
+    if (bulkMode === "include") {
+      setManuallyIncluded(new Set());
+    } else {
+      // Drop only the bulk-applied IDs from manuallyExcluded so any
+      // individual click-deselects survive a "Liste leeren" click.
+      setManuallyExcluded((prev) => {
+        const next = new Set(prev);
+        for (const id of bulkExcluded) next.delete(id);
+        return next;
+      });
+      setBulkExcluded(new Set());
+    }
+    setBulkResult(null);
     setBulkIncludeText("");
   };
 
@@ -1000,34 +1046,66 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                 </div>
               )}
 
-              {/* Bulk include by pasted email list. Primary use case:
-                  paste the CSV column emitted by the Proband:innen
-                  import flow to send a campaign just to the newly
-                  imported people. While the include set is non-empty
-                  the campaign is restricted to those contacts; the
-                  audience selector still applies as a domain filter
-                  on top, and individual deselect via click still works. */}
+              {/* Bulk apply by pasted email list. Two modes:
+                  - "Nur an diese senden" (include): restrict the campaign
+                    to the pasted addresses. Original use case: CSV of
+                    newly-imported Proband:innen.
+                  - "Diese ausschließen" (exclude): drop the pasted
+                    addresses from the audience. Original use case:
+                    recover a half-sent campaign by excluding those
+                    Resend already delivered to. */}
               <details
                 className="rounded-[10px] bg-muted/40"
-                open={includeMode}
+                open={includeMode || bulkExcluded.size > 0}
               >
                 <summary className="cursor-pointer select-none px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground">
-                  Empfänger:innen aus Liste auswählen
-                  {includeMode &&
+                  E-Mail-Liste anwenden
+                  {bulkMode === "include" && includeMode &&
                     ` (${resolvedIncludeCount} von ${manuallyIncluded.size} zugeordnet)`}
+                  {bulkMode === "exclude" && bulkExcluded.size > 0 &&
+                    ` (${bulkExcluded.size} ausgeschlossen)`}
                 </summary>
                 <div className="px-3 pb-3 pt-1 space-y-2">
+                  <div className="inline-flex rounded-[10px] bg-background p-0.5 shadow-sm ring-1 ring-black/5 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBulkMode("include");
+                        setBulkResult(null);
+                      }}
+                      className={`px-3 py-1 rounded-[8px] transition-colors ${
+                        bulkMode === "include"
+                          ? "bg-[#0066FF] text-white"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      Nur an diese senden
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBulkMode("exclude");
+                        setBulkResult(null);
+                      }}
+                      className={`px-3 py-1 rounded-[8px] transition-colors ${
+                        bulkMode === "exclude"
+                          ? "bg-[#0066FF] text-white"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      Diese ausschließen
+                    </button>
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    Füge die E-Mail-Adressen ein, an die diese Kampagne
-                    gehen soll. Solange die Liste aktiv ist, gehen
-                    Mails nur an diese Personen. Zeilenumbruch, Komma
-                    oder Leerzeichen sind alle erlaubt.
+                    {bulkMode === "include"
+                      ? "Füge die E-Mail-Adressen ein, an die diese Kampagne gehen soll. Solange die Liste aktiv ist, gehen Mails nur an diese Personen. Zeilenumbruch, Komma oder Leerzeichen sind alle erlaubt."
+                      : "Füge die E-Mail-Adressen ein, die diese Kampagne NICHT bekommen sollen. Sie werden aus dem Empfänger:innen-Pool herausgefiltert. Zeilenumbruch, Komma oder Leerzeichen sind alle erlaubt."}
                   </p>
                   <textarea
                     value={bulkIncludeText}
                     onChange={(e) => {
                       setBulkIncludeText(e.target.value);
-                      setBulkIncludeResult(null);
+                      setBulkResult(null);
                     }}
                     placeholder="anna@example.com&#10;tobias@example.com, lisa@gmail.com"
                     className="w-full min-h-[96px] rounded-[10px] border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
@@ -1037,36 +1115,40 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={applyBulkInclude}
+                      onClick={applyBulk}
                       disabled={!bulkIncludeText.trim()}
                     >
-                      Zur Liste hinzufügen
+                      {bulkMode === "include" ? "Zur Liste hinzufügen" : "Aus Empfänger:innen ausschließen"}
                     </Button>
-                    {includeMode && (
+                    {((bulkMode === "include" && includeMode) ||
+                      (bulkMode === "exclude" && bulkExcluded.size > 0)) && (
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={clearIncludeList}
+                        onClick={clearBulkList}
                       >
-                        Liste leeren ({manuallyIncluded.size})
+                        Liste leeren (
+                        {bulkMode === "include" ? manuallyIncluded.size : bulkExcluded.size}
+                        )
                       </Button>
                     )}
-                    {bulkIncludeResult && (
+                    {bulkResult && (
                       <span className="text-xs text-muted-foreground">
-                        {bulkIncludeResult.added} hinzugefügt
-                        {bulkIncludeResult.alreadyIncluded > 0 && `, ${bulkIncludeResult.alreadyIncluded} bereits`}
-                        {bulkIncludeResult.notFound.length > 0 && `, ${bulkIncludeResult.notFound.length} nicht gefunden`}
+                        {bulkResult.added}{" "}
+                        {bulkResult.mode === "include" ? "hinzugefügt" : "ausgeschlossen"}
+                        {bulkResult.alreadyApplied > 0 && `, ${bulkResult.alreadyApplied} bereits`}
+                        {bulkResult.notFound.length > 0 && `, ${bulkResult.notFound.length} nicht gefunden`}
                       </span>
                     )}
                   </div>
-                  {bulkIncludeResult && bulkIncludeResult.notFound.length > 0 && (
+                  {bulkResult && bulkResult.notFound.length > 0 && (
                     <details className="text-xs">
                       <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
                         Nicht gefundene Adressen anzeigen
                       </summary>
                       <pre className="mt-1 max-h-32 overflow-y-auto rounded bg-muted/40 p-2 text-[11px] text-muted-foreground whitespace-pre-wrap break-all">
-                        {bulkIncludeResult.notFound.join("\n")}
+                        {bulkResult.notFound.join("\n")}
                       </pre>
                     </details>
                   )}
