@@ -1,28 +1,155 @@
-import Link from "next/link";
+import { redirect, notFound } from "next/navigation";
+import { cookies } from "next/headers";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { decryptBooking } from "@/lib/encryption";
+import { KursDetailClient, type DetailBooking, type DetailSlot } from "./kurs-detail";
 
-export default async function KursDetailPlaceholderPage({
+export const dynamic = "force-dynamic";
+
+export default async function KursDetailPage({
   params,
 }: {
   params: Promise<{ sessionId: string }>;
 }) {
+  const cookieStore = await cookies();
+  const role = cookieStore.get("x-user-role")?.value;
+  if (role !== "admin" && role !== "nutzer") redirect("/login");
+
   const { sessionId } = await params;
+  const admin = createAdminClient();
+
+  const { data: session } = await admin
+    .from("course_sessions")
+    .select(
+      "id, template_id, date_iso, label_de, instructor_name, betreuer_name, max_seats, booked_seats, address, start_time, duration_minutes, is_live, cme_status, vnr_praxis, has_zahnmedizin, course_templates:template_id(id, title, course_label_de)",
+    )
+    .eq("id", sessionId)
+    .maybeSingle();
+
+  if (!session) notFound();
+
+  const { data: satellite } = await admin
+    .from("courses")
+    .select("id, status, instructor_id")
+    .eq("session_id", sessionId)
+    .maybeSingle();
+
+  let slots: DetailSlot[] = [];
+  let bookings: DetailBooking[] = [];
+
+  if (satellite) {
+    const { data: slotData } = await admin
+      .from("slots")
+      .select("id, start_time, end_time, capacity, blocked, blocked_note")
+      .eq("course_id", satellite.id)
+      .order("start_time", { ascending: true });
+    slots = (slotData ?? []) as DetailSlot[];
+
+    if (slots.length > 0) {
+      const { data: bookingRows } = await admin
+        .from("bookings")
+        .select(
+          "id, slot_id, status, encrypted_data, encrypted_key, encryption_iv, booking_type, referring_doctor, created_at",
+        )
+        .in(
+          "slot_id",
+          slots.map((s) => s.id),
+        );
+
+      bookings = ((bookingRows ?? []).map((row) => {
+        const decrypted = decryptBooking(row);
+        return {
+          id: decrypted.id,
+          slot_id: decrypted.slot_id,
+          first_name: decrypted.first_name,
+          last_name: decrypted.last_name,
+          email: decrypted.email,
+          phone: decrypted.phone,
+          notes: decrypted.notes ?? null,
+          status: decrypted.status,
+          booking_type: decrypted.booking_type ?? null,
+          referring_doctor: decrypted.referring_doctor ?? null,
+          created_at: decrypted.created_at,
+        };
+      })) as DetailBooking[];
+    }
+  }
+
+  const { data: aerztBookings } = await admin
+    .from("course_bookings")
+    .select(
+      "id, first_name, last_name, email, course_type, status, audience_tag, profile_complete, created_at",
+    )
+    .eq("session_id", sessionId)
+    .neq("status", "cancelled")
+    .order("created_at", { ascending: false });
+
+  const [{ data: dozentUsers }, { data: betreuerUsers }] = await Promise.all([
+    admin
+      .from("profiles")
+      .select("id, title, first_name, last_name")
+      .eq("is_dozent", true)
+      .order("last_name", { ascending: true }),
+    admin
+      .from("profiles")
+      .select("id, title, first_name, last_name")
+      .eq("is_kursbetreuung", true)
+      .order("last_name", { ascending: true }),
+  ]);
+
   return (
-    <div className="space-y-4">
-      <Link
-        href="/dashboard/kurse"
-        className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-      >
-        ← Zurück zur Übersicht
-      </Link>
-      <div className="rounded-[10px] bg-card p-8 ring-1 ring-black/5">
-        <h1 className="text-xl font-bold">Detailseite folgt</h1>
-        <p className="text-sm text-muted-foreground mt-2">
-          Hier kommt die Detailansicht für Session{" "}
-          <code className="text-xs font-mono">{sessionId.slice(0, 8)}</code>:
-          editierbare Session-Felder, Auszubildende-Buchungen, Proband:innen-Slots
-          mit Buchungen + Notizen.
-        </p>
-      </div>
-    </div>
+    <KursDetailClient
+      session={{
+        id: session.id as string,
+        templateId: (session.template_id as string | null) ?? null,
+        templateTitle:
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ((session.course_templates as any)?.course_label_de ||
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (session.course_templates as any)?.title ||
+            "—") as string,
+        dateIso: session.date_iso as string,
+        labelDe: (session.label_de as string | null) ?? null,
+        startTime: (session.start_time as string | null) ?? null,
+        durationMinutes: (session.duration_minutes as number | null) ?? null,
+        address: (session.address as string | null) ?? null,
+        instructorName: (session.instructor_name as string | null) ?? null,
+        betreuerName: (session.betreuer_name as string | null) ?? null,
+        maxSeats: (session.max_seats as number | null) ?? 0,
+        bookedSeats: (session.booked_seats as number | null) ?? 0,
+        isLive: (session.is_live as boolean | null) ?? false,
+        cmeStatus: (session.cme_status as string | null) ?? null,
+        vnrPraxis: (session.vnr_praxis as string | null) ?? null,
+        hasZahnmedizin: (session.has_zahnmedizin as boolean | null) ?? false,
+      }}
+      satelliteId={(satellite?.id as string | null) ?? null}
+      slots={slots}
+      bookings={bookings}
+      aerztBookings={
+        (aerztBookings ?? []).map((b) => ({
+          id: b.id as string,
+          firstName: (b.first_name as string | null) ?? null,
+          lastName: (b.last_name as string | null) ?? null,
+          email: (b.email as string | null) ?? null,
+          courseType: (b.course_type as string | null) ?? null,
+          status: (b.status as string | null) ?? null,
+          audienceTag: (b.audience_tag as string | null) ?? null,
+          profileComplete: (b.profile_complete as boolean | null) ?? false,
+          createdAt: b.created_at as string,
+        }))
+      }
+      dozentUsers={(dozentUsers ?? []).map((d) => ({
+        id: d.id as string,
+        title: (d.title as string | null) ?? null,
+        firstName: (d.first_name as string | null) ?? null,
+        lastName: (d.last_name as string | null) ?? null,
+      }))}
+      betreuerUsers={(betreuerUsers ?? []).map((d) => ({
+        id: d.id as string,
+        title: (d.title as string | null) ?? null,
+        firstName: (d.first_name as string | null) ?? null,
+        lastName: (d.last_name as string | null) ?? null,
+      }))}
+    />
   );
 }
