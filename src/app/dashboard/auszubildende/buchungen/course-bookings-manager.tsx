@@ -198,23 +198,6 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
     }
   }, [statusDropdownId]);
 
-  // Auto-complete bookings where the course date has passed
-  useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const toComplete = bookings.filter(
-      (b) => b.status === "booked" && b.course_sessions?.date_iso && b.course_sessions.date_iso < today
-    );
-    if (toComplete.length > 0) {
-      const ids = toComplete.map((b) => b.id);
-      supabase.from("course_bookings").update({ status: "completed" }).in("id", ids).then(() => {
-        setBookings((prev) =>
-          prev.map((b) => (ids.includes(b.id) ? { ...b, status: "completed" as CourseBookingStatus } : b))
-        );
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const filtered = bookings.filter((b) => {
     // Bundle filter
     if (bundleFilter && b.bundle_group_id !== bundleFilter) return false;

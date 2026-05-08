@@ -26,8 +26,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { ArrowLeft, Calendar, Check, Clock, Copy, GraduationCap, MapPin, Plus, Trash2, User } from "lucide-react";
-import { buildProfileCompletionUrl } from "@/lib/profile-link";
+import { ArrowLeft, Calendar, Check, Clock, GraduationCap, Mail, MapPin, Plus, Trash2, User } from "lucide-react";
 
 export interface DetailSlot {
   id: string;
@@ -319,7 +318,7 @@ export function KursDetailClient({
                         <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">
                           unvollständig
                         </Badge>
-                        <CopyProfileLinkButton bookingId={b.id} email={b.email ?? ""} />
+                        <SendProfileReminderButton bookingId={b.id} disabled={!b.email} />
                       </div>
                     )}
                   </TableCell>
@@ -505,31 +504,59 @@ export function KursDetailClient({
   );
 }
 
-// Small icon button that copies the customer's profile-completion link
-// to the clipboard. Uses the shared buildProfileCompletionUrl helper so
-// the URL matches what sendProfileReminderEmail puts in the email.
-function CopyProfileLinkButton({ bookingId, email }: { bookingId: string; email: string }) {
-  const [copied, setCopied] = useState(false);
-  const url = buildProfileCompletionUrl(bookingId, email);
+// Small icon button that triggers the "complete your profile"
+// reminder email server-side via /api/admin/send-profile-reminder.
+// Posts the booking id; the API resolves the email + first_name and
+// hands off to sendProfileReminderEmail in lib/post-purchase.
+function SendProfileReminderButton({
+  bookingId,
+  disabled,
+}: {
+  bookingId: string;
+  disabled?: boolean;
+}) {
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
 
-  const onCopy = async () => {
+  const onSend = async () => {
+    if (sending || disabled) return;
+    setSending(true);
     try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      const res = await fetch("/api/admin/send-profile-reminder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId }),
+      });
+      if (res.ok) {
+        setSent(true);
+        setTimeout(() => setSent(false), 1800);
+      } else {
+        console.error("send-profile-reminder failed", await res.text());
+      }
     } catch (err) {
-      console.error("Clipboard write failed", err);
+      console.error("send-profile-reminder failed", err);
+    } finally {
+      setSending(false);
     }
   };
 
   return (
     <button
       type="button"
-      onClick={onCopy}
-      className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-      title={copied ? "Link kopiert" : "Profil-Link kopieren"}
+      onClick={onSend}
+      disabled={disabled || sending}
+      className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground disabled:cursor-not-allowed"
+      title={
+        disabled
+          ? "Keine E-Mail hinterlegt"
+          : sent
+            ? "E-Mail gesendet"
+            : sending
+              ? "Wird gesendet…"
+              : "Profil-Link per E-Mail senden"
+      }
     >
-      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+      {sent ? <Check className="h-3.5 w-3.5" /> : <Mail className="h-3.5 w-3.5" />}
     </button>
   );
 }
