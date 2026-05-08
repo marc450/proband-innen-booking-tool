@@ -111,6 +111,27 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       minSize: 10,
     },
   },
+  {
+    // Aufbaukurs Biostimulation & Skinbooster (Skulptra). Same visual
+    // layout as the Botulinum certs (left-column name above dotted
+    // line, photo on the right) — A4 landscape 842 × 595 pt — so the
+    // calibration is shared. CME ist aktuell beantragt, aber noch
+    // nicht akkreditiert; deshalb keine VNR-Stempel auf dem Master-
+    // PDF und kein VNR-Layout hier. Sobald die LÄK-Akkreditierung
+    // landet, vnrTheorie/vnrPraxis-Slots ergänzen + neuen Master mit
+    // gebackenen Labels einspielen.
+    slug: "aufbaukurs-skulptra",
+    label: "Aufbaukurs Biostimulation & Skinbooster",
+    courseKeys: ["aufbaukurs_skulptra"],
+    layout: {
+      page: 1,
+      centerX: 173,
+      baselineY: 388,
+      maxWidth: 290,
+      targetSize: 28,
+      minSize: 10,
+    },
+  },
 ];
 
 export function getCertificateTemplate(
