@@ -279,8 +279,8 @@ export function KursDetailClient({
                 <TableHead>E-Mail</TableHead>
                 <TableHead>Bereits besuchte Kurse</TableHead>
                 <TableHead>Spezialisierung</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead>Profil</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -311,6 +311,20 @@ export function KursDetailClient({
                   </TableCell>
                   <TableCell className="text-sm">{b.specialty ?? "—"}</TableCell>
                   <TableCell>
+                    {b.profileComplete ? (
+                      <Badge variant="outline" className="text-emerald-700 border-emerald-300 bg-emerald-50">
+                        vollständig
+                      </Badge>
+                    ) : (
+                      <div className="inline-flex items-center gap-1.5">
+                        <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">
+                          unvollständig
+                        </Badge>
+                        <SendProfileReminderButton bookingId={b.id} disabled={!b.email} />
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
                     <select
                       value={b.status ?? "booked"}
                       onChange={(e) => updateAerztStatus(b.id, e.target.value)}
@@ -325,20 +339,6 @@ export function KursDetailClient({
                         <option value={b.status}>{b.status}</option>
                       )}
                     </select>
-                  </TableCell>
-                  <TableCell>
-                    {b.profileComplete ? (
-                      <Badge variant="outline" className="text-emerald-700 border-emerald-300 bg-emerald-50">
-                        vollständig
-                      </Badge>
-                    ) : (
-                      <div className="inline-flex items-center gap-1.5">
-                        <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">
-                          unvollständig
-                        </Badge>
-                        <SendProfileReminderButton bookingId={b.id} disabled={!b.email} />
-                      </div>
-                    )}
                   </TableCell>
                 </TableRow>
                 );
