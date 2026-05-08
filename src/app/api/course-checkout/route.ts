@@ -137,8 +137,11 @@ export async function POST(req: NextRequest) {
     let productName: string;
     let description: string;
     let grossPriceCents: number;
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen.ephia.de";
-    const successUrl = `${baseUrl}/courses/success?session_id={CHECKOUT_SESSION_ID}`;
+    // Doctor-facing post-purchase URLs live on ephia.de. Old links that
+    // still point at proband-innen.ephia.de keep working via a 308 in
+    // middleware.ts, but new Stripe redirects skip the redirect hop.
+    const successUrl =
+      "https://ephia.de/courses/success?session_id={CHECKOUT_SESSION_ID}";
     const cancelUrl = "https://ephia.de";
 
     const isDentist = courseKey === "grundkurs_botulinum_zahnmedizin";

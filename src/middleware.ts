@@ -22,7 +22,12 @@ const BOOKING_ONLY_PATHS = ["/book", "/courses"];
 
 // Paths that kurse.ephia.de should pass through untouched (framework assets,
 // API routes, etc). Everything else on that host is treated as a /kurse slug.
-const KURSE_PASSTHROUGH_RE = /^\/(api|_next|kurse|merch|team|favicon\.ico|robots\.txt|sitemap\.xml)(\/|$)/;
+//
+// `courses` and `bewertung` are passthrough so that doctor-facing
+// post-purchase URLs (Stripe success redirect at /courses/success and
+// the review-form landing at /bewertung/[token]) render on ephia.de
+// without getting caught by the /{slug} → /kurse/{slug} rewrite.
+const KURSE_PASSTHROUGH_RE = /^\/(api|_next|kurse|merch|team|courses|bewertung|favicon\.ico|robots\.txt|sitemap\.xml)(\/|$)/;
 
 // LearnWorlds → Next.js URL migration redirect map. Every entry is a
 // pathname that ranks (or recently ranked) on Google for the old LW
@@ -270,6 +275,31 @@ export async function middleware(request: NextRequest) {
     const isAdminPath = ADMIN_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
     if (isAdminPath) {
       return NextResponse.rewrite(new URL("/not-found", request.url));
+    }
+
+    // Doctor-facing post-purchase URLs that historically lived on this
+    // host get permanent-redirected to the marketing domain so emails
+    // already in inboxes (Stripe success links, profile-completion
+    // reminders, scheduled review-request emails) keep working without
+    // the doctor seeing the "proband-innen" subdomain. The Next.js
+    // routes themselves now serve from ephia.de.
+    //
+    // Note: only `/courses/success` is redirected, NOT `/courses/...`
+    // generally — the LearnWorlds iframe embed under `/courses/[courseKey]`
+    // must remain reachable on this host because LW pulls it from here.
+    if (pathname === "/courses/success") {
+      const target = new URL(
+        pathname + request.nextUrl.search,
+        `https://${MARKETING_DOMAIN}`,
+      );
+      return NextResponse.redirect(target, 308);
+    }
+    if (pathname === "/bewertung" || pathname.startsWith("/bewertung/")) {
+      const target = new URL(
+        pathname + request.nextUrl.search,
+        `https://${MARKETING_DOMAIN}`,
+      );
+      return NextResponse.redirect(target, 308);
     }
 
     // The private booking funnel is only meant to be reached via

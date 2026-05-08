@@ -48,8 +48,11 @@ export async function GET(req: NextRequest) {
       : template.name_online || template.title;
     const description = template.description_online || "";
     const unitAmount = template.price_gross_online_cents || 0;
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen.ephia.de";
-    const successUrl = `${baseUrl}/courses/success?session_id={CHECKOUT_SESSION_ID}`;
+    // Doctor-facing post-purchase URL lives on ephia.de. Old links that
+    // point at proband-innen.ephia.de keep working via a 308 in
+    // middleware.ts.
+    const successUrl =
+      "https://ephia.de/courses/success?session_id={CHECKOUT_SESSION_ID}";
     const cancelUrl = "https://ephia.de";
 
     if (unitAmount <= 0) {

@@ -455,7 +455,7 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
         buttons: [
           {
             label: "Bewertung abgeben",
-            url: "https://proband-innen.ephia.de/bewertung/beispiel-token",
+            url: "https://ephia.de/bewertung/beispiel-token",
           },
         ],
         closing:

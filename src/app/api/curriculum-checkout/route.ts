@@ -155,9 +155,13 @@ export async function POST(req: NextRequest) {
     // Build description for Stripe
     const description = courseNames.join(" + ");
 
+    // Doctor-facing post-purchase URLs live on ephia.de. The cancel URL
+    // points back to the curriculum-detail page which still lives on
+    // the booking host (per BOOKING_ONLY_PATHS in middleware.ts).
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen.ephia.de";
-    const successUrl = `${baseUrl}/courses/success?session_id={CHECKOUT_SESSION_ID}`;
+    const successUrl =
+      "https://ephia.de/courses/success?session_id={CHECKOUT_SESSION_ID}";
     const cancelUrl = `${baseUrl}/courses/curriculum/${slug}`;
 
     // Build Stripe checkout params

@@ -411,8 +411,14 @@ export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { sk
 }
 
 // ── Send "complete your profile" reminder email ──
-export async function sendProfileReminderEmail(email: string, firstName: string, bookingId: string, baseUrl: string) {
-  const profileUrl = `${baseUrl}/courses/success?booking_id=${bookingId}&email=${encodeURIComponent(email)}`;
+//
+// `baseUrl` is accepted for backwards compatibility but ignored: the
+// profile-completion page is doctor-facing and now always rendered
+// from ephia.de. Old proband-innen.ephia.de links keep working via a
+// 308 in middleware.ts.
+export async function sendProfileReminderEmail(email: string, firstName: string, bookingId: string, _baseUrl?: string) {
+  void _baseUrl;
+  const profileUrl = `https://ephia.de/courses/success?booking_id=${bookingId}&email=${encodeURIComponent(email)}`;
 
   const html = buildEmailHtml({
     firstName,

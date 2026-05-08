@@ -83,12 +83,17 @@ const REVIEWS: PageGroup = {
   label: "Bewertungen",
   description:
     "Tokenbasierte Bewertungs-Seite für Auszubildende. Pro Buchung wird ein eigener Link generiert und in der Folge-Mail nach Kursende verschickt.",
-  host: HOST_PROBAND,
+  host: HOST_MARKETING,
   pages: [
     {
       title: "Bewertungsformular (Beispiel-Token)",
       path: "/bewertung/beispiel-token",
       note: "Link funktioniert nur mit echtem, generiertem Token.",
+    },
+    {
+      title: "Bewertungs-Vorschau (Vorschau-Modus)",
+      path: "/bewertung/preview",
+      note: "Statisches Vorschau-Layout, Submit wird nicht gespeichert.",
     },
   ],
 };

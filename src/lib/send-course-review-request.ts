@@ -3,8 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildEmailHtml } from "@/lib/email-template";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
-const APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen.ephia.de";
+// Doctor-facing URL: the review form lives on ephia.de. Old links
+// already queued in Resend (or sitting in inboxes) at the
+// proband-innen subdomain keep working via a 308 in middleware.ts.
+const APP_URL = "https://ephia.de";
 
 // Resend's scheduled_at horizon: ~30 days. Use a slightly tighter
 // window so we never bump up against the limit and get a 422 back.
