@@ -14,20 +14,14 @@ export default async function KursePage() {
 
   const admin = createAdminClient();
 
-  // Show sessions from one month back through everything in the future,
-  // sorted by date. Past Auszubildende sessions matter for staff who
-  // need to look up what happened recently; the cron eventually flips
-  // their is_live to false.
-  const cutoff = new Date();
-  cutoff.setMonth(cutoff.getMonth() - 1);
-  const cutoffIso = cutoff.toISOString().slice(0, 10);
-
+  // No date cutoff — staff need historical sessions visible for
+  // tracking. Sessions without a Proband:innen satellite simply show
+  // "—" in the Proband:innen column.
   const { data: sessions } = await admin
     .from("course_sessions")
     .select(
       "id, date_iso, start_time, duration_minutes, label_de, instructor_name, betreuer_name, max_seats, booked_seats, cme_status, vnr_praxis, has_zahnmedizin, is_live, template_id",
     )
-    .gte("date_iso", cutoffIso)
     .order("date_iso", { ascending: true });
 
   const sessionList = sessions ?? [];
@@ -35,7 +29,7 @@ export default async function KursePage() {
     new Set(sessionList.map((s) => s.template_id).filter((x): x is string => !!x)),
   );
 
-  const [{ data: templates }, { data: satellites }] = await Promise.all([
+  const [{ data: templates }, { data: satellites }, { data: zahnBookings }] = await Promise.all([
     templateIds.length
       ? admin
           .from("course_templates")
@@ -51,7 +45,23 @@ export default async function KursePage() {
             sessionList.map((s) => s.id),
           )
       : Promise.resolve({ data: [] as Array<{ id: string; session_id: string; status: string }> }),
+    sessionList.length
+      ? admin
+          .from("course_bookings")
+          .select("session_id")
+          .eq("audience_tag", "Zahnmediziner:in")
+          .neq("status", "cancelled")
+      : Promise.resolve({ data: [] as Array<{ session_id: string | null }> }),
   ]);
+
+  const zahnCountBySessionId = new Map<string, number>();
+  for (const b of zahnBookings ?? []) {
+    if (!b.session_id) continue;
+    zahnCountBySessionId.set(
+      b.session_id as string,
+      (zahnCountBySessionId.get(b.session_id as string) ?? 0) + 1,
+    );
+  }
 
   const templateById = new Map((templates ?? []).map((t) => [t.id, t]));
   const satelliteBySessionId = new Map(
@@ -82,6 +92,7 @@ export default async function KursePage() {
       : null;
     return {
       id: s.id as string,
+      templateId: (s.template_id as string | null) ?? null,
       dateIso: s.date_iso as string,
       startTime: (s.start_time as string | null) ?? null,
       durationMinutes: (s.duration_minutes as number | null) ?? null,
@@ -92,7 +103,7 @@ export default async function KursePage() {
       aerztMax: (s.max_seats as number | null) ?? 0,
       probandBooked: probands ? probands.booked : null,
       probandTotal: probands ? probands.total : null,
-      hasZahnmedizin: (s.has_zahnmedizin as boolean | null) ?? false,
+      zahnmedizinerCount: zahnCountBySessionId.get(s.id as string) ?? 0,
       cmeStatus: (s.cme_status as string | null) ?? null,
       vnrPraxis: (s.vnr_praxis as string | null) ?? null,
       isLive: (s.is_live as boolean | null) ?? false,

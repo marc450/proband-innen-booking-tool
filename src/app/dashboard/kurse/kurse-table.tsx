@@ -2,8 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
 import {
   Table,
   TableBody,
@@ -12,10 +10,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowDown, ArrowUp, ArrowUpDown, Check } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 
 export interface KurseRow {
   id: string;
+  templateId: string | null;
   dateIso: string;
   startTime: string | null;
   durationMinutes: number | null;
@@ -26,7 +25,7 @@ export interface KurseRow {
   aerztMax: number;
   probandBooked: number | null;
   probandTotal: number | null;
-  hasZahnmedizin: boolean;
+  zahnmedizinerCount: number;
   cmeStatus: string | null;
   vnrPraxis: string | null;
   isLive: boolean;
@@ -63,6 +62,36 @@ const COL_LABELS: Record<SortKey, string> = {
   vnr: "VNR",
 };
 
+// Stable per-template colour palette, copied from
+// /dashboard/auszubildende/course-sessions-overview so the unified
+// table stays visually consistent with the rest of the dashboard.
+const COURSE_COLORS: { bg: string; text: string }[] = [
+  { bg: "bg-blue-100", text: "text-blue-800" },
+  { bg: "bg-emerald-100", text: "text-emerald-800" },
+  { bg: "bg-amber-100", text: "text-amber-800" },
+  { bg: "bg-purple-100", text: "text-purple-800" },
+  { bg: "bg-rose-100", text: "text-rose-800" },
+  { bg: "bg-cyan-100", text: "text-cyan-800" },
+  { bg: "bg-orange-100", text: "text-orange-800" },
+  { bg: "bg-indigo-100", text: "text-indigo-800" },
+  { bg: "bg-lime-100", text: "text-lime-800" },
+  { bg: "bg-pink-100", text: "text-pink-800" },
+];
+
+// Format YYYY-MM-DD without going through a Date object — `new Date("2026-05-10")`
+// is interpreted as UTC midnight which shifts to the previous day in Berlin.
+function formatDateDe(dateIso: string): string {
+  const [y, m, d] = dateIso.split("-");
+  return `${d}.${m}.${y}`;
+}
+
+function startTimePill(t: string | null): { className: string; label: string } | null {
+  if (!t) return null;
+  if (t === "10:00") return { className: "bg-emerald-100 text-emerald-800", label: t };
+  if (t === "15:30") return { className: "bg-rose-100 text-rose-800", label: t };
+  return null;
+}
+
 function compare(a: KurseRow, b: KurseRow, key: SortKey, dir: SortDir): number {
   const sign = dir === "asc" ? 1 : -1;
   switch (key) {
@@ -85,7 +114,7 @@ function compare(a: KurseRow, b: KurseRow, key: SortKey, dir: SortDir): number {
     case "proband":
       return ((a.probandBooked ?? 0) - (b.probandBooked ?? 0)) * sign;
     case "zahnmedizin":
-      return (Number(b.hasZahnmedizin) - Number(a.hasZahnmedizin)) * sign;
+      return (a.zahnmedizinerCount - b.zahnmedizinerCount) * sign;
     case "cme":
       return (a.cmeStatus ?? "").localeCompare(b.cmeStatus ?? "", "de") * sign;
     case "vnr":
@@ -124,6 +153,24 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
+  // Per-template colour map. Mirrors the algorithm in
+  // course-sessions-overview so that the same template gets the same
+  // hue across both views during the transition.
+  const courseColorMap = useMemo(() => {
+    const sortedNames = new Map<string, string>();
+    for (const r of rows) {
+      if (r.templateId && !sortedNames.has(r.templateId)) {
+        sortedNames.set(r.templateId, r.courseTitle);
+      }
+    }
+    const ids = [...sortedNames.entries()]
+      .sort(([, a], [, b]) => a.localeCompare(b, "de"))
+      .map(([id]) => id);
+    const map = new Map<string, { bg: string; text: string }>();
+    ids.forEach((id, i) => map.set(id, COURSE_COLORS[i % COURSE_COLORS.length]));
+    return map;
+  }, [rows]);
+
   const onSort = (k: SortKey) => {
     if (sortKey === k) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -141,7 +188,7 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
   if (rows.length === 0) {
     return (
       <div className="rounded-[10px] bg-card p-8 text-center text-sm text-muted-foreground">
-        Keine Kurstermine in den letzten/kommenden Wochen.
+        Keine Kurstermine vorhanden.
       </div>
     );
   }
@@ -170,8 +217,21 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
             const aerztSoldOut = r.aerztMax > 0 && r.aerztBooked >= r.aerztMax;
             const probandSoldOut =
               r.probandTotal != null && r.probandTotal > 0 && r.probandBooked === r.probandTotal;
+            // Row counts as fully booked when both the doctor side and
+            // the proband side (when present) are full. Sessions that
+            // never had a proband satellite only need the doctor side.
+            const fullyBooked = aerztSoldOut && (r.probandTotal == null || probandSoldOut);
+            const courseColor = (r.templateId && courseColorMap.get(r.templateId)) || COURSE_COLORS[0];
+            const startPill = startTimePill(r.startTime);
             return (
-              <TableRow key={r.id} className="hover:bg-muted/50">
+              <TableRow
+                key={r.id}
+                className={
+                  fullyBooked
+                    ? "bg-emerald-50 hover:bg-emerald-100"
+                    : "hover:bg-muted/50"
+                }
+              >
                 <TableCell>
                   <Link href={`/dashboard/kurse/${r.id}`} className="block">
                     <span
@@ -184,23 +244,33 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
                   </Link>
                 </TableCell>
                 <TableCell>
-                  <Link href={`/dashboard/kurse/${r.id}`} className="block">
-                    {format(new Date(r.dateIso), "dd.MM.yyyy", { locale: de })}
+                  <Link href={`/dashboard/kurse/${r.id}`} className="block font-medium text-sm">
+                    {formatDateDe(r.dateIso)}
                   </Link>
                 </TableCell>
                 <TableCell>
-                  <Link href={`/dashboard/kurse/${r.id}`} className="block">
-                    {r.startTime ?? "—"}
+                  <Link href={`/dashboard/kurse/${r.id}`} className="block text-sm">
+                    {startPill ? (
+                      <span className={`${startPill.className} font-medium text-xs rounded-full px-2.5 py-1`}>
+                        {startPill.label}
+                      </span>
+                    ) : (
+                      r.startTime ?? "—"
+                    )}
                   </Link>
                 </TableCell>
                 <TableCell>
-                  <Link href={`/dashboard/kurse/${r.id}`} className="block">
+                  <Link href={`/dashboard/kurse/${r.id}`} className="block text-sm">
                     {r.durationMinutes ? `${r.durationMinutes} min` : "—"}
                   </Link>
                 </TableCell>
                 <TableCell>
-                  <Link href={`/dashboard/kurse/${r.id}`} className="block font-medium">
-                    {r.courseTitle}
+                  <Link href={`/dashboard/kurse/${r.id}`} className="block">
+                    <span
+                      className={`${courseColor.bg} ${courseColor.text} font-medium text-xs rounded-full px-2.5 py-1`}
+                    >
+                      {r.courseTitle}
+                    </span>
                   </Link>
                 </TableCell>
                 <TableCell>
@@ -232,9 +302,9 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
                   </Link>
                 </TableCell>
                 <TableCell>
-                  <Link href={`/dashboard/kurse/${r.id}`} className="block">
-                    {r.hasZahnmedizin ? (
-                      <Check className="h-4 w-4 text-emerald-700" />
+                  <Link href={`/dashboard/kurse/${r.id}`} className="block text-sm tabular-nums">
+                    {r.zahnmedizinerCount > 0 ? (
+                      r.zahnmedizinerCount
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
