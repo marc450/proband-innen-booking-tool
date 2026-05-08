@@ -322,6 +322,31 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
       .select()
       .single();
     if (!error && data) {
+      // Auto-create the Proband:innen satellite course for this session.
+      // Same physical event, two database rows; the FK keeps them in sync
+      // going forward. Status starts as 'draft' so admin reviews and adds
+      // slots before the public booking page picks it up.
+      const template = templates.find((t) => t.id === formTemplateId);
+      const instructorProfile = dozentUsers.find(
+        (d) => dozentDisplayName(d) === formInstructor,
+      );
+      if (template) {
+        await supabase.from("courses").insert({
+          session_id: data.id,
+          template_id: formTemplateId,
+          title: template.title,
+          treatment_title: template.treatment_title || null,
+          description: template.description || null,
+          service_description: template.service_description || null,
+          guide_price_cents: template.guide_price_cents,
+          image_url: template.image_url || null,
+          course_date: formDateIso,
+          location: formAddress || null,
+          instructor_id: instructorProfile?.id || null,
+          status: "draft",
+        });
+      }
+
       setSessions((prev) => [...prev, data].sort((a, b) => a.date_iso.localeCompare(b.date_iso)));
       setShowCreateDialog(false);
       setFormDateIso("");
