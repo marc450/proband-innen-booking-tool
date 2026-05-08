@@ -201,12 +201,46 @@ export function KursDetailClient({
   };
 
   const [aerztBookingsState, setAerztBookingsState] = useState<AerztBooking[]>(aerztBookings);
+  // Live counter for the section header. Sync to the prop on first
+  // render and adjust optimistically on each status transition so the
+  // "(X/Y)" badge updates without waiting for a server roundtrip.
+  const [aerztBookedSeats, setAerztBookedSeats] = useState<number>(
+    session.bookedSeats,
+  );
+
+  // Status transitions out of the active set free a seat; transitions
+  // back into it consume one. Mirrors the back-office cancellation
+  // path which calls these same RPCs.
+  const ACTIVE_STATUSES = new Set(["booked", "completed"]);
+  const isActive = (s: string | null | undefined) =>
+    !!s && ACTIVE_STATUSES.has(s);
 
   const updateAerztStatus = async (bookingId: string, newStatus: string) => {
+    const prevStatus =
+      aerztBookingsState.find((b) => b.id === bookingId)?.status ?? null;
+    const wasActive = isActive(prevStatus);
+    const willBeActive = isActive(newStatus);
+
     setAerztBookingsState((prev) =>
       prev.map((b) => (b.id === bookingId ? { ...b, status: newStatus } : b)),
     );
+    // Optimistic counter update for the section header.
+    if (wasActive && !willBeActive) setAerztBookedSeats((n) => Math.max(n - 1, 0));
+    if (!wasActive && willBeActive) setAerztBookedSeats((n) => n + 1);
+
     await supabase.from("course_bookings").update({ status: newStatus }).eq("id", bookingId);
+
+    // Keep the denormalised course_sessions.booked_seats counter in
+    // sync. Without this, the public Auszubildende booking widget on
+    // ephia.de still shows the slot as "ausgebucht" after a manual
+    // cancel from this dropdown — the widget reads booked_seats, not
+    // a derived count. Same RPCs that /api/cancel-course-booking
+    // already uses.
+    if (wasActive && !willBeActive) {
+      await supabase.rpc("decrement_booked_seats", { p_session_id: session.id });
+    } else if (!wasActive && willBeActive) {
+      await supabase.rpc("increment_booked_seats", { p_session_id: session.id });
+    }
   };
 
   const updateBookingNotes = async (booking: DetailBooking, newNotes: string) => {
@@ -272,7 +306,7 @@ export function KursDetailClient({
       <section className="rounded-[10px] bg-card ring-1 ring-black/5 overflow-hidden">
         <div className="px-6 pt-6 pb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">
-            Buchungen Ärzt:innen ({session.bookedSeats}/{session.maxSeats})
+            Buchungen Ärzt:innen ({aerztBookedSeats}/{session.maxSeats})
           </h2>
         </div>
         {aerztBookingsState.length === 0 ? (
