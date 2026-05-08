@@ -54,7 +54,8 @@ export default async function KursDetailPage({
         .in(
           "slot_id",
           slots.map((s) => s.id),
-        );
+        )
+        .neq("status", "cancelled");
 
       bookings = ((bookingRows ?? []).map((row) => {
         const decrypted = decryptBooking(row);

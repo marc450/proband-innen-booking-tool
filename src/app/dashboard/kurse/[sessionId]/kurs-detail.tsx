@@ -26,7 +26,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { ArrowLeft, Calendar, Check, Clock, Copy, MapPin, Plus, Trash2, User, Users } from "lucide-react";
+import { ArrowLeft, Calendar, Check, Clock, Copy, MapPin, Plus, Trash2, User } from "lucide-react";
 
 export interface DetailSlot {
   id: string;
@@ -222,12 +222,6 @@ export function KursDetailClient({
       <div>
         <h1 className="text-2xl font-bold">{session.templateTitle}</h1>
         <div className="text-sm text-muted-foreground mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-          {session.maxSeats > 0 && (
-            <span className="inline-flex items-center gap-1.5">
-              <Users className="h-4 w-4" />
-              {session.bookedSeats}/{session.maxSeats} Plätze belegt
-            </span>
-          )}
           <span className="inline-flex items-center gap-1.5">
             <Calendar className="h-4 w-4" />
             {format(new Date(`${session.dateIso}T12:00:00`), "EEEE, dd. MMMM yyyy", { locale: de })}
@@ -264,7 +258,7 @@ export function KursDetailClient({
       <section className="rounded-[10px] bg-card ring-1 ring-black/5 overflow-hidden">
         <div className="px-6 pt-6 pb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">
-            Buchungen Ärzt:innen ({aerztBookingsState.length})
+            Buchungen Ärzt:innen ({session.bookedSeats}/{session.maxSeats})
           </h2>
         </div>
         {aerztBookingsState.length === 0 ? (
@@ -339,7 +333,7 @@ export function KursDetailClient({
       <section className="rounded-[10px] bg-card ring-1 ring-black/5 overflow-hidden">
         <div className="px-6 pt-6 pb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">
-            Buchungen Proband:innen ({slots.length})
+            Buchungen Proband:innen ({bookings.length}/{slots.reduce((sum, sl) => sum + sl.capacity, 0)})
           </h2>
           {satelliteId && (
             <Button size="sm" onClick={openAddSlot}>
