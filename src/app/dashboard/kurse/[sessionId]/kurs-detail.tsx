@@ -279,7 +279,18 @@ export function KursDetailClient({
             Noch keine Buchungen für diese Session.
           </p>
         ) : (
-          <Table>
+          <Table className="table-fixed">
+            {/* Shared column widths so the Auszubildende and Proband:innen
+                tables align column-for-column on the page. The same
+                <colgroup> repeats on the Proband:innen table below. */}
+            <colgroup>
+              <col style={{ width: "200px" }} />{/* Name */}
+              <col style={{ width: "280px" }} />{/* E-Mail */}
+              <col style={{ width: "220px" }} />{/* Bereits besuchte Kurse | Uhrzeit */}
+              <col style={{ width: "200px" }} />{/* Spezialisierung | Überweiser:in */}
+              <col style={{ width: "240px" }} />{/* Profil | Notizen */}
+              <col style={{ width: "180px" }} />{/* Status */}
+            </colgroup>
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -287,7 +298,7 @@ export function KursDetailClient({
                 <TableHead>Bereits besuchte Kurse</TableHead>
                 <TableHead>Spezialisierung</TableHead>
                 <TableHead>Profil</TableHead>
-                <TableHead className="w-[180px]">
+                <TableHead>
                   <div className="flex justify-end">
                     <span className="w-[140px]">Status</span>
                   </div>
@@ -383,7 +394,17 @@ export function KursDetailClient({
             Noch keine Slots angelegt. Klicke auf &quot;Slot hinzufügen&quot;, um den ersten anzulegen.
           </p>
         ) : (
-          <Table>
+          <Table className="table-fixed">
+            {/* Same column widths as the Auszubildende table above so
+                the two tables align column-for-column on the page. */}
+            <colgroup>
+              <col style={{ width: "200px" }} />{/* Name */}
+              <col style={{ width: "280px" }} />{/* E-Mail */}
+              <col style={{ width: "220px" }} />{/* Uhrzeit */}
+              <col style={{ width: "200px" }} />{/* Überweiser:in */}
+              <col style={{ width: "240px" }} />{/* Notizen */}
+              <col style={{ width: "180px" }} />{/* Status */}
+            </colgroup>
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -391,7 +412,7 @@ export function KursDetailClient({
                 <TableHead>Uhrzeit</TableHead>
                 <TableHead>Überweiser:in</TableHead>
                 <TableHead>Notizen</TableHead>
-                <TableHead className="w-[180px]">
+                <TableHead>
                   <div className="flex justify-end">
                     <span className="w-[140px]">Status</span>
                   </div>
