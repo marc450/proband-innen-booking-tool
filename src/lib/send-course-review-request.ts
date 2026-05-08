@@ -29,7 +29,6 @@ interface BookingRow {
   email: string | null;
   first_name: string | null;
   template_id: string;
-  legacy_import: boolean | null;
   status: string;
   course_sessions: SessionRow | SessionRow[] | null;
   course_templates:
@@ -166,17 +165,22 @@ export async function scheduleCourseReviewEmails(
   const nowMs = Date.now();
   const horizonMs = nowMs + SCHEDULE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
+  // We deliberately do NOT filter on legacy_import. Post-course
+  // communication (certificate, review request) goes to every attendee
+  // regardless of how the booking row was created. The legacy_import
+  // exclusion only makes sense for pre-course onboarding emails like
+  // profile-completion reminders, which assume the doctor went through
+  // the live signup funnel.
   let query = supabase
     .from("course_bookings")
     .select(
-      `id, email, first_name, template_id, legacy_import, status,
+      `id, email, first_name, template_id, status,
        course_sessions ( id, date_iso, start_time, duration_minutes ),
        course_templates:template_id ( title, course_label_de )`,
     )
     .is("review_email_resend_id", null)
     .is("review_email_sent_at", null)
     .in("status", ["booked", "completed"])
-    .eq("legacy_import", false)
     .not("email", "is", null)
     .not("session_id", "is", null);
 
