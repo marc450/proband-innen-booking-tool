@@ -255,8 +255,7 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
         )}
       </div>
       <div className="overflow-hidden rounded-[10px] ring-1 ring-black/5 bg-card">
-      <div className="overflow-x-auto">
-      <Table>
+      <Table containerClassName="overflow-x-auto">
         <TableHeader>
           <TableRow>
             <SortableHead sortKey="aerzt_status" current={sortKey} dir={sortDir} onSort={onSort} />
@@ -405,7 +404,6 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
           })}
         </TableBody>
       </Table>
-      </div>
       </div>
     </div>
   );
