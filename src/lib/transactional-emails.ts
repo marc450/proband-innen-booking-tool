@@ -397,6 +397,54 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
     }),
   },
   {
+    id: "profile-reminder",
+    funnel: "arzt-kursbuchung",
+    name: "Profil-Erinnerung (5 Min nach Buchung)",
+    recipient: "Ärzt:in",
+    trigger:
+      "Automatisch 5 Min nach Stripe-Checkout, wenn das Profil noch unvollständig ist",
+    codeRef: "src/lib/post-purchase.ts (sendProfileReminderEmail)",
+    description:
+      "Erinnert frisch gebuchte Ärzt:innen, ihr Profil zu vervollständigen, damit der Kursfortschritt erfasst wird.",
+    renderSample: () => ({
+      subject: "Bitte vervollständige Dein Profil",
+      html: buildEmailHtml({
+        firstName: SAMPLE.firstName,
+        intro:
+          "Vielen Dank für Deine Buchung! Wir benötigen noch ein paar Angaben von Dir, damit wir Deinen Kurs freischalten können.",
+        infoRows: [],
+        closing:
+          '<a href="https://ephia.de/courses/success?booking_id=SAMPLE&email=anna@example.com" style="display:inline-block;color:#0066FF;font-weight:600;font-size:14px;text-decoration:underline;">Profil vervollständigen →</a>',
+      }),
+    }),
+  },
+  {
+    id: "in-person-profile-link",
+    funnel: "arzt-kursbuchung",
+    name: "Profil-Link (Übergabe am Kurs)",
+    recipient: "Ärzt:in",
+    trigger:
+      "Manuell durch die Kursbetreuung im Dashboard, wenn ein:e Auszubildende:r am Kurstag mit unvollständigem Profil vor Ort ist",
+    codeRef:
+      "src/lib/post-purchase.ts (sendInPersonProfileLinkEmail), src/app/api/admin/send-profile-reminder/route.ts",
+    description:
+      "Persönlich am Kurs durch die Kursbetreuung ausgelöst. Adressiert die/den Ärzt:in, die/der gerade angesprochen wurde, und stellt den Profil-Link mit CME-/Zertifikat-Hinweis bereit.",
+    renderSample: () => ({
+      subject: "Profil vervollständigen",
+      html: buildEmailHtml({
+        firstName: SAMPLE.firstName,
+        intro:
+          "wie eben am Kurs besprochen, hier kommt Dein Profil-Link. Bitte fülle Dein Profil jetzt aus, damit wir Deine CME-Punkte zuordnen und Dein Zertifikat ausstellen können.",
+        buttons: [
+          {
+            label: "Profil vervollständigen →",
+            url: "https://ephia.de/courses/success?booking_id=SAMPLE&email=anna@example.com",
+          },
+        ],
+      }),
+    }),
+  },
+  {
     id: "invoice",
     funnel: "arzt-kursbuchung",
     name: "Rechnung",

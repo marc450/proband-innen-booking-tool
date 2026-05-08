@@ -429,3 +429,27 @@ export async function sendProfileReminderEmail(email: string, firstName: string,
 
   await sendEmailViaResend(email, "Bitte vervollständige Dein Profil", html);
 }
+
+// ── Send the profile link as a face-to-face handover ──
+//
+// Triggered manually by the Kursbetreuung from the dashboard when an
+// Auszubildende:r is on-site at the course with an incomplete profile.
+// Distinct from the 5-minute automated reminder above: this email
+// assumes the recipient was just spoken to in person and frames the
+// urgency around CME points + Zertifikat.
+export async function sendInPersonProfileLinkEmail(
+  email: string,
+  firstName: string,
+  bookingId: string,
+) {
+  const profileUrl = `https://ephia.de/courses/success?booking_id=${bookingId}&email=${encodeURIComponent(email)}`;
+
+  const html = buildEmailHtml({
+    firstName,
+    intro:
+      "wie eben am Kurs besprochen, hier kommt Dein Profil-Link. Bitte fülle Dein Profil jetzt aus, damit wir Deine CME-Punkte zuordnen und Dein Zertifikat ausstellen können.",
+    buttons: [{ label: "Profil vervollständigen →", url: profileUrl }],
+  });
+
+  await sendEmailViaResend(email, "Profil vervollständigen", html);
+}

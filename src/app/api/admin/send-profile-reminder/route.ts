@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendProfileReminderEmail } from "@/lib/post-purchase";
+import { sendInPersonProfileLinkEmail } from "@/lib/post-purchase";
 
 // Sends the customer the same "complete your profile" email that
 // sendProfileReminderEmail in lib/post-purchase already builds — just
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await sendProfileReminderEmail(
+    await sendInPersonProfileLinkEmail(
       booking.email as string,
       (booking.first_name as string | null) || "Kolleg:in",
       booking.id as string,
