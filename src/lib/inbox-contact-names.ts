@@ -78,10 +78,15 @@ export async function resolveContactNamesByEmail(
       emailByHash.set(hashEmail(e), e);
     }
     const hashes = Array.from(emailByHash.keys());
+    // Only encrypted columns + the lookup hash — first_name/last_name
+    // do not exist as plaintext columns on `patients`. Naming them in
+    // the SELECT used to fail the whole query and silently dropped
+    // every patient lookup, which is why Patient:innen rows kept
+    // showing the bare email in the inbox list.
     const { data: pats } = await admin
       .from("patients")
       .select(
-        "email_hash, encrypted_data, encrypted_key, encryption_iv, first_name, last_name",
+        "email_hash, encrypted_data, encrypted_key, encryption_iv",
       )
       .in("email_hash", hashes);
     for (const p of pats ?? []) {
