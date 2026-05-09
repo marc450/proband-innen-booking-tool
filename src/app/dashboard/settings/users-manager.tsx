@@ -30,7 +30,7 @@ import { ConfirmDialog, AlertDialog } from "@/components/confirm-dialog";
 import { TableHeaderBar } from "@/components/table/table-header-bar";
 import { SortableHead } from "@/components/table/sortable-head";
 import { useTableSort } from "@/hooks/use-table-sort";
-import { Plus, Trash2, RefreshCw, Copy, Check, Edit } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Copy, Check, Edit, ShieldOff } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { AdminUser } from "./page";
@@ -49,6 +49,13 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [alertState, setAlertState] = useState<{ title: string; description: string } | null>(null);
+  // Admin escape hatch: reset another staff user's MFA factors when
+  // they're locked out (lost phone, etc.). Hits
+  // /api/admin/users/[id]/unenroll-mfa, the user is back to password-
+  // only and the middleware will force-enroll on next login if they
+  // are admin role.
+  const [mfaResetTarget, setMfaResetTarget] = useState<AdminUser | null>(null);
+  const [mfaResetting, setMfaResetting] = useState(false);
 
   // Create form
   const [title, setTitle] = useState("");
@@ -206,6 +213,29 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     setDeleteTarget(null);
   };
 
+  const handleMfaReset = async () => {
+    if (!mfaResetTarget) return;
+    setMfaResetting(true);
+    const res = await fetch(
+      `/api/admin/users/${mfaResetTarget.id}/unenroll-mfa`,
+      { method: "POST" },
+    );
+    const data = await res.json();
+    setMfaResetting(false);
+    setMfaResetTarget(null);
+    if (!res.ok) {
+      setAlertState({
+        title: "Fehler",
+        description: data.error || "2FA konnte nicht zurückgesetzt werden.",
+      });
+    } else {
+      setAlertState({
+        title: "2FA zurückgesetzt",
+        description: `${data.count ?? 0} Faktor(en) entfernt. Beim nächsten Login ist nur das Passwort erforderlich; Admins werden danach zur Neu-Einrichtung gezwungen.`,
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <AlertDialog
@@ -227,6 +257,20 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
         variant="destructive"
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={!!mfaResetTarget}
+        title="2FA zurücksetzen"
+        description={`2FA-Faktoren von ${
+          mfaResetTarget?.first_name && mfaResetTarget?.last_name
+            ? `${mfaResetTarget.first_name} ${mfaResetTarget.last_name}`
+            : mfaResetTarget?.email
+        } entfernen? Der/die Benutzer:in kann sich danach mit Passwort einloggen und muss bei Admin-Rolle einen neuen Faktor einrichten.`}
+        confirmLabel={mfaResetting ? "Wird zurückgesetzt..." : "Zurücksetzen"}
+        variant="destructive"
+        onConfirm={handleMfaReset}
+        onCancel={() => setMfaResetTarget(null)}
       />
 
       {/* Edit dialog */}
@@ -468,6 +512,16 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                         <Button variant="ghost" size="sm" onClick={() => openEdit(u)} title="Bearbeiten">
                           <Edit className="h-4 w-4" />
                         </Button>
+                        {u.id !== currentUserId && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setMfaResetTarget(u)}
+                            title="2FA zurücksetzen (Notfall)"
+                          >
+                            <ShieldOff className="h-4 w-4 text-muted-foreground hover:text-amber-600" />
+                          </Button>
+                        )}
                         {u.id !== currentUserId && (
                           <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(u)} title="Löschen">
                             <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500" />

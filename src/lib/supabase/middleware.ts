@@ -52,7 +52,12 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/dashboard/") ||
     path === "/m" ||
     path.startsWith("/m/");
-  if (isProtected && !user) {
+  // Pages in the post-login MFA flow. They're auth-required (a session
+  // must exist to reach them) but exempt from the AAL gate further
+  // down, otherwise users with aal1 sessions would loop on the very
+  // page that's supposed to upgrade them.
+  const isMfaTransition = path === "/verify-2fa" || path === "/setup-2fa";
+  if ((isProtected || isMfaTransition) && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
@@ -110,8 +115,58 @@ export async function updateSession(request: NextRequest) {
   // Bouncing to ephia.de root rather than /login here, because the
   // user is already authenticated — sending them to /login again would
   // either show a logged-in user the login form (confusing) or loop.
-  if (user && isAdminHost && isProtected && !STAFF_ROLES.has(role)) {
+  if (user && isAdminHost && (isProtected || isMfaTransition) && !STAFF_ROLES.has(role)) {
     return NextResponse.redirect("https://ephia.de/");
+  }
+
+  // ── 2FA gate ──────────────────────────────────────────────────────
+  // Three states encoded by Supabase's AAL claims:
+  //   • currentLevel=aal1, nextLevel=aal1 → user has no verified factor.
+  //     If they're admin, force them through /setup-2fa (admin role
+  //     handles patient-data decrypt and must have MFA). Other staff
+  //     can stay on aal1.
+  //   • currentLevel=aal1, nextLevel=aal2 → user HAS a verified factor
+  //     but the current session hasn't stepped up. Bounce to /verify-2fa
+  //     so they enter their TOTP code.
+  //   • currentLevel=aal2 → fully authenticated. If they hit a transition
+  //     page anyway (e.g. typed the URL, browser back), bounce them
+  //     back to /dashboard so the transition pages don't render
+  //     post-login.
+  //
+  // Only enforced on the admin host. The customer flow on ephia.de /
+  // proband-innen.ephia.de uses Supabase auth too but doesn't gate by
+  // MFA — students self-manage their accounts and 2FA isn't in scope
+  // for the public funnel yet.
+  if (user && isAdminHost && (isProtected || isMfaTransition)) {
+    const { data: aal } =
+      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    const currentLevel = aal?.currentLevel ?? "aal1";
+    const nextLevel = aal?.nextLevel ?? "aal1";
+
+    if (currentLevel === "aal1" && nextLevel === "aal2") {
+      // Has a verified factor, session not stepped up yet.
+      if (path !== "/verify-2fa") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/verify-2fa";
+        return NextResponse.redirect(url);
+      }
+    } else if (
+      currentLevel === "aal1" &&
+      nextLevel === "aal1" &&
+      role === "admin"
+    ) {
+      // Admin without any verified factor → must enroll.
+      if (path !== "/setup-2fa") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/setup-2fa";
+        return NextResponse.redirect(url);
+      }
+    } else if (currentLevel === "aal2" && isMfaTransition) {
+      // Already stepped up → don't render the transition pages.
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;

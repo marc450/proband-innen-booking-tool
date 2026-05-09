@@ -25,11 +25,13 @@ import {
   Receipt,
   CalendarDays,
   ShieldCheck,
+  ShieldPlus,
   TrendingUp,
   ShoppingBag,
   Globe,
   LucideIcon,
 } from "lucide-react";
+import { Manage2faDialog } from "@/components/2fa/manage-2fa-dialog";
 
 type NavItem = {
   href: string;
@@ -203,6 +205,7 @@ export function DashboardNav({
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [show2faDialog, setShow2faDialog] = useState(false);
 
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -542,6 +545,17 @@ export function DashboardNav({
               </button>
               <button
                 type="button"
+                onClick={() => {
+                  setShow2faDialog(true);
+                  setUserMenuOpen(false);
+                }}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-gray-50 transition-colors"
+              >
+                <ShieldPlus className="h-4 w-4" />
+                Zwei-Faktor (2FA)
+              </button>
+              <button
+                type="button"
                 onClick={handleLogout}
                 className="flex items-center gap-2 w-full px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-gray-50 transition-colors"
               >
@@ -552,6 +566,7 @@ export function DashboardNav({
           )}
         </div>
       </aside>
+      <Manage2faDialog open={show2faDialog} onOpenChange={setShow2faDialog} />
     </>
   );
 }
