@@ -76,7 +76,7 @@ const statusVariants: Record<BookingStatus, "default" | "secondary" | "destructi
 
 const allStatuses: BookingStatus[] = ["booked", "attended", "no_show", "cancelled"];
 
-type SortKey = "name" | "kurs" | "termin" | "typ" | "arzt" | "status";
+type SortKey = "name" | "kurs" | "termin" | "typ" | "arzt" | "status" | "created";
 
 function StatusBadgeDropdown({
   booking,
@@ -228,7 +228,12 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
   const [slotChangeError, setSlotChangeError] = useState<string | null>(null);
   const [savingSlotChange, setSavingSlotChange] = useState(false);
 
-  const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("termin", "desc");
+  // Default to newest-booking-first so freshly arrived Probanden
+  // bookings surface at the top — that's the workflow staff actually
+  // need ("did anything new come in?"). Was previously "termin desc"
+  // which put the furthest-future appointment first, useful but
+  // operationally less actionable.
+  const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("created", "desc");
 
   const supabase = createClient();
   const router = useRouter();
@@ -289,6 +294,11 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
         }
         case "status": {
           return dir * a.status.localeCompare(b.status);
+        }
+        case "created": {
+          const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const tB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return dir * (tA - tB);
         }
         default:
           return 0;
