@@ -60,8 +60,31 @@ export function PatientDetail({ patient: initialPatient, bookings: initialBookin
   // Per-booking status dropdown. Holds the booking ID whose pill is
   // currently expanded; null = none open. Only one booking dropdown
   // at a time so we don't have to cap z-index per row.
+  //
+  // We render the dropdown with position: fixed and compute its
+  // coordinates from the trigger's getBoundingClientRect — the
+  // surrounding Card has overflow-hidden, so an absolute-positioned
+  // child gets clipped on the right and bottom.
   const [bookingStatusOpenId, setBookingStatusOpenId] = useState<string | null>(null);
+  const [bookingStatusPos, setBookingStatusPos] = useState<{ top: number; right: number } | null>(null);
   const bookingStatusRef = useRef<HTMLDivElement>(null);
+
+  const toggleBookingStatusDropdown = (
+    bookingId: string,
+    triggerEl: HTMLElement,
+  ) => {
+    if (bookingStatusOpenId === bookingId) {
+      setBookingStatusOpenId(null);
+      setBookingStatusPos(null);
+      return;
+    }
+    const rect = triggerEl.getBoundingClientRect();
+    setBookingStatusPos({
+      top: rect.bottom + 4,
+      right: window.innerWidth - rect.right,
+    });
+    setBookingStatusOpenId(bookingId);
+  };
 
   // Cancel-with-email flow, mirrored from kurs-detail.tsx so a
   // status change to "cancelled" from this page sends the same
@@ -100,6 +123,7 @@ export function PatientDetail({ patient: initialPatient, bookings: initialBookin
       }
       if (bookingStatusOpenId && bookingStatusRef.current && !bookingStatusRef.current.contains(e.target as Node)) {
         setBookingStatusOpenId(null);
+        setBookingStatusPos(null);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -111,6 +135,7 @@ export function PatientDetail({ patient: initialPatient, bookings: initialBookin
     newStatus: BookingStatus,
   ) => {
     setBookingStatusOpenId(null);
+    setBookingStatusPos(null);
     if (newStatus === booking.status) return;
     // Cancellations get the confirm dialog + email send. Other
     // transitions (booked ↔ attended ↔ no_show) flip silently.
@@ -557,58 +582,28 @@ export function PatientDetail({ patient: initialPatient, bookings: initialBookin
                         <span className="text-sm font-medium truncate">
                           {booking.slots?.courses?.title || "–"}
                         </span>
-                        {/* Clickable status pill: opens a small dropdown
-                            with the four BookingStatus values. */}
-                        <div
-                          className="relative shrink-0"
-                          ref={
-                            bookingStatusOpenId === booking.id
-                              ? bookingStatusRef
-                              : undefined
+                        {/* Clickable status pill. The actual dropdown
+                            renders once outside the Card (see below)
+                            with position: fixed so it can't get
+                            clipped by the Card's overflow-hidden. */}
+                        <button
+                          type="button"
+                          onClick={(e) =>
+                            toggleBookingStatusDropdown(
+                              booking.id,
+                              e.currentTarget,
+                            )
                           }
+                          title="Status ändern"
+                          className="shrink-0"
                         >
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setBookingStatusOpenId(
-                                bookingStatusOpenId === booking.id
-                                  ? null
-                                  : booking.id,
-                              )
-                            }
-                            title="Status ändern"
+                          <Badge
+                            variant={bookingStatusVariants[booking.status]}
+                            className="text-[10px] cursor-pointer hover:opacity-90"
                           >
-                            <Badge
-                              variant={bookingStatusVariants[booking.status]}
-                              className="text-[10px] cursor-pointer hover:opacity-90"
-                            >
-                              {bookingStatusLabels[booking.status]}
-                            </Badge>
-                          </button>
-                          {bookingStatusOpenId === booking.id && (
-                            <div className="absolute right-0 top-full mt-1 z-20 min-w-[160px] rounded-[10px] bg-white shadow-md ring-1 ring-black/5 py-1">
-                              {(
-                                [
-                                  "booked",
-                                  "attended",
-                                  "no_show",
-                                  "cancelled",
-                                ] as BookingStatus[]
-                              ).map((s) => (
-                                <button
-                                  key={s}
-                                  type="button"
-                                  onClick={() => updateBookingStatus(booking, s)}
-                                  className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
-                                    booking.status === s ? "font-semibold" : ""
-                                  }`}
-                                >
-                                  {bookingStatusLabels[s]}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                            {bookingStatusLabels[booking.status]}
+                          </Badge>
+                        </button>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         {booking.slots?.start_time && (
@@ -629,6 +624,41 @@ export function PatientDetail({ patient: initialPatient, bookings: initialBookin
           </Card>
         </div>
       </div>
+
+      {/* Booking-status dropdown: rendered once, positioned via
+          fixed coordinates derived from the trigger's bounding rect.
+          Lives outside the bookings Card so the Card's overflow-hidden
+          can't clip it on the right or bottom. */}
+      {bookingStatusOpenId && bookingStatusPos && (
+        <div
+          ref={bookingStatusRef}
+          style={{
+            position: "fixed",
+            top: bookingStatusPos.top,
+            right: bookingStatusPos.right,
+          }}
+          className="z-50 min-w-[160px] rounded-[10px] bg-white shadow-md ring-1 ring-black/5 py-1"
+        >
+          {(["booked", "attended", "no_show", "cancelled"] as BookingStatus[]).map(
+            (s) => {
+              const booking = bookings.find((b) => b.id === bookingStatusOpenId);
+              if (!booking) return null;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => updateBookingStatus(booking, s)}
+                  className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                    booking.status === s ? "font-semibold" : ""
+                  }`}
+                >
+                  {bookingStatusLabels[s]}
+                </button>
+              );
+            },
+          )}
+        </div>
+      )}
 
       <ConfirmDialog
         open={!!cancelPending}
