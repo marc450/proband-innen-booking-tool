@@ -3,10 +3,14 @@
 // lesson-title banner inside the page (rendered by the page itself,
 // not by the frame), matching the LW reference.
 //
-// Server component. The active-state highlight comes from comparing
-// the current pathname against each lesson's href, which is passed in
-// as a prop so this stays free of usePathname.
+// Client component: holds the sidebar collapse state. Uses
+// localStorage so the user's preference persists across lesson
+// navigation. The TOC content is small and fully serializable, so
+// flipping this client-side has no real cost.
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { LmsCourseTree } from "@/lib/lms/types";
 
 type Props = {
@@ -16,6 +20,8 @@ type Props = {
   nextHref: string | null;
   children: React.ReactNode;
 };
+
+const STORAGE_KEY = "ephia-lms-sidebar-collapsed";
 
 function lessonHref(courseSlug: string, chapterSlug: string, lessonSlug: string) {
   return `/${courseSlug}/${chapterSlug}/${lessonSlug}`;
@@ -35,15 +41,58 @@ export function ReaderFrame({
   nextHref,
   children,
 }: Props) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  // Hydrate from localStorage on mount. There's a brief flash of the
+  // expanded state before this fires; acceptable for now (avoids the
+  // need for a blocking inline script).
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(STORAGE_KEY);
+      if (saved === "true") setCollapsed(true);
+    } catch {
+      // localStorage may be unavailable (private mode, restrictive
+      // settings) — fall back to default.
+    }
+  }, []);
+
+  function toggle(next: boolean) {
+    setCollapsed(next);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, String(next));
+    } catch {
+      /* ignore */
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white">
-      {/* Sidebar — white below, blue header on top. Sticky on desktop
-          so the TOC stays visible while the content scrolls. */}
-      <aside className="w-full md:w-[320px] md:min-h-screen bg-white md:sticky md:top-0 md:self-start md:max-h-screen md:overflow-y-auto md:shadow-[4px_0_16px_rgba(0,0,0,0.06)] z-10">
+      {/* Sidebar — hidden on desktop when collapsed. Mobile keeps it
+          visible (collapse toggle is desktop-only). */}
+      <aside
+        className={
+          "w-full bg-white md:sticky md:top-0 md:self-start md:max-h-screen md:overflow-y-auto md:shadow-[4px_0_16px_rgba(0,0,0,0.06)] z-10 " +
+          (collapsed ? "md:hidden" : "md:w-[320px] md:min-h-screen")
+        }
+      >
         <div className="bg-[#0066FF] text-white px-6 py-7">
-          <Link href="/" className="text-xs uppercase tracking-wide opacity-80 hover:opacity-100">
-            ← Alle Kurse
-          </Link>
+          <div className="flex items-start justify-between gap-3">
+            <Link
+              href="/"
+              className="text-xs uppercase tracking-wide opacity-80 hover:opacity-100"
+            >
+              ← Alle Kurse
+            </Link>
+            <button
+              type="button"
+              onClick={() => toggle(true)}
+              className="hidden md:inline-flex h-7 w-7 items-center justify-center text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors text-base leading-none"
+              aria-label="Sidebar einklappen"
+              title="Sidebar einklappen"
+            >
+              «
+            </button>
+          </div>
           <h1 className="mt-3 text-xl font-bold leading-snug">{tree.title}</h1>
         </div>
 
@@ -91,12 +140,23 @@ export function ReaderFrame({
         </nav>
       </aside>
 
-      {/* Content. flex-col + min-h-screen so a child with flex-1 (e.g.
-          a fullscreen video player) can fill the remaining vertical
-          space below the top nav. Text lessons still grow naturally
-          with their content. */}
-      <main className="flex-1 min-w-0 bg-white flex flex-col md:min-h-screen">
-        <div className="border-b border-black/10 bg-white">
+      {/* Content */}
+      <main className="flex-1 min-w-0 bg-white">
+        <div className="border-b border-black/10 bg-white relative">
+          {/* Expand button shows up only on desktop when sidebar is
+              collapsed. Absolute-positioned so it doesn't reflow the
+              centered Zurück/Weiter row. */}
+          {collapsed ? (
+            <button
+              type="button"
+              onClick={() => toggle(false)}
+              className="hidden md:inline-flex absolute left-3 top-1/2 -translate-y-1/2 h-7 w-7 items-center justify-center text-black/70 hover:text-black hover:bg-black/5 rounded transition-colors text-base leading-none"
+              aria-label="Sidebar ausklappen"
+              title="Sidebar ausklappen"
+            >
+              »
+            </button>
+          ) : null}
           <div className="max-w-3xl mx-auto px-6 py-3 flex items-center justify-between text-sm">
             {prevHref ? (
               <Link href={prevHref} className="text-black/70 hover:text-black">
@@ -115,9 +175,7 @@ export function ReaderFrame({
           </div>
         </div>
 
-        {/* Page content. Pages are responsible for their own
-            title banner + body wrapping so they can choose where the
-            rose accent strip ends. */}
+        {/* Page content (rose title strip + body, owned by the page). */}
         {children}
       </main>
     </div>

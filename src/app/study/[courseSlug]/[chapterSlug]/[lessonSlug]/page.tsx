@@ -65,8 +65,8 @@ export default async function LessonPage({
     ? `/${tree.slug}/${next.chapter.slug}/${next.lesson.slug}`
     : null;
 
-  // Video lessons get a full-bleed player below the top nav, no title
-  // strip. The lesson title is already visible in the sidebar TOC.
+  // Video lessons keep the rose title strip and let the player
+  // stretch edge-to-edge below it (no max-width constraint).
   if (lesson.lesson_type === "video") {
     const videoId = extractVideoId(lesson.body) ?? lesson.cf_stream_video_id;
     return (
@@ -76,9 +76,14 @@ export default async function LessonPage({
         prevHref={prevHref}
         nextHref={nextHref}
       >
-        <div className="flex-1 flex bg-black">
-          <CfStreamPlayer videoId={videoId} fillMode />
-        </div>
+        <header className="bg-[#FAEBE1]">
+          <div className="max-w-3xl mx-auto px-6 py-12">
+            <h1 className="text-4xl font-bold leading-tight uppercase tracking-tight">
+              {lesson.title}
+            </h1>
+          </div>
+        </header>
+        <CfStreamPlayer videoId={videoId} />
       </ReaderFrame>
     );
   }
