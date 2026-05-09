@@ -31,7 +31,7 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
   switch (node.type) {
     case "paragraph":
       return (
-        <p className="text-[1.05rem] leading-[1.65] text-black mb-5">
+        <p className="text-[1.05rem] leading-[1.65] text-black mb-5 text-justify hyphens-auto">
           {node.content?.map((n, i) => <RenderNode key={i} node={n} />)}
         </p>
       );
