@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { enrollInLearnWorlds } from "@/lib/post-purchase";
 
 // Merge contact B into contact A. A's non-empty fields win; B's emails,
 // bookings and merch orders all reassign to A; B is deleted at the end.
@@ -159,6 +160,51 @@ export async function POST(req: NextRequest) {
     await admin.from("auszubildende").update(patch).eq("id", primaryId);
   }
 
+  // Step 5b: Sync LearnWorlds. The DB now says A owns every booking
+  // that was previously B's, but LW still has TWO user accounts —
+  // A's and B's — each enrolled separately in their own purchases.
+  // For A's email to actually have access to the courses A absorbed,
+  // we have to call enrollInLearnWorlds(A.email, lwCourseId) for
+  // every course attached to a moved booking that has an
+  // online_course_id on its template. Failures are non-fatal: we log
+  // them, surface a non-blocking warning in the response, but still
+  // proceed with deleting B. The admin can re-enroll manually via
+  // the LMS-Zugriff panel on A's profile.
+  const lwEnrollments: { lwCourseId: string; ok: boolean; error?: string }[] = [];
+  if (aRow.email) {
+    const { data: aBookings } = await admin
+      .from("course_bookings")
+      .select("template_id, course_templates(online_course_id)")
+      .eq("auszubildende_id", primaryId);
+    const lwCourseIds = new Set<string>();
+    for (const b of aBookings ?? []) {
+      const tmpl = Array.isArray(b.course_templates)
+        ? b.course_templates[0]
+        : b.course_templates;
+      const lwCourseId = tmpl?.online_course_id;
+      if (typeof lwCourseId === "string" && lwCourseId.length > 0) {
+        lwCourseIds.add(lwCourseId);
+      }
+    }
+    for (const lwCourseId of lwCourseIds) {
+      try {
+        await enrollInLearnWorlds(
+          aRow.email,
+          lwCourseId,
+          aRow.first_name ?? undefined,
+          aRow.last_name ?? undefined,
+        );
+        lwEnrollments.push({ lwCourseId, ok: true });
+      } catch (err) {
+        lwEnrollments.push({
+          lwCourseId,
+          ok: false,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+  }
+
   // Step 6: Delete B. Cascade safety net for any FK we forgot — but at
   // this point B has no incoming references (emails/bookings/merch all
   // moved in steps 2-4) so the delete should clean up cleanly.
@@ -184,5 +230,6 @@ export async function POST(req: NextRequest) {
     bookingsMoved: bookingsMoved ?? 0,
     ordersMoved: ordersMoved ?? 0,
     fieldsUpdated: Object.keys(patch).length,
+    lwEnrollments,
   });
 }

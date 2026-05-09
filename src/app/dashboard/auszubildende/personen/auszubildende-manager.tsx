@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { read, utils } from "xlsx";
 import { Button } from "@/components/ui/button";
@@ -99,6 +99,39 @@ export function AuszubildendeManager({
   // auszubildende so we hide the filter there.
   const [typeFilter, setTypeFilter] = useState<"all" | "company" | "other">("all");
   const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("first_name", "asc");
+
+  // Group contacts that share the same (lowercased) first+last name.
+  // The primary motivation is the "same human, multiple emails"
+  // pattern (e.g. Annett Güldner with @web.de and @gmx.de) — each
+  // address creates its own LW user and her purchases get split.
+  // Surfacing a "möglicher Duplikat (N)"-Pill on the row gives staff
+  // a fast visual cue to investigate before the customer complains.
+  // Empty-name contacts are excluded so the import-from-Stripe rows
+  // (no name yet) don't all collapse into one giant "duplicate" group.
+  const duplicateGroups = useMemo(() => {
+    const map = new Map<string, Auszubildende[]>();
+    for (const a of initialAuszubildende) {
+      const fn = (a.first_name ?? "").trim().toLowerCase();
+      const ln = (a.last_name ?? "").trim().toLowerCase();
+      if (!fn || !ln) continue;
+      const key = `${fn}|${ln}`;
+      const arr = map.get(key);
+      if (arr) arr.push(a);
+      else map.set(key, [a]);
+    }
+    for (const [key, members] of map) {
+      if (members.length < 2) map.delete(key);
+    }
+    return map;
+  }, [initialAuszubildende]);
+
+  const findDuplicateGroup = (azubi: Auszubildende): Auszubildende[] | null => {
+    const fn = (azubi.first_name ?? "").trim().toLowerCase();
+    const ln = (azubi.last_name ?? "").trim().toLowerCase();
+    if (!fn || !ln) return null;
+    const group = duplicateGroups.get(`${fn}|${ln}`);
+    return group && group.length > 1 ? group : null;
+  };
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importRows, setImportRows] = useState<ImportRow[] | null>(null);
   const [importing, setImporting] = useState(false);
@@ -524,7 +557,28 @@ export function AuszubildendeManager({
                   <TableCell>
                     {isCompany ? (azubi.company_name || azubi.last_name || "–") : (azubi.last_name || "–")}
                   </TableCell>
-                  <TableCell>{azubi.email}</TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center gap-1.5">
+                      {azubi.email}
+                      {(() => {
+                        const dupes = findDuplicateGroup(azubi);
+                        if (!dupes) return null;
+                        const others = dupes
+                          .filter((d) => d.id !== azubi.id)
+                          .map((d) => d.email)
+                          .join(", ");
+                        return (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] bg-amber-50 text-amber-700 border-amber-200"
+                            title={`Gleicher Name wie: ${others}`}
+                          >
+                            möglicher Duplikat ({dupes.length})
+                          </Badge>
+                        );
+                      })()}
+                    </span>
+                  </TableCell>
                   <TableCell>{azubi.phone || "–"}</TableCell>
                   <TableCell>{ort || "–"}</TableCell>
                   <TableCell>

@@ -19,6 +19,7 @@ import { ArrowLeft, Pencil, FileText, AlertTriangle, Ban, CheckCircle2, Mail, Gi
 import { buildProfileCompletionUrl } from "@/lib/profile-link";
 import { EmailManagerModal } from "@/components/email-manager-modal";
 import { MergeContactModal } from "@/components/merge-contact-modal";
+import { LwAccessPanel } from "@/components/lw-access-panel";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatPersonName } from "@/lib/utils";
@@ -656,6 +657,9 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, legacyBooki
               ))}
             </CardContent>
           </Card>
+
+          {/* LMS access (LearnWorlds enrollment vs DB bookings) */}
+          {isAdmin && <LwAccessPanel auszubildendeId={azubi.id} />}
 
           {/* Booking history */}
           <Card>
