@@ -39,7 +39,7 @@ export function ReaderFrame({
     <div className="min-h-screen flex flex-col md:flex-row bg-white">
       {/* Sidebar — white below, blue header on top. Sticky on desktop
           so the TOC stays visible while the content scrolls. */}
-      <aside className="w-full md:w-[320px] md:min-h-screen bg-white md:sticky md:top-0 md:self-start md:max-h-screen md:overflow-y-auto">
+      <aside className="w-full md:w-[320px] md:min-h-screen bg-white md:sticky md:top-0 md:self-start md:max-h-screen md:overflow-y-auto md:shadow-[4px_0_16px_rgba(0,0,0,0.06)] z-10">
         <div className="bg-[#0066FF] text-white px-6 py-7">
           <Link href="/" className="text-xs uppercase tracking-wide opacity-80 hover:opacity-100">
             ← Alle Kurse
