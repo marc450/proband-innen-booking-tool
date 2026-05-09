@@ -2,43 +2,31 @@
 //
 // Stages: intro → question (×N) → result. After "Test starten" the
 // timer ticks down once per second and auto-advances when it hits 0.
-// Selecting an option locks it in; advancing is one-way (no review).
+// Selecting an option locks it in; the next question slides in
+// immediately (no static feedback pause; correct answer is never
+// revealed). Result stage celebrates a perfect score and gently
+// roasts anything below — both routes invite the user into the
+// Grundkurs Botulinum.
 //
-// On perfect score, a fresh single-use 50 € Stripe promo code (5-day
-// expiry) is minted server-side via /api/lms/quiz-coupon, gated
-// behind an email input. One code per email — re-entering the same
-// email returns the existing active code.
-//
-// Anti-cheat is intentionally light — 30 s default per question is
-// short enough to deter casual ChatGPT lookups but generous for
-// readers who actually went through the lessons.
+// Anti-cheat is light — short timer, hidden correct answers, no
+// review. Users can retake the quiz freely; we'd rather they leave
+// satisfied than feel locked out.
 "use client";
 
 import { useEffect, useState } from "react";
-import { Trophy, Clock, Mail, Lock } from "lucide-react";
+import { Clock, ArrowRight } from "lucide-react";
 import type { QuizQuestion } from "@/lib/lms/types";
-
-const LOCK_STORAGE_KEY = "ephia-lms-quiz-locked-until";
-const LOCK_HOURS = 24;
 
 type Props = {
   questions: QuizQuestion[];
-  voucherLabel?: string;
   grundkursUrl?: string;
   timePerQuestionSeconds?: number;
 };
 
 type Stage = "intro" | "question" | "result";
 
-type CouponState =
-  | { kind: "gate" }
-  | { kind: "requesting" }
-  | { kind: "revealed"; code: string; expiresAt: string }
-  | { kind: "error"; message: string };
-
 export function QuizBlock({
   questions,
-  voucherLabel = "Gutschein",
   grundkursUrl,
   timePerQuestionSeconds = 20,
 }: Props) {
@@ -48,82 +36,11 @@ export function QuizBlock({
     () => questions.map(() => null),
   );
   const [timeLeft, setTimeLeft] = useState(timePerQuestionSeconds);
-  const [coupon, setCoupon] = useState<CouponState>({ kind: "gate" });
-  const [email, setEmail] = useState("");
-  // Soft-lock: after a failed attempt, store an expiry timestamp in
-  // localStorage. While the timestamp is in the future, we render a
-  // "try again later" screen instead of letting the user retake. Not
-  // a hard lock — clearing storage / using a different browser
-  // bypasses it. Just enough friction to encourage re-reading the
-  // lessons before retrying.
-  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
-
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(LOCK_STORAGE_KEY);
-      if (!raw) return;
-      const expiry = Number.parseInt(raw, 10);
-      if (Number.isFinite(expiry) && expiry > Date.now()) {
-        setLockedUntil(expiry);
-      } else {
-        window.localStorage.removeItem(LOCK_STORAGE_KEY);
-      }
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  async function requestCoupon(e: React.FormEvent) {
-    e.preventDefault();
-    const trimmed = email.trim().toLowerCase();
-    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      setCoupon({ kind: "error", message: "Bitte gib eine gültige E-Mail-Adresse ein." });
-      return;
-    }
-    setCoupon({ kind: "requesting" });
-    try {
-      const res = await fetch("/api/lms/quiz-coupon", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: trimmed }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setCoupon({
-          kind: "error",
-          message:
-            data?.error === "invalid_email"
-              ? "Bitte gib eine gültige E-Mail-Adresse ein."
-              : "Es ist ein Fehler aufgetreten. Bitte versuche es erneut.",
-        });
-        return;
-      }
-      setCoupon({
-        kind: "revealed",
-        code: data.code,
-        expiresAt: data.expiresAt,
-      });
-    } catch {
-      setCoupon({
-        kind: "error",
-        message: "Netzwerkfehler. Bitte versuche es erneut.",
-      });
-    }
-  }
-
-  function formatExpiryDate(iso: string): string {
-    return new Date(iso).toLocaleDateString("de-DE", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-  }
 
   // Per-question timer. Stops as soon as an answer is locked
-  // (answers[currentIdx] !== null) so the user can read the
-  // correct/incorrect feedback in peace. On timeout without an
-  // answer we lock the question as -1 ("no answer") so the
-  // auto-advance effect below picks it up like a normal selection.
+  // (answers[currentIdx] !== null). On timeout without an answer we
+  // lock the question as -1 ("no answer") so the auto-advance effect
+  // below picks it up like a normal selection.
   useEffect(() => {
     if (stage !== "question") return;
     if (answers[currentIdx] !== null) return;
@@ -139,11 +56,10 @@ export function QuizBlock({
     return () => clearTimeout(t);
   }, [stage, currentIdx, timeLeft, answers]);
 
-  // Auto-advance: once a question is locked (real answer or
-  // timeout-marked -1), immediately move on. Visual feedback is the
-  // slide-in animation of the next question itself, no static
-  // feedback pause. setTimeout(0) defers until after React flushes
-  // the state update, so we don't double-fire.
+  // Auto-advance: as soon as a question is locked, immediately move
+  // on. The slide-in animation on the next question provides the
+  // visual feedback. setTimeout(0) defers until after React flushes
+  // the state update.
   useEffect(() => {
     if (stage !== "question") return;
     if (answers[currentIdx] === null) return;
@@ -166,7 +82,7 @@ export function QuizBlock({
   }
 
   function selectOption(optionIdx: number) {
-    if (answers[currentIdx] !== null) return; // already locked
+    if (answers[currentIdx] !== null) return;
     setAnswers((prev) => {
       const next = [...prev];
       next[currentIdx] = optionIdx;
@@ -180,56 +96,12 @@ export function QuizBlock({
   }, 0);
   const passed = score === questions.length;
 
-  // When the user lands on the result stage with a failed score,
-  // arm the soft-lock for LOCK_HOURS. A perfect score clears any
-  // existing lock so they don't get blocked next time.
-  useEffect(() => {
-    if (stage !== "result") return;
-    try {
-      if (passed) {
-        window.localStorage.removeItem(LOCK_STORAGE_KEY);
-      } else {
-        const expiry = Date.now() + LOCK_HOURS * 60 * 60 * 1000;
-        window.localStorage.setItem(LOCK_STORAGE_KEY, String(expiry));
-      }
-    } catch {
-      /* ignore */
-    }
-  }, [stage, passed]);
-
-  if (lockedUntil && lockedUntil > Date.now() && stage === "intro") {
-    const msLeft = lockedUntil - Date.now();
-    const hoursLeft = Math.floor(msLeft / (60 * 60 * 1000));
-    const minutesLeft = Math.ceil((msLeft % (60 * 60 * 1000)) / (60 * 1000));
-    return (
-      <section className="my-2">
-        <div className="flex items-center gap-3">
-          <Lock className="w-7 h-7 text-black/60" strokeWidth={2} />
-          <h3 className="text-xl font-bold text-black">
-            Schon einmal versucht
-          </h3>
-        </div>
-        <p className="mt-3 text-[1.05rem] leading-[1.65] text-black/85 max-w-xl">
-          Du hast den Test bereits gemacht. In{" "}
-          <strong>
-            {hoursLeft > 0
-              ? `${hoursLeft} Std. ${minutesLeft} Min.`
-              : `${minutesLeft} Min.`}
-          </strong>{" "}
-          kannst Du es nochmal probieren. Schau Dir die Lessons bis dahin
-          gerne nochmal an, das hilft beim nächsten Versuch.
-        </p>
-      </section>
-    );
-  }
-
   if (stage === "intro") {
     return (
       <section className="my-2">
         <p className="text-[1.05rem] leading-[1.65] text-black/85 max-w-xl">
           {questions.length} Fragen zum gerade Gelernten. Du hast{" "}
-          {timePerQuestionSeconds} Sekunden pro Frage. Beantworte alle richtig
-          und Du bekommst einen {voucherLabel} für unseren Grundkurs Botulinum.
+          {timePerQuestionSeconds} Sekunden pro Frage.
         </p>
         <button
           type="button"
@@ -245,108 +117,106 @@ export function QuizBlock({
   if (stage === "result") {
     return (
       <section className="my-2">
-        <div className="flex items-center gap-3">
-          <Trophy
-            className={passed ? "w-8 h-8 text-[#0066FF]" : "w-8 h-8 text-black/40"}
-            strokeWidth={2}
-          />
-          <h2 className="text-2xl font-bold text-black">
-            {passed ? "Perfekt, Du hast es geschafft!" : "Knapp daneben."}
-          </h2>
-        </div>
-        <p className="mt-3 text-[1.05rem] leading-[1.65] text-black/85">
-          Du hast{" "}
-          <strong>
-            {score} von {questions.length}
-          </strong>{" "}
-          Fragen richtig beantwortet.
-        </p>
-
         {passed ? (
-          coupon.kind === "revealed" ? (
-            <div className="mt-6 bg-[#0066FF] rounded-[10px] px-6 py-7 text-center shadow-md">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/80 font-semibold">
-                Dein {voucherLabel}
-              </p>
-              <p className="mt-3 font-mono text-3xl md:text-5xl font-extrabold text-white tracking-wider break-all">
-                {coupon.code}
-              </p>
-              <p className="mt-4 text-sm text-white/85 max-w-md mx-auto">
-                Gib den Code beim Checkout des Grundkurs Botulinum ein.
-                Einmalig nutzbar, gültig bis {formatExpiryDate(coupon.expiresAt)}.
-              </p>
-            </div>
-          ) : (
-            <form
-              onSubmit={requestCoupon}
-              className="mt-6 border border-black/10 rounded-[10px] px-6 py-5"
-            >
-              <label
-                htmlFor="quiz-email"
-                className="block text-sm font-semibold text-black"
+          <div className="text-center py-6">
+            {/* Bouncing trophy + pulsing sparkles. Kept emoji-driven
+                so it works without any animation library. */}
+            <div className="relative inline-block">
+              <span
+                aria-hidden
+                className="absolute -top-4 -left-10 text-2xl animate-pulse"
+                style={{ animationDelay: "0.2s" }}
               >
-                Trag Deine E-Mail-Adresse ein, um Deinen {voucherLabel} zu
-                erhalten.
-              </label>
-              <p className="mt-1 text-sm text-black/60">
-                Wir generieren einen einmalig nutzbaren Code, gültig 5 Tage.
-              </p>
-              <div className="mt-4 flex flex-col sm:flex-row gap-2">
-                <div className="relative flex-1">
-                  <Mail
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/40"
-                    strokeWidth={2.25}
-                    aria-hidden
-                  />
-                  <input
-                    id="quiz-email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={coupon.kind === "requesting"}
-                    placeholder="dein.name@beispiel.de"
-                    className="w-full rounded-[10px] border border-black/15 bg-white pl-9 pr-3 py-2.5 text-sm text-black focus:outline-none focus:border-[#0066FF] disabled:opacity-50"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={coupon.kind === "requesting"}
-                  className="inline-flex items-center justify-center bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-sm px-5 py-2.5 rounded-[10px] transition-colors disabled:opacity-60"
-                >
-                  {coupon.kind === "requesting"
-                    ? "Wird generiert ..."
-                    : "Code anzeigen"}
-                </button>
-              </div>
-              {coupon.kind === "error" ? (
-                <p className="mt-3 text-sm text-red-600">{coupon.message}</p>
-              ) : null}
-            </form>
-          )
-        ) : null}
+                ✨
+              </span>
+              <span
+                aria-hidden
+                className="absolute -top-2 -right-12 text-3xl animate-pulse"
+                style={{ animationDelay: "0.5s" }}
+              >
+                🎉
+              </span>
+              <span
+                aria-hidden
+                className="absolute top-1 -left-14 text-xl animate-pulse"
+                style={{ animationDelay: "0.8s" }}
+              >
+                ⭐
+              </span>
+              <span
+                aria-hidden
+                className="absolute -bottom-1 -left-9 text-lg animate-pulse"
+                style={{ animationDelay: "1.1s" }}
+              >
+                ✨
+              </span>
+              <span
+                aria-hidden
+                className="absolute -bottom-3 -right-10 text-2xl animate-pulse"
+                style={{ animationDelay: "0.4s" }}
+              >
+                ⭐
+              </span>
+              <span
+                aria-hidden
+                className="absolute top-3 -right-14 text-base animate-pulse"
+                style={{ animationDelay: "0.9s" }}
+              >
+                ✨
+              </span>
+              <div className="text-7xl animate-bounce">🏆</div>
+            </div>
+            <h2 className="mt-8 text-4xl font-extrabold text-black">
+              Geschafft!
+            </h2>
+            <p className="mt-3 text-[1.05rem] leading-[1.65] text-black/80 max-w-md mx-auto">
+              Alle {questions.length} Fragen richtig. Wenn Du Dein Wissen
+              jetzt in die Praxis bringen willst: im EPHIA Online-Grundkurs
+              Botulinum lernst Du Anatomie, Indikationen, Technik und
+              Komplikationsmanagement systematisch und mit echten
+              Fallbeispielen.
+            </p>
+          </div>
+        ) : (
+          <div className="py-2">
+            <div className="flex items-baseline gap-2">
+              <span className="text-5xl font-extrabold text-black tabular-nums">
+                {score}
+              </span>
+              <span className="text-2xl font-semibold text-black/40">
+                / {questions.length}
+              </span>
+            </div>
+            <h2 className="mt-4 text-2xl font-bold text-black leading-snug">
+              Knapp daneben. Botulinum verzeiht keine Annahmen.
+            </h2>
+            <p className="mt-3 text-[1.05rem] leading-[1.65] text-black/85 max-w-xl">
+              Im EPHIA Online-Grundkurs Botulinum lernst Du Anatomie,
+              Indikationen und Technik so präzise, dass beim nächsten
+              Versuch hier nichts mehr daneben geht. Versprochen.
+            </p>
+          </div>
+        )}
 
-        <div className="mt-6 flex flex-wrap gap-3">
-          {grundkursUrl && coupon.kind === "revealed" ? (
+        <div className="mt-8 flex flex-wrap gap-3">
+          {grundkursUrl ? (
             <a
               href={grundkursUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-base px-6 py-3 rounded-[10px] transition-colors"
+              className="inline-flex items-center gap-2 bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-base px-6 py-3 rounded-[10px] transition-colors"
             >
-              Zum Grundkurs Botulinum →
+              <span>Zum Grundkurs Botulinum</span>
+              <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
             </a>
           ) : null}
-          {!passed ? (
-            <button
-              type="button"
-              onClick={start}
-              className="inline-flex items-center bg-white hover:bg-black/5 text-black font-medium text-base px-6 py-3 rounded-[10px] transition-colors"
-            >
-              Nochmal versuchen
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={start}
+            className="inline-flex items-center text-black/70 hover:text-black font-medium text-sm px-4 py-3 rounded-[10px] transition-colors"
+          >
+            Nochmal versuchen
+          </button>
         </div>
       </section>
     );
@@ -432,7 +302,6 @@ export function QuizBlock({
           );
         })}
       </ul>
-
     </section>
   );
 }

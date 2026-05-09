@@ -324,7 +324,6 @@ export function ReaderFrame({
                 <div className="px-6 py-6">
                   <QuizBlock
                     questions={quizNode.attrs.questions as QuizQuestion[]}
-                    voucherLabel={quizNode.attrs.voucherLabel}
                     grundkursUrl={quizNode.attrs.grundkursUrl}
                     timePerQuestionSeconds={
                       quizNode.attrs.timePerQuestionSeconds
