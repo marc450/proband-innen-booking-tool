@@ -114,6 +114,7 @@ function buildSlackPayload(args: {
   fromEmail: string;
   subject: string;
   preview: string;
+  threadId: string;
 }) {
   // Slack auto-links anything that looks like an email address,
   // regardless of angle brackets. Wrapping the address in backticks
@@ -158,7 +159,12 @@ function buildSlackPayload(args: {
             // domain (proband-innen.ephia.de), which doesn't render
             // /dashboard/inbox at all.
             text: { type: "plain_text", text: "Im Dashboard öffnen" },
-            url: "https://admin.ephia.de/dashboard/inbox",
+            // Deep-link to the specific thread via ?thread=<id>. The
+            // inbox-manager reads searchParams.get("thread") and opens
+            // that thread directly, which works even if the thread is
+            // no longer in the INBOX list view (Gmail filter archived
+            // it, marked spam, etc.).
+            url: `https://admin.ephia.de/dashboard/inbox?thread=${args.threadId}`,
           },
         ],
       },
@@ -245,6 +251,7 @@ export async function POST(req: Request) {
           fromEmail: extractEmailAddress(fromHeader),
           subject,
           preview,
+          threadId: full.threadId,
         }),
       );
       await applyNotifiedLabel(token, m.id, labelId);
