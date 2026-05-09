@@ -65,8 +65,12 @@ export async function GET(
   const { id } = await params;
   const admin = createAdminClient();
 
+  // Read via v_auszubildende — the canonical-email column was dropped
+  // from the base table in migration 063 and only lives on the view
+  // (which LEFT JOINs auszubildende_emails). Without this, contact
+  // came back null and the panel rendered "Kontakt nicht gefunden."
   const { data: contact } = await admin
-    .from("auszubildende")
+    .from("v_auszubildende")
     .select("id, email, first_name, last_name, lw_user_id")
     .eq("id", id)
     .maybeSingle();
@@ -172,8 +176,9 @@ export async function POST(
   }
 
   const admin = createAdminClient();
+  // v_auszubildende for the read — see GET handler for reasoning.
   const { data: contact } = await admin
-    .from("auszubildende")
+    .from("v_auszubildende")
     .select("id, email, first_name, last_name")
     .eq("id", id)
     .maybeSingle();
