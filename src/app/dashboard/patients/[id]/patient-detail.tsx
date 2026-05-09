@@ -588,6 +588,12 @@ export function PatientDetail({ patient: initialPatient, bookings: initialBookin
                             clipped by the Card's overflow-hidden. */}
                         <button
                           type="button"
+                          // Stop mousedown so the document-level
+                          // outside-click handler doesn't fire and
+                          // pre-emptively close the dropdown — that
+                          // would race with onClick and prevent the
+                          // "click same pill again to close" toggle.
+                          onMouseDown={(e) => e.stopPropagation()}
                           onClick={(e) =>
                             toggleBookingStatusDropdown(
                               booking.id,
