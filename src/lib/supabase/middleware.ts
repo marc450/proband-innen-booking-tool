@@ -122,9 +122,8 @@ export async function updateSession(request: NextRequest) {
   // ── 2FA gate ──────────────────────────────────────────────────────
   // Three states encoded by Supabase's AAL claims:
   //   • currentLevel=aal1, nextLevel=aal1 → user has no verified factor.
-  //     If they're admin, force them through /setup-2fa (admin role
-  //     handles patient-data decrypt and must have MFA). Other staff
-  //     can stay on aal1.
+  //     ALL staff are forced through /setup-2fa. The whole staff
+  //     dashboard touches encrypted patient data; everyone gets MFA.
   //   • currentLevel=aal1, nextLevel=aal2 → user HAS a verified factor
   //     but the current session hasn't stepped up. Bounce to /verify-2fa
   //     so they enter their TOTP code.
@@ -150,12 +149,10 @@ export async function updateSession(request: NextRequest) {
         url.pathname = "/verify-2fa";
         return NextResponse.redirect(url);
       }
-    } else if (
-      currentLevel === "aal1" &&
-      nextLevel === "aal1" &&
-      role === "admin"
-    ) {
-      // Admin without any verified factor → must enroll.
+    } else if (currentLevel === "aal1" && nextLevel === "aal1") {
+      // Staff without any verified factor → must enroll. Reaches here
+      // only after the staff-role check above, so role is admin or
+      // nutzer.
       if (path !== "/setup-2fa") {
         const url = request.nextUrl.clone();
         url.pathname = "/setup-2fa";

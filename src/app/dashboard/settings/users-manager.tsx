@@ -231,7 +231,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     } else {
       setAlertState({
         title: "2FA zurückgesetzt",
-        description: `${data.count ?? 0} Faktor(en) entfernt. Beim nächsten Login ist nur das Passwort erforderlich; Admins werden danach zur Neu-Einrichtung gezwungen.`,
+        description: `${data.count ?? 0} Faktor(en) entfernt. Beim nächsten Login wird der/die Benutzer:in nach Eingabe des Passworts zur Neu-Einrichtung von 2FA gezwungen, bevor das Dashboard erreichbar ist.`,
       });
     }
   };
@@ -266,7 +266,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
           mfaResetTarget?.first_name && mfaResetTarget?.last_name
             ? `${mfaResetTarget.first_name} ${mfaResetTarget.last_name}`
             : mfaResetTarget?.email
-        } entfernen? Der/die Benutzer:in kann sich danach mit Passwort einloggen und muss bei Admin-Rolle einen neuen Faktor einrichten.`}
+        } entfernen? Der/die Benutzer:in kann sich danach mit Passwort einloggen, muss aber sofort einen neuen Faktor einrichten, bevor das Dashboard erreichbar ist.`}
         confirmLabel={mfaResetting ? "Wird zurückgesetzt..." : "Zurücksetzen"}
         variant="destructive"
         onConfirm={handleMfaReset}

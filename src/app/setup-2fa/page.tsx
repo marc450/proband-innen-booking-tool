@@ -3,11 +3,11 @@ import type { Metadata } from "next";
 import { Loader2 } from "lucide-react";
 import { Setup2faForm } from "./setup-2fa-form";
 
-// Forced TOTP enrollment for admins without a verified factor.
-// Reached via the middleware AAL gate when role === "admin" and the
-// user has no verified factors. They cannot reach /dashboard until
-// they enroll. nutzer-only staff are not forced through here — they
-// can self-enroll voluntarily via the nav user menu instead.
+// Forced TOTP enrollment for any staff member without a verified
+// factor. Reached via the middleware AAL gate. Admins and nutzer
+// alike cannot reach /dashboard until they enroll — every staff
+// surface touches encrypted patient data, so 2FA is required for
+// the whole staff dashboard.
 export const metadata: Metadata = {
   title: "2FA einrichten | EPHIA Staff",
   robots: { index: false, follow: false },
@@ -28,9 +28,8 @@ export default function Setup2faPage() {
           Zwei-Faktor-Authentifizierung einrichten
         </h1>
         <p className="text-sm text-black/70 mb-6 text-center leading-relaxed">
-          Als Admin musst Du einen zweiten Faktor einrichten, bevor Du das
-          Dashboard erreichst. Das schützt Patient:innen-Daten zusätzlich
-          zum Passwort.
+          Bevor Du das Dashboard erreichst, musst Du einen zweiten Faktor
+          einrichten. Das schützt Patient:innen-Daten zusätzlich zum Passwort.
         </p>
         <Suspense
           fallback={

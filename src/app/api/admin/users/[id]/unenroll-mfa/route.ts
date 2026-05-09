@@ -4,9 +4,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 // Admin escape hatch: nukes ALL MFA factors of another staff user.
 // Used when a colleague loses their phone / authenticator-app data and
-// can't log in anymore. The next login is back to password-only; if
-// they're still admin, the middleware will force them through
-// /setup-2fa to enroll a new factor.
+// can't log in anymore. The next login is back to password-only; the
+// middleware will then force them through /setup-2fa to enroll a new
+// factor before they reach the dashboard (applies to all staff roles).
 //
 // Caller MUST be admin role. Self-unenroll is not handled here — that
 // goes through supabase.auth.mfa.unenroll() from the user's own
