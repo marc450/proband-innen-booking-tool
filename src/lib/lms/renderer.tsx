@@ -138,6 +138,46 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
         </div>
       );
 
+    case "motivationBlock":
+      return (
+        <div className="my-12 py-10 text-center">
+          <div className="relative inline-block">
+            <span
+              aria-hidden
+              className="absolute -top-6 -left-10 text-2xl animate-pulse pointer-events-none"
+              style={{ animationDelay: "0.2s" }}
+            >
+              ✨
+            </span>
+            <span
+              aria-hidden
+              className="absolute -top-4 -right-12 text-xl animate-pulse pointer-events-none"
+              style={{ animationDelay: "0.5s" }}
+            >
+              ✨
+            </span>
+            <span
+              aria-hidden
+              className="absolute -bottom-2 -left-8 text-lg animate-pulse pointer-events-none"
+              style={{ animationDelay: "0.8s" }}
+            >
+              ⭐
+            </span>
+            <span
+              aria-hidden
+              className="absolute -bottom-3 -right-9 text-2xl animate-pulse pointer-events-none"
+              style={{ animationDelay: "0.3s" }}
+            >
+              ✨
+            </span>
+            <div className="text-7xl animate-bounce">😊</div>
+          </div>
+          <p className="mt-8 text-xl font-bold text-black max-w-md mx-auto px-6">
+            {node.attrs.message}
+          </p>
+        </div>
+      );
+
     case "summaryBand": {
       const headerChildren =
         node.content?.filter(

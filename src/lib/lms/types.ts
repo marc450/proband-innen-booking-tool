@@ -98,6 +98,13 @@ export type TipTapNode =
       type: "video";
       attrs: { cfStreamVideoId: string | null; thumbnailUrl?: string | null };
     }
+  | {
+      // Lightweight celebration block: bouncing smiley + pulsing
+      // sparkles + a one-line motivational message. Intended as a
+      // chapter outro / "And don't forget" replacement.
+      type: "motivationBlock";
+      attrs: { message: string };
+    }
   | TipTapText;
 
 export type TipTapDoc = Extract<TipTapNode, { type: "doc" }>;
