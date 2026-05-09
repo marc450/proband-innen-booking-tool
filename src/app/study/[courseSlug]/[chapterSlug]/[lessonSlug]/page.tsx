@@ -103,8 +103,10 @@ export default async function LessonPage({
           </h1>
         </div>
       </header>
-      {/* White body. */}
-      <div className="max-w-3xl mx-auto px-6 py-10">
+      {/* White body. The renderer wraps each top-level block in its
+          own max-w-3xl container, so full-bleed nodes (summaryBand)
+          can break out of the column. */}
+      <div className="py-10">
         <LessonBody doc={lesson.body} />
       </div>
     </ReaderFrame>

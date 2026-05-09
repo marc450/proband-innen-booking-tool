@@ -7,7 +7,22 @@ import { CfStreamPlayer } from "@/components/lms/cf-stream-player";
 export function LessonBody({ doc }: { doc: TipTapDoc }) {
   return (
     <div className="lms-prose">
-      {doc.content?.map((n, i) => <RenderNode key={i} node={n} />)}
+      {doc.content?.map((n, i) => {
+        // summaryBand is full-bleed: it provides its own internal
+        // max-width container, no outer wrapper.
+        if (n.type === "summaryBand") {
+          return <RenderNode key={i} node={n} />;
+        }
+        // Default: each top-level block is constrained to max-w-3xl
+        // with horizontal padding, so block-level elements (paragraph,
+        // heading, list, callout) align consistently while still
+        // allowing full-bleed sections to break out.
+        return (
+          <div key={i} className="max-w-3xl mx-auto px-6">
+            <RenderNode node={n} />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -85,6 +100,74 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
           <CfStreamPlayer videoId={node.attrs.cfStreamVideoId} />
         </div>
       );
+
+    case "summaryBand": {
+      const headerChildren =
+        node.content?.filter(
+          (c) => c.type === "heading" || c.type === "paragraph",
+        ) ?? [];
+      const cardChildren =
+        node.content?.filter((c) => c.type === "summaryCard") ?? [];
+      return (
+        <section className="bg-[#0066FF] py-14 my-10">
+          <div className="max-w-3xl mx-auto px-6">
+            {headerChildren.map((c, i) => {
+              if (c.type === "heading") {
+                return (
+                  <h3
+                    key={i}
+                    className="text-xl font-bold text-white leading-snug mb-3"
+                  >
+                    {c.content?.map((cc, j) => (
+                      <RenderNode key={j} node={cc} />
+                    ))}
+                  </h3>
+                );
+              }
+              return (
+                <p
+                  key={i}
+                  className="text-base font-bold text-white leading-snug mb-10"
+                >
+                  {c.content?.map((cc, j) => (
+                    <RenderNode key={j} node={cc} />
+                  ))}
+                </p>
+              );
+            })}
+            <div className="space-y-4">
+              {cardChildren.map((c, i) => (
+                <RenderNode key={i} node={c} />
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    case "summaryCard": {
+      // Cards are rendered without paragraph wrappers around their
+      // text so we don't carry the standard paragraph bottom margin
+      // into a single-line card.
+      const flat = node.content?.flatMap((c) =>
+        c.type === "paragraph" ? c.content ?? [] : [c],
+      );
+      return (
+        <div className="bg-white rounded-[10px] px-6 py-4 flex items-start gap-3 shadow-sm">
+          <span
+            aria-hidden
+            className="flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-black text-white text-[11px] leading-none"
+          >
+            ✓
+          </span>
+          <div className="flex-1 font-bold text-black leading-snug">
+            {flat?.map((c, i) => (
+              <RenderNode key={i} node={c} />
+            ))}
+          </div>
+        </div>
+      );
+    }
 
     case "text":
       return renderText(node.text, node.marks);

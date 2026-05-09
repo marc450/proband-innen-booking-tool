@@ -73,6 +73,20 @@ export type TipTapNode =
       content?: TipTapNode[];
     }
   | {
+      // Full-bleed signal-blue section. Contents: an optional heading
+      // + an optional paragraph as the band's intro, followed by
+      // summaryCard children for the bullet items.
+      type: "summaryBand";
+      attrs: { variant: "signal" };
+      content?: TipTapNode[];
+    }
+  | {
+      // White card with a checkmark icon, used inside a summaryBand to
+      // present a single takeaway / outcome bullet.
+      type: "summaryCard";
+      content?: TipTapNode[];
+    }
+  | {
       type: "video";
       attrs: { cfStreamVideoId: string | null; thumbnailUrl?: string | null };
     }
