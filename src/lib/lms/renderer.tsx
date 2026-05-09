@@ -1,6 +1,7 @@
 // TipTap JSON → JSX. Server component. No editor runtime in the
 // reader bundle. Extend the switch when adding node types.
 import type { ReactNode } from "react";
+import { Lightbulb } from "lucide-react";
 import type { TipTapNode, TipTapDoc, TipTapMark } from "./types";
 import { CfStreamPlayer } from "@/components/lms/cf-stream-player";
 
@@ -139,6 +140,22 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
 
     case "callout": {
       const variant = node.attrs.variant;
+      // Think variant: blue background with a lightbulb icon prefix —
+      // used for key insights embedded in the prose.
+      if (variant === "think") {
+        return (
+          <div className="bg-[#0066FF] text-white rounded-[10px] px-6 py-5 my-6 font-bold leading-[1.65] flex items-start gap-4">
+            <span aria-hidden className="flex-shrink-0 mt-1">
+              <Lightbulb className="w-6 h-6" strokeWidth={2.25} />
+            </span>
+            <div className="flex-1">
+              {node.content?.map((n, i) => (
+                <CalloutChild key={i} node={n} />
+              ))}
+            </div>
+          </div>
+        );
+      }
       const classes =
         variant === "signal"
           ? "bg-[#0066FF] text-white"

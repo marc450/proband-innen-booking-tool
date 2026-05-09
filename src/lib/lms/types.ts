@@ -80,8 +80,14 @@ export type TipTapNode =
     }
   | { type: "listItem"; content?: TipTapNode[] }
   | {
+      // signal: solid signal-blue with white text.
+      // rose:   warm rose tint with brown1 text, used for reflection
+      //         prompts ("Frage Dich selbst").
+      // brown1: dark brown with rose text.
+      // think:  signal-blue with a lightbulb icon prefix, used for
+      //         key insights / takeaways embedded in the prose.
       type: "callout";
-      attrs: { variant: "signal" | "rose" | "brown1" };
+      attrs: { variant: "signal" | "rose" | "brown1" | "think" };
       content?: TipTapNode[];
     }
   | {
