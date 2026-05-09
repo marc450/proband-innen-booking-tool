@@ -94,19 +94,43 @@ export function QuizBlock({
     });
   }
 
-  // Tick the timer once per second while a question is active.
-  // When it reaches 0, auto-advance whether or not the user picked
-  // an answer (null answer counts as wrong).
+  // Per-question timer. Stops as soon as an answer is locked
+  // (answers[currentIdx] !== null) so the user can read the
+  // correct/incorrect feedback in peace. On timeout without an
+  // answer we lock the question as -1 ("no answer") so the
+  // auto-advance effect below picks it up like a normal selection.
   useEffect(() => {
     if (stage !== "question") return;
+    if (answers[currentIdx] !== null) return;
     if (timeLeft <= 0) {
-      handleAdvance();
+      setAnswers((prev) => {
+        const next = [...prev];
+        next[currentIdx] = -1;
+        return next;
+      });
       return;
     }
     const t = setTimeout(() => setTimeLeft((n) => n - 1), 1000);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage, currentIdx, timeLeft]);
+  }, [stage, currentIdx, timeLeft, answers]);
+
+  // Auto-advance: once a question is locked (real answer or
+  // timeout-marked -1), give the user 1.8s to read the green/red
+  // feedback, then move to the next question or to the result
+  // stage. No "Weiter" button required.
+  useEffect(() => {
+    if (stage !== "question") return;
+    if (answers[currentIdx] === null) return;
+    const t = setTimeout(() => {
+      if (currentIdx >= questions.length - 1) {
+        setStage("result");
+      } else {
+        setCurrentIdx((i) => i + 1);
+        setTimeLeft(timePerQuestionSeconds);
+      }
+    }, 1800);
+    return () => clearTimeout(t);
+  }, [stage, currentIdx, answers, questions.length, timePerQuestionSeconds]);
 
   function start() {
     setStage("question");
@@ -122,15 +146,6 @@ export function QuizBlock({
       next[currentIdx] = optionIdx;
       return next;
     });
-  }
-
-  function handleAdvance() {
-    if (currentIdx >= questions.length - 1) {
-      setStage("result");
-    } else {
-      setCurrentIdx((i) => i + 1);
-      setTimeLeft(timePerQuestionSeconds);
-    }
   }
 
   const score = questions.reduce((acc, q, i) => {
@@ -180,17 +195,16 @@ export function QuizBlock({
 
         {passed ? (
           coupon.kind === "revealed" ? (
-            <div className="mt-6 border border-black/10 rounded-[10px] px-6 py-5">
-              <p className="text-sm text-black/60 uppercase tracking-wide">
+            <div className="mt-6 bg-[#0066FF] rounded-[10px] px-6 py-7 text-center shadow-md">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/80 font-semibold">
                 Dein {voucherLabel}
               </p>
-              <p className="mt-1 font-mono text-3xl font-bold text-[#0066FF] break-all">
+              <p className="mt-3 font-mono text-3xl md:text-5xl font-extrabold text-white tracking-wider break-all">
                 {coupon.code}
               </p>
-              <p className="mt-3 text-sm text-black/70">
-                Gib den Code beim Checkout des Grundkurs Botulinum ein. Der
-                Code ist einmalig nutzbar und gültig bis{" "}
-                {formatExpiryDate(coupon.expiresAt)}.
+              <p className="mt-4 text-sm text-white/85 max-w-md mx-auto">
+                Gib den Code beim Checkout des Grundkurs Botulinum ein.
+                Einmalig nutzbar, gültig bis {formatExpiryDate(coupon.expiresAt)}.
               </p>
             </div>
           ) : (
@@ -360,15 +374,6 @@ export function QuizBlock({
         })}
       </ul>
 
-      {isLocked ? (
-        <button
-          type="button"
-          onClick={handleAdvance}
-          className="mt-6 inline-flex items-center bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-base px-6 py-3 rounded-[10px] transition-colors"
-        >
-          {currentIdx >= questions.length - 1 ? "Test abschliessen" : "Weiter"}
-        </button>
-      ) : null}
     </section>
   );
 }
