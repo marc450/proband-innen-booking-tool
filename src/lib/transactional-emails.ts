@@ -36,7 +36,8 @@ export type FunnelKey =
   | "proband-updates"
   | "arzt-kursbuchung"
   | "arzt-kursupdates"
-  | "kontakt";
+  | "kontakt"
+  | "staff";
 
 export const FUNNEL_LABELS: Record<FunnelKey, string> = {
   "proband-public": "Proband:innen — öffentliche Buchung",
@@ -45,6 +46,7 @@ export const FUNNEL_LABELS: Record<FunnelKey, string> = {
   "arzt-kursbuchung": "Ärzt:innen — Kursbuchung",
   "arzt-kursupdates": "Ärzt:innen — Updates & Stornierung",
   "kontakt": "Kontakt & Anfragen",
+  "staff": "Staff — Konto & Login",
 };
 
 export const FUNNEL_ORDER: FunnelKey[] = [
@@ -54,6 +56,7 @@ export const FUNNEL_ORDER: FunnelKey[] = [
   "arzt-kursbuchung",
   "arzt-kursupdates",
   "kontakt",
+  "staff",
 ];
 
 export interface TransactionalEmail {
@@ -606,6 +609,33 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
     </div>
   </body>
 </html>`,
+    }),
+  },
+
+  // ── Staff — Konto & Login ──────────────────────────────────────────
+  {
+    id: "staff-password-reset",
+    funnel: "staff",
+    name: "Passwort zurücksetzen (Staff)",
+    recipient: "Staff",
+    trigger:
+      "Staff klickt 'Passwort vergessen?' auf admin.ephia.de/login. Sendet nur, wenn die Adresse zu einem Staff-Konto (admin/nutzer) gehört.",
+    codeRef: "src/app/api/admin/request-password-reset/route.ts",
+    description:
+      "Recovery-Link für das Staff-Login. Token-Hash-Flow zu admin.ephia.de/reset-password, gültig 1 Stunde. Account-Existenz wird nicht geleakt.",
+    renderSample: () => ({
+      subject: "Passwort zurücksetzen",
+      html: buildEmailHtml({
+        firstName: SAMPLE.firstName,
+        intro:
+          "Du hast einen Link zum Zurücksetzen Deines Passworts angefordert. Klicke auf den Button unten, um ein neues Passwort zu setzen. Der Link ist 1 Stunde gültig. Wenn Du das nicht warst, kannst Du diese E-Mail einfach ignorieren.",
+        buttons: [
+          {
+            label: "Neues Passwort setzen",
+            url: "https://admin.ephia.de/reset-password?token_hash=SAMPLE&type=recovery",
+          },
+        ],
+      }),
     }),
   },
 ];
