@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { EmailHistory } from "@/components/email-history";
 import { ArrowLeft, Pencil, AlertTriangle, Ban, CheckCircle2 } from "lucide-react";
+import { ConfirmDialog, AlertDialog } from "@/components/confirm-dialog";
 import { formatBerlinDate, formatBerlinDateTime, formatBerlinTime } from "@/lib/date";
 
 const bookingStatusLabels: Record<BookingStatus, string> = {
@@ -34,9 +35,15 @@ interface Props {
 
 const fieldClass = "bg-transparent border-0 p-0 text-sm text-foreground focus:outline-none focus:ring-0 placeholder:text-muted-foreground/50 w-full";
 
-export function PatientDetail({ patient: initialPatient, bookings, isAdmin = true }: Props) {
+export function PatientDetail({ patient: initialPatient, bookings: initialBookings, isAdmin = true }: Props) {
   const supabase = createClient();
   const [patient, setPatient] = useState(initialPatient);
+  // Bookings move from prop to state so the per-booking status pill
+  // can mutate them in place (mirror of /dashboard/kurse/[sessionId]/
+  // kurs-detail.tsx which keeps a local copy for the same reason —
+  // router.refresh() only re-runs server components, useState
+  // initial values don't run twice).
+  const [bookings, setBookings] = useState(initialBookings);
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(patient.notes || "");
   const [savingNotes, setSavingNotes] = useState(false);
@@ -46,9 +53,22 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
   const [namePopoverOpen, setNamePopoverOpen] = useState(false);
   const namePopoverRef = useRef<HTMLDivElement>(null);
 
-  // Status dropdown
+  // Patient-status dropdown (active / warning / blacklist).
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Per-booking status dropdown. Holds the booking ID whose pill is
+  // currently expanded; null = none open. Only one booking dropdown
+  // at a time so we don't have to cap z-index per row.
+  const [bookingStatusOpenId, setBookingStatusOpenId] = useState<string | null>(null);
+  const bookingStatusRef = useRef<HTMLDivElement>(null);
+
+  // Cancel-with-email flow, mirrored from kurs-detail.tsx so a
+  // status change to "cancelled" from this page sends the same
+  // Resend mail and surfaces the same delivery-failure alert.
+  const [cancelPending, setCancelPending] = useState<BookingWithDetails | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelAlert, setCancelAlert] = useState<{ title: string; description: string } | null>(null);
 
   const personName = [patient.first_name, patient.last_name].filter(Boolean).join(" ");
 
@@ -69,7 +89,7 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
   // Close popovers on outside click. Per-input onBlur handles the save,
   // so this just hides the popover (after flushing any focused input).
   useEffect(() => {
-    if (!namePopoverOpen && !statusDropdownOpen) return;
+    if (!namePopoverOpen && !statusDropdownOpen && !bookingStatusOpenId) return;
     const handler = (e: MouseEvent) => {
       if (namePopoverOpen && namePopoverRef.current && !namePopoverRef.current.contains(e.target as Node)) {
         flushNamePopoverFocus();
@@ -78,10 +98,115 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
       if (statusDropdownOpen && statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
         setStatusDropdownOpen(false);
       }
+      if (bookingStatusOpenId && bookingStatusRef.current && !bookingStatusRef.current.contains(e.target as Node)) {
+        setBookingStatusOpenId(null);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [namePopoverOpen, statusDropdownOpen]);
+  }, [namePopoverOpen, statusDropdownOpen, bookingStatusOpenId]);
+
+  const updateBookingStatus = async (
+    booking: BookingWithDetails,
+    newStatus: BookingStatus,
+  ) => {
+    setBookingStatusOpenId(null);
+    if (newStatus === booking.status) return;
+    // Cancellations get the confirm dialog + email send. Other
+    // transitions (booked ↔ attended ↔ no_show) flip silently.
+    if (newStatus === "cancelled") {
+      setCancelPending(booking);
+      return;
+    }
+    setBookings((prev) =>
+      prev.map((b) => (b.id === booking.id ? { ...b, status: newStatus } : b)),
+    );
+    await supabase.from("bookings").update({ status: newStatus }).eq("id", booking.id);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancelPending) return;
+    setCancelling(true);
+
+    // Build the email payload BEFORE the update, so we have all the
+    // strings even after the row flips to "cancelled" in the UI.
+    const slot = cancelPending.slots;
+    const emailPayload = (() => {
+      if (!cancelPending.email || !slot?.start_time) return null;
+      const date = new Date(slot.start_time).toLocaleDateString("de-DE", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: "Europe/Berlin",
+      });
+      const time = new Date(slot.start_time).toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Europe/Berlin",
+      });
+      return {
+        email: cancelPending.email,
+        firstName: cancelPending.first_name || "",
+        courseTitle:
+          slot.courses?.treatment_title || slot.courses?.title || "",
+        date,
+        time,
+        // Patient detail rows don't carry the course location (not in
+        // BookingWithDetails). Empty string is fine — the email
+        // template renders no row for an empty value.
+        location: "",
+      };
+    })();
+
+    try {
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: "cancelled" })
+        .eq("id", cancelPending.id);
+      if (error) {
+        setCancelAlert({
+          title: "Stornierung fehlgeschlagen",
+          description: error.message || "DB-Update konnte nicht gespeichert werden.",
+        });
+        return;
+      }
+      setBookings((prev) =>
+        prev.map((b) => (b.id === cancelPending.id ? { ...b, status: "cancelled" } : b)),
+      );
+
+      if (emailPayload) {
+        try {
+          const emailRes = await fetch("/api/send-booking-cancellation-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(emailPayload),
+          });
+          if (!emailRes.ok) {
+            const data = await emailRes.json().catch(() => ({}));
+            setCancelAlert({
+              title: "Storniert, aber E-Mail nicht versendet",
+              description: `Die Stornierungs-E-Mail an ${emailPayload.email} konnte nicht gesendet werden${data.error ? `: ${data.error}` : "."} Bitte den/die Proband:in manuell informieren.`,
+            });
+          }
+        } catch (err) {
+          setCancelAlert({
+            title: "Storniert, aber E-Mail nicht versendet",
+            description: `Netzwerkfehler beim Senden der Stornierungs-E-Mail an ${emailPayload.email}${err instanceof Error ? `: ${err.message}` : ""}. Bitte den/die Proband:in manuell informieren.`,
+          });
+        }
+      } else if (!cancelPending.email) {
+        setCancelAlert({
+          title: "Storniert, keine E-Mail versendet",
+          description:
+            "Diese Buchung hat keine E-Mail-Adresse. Bitte den/die Proband:in manuell informieren.",
+        });
+      }
+    } finally {
+      setCancelling(false);
+      setCancelPending(null);
+    }
+  };
 
   // Autosave encrypted patient fields via API
   const autosave = async (field: string, value: string) => {
@@ -432,9 +557,58 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
                         <span className="text-sm font-medium truncate">
                           {booking.slots?.courses?.title || "–"}
                         </span>
-                        <Badge variant={bookingStatusVariants[booking.status]} className="shrink-0 text-[10px]">
-                          {bookingStatusLabels[booking.status]}
-                        </Badge>
+                        {/* Clickable status pill: opens a small dropdown
+                            with the four BookingStatus values. */}
+                        <div
+                          className="relative shrink-0"
+                          ref={
+                            bookingStatusOpenId === booking.id
+                              ? bookingStatusRef
+                              : undefined
+                          }
+                        >
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setBookingStatusOpenId(
+                                bookingStatusOpenId === booking.id
+                                  ? null
+                                  : booking.id,
+                              )
+                            }
+                            title="Status ändern"
+                          >
+                            <Badge
+                              variant={bookingStatusVariants[booking.status]}
+                              className="text-[10px] cursor-pointer hover:opacity-90"
+                            >
+                              {bookingStatusLabels[booking.status]}
+                            </Badge>
+                          </button>
+                          {bookingStatusOpenId === booking.id && (
+                            <div className="absolute right-0 top-full mt-1 z-20 min-w-[160px] rounded-[10px] bg-white shadow-md ring-1 ring-black/5 py-1">
+                              {(
+                                [
+                                  "booked",
+                                  "attended",
+                                  "no_show",
+                                  "cancelled",
+                                ] as BookingStatus[]
+                              ).map((s) => (
+                                <button
+                                  key={s}
+                                  type="button"
+                                  onClick={() => updateBookingStatus(booking, s)}
+                                  className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                                    booking.status === s ? "font-semibold" : ""
+                                  }`}
+                                >
+                                  {bookingStatusLabels[s]}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         {booking.slots?.start_time && (
@@ -455,6 +629,26 @@ export function PatientDetail({ patient: initialPatient, bookings, isAdmin = tru
           </Card>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!cancelPending}
+        title="Buchung stornieren"
+        description={
+          cancelPending
+            ? `Die Buchung von ${cancelPending.first_name || cancelPending.email || "diesem/dieser Proband:in"} (${cancelPending.slots?.courses?.title ?? "–"}) wird auf "Storniert" gesetzt. ${cancelPending.email ? "Der/die Proband:in erhält eine Stornierungs-E-Mail." : "Achtung: Keine E-Mail-Adresse hinterlegt, es wird keine Benachrichtigung versendet."}`
+            : ""
+        }
+        confirmLabel={cancelling ? "Wird storniert..." : "Stornieren & benachrichtigen"}
+        onConfirm={handleConfirmCancel}
+        onCancel={() => !cancelling && setCancelPending(null)}
+      />
+
+      <AlertDialog
+        open={!!cancelAlert}
+        title={cancelAlert?.title ?? ""}
+        description={cancelAlert?.description ?? ""}
+        onClose={() => setCancelAlert(null)}
+      />
     </div>
   );
 }
