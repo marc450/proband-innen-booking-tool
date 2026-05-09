@@ -65,6 +65,29 @@ export function ReaderFrame({
     }
   }
 
+  // Expose the current sidebar width as a CSS variable on the root
+  // element so fixed-position descendants (the figure lightbox) can
+  // start at the right edge of the sidebar instead of covering it.
+  // 0 on mobile (sidebar stacks above main) and when collapsed; 320px
+  // on desktop with the sidebar expanded.
+  useEffect(() => {
+    const apply = () => {
+      const isDesktop = window.matchMedia("(min-width: 768px)").matches;
+      const offset = isDesktop && !collapsed ? 320 : 0;
+      document.documentElement.style.setProperty(
+        "--lms-sidebar-width",
+        `${offset}px`,
+      );
+    };
+    apply();
+    const mq = window.matchMedia("(min-width: 768px)");
+    mq.addEventListener("change", apply);
+    return () => {
+      mq.removeEventListener("change", apply);
+      document.documentElement.style.removeProperty("--lms-sidebar-width");
+    };
+  }, [collapsed]);
+
   return (
     <div className="min-h-screen md:h-screen flex flex-col md:flex-row bg-white">
       {/* Sidebar — hidden on desktop when collapsed. Mobile keeps it

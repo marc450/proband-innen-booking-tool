@@ -65,7 +65,8 @@ export function FigureImage({ src, alt }: Props) {
           aria-modal="true"
           aria-label={alt}
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-40 bg-black/90 flex items-center justify-center p-6 cursor-zoom-out"
+          style={{ left: "var(--lms-sidebar-width, 0px)" }}
+          className="fixed top-[45px] right-0 bottom-0 z-40 bg-black/90 flex items-center justify-center p-8 cursor-zoom-out"
         >
           <button
             type="button"
