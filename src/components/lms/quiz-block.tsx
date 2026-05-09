@@ -3,21 +3,23 @@
 // Stages: intro → question (×N) → result. After "Test starten" the
 // timer ticks down once per second and auto-advances when it hits 0.
 // Selecting an option locks it in; advancing is one-way (no review).
-// Perfect score reveals a static coupon code passed in via attrs.
+//
+// On perfect score, a fresh single-use 50 € Stripe promo code (5-day
+// expiry) is minted server-side via /api/lms/quiz-coupon, gated
+// behind an email input. One code per email — re-entering the same
+// email returns the existing active code.
 //
 // Anti-cheat is intentionally light — 30 s default per question is
 // short enough to deter casual ChatGPT lookups but generous for
-// readers who actually went through the lessons. The 5% reward isn't
-// worth aggressive lockdowns that punish honest users.
+// readers who actually went through the lessons.
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, X, Trophy, Clock } from "lucide-react";
+import { Check, X, Trophy, Clock, Mail } from "lucide-react";
 import type { QuizQuestion } from "@/lib/lms/types";
 
 type Props = {
   questions: QuizQuestion[];
-  passCouponCode?: string;
   voucherLabel?: string;
   grundkursUrl?: string;
   timePerQuestionSeconds?: number;
@@ -25,9 +27,14 @@ type Props = {
 
 type Stage = "intro" | "question" | "result";
 
+type CouponState =
+  | { kind: "gate" }
+  | { kind: "requesting" }
+  | { kind: "revealed"; code: string; expiresAt: string }
+  | { kind: "error"; message: string };
+
 export function QuizBlock({
   questions,
-  passCouponCode,
   voucherLabel = "Gutschein",
   grundkursUrl,
   timePerQuestionSeconds = 30,
@@ -38,6 +45,54 @@ export function QuizBlock({
     () => questions.map(() => null),
   );
   const [timeLeft, setTimeLeft] = useState(timePerQuestionSeconds);
+  const [coupon, setCoupon] = useState<CouponState>({ kind: "gate" });
+  const [email, setEmail] = useState("");
+
+  async function requestCoupon(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setCoupon({ kind: "error", message: "Bitte gib eine gültige E-Mail-Adresse ein." });
+      return;
+    }
+    setCoupon({ kind: "requesting" });
+    try {
+      const res = await fetch("/api/lms/quiz-coupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCoupon({
+          kind: "error",
+          message:
+            data?.error === "invalid_email"
+              ? "Bitte gib eine gültige E-Mail-Adresse ein."
+              : "Es ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+        });
+        return;
+      }
+      setCoupon({
+        kind: "revealed",
+        code: data.code,
+        expiresAt: data.expiresAt,
+      });
+    } catch {
+      setCoupon({
+        kind: "error",
+        message: "Netzwerkfehler. Bitte versuche es erneut.",
+      });
+    }
+  }
+
+  function formatExpiryDate(iso: string): string {
+    return new Date(iso).toLocaleDateString("de-DE", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  }
 
   // Tick the timer once per second while a question is active.
   // When it reaches 0, auto-advance whether or not the user picked
@@ -124,22 +179,74 @@ export function QuizBlock({
           Fragen richtig beantwortet.
         </p>
 
-        {passed && passCouponCode ? (
-          <div className="mt-6 bg-white rounded-[10px] px-6 py-5">
-            <p className="text-sm text-black/60 uppercase tracking-wide">
-              Dein {voucherLabel}
-            </p>
-            <p className="mt-1 font-mono text-3xl font-bold text-[#0066FF]">
-              {passCouponCode}
-            </p>
-            <p className="mt-3 text-sm text-black/70">
-              Verwende den Code beim Checkout des Grundkurs Botulinum.
-            </p>
-          </div>
+        {passed ? (
+          coupon.kind === "revealed" ? (
+            <div className="mt-6 bg-white rounded-[10px] px-6 py-5">
+              <p className="text-sm text-black/60 uppercase tracking-wide">
+                Dein {voucherLabel}
+              </p>
+              <p className="mt-1 font-mono text-3xl font-bold text-[#0066FF] break-all">
+                {coupon.code}
+              </p>
+              <p className="mt-3 text-sm text-black/70">
+                Gib den Code beim Checkout des Grundkurs Botulinum ein. Der
+                Code ist einmalig nutzbar und gültig bis{" "}
+                {formatExpiryDate(coupon.expiresAt)}.
+              </p>
+            </div>
+          ) : (
+            <form
+              onSubmit={requestCoupon}
+              className="mt-6 bg-white rounded-[10px] px-6 py-5"
+            >
+              <label
+                htmlFor="quiz-email"
+                className="block text-sm font-semibold text-black"
+              >
+                Trag Deine E-Mail-Adresse ein, um Deinen {voucherLabel} zu
+                erhalten.
+              </label>
+              <p className="mt-1 text-sm text-black/60">
+                Wir generieren einen einmalig nutzbaren Code, gültig 5 Tage.
+              </p>
+              <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Mail
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/40"
+                    strokeWidth={2.25}
+                    aria-hidden
+                  />
+                  <input
+                    id="quiz-email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={coupon.kind === "requesting"}
+                    placeholder="dein.name@beispiel.de"
+                    className="w-full rounded-[10px] border border-black/15 bg-white pl-9 pr-3 py-2.5 text-sm text-black focus:outline-none focus:border-[#0066FF] disabled:opacity-50"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={coupon.kind === "requesting"}
+                  className="inline-flex items-center justify-center bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-sm px-5 py-2.5 rounded-[10px] transition-colors disabled:opacity-60"
+                >
+                  {coupon.kind === "requesting"
+                    ? "Wird generiert ..."
+                    : "Code anzeigen"}
+                </button>
+              </div>
+              {coupon.kind === "error" ? (
+                <p className="mt-3 text-sm text-red-600">{coupon.message}</p>
+              ) : null}
+            </form>
+          )
         ) : null}
 
         <div className="mt-6 flex flex-wrap gap-3">
-          {grundkursUrl ? (
+          {grundkursUrl && coupon.kind === "revealed" ? (
             <a
               href={grundkursUrl}
               target="_blank"
@@ -149,13 +256,15 @@ export function QuizBlock({
               Zum Grundkurs Botulinum →
             </a>
           ) : null}
-          <button
-            type="button"
-            onClick={start}
-            className="inline-flex items-center bg-white hover:bg-black/5 text-black font-medium text-base px-6 py-3 rounded-[10px] transition-colors"
-          >
-            Nochmal versuchen
-          </button>
+          {!passed ? (
+            <button
+              type="button"
+              onClick={start}
+              className="inline-flex items-center bg-white hover:bg-black/5 text-black font-medium text-base px-6 py-3 rounded-[10px] transition-colors"
+            >
+              Nochmal versuchen
+            </button>
+          ) : null}
         </div>
       </section>
     );

@@ -245,7 +245,6 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
       return (
         <QuizBlock
           questions={node.attrs.questions}
-          passCouponCode={node.attrs.passCouponCode}
           voucherLabel={node.attrs.voucherLabel}
           grundkursUrl={node.attrs.grundkursUrl}
           timePerQuestionSeconds={node.attrs.timePerQuestionSeconds}
