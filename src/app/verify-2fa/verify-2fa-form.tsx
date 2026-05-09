@@ -77,7 +77,13 @@ export function Verify2faForm() {
       return;
     }
 
-    router.replace("/dashboard");
+    // Hard navigation instead of router.replace: forces the browser
+    // to fully reload, so the middleware sees the freshly-updated
+    // aal2 session cookie on the next request. router.replace was
+    // observably hanging in production after a successful verify
+    // (form stuck on spinner), most likely an App Router cache /
+    // middleware-state race after the session cookie rotates.
+    window.location.assign("/dashboard");
   };
 
   const handleSignOut = async () => {

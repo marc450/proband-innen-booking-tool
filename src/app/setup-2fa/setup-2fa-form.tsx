@@ -15,10 +15,13 @@ export function Setup2faForm() {
   return (
     <TotpEnroller
       onSuccess={() => {
-        // After verification, session is aal2 and middleware lets the
-        // user through to /dashboard. router.replace avoids leaving
-        // /setup-2fa in history.
-        router.replace("/dashboard");
+        // Hard navigation instead of router.replace: forces a full
+        // reload so middleware reads the freshly-rotated aal2 cookie.
+        // router.replace was observably hanging on /verify-2fa for the
+        // same reason (App Router cache / middleware-state race after
+        // session cookie rotates), so we use window.location everywhere
+        // we transition out of an MFA step-up.
+        window.location.assign("/dashboard");
       }}
       onCancel={async () => {
         await supabase.auth.signOut();
