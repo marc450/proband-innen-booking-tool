@@ -86,7 +86,7 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
           ? "bg-[#FAEBE1] text-[#733D29]"
           : "bg-[#733D29] text-[#FAEBE1]";
       return (
-        <div className={`${classes} rounded-[10px] px-6 py-5 my-6 text-center font-bold leading-[1.65]`}>
+        <div className={`${classes} rounded-[10px] px-6 py-5 my-6 font-bold leading-[1.65]`}>
           {node.content?.map((n, i) => (
             <CalloutChild key={i} node={n} />
           ))}
