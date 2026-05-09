@@ -73,7 +73,11 @@ export type TipTapNode =
       attrs?: { variant?: "default" | "check" };
       content?: TipTapNode[];
     }
-  | { type: "orderedList"; content?: TipTapNode[] }
+  | {
+      type: "orderedList";
+      attrs?: { variant?: "default" | "citations" };
+      content?: TipTapNode[];
+    }
   | { type: "listItem"; content?: TipTapNode[] }
   | {
       type: "callout";

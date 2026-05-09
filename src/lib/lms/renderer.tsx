@@ -96,12 +96,35 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
       );
     }
 
-    case "orderedList":
+    case "orderedList": {
+      // Citations variant: smaller text, denser line height, paragraph
+      // wrappers stripped so each citation reads as one continuous
+      // sentence. Used for Literaturverzeichnis sections.
+      if (node.attrs?.variant === "citations") {
+        return (
+          <ol className="list-decimal pl-6 my-5 space-y-3 text-[0.9rem] leading-[1.55] text-black/80">
+            {node.content?.map((item, i) => {
+              if (item.type !== "listItem") return null;
+              const flat = item.content?.flatMap((c) =>
+                c.type === "paragraph" ? c.content ?? [] : [c],
+              );
+              return (
+                <li key={i} className="break-words">
+                  {flat?.map((c, j) => (
+                    <RenderNode key={j} node={c} />
+                  ))}
+                </li>
+              );
+            })}
+          </ol>
+        );
+      }
       return (
         <ol className="list-decimal pl-6 my-5 space-y-2 text-[1.05rem] leading-[1.65] text-black">
           {node.content?.map((n, i) => <RenderNode key={i} node={n} />)}
         </ol>
       );
+    }
 
     case "listItem":
       return (
@@ -270,12 +293,16 @@ function ListItemChild({ node }: { node: TipTapNode }): ReactNode {
   return <RenderNode node={node} />;
 }
 
-// Inside a callout, paragraphs are centered + no bottom margin so the
-// inner text sits visually balanced inside the colored box.
+// Inside a callout, paragraphs get a small bottom margin so multi-
+// paragraph callouts (e.g. "Frage Dich selbst:" + the question) read
+// as distinct lines without merging into a wall of text. Last child
+// has no margin so the box doesn't get visually heavy at the bottom.
 function CalloutChild({ node }: { node: TipTapNode }): ReactNode {
   if (node.type === "paragraph") {
     return (
-      <p>{node.content?.map((n, i) => <RenderNode key={i} node={n} />)}</p>
+      <p className="mb-3 last:mb-0">
+        {node.content?.map((n, i) => <RenderNode key={i} node={n} />)}
+      </p>
     );
   }
   return <RenderNode node={node} />;
