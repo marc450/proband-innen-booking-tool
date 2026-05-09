@@ -277,7 +277,7 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
           >
             ✓
           </span>
-          <div className="flex-1 font-bold text-black leading-snug">
+          <div className="flex-1 text-black leading-snug">
             {flat?.map((c, i) => (
               <RenderNode key={i} node={c} />
             ))}
