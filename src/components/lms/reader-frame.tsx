@@ -11,13 +11,17 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { LmsCourseTree } from "@/lib/lms/types";
 
 type Props = {
   tree: LmsCourseTree;
   currentLessonHref: string | null;
+  currentLessonTitle: string | null;
   prevHref: string | null;
+  prevTitle: string | null;
   nextHref: string | null;
+  nextTitle: string | null;
   children: React.ReactNode;
 };
 
@@ -37,8 +41,11 @@ function formatDuration(seconds: number | null): string {
 export function ReaderFrame({
   tree,
   currentLessonHref,
+  currentLessonTitle,
   prevHref,
+  prevTitle,
   nextHref,
+  nextTitle,
   children,
 }: Props) {
   const [collapsed, setCollapsed] = useState(false);
@@ -168,7 +175,7 @@ export function ReaderFrame({
           page-level scroll, while text content longer than the
           viewport still scrolls cleanly. Mobile keeps natural flow. */}
       <main className="flex-1 min-w-0 bg-white md:flex md:flex-col md:overflow-y-auto">
-        <div className="border-b border-black/10 bg-white sticky top-0 z-50">
+        <div className="border-b border-black/10 bg-white/85 backdrop-blur-md sticky top-0 z-50">
           {/* Expand button shows up only on desktop when sidebar is
               collapsed. Absolute-positioned so it doesn't reflow the
               centered Zurück/Weiter row. */}
@@ -183,20 +190,41 @@ export function ReaderFrame({
               »
             </button>
           ) : null}
-          <div className="max-w-3xl mx-auto px-6 py-3 flex items-center justify-between text-sm">
+          <div className="max-w-4xl mx-auto h-14 px-6 flex items-center gap-3">
             {prevHref ? (
-              <Link href={prevHref} className="text-black/70 hover:text-black">
-                ‹ Zurück
+              <Link
+                href={prevHref}
+                title={prevTitle ?? undefined}
+                className="group inline-flex items-center gap-1.5 px-3 py-1.5 -mx-3 -my-1.5 rounded-full text-sm font-medium text-black/70 hover:text-[#0066FF] hover:bg-black/5 transition-colors flex-shrink-0"
+              >
+                <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" strokeWidth={2.5} />
+                <span>Zurück</span>
               </Link>
             ) : (
-              <span className="text-black/30">‹ Zurück</span>
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-black/25 flex-shrink-0">
+                <ChevronLeft className="w-4 h-4" strokeWidth={2.5} />
+                <span>Zurück</span>
+              </span>
             )}
+
+            <div className="flex-1 text-center text-sm font-semibold text-black/80 truncate min-w-0">
+              {currentLessonTitle ?? ""}
+            </div>
+
             {nextHref ? (
-              <Link href={nextHref} className="text-black/70 hover:text-black">
-                Weiter ›
+              <Link
+                href={nextHref}
+                title={nextTitle ?? undefined}
+                className="group inline-flex items-center gap-1.5 px-3 py-1.5 -mx-3 -my-1.5 rounded-full text-sm font-medium text-black/70 hover:text-[#0066FF] hover:bg-black/5 transition-colors flex-shrink-0"
+              >
+                <span>Weiter</span>
+                <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2.5} />
               </Link>
             ) : (
-              <span className="text-black/30">Weiter ›</span>
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-black/25 flex-shrink-0">
+                <span>Weiter</span>
+                <ChevronRight className="w-4 h-4" strokeWidth={2.5} />
+              </span>
             )}
           </div>
         </div>

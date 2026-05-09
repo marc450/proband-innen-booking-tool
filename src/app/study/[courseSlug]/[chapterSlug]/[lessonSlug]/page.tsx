@@ -73,8 +73,11 @@ export default async function LessonPage({
       <ReaderFrame
         tree={tree}
         currentLessonHref={currentHref}
+        currentLessonTitle={lesson.title}
         prevHref={prevHref}
+        prevTitle={prev?.lesson.title ?? null}
         nextHref={nextHref}
+        nextTitle={next?.lesson.title ?? null}
       >
         <header className="bg-[#FAEBE1] md:flex-shrink-0">
           <div className="max-w-3xl mx-auto px-6 py-12">
@@ -97,8 +100,11 @@ export default async function LessonPage({
     <ReaderFrame
       tree={tree}
       currentLessonHref={currentHref}
+      currentLessonTitle={lesson.title}
       prevHref={prevHref}
+      prevTitle={prev?.lesson.title ?? null}
       nextHref={nextHref}
+      nextTitle={next?.lesson.title ?? null}
     >
       {/* Rose accent strip behind the lesson title only. */}
       <header className="bg-[#FAEBE1]">
