@@ -38,8 +38,8 @@ export function ReaderFrame({
       {/* Sidebar */}
       <aside className="w-full md:w-[320px] md:min-h-screen bg-white md:bg-[#FAEBE1] md:border-r-0">
         <div className="bg-[#0066FF] text-white px-6 py-7">
-          <Link href={`/${tree.slug}`} className="text-xs uppercase tracking-wide opacity-80 hover:opacity-100">
-            ← Zurück zur Kursseite
+          <Link href="/" className="text-xs uppercase tracking-wide opacity-80 hover:opacity-100">
+            ← Alle Kurse
           </Link>
           <h1 className="mt-3 text-xl font-bold leading-snug">{tree.title}</h1>
         </div>
