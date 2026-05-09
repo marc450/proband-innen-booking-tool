@@ -47,9 +47,8 @@ export function Verify2faForm() {
     };
   }, [supabase, router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!factorId) return;
+  const submitCode = async () => {
+    if (!factorId || verifying) return;
     setVerifying(true);
     setError(null);
 
@@ -85,6 +84,22 @@ export function Verify2faForm() {
     // middleware-state race after the session cookie rotates.
     window.location.assign("/dashboard");
   };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitCode();
+  };
+
+  // Auto-submit as soon as a 6-digit code is entered. The user
+  // already typed the code from their authenticator; making them
+  // also click "Bestätigen" is needless friction. We still keep the
+  // form's onSubmit + visible button so paste-and-tab workflows and
+  // the Enter key both still work, but in practice the effect fires
+  // first.
+  useEffect(() => {
+    if (code.length === 6) submitCode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();

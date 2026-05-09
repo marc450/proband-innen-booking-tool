@@ -102,9 +102,8 @@ export function TotpEnroller({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!state) return;
+  const submitCode = async () => {
+    if (!state || verifying) return;
     setVerifying(true);
     setError(null);
 
@@ -135,6 +134,20 @@ export function TotpEnroller({
     verifiedRef.current = true;
     onSuccess();
   };
+
+  const handleVerify = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitCode();
+  };
+
+  // Auto-submit as soon as 6 digits are entered — same UX as
+  // /verify-2fa, no extra "Aktivieren" click needed once the code is
+  // typed in. Form's onSubmit + button stay so Enter and paste-flows
+  // still work.
+  useEffect(() => {
+    if (code.length === 6) submitCode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code]);
 
   if (loading) {
     return (
