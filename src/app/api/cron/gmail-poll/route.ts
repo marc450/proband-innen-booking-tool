@@ -82,6 +82,33 @@ async function applyNotifiedLabel(
   });
 }
 
+// Slack renders message text as plaintext (no HTML), so HTML entities
+// in the email source leak through as literal "&nbsp;", "&amp;", etc.
+// Marc spotted "Grundkurs&nbsp;als" in a preview — this decoder
+// handles the common named entities and numeric/hex character refs.
+//
+// Order matters: &amp; is decoded LAST so that an email containing the
+// literal text "&nbsp;" (encoded in the source as "&amp;nbsp;") stays
+// as "&nbsp;" in the output instead of being recursively decoded to
+// a non-breaking space.
+function decodeHtmlEntities(s: string): string {
+  return s
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => {
+      const code = parseInt(n, 10);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : "";
+    })
+    .replace(/&#x([\da-f]+);/gi, (_, n) => {
+      const code = parseInt(n, 16);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : "";
+    })
+    .replace(/&amp;/g, "&");
+}
+
 function buildSlackPayload(args: {
   fromName: string;
   fromEmail: string;
@@ -205,7 +232,9 @@ export async function POST(req: Request) {
       const fromHeader = getHeader(full, "From");
       const subject = getHeader(full, "Subject");
       const { text, html } = getBody(full);
-      const preview = (text || html.replace(/<[^>]+>/g, " "))
+      const preview = decodeHtmlEntities(
+        text || html.replace(/<[^>]+>/g, " "),
+      )
         .replace(/\s+/g, " ")
         .trim()
         .slice(0, 280);
