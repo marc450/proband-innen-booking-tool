@@ -86,7 +86,7 @@ export function ReaderFrame({
             <button
               type="button"
               onClick={() => toggle(true)}
-              className="hidden md:inline-flex h-7 w-7 items-center justify-center text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors text-base leading-none"
+              className="hidden md:inline-flex h-10 w-10 items-center justify-center text-white hover:bg-white/15 rounded-full transition-colors text-2xl leading-none -mr-1"
               aria-label="Sidebar einklappen"
               title="Sidebar einklappen"
             >
@@ -150,7 +150,7 @@ export function ReaderFrame({
             <button
               type="button"
               onClick={() => toggle(false)}
-              className="hidden md:inline-flex absolute left-3 top-1/2 -translate-y-1/2 h-7 w-7 items-center justify-center text-black/70 hover:text-black hover:bg-black/5 rounded transition-colors text-base leading-none"
+              className="hidden md:inline-flex absolute left-4 top-1/2 -translate-y-1/2 h-10 w-10 items-center justify-center bg-[#0066FF] hover:bg-[#0055DD] text-white rounded-full transition-colors text-2xl leading-none shadow-md"
               aria-label="Sidebar ausklappen"
               title="Sidebar ausklappen"
             >
