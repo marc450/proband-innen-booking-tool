@@ -38,26 +38,63 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
 
     case "heading": {
       const level = node.attrs.level;
-      const classes =
+      const colorClass =
+        node.attrs.variant === "brown1" ? "text-[#733D29]" : "text-black";
+      const sizeClasses =
         level === 1
-          ? "text-3xl font-bold text-black mt-10 mb-5 leading-tight"
+          ? "text-3xl font-bold mt-10 mb-5 leading-tight"
           : level === 2
-          ? "text-2xl font-bold text-black mt-9 mb-4 leading-snug"
-          : "text-lg font-bold text-black mt-7 mb-3";
+          ? "text-2xl font-bold mt-9 mb-4 leading-snug"
+          : "text-lg font-bold mt-7 mb-3";
       const Tag = (`h${level}` as "h1" | "h2" | "h3");
       return (
-        <Tag className={classes}>
+        <Tag className={`${sizeClasses} ${colorClass}`}>
           {node.content?.map((n, i) => <RenderNode key={i} node={n} />)}
         </Tag>
       );
     }
 
-    case "bulletList":
+    case "bulletList": {
+      // Checkmark variant renders each list item with a black filled
+      // circle + white check icon (the "Lernziele" pattern in LW).
+      // Items are inlined here rather than dispatching to listItem so
+      // we don't need parent context.
+      if (node.attrs?.variant === "check") {
+        return (
+          <ul className="list-none pl-0 my-5 space-y-3">
+            {node.content?.map((item, i) => {
+              if (item.type !== "listItem") return null;
+              const flat = item.content?.flatMap((c) =>
+                c.type === "paragraph" ? c.content ?? [] : [c],
+              );
+              return (
+                <li
+                  key={i}
+                  className="flex items-start gap-3 text-[1.05rem] leading-[1.65] text-black"
+                >
+                  <span
+                    aria-hidden
+                    className="flex-shrink-0 mt-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-black text-white text-[11px] leading-none"
+                  >
+                    ✓
+                  </span>
+                  <span className="flex-1 font-bold">
+                    {flat?.map((c, j) => (
+                      <RenderNode key={j} node={c} />
+                    ))}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        );
+      }
       return (
         <ul className="list-disc pl-6 my-5 space-y-2 text-[1.05rem] leading-[1.65] text-black marker:text-[#0066FF]">
           {node.content?.map((n, i) => <RenderNode key={i} node={n} />)}
         </ul>
       );
+    }
 
     case "orderedList":
       return (

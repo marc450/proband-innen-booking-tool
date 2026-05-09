@@ -63,8 +63,16 @@ export type TipTapText = {
 export type TipTapNode =
   | { type: "doc"; content?: TipTapNode[] }
   | { type: "paragraph"; content?: TipTapNode[] }
-  | { type: "heading"; attrs: { level: 1 | 2 | 3 }; content?: TipTapNode[] }
-  | { type: "bulletList"; content?: TipTapNode[] }
+  | {
+      type: "heading";
+      attrs: { level: 1 | 2 | 3; variant?: "default" | "brown1" };
+      content?: TipTapNode[];
+    }
+  | {
+      type: "bulletList";
+      attrs?: { variant?: "default" | "check" };
+      content?: TipTapNode[];
+    }
   | { type: "orderedList"; content?: TipTapNode[] }
   | { type: "listItem"; content?: TipTapNode[] }
   | {
