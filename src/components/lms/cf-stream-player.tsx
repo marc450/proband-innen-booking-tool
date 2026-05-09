@@ -24,6 +24,75 @@ import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
 import "./player-overrides.css";
 
+// German translations for the vidstack DefaultVideoLayout. Only the
+// labels actually surfaced in our UI (after player-overrides.css
+// hides Accessibility / PiP) need to be German; the rest are kept
+// translated as a courtesy for screen-reader users.
+const TRANSLATIONS_DE = {
+  Play: "Abspielen",
+  Pause: "Pause",
+  Replay: "Erneut abspielen",
+  Mute: "Stumm",
+  Unmute: "Ton an",
+  Volume: "Lautstärke",
+  Settings: "Einstellungen",
+  Default: "Standard",
+  Auto: "Auto",
+  Speed: "Geschwindigkeit",
+  Normal: "Normal",
+  Quality: "Qualität",
+  Loop: "Wiederholen",
+  Captions: "Untertitel",
+  "Closed Captions": "Untertitel",
+  "Captions Off": "Aus",
+  "Captions Lookup": "Untertitel suchen",
+  Off: "Aus",
+  None: "Keine",
+  Audio: "Audio",
+  "Audio Track": "Audio-Spur",
+  "Audio Boost": "Audio-Verstärkung",
+  "Reset Boost": "Verstärkung zurücksetzen",
+  Boost: "Verstärkung",
+  Track: "Spur",
+  Original: "Original",
+  Playback: "Wiedergabe",
+  Fullscreen: "Vollbild",
+  PiP: "Bild-im-Bild",
+  AirPlay: "AirPlay",
+  "Google Cast": "Google Cast",
+  Disconnected: "Nicht verbunden",
+  Connected: "Verbunden",
+  Connecting: "Verbinde…",
+  "Skip Forward": "Vorspulen",
+  "Skip Backward": "Zurückspulen",
+  Forward: "Vorwärts",
+  Rewind: "Zurück",
+  Seek: "Springen",
+  "Seek Forward": "Vorwärts springen",
+  "Seek Backward": "Zurück springen",
+  "Seek to": "Springe zu",
+  Live: "LIVE",
+  LIVE: "LIVE",
+  "Skip To Live": "Zu Live springen",
+  Continue: "Fortsetzen",
+  Accessibility: "Barrierefreiheit",
+  Announcements: "Ansagen",
+  "Keyboard Animations": "Tastatur-Animationen",
+  Font: "Schrift",
+  Family: "Familie",
+  Size: "Grösse",
+  Color: "Farbe",
+  Opacity: "Deckkraft",
+  Background: "Hintergrund",
+  Text: "Text",
+  Window: "Fenster",
+  Shadow: "Schatten",
+  Display: "Anzeige",
+  Style: "Stil",
+  Reset: "Zurücksetzen",
+  "Caption Styles": "Untertitel-Stil",
+};
+
 const CF_DOMAIN =
   process.env.NEXT_PUBLIC_CF_STREAM_CUSTOMER_DOMAIN ||
   "customer-pimyxl0m3pl3lwao.cloudflarestream.com";
@@ -67,7 +136,10 @@ export function CfStreamPlayer({ videoId, fillHeight = false }: Props) {
         className="w-full h-full"
       >
         <MediaProvider />
-        <DefaultVideoLayout icons={defaultLayoutIcons} />
+        <DefaultVideoLayout
+          icons={defaultLayoutIcons}
+          translations={TRANSLATIONS_DE}
+        />
       </MediaPlayer>
     </div>
   );
