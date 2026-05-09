@@ -408,8 +408,32 @@ function CalloutChild({ node }: { node: TipTapNode }): ReactNode {
 }
 
 function renderText(text: string, marks?: TipTapMark[]): ReactNode {
-  if (!marks || marks.length === 0) return text;
+  // Inline scholarly citations in the form (1) / (2, 3) / (8, 9) get
+  // rendered as superscript without parens — matches academic
+  // typographic convention and brings the body text in line with what
+  // editors expect. The pattern is purely numeric inside the parens
+  // so things like (BoNT-A), (MCS), (Abb. 2), (z. B.) are unaffected.
+  const citationRe = /\((\d+(?:\s*,\s*\d+)*)\)/g;
   let node: ReactNode = text;
+  if (citationRe.test(text)) {
+    const parts: ReactNode[] = [];
+    let lastIdx = 0;
+    citationRe.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = citationRe.exec(text)) !== null) {
+      if (m.index > lastIdx) parts.push(text.slice(lastIdx, m.index));
+      parts.push(
+        <sup key={`c-${m.index}`} className="text-[0.7em] ml-0.5">
+          {m[1]}
+        </sup>,
+      );
+      lastIdx = m.index + m[0].length;
+    }
+    if (lastIdx < text.length) parts.push(text.slice(lastIdx));
+    node = <>{parts}</>;
+  }
+
+  if (!marks || marks.length === 0) return node;
   for (const mark of marks) {
     if (mark.type === "bold") node = <strong>{node}</strong>;
     else if (mark.type === "italic") node = <em>{node}</em>;
