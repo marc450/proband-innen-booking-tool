@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listThreads, getThread, getHeader, extractEmailAddress, extractName, getBody, getAttachments, isInbound } from "@/lib/gmail";
+import { cleanGmailSnippet } from "@/lib/gmail-text";
 import { resolveContactNamesByEmail } from "@/lib/inbox-contact-names";
 
 export async function GET(request: NextRequest) {
@@ -99,7 +100,7 @@ export async function GET(request: NextRequest) {
           return {
             id: t.id,
             subject,
-            snippet: t.snippet,
+            snippet: cleanGmailSnippet(t.snippet || ""),
             lastDate,
             lastFrom,
             contactName,
@@ -111,7 +112,7 @@ export async function GET(request: NextRequest) {
             hasAttachments,
           };
         } catch {
-          return { id: t.id, subject: "", snippet: t.snippet, lastDate: "", lastFrom: "", contactName: "", contactEmail: "", messageCount: 0, isUnread: false, lastMessageInbound: true, hasAttachments: false };
+          return { id: t.id, subject: "", snippet: cleanGmailSnippet(t.snippet || ""), lastDate: "", lastFrom: "", contactName: "", contactEmail: "", messageCount: 0, isUnread: false, lastMessageInbound: true, hasAttachments: false };
         }
       })
     );
