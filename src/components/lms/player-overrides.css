@@ -1,0 +1,9 @@
+/* Hide vidstack DefaultVideoLayout features we don't want users to see.
+   The vidstack default layout doesn't expose a per-feature flag for
+   these, so we suppress them with CSS. Scoped to .lms-player so we
+   never accidentally hit a vidstack instance elsewhere. */
+
+.lms-player .vds-accessibility-menu,
+.lms-player [aria-label="PiP"] {
+  display: none !important;
+}

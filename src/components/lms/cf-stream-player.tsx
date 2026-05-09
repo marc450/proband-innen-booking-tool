@@ -22,6 +22,7 @@ import {
 
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
+import "./player-overrides.css";
 
 const CF_DOMAIN =
   process.env.NEXT_PUBLIC_CF_STREAM_CUSTOMER_DOMAIN ||
@@ -40,7 +41,7 @@ export function CfStreamPlayer({ videoId }: { videoId: string | null }) {
   const poster = `https://${CF_DOMAIN}/${videoId}/thumbnails/thumbnail.jpg?height=1080`;
 
   return (
-    <div className="aspect-video w-full bg-black">
+    <div className="aspect-video w-full bg-black lms-player">
       <MediaPlayer
         src={{ src, type: "application/x-mpegurl" }}
         title="EPHIA Lehrvideo"
