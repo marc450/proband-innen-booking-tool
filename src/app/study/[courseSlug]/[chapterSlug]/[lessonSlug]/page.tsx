@@ -76,14 +76,19 @@ export default async function LessonPage({
         prevHref={prevHref}
         nextHref={nextHref}
       >
-        <header className="bg-[#FAEBE1]">
+        <header className="bg-[#FAEBE1] md:flex-shrink-0">
           <div className="max-w-3xl mx-auto px-6 py-12">
             <h1 className="text-4xl font-bold leading-tight uppercase tracking-tight">
               {lesson.title}
             </h1>
           </div>
         </header>
-        <CfStreamPlayer videoId={videoId} />
+        {/* Player fills remaining vertical space on desktop so the
+            page never scrolls. On mobile the player keeps its 16:9
+            aspect ratio and the page scrolls naturally. */}
+        <div className="md:flex-1 md:min-h-0 md:overflow-hidden bg-black">
+          <CfStreamPlayer videoId={videoId} fillHeight />
+        </div>
       </ReaderFrame>
     );
   }

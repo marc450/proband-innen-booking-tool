@@ -28,20 +28,36 @@ const CF_DOMAIN =
   process.env.NEXT_PUBLIC_CF_STREAM_CUSTOMER_DOMAIN ||
   "customer-pimyxl0m3pl3lwao.cloudflarestream.com";
 
-export function CfStreamPlayer({ videoId }: { videoId: string | null }) {
+type Props = {
+  videoId: string | null;
+  // When true, the player fills its parent container's exact height
+  // and width (used for dedicated video lesson pages where the player
+  // sits in a flex-1 slot). When false (default), the player keeps a
+  // 16:9 aspect ratio sized by its parent's width — the right shape
+  // for inline videos inside a text body.
+  fillHeight?: boolean;
+};
+
+export function CfStreamPlayer({ videoId, fillHeight = false }: Props) {
+  // fillHeight mode: aspect-video on mobile (natural sizing inside a
+  // scrolling page), w-full h-full on desktop (fills its flex-1 slot
+  // so the page can fit the viewport exactly).
+  const wrapperClass = fillHeight
+    ? "aspect-video md:aspect-auto w-full md:h-full bg-black lms-player"
+    : "aspect-video w-full bg-black lms-player";
+
   if (!videoId) {
-    return (
-      <div className="aspect-video w-full bg-[#E0E5E9] flex items-center justify-center text-[#733D29]">
-        Video wird vorbereitet
-      </div>
-    );
+    const placeholderClass = fillHeight
+      ? "aspect-video md:aspect-auto w-full md:h-full bg-[#E0E5E9] flex items-center justify-center text-[#733D29]"
+      : "aspect-video w-full bg-[#E0E5E9] flex items-center justify-center text-[#733D29]";
+    return <div className={placeholderClass}>Video wird vorbereitet</div>;
   }
 
   const src = `https://${CF_DOMAIN}/${videoId}/manifest/video.m3u8`;
   const poster = `https://${CF_DOMAIN}/${videoId}/thumbnails/thumbnail.jpg?height=1080`;
 
   return (
-    <div className="aspect-video w-full bg-black lms-player">
+    <div className={wrapperClass}>
       <MediaPlayer
         src={{ src, type: "application/x-mpegurl" }}
         title="EPHIA Lehrvideo"

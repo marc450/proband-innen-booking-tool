@@ -66,7 +66,7 @@ export function ReaderFrame({
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-white">
+    <div className="min-h-screen md:h-screen flex flex-col md:flex-row bg-white">
       {/* Sidebar — hidden on desktop when collapsed. Mobile keeps it
           visible (collapse toggle is desktop-only). */}
       <aside
@@ -140,8 +140,11 @@ export function ReaderFrame({
         </nav>
       </aside>
 
-      {/* Content */}
-      <main className="flex-1 min-w-0 bg-white">
+      {/* Content. Desktop locks to viewport height with internal
+          scroll so dedicated video pages can fit perfectly without
+          page-level scroll, while text content longer than the
+          viewport still scrolls cleanly. Mobile keeps natural flow. */}
+      <main className="flex-1 min-w-0 bg-white md:flex md:flex-col md:overflow-y-auto">
         <div className="border-b border-black/10 bg-white relative">
           {/* Expand button shows up only on desktop when sidebar is
               collapsed. Absolute-positioned so it doesn't reflow the
