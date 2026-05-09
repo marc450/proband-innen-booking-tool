@@ -18,6 +18,7 @@ import type { QuizQuestion } from "@/lib/lms/types";
 type Props = {
   questions: QuizQuestion[];
   passCouponCode?: string;
+  voucherLabel?: string;
   grundkursUrl?: string;
   timePerQuestionSeconds?: number;
 };
@@ -27,6 +28,7 @@ type Stage = "intro" | "question" | "result";
 export function QuizBlock({
   questions,
   passCouponCode,
+  voucherLabel = "Gutschein",
   grundkursUrl,
   timePerQuestionSeconds = 30,
 }: Props) {
@@ -89,7 +91,7 @@ export function QuizBlock({
         <p className="mt-3 text-[1.05rem] leading-[1.65] text-black/85 max-w-xl">
           {questions.length} Fragen zum gerade Gelernten. Du hast{" "}
           {timePerQuestionSeconds} Sekunden pro Frage. Beantworte alle richtig
-          und Du bekommst einen 5% Gutschein für unseren Grundkurs Botulinum.
+          und Du bekommst einen {voucherLabel} für unseren Grundkurs Botulinum.
         </p>
         <button
           type="button"
@@ -125,7 +127,7 @@ export function QuizBlock({
         {passed && passCouponCode ? (
           <div className="mt-6 bg-white rounded-[10px] px-6 py-5">
             <p className="text-sm text-black/60 uppercase tracking-wide">
-              Dein 5% Gutschein
+              Dein {voucherLabel}
             </p>
             <p className="mt-1 font-mono text-3xl font-bold text-[#0066FF]">
               {passCouponCode}

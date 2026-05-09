@@ -153,6 +153,9 @@ export type TipTapNode =
       attrs: {
         questions: QuizQuestion[];
         passCouponCode?: string;
+        // Human-readable label for the reward (e.g. "50 € Gutschein"
+        // or "5% Gutschein"). Used in intro + result copy.
+        voucherLabel?: string;
         grundkursUrl?: string;
         timePerQuestionSeconds?: number;
       };
