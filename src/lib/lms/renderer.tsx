@@ -103,7 +103,7 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
       // sentence. Used for Literaturverzeichnis sections.
       if (node.attrs?.variant === "citations") {
         return (
-          <ol className="list-decimal pl-6 my-5 space-y-3 text-xs leading-[1.5] text-black/70">
+          <ol className="list-decimal pl-6 my-5 space-y-3 text-sm leading-[1.55] text-black/70">
             {node.content?.map((item, i) => {
               if (item.type !== "listItem") return null;
               const flat = item.content?.flatMap((c) =>
