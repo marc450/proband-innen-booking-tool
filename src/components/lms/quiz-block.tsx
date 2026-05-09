@@ -15,8 +15,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, X, Trophy, Clock, Mail } from "lucide-react";
+import { Trophy, Clock, Mail, Lock } from "lucide-react";
 import type { QuizQuestion } from "@/lib/lms/types";
+
+const LOCK_STORAGE_KEY = "ephia-lms-quiz-locked-until";
+const LOCK_HOURS = 24;
 
 type Props = {
   questions: QuizQuestion[];
@@ -47,6 +50,28 @@ export function QuizBlock({
   const [timeLeft, setTimeLeft] = useState(timePerQuestionSeconds);
   const [coupon, setCoupon] = useState<CouponState>({ kind: "gate" });
   const [email, setEmail] = useState("");
+  // Soft-lock: after a failed attempt, store an expiry timestamp in
+  // localStorage. While the timestamp is in the future, we render a
+  // "try again later" screen instead of letting the user retake. Not
+  // a hard lock — clearing storage / using a different browser
+  // bypasses it. Just enough friction to encourage re-reading the
+  // lessons before retrying.
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(LOCK_STORAGE_KEY);
+      if (!raw) return;
+      const expiry = Number.parseInt(raw, 10);
+      if (Number.isFinite(expiry) && expiry > Date.now()) {
+        setLockedUntil(expiry);
+      } else {
+        window.localStorage.removeItem(LOCK_STORAGE_KEY);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   async function requestCoupon(e: React.FormEvent) {
     e.preventDefault();
@@ -153,6 +178,49 @@ export function QuizBlock({
     return acc + (ans !== null && q.options[ans]?.correct ? 1 : 0);
   }, 0);
   const passed = score === questions.length;
+
+  // When the user lands on the result stage with a failed score,
+  // arm the soft-lock for LOCK_HOURS. A perfect score clears any
+  // existing lock so they don't get blocked next time.
+  useEffect(() => {
+    if (stage !== "result") return;
+    try {
+      if (passed) {
+        window.localStorage.removeItem(LOCK_STORAGE_KEY);
+      } else {
+        const expiry = Date.now() + LOCK_HOURS * 60 * 60 * 1000;
+        window.localStorage.setItem(LOCK_STORAGE_KEY, String(expiry));
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [stage, passed]);
+
+  if (lockedUntil && lockedUntil > Date.now() && stage === "intro") {
+    const msLeft = lockedUntil - Date.now();
+    const hoursLeft = Math.floor(msLeft / (60 * 60 * 1000));
+    const minutesLeft = Math.ceil((msLeft % (60 * 60 * 1000)) / (60 * 1000));
+    return (
+      <section className="my-2">
+        <div className="flex items-center gap-3">
+          <Lock className="w-7 h-7 text-black/60" strokeWidth={2} />
+          <h3 className="text-xl font-bold text-black">
+            Schon einmal versucht
+          </h3>
+        </div>
+        <p className="mt-3 text-[1.05rem] leading-[1.65] text-black/85 max-w-xl">
+          Du hast den Test bereits gemacht. In{" "}
+          <strong>
+            {hoursLeft > 0
+              ? `${hoursLeft} Std. ${minutesLeft} Min.`
+              : `${minutesLeft} Min.`}
+          </strong>{" "}
+          kannst Du es nochmal probieren. Schau Dir die Lessons bis dahin
+          gerne nochmal an, das hilft beim nächsten Versuch.
+        </p>
+      </section>
+    );
+  }
 
   if (stage === "intro") {
     return (
@@ -316,20 +384,16 @@ export function QuizBlock({
       <ul className="mt-5 space-y-2.5">
         {q.options.map((opt, i) => {
           const isSelected = selectedIdx === i;
-          const isCorrectAnswer = opt.correct;
-          // Once locked, show correct in green and the user's wrong
-          // pick in red. Unselected options gray out.
+          // After lock we only highlight the user's pick; correctness
+          // is intentionally not revealed so the user can't memorise
+          // the right answer for a retry.
           let cls =
             "w-full text-left px-5 py-4 rounded-[10px] border transition-colors text-[1.02rem] leading-snug ";
           if (!isLocked) {
             cls +=
               "border-black/10 bg-white hover:bg-black/5 cursor-pointer";
-          } else if (isSelected && isCorrectAnswer) {
-            cls += "border-emerald-400 bg-emerald-50 text-black";
-          } else if (isSelected && !isCorrectAnswer) {
-            cls += "border-red-400 bg-red-50 text-black";
-          } else if (isCorrectAnswer) {
-            cls += "border-emerald-400 bg-emerald-50/60 text-black";
+          } else if (isSelected) {
+            cls += "border-[#0066FF] bg-[#0066FF]/5 text-black";
           } else {
             cls += "border-black/10 bg-white text-black/40";
           }
@@ -342,30 +406,19 @@ export function QuizBlock({
                 className={cls}
               >
                 <span className="flex items-start gap-3">
-                  {isLocked ? (
-                    <span
-                      aria-hidden
-                      className={
-                        "flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full " +
-                        (isCorrectAnswer
-                          ? "bg-emerald-500 text-white"
-                          : isSelected
-                          ? "bg-red-500 text-white"
-                          : "bg-black/10 text-black/30")
-                      }
-                    >
-                      {isCorrectAnswer ? (
-                        <Check className="w-3 h-3" strokeWidth={3} />
-                      ) : isSelected ? (
-                        <X className="w-3 h-3" strokeWidth={3} />
-                      ) : null}
-                    </span>
-                  ) : (
-                    <span
-                      aria-hidden
-                      className="flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full border border-black/30"
-                    />
-                  )}
+                  <span
+                    aria-hidden
+                    className={
+                      "flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full transition-colors " +
+                      (isLocked && isSelected
+                        ? "bg-[#0066FF]"
+                        : "border border-black/30")
+                    }
+                  >
+                    {isLocked && isSelected ? (
+                      <span className="w-2 h-2 rounded-full bg-white" />
+                    ) : null}
+                  </span>
                   <span className="flex-1">{opt.text}</span>
                 </span>
               </button>
