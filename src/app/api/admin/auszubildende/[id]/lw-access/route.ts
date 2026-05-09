@@ -44,11 +44,20 @@ async function assertAdmin() {
 
 interface LwAccessItem {
   bookingId: string | null;
-  templateId: string;
+  templateId: string | null;
   templateTitle: string;
   lwCourseId: string | null;
   courseType: string | null;
-  status: "enrolled" | "missing" | "no_lw_template";
+  // "enrolled"        → bought via us AND LW knows about it.
+  // "missing"         → bought via us but LW has no enrollment.
+  // "no_lw_template"  → bought via us but template lacks an
+  //                     online_course_id, can't be checked.
+  // "lw_only"         → LW has the enrollment but we have no
+  //                     course_bookings row. Typical for legacy
+  //                     LW user imports (legacy_bookings) and for
+  //                     enrollments granted directly inside LW
+  //                     bypassing our flow. Informational only.
+  status: "enrolled" | "missing" | "no_lw_template" | "lw_only";
   progressPct: number | null;
   boughtAt: string | null;
 }
@@ -123,7 +132,12 @@ export async function GET(
     }
   }
 
-  const items: LwAccessItem[] = (bookings ?? []).map((b) => {
+  const items: LwAccessItem[] = [];
+  // Track which LW course_ids are "claimed" by a booking row, so we
+  // can later list anything LW knows about that we don't.
+  const claimedLwCourseIds = new Set<string>();
+
+  for (const b of bookings ?? []) {
     // Supabase nests selected related rows; courses_template can come
     // back as object or array depending on the FK relation.
     const template = Array.isArray(b.course_templates)
@@ -135,7 +149,8 @@ export async function GET(
       : lwCourseIds.has(lwCourseId)
         ? "enrolled"
         : "missing";
-    return {
+    if (lwCourseId) claimedLwCourseIds.add(lwCourseId);
+    items.push({
       bookingId: b.id,
       templateId: b.template_id,
       templateTitle: template?.title ?? "—",
@@ -144,8 +159,47 @@ export async function GET(
       status,
       progressPct: lwCourseId ? (progressByCourse.get(lwCourseId) ?? null) : null,
       boughtAt: b.created_at,
-    };
-  });
+    });
+  }
+
+  // LW-only enrollments: courses LW reports the user is enrolled in
+  // that aren't matched by any booking row. Typical for legacy LW
+  // user imports (we stored those in legacy_bookings, not
+  // course_bookings) or for enrollments Marc granted directly inside
+  // LW. We still want to surface them so the panel reflects the FULL
+  // LMS picture — Annett's case has the Grundkurs here after the
+  // merge moved her newer Aufbaukurs booking.
+  const orphanLwIds = [...lwCourseIds].filter(
+    (id) => !claimedLwCourseIds.has(id),
+  );
+  if (orphanLwIds.length > 0) {
+    const { data: orphanTemplates } = await admin
+      .from("course_templates")
+      .select("id, title, online_course_id")
+      .in("online_course_id", orphanLwIds);
+    const titleByLwId = new Map<string, { templateId: string; title: string }>();
+    for (const t of orphanTemplates ?? []) {
+      if (t.online_course_id) {
+        titleByLwId.set(t.online_course_id, {
+          templateId: t.id,
+          title: t.title,
+        });
+      }
+    }
+    for (const lwCourseId of orphanLwIds) {
+      const tmpl = titleByLwId.get(lwCourseId);
+      items.push({
+        bookingId: null,
+        templateId: tmpl?.templateId ?? null,
+        templateTitle: tmpl?.title ?? lwCourseId,
+        lwCourseId,
+        courseType: null,
+        status: "lw_only",
+        progressPct: progressByCourse.get(lwCourseId) ?? null,
+        boughtAt: null,
+      });
+    }
+  }
 
   return NextResponse.json({
     email: contact.email,

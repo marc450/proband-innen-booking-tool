@@ -23,11 +23,15 @@ import { ConfirmDialog, AlertDialog } from "@/components/confirm-dialog";
 
 interface LwAccessItem {
   bookingId: string | null;
-  templateId: string;
+  templateId: string | null;
   templateTitle: string;
   lwCourseId: string | null;
   courseType: string | null;
-  status: "enrolled" | "missing" | "no_lw_template";
+  // See server-side comment for the full taxonomy. "lw_only" is
+  // surfaced here as a quiet "Nur LW" pill so admins know the user
+  // has access in LearnWorlds even though no course_bookings row
+  // backs it (typical for legacy_bookings imports).
+  status: "enrolled" | "missing" | "no_lw_template" | "lw_only";
   progressPct: number | null;
   boughtAt: string | null;
 }
@@ -181,6 +185,15 @@ export function LwAccessPanel({ auszubildendeId }: { auszubildendeId: string }) 
                       Freischalten
                     </Button>
                   </div>
+                ) : item.status === "lw_only" ? (
+                  <Badge
+                    variant="outline"
+                    className="shrink-0 text-[10px] gap-1 bg-blue-50 text-blue-700 border-blue-200"
+                    title="LearnWorlds-Enrollment ohne Buchungsdatensatz (z.B. Legacy-Import oder direkter LW-Grant)"
+                  >
+                    <CheckCircle2 className="h-3 w-3" />
+                    Nur LW
+                  </Badge>
                 ) : (
                   <Badge variant="outline" className="shrink-0 text-[10px]">
                     Kein Online-Anteil
