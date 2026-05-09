@@ -11,8 +11,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Trophy } from "lucide-react";
-import type { LmsCourseTree } from "@/lib/lms/types";
+import { ChevronLeft, ChevronRight, Trophy, X } from "lucide-react";
+import type { LmsCourseTree, QuizQuestion } from "@/lib/lms/types";
+import { QuizBlock } from "@/components/lms/quiz-block";
 
 type Props = {
   tree: LmsCourseTree;
@@ -54,6 +55,22 @@ export function ReaderFrame({
   children,
 }: Props) {
   const [collapsed, setCollapsed] = useState(false);
+  const [testModalOpen, setTestModalOpen] = useState(false);
+
+  // Lock body scroll + ESC-to-close while the test modal is open.
+  useEffect(() => {
+    if (!testModalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setTestModalOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [testModalOpen]);
 
   // Hydrate from localStorage on mount. There's a brief flash of the
   // expanded state before this fires; acceptable for now (avoids the
@@ -176,31 +193,27 @@ export function ReaderFrame({
             ))}
 
           {/* Test chapter rendered as a single prominent CTA button
-              instead of the regular chapter list, so the quiz feels
-              like a clear endgame action rather than another lesson. */}
+              that opens the quiz in a modal overlay. The
+              corresponding lesson page still exists at its URL as a
+              fallback for direct links, but the sidebar entry never
+              navigates away from the user's current lesson. */}
           {(() => {
             const testCh = tree.chapters.find(
               (ch) => ch.slug === TEST_CHAPTER_SLUG,
             );
             const testLesson = testCh?.lessons[0];
             if (!testCh || !testLesson) return null;
-            const href = lessonHref(tree.slug, testCh.slug, testLesson.slug);
-            const isActive = href === currentLessonHref;
             return (
               <div className="mt-6 px-3">
-                <Link
-                  href={href}
-                  className={
-                    "flex items-center justify-center gap-2 w-full px-4 py-3 rounded-[10px] font-bold text-sm transition-colors " +
-                    (isActive
-                      ? "bg-[#0055DD] text-white"
-                      : "bg-[#0066FF] hover:bg-[#0055DD] text-white")
-                  }
+                <button
+                  type="button"
+                  onClick={() => setTestModalOpen(true)}
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-[10px] font-bold text-sm transition-colors bg-[#0066FF] hover:bg-[#0055DD] text-white"
                 >
                   <Trophy className="w-4 h-4" strokeWidth={2.25} />
                   <span>{testCh.title}</span>
                   <ChevronRight className="w-4 h-4" strokeWidth={2.5} />
-                </Link>
+                </button>
               </div>
             );
           })()}
@@ -269,6 +282,60 @@ export function ReaderFrame({
         {/* Page content (rose title strip + body, owned by the page). */}
         {children}
       </main>
+
+      {/* Quiz modal — opens from the sidebar CTA. Renders the quiz
+          node attrs from the test lesson's body so the question set
+          stays editable from the DB without code changes. */}
+      {testModalOpen ? (
+        (() => {
+          const testCh = tree.chapters.find(
+            (ch) => ch.slug === TEST_CHAPTER_SLUG,
+          );
+          const testLesson = testCh?.lessons[0];
+          const quizNode = testLesson?.body?.content?.find(
+            (n) => n.type === "quiz",
+          );
+          if (!testCh || !quizNode || quizNode.type !== "quiz") return null;
+          return (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label={testCh.title}
+              onClick={() => setTestModalOpen(false)}
+              className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4 md:p-8"
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-3xl bg-white rounded-[10px] shadow-2xl max-h-[90vh] overflow-y-auto"
+              >
+                <div className="sticky top-0 z-10 bg-white border-b border-black/10 px-6 py-4 flex items-center justify-between gap-3">
+                  <h2 className="text-xl font-bold text-black truncate">
+                    {testCh.title}
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setTestModalOpen(false)}
+                    className="flex-shrink-0 inline-flex items-center justify-center h-9 w-9 text-black/60 hover:text-black hover:bg-black/5 rounded-full transition-colors"
+                    aria-label="Schliessen"
+                  >
+                    <X className="w-5 h-5" strokeWidth={2.25} />
+                  </button>
+                </div>
+                <div className="px-6 py-6">
+                  <QuizBlock
+                    questions={quizNode.attrs.questions as QuizQuestion[]}
+                    voucherLabel={quizNode.attrs.voucherLabel}
+                    grundkursUrl={quizNode.attrs.grundkursUrl}
+                    timePerQuestionSeconds={
+                      quizNode.attrs.timePerQuestionSeconds
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })()
+      ) : null}
     </div>
   );
 }
