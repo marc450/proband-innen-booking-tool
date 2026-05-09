@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,14 @@ export function TotpEnroller({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
-  const [verified, setVerified] = useState(false);
+  // Refs let the unmount cleanup (below) read the latest values
+  // without re-running on every state change. Putting `verified` in
+  // useEffect deps caused the previous cleanup to fire after a
+  // successful verify and immediately unenroll the factor we just
+  // verified — that downgraded the session back to aal1 and made
+  // /setup-2fa loop forever.
+  const factorIdRef = useRef<string | null>(null);
+  const verifiedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,6 +76,7 @@ export function TotpEnroller({
         setLoading(false);
         return;
       }
+      factorIdRef.current = data.id;
       setState({
         factorId: data.id,
         qrCode: data.totp.qr_code,
@@ -81,16 +89,18 @@ export function TotpEnroller({
     };
   }, [supabase]);
 
-  // Clean up the unverified factor if the parent unmounts us before the
-  // user verifies (e.g. dialog closed). Skipped if verified=true since
-  // by then the factor is permanent.
+  // Clean up the unverified factor if the parent unmounts us before
+  // the user verifies (e.g. dialog closed). Empty deps so this runs
+  // exactly once on unmount, reading the latest values via refs.
   useEffect(() => {
     return () => {
-      if (state && !verified) {
-        supabase.auth.mfa.unenroll({ factorId: state.factorId }).catch(() => {});
+      const fid = factorIdRef.current;
+      if (fid && !verifiedRef.current) {
+        supabase.auth.mfa.unenroll({ factorId: fid }).catch(() => {});
       }
     };
-  }, [state, verified, supabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,7 +132,7 @@ export function TotpEnroller({
       return;
     }
 
-    setVerified(true);
+    verifiedRef.current = true;
     onSuccess();
   };
 
@@ -156,10 +166,17 @@ export function TotpEnroller({
           Scanne diesen QR-Code mit Deiner Authenticator-App (Google
           Authenticator, Authy, 1Password, ...).
         </p>
-        <div
-          className="bg-white p-3 rounded-[10px] inline-block"
-          dangerouslySetInnerHTML={{ __html: state.qrCode }}
-        />
+        {/* Supabase returns qr_code as a data URI (e.g.
+            "data:image/svg+xml;utf-8,<svg ...>...</svg>"), so render it
+            via <img src> rather than dangerouslySetInnerHTML — the
+            latter would print the data-URI prefix as visible text. */}
+        <div className="bg-white p-3 rounded-[10px] inline-block">
+          <img
+            src={state.qrCode}
+            alt="QR-Code für die Authenticator-App"
+            className="w-48 h-48"
+          />
+        </div>
         <p className="text-xs text-black/60">
           Kein Scanner zur Hand? Gib den Schlüssel manuell ein:
         </p>
