@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { BottomTabBar } from "./bottom-tab-bar";
 import { SuppressPasswordManagers } from "@/app/dashboard/suppress-password-managers";
+import { InactivityLogout } from "@/components/auth/inactivity-logout";
 
 export const metadata = {
   title: "EPHIA Mobile",
@@ -35,6 +36,7 @@ export default async function MobileLayout({
       data-role={role}
     >
       <SuppressPasswordManagers />
+      <InactivityLogout />
       <main className="px-4 pt-4">{children}</main>
       <BottomTabBar />
     </div>

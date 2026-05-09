@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { DashboardNav } from "./nav";
 import { DashboardBodyTheme } from "./body-theme";
 import { SuppressPasswordManagers } from "./suppress-password-managers";
+import { InactivityLogout } from "@/components/auth/inactivity-logout";
 
 export const metadata: Metadata = {
   title: "EPHIA Admin",
@@ -41,6 +42,7 @@ export default async function DashboardLayout({
     >
       <DashboardBodyTheme theme={theme} />
       <SuppressPasswordManagers />
+      <InactivityLogout />
       <DashboardNav
         userEmail={session.user.email || ""}
         role={role}
