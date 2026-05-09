@@ -314,10 +314,19 @@ function ListItemChild({ node }: { node: TipTapNode }): ReactNode {
 // paragraph callouts (e.g. "Frage Dich selbst:" + the question) read
 // as distinct lines without merging into a wall of text. Last child
 // has no margin so the box doesn't get visually heavy at the bottom.
+//
+// A paragraph with attrs.weight = "normal" opts out of the callout's
+// bold default — used for "Frage Dich selbst:" prompts where the
+// header stays bold and the question below renders in normal weight.
 function CalloutChild({ node }: { node: TipTapNode }): ReactNode {
   if (node.type === "paragraph") {
+    const weight = node.attrs?.weight;
     return (
-      <p className="mb-3 last:mb-0">
+      <p
+        className={
+          "mb-3 last:mb-0" + (weight === "normal" ? " font-normal" : "")
+        }
+      >
         {node.content?.map((n, i) => <RenderNode key={i} node={n} />)}
       </p>
     );

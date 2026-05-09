@@ -62,7 +62,14 @@ export type TipTapText = {
 
 export type TipTapNode =
   | { type: "doc"; content?: TipTapNode[] }
-  | { type: "paragraph"; content?: TipTapNode[] }
+  | {
+      type: "paragraph";
+      // Optional weight override. Default inherits from the parent
+      // (e.g. callouts have font-bold; setting weight: "normal" on a
+      // paragraph inside a callout opts that paragraph out of bold).
+      attrs?: { weight?: "normal" | "bold" };
+      content?: TipTapNode[];
+    }
   | {
       type: "heading";
       attrs: { level: 1 | 2 | 3; variant?: "default" | "brown1" };
