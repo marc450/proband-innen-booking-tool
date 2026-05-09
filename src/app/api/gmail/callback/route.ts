@@ -6,10 +6,19 @@ export async function GET(request: NextRequest) {
   if (!code) {
     return NextResponse.json({ error: "Missing code parameter" }, { status: 400 });
   }
+  // `state` carries the EPHIA mailbox the consent was for. Falls back to the
+  // default (customerlove) so historical OAuth flows that didn't set state
+  // still work.
+  const stateEmail = request.nextUrl.searchParams.get("state") || undefined;
 
   try {
     const tokens = await exchangeCodeForTokens(code);
-    await saveTokens(tokens.access_token, tokens.refresh_token, tokens.expires_in);
+    await saveTokens(
+      tokens.access_token,
+      tokens.refresh_token,
+      tokens.expires_in,
+      stateEmail,
+    );
     // Redirect to inbox after successful auth. Hard-coded to admin.ephia.de
     // because the dashboard (and the inbox) only render on the admin host —
     // NEXT_PUBLIC_APP_URL points at the booking domain (proband-innen.ephia.de),

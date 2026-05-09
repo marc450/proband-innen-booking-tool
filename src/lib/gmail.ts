@@ -14,7 +14,10 @@ const SCOPES = [
 
 // ── OAuth helpers ──
 
-export function getAuthUrl(): string {
+// loginHint pre-fills the Google account picker. state is opaque round-trip
+// data (we use it to remember which EPHIA mailbox the consent was for, so
+// the callback knows under which email to upsert the resulting tokens).
+export function getAuthUrl(opts?: { loginHint?: string; state?: string }): string {
   const params = new URLSearchParams({
     client_id: GMAIL_CLIENT_ID,
     redirect_uri: GMAIL_REDIRECT_URI,
@@ -22,8 +25,9 @@ export function getAuthUrl(): string {
     scope: SCOPES.join(" "),
     access_type: "offline",
     prompt: "consent",
-    login_hint: GMAIL_USER_EMAIL,
+    login_hint: opts?.loginHint ?? GMAIL_USER_EMAIL,
   });
+  if (opts?.state) params.set("state", opts.state);
   return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
 }
 
@@ -70,7 +74,14 @@ async function refreshAccessToken(refreshToken: string): Promise<{ access_token:
 
 // ── Token management ──
 
-export async function saveTokens(accessToken: string, refreshToken: string, expiresIn: number) {
+// Multi-account aware. `email` defaults to GMAIL_USER_EMAIL (customerlove)
+// so all existing single-account callers stay backward compatible.
+export async function saveTokens(
+  accessToken: string,
+  refreshToken: string,
+  expiresIn: number,
+  email: string = GMAIL_USER_EMAIL,
+) {
   const supabase = createAdminClient();
   const expiry = new Date(Date.now() + expiresIn * 1000).toISOString();
 
@@ -79,17 +90,21 @@ export async function saveTokens(accessToken: string, refreshToken: string, expi
       access_token: accessToken,
       refresh_token: refreshToken,
       expiry,
-      email: GMAIL_USER_EMAIL,
+      email,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "email" },
   );
 }
 
-export async function getValidAccessToken(): Promise<string> {
+export async function getValidAccessToken(email: string = GMAIL_USER_EMAIL): Promise<string> {
   const supabase = createAdminClient();
-  const { data } = await supabase.from("gmail_tokens").select("*").single();
-  if (!data) throw new Error("Gmail not connected. Visit /api/gmail/authorize to connect.");
+  const { data } = await supabase
+    .from("gmail_tokens")
+    .select("*")
+    .eq("email", email)
+    .maybeSingle();
+  if (!data) throw new Error(`Gmail not connected for ${email}. Visit /api/gmail/authorize to connect.`);
 
   // If token expires in less than 5 minutes, refresh
   if (new Date(data.expiry).getTime() - Date.now() < 5 * 60 * 1000) {
