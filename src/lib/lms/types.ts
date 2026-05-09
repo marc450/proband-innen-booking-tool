@@ -120,6 +120,18 @@ export type TipTapNode =
       attrs: { cfStreamVideoId: string | null; thumbnailUrl?: string | null };
     }
   | {
+      // Captioned image (Abb. N + description). `label` renders bold
+      // before the caption; both are optional. `src` is a full URL
+      // (Supabase Storage on the lms-images bucket in our case).
+      type: "figure";
+      attrs: {
+        src: string;
+        alt: string;
+        label?: string;
+        caption?: string;
+      };
+    }
+  | {
       // Lightweight celebration block: bouncing smiley + pulsing
       // sparkles + a one-line motivational message. Intended as a
       // chapter outro / "And don't forget" replacement.
