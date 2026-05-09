@@ -1,12 +1,27 @@
-// Cloudflare Stream video embed.
+// Cloudflare Stream video player.
 //
-// One mode: aspect-video (16:9), full width of its parent container.
-// The parent decides the width — full-bleed on dedicated video pages,
-// constrained inside a max-w-3xl text body for inline videos.
+// Uses vidstack instead of the Stream-hosted iframe so we can expose
+// the manual quality selector. Cloudflare Stream auto-encodes the
+// source into multiple HLS renditions (1080p / 720p / 480p / 360p /
+// 240p); the iframe player only ever exposes Speed, while vidstack's
+// default layout renders a full Settings menu including Quality.
+//
+// HLS manifest URL pattern:
+//   https://<customer-subdomain>/<videoId>/manifest/video.m3u8
 //
 // videoId === null shows a "Video wird vorbereitet" placeholder so
 // freshly seeded video lessons render gracefully before the file is
 // uploaded.
+"use client";
+
+import { MediaPlayer, MediaProvider } from "@vidstack/react";
+import {
+  defaultLayoutIcons,
+  DefaultVideoLayout,
+} from "@vidstack/react/player/layouts/default";
+
+import "@vidstack/react/player/styles/default/theme.css";
+import "@vidstack/react/player/styles/default/layouts/video.css";
 
 const CF_DOMAIN =
   process.env.NEXT_PUBLIC_CF_STREAM_CUSTOMER_DOMAIN ||
@@ -21,18 +36,22 @@ export function CfStreamPlayer({ videoId }: { videoId: string | null }) {
     );
   }
 
-  const src = `https://${CF_DOMAIN}/${videoId}/iframe?primaryColor=%230066FF&letterboxColor=%23000000`;
+  const src = `https://${CF_DOMAIN}/${videoId}/manifest/video.m3u8`;
+  const poster = `https://${CF_DOMAIN}/${videoId}/thumbnails/thumbnail.jpg?height=1080`;
 
   return (
     <div className="aspect-video w-full bg-black">
-      <iframe
-        src={src}
-        loading="lazy"
-        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-        allowFullScreen
-        className="w-full h-full border-0"
+      <MediaPlayer
+        src={{ src, type: "application/x-mpegurl" }}
         title="EPHIA Lehrvideo"
-      />
+        poster={poster}
+        playsInline
+        crossOrigin
+        className="w-full h-full"
+      >
+        <MediaProvider />
+        <DefaultVideoLayout icons={defaultLayoutIcons} />
+      </MediaPlayer>
     </div>
   );
 }
