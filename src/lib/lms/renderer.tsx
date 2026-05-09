@@ -1,10 +1,11 @@
 // TipTap JSON → JSX. Server component. No editor runtime in the
 // reader bundle. Extend the switch when adding node types.
 import type { ReactNode } from "react";
-import { Lightbulb, BookOpen } from "lucide-react";
+import { Lightbulb, BookOpen, ArrowRight } from "lucide-react";
 import type { TipTapNode, TipTapDoc, TipTapMark } from "./types";
 import { CfStreamPlayer } from "@/components/lms/cf-stream-player";
 import { FigureImage } from "@/components/lms/figure-image";
+import { QuizBlock } from "@/components/lms/quiz-block";
 
 export function LessonBody({ doc }: { doc: TipTapDoc }) {
   return (
@@ -221,6 +222,33 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
             </figcaption>
           ) : null}
         </figure>
+      );
+
+    case "ctaButton": {
+      const isExternal = /^https?:\/\//.test(node.attrs.href);
+      return (
+        <div className="my-10 text-center">
+          <a
+            href={node.attrs.href}
+            target={isExternal ? "_blank" : undefined}
+            rel={isExternal ? "noopener noreferrer" : undefined}
+            className="inline-flex items-center gap-2 bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-base md:text-lg px-7 py-4 rounded-[10px] transition-colors"
+          >
+            <span>{node.attrs.label}</span>
+            <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
+          </a>
+        </div>
+      );
+    }
+
+    case "quiz":
+      return (
+        <QuizBlock
+          questions={node.attrs.questions}
+          passCouponCode={node.attrs.passCouponCode}
+          grundkursUrl={node.attrs.grundkursUrl}
+          timePerQuestionSeconds={node.attrs.timePerQuestionSeconds}
+        />
       );
 
     case "motivationBlock":

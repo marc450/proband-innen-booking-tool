@@ -54,6 +54,11 @@ export type LmsCourseTree = LmsCourse & {
 // Add a case to the renderer when extending this union.
 export type TipTapMark = { type: "bold" | "italic" | "link"; attrs?: Record<string, unknown> };
 
+export type QuizQuestion = {
+  question: string;
+  options: { text: string; correct: boolean }[];
+};
+
 export type TipTapText = {
   type: "text";
   text: string;
@@ -129,6 +134,27 @@ export type TipTapNode =
         alt: string;
         label?: string;
         caption?: string;
+      };
+    }
+  | {
+      // Big signal-blue call-to-action button, centered. External
+      // links open in a new tab.
+      type: "ctaButton";
+      attrs: {
+        label: string;
+        href: string;
+      };
+    }
+  | {
+      // Interactive multi-question quiz. The reader is a client
+      // component (QuizBlock) that handles state, timer and the
+      // coupon reveal. Each option carries its own `correct` flag.
+      type: "quiz";
+      attrs: {
+        questions: QuizQuestion[];
+        passCouponCode?: string;
+        grundkursUrl?: string;
+        timePerQuestionSeconds?: number;
       };
     }
   | {
