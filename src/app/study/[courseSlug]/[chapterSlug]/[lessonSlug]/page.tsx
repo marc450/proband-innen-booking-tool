@@ -4,6 +4,18 @@ import type { Metadata } from "next";
 import { getCourseTreeBySlug, flattenLessons } from "@/lib/lms/queries";
 import { ReaderFrame } from "@/components/lms/reader-frame";
 import { LessonBody } from "@/lib/lms/renderer";
+import { CfStreamPlayer } from "@/components/lms/cf-stream-player";
+import type { TipTapDoc } from "@/lib/lms/types";
+
+// Pull the Cloudflare Stream UID out of a video-lesson body. The seed
+// migration encodes it at content[0].attrs.cfStreamVideoId; the
+// dedicated video lesson page reads from there. Returns null if the
+// body doesn't have a video node (or if it's still unset).
+function extractVideoId(doc: TipTapDoc): string | null {
+  const first = doc.content?.[0];
+  if (first?.type === "video") return first.attrs.cfStreamVideoId ?? null;
+  return null;
+}
 
 type Params = {
   courseSlug: string;
@@ -52,6 +64,24 @@ export default async function LessonPage({
   const nextHref = next
     ? `/${tree.slug}/${next.chapter.slug}/${next.lesson.slug}`
     : null;
+
+  // Video lessons get a full-bleed player below the top nav, no title
+  // strip. The lesson title is already visible in the sidebar TOC.
+  if (lesson.lesson_type === "video") {
+    const videoId = extractVideoId(lesson.body) ?? lesson.cf_stream_video_id;
+    return (
+      <ReaderFrame
+        tree={tree}
+        currentLessonHref={currentHref}
+        prevHref={prevHref}
+        nextHref={nextHref}
+      >
+        <div className="flex-1 flex bg-black">
+          <CfStreamPlayer videoId={videoId} fillMode />
+        </div>
+      </ReaderFrame>
+    );
+  }
 
   return (
     <ReaderFrame

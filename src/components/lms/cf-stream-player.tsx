@@ -12,19 +12,31 @@ const CF_DOMAIN =
   process.env.NEXT_PUBLIC_CF_STREAM_CUSTOMER_DOMAIN ||
   "customer-pimyxl0m3pl3lwao.cloudflarestream.com";
 
-export function CfStreamPlayer({ videoId }: { videoId: string | null }) {
+type Props = {
+  videoId: string | null;
+  // When true, the player fills its parent container (used for
+  // dedicated video-lesson pages). When false (default), the player
+  // uses a 16:9 aspect-ratio box with rounded corners — the right
+  // shape for inline videos inside a text body.
+  fillMode?: boolean;
+};
+
+export function CfStreamPlayer({ videoId, fillMode = false }: Props) {
+  const wrapperClass = fillMode
+    ? "w-full h-full bg-black"
+    : "aspect-video rounded-[10px] overflow-hidden bg-black";
+
   if (!videoId) {
-    return (
-      <div className="aspect-video bg-[#E0E5E9] rounded-[10px] flex items-center justify-center text-[#733D29]">
-        Video wird vorbereitet
-      </div>
-    );
+    const placeholderClass = fillMode
+      ? "w-full h-full bg-[#E0E5E9] flex items-center justify-center text-[#733D29]"
+      : "aspect-video bg-[#E0E5E9] rounded-[10px] flex items-center justify-center text-[#733D29]";
+    return <div className={placeholderClass}>Video wird vorbereitet</div>;
   }
 
-  const src = `https://${CF_DOMAIN}/${videoId}/iframe?primaryColor=%230066FF&letterboxColor=%23FAEBE1`;
+  const src = `https://${CF_DOMAIN}/${videoId}/iframe?primaryColor=%230066FF&letterboxColor=%23000000`;
 
   return (
-    <div className="aspect-video rounded-[10px] overflow-hidden bg-black">
+    <div className={wrapperClass}>
       <iframe
         src={src}
         loading="lazy"

@@ -91,8 +91,11 @@ export function ReaderFrame({
         </nav>
       </aside>
 
-      {/* Content */}
-      <main className="flex-1 min-w-0 bg-white">
+      {/* Content. flex-col + min-h-screen so a child with flex-1 (e.g.
+          a fullscreen video player) can fill the remaining vertical
+          space below the top nav. Text lessons still grow naturally
+          with their content. */}
+      <main className="flex-1 min-w-0 bg-white flex flex-col md:min-h-screen">
         <div className="border-b border-black/10 bg-white">
           <div className="max-w-3xl mx-auto px-6 py-3 flex items-center justify-between text-sm">
             {prevHref ? (
