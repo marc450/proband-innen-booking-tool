@@ -14,11 +14,16 @@ const MARKETING_DOMAIN = "ephia.de";
 const WWW_MARKETING_DOMAIN = "www.ephia.de";
 // LMS subdomain (post-cutover home of the LearnWorlds course player).
 const LEARN_DOMAIN = "learn.ephia.de";
+// In-house LMS reader (replaces LearnWorlds). Serves the /study tree
+// with clean URLs: study.ephia.de/{course-slug}/{chapter-slug}/{lesson-slug}
+const STUDY_DOMAIN = "study.ephia.de";
 
 // Routes that belong to the admin domain only
 const ADMIN_ONLY_PATHS = ["/dashboard", "/login", "/m"];
 // Routes that belong to the booking domain only
 const BOOKING_ONLY_PATHS = ["/book", "/courses"];
+// Routes that belong to the study domain only
+const STUDY_ONLY_PATHS = ["/study"];
 
 // Paths that kurse.ephia.de should pass through untouched (framework assets,
 // API routes, etc). Everything else on that host is treated as a /kurse slug.
@@ -28,6 +33,10 @@ const BOOKING_ONLY_PATHS = ["/book", "/courses"];
 // the review-form landing at /bewertung/[token]) render on ephia.de
 // without getting caught by the /{slug} → /kurse/{slug} rewrite.
 const KURSE_PASSTHROUGH_RE = /^\/(api|_next|kurse|merch|team|courses|bewertung|favicon\.ico|robots\.txt|sitemap\.xml)(\/|$)/;
+
+// Paths that study.ephia.de should pass through untouched. Everything
+// else on that host is rewritten under the /study tree.
+const STUDY_PASSTHROUGH_RE = /^\/(api|_next|study|favicon\.ico|robots\.txt|sitemap\.xml)(\/|$)/;
 
 // LearnWorlds → Next.js URL migration redirect map. Every entry is a
 // pathname that ranks (or recently ranked) on Google for the old LW
@@ -141,9 +150,43 @@ export async function middleware(request: NextRequest) {
     }
 
     const isBookingPath = BOOKING_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
-    if (isBookingPath) {
+    const isStudyPath = STUDY_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+    if (isBookingPath || isStudyPath) {
       return NextResponse.rewrite(new URL("/not-found", request.url));
     }
+  }
+
+  // On study.ephia.de: in-house LMS reader (replaces LearnWorlds).
+  //  - Block admin-only and booking-only paths so they 404 cleanly.
+  //  - "/" → rewrite to /study (course hub).
+  //  - "/{course-slug}/{chapter-slug}/{lesson-slug}" and shorter prefixes
+  //    rewrite under /study/* so clean URLs work.
+  //  - Pass framework + API routes through.
+  // No noindex on this host: the open Botox tutorial is meant to rank.
+  if (hostname === STUDY_DOMAIN) {
+    const isAdminPath = ADMIN_ONLY_PATHS.some(
+      (p) => pathname === p || pathname.startsWith(p + "/"),
+    );
+    const isBookingPath = BOOKING_ONLY_PATHS.some(
+      (p) => pathname === p || pathname.startsWith(p + "/"),
+    );
+    if (isAdminPath || isBookingPath) {
+      return NextResponse.rewrite(new URL("/not-found", request.url));
+    }
+
+    if (pathname === "/") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/study";
+      return NextResponse.rewrite(url);
+    }
+
+    if (!STUDY_PASSTHROUGH_RE.test(pathname)) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/study${pathname}`;
+      return NextResponse.rewrite(url);
+    }
+
+    return NextResponse.next();
   }
 
   // On kurse.ephia.de: shadow marketing site.
@@ -282,7 +325,8 @@ export async function middleware(request: NextRequest) {
   //  - Everything else (/book, /courses, …) passes through untouched.
   if (hostname === BOOKING_DOMAIN) {
     const isAdminPath = ADMIN_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
-    if (isAdminPath) {
+    const isStudyPath = STUDY_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+    if (isAdminPath || isStudyPath) {
       return NextResponse.rewrite(new URL("/not-found", request.url));
     }
 
