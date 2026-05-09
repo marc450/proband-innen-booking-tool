@@ -140,9 +140,10 @@ export function QuizBlock({
   }, [stage, currentIdx, timeLeft, answers]);
 
   // Auto-advance: once a question is locked (real answer or
-  // timeout-marked -1), give the user 1.8s to read the green/red
-  // feedback, then move to the next question or to the result
-  // stage. No "Weiter" button required.
+  // timeout-marked -1), immediately move on. Visual feedback is the
+  // slide-in animation of the next question itself, no static
+  // feedback pause. setTimeout(0) defers until after React flushes
+  // the state update, so we don't double-fire.
   useEffect(() => {
     if (stage !== "question") return;
     if (answers[currentIdx] === null) return;
@@ -153,7 +154,7 @@ export function QuizBlock({
         setCurrentIdx((i) => i + 1);
         setTimeLeft(timePerQuestionSeconds);
       }
-    }, 1800);
+    }, 0);
     return () => clearTimeout(t);
   }, [stage, currentIdx, answers, questions.length, timePerQuestionSeconds]);
 
@@ -357,7 +358,12 @@ export function QuizBlock({
   const isLocked = selectedIdx !== null;
 
   return (
-    <section className="my-10">
+    <section
+      // key on currentIdx remounts the section per question, so
+      // tw-animate-css's enter classes replay each time.
+      key={currentIdx}
+      className="my-10 animate-in slide-in-from-right-12 fade-in duration-300"
+    >
       {/* Progress + timer */}
       <div className="flex items-center justify-between text-sm text-black/60 mb-2">
         <span>
