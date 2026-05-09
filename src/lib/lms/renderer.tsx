@@ -215,10 +215,10 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
             alt={node.attrs.alt}
             width={1600}
             height={1200}
-            className="w-full max-w-2xl h-auto mx-auto rounded-[10px] block"
+            className="w-full h-auto rounded-[10px] block"
           />
           {(node.attrs.label || node.attrs.caption) ? (
-            <figcaption className="mt-3 max-w-2xl mx-auto text-sm text-black/70 text-center">
+            <figcaption className="mt-3 text-sm text-black/70 text-center">
               {node.attrs.label ? (
                 <span className="font-semibold">{node.attrs.label}</span>
               ) : null}
