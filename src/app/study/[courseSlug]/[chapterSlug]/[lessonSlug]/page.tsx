@@ -60,10 +60,16 @@ export default async function LessonPage({
       prevHref={prevHref}
       nextHref={nextHref}
     >
-      <h1 className="text-4xl font-bold leading-tight uppercase tracking-tight">
-        {lesson.title}
-      </h1>
-      <div className="mt-8">
+      {/* Rose accent strip behind the lesson title only. */}
+      <header className="bg-[#FAEBE1]">
+        <div className="max-w-3xl mx-auto px-6 py-12">
+          <h1 className="text-4xl font-bold leading-tight uppercase tracking-tight">
+            {lesson.title}
+          </h1>
+        </div>
+      </header>
+      {/* White body. */}
+      <div className="max-w-3xl mx-auto px-6 py-10">
         <LessonBody doc={lesson.body} />
       </div>
     </ReaderFrame>

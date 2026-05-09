@@ -1,5 +1,7 @@
-// Two-column reader frame: blue sidebar (course title + TOC) on the
-// left, content area on the right with Zurück/Weiter nav at the top.
+// Two-column reader frame: white sidebar with blue header on the
+// left, white content area on the right. Rose is reserved for the
+// lesson-title banner inside the page (rendered by the page itself,
+// not by the frame), matching the LW reference.
 //
 // Server component. The active-state highlight comes from comparing
 // the current pathname against each lesson's href, which is passed in
@@ -34,9 +36,10 @@ export function ReaderFrame({
   children,
 }: Props) {
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-[#FAEBE1]">
-      {/* Sidebar */}
-      <aside className="w-full md:w-[320px] md:min-h-screen bg-white md:bg-[#FAEBE1] md:border-r-0">
+    <div className="min-h-screen flex flex-col md:flex-row bg-white">
+      {/* Sidebar — white below, blue header on top. Sticky on desktop
+          so the TOC stays visible while the content scrolls. */}
+      <aside className="w-full md:w-[320px] md:min-h-screen bg-white md:sticky md:top-0 md:self-start md:max-h-screen md:overflow-y-auto">
         <div className="bg-[#0066FF] text-white px-6 py-7">
           <Link href="/" className="text-xs uppercase tracking-wide opacity-80 hover:opacity-100">
             ← Alle Kurse
@@ -89,7 +92,7 @@ export function ReaderFrame({
       </aside>
 
       {/* Content */}
-      <main className="flex-1 min-w-0">
+      <main className="flex-1 min-w-0 bg-white">
         <div className="border-b border-black/10 bg-white">
           <div className="max-w-3xl mx-auto px-6 py-3 flex items-center justify-between text-sm">
             {prevHref ? (
@@ -109,7 +112,10 @@ export function ReaderFrame({
           </div>
         </div>
 
-        <article className="max-w-3xl mx-auto px-6 py-10">{children}</article>
+        {/* Page content. Pages are responsible for their own
+            title banner + body wrapping so they can choose where the
+            rose accent strip ends. */}
+        {children}
       </main>
     </div>
   );

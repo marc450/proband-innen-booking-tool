@@ -12,19 +12,24 @@ export default async function StudyHubPage() {
   const courses = await listPublishedCourses();
 
   return (
-    <div className="min-h-screen bg-[#FAEBE1]">
-      <div className="max-w-4xl mx-auto px-6 py-16">
-        <h1 className="text-4xl font-bold leading-tight">EPHIA Lernzentrum</h1>
-        <p className="mt-3 text-[1.1rem] text-black/70 max-w-2xl">
-          Kostenlose Tutorials und Online-Kurse für Ärzt:innen, die ästhetische Medizin verantwortungsvoll lernen wollen.
-        </p>
+    <div className="min-h-screen bg-white">
+      {/* Rose accent strip behind the page title. */}
+      <header className="bg-[#FAEBE1]">
+        <div className="max-w-4xl mx-auto px-6 py-12">
+          <h1 className="text-4xl font-bold leading-tight">EPHIA Lernzentrum</h1>
+          <p className="mt-3 text-[1.1rem] text-black/70 max-w-2xl">
+            Kostenlose Tutorials und Online-Kurse für Ärzt:innen, die ästhetische Medizin verantwortungsvoll lernen wollen.
+          </p>
+        </div>
+      </header>
 
-        <div className="mt-10 grid gap-4 md:grid-cols-2">
+      <div className="max-w-4xl mx-auto px-6 py-12">
+        <div className="grid gap-4 md:grid-cols-2">
           {courses.map((c) => (
             <Link
               key={c.id}
               href={`/${c.slug}`}
-              className="bg-white rounded-[10px] p-6 shadow-md hover:shadow-lg transition-shadow"
+              className="bg-[#FAEBE1] rounded-[10px] p-6 hover:bg-[#FAEBE1]/70 transition-colors"
             >
               <h2 className="text-xl font-bold">{c.title}</h2>
               {c.subtitle ? (
