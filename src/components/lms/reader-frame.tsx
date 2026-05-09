@@ -130,10 +130,12 @@ export function ReaderFrame({
         <div className="bg-[#0066FF] text-white px-6 py-7">
           <div className="flex items-start justify-between gap-3">
             <Link
-              href="/"
+              href="https://ephia.de/grundkurs-botulinum"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-xs uppercase tracking-wide opacity-80 hover:opacity-100"
             >
-              ← Alle Kurse
+              Zum Grundkurs Botulinum
             </Link>
             <button
               type="button"

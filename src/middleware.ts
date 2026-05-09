@@ -158,7 +158,10 @@ export async function middleware(request: NextRequest) {
 
   // On study.ephia.de: in-house LMS reader (replaces LearnWorlds).
   //  - Block admin-only and booking-only paths so they 404 cleanly.
-  //  - "/" → rewrite to /study (course hub).
+  //  - "/" → 308-redirect to the only course (no hub page).
+  //  - Old "/kostenloses-botox-tutorial/*" 301-redirects to the new
+  //    "/kostenloser-botox-kurs/*" tree (preserves SEO after the
+  //    course slug rename in migration 097).
   //  - "/{course-slug}/{chapter-slug}/{lesson-slug}" and shorter prefixes
   //    rewrite under /study/* so clean URLs work.
   //  - Pass framework + API routes through.
@@ -174,10 +177,24 @@ export async function middleware(request: NextRequest) {
       return NextResponse.rewrite(new URL("/not-found", request.url));
     }
 
+    // Root has no landing page — drop straight into the course.
     if (pathname === "/") {
       const url = request.nextUrl.clone();
-      url.pathname = "/study";
-      return NextResponse.rewrite(url);
+      url.pathname = "/kostenloser-botox-kurs";
+      return NextResponse.redirect(url, 308);
+    }
+
+    // 301 redirect from the old course slug tree to the new one.
+    if (
+      pathname === "/kostenloses-botox-tutorial" ||
+      pathname.startsWith("/kostenloses-botox-tutorial/")
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = pathname.replace(
+        "/kostenloses-botox-tutorial",
+        "/kostenloser-botox-kurs",
+      );
+      return NextResponse.redirect(url, 301);
     }
 
     if (!STUDY_PASSTHROUGH_RE.test(pathname)) {
