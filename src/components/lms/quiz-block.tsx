@@ -37,7 +37,7 @@ export function QuizBlock({
   questions,
   voucherLabel = "Gutschein",
   grundkursUrl,
-  timePerQuestionSeconds = 30,
+  timePerQuestionSeconds = 20,
 }: Props) {
   const [stage, setStage] = useState<Stage>("intro");
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -141,9 +141,8 @@ export function QuizBlock({
 
   if (stage === "intro") {
     return (
-      <section className="bg-[#FAEBE1] rounded-[10px] px-8 py-10 my-10">
-        <h2 className="text-2xl font-bold text-black">Mache jetzt den Test</h2>
-        <p className="mt-3 text-[1.05rem] leading-[1.65] text-black/85 max-w-xl">
+      <section className="my-2">
+        <p className="text-[1.05rem] leading-[1.65] text-black/85 max-w-xl">
           {questions.length} Fragen zum gerade Gelernten. Du hast{" "}
           {timePerQuestionSeconds} Sekunden pro Frage. Beantworte alle richtig
           und Du bekommst einen {voucherLabel} für unseren Grundkurs Botulinum.
@@ -161,7 +160,7 @@ export function QuizBlock({
 
   if (stage === "result") {
     return (
-      <section className="bg-[#FAEBE1] rounded-[10px] px-8 py-10 my-10">
+      <section className="my-2">
         <div className="flex items-center gap-3">
           <Trophy
             className={passed ? "w-8 h-8 text-[#0066FF]" : "w-8 h-8 text-black/40"}
@@ -181,7 +180,7 @@ export function QuizBlock({
 
         {passed ? (
           coupon.kind === "revealed" ? (
-            <div className="mt-6 bg-white rounded-[10px] px-6 py-5">
+            <div className="mt-6 border border-black/10 rounded-[10px] px-6 py-5">
               <p className="text-sm text-black/60 uppercase tracking-wide">
                 Dein {voucherLabel}
               </p>
@@ -197,7 +196,7 @@ export function QuizBlock({
           ) : (
             <form
               onSubmit={requestCoupon}
-              className="mt-6 bg-white rounded-[10px] px-6 py-5"
+              className="mt-6 border border-black/10 rounded-[10px] px-6 py-5"
             >
               <label
                 htmlFor="quiz-email"
