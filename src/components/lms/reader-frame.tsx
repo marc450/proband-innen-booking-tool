@@ -11,7 +11,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trophy } from "lucide-react";
 import type { LmsCourseTree } from "@/lib/lms/types";
 
 type Props = {
@@ -26,6 +26,11 @@ type Props = {
 };
 
 const STORAGE_KEY = "ephia-lms-sidebar-collapsed";
+
+// Special chapter slug that gets pulled out of the regular sidebar
+// list and rendered as a prominent CTA button at the bottom (the
+// quiz / test). The chapter's first lesson is the link target.
+const TEST_CHAPTER_SLUG = "teste-dein-wissen";
 
 function lessonHref(courseSlug: string, chapterSlug: string, lessonSlug: string) {
   return `/${courseSlug}/${chapterSlug}/${lessonSlug}`;
@@ -127,46 +132,78 @@ export function ReaderFrame({
         </div>
 
         <nav className="px-3 py-5">
-          {tree.chapters.map((ch, ci) => (
-            <div key={ch.id} className="mb-4">
-              <div className="px-3 py-1 text-sm font-semibold text-[#0066FF]">
-                {ci + 1}. {ch.title}
-              </div>
-              <ul className="mt-1">
-                {ch.lessons.map((l) => {
-                  const href = lessonHref(tree.slug, ch.slug, l.slug);
-                  const isActive = href === currentLessonHref;
-                  return (
-                    <li key={l.id}>
-                      <Link
-                        href={href}
-                        className={
-                          "flex items-start gap-2 px-3 py-2 rounded-[10px] transition-colors " +
-                          (isActive
-                            ? "bg-[#E0E5E9] text-black"
-                            : "text-black/80 hover:bg-[#E0E5E9]/60")
-                        }
-                      >
-                        <span aria-hidden className="mt-[3px] text-[#0066FF]">
-                          {l.lesson_type === "video" ? "▶" : "≡"}
-                        </span>
-                        <span className="flex-1">
-                          <span className="block text-sm font-medium leading-snug">
-                            {l.title}
+          {tree.chapters
+            .filter((ch) => ch.slug !== TEST_CHAPTER_SLUG)
+            .map((ch, ci) => (
+              <div key={ch.id} className="mb-4">
+                <div className="px-3 py-1 text-sm font-semibold text-[#0066FF]">
+                  {ci + 1}. {ch.title}
+                </div>
+                <ul className="mt-1">
+                  {ch.lessons.map((l) => {
+                    const href = lessonHref(tree.slug, ch.slug, l.slug);
+                    const isActive = href === currentLessonHref;
+                    return (
+                      <li key={l.id}>
+                        <Link
+                          href={href}
+                          className={
+                            "flex items-start gap-2 px-3 py-2 rounded-[10px] transition-colors " +
+                            (isActive
+                              ? "bg-[#E0E5E9] text-black"
+                              : "text-black/80 hover:bg-[#E0E5E9]/60")
+                          }
+                        >
+                          <span aria-hidden className="mt-[3px] text-[#0066FF]">
+                            {l.lesson_type === "video" ? "▶" : "≡"}
                           </span>
-                          {l.duration_seconds ? (
-                            <span className="block text-xs text-black/50 mt-0.5">
-                              {formatDuration(l.duration_seconds)}
+                          <span className="flex-1">
+                            <span className="block text-sm font-medium leading-snug">
+                              {l.title}
                             </span>
-                          ) : null}
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
+                            {l.duration_seconds ? (
+                              <span className="block text-xs text-black/50 mt-0.5">
+                                {formatDuration(l.duration_seconds)}
+                              </span>
+                            ) : null}
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+
+          {/* Test chapter rendered as a single prominent CTA button
+              instead of the regular chapter list, so the quiz feels
+              like a clear endgame action rather than another lesson. */}
+          {(() => {
+            const testCh = tree.chapters.find(
+              (ch) => ch.slug === TEST_CHAPTER_SLUG,
+            );
+            const testLesson = testCh?.lessons[0];
+            if (!testCh || !testLesson) return null;
+            const href = lessonHref(tree.slug, testCh.slug, testLesson.slug);
+            const isActive = href === currentLessonHref;
+            return (
+              <div className="mt-6 px-3">
+                <Link
+                  href={href}
+                  className={
+                    "flex items-center justify-center gap-2 w-full px-4 py-3 rounded-[10px] font-bold text-sm transition-colors " +
+                    (isActive
+                      ? "bg-[#0055DD] text-white"
+                      : "bg-[#0066FF] hover:bg-[#0055DD] text-white")
+                  }
+                >
+                  <Trophy className="w-4 h-4" strokeWidth={2.25} />
+                  <span>{testCh.title}</span>
+                  <ChevronRight className="w-4 h-4" strokeWidth={2.5} />
+                </Link>
+              </div>
+            );
+          })()}
         </nav>
       </aside>
 
