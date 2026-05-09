@@ -1,10 +1,10 @@
 // TipTap JSON → JSX. Server component. No editor runtime in the
 // reader bundle. Extend the switch when adding node types.
 import type { ReactNode } from "react";
-import Image from "next/image";
 import { Lightbulb, BookOpen } from "lucide-react";
 import type { TipTapNode, TipTapDoc, TipTapMark } from "./types";
 import { CfStreamPlayer } from "@/components/lms/cf-stream-player";
+import { FigureImage } from "@/components/lms/figure-image";
 
 export function LessonBody({ doc }: { doc: TipTapDoc }) {
   return (
@@ -210,13 +210,7 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
     case "figure":
       return (
         <figure className="my-8">
-          <Image
-            src={node.attrs.src}
-            alt={node.attrs.alt}
-            width={1600}
-            height={1200}
-            className="w-full h-auto rounded-[10px] block"
-          />
+          <FigureImage src={node.attrs.src} alt={node.attrs.alt} />
           {(node.attrs.label || node.attrs.caption) ? (
             <figcaption className="mt-3 text-sm text-black/70 text-center">
               {node.attrs.label ? (
