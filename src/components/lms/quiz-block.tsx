@@ -176,6 +176,19 @@ export function QuizBlock({
               Komplikationsmanagement systematisch und mit echten
               Fallbeispielen.
             </p>
+            {grundkursUrl ? (
+              <div className="mt-8 flex justify-center">
+                <a
+                  href={grundkursUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-base px-6 py-3 rounded-[10px] transition-colors"
+                >
+                  <span>Zum Grundkurs Botulinum</span>
+                  <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
+                </a>
+              </div>
+            ) : null}
           </div>
         ) : (
           <div className="py-2">
@@ -195,29 +208,28 @@ export function QuizBlock({
               Indikationen und Technik so präzise, dass beim nächsten
               Versuch hier nichts mehr daneben geht. Versprochen.
             </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              {grundkursUrl ? (
+                <a
+                  href={grundkursUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-base px-6 py-3 rounded-[10px] transition-colors"
+                >
+                  <span>Zum Grundkurs Botulinum</span>
+                  <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
+                </a>
+              ) : null}
+              <button
+                type="button"
+                onClick={start}
+                className="inline-flex items-center text-black/70 hover:text-black font-medium text-sm px-4 py-3 rounded-[10px] transition-colors"
+              >
+                Nochmal versuchen
+              </button>
+            </div>
           </div>
         )}
-
-        <div className="mt-8 flex flex-wrap gap-3">
-          {grundkursUrl ? (
-            <a
-              href={grundkursUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-base px-6 py-3 rounded-[10px] transition-colors"
-            >
-              <span>Zum Grundkurs Botulinum</span>
-              <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
-            </a>
-          ) : null}
-          <button
-            type="button"
-            onClick={start}
-            className="inline-flex items-center text-black/70 hover:text-black font-medium text-sm px-4 py-3 rounded-[10px] transition-colors"
-          >
-            Nochmal versuchen
-          </button>
-        </div>
       </section>
     );
   }
