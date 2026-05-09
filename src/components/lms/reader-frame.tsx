@@ -71,7 +71,7 @@ export function ReaderFrame({
           visible (collapse toggle is desktop-only). */}
       <aside
         className={
-          "w-full bg-white md:sticky md:top-0 md:self-start md:max-h-screen md:overflow-y-auto md:shadow-[4px_0_16px_rgba(0,0,0,0.06)] z-10 " +
+          "w-full bg-white md:sticky md:top-0 md:self-start md:max-h-screen md:overflow-y-auto md:shadow-[4px_0_16px_rgba(0,0,0,0.06)] z-50 " +
           (collapsed ? "md:hidden" : "md:w-[320px] md:min-h-screen")
         }
       >
@@ -145,7 +145,7 @@ export function ReaderFrame({
           page-level scroll, while text content longer than the
           viewport still scrolls cleanly. Mobile keeps natural flow. */}
       <main className="flex-1 min-w-0 bg-white md:flex md:flex-col md:overflow-y-auto">
-        <div className="border-b border-black/10 bg-white relative">
+        <div className="border-b border-black/10 bg-white sticky top-0 z-50">
           {/* Expand button shows up only on desktop when sidebar is
               collapsed. Absolute-positioned so it doesn't reflow the
               centered Zurück/Weiter row. */}
