@@ -1,7 +1,7 @@
 // TipTap JSON → JSX. Server component. No editor runtime in the
 // reader bundle. Extend the switch when adding node types.
 import type { ReactNode } from "react";
-import { Lightbulb } from "lucide-react";
+import { Lightbulb, BookOpen } from "lucide-react";
 import type { TipTapNode, TipTapDoc, TipTapMark } from "./types";
 import { CfStreamPlayer } from "@/components/lms/cf-stream-player";
 
@@ -56,6 +56,34 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
     }
 
     case "bulletList": {
+      // Book variant: small open-book icon left of each item; items
+      // can contain multiple paragraphs (Journal Club paper summaries).
+      // Each paragraph dispatches through RenderNode so the standard
+      // paragraph styles (mb-5, justify) apply per-paragraph.
+      if (node.attrs?.variant === "book") {
+        return (
+          <ul className="list-none pl-0 my-5 space-y-7">
+            {node.content?.map((item, i) => {
+              if (item.type !== "listItem") return null;
+              return (
+                <li key={i} className="flex items-start gap-4">
+                  <span
+                    aria-hidden
+                    className="flex-shrink-0 mt-1 text-black"
+                  >
+                    <BookOpen className="w-5 h-5" strokeWidth={2.25} />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    {item.content?.map((c, j) => (
+                      <RenderNode key={j} node={c} />
+                    ))}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        );
+      }
       // Checkmark variant renders each list item with a black filled
       // circle + white check icon (the "Lernziele" pattern in LW).
       // Items are inlined here rather than dispatching to listItem so

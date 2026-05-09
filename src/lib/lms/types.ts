@@ -77,7 +77,11 @@ export type TipTapNode =
     }
   | {
       type: "bulletList";
-      attrs?: { variant?: "default" | "check" };
+      // check: black checkmark circle icon, single-line bold items.
+      //        Lernziele-style outcome lists.
+      // book:  small book icon, supports multi-paragraph items.
+      //        Journal Club-style paper-summary lists.
+      attrs?: { variant?: "default" | "check" | "book" };
       content?: TipTapNode[];
     }
   | {
