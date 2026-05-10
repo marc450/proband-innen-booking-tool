@@ -27,23 +27,20 @@ export async function POST() {
 
   const admin = createAdminClient();
 
-  // Pull every course that's missing an instructor_id. We try TWO
-  // sources for the name:
-  //
-  //   1. If session_id is set, prefer the linked course_sessions
-  //      .instructor_name (the post-merge canonical source).
-  //   2. Otherwise fall back to the legacy courses.instructor text
-  //      column (set when the course was created pre-072 and never
-  //      successfully back-mapped).
-  //
-  // Whichever source we get a name from, the resolver does the actual
-  // matching against profiles.
+  // Pull every course that's missing an instructor_id. The only
+  // source for a name is the linked course_sessions.instructor_name
+  // (the legacy courses.instructor text column was dropped in
+  // production even though the migration is still in the repo). When
+  // session_id is NULL there's nothing to derive from — those rows
+  // come back with source "none" so the caller can see them and set
+  // them manually.
   const { data: rows, error } = await admin
     .from("courses")
     .select(
-      "id, instructor, session_id, course_sessions(instructor_name)",
+      "id, title, course_date, session_id, course_sessions(instructor_name)",
     )
-    .is("instructor_id", null);
+    .is("instructor_id", null)
+    .order("course_date", { ascending: false, nullsFirst: false });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -51,8 +48,11 @@ export async function POST() {
 
   const results: Array<{
     courseId: string;
+    title: string | null;
+    courseDate: string | null;
+    sessionId: string | null;
     instructorName: string | null;
-    source: "session" | "legacy" | "none";
+    source: "session" | "none";
     matched: boolean;
   }> = [];
 
@@ -61,19 +61,13 @@ export async function POST() {
       ? row.course_sessions[0]
       : row.course_sessions;
     const sessionName = (session?.instructor_name as string | null) ?? null;
-    const legacyName = (row.instructor as string | null) ?? null;
 
-    let instructorName: string | null = null;
-    let source: "session" | "legacy" | "none" = "none";
-    if (sessionName) {
-      instructorName = sessionName;
-      source = "session";
-    } else if (legacyName) {
-      instructorName = legacyName;
-      source = "legacy";
-    }
+    const instructorName = sessionName;
+    const source: "session" | "none" = sessionName ? "session" : "none";
 
-    const instructorId = await resolveInstructorIdFromName(admin, instructorName);
+    const instructorId = sessionName
+      ? await resolveInstructorIdFromName(admin, sessionName)
+      : null;
 
     if (instructorId) {
       await admin
@@ -83,6 +77,9 @@ export async function POST() {
     }
     results.push({
       courseId: row.id as string,
+      title: (row.title as string | null) ?? null,
+      courseDate: (row.course_date as string | null) ?? null,
+      sessionId: (row.session_id as string | null) ?? null,
       instructorName,
       source,
       matched: !!instructorId,
@@ -92,6 +89,9 @@ export async function POST() {
   return NextResponse.json({
     scanned: results.length,
     patched: results.filter((r) => r.matched).length,
+    // Everything that didn't get patched, with diagnostic columns so
+    // staff can see whether the gap is a name mismatch (source=session,
+    // matched=false) or a missing session linkage (source=none).
     unresolved: results.filter((r) => !r.matched),
   });
 }
