@@ -11,7 +11,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, Trophy, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Menu, Trophy, X } from "lucide-react";
 import type { LmsCourseTree, QuizQuestion } from "@/lib/lms/types";
 import { QuizBlock } from "@/components/lms/quiz-block";
 
@@ -56,6 +56,10 @@ export function ReaderFrame({
 }: Props) {
   const [collapsed, setCollapsed] = useState(false);
   const [testModalOpen, setTestModalOpen] = useState(false);
+  // Mobile-only drawer state. Desktop has its own `collapsed` state with
+  // localStorage persistence; this one is ephemeral so a refresh on mobile
+  // always lands on the lesson, not the navigation.
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   // Single-open accordion for chapters. Default = null (all collapsed); the
   // chapter holding the current lesson auto-opens via the effect below so
   // the user always sees their position in context.
@@ -77,6 +81,28 @@ export function ReaderFrame({
   useEffect(() => {
     if (activeChapterId) setOpenChapterId(activeChapterId);
   }, [activeChapterId]);
+
+  // Close the mobile drawer whenever the user navigates to a different
+  // lesson. Next-link navigation is client-side so component state would
+  // otherwise persist and leave the drawer covering the new lesson.
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [currentLessonHref]);
+
+  // Lock body scroll + ESC-to-close while the mobile drawer is open.
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [mobileMenuOpen]);
 
   // Lock body scroll + ESC-to-close while the test modal is open.
   useEffect(() => {
@@ -140,12 +166,27 @@ export function ReaderFrame({
 
   return (
     <div className="min-h-screen md:h-screen flex flex-col md:flex-row bg-white">
-      {/* Sidebar — hidden on desktop when collapsed. Mobile keeps it
-          visible (collapse toggle is desktop-only). */}
+      {/* Sidebar.
+          • Desktop (md+): sticky column on the left, hidden when `collapsed`.
+          • Mobile: hidden by default; opens as a fullscreen drawer when the
+            top-bar hamburger sets `mobileMenuOpen`. The drawer takes over the
+            viewport so no separate backdrop is needed.
+          Using max-md: + md: variants keeps mobile and desktop styles in
+          disjoint media queries so they never have to override each other. */}
       <aside
         className={
-          "w-full bg-white md:sticky md:top-0 md:self-start md:max-h-screen md:overflow-y-auto md:shadow-[4px_0_16px_rgba(0,0,0,0.06)] z-50 " +
-          (collapsed ? "md:hidden" : "md:w-[320px] md:min-h-screen")
+          // z-[60] beats the lesson topbar's z-50 so the mobile drawer
+          // covers it instead of being covered by it. Doesn't matter on
+          // desktop where the two never overlap.
+          "bg-white z-[60] " +
+          // Mobile (< md)
+          (mobileMenuOpen
+            ? "max-md:fixed max-md:inset-0 max-md:overflow-y-auto "
+            : "max-md:hidden ") +
+          // Desktop (md+)
+          (collapsed
+            ? "md:hidden"
+            : "md:w-[320px] md:min-h-screen md:sticky md:top-0 md:self-start md:max-h-screen md:overflow-y-auto md:shadow-[4px_0_16px_rgba(0,0,0,0.06)]")
         }
       >
         <div className="bg-[#0066FF] text-white px-6 py-7">
@@ -167,6 +208,16 @@ export function ReaderFrame({
               title="Sidebar einklappen"
             >
               «
+            </button>
+            {/* Mobile drawer close. Parallels the desktop collapse button so
+                the user has a clear way out without tapping a backdrop. */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(false)}
+              className="md:hidden h-10 w-10 inline-flex items-center justify-center text-white hover:bg-white/15 rounded-full transition-colors -mr-1"
+              aria-label="Menü schliessen"
+            >
+              <X className="w-5 h-5" strokeWidth={2.25} />
             </button>
           </div>
           <h1 className="mt-3 text-xl font-bold leading-snug">{tree.title}</h1>
@@ -283,7 +334,26 @@ export function ReaderFrame({
               »
             </button>
           ) : null}
-          <div className="max-w-4xl mx-auto h-14 px-6 flex items-center gap-3">
+          {/* Mobile-only hamburger. Same absolute slot so the centered
+              lesson title in the row below stays centered. */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            className="md:hidden absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 inline-flex items-center justify-center text-black/70 hover:text-black hover:bg-black/5 rounded-full transition-colors"
+            aria-label="Menü öffnen"
+          >
+            <Menu className="w-5 h-5" strokeWidth={2.25} />
+          </button>
+          {/* pl-14 reserves space for the absolute-positioned hamburger
+              (mobile, always) and the desktop expand button (when collapsed).
+              Desktop with the sidebar visible has no left-edge button, so we
+              reclaim that space with md:pl-6 in the non-collapsed case. */}
+          <div
+            className={
+              "max-w-4xl mx-auto h-14 pl-16 pr-6 flex items-center gap-3 " +
+              (collapsed ? "" : "md:pl-6")
+            }
+          >
             {prevHref ? (
               <Link
                 href={prevHref}
