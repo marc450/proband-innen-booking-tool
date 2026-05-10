@@ -323,9 +323,8 @@ export async function scheduleCourseReviewEmails(
       // We deliberately do NOT mirror into Gmail Sent here. Resend will
       // fire this email at the future scheduled time, not now, so an
       // archive at scheduling time would falsely date the entry. The
-      // resend-webhook route already has the archive-on-actual-delivery
-      // path for tagged sends; extending it to the
-      // "ephia-purpose=course-review-request" tag is a follow-up.
+      // resend-webhook route handles the archive on actual delivery
+      // and gates on the "ephia-purpose=course-review-request" tag.
       result.scheduled++;
       // Pace successive sends so we stay under Resend's 2 req/sec.
       await sleep(RESEND_RATE_LIMIT_DELAY_MS);

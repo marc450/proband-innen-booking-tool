@@ -153,12 +153,22 @@ export async function POST(req: NextRequest) {
   // Archive only what we explicitly tagged for it. Immediate
   // transactional sends archive inline in their endpoints; if we
   // archived them here too we'd duplicate.
+  //
+  // Two tag families qualify:
+  //   - ephia-archive=campaign-scheduled  → scheduled marketing campaigns
+  //   - ephia-purpose=course-review-request → review-request emails
+  //     scheduled 1h before course end (see send-course-review-request.ts).
+  //     Their schedule path deliberately does NOT archive at queue time
+  //     (the date would be wrong); the archive must happen here, when
+  //     Resend actually dispatches the mail.
   const tags = event.data.tags || [];
   const wantsArchive = tags.some(
-    (t) => t.name === "ephia-archive" && t.value === "campaign-scheduled",
+    (t) =>
+      (t.name === "ephia-archive" && t.value === "campaign-scheduled") ||
+      (t.name === "ephia-purpose" && t.value === "course-review-request"),
   );
   if (!wantsArchive) {
-    return NextResponse.json({ ok: true, ignored: "no-ephia-archive-tag" });
+    return NextResponse.json({ ok: true, ignored: "no-archive-tag" });
   }
 
   const resendId = event.data.email_id;
