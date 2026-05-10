@@ -5,12 +5,30 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Title strings that mean "no title". Imported data has shown several
+// variants over time:
+//   - "Kein Titel"           — the canonical TITLE_OPTIONS entry
+//   - "Keine" / "Keiner"     — Heilpraktiker:innen profiles where the
+//                              title field was filled with the German
+//                              "no" word instead of left blank
+//   - "Kein"                 — short variant
+//   - "-" / "—"              — placeholder dashes
+// All are normalised away so the rendered name doesn't read
+// "Keine Agnes Egyed" or "- Anna Beispiel".
+const NO_TITLE_VALUES = new Set([
+  "kein titel",
+  "kein",
+  "keine",
+  "keiner",
+  "-",
+  "—",
+  "–",
+]);
+
 /**
- * Format a person's display name from title + first + last. The TITLE_OPTIONS
- * list across the app uses the literal string "Kein Titel" as the "no title"
- * choice, which is truthy and would leak into naive `[title, first, last]
- * .filter(Boolean).join(" ")` compositions as "Kein Titel Theresa Hristov".
- * This helper drops it.
+ * Format a person's display name from title + first + last. Drops any
+ * "no title" sentinel value so it doesn't leak into the composed name
+ * (see NO_TITLE_VALUES above).
  *
  * Returns undefined when every part is empty so callers can fall back to an
  * email or "Unbekannt" themselves.
@@ -21,7 +39,7 @@ export function formatPersonName(parts: {
   lastName?: string | null
 }): string | undefined {
   const t = parts.title?.trim()
-  const effectiveTitle = !t || t.toLowerCase() === "kein titel" ? null : t
+  const effectiveTitle = !t || NO_TITLE_VALUES.has(t.toLowerCase()) ? null : t
   const joined = [effectiveTitle, parts.firstName?.trim(), parts.lastName?.trim()]
     .filter((x): x is string => !!x)
     .join(" ")
