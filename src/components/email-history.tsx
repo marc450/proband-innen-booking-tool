@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   Mail,
@@ -52,12 +52,18 @@ interface ThreadMessage {
 
 export function EmailHistory({
   email,
+  aliases,
   displayName,
   canCompose = true,
   aiMode,
   firstName,
 }: {
   email: string;
+  // Additional addresses to include when searching Gmail. Populated for
+  // contacts that have absorbed merged-in profiles (auszubildende_emails
+  // alias rows). The primary `email` is still used as the compose
+  // recipient; aliases only widen the thread search.
+  aliases?: string[];
   displayName?: string;
   // Nutzer:innen can view past threads but must not send mail from a
   // profile. Default true keeps admin-only call sites unaffected.
@@ -113,17 +119,37 @@ export function EmailHistory({
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   const signature = useSignature();
 
+  // Stable, deduped, lowercased list of every address whose threads we
+  // want to surface for this contact (primary + merge aliases). Joined
+  // into a Gmail OR-search via `{ }` so a single thread on any of these
+  // addresses is enough to surface here.
+  const aliasesKey = (aliases ?? []).map((a) => a.toLowerCase()).sort().join(",");
+  const allEmails = useMemo(() => {
+    const set = new Set<string>();
+    if (email) set.add(email.toLowerCase());
+    for (const a of aliases ?? []) {
+      if (a) set.add(a.toLowerCase());
+    }
+    return Array.from(set);
+    // aliasesKey reduces the array prop to a stable string identity so
+    // useMemo doesn't rebuild on every parent re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [email, aliasesKey]);
+
   const fetchEmails = useCallback(async () => {
-    if (!email) {
+    if (allEmails.length === 0) {
       setLoading(false);
       return;
     }
     setLoading(true);
     try {
+      // Gmail's `{ ... }` operator is OR. Each address contributes both
+      // `from:` and `to:` so we catch threads in either direction.
+      const orTerms = allEmails
+        .flatMap((e) => [`from:${e}`, `to:${e}`])
+        .join(" ");
       const res = await fetch(
-        `/api/gmail/threads?q=${encodeURIComponent(
-          `{from:${email} to:${email}}`
-        )}&maxResults=10`
+        `/api/gmail/threads?q=${encodeURIComponent(`{${orTerms}}`)}&maxResults=10`
       );
       const data = await res.json();
       if (res.ok) {
@@ -139,7 +165,7 @@ export function EmailHistory({
     } finally {
       setLoading(false);
     }
-  }, [email]);
+  }, [allEmails]);
 
   useEffect(() => {
     fetchEmails();

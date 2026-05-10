@@ -22,7 +22,11 @@ export default async function AuszubildendeDetailPage({
 
   if (!azubi) notFound();
 
-  const [{ data: bookings }, { data: legacyBookings }] = await Promise.all([
+  const [
+    { data: bookings },
+    { data: legacyBookings },
+    { data: emailRows },
+  ] = await Promise.all([
     supabase
       .from("course_bookings")
       .select("*, course_sessions(date_iso, label_de, instructor_name), course_templates:template_id(title, course_label_de)")
@@ -33,7 +37,19 @@ export default async function AuszubildendeDetailPage({
       .select("id, product_name, amount_cents, course_date, purchased_at, source, created_at")
       .eq("auszubildende_id", id)
       .order("purchased_at", { ascending: false, nullsFirst: false }),
+    // Pull every alias address attached to this contact so EmailHistory
+    // can also surface threads from a previously merged-in profile, not
+    // just the current primary.
+    supabase
+      .from("auszubildende_emails")
+      .select("email")
+      .eq("auszubildende_id", id),
   ]);
+
+  const primary = (azubi.email || "").toLowerCase();
+  const emailAliases = (emailRows ?? [])
+    .map((r: { email: string | null }) => (r.email || "").toLowerCase())
+    .filter((e: string) => e && e !== primary);
 
   // Pull all reviews tied to this contact's bookings. Review rows live
   // under booking_id, which is FK'd to course_bookings — we already have
@@ -54,6 +70,7 @@ export default async function AuszubildendeDetailPage({
   return (
     <AuszubildendeDetail
       azubi={azubi}
+      emailAliases={emailAliases}
       bookings={bookings ?? []}
       legacyBookings={legacyBookings ?? []}
       reviews={reviews ?? []}

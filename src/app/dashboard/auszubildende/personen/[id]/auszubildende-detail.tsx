@@ -73,6 +73,10 @@ interface ReviewRow {
 
 interface Props {
   azubi: Auszubildende;
+  // Additional email addresses attached to this contact via
+  // auszubildende_emails (i.e. previously merged-in profiles' addresses).
+  // Forwarded to EmailHistory so its Gmail thread search includes them.
+  emailAliases?: string[];
   bookings: BookingRow[];
   legacyBookings: LegacyBookingRow[];
   reviews?: ReviewRow[];
@@ -95,7 +99,7 @@ const statusVariants: Record<CourseBookingStatus, "default" | "secondary" | "des
 
 const fieldClass = "bg-transparent border-0 p-0 text-sm text-foreground focus:outline-none focus:ring-0 placeholder:text-muted-foreground/50 w-full";
 
-export function AuszubildendeDetail({ azubi: initialAzubi, bookings, legacyBookings, reviews = [], isAdmin = true }: Props) {
+export function AuszubildendeDetail({ azubi: initialAzubi, emailAliases = [], bookings, legacyBookings, reviews = [], isAdmin = true }: Props) {
   const supabase = createClient();
   const [azubi, setAzubi] = useState(initialAzubi);
   const [editingNotes, setEditingNotes] = useState(false);
@@ -625,6 +629,7 @@ export function AuszubildendeDetail({ azubi: initialAzubi, bookings, legacyBooki
           {/* Emails */}
           <EmailHistory
             email={azubi.email}
+            aliases={emailAliases}
             displayName={personName || undefined}
             canCompose={isAdmin}
             aiMode="auszubildende"
