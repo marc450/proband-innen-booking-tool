@@ -2,6 +2,47 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 
+export interface SweepResult {
+  found: number;
+  cancelled: number;
+  failed: number;
+}
+
+// Find course_bookings that are no longer active (cancelled/refunded) but
+// still carry a future-dated Resend review email, and cancel each one.
+// Defensive cleanup that catches drift from any path that fails to call
+// cancelScheduledReviewEmail — silent fetch failures in the dashboard,
+// direct DB edits, future code paths that forget the hook, etc.
+//
+// Idempotent: safe to call repeatedly. Each per-booking cancel goes
+// through cancelScheduledReviewEmail() which clears the bookkeeping
+// columns, so the next sweep won't re-pick the same row.
+export async function sweepStaleReviewEmails(
+  supabase: SupabaseClient,
+): Promise<SweepResult> {
+  const nowIso = new Date().toISOString();
+  const { data: stale, error } = await supabase
+    .from("course_bookings")
+    .select("id")
+    .in("status", ["cancelled", "refunded"])
+    .not("review_email_resend_id", "is", null)
+    .gt("review_email_sent_at", nowIso);
+
+  if (error) {
+    console.error("sweepStaleReviewEmails: query failed", error);
+    return { found: 0, cancelled: 0, failed: 1 };
+  }
+
+  let cancelled = 0;
+  let failed = 0;
+  for (const row of stale ?? []) {
+    const r = await cancelScheduledReviewEmail(supabase, row.id);
+    if (r.ok) cancelled++;
+    else failed++;
+  }
+  return { found: stale?.length ?? 0, cancelled, failed };
+}
+
 // Cancel the Resend-scheduled review-request email for a single booking
 // and clear the bookkeeping columns. Designed for the cancellation /
 // refund flow: when a booking moves out of the "active" set, the review

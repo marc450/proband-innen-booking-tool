@@ -5,6 +5,7 @@ import { buildEmailHtml } from "@/lib/email-template";
 import { sendProfileReminderEmail } from "@/lib/post-purchase";
 import { sendPostPraxisCertificates } from "@/lib/send-post-praxis-certificate";
 import { scheduleCourseReviewEmails } from "@/lib/send-course-review-request";
+import { sweepStaleReviewEmails } from "@/lib/cancel-scheduled-review-email";
 import { archiveSentMessage } from "@/lib/gmail";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
@@ -33,6 +34,8 @@ export async function GET(req: NextRequest) {
     certSkippedNoVnr: 0,
     reviewEmailsScheduled: 0,
     reviewEmailsSkipped: 0,
+    staleReviewEmailsFound: 0,
+    staleReviewEmailsCancelled: 0,
     errors: 0,
   };
 
@@ -64,6 +67,23 @@ export async function GET(req: NextRequest) {
       results.errors += reviewResult.errors;
     } catch (reviewErr) {
       console.error("Course review scheduling pass failed:", reviewErr);
+      results.errors += 1;
+    }
+
+    // ── Stale review-email sweep ──
+    // Catches drift when a booking has been moved out of the active set
+    // (cancelled/refunded) but still carries a future-dated Resend
+    // scheduled review email. Cleanup hooks in the dashboard fire-and-
+    // forget the cancel call, and direct DB edits skip them entirely;
+    // this nightly sweep is the safety net that prevents a stale review
+    // email from going out to someone who's no longer attending.
+    try {
+      const sweep = await sweepStaleReviewEmails(supabase);
+      results.staleReviewEmailsFound = sweep.found;
+      results.staleReviewEmailsCancelled = sweep.cancelled;
+      results.errors += sweep.failed;
+    } catch (sweepErr) {
+      console.error("Stale review-email sweep failed:", sweepErr);
       results.errors += 1;
     }
 
