@@ -6,7 +6,6 @@ import { Star } from "lucide-react";
 interface Props {
   token: string;
   defaultFirstName: string;
-  courseTitle: string;
   /**
    * Preview mode shows the form exactly as a doctor sees it but
    * short-circuits the submit so no review is written to the DB. Used
@@ -21,7 +20,6 @@ const PRIMARY = "#0066FF";
 export function ReviewForm({
   token,
   defaultFirstName,
-  courseTitle,
   previewMode = false,
 }: Props) {
   const [rating, setRating] = useState<number>(0);
@@ -99,9 +97,9 @@ export function ReviewForm({
           Wie war Dein Kurs?
         </h1>
         <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
-          {courseTitle}. Eine Minute reicht. Deine Sterne und Dein
-          Bewertungstext erscheinen später mit Deinem Vornamen auf unserer
-          Kursseite. Das Team-Feedback bleibt anonym.
+          Eine Minute reicht. Deine Sterne und Dein Bewertungstext
+          erscheinen später mit Deinem Vornamen auf unserer Kursseite. Das
+          Team-Feedback bleibt anonym.
         </p>
       </header>
 
@@ -188,8 +186,11 @@ export function ReviewForm({
           htmlFor="bewertung-internal"
           className="block text-sm font-semibold text-gray-900"
         >
-          Anonymes Feedback an unser Team (optional)
+          Anonymes Feedback an unsere Gründer:innen Sophia & Marc
         </label>
+        <p className="text-xs text-gray-600">
+          Wird niemals veröffentlicht und nicht mit Deinem Namen verknüpft.
+        </p>
         <textarea
           id="bewertung-internal"
           value={internalFeedback}
@@ -200,9 +201,6 @@ export function ReviewForm({
           className="w-full rounded-[10px] bg-[#E0E5E9] px-4 py-3 text-base placeholder:text-gray-500 focus:outline-none focus-visible:ring-2"
           style={{ caretColor: PRIMARY }}
         />
-        <p className="text-xs text-gray-600">
-          Wird niemals veröffentlicht und nicht mit Deinem Namen verknüpft.
-        </p>
       </div>
 
       {error && (

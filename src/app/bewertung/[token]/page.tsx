@@ -24,8 +24,7 @@ export default async function BewertungPage({ params }: PageProps) {
   const { data: booking } = await supabase
     .from("course_bookings")
     .select(
-      `id, first_name, template_id,
-       course_templates:template_id ( title, course_label_de ),
+      `id, first_name,
        course_reviews ( id )`,
     )
     .eq("review_submit_token", token)
@@ -45,17 +44,11 @@ export default async function BewertungPage({ params }: PageProps) {
     return <Shell>{<AlreadyDoneCard />}</Shell>;
   }
 
-  const tpl = Array.isArray(booking.course_templates)
-    ? booking.course_templates[0]
-    : booking.course_templates;
-  const courseTitle = tpl?.course_label_de || tpl?.title || "Deinem EPHIA-Kurs";
-
   return (
     <Shell>
       <ReviewForm
         token={token}
         defaultFirstName={booking.first_name || ""}
-        courseTitle={courseTitle}
       />
     </Shell>
   );

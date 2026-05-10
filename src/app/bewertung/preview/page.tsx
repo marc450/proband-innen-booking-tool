@@ -27,7 +27,6 @@ export default function BewertungPreviewPage() {
         <ReviewForm
           token="preview"
           defaultFirstName="Anna"
-          courseTitle="Aufbaukurs Biostimulation/Skinbooster"
           previewMode
         />
       </div>
