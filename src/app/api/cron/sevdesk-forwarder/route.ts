@@ -113,24 +113,26 @@ async function applyForwardedLabel(token: string, messageId: string, labelId: st
   });
 }
 
-async function downloadAttachmentBase64(
+async function downloadAttachmentBuffer(
   token: string,
   messageId: string,
   attachmentId: string,
-): Promise<string> {
+): Promise<Buffer> {
   const data = (await gmailFetch(
     `messages/${messageId}/attachments/${attachmentId}`,
     token,
   )) as { data: string; size: number };
-  // Gmail returns base64url; sevDesk wants standard base64. Convert here.
-  return data.data.replace(/-/g, "+").replace(/_/g, "/");
+  // Gmail returns base64url; decode straight to a Buffer that we can both
+  // re-encode for the sevDesk MIME forward and stream to Slack.
+  return Buffer.from(data.data, "base64url");
 }
 
 async function sendForwardEmail(
   token: string,
   pdfFilename: string,
-  pdfBase64: string,
+  pdfBuffer: Buffer,
 ) {
+  const pdfBase64 = pdfBuffer.toString("base64");
   const boundary = `boundary_${Date.now()}`;
   const subject = "Neuer Beleg für EPHIA Medical GmbH";
   const body = "Automatischer Upload aus invoice@ephia.de";
@@ -173,7 +175,7 @@ async function sendForwardEmail(
   });
 }
 
-async function postSlackNotification() {
+async function postSlackNotification(pdfFilename: string, pdfBuffer: Buffer) {
   const token = process.env.SLACK_BOT_TOKEN;
   if (!token) throw new Error("SLACK_BOT_TOKEN not set");
 
@@ -184,10 +186,10 @@ async function postSlackNotification() {
     "Bitte Haken setzen wenn bezahlt.",
   ].join("\n");
 
-  // chat.postMessage with `username` + `icon_emoji` overrides requires the
-  // chat:write.customize scope on the Inbox Manager bot. Bot must already be
-  // a member of #finance (one-off /invite during setup).
-  const res = await fetch("https://slack.com/api/chat.postMessage", {
+  // 1. Post the styled text via chat.postMessage. `username` + `icon_emoji`
+  // overrides require chat:write.customize. We capture the channel id +
+  // message ts so step 3 can pin the PDF to this exact thread.
+  const postRes = await fetch("https://slack.com/api/chat.postMessage", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -198,13 +200,76 @@ async function postSlackNotification() {
       text,
       username: SLACK_BOT_USERNAME,
       icon_emoji: SLACK_BOT_ICON,
-      // Disable Slack's auto-unfurl so the message stays compact.
       unfurl_links: false,
       unfurl_media: false,
     }),
   });
-  const json = (await res.json()) as { ok: boolean; error?: string };
-  if (!json.ok) throw new Error(`Slack ${json.error || "unknown error"}`);
+  const postJson = (await postRes.json()) as {
+    ok: boolean;
+    error?: string;
+    channel?: string;
+    ts?: string;
+  };
+  if (!postJson.ok) throw new Error(`Slack postMessage: ${postJson.error || "unknown error"}`);
+
+  // 2. Reserve an upload URL for the PDF. files.getUploadURLExternal requires
+  // the files:write scope on the bot.
+  const urlRes = await fetch("https://slack.com/api/files.getUploadURLExternal", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      filename: pdfFilename,
+      length: String(pdfBuffer.length),
+    }),
+  });
+  const urlJson = (await urlRes.json()) as {
+    ok: boolean;
+    error?: string;
+    upload_url?: string;
+    file_id?: string;
+  };
+  if (!urlJson.ok || !urlJson.upload_url || !urlJson.file_id) {
+    throw new Error(`Slack getUploadURLExternal: ${urlJson.error || "unknown error"}`);
+  }
+
+  // 3. PUT the bytes to the temp upload URL. Slack returns a non-JSON body
+  // here; we only care about HTTP status.
+  const fd = new FormData();
+  // Buffer extends Uint8Array but the lib.dom Blob typings don't accept it
+  // directly under our TS config; the explicit Uint8Array view is a copy
+  // that sidesteps the BlobPart mismatch without changing wire bytes.
+  fd.append(
+    "file",
+    new Blob([new Uint8Array(pdfBuffer)], { type: "application/pdf" }),
+    pdfFilename,
+  );
+  const uploadRes = await fetch(urlJson.upload_url, { method: "POST", body: fd });
+  if (!uploadRes.ok) {
+    throw new Error(`Slack upload bytes: HTTP ${uploadRes.status}`);
+  }
+
+  // 4. Finalize the upload as a thread reply on the just-posted message.
+  // Without `thread_ts` Slack would post the file as a fresh top-level
+  // message in the channel (default-bot identity, breaks the styled flow).
+  const completeRes = await fetch("https://slack.com/api/files.completeUploadExternal", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json; charset=utf-8",
+    },
+    body: JSON.stringify({
+      files: [{ id: urlJson.file_id, title: pdfFilename }],
+      channel_id: postJson.channel,
+      thread_ts: postJson.ts,
+    }),
+  });
+  const completeJson = (await completeRes.json()) as { ok: boolean; error?: string };
+  if (!completeJson.ok) {
+    throw new Error(`Slack completeUploadExternal: ${completeJson.error || "unknown error"}`);
+  }
 }
 
 export async function POST(req: Request) {
@@ -250,9 +315,9 @@ export async function POST(req: Request) {
       // Attachment" trigger which fires per attachment. sevDesk creates one
       // Beleg per inbound email so this gives one Beleg per PDF.
       for (const pdf of pdfs) {
-        const base64 = await downloadAttachmentBase64(token, m.id, pdf.attachmentId);
-        await sendForwardEmail(token, pdf.filename, base64);
-        await postSlackNotification();
+        const buffer = await downloadAttachmentBuffer(token, m.id, pdf.attachmentId);
+        await sendForwardEmail(token, pdf.filename, buffer);
+        await postSlackNotification(pdf.filename, buffer);
         forwarded++;
       }
 
