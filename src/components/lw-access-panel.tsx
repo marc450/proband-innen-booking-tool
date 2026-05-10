@@ -152,10 +152,14 @@ export function LwAccessPanel({ auszubildendeId }: { auszubildendeId: string }) 
             {items.map((item, idx) => (
               <div
                 key={`${item.bookingId ?? item.templateId}-${idx}`}
-                className="px-4 py-3 flex items-center justify-between gap-3"
+                className="px-4 py-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2"
               >
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium break-words">
+                {/* min-w-[180px] keeps the title column wide enough that
+                    word-wrapping works naturally; if the right-side
+                    controls can't fit alongside, flex-wrap on the parent
+                    pushes them to a second line under the title. */}
+                <div className="min-w-[180px] flex-1">
+                  <div className="text-sm font-medium">
                     {item.templateTitle}
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-2">
