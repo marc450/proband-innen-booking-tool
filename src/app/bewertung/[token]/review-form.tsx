@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Star } from "lucide-react";
 
 interface Props {
@@ -30,6 +30,17 @@ export function ReviewForm({
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 5-Sterne-Celebration: kurzes Wave-Bounce der Sterne plus
+  // Konfetti aus kleinen Sternchen, die nach oben wegdriften.
+  // ~1.5s Dauer, dann automatisch wieder aus, damit der Doctor
+  // weiterscrollen kann ohne von Animation abgelenkt zu werden.
+  const [celebrating, setCelebrating] = useState(false);
+  useEffect(() => {
+    if (rating !== 5) return;
+    setCelebrating(true);
+    const t = setTimeout(() => setCelebrating(false), 1500);
+    return () => clearTimeout(t);
+  }, [rating]);
 
   const canSubmit =
     rating >= 1 &&
@@ -97,9 +108,10 @@ export function ReviewForm({
           Wie war Dein Kurs?
         </h1>
         <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
-          Eine Minute reicht. Deine Sterne und Dein Bewertungstext
-          erscheinen später mit Deinem Vornamen auf unserer Kursseite. Das
-          Team-Feedback bleibt anonym.
+          Wir wären Dir wahnsinnig dankbar für eine kurze Bewertung. Und
+          falls es etwas gibt, das wir besser machen können, sag es uns
+          bitte ehrlich. Dein Feedback hilft uns, EPHIA für alle
+          Ärzt:innen, die nach Dir kommen, ein Stück besser zu machen.
         </p>
       </header>
 
@@ -107,31 +119,91 @@ export function ReviewForm({
         <label className="block text-sm font-semibold text-gray-900">
           Sterne
         </label>
-        <div
-          className="flex items-center gap-1"
-          onMouseLeave={() => setHoverRating(0)}
-        >
-          {[1, 2, 3, 4, 5].map((value) => {
-            const active = (hoverRating || rating) >= value;
-            return (
-              <button
-                key={value}
-                type="button"
-                aria-label={`${value} Stern${value === 1 ? "" : "e"}`}
-                aria-pressed={rating === value}
-                onMouseEnter={() => setHoverRating(value)}
-                onClick={() => setRating(value)}
-                className="p-1 rounded transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2"
-                style={{ color: active ? PRIMARY : "#D1D5DB" }}
-              >
-                <Star
-                  className="h-9 w-9"
-                  fill={active ? PRIMARY : "none"}
-                  strokeWidth={1.5}
-                />
-              </button>
-            );
-          })}
+        <div className="relative inline-block">
+          <div
+            className="flex items-center gap-1"
+            onMouseLeave={() => setHoverRating(0)}
+          >
+            {[1, 2, 3, 4, 5].map((value, idx) => {
+              const active = (hoverRating || rating) >= value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  aria-label={`${value} Stern${value === 1 ? "" : "e"}`}
+                  aria-pressed={rating === value}
+                  onMouseEnter={() => setHoverRating(value)}
+                  onClick={() => setRating(value)}
+                  className={`p-1 rounded transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2${
+                    celebrating ? " bewertung-star-wave" : ""
+                  }`}
+                  style={{
+                    color: active ? PRIMARY : "#D1D5DB",
+                    animationDelay: celebrating ? `${idx * 80}ms` : undefined,
+                  }}
+                >
+                  <Star
+                    className="h-9 w-9"
+                    fill={active ? PRIMARY : "none"}
+                    strokeWidth={1.5}
+                  />
+                </button>
+              );
+            })}
+          </div>
+          {celebrating && (
+            <div
+              className="pointer-events-none absolute inset-0 -top-3 overflow-visible"
+              aria-hidden="true"
+            >
+              {Array.from({ length: 10 }).map((_, i) => {
+                // Brand-Palette aus dem Brand Manual: Signal Blau, plus
+                // Brown 1/2/3. Bewusst kein Rot/Grün, keine Hochzeits-
+                // Look. Cute aber EPHIA-on-brand.
+                const colors = ["#0066FF", "#BF785E", "#D9AA8F", "#733D29"];
+                const color = colors[i % colors.length];
+                // Konfetti driften zufällig links/rechts und unter-
+                // schiedlich weit nach oben weg.
+                const tx = (i % 2 === 0 ? -1 : 1) * (10 + ((i * 13) % 60));
+                const ty = -(40 + ((i * 19) % 30));
+                return (
+                  <Star
+                    key={i}
+                    className="bewertung-confetti-star absolute h-3.5 w-3.5"
+                    style={
+                      {
+                        left: `${5 + i * 9.5}%`,
+                        top: 0,
+                        color,
+                        fill: color,
+                        animationDelay: `${i * 40}ms`,
+                        ["--tx"]: `${tx}px`,
+                        ["--ty"]: `${ty}px`,
+                      } as React.CSSProperties & { "--tx": string; "--ty": string }
+                    }
+                  />
+                );
+              })}
+            </div>
+          )}
+          <style>{`
+            @keyframes bewertung-star-wave {
+              0%, 100% { transform: scale(1) rotate(0deg); }
+              40% { transform: scale(1.25) rotate(-8deg); }
+              70% { transform: scale(1.1) rotate(6deg); }
+            }
+            .bewertung-star-wave {
+              animation: bewertung-star-wave 700ms ease-in-out;
+            }
+            @keyframes bewertung-confetti-star {
+              0% { transform: translate(0, 0) rotate(0deg) scale(0.4); opacity: 0; }
+              15% { opacity: 1; }
+              100% { transform: translate(var(--tx, 0), var(--ty, -50px)) rotate(180deg) scale(1.1); opacity: 0; }
+            }
+            .bewertung-confetti-star {
+              animation: bewertung-confetti-star 1.2s ease-out forwards;
+            }
+          `}</style>
         </div>
       </div>
 
@@ -142,6 +214,10 @@ export function ReviewForm({
         >
           Dein Vorname
         </label>
+        <p className="text-xs text-gray-600">
+          Erscheint öffentlich neben Deiner Bewertung. Nachname und E-Mail
+          bleiben bei uns.
+        </p>
         <input
           id="bewertung-firstname"
           type="text"
@@ -152,10 +228,6 @@ export function ReviewForm({
           className="w-full rounded-[10px] bg-[#E0E5E9] px-4 py-3 text-base placeholder:text-gray-500 focus:outline-none focus-visible:ring-2"
           style={{ caretColor: PRIMARY }}
         />
-        <p className="text-xs text-gray-600">
-          Erscheint öffentlich neben Deiner Bewertung. Nachname und E-Mail
-          bleiben bei uns.
-        </p>
       </div>
 
       <div className="space-y-2">
@@ -165,6 +237,10 @@ export function ReviewForm({
         >
           Was möchtest Du anderen Ärzt:innen über diesen Kurs sagen?
         </label>
+        <p className="text-xs text-gray-600">
+          Optional. Wird auf unserer Kursseite gezeigt, sobald wir sie
+          freischalten.
+        </p>
         <textarea
           id="bewertung-body"
           value={bodyText}
@@ -175,10 +251,6 @@ export function ReviewForm({
           className="w-full rounded-[10px] bg-[#E0E5E9] px-4 py-3 text-base placeholder:text-gray-500 focus:outline-none focus-visible:ring-2"
           style={{ caretColor: PRIMARY }}
         />
-        <p className="text-xs text-gray-600">
-          Optional. Wird auf unserer Kursseite gezeigt, sobald wir sie
-          freischalten.
-        </p>
       </div>
 
       <div className="space-y-2">
