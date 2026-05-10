@@ -14,8 +14,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock, ArrowRight } from "lucide-react";
+import { Clock, ArrowRight, Check } from "lucide-react";
 import type { QuizQuestion } from "@/lib/lms/types";
+import "./quiz-animations.css";
 
 type Props = {
   questions: QuizQuestion[];
@@ -56,10 +57,10 @@ export function QuizBlock({
     return () => clearTimeout(t);
   }, [stage, currentIdx, timeLeft, answers]);
 
-  // Auto-advance: as soon as a question is locked, immediately move
-  // on. The slide-in animation on the next question provides the
-  // visual feedback. setTimeout(0) defers until after React flushes
-  // the state update.
+  // Auto-advance: as soon as a question is locked, wait long enough for
+  // the pop + checkmark animation on the picked option to play out, then
+  // remount the next question (its key={currentIdx} replays the slide-in).
+  // The 380ms covers the 360ms keyframe with a small breath at the end.
   useEffect(() => {
     if (stage !== "question") return;
     if (answers[currentIdx] === null) return;
@@ -70,7 +71,7 @@ export function QuizBlock({
         setCurrentIdx((i) => i + 1);
         setTimeLeft(timePerQuestionSeconds);
       }
-    }, 0);
+    }, 380);
     return () => clearTimeout(t);
   }, [stage, currentIdx, answers, questions.length, timePerQuestionSeconds]);
 
@@ -281,7 +282,9 @@ export function QuizBlock({
             cls +=
               "border-black/10 bg-white hover:bg-black/5 cursor-pointer";
           } else if (isSelected) {
-            cls += "border-[#0066FF] bg-[#0066FF]/5 text-black";
+            // .quiz-option--picked plays the one-shot pop animation defined
+            // in quiz-animations.css the moment this class lands.
+            cls += "border-[#0066FF] bg-[#0066FF]/5 text-black quiz-option--picked";
           } else {
             cls += "border-black/10 bg-white text-black/40";
           }
@@ -304,7 +307,10 @@ export function QuizBlock({
                     }
                   >
                     {isLocked && isSelected ? (
-                      <span className="w-2 h-2 rounded-full bg-white" />
+                      <Check
+                        className="w-3 h-3 text-white quiz-check--popped"
+                        strokeWidth={3.5}
+                      />
                     ) : null}
                   </span>
                   <span className="flex-1">{opt.text}</span>
