@@ -5,7 +5,6 @@ import { Star } from "lucide-react";
 
 interface Props {
   token: string;
-  defaultFirstName: string;
   /**
    * Preview mode shows the form exactly as a doctor sees it but
    * short-circuits the submit so no review is written to the DB. Used
@@ -17,14 +16,12 @@ interface Props {
 
 const PRIMARY = "#0066FF";
 
-export function ReviewForm({
-  token,
-  defaultFirstName,
-  previewMode = false,
-}: Props) {
+export function ReviewForm({ token, previewMode = false }: Props) {
   const [rating, setRating] = useState<number>(0);
   const [hoverRating, setHoverRating] = useState<number>(0);
-  const [firstName, setFirstName] = useState(defaultFirstName);
+  // Intentionally not prefilled from the booking record. Marc's preference:
+  // the doctor types their own display name, signalling intent to publish.
+  const [firstName, setFirstName] = useState("");
   const [bodyText, setBodyText] = useState("");
   const [internalFeedback, setInternalFeedback] = useState("");
   const [submitting, setSubmitting] = useState(false);

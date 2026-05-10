@@ -24,11 +24,7 @@ export default function BewertungPreviewPage() {
         >
           Vorschau, keine Bewertung wird gespeichert.
         </div>
-        <ReviewForm
-          token="preview"
-          defaultFirstName="Anna"
-          previewMode
-        />
+        <ReviewForm token="preview" previewMode />
       </div>
     </main>
   );

@@ -23,10 +23,7 @@ export default async function BewertungPage({ params }: PageProps) {
 
   const { data: booking } = await supabase
     .from("course_bookings")
-    .select(
-      `id, first_name,
-       course_reviews ( id )`,
-    )
+    .select(`id, course_reviews ( id )`)
     .eq("review_submit_token", token)
     .maybeSingle();
 
@@ -46,10 +43,7 @@ export default async function BewertungPage({ params }: PageProps) {
 
   return (
     <Shell>
-      <ReviewForm
-        token={token}
-        defaultFirstName={booking.first_name || ""}
-      />
+      <ReviewForm token={token} />
     </Shell>
   );
 }
