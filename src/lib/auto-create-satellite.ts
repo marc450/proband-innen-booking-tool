@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveInstructorIdFromName } from "@/lib/resolve-instructor-id";
 
 // Builds a Berlin-local timestamp string ("YYYY-MM-DDTHH:MM:00+HH:MM").
 // Computes the correct Berlin offset for the given date (CET vs CEST)
@@ -215,19 +216,14 @@ export async function createSatelliteForSession(
   }
 
   // Resolve instructor: course_sessions stores instructor_name as text;
-  // best-effort match against profiles.is_dozent for the satellite FK.
-  let instructorId: string | null = null;
-  if (session.instructor_name) {
-    const { data: profiles } = await admin
-      .from("profiles")
-      .select("id, title, first_name, last_name")
-      .eq("is_dozent", true);
-    const match = (profiles ?? []).find((p) => {
-      const formatted = [p.title, p.first_name, p.last_name].filter(Boolean).join(" ");
-      return formatted === session.instructor_name;
-    });
-    if (match) instructorId = match.id as string;
-  }
+  // resolveInstructorIdFromName does a forgiving lookup (title-blind
+  // fallbacks, no is_dozent gate) so satellite courses get a populated
+  // instructor_id even when the doctor's profile title drifted from the
+  // string the admin typed.
+  const instructorId = await resolveInstructorIdFromName(
+    admin,
+    session.instructor_name as string | null,
+  );
 
   // Insert satellite course.
   const { data: newCourse, error: courseErr } = await admin
