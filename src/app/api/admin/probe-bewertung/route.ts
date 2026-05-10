@@ -136,6 +136,22 @@ export async function POST(req: Request) {
         "Submission landed in course_reviews and would render in the admin tool's pending tab.",
       steps,
     });
+  } catch (err) {
+    // Any unexpected throw lands here instead of bubbling out as an empty
+    // 500. Surface the message + stack so we can pinpoint the failure.
+    steps.push({
+      step: "uncaught-exception",
+      ok: false,
+      detail: err instanceof Error ? `${err.message}\n${err.stack ?? ""}` : String(err),
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        steps,
+        reviewId,
+      },
+      { status: 500 },
+    );
   } finally {
     // Clean up: deleting the booking cascades the review.
     if (bookingId) {
