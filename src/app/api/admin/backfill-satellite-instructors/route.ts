@@ -27,15 +27,23 @@ export async function POST() {
 
   const admin = createAdminClient();
 
-  // Pull every linked satellite that's missing an instructor_id, with
-  // the session's instructor_name joined in. We explicitly do NOT filter
-  // on course_date — historical satellites are fine to fix too, even if
-  // the booking page doesn't render them anymore.
+  // Pull every course that's missing an instructor_id. We try TWO
+  // sources for the name:
+  //
+  //   1. If session_id is set, prefer the linked course_sessions
+  //      .instructor_name (the post-merge canonical source).
+  //   2. Otherwise fall back to the legacy courses.instructor text
+  //      column (set when the course was created pre-072 and never
+  //      successfully back-mapped).
+  //
+  // Whichever source we get a name from, the resolver does the actual
+  // matching against profiles.
   const { data: rows, error } = await admin
     .from("courses")
-    .select("id, course_sessions!inner(instructor_name)")
-    .is("instructor_id", null)
-    .not("session_id", "is", null);
+    .select(
+      "id, instructor, session_id, course_sessions(instructor_name)",
+    )
+    .is("instructor_id", null);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -44,6 +52,7 @@ export async function POST() {
   const results: Array<{
     courseId: string;
     instructorName: string | null;
+    source: "session" | "legacy" | "none";
     matched: boolean;
   }> = [];
 
@@ -51,7 +60,19 @@ export async function POST() {
     const session = Array.isArray(row.course_sessions)
       ? row.course_sessions[0]
       : row.course_sessions;
-    const instructorName = (session?.instructor_name as string | null) ?? null;
+    const sessionName = (session?.instructor_name as string | null) ?? null;
+    const legacyName = (row.instructor as string | null) ?? null;
+
+    let instructorName: string | null = null;
+    let source: "session" | "legacy" | "none" = "none";
+    if (sessionName) {
+      instructorName = sessionName;
+      source = "session";
+    } else if (legacyName) {
+      instructorName = legacyName;
+      source = "legacy";
+    }
+
     const instructorId = await resolveInstructorIdFromName(admin, instructorName);
 
     if (instructorId) {
@@ -63,6 +84,7 @@ export async function POST() {
     results.push({
       courseId: row.id as string,
       instructorName,
+      source,
       matched: !!instructorId,
     });
   }
