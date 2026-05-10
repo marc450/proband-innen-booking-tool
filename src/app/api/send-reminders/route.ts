@@ -129,11 +129,14 @@ export async function GET(req: NextRequest) {
         if (!slot?.start_time) continue;
 
         const slotTime = new Date(slot.start_time);
-        const hoursUntil = (slotTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-        // Determine which reminder(s) to send
-        const needs72h = !booking.reminder_72h_sent && hoursUntil <= 72 && hoursUntil > 24;
-        const needs24h = !booking.reminder_24h_sent && hoursUntil <= 24 && hoursUntil > 0;
+        // Calendar-day distance in Europe/Berlin. Raw hoursUntil math
+        // would let the "morgen" reminder fire for a same-day appointment
+        // (e.g. cron at 10:03, slot at 14:00 → 4h → previously matched
+        // the 24h window), and the "in 3 Tagen" reminder fire when the
+        // slot is only 2 days away.
+        const daysUntil = calendarDaysUntilBerlin(slotTime, now);
+        const needs72h = !booking.reminder_72h_sent && daysUntil === 3;
+        const needs24h = !booking.reminder_24h_sent && daysUntil === 1;
 
         if (!needs72h && !needs24h) continue;
 
@@ -230,6 +233,22 @@ export async function GET(req: NextRequest) {
     console.error("Send reminders error:", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
+}
+
+// Calendar-day distance in Europe/Berlin between `now` and `target`.
+// Returns 1 if the target is "tomorrow" in Berlin, regardless of clock time.
+function calendarDaysUntilBerlin(target: Date, now: Date): number {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const [tY, tM, tD] = fmt.format(target).split("-").map(Number);
+  const [nY, nM, nD] = fmt.format(now).split("-").map(Number);
+  const targetUTC = Date.UTC(tY, tM - 1, tD);
+  const nowUTC = Date.UTC(nY, nM - 1, nD);
+  return Math.round((targetUTC - nowUTC) / (1000 * 60 * 60 * 24));
 }
 
 async function sendEmail(to: string, subject: string, html: string) {
