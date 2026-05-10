@@ -155,7 +155,7 @@ export function LwAccessPanel({ auszubildendeId }: { auszubildendeId: string }) 
                 className="px-4 py-3 flex items-center justify-between gap-3"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium truncate">
+                  <div className="text-sm font-medium break-words">
                     {item.templateTitle}
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-2">
