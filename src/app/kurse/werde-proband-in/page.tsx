@@ -58,7 +58,7 @@ const steps = [
   {
     number: "2",
     title: "Buchung bestätigen",
-    body: "Hinterlege ein Zahlungsmittel und bestätige Deine Buchung. Der Richtpreis wird erst am Behandlungstag in der Praxis abgerechnet, nicht vorab.",
+    body: "Hinterlege ein Zahlungsmittel und bestätige Deine Buchung. Bezahlt wird erst am Behandlungstag in der Praxis, der genaue Betrag wird im Aufklärungsgespräch festgelegt.",
   },
   {
     number: "3",
