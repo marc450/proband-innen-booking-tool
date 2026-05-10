@@ -58,12 +58,12 @@ const steps = [
   {
     number: "2",
     title: "Buchung bestätigen",
-    body: "Hinterlege ein Zahlungsmittel und bestätige Deine Buchung. Bezahlt wird erst am Behandlungstag in der Praxis, der genaue Betrag wird im Aufklärungsgespräch festgelegt.",
+    body: "Hinterlege ein Zahlungsmittel und bestätige Deine Buchung. Bezahlt wird erst am Behandlungstag, der Betrag im Aufklärungsgespräch festgelegt.",
   },
   {
     number: "3",
     title: "Behandlung erhalten",
-    body: "Am Kurstag wirst Du von einer approbierten Ärzt:in unter Aufsicht einer erfahrenen Dozent:in behandelt, mit derselben Sorgfalt wie in einer regulären Sprechstunde.",
+    body: "Am Kurstag wirst Du von einer approbierten Ärzt:in unter Aufsicht einer Dozent:in behandelt, mit derselben Sorgfalt wie in einer Sprechstunde.",
   },
   {
     number: "4",
