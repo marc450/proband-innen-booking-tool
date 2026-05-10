@@ -10,8 +10,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Trophy, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight, Trophy, X } from "lucide-react";
 import type { LmsCourseTree, QuizQuestion } from "@/lib/lms/types";
 import { QuizBlock } from "@/components/lms/quiz-block";
 
@@ -56,6 +56,27 @@ export function ReaderFrame({
 }: Props) {
   const [collapsed, setCollapsed] = useState(false);
   const [testModalOpen, setTestModalOpen] = useState(false);
+  // Single-open accordion for chapters. Default = null (all collapsed); the
+  // chapter holding the current lesson auto-opens via the effect below so
+  // the user always sees their position in context.
+  const [openChapterId, setOpenChapterId] = useState<string | null>(null);
+
+  // Identify which chapter contains the active lesson so we can auto-open
+  // it on first render and on lesson navigation.
+  const activeChapterId = useMemo(() => {
+    if (!currentLessonHref) return null;
+    for (const ch of tree.chapters) {
+      const hit = ch.lessons.some(
+        (l) => lessonHref(tree.slug, ch.slug, l.slug) === currentLessonHref,
+      );
+      if (hit) return ch.id;
+    }
+    return null;
+  }, [tree, currentLessonHref]);
+
+  useEffect(() => {
+    if (activeChapterId) setOpenChapterId(activeChapterId);
+  }, [activeChapterId]);
 
   // Lock body scroll + ESC-to-close while the test modal is open.
   useEffect(() => {
@@ -133,9 +154,10 @@ export function ReaderFrame({
               href="https://ephia.de/grundkurs-botulinum"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs uppercase tracking-wide opacity-80 hover:opacity-100"
+              className="inline-flex items-center gap-1 text-xs uppercase tracking-wide opacity-80 hover:opacity-100"
             >
-              Zum Grundkurs Botulinum
+              <ChevronLeft className="w-3.5 h-3.5" strokeWidth={2.5} />
+              <span>Zum Grundkurs Botulinum</span>
             </Link>
             <button
               type="button"
@@ -153,46 +175,65 @@ export function ReaderFrame({
         <nav className="px-3 py-5">
           {tree.chapters
             .filter((ch) => ch.slug !== TEST_CHAPTER_SLUG)
-            .map((ch, ci) => (
-              <div key={ch.id} className="mb-4">
-                <div className="px-3 py-1 text-sm font-semibold text-[#0066FF]">
-                  {ci + 1}. {ch.title}
-                </div>
-                <ul className="mt-1">
-                  {ch.lessons.map((l) => {
-                    const href = lessonHref(tree.slug, ch.slug, l.slug);
-                    const isActive = href === currentLessonHref;
-                    return (
-                      <li key={l.id}>
-                        <Link
-                          href={href}
-                          className={
-                            "flex items-start gap-2 px-3 py-2 rounded-[10px] transition-colors " +
-                            (isActive
-                              ? "bg-[#E0E5E9] text-black"
-                              : "text-black/80 hover:bg-[#E0E5E9]/60")
-                          }
-                        >
-                          <span aria-hidden className="mt-[3px] text-[#0066FF]">
-                            {l.lesson_type === "video" ? "▶" : "≡"}
-                          </span>
-                          <span className="flex-1">
-                            <span className="block text-sm font-medium leading-snug">
-                              {l.title}
-                            </span>
-                            {l.duration_seconds ? (
-                              <span className="block text-xs text-black/50 mt-0.5">
-                                {formatDuration(l.duration_seconds)}
+            .map((ch, ci) => {
+              const isOpen = openChapterId === ch.id;
+              return (
+                <div key={ch.id} className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setOpenChapterId(isOpen ? null : ch.id)}
+                    className="w-full flex items-center justify-between gap-2 px-3 py-1 text-sm font-semibold text-[#0066FF] hover:bg-[#0066FF]/5 rounded-[10px] transition-colors"
+                    aria-expanded={isOpen}
+                  >
+                    <span className="text-left">
+                      {ci + 1}. {ch.title}
+                    </span>
+                    <ChevronDown
+                      className={
+                        "w-4 h-4 flex-shrink-0 transition-transform " +
+                        (isOpen ? "rotate-0" : "-rotate-90")
+                      }
+                      strokeWidth={2.5}
+                    />
+                  </button>
+                  {isOpen ? (
+                    <ul className="mt-1">
+                      {ch.lessons.map((l) => {
+                        const href = lessonHref(tree.slug, ch.slug, l.slug);
+                        const isActive = href === currentLessonHref;
+                        return (
+                          <li key={l.id}>
+                            <Link
+                              href={href}
+                              className={
+                                "flex items-start gap-2 px-3 py-2 rounded-[10px] transition-colors " +
+                                (isActive
+                                  ? "bg-[#E0E5E9] text-black"
+                                  : "text-black/80 hover:bg-[#E0E5E9]/60")
+                              }
+                            >
+                              <span aria-hidden className="mt-[3px] text-[#0066FF]">
+                                {l.lesson_type === "video" ? "▶" : "≡"}
                               </span>
-                            ) : null}
-                          </span>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
+                              <span className="flex-1">
+                                <span className="block text-sm font-medium leading-snug">
+                                  {l.title}
+                                </span>
+                                {l.duration_seconds ? (
+                                  <span className="block text-xs text-black/50 mt-0.5">
+                                    {formatDuration(l.duration_seconds)}
+                                  </span>
+                                ) : null}
+                              </span>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
+                </div>
+              );
+            })}
 
           {/* Test chapter rendered as a single prominent CTA button
               that opens the quiz in a modal overlay. The
