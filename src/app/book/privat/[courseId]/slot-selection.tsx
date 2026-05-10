@@ -9,7 +9,7 @@ import {
   formatBerlinTime,
   parseDateOnly,
 } from "@/lib/date";
-import { Calendar, ChevronDown, Clock, MapPin, Users } from "lucide-react";
+import { Calendar, ChevronDown, Clock, MapPin, UserRound, Users } from "lucide-react";
 import Link from "next/link";
 import { PrivatBookingForm } from "../booking-form";
 
@@ -130,8 +130,8 @@ export function PrivatSlotSelection({ course, allCourses, slots }: Props) {
                             </div>
                             {formatInstructor(dateCourse.instructor) && (
                               <div className="flex items-center gap-2">
-                                <Clock className="h-3.5 w-3.5 shrink-0" />
-                                <span>Dozent:in: {formatInstructor(dateCourse.instructor)}</span>
+                                <UserRound className="h-3.5 w-3.5 shrink-0" />
+                                <span>Kursleitende Ärzt:in: {formatInstructor(dateCourse.instructor)}</span>
                               </div>
                             )}
                             {dateCourse.location && (
