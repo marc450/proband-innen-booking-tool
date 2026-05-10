@@ -17,7 +17,8 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 /**
  * Scans course_sessions that happened at least 24h ago and sends the
  * post-praxis certificate email (with the rendered PDF attached) to each
- * non-cancelled booking that hasn't been sent to yet.
+ * booking that has been EXPLICITLY MARKED AS COMPLETED by staff and
+ * hasn't been sent to yet.
  *
  * Skip conditions (silent, no email sent):
  *  - The course template has no registered CertificateTemplate
@@ -25,11 +26,19 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY!;
  *  - vnr_theorie on the template is empty.
  *  - vnr_praxis on the session is empty.
  *  - Booking course_type is Onlinekurs (no practical day, no cert).
- *  - Booking status = cancelled.
+ *  - Booking status ≠ 'completed'. The default 'booked' state from
+ *    Stripe checkout is NOT enough — staff must mark the booking as
+ *    completed in /dashboard/auszubildende/buchungen for the cert
+ *    cron to consider it. This is the compliance gate: a CME-bearing
+ *    certificate (with VNR) is a Landesärztekammer-relevant document,
+ *    so issuing one to a no-show is a regulatory liability. Marc made
+ *    this explicit on 2026-05-10 after auditing the previous
+ *    "everything except cancelled" filter.
  *  - course_bookings.cert_sent_at is already set (already mailed).
  *
  * Uses a 1–30 day window so we catch anything the cron missed during
- * downtime without re-scanning the entire history every run.
+ * downtime, AND so that bookings staff marks completed several days
+ * after the course day still get their cert on the next cron run.
  */
 
 // Course types that include a practical day and therefore qualify for a
@@ -137,7 +146,12 @@ export async function sendPostPraxisCertificates(
       )
       .eq("session_id", session.id)
       .is("cert_sent_at", null)
-      .neq("status", "cancelled")
+      // Strict gate: only completed bookings ship a certificate.
+      // Default 'booked' (post-Stripe checkout) and 'cancelled' /
+      // 'refunded' are all excluded. Staff flips the status manually
+      // in /dashboard/auszubildende/buchungen after the course day.
+      // See file header for the why.
+      .eq("status", "completed")
       .in("course_type", [...CERTIFIABLE_COURSE_TYPES]);
 
     if (bookingErr) {
