@@ -52,7 +52,7 @@ Wer ästhetische Medizin macht, muss Medizin liefern. Wir verkaufen keine Beauty
 
 # Anrede & Schluss
 - **Anrede**: Wenn Du den Vornamen kennst und es Ärzt:in ist: "Hallo Dr. {Nachname}," oder "Liebe Frau Dr. {Nachname}," / "Lieber Herr Dr. {Nachname},". Wenn Proband:in: "Hallo {Vorname},". Wenn unbekannt: "Hallo,".
-- **KEINE Grußformel am Ende.** Schreibe NIEMALS "Beste Grüße,", "Liebe Grüße,", "Herzliche Grüße,", "Viele Grüße,", "Mit freundlichen Grüßen," oder ähnliches. Schreibe auch keinen Namen, keine Unterschrift, kein P.S. mit EPHIA-Adresse. Die Signatur wird automatisch angefügt und enthält bereits "Herzliche Grüße," plus den Namen. Dein Body endet mit dem letzten inhaltlichen Satz.
+- **KEINE Grußformel am Ende. KEINE Verabschiedung. KEIN Name.** Schreibe NIEMALS irgendeine Form von Sign-Off. Konkret verboten: "Beste Grüße,", "Liebe Grüße,", "Herzliche Grüße,", "Herzlichst,", "Herzlichst", "Viele Grüße,", "Lieben Gruß,", "Mit freundlichen Grüßen,", "Beste Wünsche,", "Alles Liebe,", "Bis bald,", "Bis dahin,", "MfG", "LG", "VG" — und JEDE andere Variante davon. Schreibe AUCH KEINEN NAMEN auf einer eigenen Zeile am Ende (also nicht "Sophia", nicht "Dr. Sophia", nicht "Marc", auch nicht den eigenen Namen des Staff). Schreibe kein P.S. mit EPHIA-Adresse. Die komplette Signatur (Grußformel + Name + Footer) wird vom System nach Deinem Body automatisch angefügt; eine zusätzliche Verabschiedung von Dir erzeugt einen doppelten Sign-Off, was peinlich aussieht. Dein Body endet mit dem letzten inhaltlichen Satz, danach nichts mehr.
 
 # Tonfall
 - **Medizinische Klarheit, keine Werbesprache.** Begriffe wie Indikation, Aufklärung, Risikomanagement, Anatomie, Nachsorge, Komplikation sind willkommen wenn der Kontext es trägt.
@@ -296,6 +296,60 @@ function stripHtmlForCheck(html: string) {
   return html.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").trim();
 }
 
+// Post-processing safety net: strip any closing-greeting paragraphs
+// the LLM emitted at the very end despite the system prompt forbidding
+// them. Marc kept seeing duplicate sign-offs in customerlove replies
+// (e.g. "Herzlichst\nSophia" in the body PLUS the auto-appended
+// "Herzliche Grüße, Dr. Sophia" signature). Tighter prompt + this
+// regex peel = belt and suspenders.
+//
+// Strategy: peel trailing <p>...</p> blocks one at a time as long as
+// the inner text matches a closing-greeting or short-name pattern.
+// Stops as soon as a paragraph doesn't match, so legitimate body text
+// is preserved.
+const CLOSING_PHRASE_RE =
+  /\b(?:Herzlichst|Herzliche\s+Grüße|Liebe\s+Grüße|Beste\s+Grüße|Viele\s+Grüße|Lieben\s+Gruß|Mit\s+(?:freundlichen\s+)?Grüßen|Beste\s+Wünsche|Alles\s+Liebe|Bis\s+(?:bald|dahin)|MfG|LG|VG|Cheers|Best)\b/i;
+// Names we may see on a standalone trailing line. Kept as a small
+// allowlist on purpose — peeling arbitrary single-word paragraphs
+// could chew through real content.
+const TRAILING_NAME_RE =
+  /^(?:Dr\.\s*)?(?:Sophia|Marc|Annett|Sarah|Tina|Pauline|Lili|Aylin|Nathalie|Christian)\s*(?:Wilk-?Vollmann)?$/i;
+
+function stripTrailingClosing(html: string): string {
+  let cur = html.trim();
+  // Strip dangling <br>'s + empty paragraphs at the end up front.
+  const eatTrailingNoise = (s: string): string =>
+    s
+      .replace(/(?:\s*<br\s*\/?>\s*)+$/gi, "")
+      .replace(/(?:\s*<p[^>]*>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>\s*)+$/gi, "")
+      .trim();
+  cur = eatTrailingNoise(cur);
+
+  // Peel trailing closings up to 3 times (greeting line, name line,
+  // maybe a stray comma / smiley line).
+  for (let i = 0; i < 3; i++) {
+    const m = cur.match(/^([\s\S]*?)<p[^>]*>([\s\S]*?)<\/p>\s*$/i);
+    if (!m) break;
+    const innerText = m[2]
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!innerText) {
+      // Empty trailing <p></p> — drop and continue.
+      cur = eatTrailingNoise(m[1]);
+      continue;
+    }
+    const isClosingPhrase = CLOSING_PHRASE_RE.test(innerText);
+    const isTrailingName =
+      innerText.length <= 40 && TRAILING_NAME_RE.test(innerText);
+    if (!isClosingPhrase && !isTrailingName) break;
+    cur = eatTrailingNoise(m[1]);
+  }
+
+  return cur;
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const {
@@ -391,7 +445,7 @@ PFLICHT-REGEL ZUM VORNAMEN:
 • Setze NIEMALS einen erfundenen Namen ein (kein "Hallo Anna,", kein "Liebe Maria,"). Nutze auch nicht generisch "Hallo," oder "Liebe Teilnehmer:in," wenn ein Vorname natürlich wäre.
 
 WEITERE REGELN:
-• KEINE Grußformel und KEINE Signatur am Ende. Schreibe NIEMALS "Beste Grüße,", "Liebe Grüße,", "Herzliche Grüße," o.ä. Die Signatur (inklusive Grußformel + Name) wird beim Versenden automatisch angefügt. Die Vorlage endet mit dem letzten inhaltlichen Satz.
+• KEINE Grußformel, KEINE Verabschiedung, KEIN Name am Ende. Verboten: "Beste Grüße,", "Liebe Grüße,", "Herzliche Grüße,", "Herzlichst,", "Herzlichst", "Viele Grüße,", "Lieben Gruß,", "Mit freundlichen Grüßen,", "Beste Wünsche,", "Alles Liebe,", "Bis bald,", "MfG", "LG", "VG" — und JEDE andere Variante. Schreibe AUCH KEINEN Namen auf einer eigenen Zeile am Ende ("Sophia", "Dr. Sophia", "Marc" etc.). Die Signatur (Grußformel + Name + Footer) wird beim Versenden vom System angefügt; eine zweite Verabschiedung in der Vorlage erzeugt einen doppelten Sign-Off. Die Vorlage endet mit dem letzten inhaltlichen Satz, danach nichts mehr.
 • Erfinde keine weiteren Platzhalter wie \`[Datum]\` oder \`[Termin]\`, außer die Anweisung verlangt es ausdrücklich. Aktuell ist nur \`{{Vorname}}\` etabliert.
 • Schreibe so generisch wie nötig, aber mit klarem, konkretem Inhalt — kein Lückentext mit Eckigen Klammern.</modus>`,
     );
@@ -510,6 +564,9 @@ WEITERE REGELN:
       .replace(/^```(?:html)?\s*\n?/i, "")
       .replace(/\n?```\s*$/i, "")
       .trim();
+    // Defense in depth against the LLM ignoring the "no sign-off"
+    // rule. See stripTrailingClosing for context.
+    html = stripTrailingClosing(html);
     if (!html) {
       return NextResponse.json(
         { error: "AI returned empty body" },
