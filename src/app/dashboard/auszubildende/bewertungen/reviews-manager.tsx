@@ -7,9 +7,8 @@ import {
   Trash2,
   Eye,
   EyeOff,
-  ChevronDown,
-  ChevronUp,
   RefreshCcw,
+  MessageSquareText,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,7 +47,6 @@ export interface ReviewRow {
   rating: number;
   first_name: string;
   body_text: string | null;
-  internal_feedback: string | null;
   is_published: boolean;
   submitted_at: string;
   published_at: string | null;
@@ -58,10 +56,26 @@ export interface ReviewRow {
   course_templates: Joined<TemplateJoin>;
 }
 
+// Anonymous team feedback, grouped by course and only surfaced once a
+// course has ≥ feedbackThreshold entries (gate enforced in the loader).
+// Items inside a group are shuffled there too so date order doesn't
+// give away who wrote what.
+export interface InternalFeedbackByCourse {
+  templateId: string;
+  courseTitle: string;
+  items: Array<{
+    id: string;
+    body: string;
+    dateReceived: string;
+  }>;
+}
+
 type Filter = "all" | "pending" | "published";
 
 interface Props {
   initialReviews: ReviewRow[];
+  initialFeedback?: InternalFeedbackByCourse[];
+  feedbackThreshold?: number;
 }
 
 function unwrap<T>(v: T | T[] | null): T | null {
@@ -98,11 +112,14 @@ function StarRow({ rating }: { rating: number }) {
   );
 }
 
-export function ReviewsManager({ initialReviews }: Props) {
+export function ReviewsManager({
+  initialReviews,
+  initialFeedback = [],
+  feedbackThreshold = 2,
+}: Props) {
   const [reviews, setReviews] = useState<ReviewRow[]>(initialReviews);
   const [filter, setFilter] = useState<Filter>("all");
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
-  const [expandedInternal, setExpandedInternal] = useState<Set<string>>(new Set());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmReschedule, setConfirmReschedule] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
@@ -216,15 +233,6 @@ export function ReviewsManager({ initialReviews }: Props) {
     }
   }
 
-  function toggleExpand(id: string) {
-    setExpandedInternal((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
   return (
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -296,7 +304,6 @@ export function ReviewsManager({ initialReviews }: Props) {
                   .join(" ")
               : null;
             const isBusy = busyIds.has(r.id);
-            const internalOpen = expandedInternal.has(r.id);
             return (
               <div
                 key={r.id}
@@ -379,32 +386,61 @@ export function ReviewsManager({ initialReviews }: Props) {
                     Kein öffentlicher Bewertungstext.
                   </p>
                 )}
-
-                {r.internal_feedback && (
-                  <div className="rounded-[10px] bg-[#FAEBE1] p-3">
-                    <button
-                      onClick={() => toggleExpand(r.id)}
-                      className="flex items-center gap-1.5 text-xs font-semibold text-[#733D29]"
-                    >
-                      {internalOpen ? (
-                        <ChevronUp className="h-3.5 w-3.5" />
-                      ) : (
-                        <ChevronDown className="h-3.5 w-3.5" />
-                      )}
-                      Anonymes Team-Feedback
-                    </button>
-                    {internalOpen && (
-                      <p className="mt-2 text-sm leading-relaxed text-[#733D29] whitespace-pre-wrap">
-                        {r.internal_feedback}
-                      </p>
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}
         </div>
       )}
+
+      {/* Anonymes Team-Feedback — its own section, decoupled from any
+          individual review row. Loader applies the ≥ threshold gate so
+          a brand-new entry isn't trivially correlatable to a same-day
+          review. Items within a course are shuffled in the loader to
+          drop chronological ordering too. */}
+      <section className="space-y-3 pt-2">
+        <div>
+          <h2 className="text-lg font-semibold">Anonymes Team-Feedback</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Strukturell getrennt von den Bewertungen, kein Bezug zu
+            Vorname, Buchung oder Datum. Wird je Kurs erst sichtbar, sobald
+            mindestens {feedbackThreshold} Einträge vorliegen — so kann
+            kein einzelnes Feedback einer einzelnen frischen Bewertung
+            zugeordnet werden.
+          </p>
+        </div>
+        {initialFeedback.length === 0 ? (
+          <div className="bg-white rounded-[10px] p-6 text-center text-sm text-muted-foreground shadow-sm">
+            Noch kein anonymes Feedback freigegeben.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {initialFeedback.map((group) => (
+              <div
+                key={group.templateId}
+                className="bg-white rounded-[10px] shadow-sm p-5 space-y-3"
+              >
+                <div className="flex items-center gap-2">
+                  <MessageSquareText className="h-4 w-4 text-[#733D29]" />
+                  <h3 className="text-sm font-semibold">{group.courseTitle}</h3>
+                  <Badge variant="secondary" className="text-[10px]">
+                    {group.items.length}
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  {group.items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="rounded-[10px] bg-[#FAEBE1] p-3 text-sm leading-relaxed text-[#733D29] whitespace-pre-wrap"
+                    >
+                      {item.body}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <ConfirmDialog
         open={!!confirmDeleteId}

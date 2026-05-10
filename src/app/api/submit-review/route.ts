@@ -77,7 +77,6 @@ export async function POST(req: NextRequest) {
     rating: ratingNum,
     first_name: trimmedFirstName,
     body_text: trimmedBody || null,
-    internal_feedback: trimmedInternal || null,
     is_published: false,
   });
 
@@ -96,6 +95,22 @@ export async function POST(req: NextRequest) {
       { error: "Da ist etwas schiefgelaufen." },
       { status: 500 },
     );
+  }
+
+  // Anonymes Team-Feedback goes into its own table with no booking_id
+  // and a day-level date so it can't be correlated back to this
+  // specific reviewer. Best-effort: a failure here doesn't roll back
+  // the public review — the doctor still gets credit for submitting.
+  if (trimmedInternal) {
+    const { error: feedbackErr } = await supabase
+      .from("course_internal_feedback")
+      .insert({
+        template_id: booking.template_id,
+        body: trimmedInternal,
+      });
+    if (feedbackErr) {
+      console.error("submit-review: internal feedback insert failed", feedbackErr);
+    }
   }
 
   return NextResponse.json({ ok: true });
