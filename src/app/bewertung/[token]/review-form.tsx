@@ -238,8 +238,8 @@ export function ReviewForm({
           Was möchtest Du anderen Ärzt:innen über diesen Kurs sagen?
         </label>
         <p className="text-xs text-gray-600">
-          Optional. Wird auf unserer Kursseite gezeigt, sobald wir sie
-          freischalten.
+          Optional. Wird auf unserer Kursseite gezeigt neben Deiner
+          Sternebewertung.
         </p>
         <textarea
           id="bewertung-body"
