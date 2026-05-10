@@ -59,6 +59,13 @@ type CourseBookingRow = {
   course_sessions: { date_iso: string | null; label_de: string | null } | null;
 };
 
+type PatientBookingRow = {
+  id: string;
+  status: string;
+  startTime: string | null;
+  courseTitle: string | null;
+};
+
 async function assertStaff() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -200,6 +207,41 @@ async function fetchCourseBookings(auszubildendeId: string) {
   return (data || []) as unknown as CourseBookingRow[];
 }
 
+// Patient treatment bookings (the rows the patient detail page reads).
+// We only select non-encrypted fields here — the encrypted PII on
+// bookings (name/email/phone/notes) isn't needed for the sidebar, so we
+// skip the decrypt roundtrip. Cancelled rows are filtered out; the
+// sidebar is meant to surface live + historical attended/no-show
+// appointments, not abandoned ones.
+type RawPatientBookingRow = {
+  id: string;
+  status: string;
+  slots:
+    | {
+        start_time: string | null;
+        courses: { title: string | null; treatment_title: string | null } | null;
+      }
+    | null;
+};
+async function fetchPatientBookings(patientId: string): Promise<PatientBookingRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("bookings")
+    .select("id, status, slots(start_time, courses(title, treatment_title))")
+    .eq("patient_id", patientId)
+    .neq("status", "cancelled")
+    .order("created_at", { ascending: false });
+  return (data || []).map((row) => {
+    const r = row as unknown as RawPatientBookingRow;
+    return {
+      id: r.id,
+      status: r.status,
+      startTime: r.slots?.start_time ?? null,
+      courseTitle: r.slots?.courses?.treatment_title || r.slots?.courses?.title || null,
+    };
+  });
+}
+
 async function fetchStripeInvoices(email: string) {
   if (!process.env.STRIPE_SECRET_KEY) return [];
   try {
@@ -308,20 +350,24 @@ export async function GET(req: NextRequest) {
         patientStatus: null,
       } satisfies ContactDTO,
       courseBookings: [],
+      patientBookings: [],
       invoices: [],
       noShows: [],
     });
   }
 
-  const [courseBookings, invoices, noShows] = await Promise.all([
+  const [courseBookings, patientBookings, invoices, noShows] = await Promise.all([
     contact.source === "auszubildende" && contact.id
       ? fetchCourseBookings(contact.id)
       : Promise.resolve([] as CourseBookingRow[]),
+    contact.source === "patient" && contact.id
+      ? fetchPatientBookings(contact.id)
+      : Promise.resolve([] as PatientBookingRow[]),
     fetchStripeInvoices(email),
     fetchNoShows(email, contact.source === "patient" ? contact.id : null),
   ]);
 
-  return NextResponse.json({ contact, courseBookings, invoices, noShows });
+  return NextResponse.json({ contact, courseBookings, patientBookings, invoices, noShows });
 }
 
 // ── Inline update ────────────────────────────────────────────────────────

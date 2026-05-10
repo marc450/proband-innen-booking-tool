@@ -47,6 +47,13 @@ interface CourseBooking {
   course_sessions: { date_iso: string | null; label_de: string | null } | null;
 }
 
+interface PatientBooking {
+  id: string;
+  status: string;
+  startTime: string | null;
+  courseTitle: string | null;
+}
+
 interface StripeInvoice {
   id: string;
   number: string | null;
@@ -69,6 +76,7 @@ interface NoShow {
 interface ContactPayload {
   contact: ContactDTO;
   courseBookings: CourseBooking[];
+  patientBookings: PatientBooking[];
   invoices: StripeInvoice[];
   noShows: NoShow[];
 }
@@ -190,7 +198,7 @@ export function ContactSidebar({ email, displayName }: Props) {
 
   if (!data) return null;
 
-  const { contact, courseBookings, invoices, noShows } = data;
+  const { contact, courseBookings, patientBookings, invoices, noShows } = data;
   const isUnknown = contact.source === "unknown";
   const fullName =
     [contact.firstName, contact.lastName].filter(Boolean).join(" ") ||
@@ -378,38 +386,75 @@ export function ContactSidebar({ email, displayName }: Props) {
         </section>
       )}
 
-      {/* Kursbuchungen */}
-      <section className="p-5 border-b border-gray-100">
-        <h3 className="text-xs font-bold uppercase tracking-wide text-gray-700 mb-3 flex items-center gap-1.5">
-          <BookOpen className="h-3 w-3" />
-          Kursbuchungen ({courseBookings.length})
-        </h3>
-        {courseBookings.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Keine Buchungen</p>
-        ) : (
-          <ul className="space-y-2">
-            {courseBookings.slice(0, 10).map((b) => (
-              <li key={b.id} className="text-xs">
-                <Link
-                  href={`/dashboard/auszubildende/buchungen/${b.id}`}
-                  className="block hover:bg-gray-50 rounded p-2 -mx-2"
-                >
-                  <p className="font-medium text-gray-900 truncate">
-                    {b.course_templates?.title || "Kurs"}
-                  </p>
-                  <p className="text-muted-foreground truncate">
-                    {b.course_type || "–"}
-                    {b.course_sessions?.label_de && ` · ${b.course_sessions.label_de}`}
-                  </p>
-                  <p className="text-muted-foreground mt-0.5">
-                    {b.status} · {formatDate(b.created_at)}
-                  </p>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {/* Kursbuchungen — only relevant for Ärzt:innen / Auszubildende.
+          Patient contacts get the Behandlungen section below instead. */}
+      {contact.source !== "patient" && (
+        <section className="p-5 border-b border-gray-100">
+          <h3 className="text-xs font-bold uppercase tracking-wide text-gray-700 mb-3 flex items-center gap-1.5">
+            <BookOpen className="h-3 w-3" />
+            Kursbuchungen ({courseBookings.length})
+          </h3>
+          {courseBookings.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Keine Buchungen</p>
+          ) : (
+            <ul className="space-y-2">
+              {courseBookings.slice(0, 10).map((b) => (
+                <li key={b.id} className="text-xs">
+                  <Link
+                    href={`/dashboard/auszubildende/buchungen/${b.id}`}
+                    className="block hover:bg-gray-50 rounded p-2 -mx-2"
+                  >
+                    <p className="font-medium text-gray-900 truncate">
+                      {b.course_templates?.title || "Kurs"}
+                    </p>
+                    <p className="text-muted-foreground truncate">
+                      {b.course_type || "–"}
+                      {b.course_sessions?.label_de && ` · ${b.course_sessions.label_de}`}
+                    </p>
+                    <p className="text-muted-foreground mt-0.5">
+                      {b.status} · {formatDate(b.created_at)}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {/* Behandlungen — patient-only. Lists the treatment appointments
+          from the bookings table (joined to slots → courses) so the
+          inbox sidebar surfaces "Hannah hat einen Termin am 24. Mai
+          gebucht" right next to her conversation. */}
+      {contact.source === "patient" && (
+        <section className="p-5 border-b border-gray-100">
+          <h3 className="text-xs font-bold uppercase tracking-wide text-gray-700 mb-3 flex items-center gap-1.5">
+            <BookOpen className="h-3 w-3" />
+            Behandlungen ({patientBookings.length})
+          </h3>
+          {patientBookings.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Keine Behandlungen</p>
+          ) : (
+            <ul className="space-y-2">
+              {patientBookings.slice(0, 10).map((b) => (
+                <li key={b.id} className="text-xs">
+                  <Link
+                    href={contact.id ? `/dashboard/patients/${contact.id}` : "#"}
+                    className="block hover:bg-gray-50 rounded p-2 -mx-2"
+                  >
+                    <p className="font-medium text-gray-900 truncate">
+                      {b.courseTitle || "Behandlung"}
+                    </p>
+                    <p className="text-muted-foreground mt-0.5">
+                      {b.status} · {formatDate(b.startTime)}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       {/* Rechnungen (Stripe) */}
       <section className="p-5 border-b border-gray-100">

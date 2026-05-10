@@ -56,10 +56,16 @@ export async function resolveContactNamesByEmail(
         .in("id", ids);
       const nameById = new Map<string, string>();
       for (const p of persons ?? []) {
+        // Require both first and last name so we don't clobber a richer
+        // From-header display name with a partial DB row (e.g. DB has
+        // only "Maria" but the header says "Maria Schmidt").
+        const firstName = (p.first_name as string | null)?.trim() || null;
+        const lastName = (p.last_name as string | null)?.trim() || null;
+        if (!firstName || !lastName) continue;
         const name = formatPersonName({
           title: (p.title as string | null) ?? null,
-          firstName: (p.first_name as string | null) ?? null,
-          lastName: (p.last_name as string | null) ?? null,
+          firstName,
+          lastName,
         });
         if (name) nameById.set(p.id as string, name);
       }
@@ -97,10 +103,11 @@ export async function resolveContactNamesByEmail(
         const hash = p.email_hash as string | null;
         const email = hash ? emailByHash.get(hash) : null;
         if (!email) continue;
-        const name = formatPersonName({
-          firstName: decrypted.first_name,
-          lastName: decrypted.last_name,
-        });
+        // Require both names — see auszubildende pass above.
+        const firstName = decrypted.first_name?.trim() || null;
+        const lastName = decrypted.last_name?.trim() || null;
+        if (!firstName || !lastName) continue;
+        const name = formatPersonName({ firstName, lastName });
         if (name) result.set(email, name);
       } catch {
         // Best-effort: legacy or malformed rows are skipped silently.
