@@ -435,6 +435,14 @@ export function KursDetailClient({
     } else if (!wasActive && willBeActive) {
       await supabase.rpc("increment_booked_seats", { p_session_id: session.id });
     }
+
+    // Cancel any pending review-request email when leaving the active set.
+    // The "cancelled" branch above already routed through the cancel-modal
+    // → API path which handles this; what's left here is the direct
+    // booked → refunded transition.
+    if (wasActive && !willBeActive) {
+      await fetch(`/api/admin/cancel-review-email/${bookingId}`, { method: "POST" }).catch(() => {});
+    }
   };
 
   const handleConfirmAerztCancel = async () => {

@@ -14,6 +14,7 @@ import {
 } from "@/lib/post-purchase";
 import { normalizeEmail } from "@/lib/email-normalize";
 import { findAuszubildendeIdByAnyEmail, upsertAuszubildendeByEmail } from "@/lib/contact-emails";
+import { cancelScheduledReviewEmail } from "@/lib/cancel-scheduled-review-email";
 import Stripe from "stripe";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
@@ -929,6 +930,16 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
   if (updateErr) {
     console.error("Failed to mark booking as refunded:", updateErr);
     return;
+  }
+
+  // Drop any pending review-request email so the refunded doctor doesn't
+  // get the post-course "wie war Dein Kurs?" email anyway.
+  const reviewCancelResult = await cancelScheduledReviewEmail(supabase, booking.id);
+  if (!reviewCancelResult.ok) {
+    console.error(
+      `stripe-webhook: review email cancel failed for ${booking.id}`,
+      reviewCancelResult.reason,
+    );
   }
 
   console.log(`Course booking ${booking.id} marked as refunded (was ${booking.status})`);

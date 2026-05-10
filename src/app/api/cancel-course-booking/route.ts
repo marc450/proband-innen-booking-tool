@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildEmailHtml } from "@/lib/email-template";
 import { archiveSentMessage } from "@/lib/gmail";
+import { cancelScheduledReviewEmail } from "@/lib/cancel-scheduled-review-email";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
@@ -158,6 +159,19 @@ export async function POST(req: NextRequest) {
 
     if (booking.session_id) {
       await supabase.rpc("decrement_booked_seats", { p_session_id: booking.session_id });
+    }
+
+    // ── Cancel any pending review-request email ─────────────────────────
+    // The review email is scheduled at booking time to fire 1h before
+    // course end. If we don't cancel it here, a cancelled doctor still
+    // gets the "wie war Dein Kurs?" email, which is exactly the bug we
+    // fixed. Best-effort: failure is logged, never aborts the cancel.
+    const reviewCancelResult = await cancelScheduledReviewEmail(supabase, bookingId);
+    if (!reviewCancelResult.ok) {
+      console.error(
+        `cancel-course-booking: review email cancel failed for ${bookingId}`,
+        reviewCancelResult.reason,
+      );
     }
 
     // ── Always attempt cancellation email ───────────────────────────────

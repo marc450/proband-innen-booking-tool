@@ -271,6 +271,14 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
       await supabase.rpc("increment_booked_seats", { p_session_id: booking.session_id });
     }
 
+    // Cancel any pending review-request email when leaving the active set.
+    // The "cancelled" path normally goes through the cancel modal which
+    // already handles this server-side, but the dropdown's direct
+    // booked → refunded path lands here, so we still need the cleanup.
+    if (!wasCancelledOrRefunded && isCancellingOrRefunding) {
+      await fetch(`/api/admin/cancel-review-email/${id}`, { method: "POST" }).catch(() => {});
+    }
+
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b)));
     setStatusDropdownId(null);
   };
