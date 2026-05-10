@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { read, utils } from "xlsx";
 import { Button } from "@/components/ui/button";
 import {
@@ -137,6 +137,27 @@ export function AuszubildendeManager({
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [newContactOpen, setNewContactOpen] = useState(false);
+  const [prefillEmail, setPrefillEmail] = useState<string | null>(null);
+
+  // Deep-link from the inbox sidebar: /…?newEmail=foo@bar.de auto-opens
+  // the NewContactModal with the address pre-filled, so clicking "Als
+  // Ärzt:in anlegen" lands you straight in the create flow with the
+  // sender's email already in the field. The param is stripped from the
+  // URL after consumption so a back-button trip doesn't re-trigger.
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  useEffect(() => {
+    const newEmail = searchParams?.get("newEmail");
+    if (!newEmail) return;
+    setPrefillEmail(newEmail);
+    setNewContactOpen(true);
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("newEmail");
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+    // searchParams + pathname are stable identities across renders; we
+    // only want this to run on initial mount + URL changes.
+  }, [searchParams, pathname, router]);
 
   const pageTitle = scope === "other" ? "Sonstige Kontakte" : "Ärzt:innen";
   const countLabel = scope === "other" ? "Kontakte" : "Ärzt:innen";
@@ -392,8 +413,12 @@ export function AuszubildendeManager({
 
       <NewContactModal
         open={newContactOpen}
-        onOpenChange={setNewContactOpen}
+        onOpenChange={(o) => {
+          setNewContactOpen(o);
+          if (!o) setPrefillEmail(null);
+        }}
         defaultType={scope === "other" ? "other" : "auszubildende"}
+        defaultEmail={prefillEmail}
       />
 
       {/* Import preview / result dialog. Skips any email that already

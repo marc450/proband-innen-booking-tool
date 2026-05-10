@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { read, utils } from "xlsx";
 import { createClient } from "@/lib/supabase/client";
 import { Patient, PatientStatus } from "@/lib/types";
@@ -82,9 +82,25 @@ export function PatientsManager({ initialPatients }: Props) {
   const [deleting, setDeleting] = useState(false);
   const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null);
   const [newContactOpen, setNewContactOpen] = useState(false);
+  const [prefillEmail, setPrefillEmail] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const supabase = createClient();
+
+  // Deep-link from the inbox sidebar: /…?newEmail=foo@bar.de auto-opens
+  // the NewContactModal pre-filled, matching the auszubildende page.
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  useEffect(() => {
+    const newEmail = searchParams?.get("newEmail");
+    if (!newEmail) return;
+    setPrefillEmail(newEmail);
+    setNewContactOpen(true);
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("newEmail");
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+  }, [searchParams, pathname, router]);
 
   const handleStatusChange = async (patientId: string, newStatus: PatientStatus) => {
     setStatusDropdownId(null);
@@ -235,8 +251,12 @@ export function PatientsManager({ initialPatients }: Props) {
 
       <NewContactModal
         open={newContactOpen}
-        onOpenChange={setNewContactOpen}
+        onOpenChange={(o) => {
+          setNewContactOpen(o);
+          if (!o) setPrefillEmail(null);
+        }}
         defaultType="proband"
+        defaultEmail={prefillEmail}
       />
 
       {/* Import preview modal */}

@@ -30,6 +30,9 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultType?: ContactType | null;
+  /** Pre-fills the E-Mail field on open. Used when the inbox sidebar
+   *  deep-links here with `?newEmail=…` for an unknown sender. */
+  defaultEmail?: string | null;
   /** Called after a successful create. The parent typically calls router.refresh(). */
   onCreated?: (result: { id: string; type: ContactType }) => void;
 }
@@ -76,6 +79,7 @@ export function NewContactModal({
   open,
   onOpenChange,
   defaultType = null,
+  defaultEmail = null,
   onCreated,
 }: Props) {
   const router = useRouter();
@@ -97,7 +101,7 @@ export function NewContactModal({
       setType(defaultType);
       setFirstName("");
       setLastName("");
-      setEmail("");
+      setEmail(defaultEmail ?? "");
       setPhone("");
       setTitle("");
       setSpecialty("");
@@ -107,7 +111,7 @@ export function NewContactModal({
       setError(null);
       setSubmitting(false);
     }
-  }, [open, defaultType]);
+  }, [open, defaultType, defaultEmail]);
 
   const statusOptions =
     type === "proband" ? PATIENT_STATUS_OPTIONS : AZUBI_STATUS_OPTIONS;
