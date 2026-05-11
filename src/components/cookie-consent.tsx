@@ -63,10 +63,15 @@ export function CookieConsent() {
   if (decided) return null;
 
   return (
+    // md:left uses the --lms-sidebar-width variable set by the LMS
+    // reader so the banner sits to the RIGHT of the sticky sidebar on
+    // study.ephia.de instead of being hidden behind it. The variable
+    // resolves to 0px on every other page, leaving the previous
+    // bottom-left placement unchanged.
     <div
       role="dialog"
       aria-label="Cookie-Hinweis"
-      className="fixed bottom-4 left-4 right-4 md:left-6 md:right-auto md:max-w-md z-50"
+      className="fixed bottom-4 left-4 right-4 md:left-[calc(1.5rem+var(--lms-sidebar-width,0px))] md:right-auto md:max-w-md z-50"
     >
       <div className="bg-white rounded-[10px] shadow-[0_8px_32px_-4px_rgba(0,0,0,0.12),0_2px_6px_-2px_rgba(0,0,0,0.08)] p-5">
         <p className="text-sm text-black/80 leading-relaxed">
