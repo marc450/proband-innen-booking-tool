@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptPatient } from "@/lib/encryption";
+import { buildPatientEmailSet, isAlsoAPatient } from "@/lib/campaign-audience";
 import { CampaignComposer } from "./campaign-composer";
 
 export default async function NewCampaignPage() {
@@ -22,13 +23,19 @@ export default async function NewCampaignPage() {
   // Only Auszubildende (not "other"/"company") and drop anyone who has
   // explicitly opted out (status "inactive") so the composer UI matches
   // what the send pipeline actually mails.
+  const sendablePatients = decrypted.filter((p) => p.patient_status !== "inactive");
+  const patientEmails = buildPatientEmailSet(sendablePatients);
   const filteredAzubis = (auszubildende || []).filter((a) => {
     const ct = a.contact_type as string | null;
     const isAzubi = ct === "auszubildende" || ct == null;
-    return isAzubi && a.status !== "inactive";
+    if (!isAzubi || a.status === "inactive") return false;
+    // Anyone whose email is also a Probandin's email is classified as a
+    // patient first and dropped from the Ärzt:innen pool. Without this,
+    // a stray v_auszubildende row for a real patient (reported case:
+    // Lydia Lemke) would leak into the doctor-only campaign audience.
+    if (isAlsoAPatient({ email: a.email }, patientEmails)) return false;
+    return true;
   });
-
-  const sendablePatients = decrypted.filter((p) => p.patient_status !== "inactive");
 
   return (
     <CampaignComposer

@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptPatient } from "@/lib/encryption";
+import { buildPatientEmailSet, isAlsoAPatient } from "@/lib/campaign-audience";
 import { notFound } from "next/navigation";
 import { CampaignComposer } from "../new/campaign-composer";
 import { CampaignView } from "./campaign-view";
@@ -41,14 +42,18 @@ export default async function CampaignDetailPage({
   const decrypted = (patients || []).map(decryptPatient);
 
   // Mirror dashboard/campaigns/new/page.tsx: drop hard-unsubscribed
-  // contacts so the UI matches the send pipeline.
+  // contacts and reclassify any v_auszubildende row whose email also
+  // shows up as a patient so they don't leak into the Ärzt:innen-only
+  // audience (reported case: "Lydia Lemke").
+  const sendablePatients = decrypted.filter((p) => p.patient_status !== "inactive");
+  const patientEmails = buildPatientEmailSet(sendablePatients);
   const filteredAzubis = (auszubildende || []).filter((a) => {
     const ct = a.contact_type as string | null;
     const isAzubi = ct === "auszubildende" || ct == null;
-    return isAzubi && a.status !== "inactive";
+    if (!isAzubi || a.status === "inactive") return false;
+    if (isAlsoAPatient({ email: a.email }, patientEmails)) return false;
+    return true;
   });
-
-  const sendablePatients = decrypted.filter((p) => p.patient_status !== "inactive");
 
   return (
     <CampaignComposer

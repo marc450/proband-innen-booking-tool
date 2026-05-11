@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { buildEmailHtml, type ContentBlock } from "@/lib/email-template";
 import { decryptPatient } from "@/lib/encryption";
 import { normalizeEmail } from "@/lib/email-normalize";
+import { buildPatientEmailSet, isAlsoAPatient } from "@/lib/campaign-audience";
 import { archiveSentMessage } from "@/lib/gmail";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
@@ -93,10 +94,17 @@ export async function POST(req: NextRequest) {
   // final count is lower than the expected audience size.
   const skippedInvalid: string[] = [];
 
+  // Always materialise the patient list up front. We need the email set
+  // even when audience === "aerztinnen" so we can drop v_auszubildende
+  // rows that secretly correspond to Probandinnen (reported regression:
+  // "Lydia Lemke" leaked into the Ärzt:innen-only campaign).
+  const { data: rawPatients } = await supabase.from("patients").select("*");
+  const allPatients = (rawPatients || []).map(decryptPatient);
+  const sendablePatients = allPatients.filter((p) => p.patient_status !== "inactive");
+  const patientEmails = buildPatientEmailSet(sendablePatients);
+
   // Resolve recipients based on audience type
   if (audienceType === "probandinnen" || audienceType === "alle") {
-    const { data: rawPatients } = await supabase.from("patients").select("*");
-    const allPatients = (rawPatients || []).map(decryptPatient);
     for (const p of allPatients) {
       if (!p.email) continue;
       // "inactive" is a hard unsubscribe — ignore the excludeBlacklisted
@@ -128,6 +136,12 @@ export async function POST(req: NextRequest) {
       if (!a.email) continue;
       // Hard unsubscribe — same semantics as the patients branch above.
       if ((a.status as string | null) === "inactive") continue;
+      // Cross-table reclassification: if this auszubildende row's email
+      // is also a Probandin's email, treat them as Probandin and skip
+      // for the Ärzt:innen audience. Matches the composer-side filter
+      // in dashboard/campaigns/new/page.tsx so the recipient counts
+      // align between UI preview and actual send.
+      if (isAlsoAPatient({ email: a.email }, patientEmails)) continue;
       if (excludedSet.has(`a-${a.id}`)) continue;
       if (includedSet && !includedSet.has(`a-${a.id}`)) continue;
       const cleaned = sanitizeRecipientEmail(a.email);
