@@ -200,6 +200,31 @@ export function decryptBooking(row: any): Booking & { email_hash?: string } {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function decryptBookingWithDetails(row: any): BookingWithDetails & { email_hash?: string } {
   const decrypted = decryptBooking(row);
+
+  // When the booking is linked to a patient and the join provided that
+  // patient row (alias `patient`, see the dashboard/bookings query), use
+  // the patient's name as the source of truth. The booking row keeps its
+  // own encrypted name snapshot from the time of booking — that snapshot
+  // can drift if the patient is later corrected (a previously-imported
+  // booking might still carry "DKB" while the patient profile already
+  // reads "Ute Böcker"). Falling back to the booking snapshot keeps
+  // legacy bookings without `patient_id` working.
+  if (row.patient) {
+    const patient = decryptPatient(row.patient);
+    const firstName = patient.first_name ?? decrypted.first_name;
+    const lastName = patient.last_name ?? decrypted.last_name;
+    return {
+      ...decrypted,
+      first_name: firstName,
+      last_name: lastName,
+      name:
+        firstName && lastName
+          ? `${firstName} ${lastName}`
+          : decrypted.name,
+      slots: row.slots,
+    } as BookingWithDetails & { email_hash?: string };
+  }
+
   return {
     ...decrypted,
     slots: row.slots,
