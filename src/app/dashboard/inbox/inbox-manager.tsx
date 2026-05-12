@@ -178,15 +178,23 @@ export function InboxManager({
   }, []);
 
   // Client-side filter for "Beantwortet": show only threads whose most
-  // recent message we sent (i.e. not inbound).
+  // recent message we sent (i.e. not inbound). All tabs are then sorted
+  // by the latest INBOUND message timestamp so a staff reply doesn't
+  // bump the thread to the top — only a new customer message does.
+  // Threads with no inbound message fall back to lastDate so outbound-
+  // only sends still sort by their own timestamp.
   const visibleThreads = useMemo(() => {
+    const sortKey = (t: ThreadSummary) =>
+      new Date(t.lastInboundDate || t.lastDate).getTime();
+    const sortByLatestInbound = (a: ThreadSummary, b: ThreadSummary) =>
+      sortKey(b) - sortKey(a);
+    let list = threads;
     if (filter === "answered") {
-      return threads.filter((t) => !t.lastMessageInbound);
+      list = threads.filter((t) => !t.lastMessageInbound);
+    } else if (filter === "mine") {
+      list = threads.filter((t) => assignments[t.id]?.assignedTo === currentUserId);
     }
-    if (filter === "mine") {
-      return threads.filter((t) => assignments[t.id]?.assignedTo === currentUserId);
-    }
-    return threads;
+    return [...list].sort(sortByLatestInbound);
   }, [threads, filter, assignments, currentUserId]);
 
   const openThread = useCallback(async (threadId: string) => {

@@ -14,6 +14,9 @@ export interface ThreadSummary {
   subject: string;
   snippet: string;
   lastDate: string;
+  /** Date of the latest inbound message — used for sorting so a staff
+   * reply doesn't bump the thread. Empty/missing → fall back to lastDate. */
+  lastInboundDate?: string;
   contactName: string;
   contactEmail: string;
   messageCount: number;

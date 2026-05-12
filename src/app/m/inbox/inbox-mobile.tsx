@@ -39,6 +39,9 @@ interface ThreadSummary {
   subject: string;
   snippet: string;
   lastDate: string;
+  /** Date of the latest inbound message — used for sorting so a staff
+   * reply doesn't bump the thread. Empty/missing → fall back to lastDate. */
+  lastInboundDate?: string;
   contactName: string;
   contactEmail: string;
   isUnread: boolean;
@@ -414,10 +417,17 @@ export function InboxMobile() {
   }, [composing, composeTo, composeSubject, composeBody, composeCc, composeBcc]);
 
   const visibleThreads = useMemo(() => {
-    if (filter === "answered") {
-      return threads.filter((t) => !t.lastMessageInbound);
-    }
-    return threads;
+    // Sort by the latest inbound message timestamp so a staff reply
+    // doesn't bump the thread. Threads with no inbound message fall
+    // back to lastDate so outbound-only sends still sort by their own
+    // timestamp. Mirrors the desktop inbox-manager logic.
+    const sortKey = (t: ThreadSummary) =>
+      new Date(t.lastInboundDate || t.lastDate).getTime();
+    const list =
+      filter === "answered"
+        ? threads.filter((t) => !t.lastMessageInbound)
+        : threads;
+    return [...list].sort((a, b) => sortKey(b) - sortKey(a));
   }, [threads, filter]);
 
   const handleFilterChange = (f: InboxFilter) => {

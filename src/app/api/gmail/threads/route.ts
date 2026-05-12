@@ -56,6 +56,18 @@ export async function GET(request: NextRequest) {
           // or by us (outbound). Used by the "Beantwortet" filter in the
           // inbox UI to hide threads that still need a reply.
           const lastMessageInbound = isInbound(lastMsg);
+          // Date of the most recent INBOUND message — used by the inbox
+          // list as the sort key so a staff reply does not bump the
+          // thread to the top. Falls back to lastDate when the thread
+          // is outbound-only (e.g. a campaign send the contact hasn't
+          // answered yet) so those threads still sort by their own send
+          // timestamp.
+          const lastInboundMsg = [...full.messages]
+            .reverse()
+            .find((m) => isInbound(m));
+          const lastInboundDate = lastInboundMsg
+            ? new Date(Number(lastInboundMsg.internalDate)).toISOString()
+            : lastDate;
           const hasAttachments = full.messages.some((m) => getAttachments(m).length > 0);
 
           // Get the external participant (not customerlove@ephia.de)
@@ -95,6 +107,7 @@ export async function GET(request: NextRequest) {
             subject,
             snippet: cleanGmailSnippet(t.snippet || ""),
             lastDate,
+            lastInboundDate,
             lastFrom,
             contactName,
             contactEmail,
@@ -104,7 +117,7 @@ export async function GET(request: NextRequest) {
             hasAttachments,
           };
         } catch {
-          return { id: t.id, subject: "", snippet: cleanGmailSnippet(t.snippet || ""), lastDate: "", lastFrom: "", contactName: "", contactEmail: "", messageCount: 0, isUnread: false, lastMessageInbound: true, hasAttachments: false };
+          return { id: t.id, subject: "", snippet: cleanGmailSnippet(t.snippet || ""), lastDate: "", lastInboundDate: "", lastFrom: "", contactName: "", contactEmail: "", messageCount: 0, isUnread: false, lastMessageInbound: true, hasAttachments: false };
         }
       })
     );
