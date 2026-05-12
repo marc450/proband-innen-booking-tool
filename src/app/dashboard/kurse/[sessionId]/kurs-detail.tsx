@@ -26,7 +26,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { ArrowLeft, Ban, Calendar, Check, Clock, Copy, GraduationCap, Mail, MapPin, Plus, Trash2, User } from "lucide-react";
+import { ArrowLeft, Ban, Calendar, Check, Clock, Copy, GraduationCap, Loader2, Mail, MapPin, Plus, Trash2, User } from "lucide-react";
 import { buildProfileCompletionUrl } from "@/lib/profile-link";
 
 export interface DetailSlot {
@@ -571,6 +571,15 @@ export function KursDetailClient({
           <h2 className="text-lg font-semibold">
             Buchungen Ärzt:innen ({aerztBookedSeats}/{session.maxSeats})
           </h2>
+          <CreateCampaignButton
+            sessionTitle={session.templateTitle}
+            dateIso={session.dateIso}
+            audienceType="aerztinnen"
+            recipientIds={aerztBookingsState
+              .map((b) => b.auszubildendeId)
+              .filter((id): id is string => Boolean(id))
+              .map((id) => `a-${id}`)}
+          />
         </div>
         {aerztBookingsState.length === 0 ? (
           <p className="px-6 pb-6 text-sm text-muted-foreground">
@@ -694,12 +703,23 @@ export function KursDetailClient({
           <h2 className="text-lg font-semibold">
             Buchungen Proband:innen ({bookings.length}/{slots.filter((s) => !s.blocked).reduce((sum, sl) => sum + sl.capacity, 0)})
           </h2>
-          {satelliteId && (
-            <Button size="sm" onClick={openAddSlot}>
-              <Plus className="h-4 w-4 mr-1" />
-              Slot hinzufügen
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <CreateCampaignButton
+              sessionTitle={session.templateTitle}
+              dateIso={session.dateIso}
+              audienceType="probandinnen"
+              recipientIds={bookings
+                .map((b) => b.patient_id)
+                .filter((id): id is string => Boolean(id))
+                .map((id) => `p-${id}`)}
+            />
+            {satelliteId && (
+              <Button size="sm" onClick={openAddSlot}>
+                <Plus className="h-4 w-4 mr-1" />
+                Slot hinzufügen
+              </Button>
+            )}
+          </div>
         </div>
         {!satelliteId ? (
           <p className="px-6 pb-6 text-sm text-muted-foreground">
@@ -1197,5 +1217,103 @@ function SendProfileReminderButton({
     >
       {sent ? <Check className="h-3.5 w-3.5" /> : <Mail className="h-3.5 w-3.5" />}
     </button>
+  );
+}
+
+// One-click "create a draft campaign for the contacts on this session"
+// shortcut. Inserts a row into email_campaigns with the participants
+// pre-attached as included_patient_ids in the same "p-<uuid>" /
+// "a-<uuid>" form the composer's recipient panel expects, then
+// redirects to the composer so the user can fill subject + body.
+//
+// Used in two places on this page: the Ärzt:innen section
+// (audienceType="aerztinnen", recipientIds = a-<auszubildendeId>) and
+// the Proband:innen section (audienceType="probandinnen", recipientIds
+// = p-<patientId>). Bookings without a linked profile (patient_id /
+// auszubildendeId NULL) are silently filtered upstream so we don't
+// need to handle them here.
+function CreateCampaignButton({
+  sessionTitle,
+  dateIso,
+  audienceType,
+  recipientIds,
+}: {
+  sessionTitle: string;
+  dateIso: string;
+  audienceType: "aerztinnen" | "probandinnen";
+  recipientIds: string[];
+}) {
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
+
+  const disabled = creating || recipientIds.length === 0;
+  const label =
+    audienceType === "aerztinnen"
+      ? "Kampagne an Ärzt:innen"
+      : "Kampagne an Proband:innen";
+  const emptyTitle =
+    audienceType === "aerztinnen"
+      ? "Keine Ärzt:innen mit verknüpftem Profil — Kampagne nicht möglich."
+      : "Keine Proband:innen mit verknüpftem Profil — Kampagne nicht möglich.";
+
+  const handleCreate = async () => {
+    if (disabled) return;
+    setCreating(true);
+    try {
+      const supabase = createClient();
+      const dateStr = new Date(dateIso).toLocaleDateString("de-DE", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      });
+      const { data, error } = await supabase
+        .from("email_campaigns")
+        .insert({
+          name: `${sessionTitle} | ${dateStr}`,
+          subject: "",
+          body_text: "",
+          content_blocks: [{ type: "text", text: "" }],
+          audience_type: audienceType,
+          included_patient_ids: recipientIds,
+          excluded_patient_ids: [],
+          status: "draft",
+          recipient_count: 0,
+        })
+        .select("id")
+        .single();
+      if (error || !data) {
+        setCreating(false);
+        return;
+      }
+      router.push(`/dashboard/campaigns/${data.id}`);
+    } catch {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={handleCreate}
+      disabled={disabled}
+      title={
+        recipientIds.length === 0
+          ? emptyTitle
+          : `${label} mit ${recipientIds.length} Empfänger:in${recipientIds.length === 1 ? "" : "nen"}`
+      }
+    >
+      {creating ? (
+        <>
+          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+          Erstelle…
+        </>
+      ) : (
+        <>
+          <Mail className="h-4 w-4 mr-1" />
+          {label}
+        </>
+      )}
+    </Button>
   );
 }
