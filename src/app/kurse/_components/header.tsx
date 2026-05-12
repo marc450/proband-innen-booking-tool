@@ -50,7 +50,7 @@ const NAV_LINKS: NavLink[] = [
     href: "/kurse/curriculum-botulinum",
     subLinks: [
       { label: "Curriculum Botulinum", href: "/kurse/curriculum-botulinum" },
-      { label: "Curriculum Dermalfiller", href: "#", disabled: true, note: "Coming soon" },
+      { label: "Curriculum Dermalfiller", href: "/kurse/curriculum-dermalfiller" },
       { label: "Curriculum Hautpflege", href: "#", disabled: true, note: "Coming soon" },
     ],
   },

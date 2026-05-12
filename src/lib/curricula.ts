@@ -34,9 +34,25 @@ export const CURRICULUM_BOTULINUM: CurriculumConfig = {
   ],
 } as const;
 
+export const CURRICULUM_DERMALFILLER: CurriculumConfig = {
+  slug: "dermalfiller",
+  title: "Curriculum Dermalfiller",
+  subtitle: "Dein Weg zur Spezialisierung in der Dermalfiller-Therapie",
+  description:
+    "Vier aufeinander aufbauende Kurse, die Dich vom Grundlagenwissen bis zur Spezialisierung begleiten. Buche das Komplettpaket und spare 10%.",
+  discountPercent: 10,
+  courses: [
+    { courseKey: "grundkurs_dermalfiller", sort: 1, courseType: "Kombikurs" },
+    { courseKey: "grundkurs_medizinische_hautpflege", sort: 2, courseType: "Onlinekurs" },
+    { courseKey: "aufbaukurs_lippen", sort: 3, courseType: "Kombikurs" },
+    { courseKey: "aufbaukurs_skulptra", sort: 4, courseType: "Kombikurs" },
+  ],
+} as const;
+
 /** Map of all curricula by slug */
 export const CURRICULA: Record<string, CurriculumConfig> = {
   botulinum: CURRICULUM_BOTULINUM,
+  dermalfiller: CURRICULUM_DERMALFILLER,
 };
 
 /** Lookup: courseKey → curriculum slug (for banner on individual course pages) */

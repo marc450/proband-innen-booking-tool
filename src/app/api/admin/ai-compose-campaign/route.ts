@@ -78,6 +78,7 @@ Verwende diese URLs, wenn der Prompt eine entsprechende Aktion verlangt:
 - https://proband-innen.ephia.de — Hauptbuchungsseite für Proband:innen, um Behandlungs-Termine zu buchen.
 - https://ephia.de — Kurskatalog für Ärzt:innen.
 - https://ephia.de/curriculum-botulinum — Botulinum-Curriculum-Übersicht.
+- https://ephia.de/curriculum-dermalfiller — Dermalfiller-Curriculum-Übersicht.
 - https://chat.whatsapp.com/DfbOTDsWWksFQJhVOqdPJI — EPHIA-Community (WhatsApp).
 - mailto:customerlove@ephia.de — Kundenservice-E-Mail.
 

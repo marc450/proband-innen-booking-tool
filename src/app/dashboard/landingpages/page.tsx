@@ -31,6 +31,7 @@ const HAUPTSEITEN: PageGroup = {
     { title: "Startseite", path: "/" },
     { title: "Unsere Kurse", path: "/unsere-kurse" },
     { title: "Curriculum Botulinum", path: "/curriculum-botulinum" },
+    { title: "Curriculum Dermalfiller", path: "/curriculum-dermalfiller" },
     { title: "CME-Online-Seminare", path: "/cme-online-seminare" },
     { title: "Unsere Didaktik", path: "/didaktik" },
     { title: "Unsere Vision", path: "/vision" },

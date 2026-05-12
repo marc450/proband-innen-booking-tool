@@ -22,6 +22,7 @@ const STATIC_PATHS = [
   "/",
   "/unsere-kurse",
   "/curriculum-botulinum",
+  "/curriculum-dermalfiller",
   "/cme-online-seminare",
   "/cme-onlinekurse-botox",
   "/kostenloser-botox-kurs",
