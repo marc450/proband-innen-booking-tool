@@ -47,13 +47,6 @@ export default function KarrierePage() {
               background-color: transparent !important;
               box-shadow: none !important;
             }
-            /* Hide the widget's "Alle offenen Stellen bei … ansehen." footer
-               link. Job cards themselves are also <a href="…join.com…/jobs/…">
-               links, so we exclude /jobs/ URLs to keep the cards clickable
-               and only kill the trailing company-page link. */
-            #join-widget a[href*="join.com"]:not([href*="/jobs"]) {
-              display: none !important;
-            }
           `}</style>
           <div id="join-widget" className="rounded-[10px] overflow-hidden" />
           <Script
@@ -61,6 +54,31 @@ export default function KarrierePage() {
             data-mount-in="#join-widget"
             strategy="afterInteractive"
           />
+          {/* The widget renders a "Alle offenen Stellen bei … ansehen." footer
+              link (and a shorter "Alle ansehen." variant on smaller breakpoints)
+              that points at the join.com-hosted job board. We hide it via a
+              text match so we don't accidentally catch job cards by URL. Runs
+              once after the widget mounts and again on every DOM mutation in
+              case the widget re-renders (pagination, filters). */}
+          <Script id="join-widget-hide-footer" strategy="afterInteractive">{`
+            (function () {
+              var root = document.getElementById('join-widget');
+              if (!root) return;
+              function hide() {
+                root.querySelectorAll('a').forEach(function (a) {
+                  var text = (a.textContent || '').trim();
+                  if (/^Alle\\b.*ansehen\\b\\.?$/i.test(text)) {
+                    a.style.display = 'none';
+                  }
+                });
+              }
+              hide();
+              new MutationObserver(hide).observe(root, {
+                childList: true,
+                subtree: true,
+              });
+            })();
+          `}</Script>
         </div>
       </section>
     </>
