@@ -47,6 +47,14 @@ export default function KarrierePage() {
               background-color: transparent !important;
               box-shadow: none !important;
             }
+            /* Hide the widget's "Alle offenen Stellen bei … ansehen." footer
+               link — it points to the join.com-hosted job board and we
+               don't want to send visitors off-site. */
+            #join-widget a[href*="join.com"],
+            #join-widget p:has(a[href*="join.com"]),
+            #join-widget div:has(> a[href*="join.com"]) {
+              display: none !important;
+            }
           `}</style>
           <div id="join-widget" className="rounded-[10px] overflow-hidden" />
           <Script
