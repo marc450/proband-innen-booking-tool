@@ -37,6 +37,7 @@ const HAUPTSEITEN: PageGroup = {
     { title: "Unsere Vision", path: "/vision" },
     { title: "Unsere Community", path: "/community" },
     { title: "Team & Dozent:innen", path: "/team" },
+    { title: "Karriere", path: "/karriere" },
     { title: "FAQ & Kontakt", path: "/faq-kontakt" },
   ],
 };

@@ -30,6 +30,7 @@ const STATIC_PATHS = [
   "/vision",
   "/community",
   "/team",
+  "/karriere",
   "/faq-kontakt",
   "/impressum",
   "/datenschutz",

@@ -69,6 +69,7 @@ const NAV_LINKS: NavLink[] = [
   { label: "Werde Proband:in", href: "https://proband-innen.ephia.de/" },
   { label: "Merch ✨", href: "/merch" },
   { label: "FAQ & Kontakt", href: "/kurse/faq-kontakt" },
+  { label: "Karriere", href: "/kurse/karriere" },
 ];
 
 // Path that hosts the customer dashboard. The middleware rewrites
