@@ -19,6 +19,26 @@
 - List the exact SQL statements to run
 - Do NOT proceed with pushing code until the user confirms the migration has been executed
 
+### Migration conventions
+
+- **Every `create table public.x` must include explicit GRANTs.** Supabase removes the default `public` schema grant for the Data API on existing projects from October 30, 2026. A table without grants is invisible to supabase-js, PostgREST, and GraphQL even if RLS policies exist. Template:
+
+  ```sql
+  create table public.your_table (...);
+
+  -- Data API access. Tune verbs per role for the actual use case.
+  grant select on public.your_table to anon;
+  grant select, insert, update, delete on public.your_table to authenticated;
+  grant select, insert, update, delete on public.your_table to service_role;
+
+  alter table public.your_table enable row level security;
+  -- create policy ...
+  ```
+
+- **Pick the verbs that match the access surface.** For PII tables that are only touched by the admin client (e.g. patients, bookings) grant nothing to `anon` and only what's needed to `authenticated`; rely on `service_role` bypassing RLS for server-side writes. For public-read tables (e.g. course landings data), grant `select` to `anon`.
+- **Views need grants too.** `grant select on public.your_view to anon, authenticated;` after creating any view that's consumed via the Data API.
+- **Existing tables are safe.** Pre-existing grants are preserved through both rollout deadlines; this rule applies to new tables we ship from now on.
+
 ## UI / Modals
 - NEVER use browser-native `confirm()`, `alert()`, or `prompt()` dialogs
 - Always use app-native modals: shadcn `Dialog`, `AlertDialog`, or the custom `ConfirmDialog` component
