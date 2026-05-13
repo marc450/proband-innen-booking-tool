@@ -35,6 +35,19 @@ export default function KarrierePage() {
 
       <section className="bg-[#FAEBE1] pb-24 md:pb-32">
         <div className="max-w-5xl mx-auto px-5 md:px-8">
+          {/* The join.com widget's outer wrapper has its background hard-coded
+              to #FFFFFF in the signed JWT config. We can't change it without
+              regenerating the bundle URL on join.com, so we make every direct
+              container inside #join-widget transparent. The job card itself
+              keeps its own white background (set deeper in the DOM via
+              jobCard.background in the same JWT). */}
+          <style>{`
+            #join-widget > div,
+            #join-widget > div > div:first-child {
+              background-color: transparent !important;
+              box-shadow: none !important;
+            }
+          `}</style>
           <div id="join-widget" className="rounded-[10px] overflow-hidden" />
           <Script
             src={JOIN_BUNDLE_SRC}
