@@ -48,11 +48,10 @@ export default function KarrierePage() {
               box-shadow: none !important;
             }
             /* Hide the widget's "Alle offenen Stellen bei … ansehen." footer
-               link — it points to the join.com-hosted job board and we
-               don't want to send visitors off-site. */
-            #join-widget a[href*="join.com"],
-            #join-widget p:has(a[href*="join.com"]),
-            #join-widget div:has(> a[href*="join.com"]) {
+               link. Job cards themselves are also <a href="…join.com…/jobs/…">
+               links, so we exclude /jobs/ URLs to keep the cards clickable
+               and only kill the trailing company-page link. */
+            #join-widget a[href*="join.com"]:not([href*="/jobs"]) {
               display: none !important;
             }
           `}</style>
