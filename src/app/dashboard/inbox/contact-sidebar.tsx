@@ -274,7 +274,16 @@ export function ContactSidebar({ email, displayName }: Props) {
           <h3 className="text-xs font-bold uppercase tracking-wide text-gray-700 mb-2">
             Kontaktinfos
           </h3>
-          <div className="divide-y divide-gray-100">
+          {/* `key` is tied to the contact identity so every EditableField
+              below unmounts and remounts with fresh state when the user
+              clicks a different email thread. Without this, a draft typed
+              into one contact's field could linger in edit mode on the
+              next contact's profile and trigger a save against the wrong
+              contact when the second blur fires. */}
+          <div
+            key={contact.id ?? contact.email}
+            className="divide-y divide-gray-100"
+          >
             <EditableField
               label="Vorname"
               value={contact.firstName}
