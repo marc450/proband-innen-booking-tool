@@ -577,7 +577,9 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
     (b) => (b.type === "text" && b.text.trim()) || (b.type === "button" && b.label && b.url)
   );
 
-  // Live preview HTML
+  // Live preview HTML. Pass a placeholder unsubscribeUrl so the
+  // opt-out footer block renders in preview. The real send replaces
+  // this with a per-recipient `?id=p-<uuid>` link in send-campaign.
   const previewHtml = useMemo(() => {
     const previewBlocks = contentBlocks.map((b) => {
       if (b.type === "text") return { ...b, text: b.text || "Dein Text erscheint hier..." };
@@ -586,6 +588,7 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
     return buildEmailHtml({
       firstName: "{Vorname}",
       contentBlocks: previewBlocks,
+      unsubscribeUrl: "https://proband-innen.ephia.de/abmelden",
     });
   }, [contentBlocks]);
 

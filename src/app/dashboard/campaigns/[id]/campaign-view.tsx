@@ -71,9 +71,14 @@ export function CampaignView({ campaign }: Props) {
         ? [{ type: "text", text: campaign.body_text }]
         : [];
 
+  // Pass a placeholder unsubscribeUrl so the opt-out block also
+  // shows up in the read-only view. Real sends used a per-recipient
+  // link; the placeholder lands on /abmelden's "Link ungültig" state
+  // if a curious staff member clicks it.
   const previewHtml = buildEmailHtml({
     firstName: "{Vorname}",
     contentBlocks: blocks,
+    unsubscribeUrl: "https://proband-innen.ephia.de/abmelden",
   });
 
   return (
