@@ -17,9 +17,32 @@ const EMAIL_RE = /^[^\s@,<>"']+@[^\s@,<>"']+\.[^\s@,<>"']+$/;
 
 type AudienceType = "probandinnen" | "aerztinnen" | "alle";
 
+type ContactKind = "p" | "a";
+
 interface Recipient {
   email: string;
   first_name: string | null;
+  // Composite key prefix + uuid, e.g. "p-<uuid>" or "a-<uuid>". Used
+  // verbatim in the unsubscribe URL so /api/unsubscribe knows which
+  // table to flip.
+  contactKey: string;
+}
+
+const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL || "https://proband-innen.ephia.de";
+
+function buildUnsubscribeUrl(contactKey: string): string {
+  return `${APP_URL}/abmelden?id=${encodeURIComponent(contactKey)}`;
+}
+
+function buildListUnsubscribePostUrl(contactKey: string): string {
+  // RFC 8058 one-click endpoint. Mail clients (Gmail, Apple Mail) POST
+  // here directly without rendering the /abmelden page.
+  return `${APP_URL}/api/unsubscribe?id=${encodeURIComponent(contactKey)}`;
+}
+
+function contactKeyFor(kind: ContactKind, id: string): string {
+  return `${kind}-${id}`;
 }
 
 /**
@@ -122,7 +145,11 @@ export async function POST(req: NextRequest) {
       const dedupeKey = normalizeEmail(cleaned) || cleaned;
       if (emailsSeen.has(dedupeKey)) continue;
       emailsSeen.add(dedupeKey);
-      recipients.push({ email: cleaned, first_name: p.first_name });
+      recipients.push({
+        email: cleaned,
+        first_name: p.first_name,
+        contactKey: contactKeyFor("p", p.id),
+      });
     }
   }
 
@@ -152,7 +179,11 @@ export async function POST(req: NextRequest) {
       const dedupeKey = normalizeEmail(cleaned) || cleaned;
       if (emailsSeen.has(dedupeKey)) continue;
       emailsSeen.add(dedupeKey);
-      recipients.push({ email: cleaned, first_name: a.first_name });
+      recipients.push({
+        email: cleaned,
+        first_name: a.first_name,
+        contactKey: contactKeyFor("a", a.id),
+      });
     }
   }
 
@@ -242,15 +273,26 @@ export async function POST(req: NextRequest) {
       const batch = recipients.slice(i, i + BATCH_SIZE);
 
       const payloads = batch.map((r) => {
+        const unsubscribeUrl = buildUnsubscribeUrl(r.contactKey);
+        const oneClickUrl = buildListUnsubscribePostUrl(r.contactKey);
         const html = buildEmailHtml({
           firstName: r.first_name || "Kolleg:in",
           contentBlocks,
+          unsubscribeUrl,
         });
         const payload: Record<string, unknown> = {
           from: "EPHIA <customerlove@ephia.de>",
           to: [r.email],
           subject,
           html,
+          // RFC 2369 + RFC 8058. Gmail/Apple Mail render a native
+          // "Unsubscribe" link next to the sender name when both
+          // headers are present, and POST to oneClickUrl directly.
+          // Required for sender reputation at our volume.
+          headers: {
+            "List-Unsubscribe": `<${oneClickUrl}>, <${unsubscribeUrl}>`,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          },
           ...(sendAtParam ? { send_at: sendAtParam } : {}),
           // Scheduled sends: tag so the Resend webhook archives the
           // message into Gmail Sent at actual delivery time. Immediate
@@ -378,6 +420,7 @@ async function archiveCampaignToGmail(opts: {
       const html = buildEmailHtml({
         firstName: r.first_name || "Kolleg:in",
         contentBlocks: opts.contentBlocks,
+        unsubscribeUrl: buildUnsubscribeUrl(r.contactKey),
       });
       try {
         await archiveSentMessage({ to: r.email, subject: opts.subject, html });

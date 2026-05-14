@@ -122,6 +122,21 @@ function renderContentBlocks(blocks: ContentBlock[]): string {
     .join("\n    ");
 }
 
+function renderUnsubscribeBlock(unsubscribeUrl: string): string {
+  // Lives below FOOTER. Muted on purpose so it doesn't compete with
+  // the brand block, but still readable. Only rendered for campaign
+  // sends, never for transactional emails (those have no unsubscribe
+  // option, they're tied to a specific booking).
+  return `
+  <div style="margin-top:16px; padding-top:12px; border-top:1px solid #f0f0f0; text-align:left;">
+    <p style="color:#9e9e9e; font-size:11px; line-height:1.5; margin:0;">
+      Du möchtest keine weiteren E-Mail-Mitteilungen wie diese erhalten?
+      <a href="${unsubscribeUrl}" style="color:#9e9e9e; text-decoration:underline;">Hier abmelden</a>.
+      Bestätigungen zu Deinen Buchungen und Terminänderungen erhältst Du weiterhin.
+    </p>
+  </div>`;
+}
+
 export function buildEmailHtml({
   firstName,
   intro,
@@ -131,6 +146,7 @@ export function buildEmailHtml({
   contentBlocks,
   closing = "Herzliche Grüße,<br>Dein EPHIA-Team",
   extraContent = "",
+  unsubscribeUrl,
 }: {
   firstName: string;
   intro?: string;
@@ -140,6 +156,7 @@ export function buildEmailHtml({
   contentBlocks?: ContentBlock[];
   closing?: string;
   extraContent?: string;
+  unsubscribeUrl?: string;
 }): string {
   const rows = infoRows
     .filter((r) => r.value)
@@ -191,6 +208,7 @@ export function buildEmailHtml({
     </p>
 
     ${FOOTER}
+    ${unsubscribeUrl ? renderUnsubscribeBlock(unsubscribeUrl) : ""}
   </div>
 </div>`;
 }
