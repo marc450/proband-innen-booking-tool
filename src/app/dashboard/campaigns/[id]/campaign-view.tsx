@@ -5,9 +5,10 @@ import { de } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buildEmailHtml, type ContentBlock } from "@/lib/email-template";
-import type { CampaignStatus } from "@/lib/types";
+import type { CampaignStatus, GmailArchiveStatus } from "@/lib/types";
 import { EmailPreview } from "../email-preview";
 import { RecipientList } from "./recipient-list";
+import { GmailArchiveStatusCard } from "./gmail-archive-status";
 
 const statusLabels: Record<CampaignStatus, string> = {
   draft: "In Bearbeitung",
@@ -49,6 +50,12 @@ interface Props {
     sent_at: string | null;
     scheduled_at: string | null;
     error_message: string | null;
+    gmail_archive_status: GmailArchiveStatus | null;
+    gmail_archive_progress: number | null;
+    gmail_archive_total: number | null;
+    gmail_archive_failed: number | null;
+    gmail_archive_error: string | null;
+    gmail_archive_finished_at: string | null;
   };
 }
 
@@ -164,6 +171,18 @@ export function CampaignView({ campaign }: Props) {
                   </div>
                 </div>
               )}
+
+              <GmailArchiveStatusCard
+                campaignId={campaign.id}
+                initial={{
+                  status: campaign.gmail_archive_status,
+                  progress: campaign.gmail_archive_progress ?? 0,
+                  total: campaign.gmail_archive_total ?? 0,
+                  failed: campaign.gmail_archive_failed ?? 0,
+                  error: campaign.gmail_archive_error,
+                  finishedAt: campaign.gmail_archive_finished_at,
+                }}
+              />
 
               {campaign.error_message && (
                 <div className="pt-2 border-t">

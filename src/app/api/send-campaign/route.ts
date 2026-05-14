@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildEmailHtml, type ContentBlock } from "@/lib/email-template";
 import { decryptPatient } from "@/lib/encryption";
@@ -241,11 +241,7 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
       const batch = recipients.slice(i, i + BATCH_SIZE);
 
-      // Build (recipient, html, payload) so we can hand the same per-
-      // recipient HTML to both Resend (real send) and archiveSentMessage
-      // (Gmail mirror). Without retaining the html alongside, we'd have
-      // to rebuild it twice.
-      const items = batch.map((r) => {
+      const payloads = batch.map((r) => {
         const html = buildEmailHtml({
           firstName: r.first_name || "Kolleg:in",
           contentBlocks,
@@ -258,8 +254,9 @@ export async function POST(req: NextRequest) {
           ...(sendAtParam ? { send_at: sendAtParam } : {}),
           // Scheduled sends: tag so the Resend webhook archives the
           // message into Gmail Sent at actual delivery time. Immediate
-          // sends archive inline below — no tag needed (and no tag
-          // means the webhook ignores them, preventing double-archive).
+          // sends archive in a detached after() callback below, no tag
+          // needed (and no tag means the webhook ignores them,
+          // preventing double-archive).
           ...(sendAtParam
             ? {
                 tags: [
@@ -271,7 +268,7 @@ export async function POST(req: NextRequest) {
         if (rawAttachments && rawAttachments.length > 0) {
           payload.attachments = rawAttachments;
         }
-        return { recipient: r, html, payload };
+        return payload;
       });
 
       const res = await fetch("https://api.resend.com/emails/batch", {
@@ -280,7 +277,7 @@ export async function POST(req: NextRequest) {
           Authorization: `Bearer ${RESEND_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(items.map((it) => it.payload)),
+        body: JSON.stringify(payloads),
       });
 
       if (!res.ok) {
@@ -288,49 +285,53 @@ export async function POST(req: NextRequest) {
         throw new Error(`Resend batch error: ${errBody}`);
       }
 
-      // Mirror each delivered recipient into the customerlove Gmail Sent
-      // folder so the contact-profile email history (which queries Gmail
-      // directly) shows the campaign.
-      //
-      // Scheduled campaigns are skipped here: Resend hasn't sent them
-      // yet, and archiving now would falsely date the Gmail entry.
-      // Once we wire a Resend `email.sent` webhook we can archive at
-      // actual delivery time instead.
-      //
-      // Sequential per recipient to stay under Gmail's per-user
-      // ~10 inserts/sec quota. Best-effort: a Gmail failure for one
-      // recipient is logged but doesn't fail the whole campaign.
-      if (!sendAtParam) {
-        for (const { recipient, html } of items) {
-          try {
-            await archiveSentMessage({
-              to: recipient.email,
-              subject,
-              html,
-            });
-          } catch (archiveErr) {
-            console.error(
-              `archiveSentMessage failed for ${recipient.email} (non-fatal):`,
-              archiveErr,
-            );
-          }
-        }
-      }
-
-      // Brief pause between batches
+      // Brief pause between batches to stay under Resend's 2 req/s rate limit.
       if (i + BATCH_SIZE < recipients.length) {
         await new Promise((r) => setTimeout(r, 1000));
       }
     }
 
-    // Update campaign as sent
+    // Resend has accepted everything. Mark the campaign sent and seed
+    // the Gmail-archive tracking columns. Scheduled sends are marked
+    // 'skipped' here because the Resend webhook handles archiving at
+    // actual delivery time, not now.
+    const archiveSeed = sendAtParam
+      ? { gmail_archive_status: "skipped" as const, gmail_archive_total: 0 }
+      : {
+          gmail_archive_status: "pending" as const,
+          gmail_archive_total: recipients.length,
+          gmail_archive_progress: 0,
+          gmail_archive_failed: 0,
+          gmail_archive_error: null,
+          gmail_archive_started_at: new Date().toISOString(),
+          gmail_archive_finished_at: null,
+        };
+
     await supabase
       .from("email_campaigns")
       .update({
         status: scheduledAt ? "scheduled" : "sent",
         sent_at: scheduledAt ? null : new Date().toISOString(),
+        ...archiveSeed,
       })
       .eq("id", campaignId);
+
+    // Detach the Gmail Sent-folder mirror so staff don't wait on it.
+    // Gmail's per-user insert quota is ~10/sec, and each insert is a
+    // 200-500ms round trip. At 400 recipients that's 1-2 minutes that
+    // would otherwise block the response. after() runs the callback
+    // after the response is flushed but still inside the same Node
+    // process on Railway, so progress updates the email_campaigns row.
+    if (!sendAtParam) {
+      after(
+        archiveCampaignToGmail({
+          campaignId: campaignId!,
+          recipients,
+          contentBlocks,
+          subject,
+        }),
+      );
+    }
 
     return NextResponse.json({ ok: true, campaignId, recipientCount: recipients.length });
   } catch (err: unknown) {
@@ -341,5 +342,92 @@ export async function POST(req: NextRequest) {
       .eq("id", campaignId);
 
     return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+/**
+ * Mirror every campaign recipient into the customerlove Gmail Sent
+ * folder so the contact-profile email history (which queries Gmail
+ * directly) shows the campaign.
+ *
+ * Runs detached via `after()` so the HTTP response is already on its
+ * way back to the dashboard. Progress is flushed to email_campaigns
+ * every FLUSH_EVERY recipients so the campaign detail view can render
+ * a live "247 / 400" counter without per-row DB pressure.
+ *
+ * Sequential per recipient to stay under Gmail's per-user ~10
+ * inserts/sec quota. Best-effort: a failure for one recipient is
+ * logged and counted but doesn't abort the whole archive.
+ */
+async function archiveCampaignToGmail(opts: {
+  campaignId: string;
+  recipients: Recipient[];
+  contentBlocks: ContentBlock[];
+  subject: string;
+}) {
+  const supabase = createAdminClient();
+  const total = opts.recipients.length;
+  const FLUSH_EVERY = 25;
+  let ok = 0;
+  let fail = 0;
+  let lastError: string | null = null;
+
+  try {
+    for (let idx = 0; idx < total; idx++) {
+      const r = opts.recipients[idx];
+      const html = buildEmailHtml({
+        firstName: r.first_name || "Kolleg:in",
+        contentBlocks: opts.contentBlocks,
+      });
+      try {
+        await archiveSentMessage({ to: r.email, subject: opts.subject, html });
+        ok++;
+      } catch (err) {
+        fail++;
+        lastError = err instanceof Error ? err.message : String(err);
+        console.error(
+          `archiveSentMessage failed for ${r.email} (non-fatal):`,
+          err,
+        );
+      }
+
+      const isLast = idx === total - 1;
+      if ((idx + 1) % FLUSH_EVERY === 0 || isLast) {
+        await supabase
+          .from("email_campaigns")
+          .update({
+            gmail_archive_progress: ok,
+            gmail_archive_failed: fail,
+            gmail_archive_error: lastError,
+          })
+          .eq("id", opts.campaignId);
+      }
+    }
+
+    const finalStatus =
+      fail === 0 ? "done" : ok === 0 ? "failed" : "partial";
+    await supabase
+      .from("email_campaigns")
+      .update({
+        gmail_archive_status: finalStatus,
+        gmail_archive_progress: ok,
+        gmail_archive_failed: fail,
+        gmail_archive_error: lastError,
+        gmail_archive_finished_at: new Date().toISOString(),
+      })
+      .eq("id", opts.campaignId);
+  } catch (err) {
+    // Catches anything outside the per-recipient try (e.g. a fatal
+    // token-refresh failure on the very first call).
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("archiveCampaignToGmail catastrophic failure:", err);
+    await supabase
+      .from("email_campaigns")
+      .update({
+        gmail_archive_status: "failed",
+        gmail_archive_error: message,
+        gmail_archive_finished_at: new Date().toISOString(),
+      })
+      .eq("id", opts.campaignId);
   }
 }

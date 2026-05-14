@@ -231,6 +231,13 @@ export interface Auszubildende {
 
 export type CampaignStatus = "draft" | "scheduled" | "sending" | "sent" | "failed";
 
+export type GmailArchiveStatus =
+  | "pending"
+  | "done"
+  | "partial"
+  | "failed"
+  | "skipped";
+
 export interface EmailCampaign {
   id: string;
   name: string | null;
@@ -247,6 +254,13 @@ export interface EmailCampaign {
   sent_at: string | null;
   error_message: string | null;
   created_at: string;
+  gmail_archive_status: GmailArchiveStatus | null;
+  gmail_archive_progress: number;
+  gmail_archive_total: number;
+  gmail_archive_failed: number;
+  gmail_archive_error: string | null;
+  gmail_archive_started_at: string | null;
+  gmail_archive_finished_at: string | null;
 }
 
 export interface BookingWithDetails extends Booking {
