@@ -72,6 +72,14 @@ const TEMP_ZONES_BY_TITLE: Record<
       "Migräne",
     ],
   },
+  "Behandlung des Gesichts mit Dermalfiller": {
+    label: "Behandelbare Zonen",
+    items: [
+      "Wangen",
+      "Kinn",
+      "Nasolabialfalten",
+    ],
+  },
 };
 
 function classifyTreatment(
