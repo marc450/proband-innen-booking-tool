@@ -80,7 +80,7 @@ export default async function KursDetailPage({
   const { data: aerztBookings } = await admin
     .from("course_bookings")
     .select(
-      "id, first_name, last_name, email, course_type, status, audience_tag, profile_complete, created_at, auszubildende_id",
+      "id, first_name, last_name, email, course_type, status, audience_tag, profile_complete, created_at, auszubildende_id, notes",
     )
     .eq("session_id", sessionId)
     .neq("status", "cancelled")
@@ -195,6 +195,7 @@ export default async function KursDetailPage({
               ? priorTitlesByAuszubildendeId.get(b.auszubildende_id as string) ?? []
               : [],
           profileComplete: (b.profile_complete as boolean | null) ?? false,
+          notes: (b.notes as string | null) ?? null,
         }))
       }
     />

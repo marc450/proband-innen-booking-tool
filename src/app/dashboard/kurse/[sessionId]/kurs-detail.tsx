@@ -68,6 +68,7 @@ interface AerztBooking {
   specialty: string | null;
   priorCourses: string[];
   profileComplete: boolean;
+  notes: string | null;
 }
 
 const AERZT_STATUS_OPTIONS: Array<{ value: string; label: string }> = [
@@ -519,6 +520,18 @@ export function KursDetailClient({
     });
   };
 
+  const updateAerztNotes = async (booking: AerztBooking, newNotes: string) => {
+    const trimmed = newNotes.trim();
+    setAerztBookingsState((prev) =>
+      prev.map((b) => (b.id === booking.id ? { ...b, notes: trimmed || null } : b)),
+    );
+    // course_bookings has no E2EE, so we can write the plain column directly.
+    await supabase
+      .from("course_bookings")
+      .update({ notes: trimmed || null })
+      .eq("id", booking.id);
+  };
+
   // ── Render ────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
@@ -587,15 +600,17 @@ export function KursDetailClient({
           </p>
         ) : (
           <Table className="table-fixed">
-            {/* Shared column widths so the Auszubildende and Proband:innen
-                tables align column-for-column on the page. The same
-                <colgroup> repeats on the Proband:innen table below. */}
+            {/* Auszubildende table has an extra Notizen column (240px)
+                that the Proband:innen table below does not. Other column
+                widths still match the Proband:innen <colgroup> so the
+                two tables read as a stacked pair. */}
             <colgroup>
               <col style={{ width: "200px" }} />{/* Name */}
               <col style={{ width: "280px" }} />{/* E-Mail */}
-              <col style={{ width: "220px" }} />{/* Bereits besuchte Kurse | Uhrzeit */}
-              <col style={{ width: "200px" }} />{/* Spezialisierung | Überweiser:in */}
-              <col style={{ width: "240px" }} />{/* Profil | Notizen */}
+              <col style={{ width: "220px" }} />{/* Bereits besuchte Kurse */}
+              <col style={{ width: "200px" }} />{/* Spezialisierung */}
+              <col style={{ width: "240px" }} />{/* Profil */}
+              <col style={{ width: "240px" }} />{/* Notizen */}
               <col style={{ width: "180px" }} />{/* Status */}
             </colgroup>
             <TableHeader>
@@ -605,6 +620,7 @@ export function KursDetailClient({
                 <TableHead>Bereits besuchte Kurse</TableHead>
                 <TableHead>Spezialisierung</TableHead>
                 <TableHead>Profil</TableHead>
+                <TableHead>Notizen</TableHead>
                 <TableHead>
                   <div className="flex justify-end">
                     <span className="w-[140px]">Status</span>
@@ -670,6 +686,18 @@ export function KursDetailClient({
                         <SendProfileReminderButton bookingId={b.id} disabled={!b.email} />
                       </div>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      defaultValue={b.notes ?? ""}
+                      onBlur={(e) => {
+                        if (e.target.value !== (b.notes ?? "")) {
+                          updateAerztNotes(b, e.target.value);
+                        }
+                      }}
+                      placeholder="Notizen…"
+                      className="text-sm h-9"
+                    />
                   </TableCell>
                   <TableCell className="w-[180px]">
                     <div className="flex justify-end">
