@@ -163,6 +163,10 @@ export function AuszubildendeDetail({ azubi: initialAzubi, emailAliases = [], bo
   // Status dropdown
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
+  // Inline error rendered below the status pill so silent DB / RLS
+  // failures stop being silent. Cleared the next time the user picks
+  // a status that does persist.
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   // Multi-email manager modal
   const [emailModalOpen, setEmailModalOpen] = useState(false);
@@ -260,12 +264,24 @@ export function AuszubildendeDetail({ azubi: initialAzubi, emailAliases = [], bo
   };
 
   const handleStatusChange = async (status: string) => {
-    const { error } = await supabase
-      .from("auszubildende")
-      .update({ status })
-      .eq("id", azubi.id);
-    if (!error) {
+    // Routed through /api/admin/auszubildende/[id]/status because the
+    // table's RLS silently filters UPDATE for `authenticated`, so the
+    // browser-side supabase.update() returns 204 with no rows changed
+    // and the status reverts on next page load.
+    setStatusError(null);
+    const res = await fetch(
+      `/api/admin/auszubildende/${azubi.id}/status`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      },
+    );
+    if (res.ok) {
       setAzubi((prev) => ({ ...prev, status }));
+    } else {
+      const body = await res.json().catch(() => ({}));
+      setStatusError(body.error || res.statusText || "Unbekannter Fehler");
     }
   };
 
@@ -449,6 +465,11 @@ export function AuszubildendeDetail({ azubi: initialAzubi, emailAliases = [], bo
                       </button>
                     ))}
                   </div>
+                )}
+                {statusError && (
+                  <p className="mt-2 text-xs text-red-600">
+                    Status konnte nicht gespeichert werden: {statusError}
+                  </p>
                 )}
               </div>
               {/* Profile-completion link copy. Surfaces only when at

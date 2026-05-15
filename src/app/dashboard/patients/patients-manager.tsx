@@ -81,6 +81,12 @@ export function PatientsManager({ initialPatients }: Props) {
   const [deletePatient, setDeletePatient] = useState<Patient | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null);
+  // Inline error for status writes that the DB rejects (e.g. an old
+  // CHECK constraint missing a new enum value). Surfaces in the row
+  // so silent failures stop being silent.
+  const [statusErrorByPatient, setStatusErrorByPatient] = useState<
+    Record<string, string>
+  >({});
   const [newContactOpen, setNewContactOpen] = useState(false);
   const [prefillEmail, setPrefillEmail] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -104,11 +110,23 @@ export function PatientsManager({ initialPatients }: Props) {
 
   const handleStatusChange = async (patientId: string, newStatus: PatientStatus) => {
     setStatusDropdownId(null);
+    setStatusErrorByPatient((prev) => {
+      const next = { ...prev };
+      delete next[patientId];
+      return next;
+    });
+    // Capture the previous status so we can revert the optimistic UI
+    // update when the DB rejects the new value.
+    const prevStatus = patients.find((p) => p.id === patientId)?.patient_status;
     setPatients((prev) => prev.map((p) => p.id === patientId ? { ...p, patient_status: newStatus } : p));
-    await supabase
+    const { error } = await supabase
       .from("patients")
       .update({ patient_status: newStatus })
       .eq("id", patientId);
+    if (error) {
+      setPatients((prev) => prev.map((p) => p.id === patientId && prevStatus ? { ...p, patient_status: prevStatus } : p));
+      setStatusErrorByPatient((prev) => ({ ...prev, [patientId]: error.message }));
+    }
   };
 
   const handleDeletePatient = async () => {
@@ -439,6 +457,11 @@ export function PatientsManager({ initialPatients }: Props) {
                               </button>
                             ))}
                           </div>
+                        )}
+                        {statusErrorByPatient[patient.id] && (
+                          <p className="mt-1 text-[11px] text-red-600 max-w-[200px]">
+                            Status nicht gespeichert: {statusErrorByPatient[patient.id]}
+                          </p>
                         )}
                       </div>
                     </TableCell>
