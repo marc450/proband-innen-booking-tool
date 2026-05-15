@@ -157,13 +157,13 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                             </p>
                           </div>
                           <div className="divide-y divide-black/[0.06]">
-                            {dateSlots.map((slot) => (
+                            {dateSlots.map((slot, idx) => (
                               <button
                                 key={slot.id}
                                 onClick={() => setSelectedSlot(slot)}
                                 className="group w-full flex items-center justify-between gap-3 md:gap-4 px-5 md:px-6 py-4 hover:bg-black/[0.02] transition-colors text-left"
                               >
-                                <div className="flex items-center gap-3 md:gap-5 min-w-0">
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 md:gap-x-5 min-w-0">
                                   <div className="flex items-center gap-1.5 shrink-0">
                                     <Clock className="h-4 w-4 text-black/55" />
                                     <span className="text-sm md:text-base font-bold text-black whitespace-nowrap">
@@ -173,6 +173,11 @@ export function SlotSelection({ course, allCourses, slots }: SlotSelectionProps)
                                   <span className="text-xs md:text-sm text-black/60 whitespace-nowrap">
                                     {slot.remaining_capacity} {slot.remaining_capacity === 1 ? "Platz" : "Plätze"} frei
                                   </span>
+                                  {idx === 0 && (
+                                    <span className="inline-flex items-center text-[10px] md:text-[11px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-[#0066FF]/10 text-[#0066FF]">
+                                      Behandlung durch Dozent:in
+                                    </span>
+                                  )}
                                 </div>
                                 <span className="text-xs md:text-sm font-bold text-[#0066FF] shrink-0 group-hover:underline whitespace-nowrap">
                                   <span className="hidden sm:inline">Platz reservieren</span>
