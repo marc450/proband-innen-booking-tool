@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -532,6 +533,27 @@ export function KursDetailClient({
       .eq("id", booking.id);
   };
 
+  // Click-to-expand popover for Auszubildende notes. The table cell only
+  // shows a one-line preview; the full note lives in a Textarea inside a
+  // Dialog so longer entries (Schwangerschaft, Vorerkrankungen, …) bleiben
+  // gut lesbar without growing every row.
+  const [aerztNotesEditing, setAerztNotesEditing] = useState<AerztBooking | null>(null);
+  const [aerztNotesDraft, setAerztNotesDraft] = useState("");
+
+  const openAerztNotes = (booking: AerztBooking) => {
+    setAerztNotesEditing(booking);
+    setAerztNotesDraft(booking.notes ?? "");
+  };
+
+  const saveAerztNotes = async () => {
+    if (!aerztNotesEditing) return;
+    const target = aerztNotesEditing;
+    setAerztNotesEditing(null);
+    if ((target.notes ?? "") !== aerztNotesDraft) {
+      await updateAerztNotes(target, aerztNotesDraft);
+    }
+  };
+
   // ── Render ────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
@@ -688,16 +710,16 @@ export function KursDetailClient({
                     )}
                   </TableCell>
                   <TableCell>
-                    <Input
-                      defaultValue={b.notes ?? ""}
-                      onBlur={(e) => {
-                        if (e.target.value !== (b.notes ?? "")) {
-                          updateAerztNotes(b, e.target.value);
-                        }
-                      }}
-                      placeholder="Notizen…"
-                      className="text-sm h-9"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => openAerztNotes(b)}
+                      className={`w-full text-left text-sm h-9 px-2.5 rounded-lg border border-input bg-transparent hover:bg-muted/50 transition-colors truncate ${
+                        b.notes ? "text-foreground" : "text-muted-foreground"
+                      }`}
+                      title={b.notes ?? "Notizen hinzufügen"}
+                    >
+                      {b.notes || "Notizen…"}
+                    </button>
                   </TableCell>
                   <TableCell className="w-[180px]">
                     <div className="flex justify-end">
@@ -1123,6 +1145,39 @@ export function KursDetailClient({
           </p>
           <DialogFooter>
             <Button onClick={() => setCancelAlert(null)}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!aerztNotesEditing}
+        onOpenChange={(open) => {
+          if (!open) setAerztNotesEditing(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>
+              Notizen
+              {aerztNotesEditing
+                ? `: ${[aerztNotesEditing.firstName, aerztNotesEditing.lastName]
+                    .filter(Boolean)
+                    .join(" ") || "Auszubildende:r"}`
+                : ""}
+            </DialogTitle>
+          </DialogHeader>
+          <Textarea
+            value={aerztNotesDraft}
+            onChange={(e) => setAerztNotesDraft(e.target.value)}
+            placeholder="z.B. Schwangerschaft, Vorerkrankungen, Sitzplatzwunsch …"
+            className="min-h-[180px] text-sm"
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAerztNotesEditing(null)}>
+              Abbrechen
+            </Button>
+            <Button onClick={saveAerztNotes}>Speichern</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
