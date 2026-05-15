@@ -45,18 +45,33 @@ const CATEGORY_ORDER: TreatmentCategory[] = [
   "sonstiges",
 ];
 
-// TEMPORARY: hardcoded zone list for the "Behandlung mimischer Falten
-// mit Botulinum" card. Once the visual is approved this moves to a
-// `treatments: text[]` column on course_templates and gets edited via
-// the dashboard template manager.
-const TEMP_ZONES_BY_TITLE: Record<string, string[]> = {
-  "Behandlung mimischer Falten mit Botulinum": [
-    "Glabella (Zornesfalte)",
-    "Stirn (Querfalten)",
-    "Krähenfüße",
-    "Bunny Lines",
-    "Hals (Platysmabänder)",
-  ],
+// TEMPORARY: hardcoded zone / indication lists per treatment card.
+// Once the structure is stable this moves to course_templates columns
+// (label + treatments[]) and gets edited via the dashboard template
+// manager. The `label` switches the small header above the list so
+// aesthetic and therapeutic cards can use the right vocabulary.
+const TEMP_ZONES_BY_TITLE: Record<
+  string,
+  { label: string; items: string[] }
+> = {
+  "Behandlung mimischer Falten mit Botulinum": {
+    label: "Behandelbare Zonen",
+    items: [
+      "Glabella (Zornesfalte)",
+      "Stirn (Querfalten)",
+      "Krähenfüße",
+      "Bunny Lines",
+      "Hals (Platysmabänder)",
+    ],
+  },
+  "Behandlung therapeutischer Indikationen": {
+    label: "Behandelbare Indikationen",
+    items: [
+      "Hyperhidrosis (Achseln)",
+      "Bruxismus (Masseter)",
+      "Migräne",
+    ],
+  },
 };
 
 function classifyTreatment(
@@ -238,14 +253,14 @@ export function TreatmentList({ courses, slots }: TreatmentListProps) {
                     const displayTitle =
                       group.firstCourse.treatment_title || group.firstCourse.title;
                     const zones = TEMP_ZONES_BY_TITLE[displayTitle];
-                    if (!zones || zones.length === 0) return null;
+                    if (!zones || zones.items.length === 0) return null;
                     return (
                       <div className="mt-5">
                         <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-black/55 mb-2">
-                          Behandelbare Zonen
+                          {zones.label}
                         </p>
                         <ul className="space-y-1.5">
-                          {zones.map((z) => (
+                          {zones.items.map((z) => (
                             <li
                               key={z}
                               className="flex items-start gap-2 text-sm md:text-base text-black/80"
