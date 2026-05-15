@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight, ImageIcon } from "lucide-react";
+import { ArrowRight, Check, ImageIcon } from "lucide-react";
 import type { AvailableSlot, Course } from "@/lib/types";
 import { TYPO } from "../typography";
 
@@ -44,6 +44,20 @@ const CATEGORY_ORDER: TreatmentCategory[] = [
   "hautpflege",
   "sonstiges",
 ];
+
+// TEMPORARY: hardcoded zone list for the "Behandlung mimischer Falten
+// mit Botulinum" card. Once the visual is approved this moves to a
+// `treatments: text[]` column on course_templates and gets edited via
+// the dashboard template manager.
+const TEMP_ZONES_BY_TITLE: Record<string, string[]> = {
+  "Behandlung mimischer Falten mit Botulinum": [
+    "Glabella (Zornesfalte)",
+    "Stirn (Querfalten)",
+    "Krähenfüße",
+    "Bunny Lines",
+    "Hals (Platysmabänder)",
+  ],
+};
 
 function classifyTreatment(
   treatmentTitle: string | null,
@@ -215,10 +229,44 @@ export function TreatmentList({ courses, slots }: TreatmentListProps) {
                   </h3>
 
                   {group.firstCourse.service_description && (
-                    <p className={`${TYPO.bodyCard} mt-4 flex-1`}>
+                    <p className={`${TYPO.bodyCard} mt-4`}>
                       {group.firstCourse.service_description}
                     </p>
                   )}
+
+                  {(() => {
+                    const displayTitle =
+                      group.firstCourse.treatment_title || group.firstCourse.title;
+                    const zones = TEMP_ZONES_BY_TITLE[displayTitle];
+                    if (!zones || zones.length === 0) return null;
+                    return (
+                      <div className="mt-5">
+                        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-black/55 mb-2">
+                          Behandelbare Zonen
+                        </p>
+                        <ul className="space-y-1.5">
+                          {zones.map((z) => (
+                            <li
+                              key={z}
+                              className="flex items-start gap-2 text-sm md:text-base text-black/80"
+                            >
+                              <Check
+                                className="w-4 h-4 mt-1 text-[#0066FF] shrink-0"
+                                strokeWidth={2.5}
+                                aria-hidden="true"
+                              />
+                              <span>{z}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Absorbs remaining vertical space so price + button
+                      pin to the bottom regardless of how much content
+                      sits above. */}
+                  <div className="flex-1" />
 
                   {group.firstCourse.guide_price_cents != null && (
                     <div className="mt-5 mb-6">
