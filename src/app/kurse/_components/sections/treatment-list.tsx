@@ -182,7 +182,7 @@ export function TreatmentList({ courses, slots }: TreatmentListProps) {
                 className="bg-white rounded-[10px] overflow-hidden flex flex-col group"
               >
                 {group.firstCourse.image_url ? (
-                  <div className="relative aspect-[4/3] bg-black/5 overflow-hidden">
+                  <div className="relative aspect-[16/9] bg-black/5 overflow-hidden">
                     <Image
                       src={group.firstCourse.image_url}
                       alt={
@@ -197,7 +197,7 @@ export function TreatmentList({ courses, slots }: TreatmentListProps) {
                   </div>
                 ) : (
                   <div
-                    className="aspect-[4/3] flex items-center justify-center bg-black/5"
+                    className="aspect-[16/9] flex items-center justify-center bg-black/5"
                     aria-hidden="true"
                   >
                     <ImageIcon className="w-12 h-12 text-black/20" />
