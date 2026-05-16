@@ -48,11 +48,28 @@ export default async function PrivatCourseBookingPage({
     .gt("start_time", new Date().toISOString())
     .order("start_time", { ascending: true });
 
+  // Earliest slot per course across ALL slots (incl. booked-out). The
+  // "Behandlung durch Dozent:in" pill must mark the absolute first slot
+  // of the day, not just the first one still available.
+  const { data: allSlots } = await supabase
+    .from("slots")
+    .select("course_id, start_time")
+    .in("course_id", courseIds)
+    .order("start_time", { ascending: true });
+
+  const firstSlotByCourse: Record<string, string> = {};
+  for (const s of (allSlots as { course_id: string; start_time: string }[]) || []) {
+    if (!firstSlotByCourse[s.course_id]) {
+      firstSlotByCourse[s.course_id] = s.start_time;
+    }
+  }
+
   return (
     <PrivatSlotSelection
       course={course as Course}
       allCourses={allCourses}
       slots={(slots as AvailableSlot[]) || []}
+      firstSlotByCourse={firstSlotByCourse}
     />
   );
 }

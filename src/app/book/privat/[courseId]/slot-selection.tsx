@@ -17,9 +17,10 @@ interface Props {
   course: Course;
   allCourses: Course[];
   slots: AvailableSlot[];
+  firstSlotByCourse: Record<string, string>;
 }
 
-export function PrivatSlotSelection({ course, allCourses, slots }: Props) {
+export function PrivatSlotSelection({ course, allCourses, slots, firstSlotByCourse }: Props) {
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
   const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
 
@@ -153,7 +154,10 @@ export function PrivatSlotSelection({ course, allCourses, slots }: Props) {
                             </p>
                           </div>
                           <div className="divide-y divide-black/[0.06]">
-                            {dateSlots.map((slot, idx) => (
+                            {dateSlots.map((slot) => {
+                              const isFirstOfCourse =
+                                firstSlotByCourse[slot.course_id] === slot.start_time;
+                              return (
                               <button
                                 key={slot.id}
                                 onClick={() => setSelectedSlot(slot)}
@@ -169,7 +173,7 @@ export function PrivatSlotSelection({ course, allCourses, slots }: Props) {
                                   <span className="text-xs md:text-sm text-black/60 whitespace-nowrap">
                                     {slot.remaining_capacity} {slot.remaining_capacity === 1 ? "Platz" : "Plätze"} frei
                                   </span>
-                                  {idx === 0 && (
+                                  {isFirstOfCourse && (
                                     <span className="inline-flex items-center text-[10px] md:text-[11px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-[#0066FF]/10 text-[#0066FF]">
                                       Behandlung durch Dozent:in
                                     </span>
@@ -181,7 +185,8 @@ export function PrivatSlotSelection({ course, allCourses, slots }: Props) {
                                   {" "}&rarr;
                                 </span>
                               </button>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       )}
