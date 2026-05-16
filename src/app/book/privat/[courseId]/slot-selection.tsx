@@ -24,10 +24,17 @@ export function PrivatSlotSelection({ course, allCourses, slots, firstSlotByCour
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
   const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
 
+  // Privatfunnel: der absolut erste Slot des Kurses ("Behandlung durch
+  // Dozent:in") ist Proband:innen aus dem oeffentlichen Funnel
+  // vorbehalten und darf hier nicht buchbar sein.
   const dateEntries = allCourses
     .map((c) => ({
       course: c,
-      slots: slots.filter((s) => s.course_id === c.id),
+      slots: slots.filter(
+        (s) =>
+          s.course_id === c.id &&
+          firstSlotByCourse[s.course_id] !== s.start_time,
+      ),
     }))
     .filter((entry) => entry.slots.length > 0);
 
