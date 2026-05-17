@@ -102,7 +102,7 @@ interface Props {
 
 const BOOKING_STATUS_OPTIONS: Array<{ value: DetailBooking["status"]; label: string }> = [
   { value: "booked", label: "Gebucht" },
-  { value: "attended", label: "Erschienen" },
+  { value: "attended", label: "Erschienen & Bezahlt" },
   { value: "no_show", label: "Nicht erschienen" },
   { value: "cancelled", label: "Storniert" },
 ];
@@ -892,7 +892,11 @@ export function KursDetailClient({
                       .filter(Boolean)
                       .join(" ") || "—";
                   return (
-                  <TableRow key={booking.id} className="h-14">
+                  <TableRow
+                    key={booking.id}
+                    data-attended={booking.status === "attended" ? "true" : undefined}
+                    className="h-14 data-[attended=true]:bg-[color:var(--soldout-bg)] data-[attended=true]:hover:bg-[color:var(--soldout-bg-hover)]"
+                  >
                     <TableCell className="font-medium truncate" title={fullName}>{/* Name */}
                       {booking.patient_id ? (
                         <Link
