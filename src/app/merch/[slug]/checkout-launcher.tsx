@@ -57,6 +57,7 @@ export function MerchCheckoutLauncher({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDoctor, setIsDoctor] = useState<"" | "yes" | "no">("");
+  const [pastCourse, setPastCourse] = useState<"" | "yes" | "no">("");
   const [delivery, setDelivery] = useState<"" | "shipping" | "pickup">("");
 
   const soldOut = stock <= 0;
@@ -77,12 +78,13 @@ export function MerchCheckoutLauncher({
     const id = window.setInterval(tick, 60_000);
     return () => window.clearInterval(id);
   }, [productAllowsPickup]);
-  const showDeliveryQuestion = productAllowsPickup && pickupWindowOpen;
+  const showPastCourseQuestion = productAllowsPickup && pickupWindowOpen;
+  const showDeliveryQuestion = showPastCourseQuestion && pastCourse === "yes";
 
   // Default the delivery choice to "shipping" for any non-eligible
-  // product (cap, future merch) so the form is always submittable
-  // even when the question doesn't render. Eligible products start
-  // with no choice so the buyer is forced to make one.
+  // product (cap, future merch) and for buyers who haven't attended a
+  // past course. Only past course attendees get to choose Versand vs
+  // Abholung.
   useEffect(() => {
     if (!showDeliveryQuestion) {
       setDelivery("shipping");
@@ -93,6 +95,7 @@ export function MerchCheckoutLauncher({
 
   const reset = () => {
     setIsDoctor("");
+    setPastCourse("");
     setDelivery(showDeliveryQuestion ? "" : "shipping");
     setError(null);
     setSubmitting(false);
@@ -104,6 +107,10 @@ export function MerchCheckoutLauncher({
 
     if (!isDoctor) {
       setError("Bitte eine Auswahl treffen.");
+      return;
+    }
+    if (showPastCourseQuestion && !pastCourse) {
+      setError("Bitte angeben, ob Du schon an einem Kurs teilgenommen hast.");
       return;
     }
     if (showDeliveryQuestion && !delivery) {
@@ -254,6 +261,38 @@ export function MerchCheckoutLauncher({
                   </button>
                 </div>
               </div>
+
+              {showPastCourseQuestion && (
+                <div className="space-y-3">
+                  <label className="text-sm font-medium block">
+                    Hast Du als Ärzt:in bei uns schonmal an einem Kurs teilgenommen?
+                  </label>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setPastCourse("yes")}
+                      className={`flex-1 rounded-[10px] border py-2.5 text-sm font-medium transition-colors cursor-pointer ${
+                        pastCourse === "yes"
+                          ? "border-[#0066FF] bg-[#0066FF]/5 text-[#0066FF]"
+                          : "border-input bg-white hover:bg-gray-50"
+                      }`}
+                    >
+                      Ja
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPastCourse("no")}
+                      className={`flex-1 rounded-[10px] border py-2.5 text-sm font-medium transition-colors cursor-pointer ${
+                        pastCourse === "no"
+                          ? "border-[#0066FF] bg-[#0066FF]/5 text-[#0066FF]"
+                          : "border-input bg-white hover:bg-gray-50"
+                      }`}
+                    >
+                      Nein
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {showDeliveryQuestion && (
                 <div className="space-y-4">
