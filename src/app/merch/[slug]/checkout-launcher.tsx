@@ -78,8 +78,18 @@ export function MerchCheckoutLauncher({
     const id = window.setInterval(tick, 60_000);
     return () => window.clearInterval(id);
   }, [productAllowsPickup]);
-  const showPastCourseQuestion = productAllowsPickup && pickupWindowOpen;
+  // Only doctors get asked about a past course (non-doctors can't have
+  // attended one of our courses).
+  const showPastCourseQuestion =
+    productAllowsPickup && pickupWindowOpen && isDoctor === "yes";
   const showDeliveryQuestion = showPastCourseQuestion && pastCourse === "yes";
+
+  // Clear the past-course answer whenever the question disappears
+  // (e.g. user switches from "Ja" back to "Nein" on the doctor
+  // question) so a stale "yes" can't keep the delivery picker open.
+  useEffect(() => {
+    if (!showPastCourseQuestion) setPastCourse("");
+  }, [showPastCourseQuestion]);
 
   // Default the delivery choice to "shipping" for any non-eligible
   // product (cap, future merch) and for buyers who haven't attended a
