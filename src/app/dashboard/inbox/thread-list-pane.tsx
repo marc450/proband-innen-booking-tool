@@ -243,7 +243,7 @@ export function ThreadListPane({
                         : t.isUnread
                           ? "bg-blue-50/50 hover:bg-blue-50 border-l-2 border-l-transparent"
                           : isAnswered
-                            ? "bg-emerald-50/30 hover:bg-emerald-50/60 border-l-2 border-l-transparent"
+                            ? "bg-emerald-100 hover:bg-emerald-200 border-l-2 border-l-transparent"
                             : "hover:bg-gray-50 border-l-2 border-l-transparent"
                     }`}
                   >
