@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Loader2, MailOpen, PenSquare, RefreshCw, X, Paperclip } from "lucide-react";
+import { Search, Loader2, MailOpen, PenSquare, RefreshCw, X, Paperclip, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 // Left pane of the HubSpot-style inbox. Owns the search input and filter
@@ -22,6 +22,13 @@ export interface ThreadSummary {
   messageCount: number;
   isUnread: boolean;
   lastMessageInbound: boolean;
+  /** Display name of the staff member who sent the most recent outbound
+   * message (from the X-EPHIA-Sent-By header). Null if the thread has
+   * no outbound message yet, or if the outbound was sent outside our
+   * admin tool (e.g. manual reply from Gmail web). */
+  lastOutboundSentBy?: string | null;
+  /** ISO timestamp of the most recent outbound message. Null if none. */
+  lastOutboundDate?: string | null;
   hasAttachments?: boolean;
 }
 
@@ -300,9 +307,28 @@ export function ThreadListPane({
                         </span>
                       )}
                     </p>
-                    <p className={`text-[11px] text-muted-foreground truncate mt-0.5 ${t.isUnread ? "ml-4" : ""}`}>
-                      {t.snippet}
-                    </p>
+                    <div className={`flex items-center gap-2 mt-0.5 ${t.isUnread ? "ml-4" : ""}`}>
+                      <p className="text-[11px] text-muted-foreground truncate flex-1 min-w-0">
+                        {t.snippet}
+                      </p>
+                      {!t.lastMessageInbound && (
+                        <span
+                          className="text-[10px] font-medium text-emerald-700 bg-emerald-50 rounded px-1.5 py-0.5 inline-flex items-center gap-1 flex-shrink-0"
+                          title={
+                            t.lastOutboundDate
+                              ? `Beantwortet ${formatDate(t.lastOutboundDate)}${
+                                  t.lastOutboundSentBy ? ` von ${t.lastOutboundSentBy}` : ""
+                                }`
+                              : "Beantwortet"
+                          }
+                        >
+                          <Check className="h-3 w-3" strokeWidth={2.5} />
+                          {t.lastOutboundSentBy
+                            ? t.lastOutboundSentBy.split(" ")[0]
+                            : "Beantwortet"}
+                        </span>
+                      )}
+                    </div>
                   </button>
                 </li>
               );

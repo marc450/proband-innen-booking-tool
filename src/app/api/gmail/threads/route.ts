@@ -68,6 +68,19 @@ export async function GET(request: NextRequest) {
           const lastInboundDate = lastInboundMsg
             ? new Date(Number(lastInboundMsg.internalDate)).toISOString()
             : lastDate;
+          // For the "responded by" indicator: find the most recent
+          // OUTBOUND message and read its X-EPHIA-Sent-By header,
+          // which is stamped by /api/gmail/send when staff fire off
+          // a reply. Threads with no outbound message return null.
+          const lastOutboundMsg = [...full.messages]
+            .reverse()
+            .find((m) => !isInbound(m));
+          const lastOutboundSentBy = lastOutboundMsg
+            ? getHeader(lastOutboundMsg, "X-EPHIA-Sent-By") || null
+            : null;
+          const lastOutboundDate = lastOutboundMsg
+            ? new Date(Number(lastOutboundMsg.internalDate)).toISOString()
+            : null;
           const hasAttachments = full.messages.some((m) => getAttachments(m).length > 0);
 
           // Get the external participant (not customerlove@ephia.de)
@@ -114,10 +127,12 @@ export async function GET(request: NextRequest) {
             messageCount: full.messages.length,
             isUnread,
             lastMessageInbound,
+            lastOutboundSentBy,
+            lastOutboundDate,
             hasAttachments,
           };
         } catch {
-          return { id: t.id, subject: "", snippet: cleanGmailSnippet(t.snippet || ""), lastDate: "", lastInboundDate: "", lastFrom: "", contactName: "", contactEmail: "", messageCount: 0, isUnread: false, lastMessageInbound: true, hasAttachments: false };
+          return { id: t.id, subject: "", snippet: cleanGmailSnippet(t.snippet || ""), lastDate: "", lastInboundDate: "", lastFrom: "", contactName: "", contactEmail: "", messageCount: 0, isUnread: false, lastMessageInbound: true, lastOutboundSentBy: null, lastOutboundDate: null, hasAttachments: false };
         }
       })
     );
