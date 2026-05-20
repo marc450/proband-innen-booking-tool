@@ -351,6 +351,8 @@ export interface MerchOrder {
   status: MerchOrderStatus;
   tracking_number: string | null;
   shipped_at: string | null;
+  is_complimentary: boolean;
+  complimentary_reason: string | null;
   created_at: string;
   updated_at: string;
 }
