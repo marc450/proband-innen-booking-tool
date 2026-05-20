@@ -331,7 +331,10 @@ export function ThreadListPane({
                         >
                           <Check className="h-3 w-3" strokeWidth={2.5} />
                           {t.lastOutboundSentBy
-                            ? t.lastOutboundSentBy.split(" ")[0]
+                            ? (t.lastOutboundSentBy
+                                .split(/\s+/)
+                                .find((w) => !w.endsWith(".")) ||
+                                t.lastOutboundSentBy)
                             : "Beantwortet"}
                         </span>
                       )}
