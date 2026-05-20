@@ -94,8 +94,18 @@ export default async function KursDetailPage({
 
   const [{ data: contactRows }, { data: priorRows }] = await Promise.all([
     auszubildendeIds.length
-      ? admin.from("v_auszubildende").select("id, specialty").in("id", auszubildendeIds)
-      : Promise.resolve({ data: [] as Array<{ id: string; specialty: string | null }> }),
+      ? admin
+          .from("v_auszubildende")
+          .select("id, specialty, first_name, last_name")
+          .in("id", auszubildendeIds)
+      : Promise.resolve({
+          data: [] as Array<{
+            id: string;
+            specialty: string | null;
+            first_name: string | null;
+            last_name: string | null;
+          }>,
+        }),
     auszubildendeIds.length
       ? admin
           .from("course_bookings")
@@ -118,6 +128,24 @@ export default async function KursDetailPage({
 
   const specialtyByAuszubildendeId = new Map<string, string | null>(
     (contactRows ?? []).map((c) => [c.id as string, (c.specialty as string | null) ?? null]),
+  );
+
+  // Canonical name lookup: course_bookings.first_name/last_name is a
+  // snapshot from the Stripe checkout form and can drift if the Arzt:in
+  // later corrects their profile. Always prefer the auszubildende name
+  // when we have a profile link (matches what the profile page shows and
+  // what the cert email puts on the certificate).
+  const canonicalNameByAuszubildendeId = new Map<
+    string,
+    { firstName: string | null; lastName: string | null }
+  >(
+    (contactRows ?? []).map((c) => [
+      c.id as string,
+      {
+        firstName: (c.first_name as string | null) ?? null,
+        lastName: (c.last_name as string | null) ?? null,
+      },
+    ]),
   );
 
   // "Bereits besuchte Kurse": list other courses this contact has
@@ -178,11 +206,21 @@ export default async function KursDetailPage({
       slots={slots}
       bookings={bookings}
       aerztBookings={
-        (aerztBookings ?? []).map((b) => ({
+        (aerztBookings ?? []).map((b) => {
+          const azid = (b.auszubildende_id as string | null) ?? null;
+          const canonical = azid ? canonicalNameByAuszubildendeId.get(azid) : null;
+          // Prefer canonical name from auszubildende; fall back to the
+          // booking snapshot only if the canonical field is empty (e.g.
+          // never filled by the contact).
+          const firstName =
+            (canonical?.firstName ?? null) || (b.first_name as string | null) || null;
+          const lastName =
+            (canonical?.lastName ?? null) || (b.last_name as string | null) || null;
+          return ({
           id: b.id as string,
-          auszubildendeId: (b.auszubildende_id as string | null) ?? null,
-          firstName: (b.first_name as string | null) ?? null,
-          lastName: (b.last_name as string | null) ?? null,
+          auszubildendeId: azid,
+          firstName,
+          lastName,
           email: (b.email as string | null) ?? null,
           courseType: (b.course_type as string | null) ?? null,
           status: (b.status as string | null) ?? null,
@@ -196,7 +234,8 @@ export default async function KursDetailPage({
               : [],
           profileComplete: (b.profile_complete as boolean | null) ?? false,
           notes: (b.notes as string | null) ?? null,
-        }))
+          });
+        })
       }
     />
   );

@@ -85,6 +85,13 @@ interface SessionWithTemplate {
 interface EmbeddedAuszubildende {
   title: string | null;
   specialty: string | null;
+  // Canonical name from the profile. Preferred over the
+  // course_bookings.first_name/last_name snapshot which was captured at
+  // Stripe checkout and never gets updated when an Arzt:in corrects
+  // their profile (e.g. fixed last name). Certs must always print the
+  // current profile name so they match what the recipient sees.
+  first_name: string | null;
+  last_name: string | null;
 }
 
 interface BookingRow {
@@ -136,13 +143,16 @@ export async function sendPostPraxisCertificates(
 
     // Bookings on this session that still need a cert. Join auszubildende
     // for the title (course_bookings.title is not stored — the Arzt:in's
-    // title lives on the auszubildende row) and for the specialty so we
-    // can route legacy Zahnmedizin bookings to the dentist cert.
+    // title lives on the auszubildende row), the specialty (routes legacy
+    // Zahnmedizin bookings to the dentist cert), and the canonical
+    // first/last name. The course_bookings name columns are a stale
+    // Stripe-checkout snapshot; if the profile has a name we prefer that
+    // so the cert PDF matches what the recipient sees on her profile.
     const { data: bookings, error: bookingErr } = await supabase
       .from("course_bookings")
       .select(
         `id, email, first_name, last_name, course_type, audience_tag, auszubildende_id,
-         auszubildende:auszubildende_id ( title, specialty )`,
+         auszubildende:auszubildende_id ( title, specialty, first_name, last_name )`,
       )
       .eq("session_id", session.id)
       .is("cert_sent_at", null)
@@ -195,10 +205,19 @@ export async function sendPostPraxisCertificates(
           continue;
         }
 
+        // Prefer the canonical name from the auszubildende profile over
+        // the Stripe-checkout snapshot on course_bookings. Falls back to
+        // the snapshot only if the profile name is empty (rare; pre-link
+        // legacy bookings).
+        const firstName =
+          (azubi?.first_name || "").trim() || booking.first_name;
+        const lastName =
+          (azubi?.last_name || "").trim() || booking.last_name;
+
         const fullName = formatParticipantName({
           title: azubi?.title,
-          firstName: booking.first_name,
-          lastName: booking.last_name,
+          firstName,
+          lastName,
         });
         if (!fullName) continue;
 
@@ -207,7 +226,7 @@ export async function sendPostPraxisCertificates(
 
         await sendCertificateEmail({
           to: booking.email,
-          firstName: booking.first_name || "Du",
+          firstName: firstName || "Du",
           courseName,
           courseDay,
           cert,
