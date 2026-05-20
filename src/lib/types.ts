@@ -262,6 +262,16 @@ export interface EmailCampaign {
   gmail_archive_error: string | null;
   gmail_archive_started_at: string | null;
   gmail_archive_finished_at: string | null;
+  sent_by_user_id: string | null;
+  // Joined from public.profiles in the dashboard list query. Null when
+  // sent_by_user_id is null (legacy rows pre-migration 105 or sends from
+  // a non-user context like the scheduled-tasks runner) or when the
+  // profile row has been deleted.
+  sent_by?: {
+    first_name: string | null;
+    last_name: string | null;
+    title: string | null;
+  } | null;
 }
 
 export interface BookingWithDetails extends Booking {

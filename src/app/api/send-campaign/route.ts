@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildEmailHtml, type ContentBlock } from "@/lib/email-template";
 import { decryptPatient } from "@/lib/encryption";
@@ -98,6 +99,20 @@ export async function POST(req: NextRequest) {
 
   if (!RESEND_API_KEY) {
     return NextResponse.json({ error: "RESEND_API_KEY nicht konfiguriert." }, { status: 500 });
+  }
+
+  // Capture the logged-in staff member so the dashboard can attribute
+  // the send. Done via the SSR cookie-aware client; the rest of the
+  // handler keeps using the admin client to bypass RLS. If the request
+  // somehow has no session (e.g. an internal call), sentByUserId stays
+  // null and the insert still succeeds.
+  let sentByUserId: string | null = null;
+  try {
+    const ssr = await createClient();
+    const { data: { user } } = await ssr.auth.getUser();
+    sentByUserId = user?.id ?? null;
+  } catch {
+    // Non-fatal: the attribution column is nullable.
   }
 
   const supabase = createAdminClient();
@@ -235,6 +250,7 @@ export async function POST(req: NextRequest) {
           audience_type: audienceType,
           status,
           scheduled_at: scheduledAt || null,
+          sent_by_user_id: sentByUserId,
         })
         .eq("id", draftId);
       if (updErr) {
@@ -258,6 +274,7 @@ export async function POST(req: NextRequest) {
         audience_type: audienceType,
         status,
         scheduled_at: scheduledAt || null,
+        sent_by_user_id: sentByUserId,
       })
       .select("id")
       .single();

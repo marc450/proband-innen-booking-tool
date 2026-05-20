@@ -46,7 +46,16 @@ const statusVariants: Record<CampaignStatus, "default" | "secondary" | "destruct
   failed: "destructive",
 };
 
-type SortKey = "name" | "status" | "recipients" | "created" | "sent";
+type SortKey = "name" | "status" | "recipients" | "created" | "sent" | "sender";
+
+function formatSenderName(c: EmailCampaign): string {
+  const sb = c.sent_by;
+  if (!sb) return "";
+  const first = (sb.first_name || "").trim();
+  const last = (sb.last_name || "").trim();
+  const full = [first, last].filter(Boolean).join(" ").trim();
+  return full;
+}
 type StatusFilter = "all" | CampaignStatus;
 
 interface Props {
@@ -105,6 +114,8 @@ export function CampaignsManager({ campaigns: initialCampaigns, monthlyEmailsSen
           return a.created_at.localeCompare(b.created_at) * dir;
         case "sent":
           return (a.sent_at || "").localeCompare(b.sent_at || "") * dir;
+        case "sender":
+          return formatSenderName(a).localeCompare(formatSenderName(b), "de") * dir;
         default:
           return 0;
       }
@@ -220,6 +231,7 @@ export function CampaignsManager({ campaigns: initialCampaigns, monthlyEmailsSen
               <SortableHead label="Empfänger:innen" sortKey="recipients" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
               <SortableHead label="Erstellt" sortKey="created" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
               <SortableHead label="Gesendet" sortKey="sent" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
+              <SortableHead label="Gesendet von" sortKey="sender" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
               <TableHead />
             </TableRow>
           </TableHeader>
@@ -254,6 +266,19 @@ export function CampaignsManager({ campaigns: initialCampaigns, monthlyEmailsSen
                       : c.scheduled_at
                       ? `Geplant ${formatDateShort(c.scheduled_at)}`
                       : "—"}
+                  </TableCell>
+                  <TableCell className="text-sm whitespace-nowrap">
+                    {(() => {
+                      const name = formatSenderName(c);
+                      if (!name) {
+                        return <span className="text-muted-foreground">—</span>;
+                      }
+                      return (
+                        <span className="inline-flex items-center rounded-full bg-[#0066FF]/10 px-2 py-0.5 text-xs font-medium text-[#0066FF]">
+                          {name}
+                        </span>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">

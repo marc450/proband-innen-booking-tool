@@ -11,7 +11,7 @@ export default async function CampaignsPage() {
 
   const { data: campaigns } = await supabase
     .from("email_campaigns")
-    .select("*")
+    .select("*, sent_by:profiles!sent_by_user_id(first_name, last_name, title)")
     .order("created_at", { ascending: false });
 
   // Sum recipient_count of campaigns sent within the current calendar month.
