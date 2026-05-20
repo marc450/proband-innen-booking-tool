@@ -12,11 +12,12 @@ import { formatBerlinLongDate, formatBerlinTime } from "@/lib/date";
 
 interface Props {
   slot: AvailableSlot;
+  indication?: string | null;
 }
 
 type Step = "details" | "agb" | "privacy" | "confirm";
 
-export function PrivatBookingForm({ slot }: Props) {
+export function PrivatBookingForm({ slot, indication }: Props) {
   const router = useRouter();
 
   const [firstName, setFirstName] = useState("");
@@ -57,6 +58,7 @@ export function PrivatBookingForm({ slot }: Props) {
           email: email.trim(),
           phone: phone.trim(),
           referringDoctor: referringDoctor.trim(),
+          indication: indication ?? null,
         }),
       });
       const data = await res.json();

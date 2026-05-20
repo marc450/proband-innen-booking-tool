@@ -12,11 +12,12 @@ import { formatBerlinLongDate, formatBerlinTime } from "@/lib/date";
 interface BookingFormProps {
   slot: AvailableSlot;
   guidePriceCents?: number | null;
+  indication?: string | null;
 }
 
 type Step = "details" | "agb" | "privacy" | "confirm";
 
-export function BookingForm({ slot, guidePriceCents }: BookingFormProps) {
+export function BookingForm({ slot, guidePriceCents, indication }: BookingFormProps) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -67,6 +68,7 @@ export function BookingForm({ slot, guidePriceCents }: BookingFormProps) {
           slotId: slot.id,
           email: email.trim(),
           phone,
+          indication: indication ?? null,
           successUrl: `${origin}/book/success`,
           cancelUrl: `${origin}/book`,
         }),

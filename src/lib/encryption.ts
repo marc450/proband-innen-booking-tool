@@ -189,6 +189,7 @@ export function decryptBooking(row: any): Booking & { email_hash?: string } {
       patient_id: row.patient_id ?? null,
       booking_type: row.booking_type ?? undefined,
       referring_doctor: row.referring_doctor ?? undefined,
+      indication: row.indication ?? null,
       notes: fields.notes ?? row.notes ?? null,
       created_at: row.created_at,
       email_hash: row.email_hash ?? undefined,

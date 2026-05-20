@@ -9,9 +9,13 @@ import {
   formatBerlinTime,
   parseDateOnly,
 } from "@/lib/date";
-import { Calendar, ChevronDown, Clock, MapPin, UserRound, Users } from "lucide-react";
+import { Calendar, ChevronDown, ChevronRight, Clock, MapPin, UserRound, Users } from "lucide-react";
 import Link from "next/link";
 import { PrivatBookingForm } from "../booking-form";
+import {
+  INDICATIONS,
+  IndicationKey,
+} from "@/lib/indications";
 
 interface Props {
   course: Course;
@@ -23,6 +27,15 @@ interface Props {
 export function PrivatSlotSelection({ course, allCourses, slots, firstSlotByCourse }: Props) {
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
   const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
+
+  const usesIndications = /therap.*indikation/i.test(course.title);
+  const [selectedIndication, setSelectedIndication] = useState<IndicationKey | null>(null);
+  const showPicker = usesIndications && !selectedIndication;
+
+  const indicationStats = INDICATIONS.map((ind) => ({
+    ...ind,
+    remaining: ind.max,
+  }));
 
   // Privatfunnel: der absolut erste Slot des Kurses ("Behandlung durch
   // Dozent:in") ist Proband:innen aus dem oeffentlichen Funnel
@@ -72,9 +85,12 @@ export function PrivatSlotSelection({ course, allCourses, slots, firstSlotByCour
                 </span>
               </div>
             </div>
-            <PrivatBookingForm slot={selectedSlot} />
+            <PrivatBookingForm
+              slot={selectedSlot}
+              indication={usesIndications ? selectedIndication : null}
+            />
           </div>
-        ) : (
+        ) : showPicker ? (
           <div>
             <Link
               href="/book/privat"
@@ -82,6 +98,90 @@ export function PrivatSlotSelection({ course, allCourses, slots, firstSlotByCour
             >
               &larr; Zurück zur Kursübersicht
             </Link>
+
+            <h1 className="text-2xl md:text-3xl font-bold tracking-wide leading-tight text-black">
+              {course.treatment_title || course.title}
+            </h1>
+            <p className="text-sm md:text-base text-black/70 leading-relaxed mt-3 mb-8">
+              Für welche Indikation soll der:die Privatpatient:in behandelt werden?
+              Wähle eine aus, anschließend siehst Du die passenden Termine.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+              {indicationStats.map((ind) => {
+                const isFull = ind.remaining === 0;
+                return (
+                  <button
+                    key={ind.key}
+                    onClick={() => !isFull && setSelectedIndication(ind.key)}
+                    disabled={isFull}
+                    className={`bg-white rounded-[10px] p-5 md:p-6 text-left transition-shadow ${
+                      isFull
+                        ? "opacity-60 cursor-not-allowed"
+                        : "shadow-sm hover:shadow-md cursor-pointer"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-base md:text-lg font-bold text-black leading-tight">
+                          {ind.label}
+                        </p>
+                        <p className="text-sm text-black/70 leading-snug mt-1">
+                          {ind.description}
+                        </p>
+                      </div>
+                      {!isFull && (
+                        <ChevronRight className="h-5 w-5 text-[#0066FF] shrink-0 mt-0.5" strokeWidth={2.25} />
+                      )}
+                    </div>
+                    <div className="mt-4 flex items-center gap-2 text-sm">
+                      {isFull ? (
+                        <span className="inline-flex items-center text-[11px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-black/10 text-black/60">
+                          Belegt
+                        </span>
+                      ) : (
+                        <>
+                          <Users className="h-3.5 w-3.5 text-black/55 shrink-0" />
+                          <span className="text-black/70">
+                            <strong className="font-bold text-black">{ind.remaining}</strong>{" "}
+                            von max. {ind.max} Plätzen frei
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div>
+            {usesIndications ? (
+              <button
+                onClick={() => {
+                  setSelectedIndication(null);
+                  setExpandedCourseId(null);
+                }}
+                className="text-sm text-black/60 hover:text-black mb-6 inline-flex items-center gap-1"
+              >
+                &larr; Zurück zur Indikationsauswahl
+              </button>
+            ) : (
+              <Link
+                href="/book/privat"
+                className="text-sm text-black/60 hover:text-black mb-6 inline-flex items-center gap-1"
+              >
+                &larr; Zurück zur Kursübersicht
+              </Link>
+            )}
+
+            {usesIndications && selectedIndication && (
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <span className="inline-flex items-center text-[11px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-[#0066FF]/10 text-[#0066FF]">
+                  Indikation: {indicationStats.find((i) => i.key === selectedIndication)?.label}
+                </span>
+              </div>
+            )}
 
             <h1 className="text-2xl md:text-3xl font-bold tracking-wide leading-tight text-black whitespace-nowrap overflow-hidden text-ellipsis">
               {course.treatment_title || course.title}

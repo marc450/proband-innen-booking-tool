@@ -9,7 +9,7 @@ const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 
 export async function POST(req: NextRequest) {
   try {
-    const { slotId, firstName, lastName, email, phone, referringDoctor } = await req.json();
+    const { slotId, firstName, lastName, email, phone, referringDoctor, indication } = await req.json();
 
     if (!slotId || !firstName || !lastName || !email || !phone || !referringDoctor) {
       return NextResponse.json({ error: "Alle Felder sind erforderlich." }, { status: 400 });
@@ -162,6 +162,7 @@ export async function POST(req: NextRequest) {
       p_stripe_checkout_session_id: null,
       p_booking_type: "private",
       p_referring_doctor: referringDoctor,
+      p_indication: indication ?? null,
     });
 
     if (rpcError) {

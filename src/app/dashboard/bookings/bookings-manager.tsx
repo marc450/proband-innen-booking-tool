@@ -44,8 +44,13 @@ import {
 } from "@/lib/date";
 import { ArrowLeftRight, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { INDICATIONS } from "@/lib/indications";
 
 type BookingWithHash = BookingWithDetails & { email_hash?: string };
+
+function indicationLabel(key: string): string {
+  return INDICATIONS.find((i) => i.key === key)?.label ?? key;
+}
 
 interface Props {
   initialBookings: BookingWithHash[];
@@ -76,7 +81,7 @@ const statusVariants: Record<BookingStatus, "default" | "secondary" | "destructi
 
 const allStatuses: BookingStatus[] = ["booked", "attended", "no_show", "cancelled"];
 
-type SortKey = "name" | "kurs" | "termin" | "typ" | "arzt" | "status" | "created";
+type SortKey = "name" | "kurs" | "termin" | "typ" | "arzt" | "indikation" | "status" | "created";
 
 function StatusBadgeDropdown({
   booking,
@@ -291,6 +296,11 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
           const aI = (formatInstructor(a.slots?.courses?.instructor) || "").toLowerCase();
           const bI = (formatInstructor(b.slots?.courses?.instructor) || "").toLowerCase();
           return dir * aI.localeCompare(bI, "de");
+        }
+        case "indikation": {
+          const iA = a.indication || "";
+          const iB = b.indication || "";
+          return dir * iA.localeCompare(iB, "de");
         }
         case "status": {
           return dir * a.status.localeCompare(b.status);
@@ -882,6 +892,7 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
                 <SortableHead label="Termin" sortKey="termin" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
                 <SortableHead label="Typ" sortKey="typ" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
                 <SortableHead label="Ärzt:in" sortKey="arzt" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
+                <SortableHead label="Indikation" sortKey="indikation" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
                 <SortableHead label="Status" sortKey="status" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
                 <TableHead />
               </TableRow>
@@ -928,6 +939,15 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
                   </TableCell>
                   <TableCell className="text-sm whitespace-nowrap">
                     {formatInstructor(booking.slots?.courses?.instructor) || "—"}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {booking.indication ? (
+                      <Badge variant="outline" className="bg-[#0066FF]/10 text-[#0066FF] border-transparent">
+                        {indicationLabel(booking.indication)}
+                      </Badge>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
