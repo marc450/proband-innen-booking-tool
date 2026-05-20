@@ -68,6 +68,11 @@ export async function GET(request: NextRequest) {
           const lastInboundDate = lastInboundMsg
             ? new Date(Number(lastInboundMsg.internalDate)).toISOString()
             : lastDate;
+          // True iff the thread has any real inbound message at all.
+          // Notwendig, weil Contact-Form-Benachrichtigungen mit
+          // From=customerlove keine echten inbound Mails sind und
+          // sonst faelschlich als "beantwortet" geltend wuerden.
+          const hasInboundMessage = !!lastInboundMsg;
           // For the "responded by" indicator: find the most recent
           // OUTBOUND message and read its X-EPHIA-Sent-By header,
           // which is stamped by /api/gmail/send when staff fire off
@@ -127,12 +132,13 @@ export async function GET(request: NextRequest) {
             messageCount: full.messages.length,
             isUnread,
             lastMessageInbound,
+            hasInboundMessage,
             lastOutboundSentBy,
             lastOutboundDate,
             hasAttachments,
           };
         } catch {
-          return { id: t.id, subject: "", snippet: cleanGmailSnippet(t.snippet || ""), lastDate: "", lastInboundDate: "", lastFrom: "", contactName: "", contactEmail: "", messageCount: 0, isUnread: false, lastMessageInbound: true, lastOutboundSentBy: null, lastOutboundDate: null, hasAttachments: false };
+          return { id: t.id, subject: "", snippet: cleanGmailSnippet(t.snippet || ""), lastDate: "", lastInboundDate: "", lastFrom: "", contactName: "", contactEmail: "", messageCount: 0, isUnread: false, lastMessageInbound: true, hasInboundMessage: false, lastOutboundSentBy: null, lastOutboundDate: null, hasAttachments: false };
         }
       })
     );

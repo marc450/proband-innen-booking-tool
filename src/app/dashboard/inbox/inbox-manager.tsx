@@ -190,7 +190,11 @@ export function InboxManager({
       sortKey(b) - sortKey(a);
     let list = threads;
     if (filter === "answered") {
-      list = threads.filter((t) => !t.lastMessageInbound);
+      // Mirror the visual "isAnswered" rule in thread-list-pane: a thread
+      // counts as beantwortet only if it has both a real inbound message
+      // and a more-recent outbound one. Contact-form notifications
+      // (FROM=To=customerlove, no inbound) are excluded.
+      list = threads.filter((t) => !t.lastMessageInbound && !!t.hasInboundMessage);
     } else if (filter === "mine") {
       list = threads.filter((t) => assignments[t.id]?.assignedTo === currentUserId);
     }

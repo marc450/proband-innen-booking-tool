@@ -22,6 +22,12 @@ export interface ThreadSummary {
   messageCount: number;
   isUnread: boolean;
   lastMessageInbound: boolean;
+  /** True iff the thread has at least one real inbound message
+   * (FROM != customerlove). Contact-form notifications have FROM=To=
+   * customerlove and therefore no inbound — we exclude them from the
+   * "Beantwortet" indicator + filter, since there was nothing to
+   * answer in the first place. */
+  hasInboundMessage?: boolean;
   /** Display name of the staff member who sent the most recent outbound
    * message (from the X-EPHIA-Sent-By header). Null if the thread has
    * no outbound message yet, or if the outbound was sent outside our
@@ -228,11 +234,13 @@ export function ThreadListPane({
             {threads.map((t) => {
               const selected = t.id === selectedThreadId;
               const hasReplyDraft = replyDraftThreadIds.includes(t.id);
-              // "Beantwortet" = unsere letzte Nachricht im Thread ist
-              // ausgehend. Wenn weder ausgewählt noch ungelesen, faerben
-              // wir die ganze Zeile dezent emerald, damit erledigte
-              // Threads optisch zurücktreten.
-              const isAnswered = !t.lastMessageInbound;
+              // "Beantwortet" = der Thread hatte einen echten Eingang
+              // (FROM != customerlove) UND unsere letzte Nachricht ist
+              // ausgehend. Threads ohne echten Eingang (z. B. Kontakt-
+              // formular-Benachrichtigungen FROM=customerlove To=
+              // customerlove) duerfen NICHT als beantwortet markiert
+              // werden, weil es nichts zu beantworten gab.
+              const isAnswered = !t.lastMessageInbound && !!t.hasInboundMessage;
               return (
                 <li key={t.id}>
                   <button
