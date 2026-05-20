@@ -9,6 +9,12 @@ export default async function MobileTerminePage() {
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
 
+  // "Today" anchored to Europe/Berlin so a 1am request doesn't accidentally
+  // hide today's date because UTC is still on yesterday.
+  const todayBerlinIso = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Berlin",
+  }).format(new Date());
+
   const [
     { data: courses },
     { data: slots },
@@ -16,11 +22,12 @@ export default async function MobileTerminePage() {
     { data: templates },
     { data: sessions },
   ] = await Promise.all([
-    // Behandlungstermine data
+    // Behandlungstermine data — only today and future
     supabase
       .from("courses")
       .select("*, instructor:profiles!instructor_id(title, first_name, last_name)")
       .eq("status", "published")
+      .gte("course_date", todayBerlinIso)
       .order("course_date", { ascending: true }),
     supabase
       .from("slots")
@@ -40,6 +47,7 @@ export default async function MobileTerminePage() {
     adminSupabase
       .from("course_sessions")
       .select("*")
+      .gte("date_iso", todayBerlinIso)
       .order("date_iso", { ascending: true }),
   ]);
 
