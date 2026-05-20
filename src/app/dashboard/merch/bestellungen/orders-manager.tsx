@@ -15,7 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Gift, Plus, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Gift, Plus, Search } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +48,55 @@ const statusLabels: Record<MerchOrderStatus, string> = {
 
 const statusOrder: MerchOrderStatus[] = ["pending", "paid", "shipped", "cancelled", "refunded"];
 
+const statusSortRank: Record<MerchOrderStatus, number> = {
+  pending: 0,
+  paid: 1,
+  shipped: 2,
+  cancelled: 3,
+  refunded: 4,
+};
+
+type SortKey =
+  | "created_at"
+  | "name"
+  | "product"
+  | "variant"
+  | "type"
+  | "doctor"
+  | "delivery"
+  | "amount"
+  | "status";
+
+type SortDir = "asc" | "desc";
+
+function sortValue(o: MerchOrder, key: SortKey): string | number {
+  switch (key) {
+    case "created_at":
+      return new Date(o.created_at).getTime();
+    case "name":
+      return [o.first_name, o.last_name].filter(Boolean).join(" ").toLowerCase();
+    case "product":
+      return (o.product_title || "").toLowerCase();
+    case "variant":
+      return [o.variant_color, o.variant_size]
+        .filter((x) => x && x !== "one-size")
+        .join(" / ")
+        .toLowerCase() || (o.variant_name || "").toLowerCase();
+    case "type":
+      return o.is_complimentary ? 1 : 0;
+    case "doctor":
+      return o.is_doctor ? 1 : 0;
+    case "delivery":
+      return o.pickup_at_event
+        ? "0_abholung"
+        : [o.shipping_postal_code, o.shipping_city].filter(Boolean).join(" ").toLowerCase() || "zz";
+    case "amount":
+      return o.amount_paid_cents;
+    case "status":
+      return statusSortRank[o.status];
+  }
+}
+
 function statusBadge(status: MerchOrderStatus) {
   switch (status) {
     case "paid":
@@ -75,12 +124,23 @@ export function OrdersManager({
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"" | MerchOrderStatus>("");
   const [filterType, setFilterType] = useState<"" | "paid" | "complimentary">("");
+  const [sortKey, setSortKey] = useState<SortKey>("created_at");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [alertState, setAlertState] = useState<{ title: string; description: string } | null>(null);
   const [compOpen, setCompOpen] = useState(false);
 
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "created_at" || key === "amount" ? "desc" : "asc");
+    }
+  };
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return orders.filter((o) => {
+    const matched = orders.filter((o) => {
       if (filterStatus && o.status !== filterStatus) return false;
       if (filterType === "complimentary" && !o.is_complimentary) return false;
       if (filterType === "paid" && o.is_complimentary) return false;
@@ -94,7 +154,24 @@ export function OrdersManager({
         (o.complimentary_reason || "").toLowerCase().includes(q)
       );
     });
-  }, [orders, search, filterStatus, filterType]);
+
+    const sorted = [...matched].sort((a, b) => {
+      const av = sortValue(a, sortKey);
+      const bv = sortValue(b, sortKey);
+      let cmp = 0;
+      if (typeof av === "number" && typeof bv === "number") {
+        cmp = av - bv;
+      } else {
+        cmp = String(av).localeCompare(String(bv), "de");
+      }
+      if (cmp === 0 && sortKey !== "created_at") {
+        cmp = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+    return sorted;
+  }, [orders, search, filterStatus, filterType, sortKey, sortDir]);
 
   const totals = useMemo(() => {
     return filtered.reduce(
@@ -184,15 +261,15 @@ export function OrdersManager({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Datum</TableHead>
-              <TableHead>Kund:in</TableHead>
-              <TableHead>Produkt</TableHead>
-              <TableHead>Variante</TableHead>
-              <TableHead>Typ</TableHead>
-              <TableHead>Ärzt:in</TableHead>
-              <TableHead>Lieferung</TableHead>
-              <TableHead className="text-right">Betrag</TableHead>
-              <TableHead>Status</TableHead>
+              <SortableHead label="Datum" sortKey="created_at" current={sortKey} dir={sortDir} onToggle={toggleSort} />
+              <SortableHead label="Kund:in" sortKey="name" current={sortKey} dir={sortDir} onToggle={toggleSort} />
+              <SortableHead label="Produkt" sortKey="product" current={sortKey} dir={sortDir} onToggle={toggleSort} />
+              <SortableHead label="Variante" sortKey="variant" current={sortKey} dir={sortDir} onToggle={toggleSort} />
+              <SortableHead label="Typ" sortKey="type" current={sortKey} dir={sortDir} onToggle={toggleSort} />
+              <SortableHead label="Ärzt:in" sortKey="doctor" current={sortKey} dir={sortDir} onToggle={toggleSort} />
+              <SortableHead label="Lieferung" sortKey="delivery" current={sortKey} dir={sortDir} onToggle={toggleSort} />
+              <SortableHead label="Betrag" sortKey="amount" current={sortKey} dir={sortDir} onToggle={toggleSort} align="right" />
+              <SortableHead label="Status" sortKey="status" current={sortKey} dir={sortDir} onToggle={toggleSort} />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -311,6 +388,39 @@ export function OrdersManager({
         onError={(msg) => setAlertState({ title: "Fehler", description: msg })}
       />
     </div>
+  );
+}
+
+function SortableHead({
+  label,
+  sortKey,
+  current,
+  dir,
+  onToggle,
+  align = "left",
+}: {
+  label: string;
+  sortKey: SortKey;
+  current: SortKey;
+  dir: SortDir;
+  onToggle: (key: SortKey) => void;
+  align?: "left" | "right";
+}) {
+  const active = current === sortKey;
+  const Icon = !active ? ArrowUpDown : dir === "asc" ? ArrowUp : ArrowDown;
+  return (
+    <TableHead className={align === "right" ? "text-right" : undefined}>
+      <button
+        type="button"
+        onClick={() => onToggle(sortKey)}
+        className={`inline-flex items-center gap-1 hover:text-foreground cursor-pointer ${
+          align === "right" ? "flex-row-reverse" : ""
+        } ${active ? "text-foreground font-medium" : ""}`}
+      >
+        {label}
+        <Icon className={`h-3.5 w-3.5 ${active ? "opacity-100" : "opacity-40"}`} />
+      </button>
+    </TableHead>
   );
 }
 
