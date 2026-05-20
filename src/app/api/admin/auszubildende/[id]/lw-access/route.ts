@@ -4,6 +4,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { listUserProgress } from "@/lib/learnworlds";
 import { enrollInLearnWorlds } from "@/lib/post-purchase";
 
+// Each LW call can take a few seconds; the POST does up to 3 sequential
+// calls (create-user, get-user fallback, enroll). Default platform timeouts
+// (10s on some configs) cause the browser to see "Failed to fetch" when
+// LW is slow. Bump the function timeout so the request can complete cleanly.
+export const maxDuration = 60;
+
 // Per-Auszubildende LMS-Zugriff diagnostic + repair.
 //
 // GET /api/admin/auszubildende/[id]/lw-access
@@ -246,8 +252,9 @@ export async function POST(
     );
   }
 
+  let lwUserId: string | null = null;
   try {
-    await enrollInLearnWorlds(
+    lwUserId = await enrollInLearnWorlds(
       contact.email,
       lwCourseId,
       contact.first_name ?? undefined,
@@ -265,6 +272,26 @@ export async function POST(
     );
   }
 
+  if (!lwUserId) {
+    return NextResponse.json(
+      {
+        error:
+          "LW-Enrollment fehlgeschlagen. LearnWorlds hat keine User-ID zurueckgegeben. Bitte Logs pruefen.",
+      },
+      { status: 500 },
+    );
+  }
+
+  // Pin the LW user_id on the auszubildende row so the panel can verify
+  // enrollment on the next refresh without waiting for SSO login. Only
+  // writes if currently null — duplicate-email scenarios may already have
+  // a different LW account linked which we don't want to clobber.
+  await admin
+    .from("auszubildende")
+    .update({ lw_user_id: lwUserId })
+    .eq("id", id)
+    .is("lw_user_id", null);
+
   await admin.from("admin_actions").insert({
     actor_id: caller.id,
     action_type: "lw_grant_access",
@@ -273,8 +300,9 @@ export async function POST(
     metadata: {
       email: contact.email,
       lw_course_id: lwCourseId,
+      lw_user_id: lwUserId,
     },
   });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, lwUserId });
 }

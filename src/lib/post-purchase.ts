@@ -104,10 +104,24 @@ function computeEndTime(startTime: string, durationMinutes: number): string {
 }
 
 // ── LearnWorlds enrollment ──
-export async function enrollInLearnWorlds(email: string, courseId: string, firstName?: string, lastName?: string) {
+// Returns the LW user_id on success (whether the user was just created or
+// already existed and we just enrolled them), null if env is missing or the
+// call failed. Callers can persist the returned id to
+// `auszubildende.lw_user_id` so the LMS-Zugriff panel can verify the
+// enrollment without waiting for the user to log in via SSO.
+//
+// Each LW fetch has a 15s timeout: if LW hangs we'd otherwise block the
+// caller for the entire serverless function lifetime, which surfaces to the
+// browser as "Failed to fetch" when the platform proxy gives up.
+export async function enrollInLearnWorlds(
+  email: string,
+  courseId: string,
+  firstName?: string,
+  lastName?: string,
+): Promise<string | null> {
   if (!LEARNWORLDS_API_URL || !LEARNWORLDS_CLIENT_ID || !LEARNWORLDS_ACCESS_TOKEN) {
     console.warn("LearnWorlds env vars not configured, skipping enrollment");
-    return;
+    return null;
   }
 
   const headers = {
@@ -116,6 +130,7 @@ export async function enrollInLearnWorlds(email: string, courseId: string, first
     "Lw-Client": LEARNWORLDS_CLIENT_ID,
   };
   const baseUrl = LEARNWORLDS_API_URL.replace(/\/$/, "");
+  const timeout = () => AbortSignal.timeout(15000);
 
   try {
     const createBody: Record<string, unknown> = { email, username: email };
@@ -126,6 +141,7 @@ export async function enrollInLearnWorlds(email: string, courseId: string, first
       method: "POST",
       headers,
       body: JSON.stringify(createBody),
+      signal: timeout(),
     });
     const createText = await createRes.text();
 
@@ -134,29 +150,64 @@ export async function enrollInLearnWorlds(email: string, courseId: string, first
       try { lwUserId = JSON.parse(createText)?.id ?? null; } catch { /* ignore */ }
     }
     if (!lwUserId) {
-      const getRes = await fetch(`${baseUrl}/v2/users/${encodeURIComponent(email)}`, { headers });
+      const getRes = await fetch(`${baseUrl}/v2/users/${encodeURIComponent(email)}`, {
+        headers,
+        signal: timeout(),
+      });
       const getText = await getRes.text();
       try { lwUserId = JSON.parse(getText)?.id ?? null; } catch { /* ignore */ }
     }
     if (!lwUserId) {
       console.error("LearnWorlds: could not determine user ID, skipping enrollment");
-      return;
+      return null;
     }
 
     const enrollRes = await fetch(`${baseUrl}/v2/users/${lwUserId}/enrollment`, {
       method: "POST",
       headers,
       body: JSON.stringify({ productId: courseId, productType: "course", price: 0 }),
+      signal: timeout(),
     });
     const enrollText = await enrollRes.text();
     if (!enrollRes.ok) {
       console.error(`LearnWorlds enrollment error: ${enrollRes.status} ${enrollText}`);
-      return;
+      // Even if enrollment failed (e.g. "already enrolled"), the user_id is
+      // valid — return it so we can still pin it on auszubildende.
+      return lwUserId;
     }
     console.log(`LearnWorlds: enrolled ${email} (${lwUserId}) in course ${courseId} — ${enrollText}`);
+    return lwUserId;
   } catch (err) {
     console.error("LearnWorlds enrollment failed:", err);
+    return null;
   }
+}
+
+// Persist a freshly-resolved LW user_id back to the auszubildende row, but
+// only if it doesn't already have one (so we don't clobber a previously
+// linked LW account in duplicate-email scenarios — the merge flow handles
+// those explicitly).
+export async function persistLwUserIdForBooking(bookingId: string, lwUserId: string) {
+  if (!lwUserId) return;
+  const admin = createAdminClient();
+  const { data: booking } = await admin
+    .from("course_bookings")
+    .select("auszubildende_id")
+    .eq("id", bookingId)
+    .maybeSingle();
+  const auszId = booking?.auszubildende_id;
+  if (!auszId) return;
+  const { data: ausz } = await admin
+    .from("auszubildende")
+    .select("lw_user_id")
+    .eq("id", auszId)
+    .maybeSingle();
+  if (ausz?.lw_user_id) return; // already linked
+  await admin
+    .from("auszubildende")
+    .update({ lw_user_id: lwUserId })
+    .eq("id", auszId)
+    .is("lw_user_id", null);
 }
 
 // ── Run the full post-purchase flow ──
@@ -252,11 +303,17 @@ export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { sk
   }
 
   // 2. LearnWorlds enrollment
+  // We collect the first non-null LW user_id from any enrollment in this
+  // flow and pin it on the auszubildende row. Without that, the LMS-Zugriff
+  // panel can't verify enrollment until the customer logs in via SSO.
+  let resolvedLwUserId: string | null = null;
   if (data.email && (data.courseType === "Onlinekurs" || data.courseType === "Kombikurs")) {
     const onlineCourseId = template?.online_course_id;
     if (onlineCourseId) {
-      try { await enrollInLearnWorlds(data.email, onlineCourseId, data.firstName, data.lastName); }
-      catch (lwErr) { console.error("LearnWorlds enrollment error:", lwErr); }
+      try {
+        const lwUserId = await enrollInLearnWorlds(data.email, onlineCourseId, data.firstName, data.lastName);
+        if (lwUserId) resolvedLwUserId = lwUserId;
+      } catch (lwErr) { console.error("LearnWorlds enrollment error:", lwErr); }
     }
   }
 
@@ -303,9 +360,19 @@ export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { sk
                 "grundkurs-medizinische-hautpflege",
               ];
     for (const lwCourseId of premiumCourseIds) {
-      try { await enrollInLearnWorlds(data.email, lwCourseId, data.firstName, data.lastName); }
+      try {
+        const lwUserId = await enrollInLearnWorlds(data.email, lwCourseId, data.firstName, data.lastName);
+        if (lwUserId && !resolvedLwUserId) resolvedLwUserId = lwUserId;
+      }
       catch (lwErr) { console.error(`LearnWorlds Premium enrollment error (${lwCourseId}):`, lwErr); }
     }
+  }
+
+  // Persist LW user_id to auszubildende so the LMS-Zugriff panel can verify
+  // enrollment immediately, before the customer logs in via SSO.
+  if (resolvedLwUserId) {
+    try { await persistLwUserIdForBooking(data.bookingId, resolvedLwUserId); }
+    catch (persistErr) { console.error("persistLwUserIdForBooking failed:", persistErr); }
   }
 
   // 3. Slack notification (skipped when called from profile completion)
