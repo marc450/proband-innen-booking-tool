@@ -228,6 +228,11 @@ export function ThreadListPane({
             {threads.map((t) => {
               const selected = t.id === selectedThreadId;
               const hasReplyDraft = replyDraftThreadIds.includes(t.id);
+              // "Beantwortet" = unsere letzte Nachricht im Thread ist
+              // ausgehend. Wenn weder ausgewählt noch ungelesen, faerben
+              // wir die ganze Zeile dezent emerald, damit erledigte
+              // Threads optisch zurücktreten.
+              const isAnswered = !t.lastMessageInbound;
               return (
                 <li key={t.id}>
                   <button
@@ -237,7 +242,9 @@ export function ThreadListPane({
                         ? "bg-[#0066FF]/5 border-l-2 border-l-[#0066FF]"
                         : t.isUnread
                           ? "bg-blue-50/50 hover:bg-blue-50 border-l-2 border-l-transparent"
-                          : "hover:bg-gray-50 border-l-2 border-l-transparent"
+                          : isAnswered
+                            ? "bg-emerald-50/30 hover:bg-emerald-50/60 border-l-2 border-l-transparent"
+                            : "hover:bg-gray-50 border-l-2 border-l-transparent"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2 mb-0.5 h-5">
