@@ -216,12 +216,6 @@ main > div > h1.text-2xl.font-bold:first-child {
 .dark .hover\:bg-emerald-100:hover {
   background-color: rgba(74, 222, 128, 0.22) !important;
 }
-.dark .bg-emerald-200 {
-  background-color: rgba(74, 222, 128, 0.26) !important;
-}
-.dark .hover\:bg-emerald-200:hover {
-  background-color: rgba(74, 222, 128, 0.30) !important;
-}
 .dark .text-emerald-600,
 .dark .text-emerald-700,
 .dark .text-emerald-800 {
