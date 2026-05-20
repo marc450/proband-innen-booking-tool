@@ -279,59 +279,69 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let token: string;
+  // Transient upstream failures (Gmail rate limits, 5xx, Supabase blips) must
+  // not crash the Railway cron container. We swallow everything into a 200
+  // response with `ok:false` + reason so curl stays happy and the service is
+  // back to "ready" before the next 5-min tick.
   try {
-    token = await getValidAccessToken(INVOICE_EMAIL);
+    let token: string;
+    try {
+      token = await getValidAccessToken(INVOICE_EMAIL);
+    } catch (e) {
+      return NextResponse.json({
+        ok: false,
+        reason: e instanceof Error ? e.message : "no gmail token",
+      });
+    }
+
+    const labelId = await ensureForwardedLabelId(token);
+    const messages = await listUnprocessedMessages(token);
+
+    let forwarded = 0;
+    let skippedNoPdf = 0;
+    const errors: string[] = [];
+
+    for (const m of messages) {
+      try {
+        const full = (await gmailFetch(`messages/${m.id}?format=full`, token)) as GmailMessage;
+        const pdfs = findPdfAttachments(full);
+
+        if (pdfs.length === 0) {
+          // No PDFs, label so we don't keep checking. Other attachments
+          // (images, docs) are intentionally ignored to match the original Zap.
+          await applyForwardedLabel(token, m.id, labelId);
+          skippedNoPdf++;
+          continue;
+        }
+
+        // One forward + one Slack ping per PDF, mirroring the Zapier "New
+        // Attachment" trigger which fires per attachment. sevDesk creates one
+        // Beleg per inbound email so this gives one Beleg per PDF.
+        for (const pdf of pdfs) {
+          const buffer = await downloadAttachmentBuffer(token, m.id, pdf.attachmentId);
+          await sendForwardEmail(token, pdf.filename, buffer);
+          await postSlackNotification(pdf.filename, buffer);
+          forwarded++;
+        }
+
+        await applyForwardedLabel(token, m.id, labelId);
+      } catch (e) {
+        errors.push(`${m.id}: ${e instanceof Error ? e.message : "unknown error"}`);
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      scanned: messages.length,
+      forwarded,
+      skippedNoPdf,
+      errors,
+    });
   } catch (e) {
-    // Don't crash the cron container — return 200 with a noop so the Railway
-    // service stays "ready" while OAuth is being reconnected.
+    console.error("sevdesk-forwarder top-level error:", e);
     return NextResponse.json({
       ok: false,
-      reason: e instanceof Error ? e.message : "no gmail token",
+      reason: e instanceof Error ? e.message : "unknown top-level error",
     });
   }
-
-  const labelId = await ensureForwardedLabelId(token);
-  const messages = await listUnprocessedMessages(token);
-
-  let forwarded = 0;
-  let skippedNoPdf = 0;
-  const errors: string[] = [];
-
-  for (const m of messages) {
-    try {
-      const full = (await gmailFetch(`messages/${m.id}?format=full`, token)) as GmailMessage;
-      const pdfs = findPdfAttachments(full);
-
-      if (pdfs.length === 0) {
-        // No PDFs — label so we don't keep checking. Other attachments
-        // (images, docs) are intentionally ignored to match the original Zap.
-        await applyForwardedLabel(token, m.id, labelId);
-        skippedNoPdf++;
-        continue;
-      }
-
-      // One forward + one Slack ping per PDF, mirroring the Zapier "New
-      // Attachment" trigger which fires per attachment. sevDesk creates one
-      // Beleg per inbound email so this gives one Beleg per PDF.
-      for (const pdf of pdfs) {
-        const buffer = await downloadAttachmentBuffer(token, m.id, pdf.attachmentId);
-        await sendForwardEmail(token, pdf.filename, buffer);
-        await postSlackNotification(pdf.filename, buffer);
-        forwarded++;
-      }
-
-      await applyForwardedLabel(token, m.id, labelId);
-    } catch (e) {
-      errors.push(`${m.id}: ${e instanceof Error ? e.message : "unknown error"}`);
-    }
-  }
-
-  return NextResponse.json({
-    ok: true,
-    scanned: messages.length,
-    forwarded,
-    skippedNoPdf,
-    errors,
-  });
 }
