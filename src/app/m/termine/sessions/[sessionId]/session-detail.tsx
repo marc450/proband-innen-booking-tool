@@ -42,6 +42,18 @@ export interface Participant {
   priorSessionsCount: number;
 }
 
+export interface Proband {
+  bookingId: string;
+  firstName: string | null;
+  lastName: string | null;
+  /** ISO timestamp of the slot start. Used to group + label rows. */
+  slotStart: string | null;
+  status: string;
+  /** "standard" | "private" | null */
+  bookingType: string | null;
+  referringDoctor: string | null;
+}
+
 interface Props {
   sessionId: string;
   templateTitle: string;
@@ -55,6 +67,7 @@ interface Props {
   maxSeats: number;
   bookedSeats: number;
   participants: Participant[];
+  probanden: Proband[];
 }
 
 const COURSE_TYPE_LABEL: Record<string, string> = {
@@ -110,6 +123,7 @@ export function SessionDetail({
   maxSeats,
   bookedSeats,
   participants,
+  probanden,
 }: Props) {
   const totalCount = participants.length;
 
@@ -156,6 +170,16 @@ export function SessionDetail({
     () => participants.filter((p) => !!p.notes?.trim()),
     [participants],
   );
+
+  const probandenBySlot = useMemo(() => {
+    const map = new Map<string, Proband[]>();
+    for (const p of probanden) {
+      const key = p.slotStart || "—";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(p);
+    }
+    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [probanden]);
 
   return (
     <div>
@@ -290,7 +314,91 @@ export function SessionDetail({
           </div>
         ))}
       </div>
+
+      {/* Proband:innen */}
+      <h2 className="text-sm font-bold text-black mt-6 mb-2">
+        Proband:innen ({probanden.length})
+      </h2>
+      {probanden.length === 0 ? (
+        <p className="text-center text-sm text-gray-400 py-8 bg-white rounded-[10px]">
+          Noch keine Proband:innen-Buchungen.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {probandenBySlot.map(([slotStart, rows]) => (
+            <div
+              key={slotStart}
+              className="bg-white rounded-[10px] overflow-hidden"
+            >
+              <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  {slotStart === "—" ? "Ohne Slot" : formatTime(slotStart)}
+                </span>
+                <span className="text-xs text-gray-400">{rows.length}</span>
+              </div>
+              <ul>
+                {rows.map((p) => (
+                  <ProbandRow key={p.bookingId} p={p} />
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
+  );
+}
+
+const PROBAND_STATUS_LABEL: Record<string, string> = {
+  booked: "Gebucht",
+  attended: "Erschienen",
+  attended_paid: "Erschienen & bezahlt",
+  no_show: "No-Show",
+  cancelled: "Storniert",
+};
+
+const PROBAND_STATUS_COLOR: Record<string, string> = {
+  booked: "bg-gray-100 text-gray-700",
+  attended: "bg-emerald-100 text-emerald-700",
+  attended_paid: "bg-emerald-100 text-emerald-700",
+  no_show: "bg-red-100 text-red-700",
+  cancelled: "bg-gray-100 text-gray-500",
+};
+
+function ProbandRow({ p }: { p: Proband }) {
+  const name =
+    formatPersonName({
+      title: null,
+      firstName: p.firstName,
+      lastName: p.lastName,
+    }) || "Unbekannt";
+  return (
+    <li className="px-4 py-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-sm font-semibold text-black truncate">
+              {name}
+            </span>
+            {p.bookingType === "private" && (
+              <span className="text-[10px] font-medium text-violet-700 bg-violet-50 rounded px-1.5 py-0.5">
+                Privat
+              </span>
+            )}
+            <span
+              className={`text-[10px] font-medium rounded px-1.5 py-0.5 ${PROBAND_STATUS_COLOR[p.status] || "bg-gray-100 text-gray-700"}`}
+            >
+              {PROBAND_STATUS_LABEL[p.status] || p.status}
+            </span>
+          </div>
+          {p.referringDoctor && (
+            <p className="mt-1 text-xs text-gray-500 truncate">
+              Empfehlung: {p.referringDoctor}
+            </p>
+          )}
+        </div>
+      </div>
+    </li>
   );
 }
 

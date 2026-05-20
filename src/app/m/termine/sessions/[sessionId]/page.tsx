@@ -2,7 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { SessionDetail, type Participant } from "./session-detail";
+import { decryptBooking, decryptPatient } from "@/lib/encryption";
+import { SessionDetail, type Participant, type Proband } from "./session-detail";
 
 interface PageProps {
   params: Promise<{ sessionId: string }>;
@@ -83,6 +84,88 @@ export default async function MobileSessionDetailPage({ params }: PageProps) {
     priorCountsById.set(row.auszubildende_id, (priorCountsById.get(row.auszubildende_id) || 0) + 1);
   }
 
+  // 4. Proband:innen on the same day: every course_session has a satellite
+  // `courses` row (linked via courses.session_id, see migration 073). The
+  // satellite holds the slots that Proband:innen book into. We load those
+  // bookings here so the mobile detail view shows who Dozent:in actually
+  // treats at which slot.
+  const { data: satelliteCourse } = await admin
+    .from("courses")
+    .select("id")
+    .eq("session_id", sessionId)
+    .maybeSingle();
+
+  let probanden: Proband[] = [];
+  if (satelliteCourse?.id) {
+    const { data: slotRows } = await admin
+      .from("slots")
+      .select("id, start_time")
+      .eq("course_id", satelliteCourse.id);
+    const slotById = new Map(
+      (slotRows || []).map((s) => [s.id as string, s.start_time as string]),
+    );
+    const slotIds = (slotRows || []).map((s) => s.id as string);
+
+    if (slotIds.length) {
+      const { data: bookingRows } = await admin
+        .from("bookings")
+        .select(
+          "id, slot_id, status, booking_type, referring_doctor, first_name, last_name, encrypted_data, encrypted_key, encryption_iv, patient_id",
+        )
+        .in("slot_id", slotIds)
+        .neq("status", "cancelled");
+
+      // Pull patient rows for canonical names (booking row's name snapshot
+      // can drift if the patient is corrected later). Mirrors the desktop
+      // dashboard's bookings page pattern.
+      const patientIds = Array.from(
+        new Set(
+          (bookingRows || [])
+            .map((b) => b.patient_id)
+            .filter((v): v is string => !!v),
+        ),
+      );
+      const { data: patientRows } = patientIds.length
+        ? await admin
+            .from("patients")
+            .select(
+              "id, encrypted_data, encrypted_key, encryption_iv, first_name, last_name",
+            )
+            .in("id", patientIds)
+        : { data: [] };
+      const patientById = new Map(
+        (patientRows || []).map((p) => [p.id as string, p]),
+      );
+
+      probanden = (bookingRows || []).map((row) => {
+        const decrypted = decryptBooking(row);
+        const patient = row.patient_id ? patientById.get(row.patient_id) : null;
+        const patientDecrypted = patient ? decryptPatient(patient) : null;
+        const firstName =
+          patientDecrypted?.first_name ?? decrypted.first_name ?? null;
+        const lastName =
+          patientDecrypted?.last_name ?? decrypted.last_name ?? null;
+        return {
+          bookingId: row.id,
+          firstName,
+          lastName,
+          slotStart: slotById.get(row.slot_id as string) ?? null,
+          status: row.status,
+          bookingType: row.booking_type ?? null,
+          referringDoctor: row.referring_doctor ?? null,
+        };
+      });
+
+      // Sort by slot start time, then by last name for stable order within a slot
+      probanden.sort((a, b) => {
+        const ta = a.slotStart || "";
+        const tb = b.slotStart || "";
+        if (ta !== tb) return ta.localeCompare(tb);
+        return (a.lastName || "").localeCompare(b.lastName || "");
+      });
+    }
+  }
+
   const participants: Participant[] = bookings.map((b) => {
     const azubi = b.auszubildende_id ? azubiById.get(b.auszubildende_id) : undefined;
     return {
@@ -124,6 +207,7 @@ export default async function MobileSessionDetailPage({ params }: PageProps) {
       maxSeats={session.max_seats}
       bookedSeats={session.booked_seats}
       participants={participants}
+      probanden={probanden}
     />
   );
 }
