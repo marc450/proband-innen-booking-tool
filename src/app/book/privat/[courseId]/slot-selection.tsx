@@ -34,7 +34,7 @@ export function PrivatSlotSelection({ course, allCourses, slots, firstSlotByCour
 
   const indicationStats = INDICATIONS.map((ind) => ({
     ...ind,
-    remaining: ind.max,
+    remaining: ind.max as number,
   }));
 
   // Privatfunnel: der absolut erste Slot des Kurses ("Behandlung durch

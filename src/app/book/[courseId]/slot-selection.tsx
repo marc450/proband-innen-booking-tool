@@ -42,7 +42,7 @@ export function SlotSelection({ course, allCourses, slots, firstSlotByCourse }: 
   // to the bookings table once the column lands.
   const indicationStats = INDICATIONS.map((ind) => ({
     ...ind,
-    remaining: ind.max,
+    remaining: ind.max as number,
   }));
 
   // Slot list is the same regardless of which indication is picked,
