@@ -387,15 +387,15 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
   {
     id: "probandinnen-info",
     funnel: "arzt-kursbuchung",
-    name: "Proband:innen-Info (nächster Schritt)",
+    name: "Bring Deine:n Proband:in mit (nächster Schritt)",
     recipient: "Ärzt:in",
     trigger:
       "Nach Buchung eines Kurses mit Praxisanteil (Praxis, Kombi, Premium)",
     codeRef: "src/lib/post-purchase.ts",
     description:
-      "Erklärt die Proband:innen-Organisation und lädt ein, selbst eine:n Proband:in mitzubringen.",
+      "Empfiehlt nachdrücklich, eine:n eigene:n Proband:in mitzubringen, und positioniert den Pool als Ergänzung statt Vollersatz.",
     renderSample: () => ({
-      subject: "Nächster Schritt: Proband:innen für Deinen Praxiskurs",
+      subject: "Wichtig für Deinen Praxiskurs: Bring Deine:n Proband:in mit",
       html: buildProbandinnenInfoEmail(SAMPLE.firstName),
     }),
   },

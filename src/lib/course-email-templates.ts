@@ -83,20 +83,22 @@ function praxiskursInfoBox({
 }
 
 const PROBANDINNEN_SECTION = `
-    <h3 style="margin:16px 0 10px;font-size:16px;font-weight:bold;">Proband:innen-Organisation</h3>
-    <p style="margin:0 0 20px;">
-      Für Deinen Praxiskurs stellen wir Dir automatisch passende Proband:innen aus unserem Pool zur Verfügung. Du musst Dich also grundsätzlich um nichts kümmern.
+    <h3 style="margin:16px 0 10px;font-size:16px;font-weight:bold;">Bring Deine:n eigene:n Proband:in mit</h3>
+    <p style="margin:0 0 12px;">
+      Wir empfehlen jeder:m Teilnehmer:in nachdrücklich, eine:n eigene:n Proband:in zum Praxistag mitzubringen. Das hat zwei Gründe:
+    </p>
+    <ul style="margin:0 0 16px 24px; padding:0;">
+      <li style="margin-bottom:8px;"><strong>Bessere Behandlung.</strong> Wenn Du Anamnese und Indikation Deiner Proband:in vorab kennst, gehst Du strukturierter in den Praxisteil, statt sie erst im Kurs zu erfassen.</li>
+      <li style="margin-bottom:8px;"><strong>Verlässliche Planung.</strong> Unser Proband:innen-Pool ergänzt jeden Kurs, ist aber bewusst nicht so dimensioniert, dass er allein alle Teilnehmer:innen abdeckt. Wer jemanden mitbringt, hat den Behandlungsplatz sicher.</li>
+    </ul>
+    <p style="margin:0 0 16px;">
+      <strong>Pro Teilnehmer:in kann maximal ein:e eigene:r Proband:in eingebracht werden.</strong>
+    </p>
+    <p style="margin:0 0 16px;">
+      Leite den folgenden Link bitte direkt an Deine:n Proband:in weiter: <a href="https://proband-innen.ephia.de/book/privat" style="color:#0066FF;text-decoration:none;">https://proband-innen.ephia.de/book/privat</a>. Die Registrierung muss persönlich durch Deine:n Proband:in erfolgen, da AGB und Datenschutzerklärung bestätigt werden müssen. Über diesen Link ist die Buchung kostenfrei. Schnelles Handeln ist wichtig, da unsere Termine parallel öffentlich vergeben werden.
     </p>
     <p style="margin:0 0 20px;">
-      Wir freuen uns trotzdem sehr, wenn Du eine:n eigene:n Proband:in mitbringst. Verpflichtend ist das aber nicht. <strong>Pro Teilnehmer:in kann maximal ein:e eigene:r Proband:in eingebracht werden.</strong>
-    </p>
-    <p style="margin:0 0 20px;">
-      Wenn Du jemanden mitbringen möchtest, leite bitte den folgenden Link weiter: <a href="https://proband-innen.ephia.de/book/privat" style="color:#0066FF;text-decoration:none;">https://proband-innen.ephia.de/book/privat</a>. Die Registrierung muss persönlich durch den/die Proband:in erfolgen, da AGB und Datenschutzerklärung bestätigt werden müssen, und ist über diesen Link kostenfrei. Da unsere Termine parallel öffentlich vergeben werden, ist schnelles Handeln wichtig.
-    </p>
-    <p style="margin:0 0 20px;">
-      Sobald Dein:e Proband:in angemeldet ist, erhält die Person ca. <strong>48 Stunden vor Kursbeginn</strong> alle relevanten Informationen per E-Mail, inklusive genauer Adresse, gewünschter Ankunftszeit und Details zur Behandlung.
-      <br><br>
-      Bei der Auswahl Deiner Proband:in freuen wir uns, wenn Du an Personen mit mehreren möglichen Indikationen denkst. So können vor Ort möglichst viele Behandlungstechniken gezeigt und geübt werden. Bitte beachte dabei unbedingt bekannte Kontraindikationen.
+      Sobald Dein:e Proband:in angemeldet ist, erhält die Person ca. <strong>48 Stunden vor Kursbeginn</strong> alle relevanten Informationen per E-Mail, inklusive genauer Adresse, gewünschter Ankunftszeit und Details zur Behandlung. Bitte denke bei der Auswahl an Personen mit mehreren möglichen Indikationen, damit vor Ort möglichst viele Behandlungstechniken gezeigt und geübt werden können. Achte dabei auf bekannte Kontraindikationen.
     </p>`;
 
 const VORAUSSETZUNG_SECTION = `
@@ -242,10 +244,8 @@ export function buildKombikursEmail(firstName: string, courseName: string, praxi
 /**
  * Praxiskurs Proband:innen-Info email — second transactional email
  * sent to anyone who books a Praxiskurs, Kombikurs or Premium bundle.
- * Explains that EPHIA provides Proband:innen by default but the buyer
- * can bring one of their own (one max) via the public registration
- * link, and points out the fast-paced public seat allocation that
- * makes acting quickly important.
+ * Frames bringing an own Proband:in as the strongly recommended default;
+ * the pool is positioned as a supplement, not a full substitute.
  */
 export function buildProbandinnenInfoEmail(firstName: string): string {
   return `<div style="background-color:#fff; padding:0; font-family:Arial, sans-serif;">
@@ -255,11 +255,11 @@ export function buildProbandinnenInfoEmail(firstName: string): string {
     </p>
 
     <p style="margin:0 0 18px;">
-      für Deinen Praxiskurs stellen wir Dir automatisch passende Proband:innen aus unserem Pool zur Verfügung. Du musst Dich also grundsätzlich um nichts kümmern.
+      ein wichtiger Hinweis vorab zu Deinem Praxiskurs: Wir empfehlen jeder:m Teilnehmer:in nachdrücklich, eine:n eigene:n Proband:in mitzubringen.
     </p>
 
     <p style="margin:0 0 18px;">
-      Falls Du eine eigene Proband:in einplanen möchtest, ist schnelles Handeln wichtig. Unsere Termine werden parallel öffentlich vergeben und sind erfahrungsgemäß innerhalb weniger Tage vollständig ausgebucht. Sobald alle Slots belegt sind, können wir keine Änderungen oder Zuordnungen mehr vornehmen.
+      Unser Proband:innen-Pool ergänzt zwar jeden Kurs, ist aber bewusst nicht so dimensioniert, dass er allein alle Teilnehmer:innen abdeckt. Wer jemanden mitbringt, hat den Behandlungsplatz sicher und kann Anamnese sowie Indikation vorab strukturiert klären, statt sie spontan im Kurs zu erfassen.
     </p>
 
     <p style="margin:0 0 18px;">
@@ -267,7 +267,7 @@ export function buildProbandinnenInfoEmail(firstName: string): string {
     </p>
 
     <p style="margin:0 0 12px;">
-      Wenn Du eine:n eigene:n Proband:in mitbringen möchtest, leite den folgenden Link bitte direkt weiter:
+      Schnelles Handeln ist entscheidend: Die offenen Slots werden parallel öffentlich vergeben und sind erfahrungsgemäß innerhalb weniger Tage vollständig ausgebucht. Sobald alle Plätze belegt sind, können wir keine Zuordnungen mehr vornehmen. Leite den folgenden Link bitte direkt an Deine:n Proband:in weiter:
     </p>
     <p style="margin:0 0 18px;">
       <a href="https://proband-innen.ephia.de/book/privat" style="display:inline-block; background-color:#0066FF; color:#fff; text-decoration:none; padding:12px 22px; border-radius:10px; font-weight:bold;">
@@ -276,11 +276,11 @@ export function buildProbandinnenInfoEmail(firstName: string): string {
     </p>
 
     <p style="margin:0 0 18px;">
-      Die Registrierung muss persönlich durch den/die Proband:in erfolgen, da AGB und Datenschutzerklärung bestätigt werden müssen. Über diesen Link ist die Buchung kostenfrei.
+      Die Registrierung muss persönlich durch Deine:n Proband:in erfolgen, da AGB und Datenschutzerklärung bestätigt werden müssen. Über diesen Link ist die Buchung kostenfrei.
     </p>
 
     <p style="margin:0 0 18px;">
-      Bitte beachte zudem: Medizinische Leistungen müssen gemäß GOÄ abgerechnet werden. Da die Behandlung durch Dich erfolgt, liegt die ordnungsgemäße Abrechnung in Deiner Verantwortung.
+      Zur Abrechnung: Medizinische Leistungen sind nach GOÄ abzurechnen. Da die Behandlung durch Dich erfolgt, liegt die ordnungsgemäße Abrechnung in Deiner Verantwortung.
     </p>
 
     <h3 style="margin:24px 0 10px; font-size:16px; font-weight:bold;">Voraussetzungen für Proband:innen</h3>

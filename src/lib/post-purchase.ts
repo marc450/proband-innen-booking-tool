@@ -293,7 +293,7 @@ export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { sk
       try {
         await sendEmailViaResend(
           data.email,
-          "Nächster Schritt: Proband:innen für Deinen Praxiskurs",
+          "Wichtig für Deinen Praxiskurs: Bring Deine:n Proband:in mit",
           buildProbandinnenInfoEmail(data.firstName),
         );
       } catch (probandErr) {
