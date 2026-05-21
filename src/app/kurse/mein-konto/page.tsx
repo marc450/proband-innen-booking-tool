@@ -475,22 +475,73 @@ export default async function MeinKontoPage() {
       return db - da;
     });
 
-    // ── 3) Attach LW progress to online cards ──
-    // Single API call per page load. If the customer has no lw_user_id
-    // (HubSpot-only contact, or a new Stripe purchase before we wire
-    // checkout to provision an LW user), skip silently — cards just
-    // render without a progress bar.
-    if (contact.lw_user_id && online.length > 0) {
+    // ── 3) Merge LW enrollments into online + attach progress ──
+    // Two responsibilities in one block:
+    //   a) Premium customers get enrolled in 3-4 LW courses for a single
+    //      course_bookings row (the Komplettpaket bundle). The booking
+    //      loop above only ever creates ONE Online card per booking
+    //      (template.lw_slug_online), so the bundled extras silently
+    //      disappear from /mein-konto even though the customer has full
+    //      LW access. We compensate by walking the customer's actual LW
+    //      enrollments and adding any course that isn't already covered
+    //      by a booking-derived card.
+    //   b) Attach the progress percent to every Online card.
+    //
+    // Single API call per page load. Skipped silently when the contact
+    // has no lw_user_id (HubSpot-only contact, brand-new Stripe purchase
+    // before SSO has bridged the user) — cards just render without a
+    // progress bar.
+    if (contact.lw_user_id) {
       try {
         const rows = await listUserProgress(contact.lw_user_id as string);
         const progress = buildProgressMap(rows);
+
+        // (a) Add Online cards for LW enrollments not yet covered.
+        // Match LW course_id (== slug) against any template's
+        // lw_slug_online. Skip enrollments with no matching template
+        // (admin hasn't registered them yet) so we don't show raw slugs
+        // to the customer.
+        const coveredSlugs = new Set(
+          online.map((c) => (c.lwSlug || "").toLowerCase()).filter(Boolean),
+        );
+        for (const r of rows) {
+          const lwSlug = (r.course_id || "").trim();
+          if (!lwSlug) continue;
+          if (coveredSlugs.has(lwSlug.toLowerCase())) continue;
+          const match = tplIndex.matchSlug(lwSlug);
+          if (!match || match.type !== "Onlinekurs") continue;
+          const tpl = match.tpl;
+          online.push({
+            id: `lw:${lwSlug}`,
+            productName: tpl.name_online || tpl.title || lwSlug,
+            displayTitle: pickDisplayTitle(tpl, "Onlinekurs", lwSlug),
+            courseType: "Onlinekurs",
+            courseDate: null,
+            // We don't know when access was granted (LW doesn't expose
+            // it on the progress endpoint), so leave purchasedAt null.
+            purchasedAt: null,
+            source: "lw_enrollment",
+            imageUrl: tpl.image_url ?? null,
+            lwHref: `/api/auth/lw-sso?redirectUrl=${encodeURIComponent(
+              `https://learn.ephia.de/course/${lwSlug}`,
+            )}`,
+            lwSlug,
+            location: null,
+            startTime: null,
+            instructor: null,
+          });
+          coveredSlugs.add(lwSlug.toLowerCase());
+        }
+
+        // (b) Attach progress to every Online card.
         online = online.map((b) => {
           const pct = b.lwSlug ? progress.get(b.lwSlug) : undefined;
           return pct !== undefined ? { ...b, progressPct: pct } : b;
         });
       } catch (err) {
         // LW API outage / token expiry / rate limit: don't fail the
-        // whole dashboard. Log + render the cards without progress.
+        // whole dashboard. Log + render the cards without progress
+        // and without the bundle-extras merge.
         console.error("[mein-konto] LW progress fetch failed:", err);
       }
     }
