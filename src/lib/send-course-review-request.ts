@@ -109,8 +109,6 @@ function buildReviewEmailHtml(opts: {
     firstName: opts.firstName,
     intro:
       "vielen Dank, dass Du heute bei uns bist. Solange Dein Eindruck noch frisch ist, ist Dein Feedback für uns am wertvollsten. Bitte nimm Dir 1 Minute, bevor Du gehst.",
-    note:
-      "Deine Sterne und Dein kurzer Bewertungstext erscheinen später mit Deinem Vornamen auf unserer Kursseite. Das zusätzliche Team-Feedback bleibt anonym und erreicht nur uns intern.",
     buttons: [
       {
         label: "Bewertung abgeben",
