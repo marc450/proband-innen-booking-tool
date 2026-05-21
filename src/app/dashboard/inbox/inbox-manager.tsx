@@ -110,6 +110,68 @@ export function InboxManager({
     });
   }, [teamMembers, threads]);
 
+  // Manueller "Als beantwortet markieren" Toggle. Schreibt in
+  // inbox_thread_marks via /api/inbox/mark-answered und aktualisiert
+  // den lokalen Thread-State optimistisch, damit das Pill sofort
+  // erscheint/verschwindet ohne Roundtrip.
+  const handleToggleMark = useCallback(async (threadId: string, mark: boolean) => {
+    // Optimistic update
+    setThreads((prev) =>
+      prev.map((t) =>
+        t.id === threadId
+          ? {
+              ...t,
+              manuallyAnsweredBy: mark ? signature?.userName || "Markiert" : null,
+              manuallyAnsweredAt: mark ? new Date().toISOString() : null,
+            }
+          : t,
+      ),
+    );
+
+    try {
+      const res = mark
+        ? await fetch("/api/inbox/mark-answered", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ threadId }),
+          })
+        : await fetch(`/api/inbox/mark-answered?threadId=${encodeURIComponent(threadId)}`, {
+            method: "DELETE",
+          });
+      if (!res.ok) throw new Error(await res.text());
+      // Server hat den kanonischen Anzeigenamen (aus profiles)
+      // zurueckgegeben; auf den optimistischen Wert ueberschreiben.
+      if (mark) {
+        const data = await res.json();
+        setThreads((prev) =>
+          prev.map((t) =>
+            t.id === threadId
+              ? {
+                  ...t,
+                  manuallyAnsweredBy: data.manuallyAnsweredBy ?? t.manuallyAnsweredBy,
+                  manuallyAnsweredAt: data.manuallyAnsweredAt ?? t.manuallyAnsweredAt,
+                }
+              : t,
+          ),
+        );
+      }
+    } catch (err) {
+      console.error("toggle mark failed:", err);
+      // Rollback
+      setThreads((prev) =>
+        prev.map((t) =>
+          t.id === threadId
+            ? {
+                ...t,
+                manuallyAnsweredBy: mark ? null : t.manuallyAnsweredBy,
+                manuallyAnsweredAt: mark ? null : t.manuallyAnsweredAt,
+              }
+            : t,
+        ),
+      );
+    }
+  }, [signature]);
+
   // Translate our filter tabs into a Gmail query. "Beantwortet" is handled
   // client-side since it's a simple !lastMessageInbound check and Gmail has
   // no single query operator for it.
@@ -190,11 +252,17 @@ export function InboxManager({
       sortKey(b) - sortKey(a);
     let list = threads;
     if (filter === "answered") {
-      // Mirror the visual "isAnswered" rule in thread-list-pane: a thread
-      // counts as beantwortet only if it has both a real inbound message
-      // and a more-recent outbound one. Contact-form notifications
-      // (FROM=To=customerlove, no inbound) are excluded.
-      list = threads.filter((t) => !t.lastMessageInbound && !!t.hasInboundMessage);
+      // Mirror the visual "isAnswered" rule in thread-list-pane: ein
+      // Thread ist beantwortet, wenn er einen echten Eingang hat und
+      // unsere letzte Nachricht ausgehend ist, oder wenn ein Staff
+      // ihn manuell als beantwortet markiert hat (z. B. Telefon-
+      // Antwort). Kontaktformular-Benachrichtigungen ohne echten
+      // Eingang sind ausgeschlossen.
+      list = threads.filter(
+        (t) =>
+          (!t.lastMessageInbound && !!t.hasInboundMessage) ||
+          !!t.manuallyAnsweredBy,
+      );
     } else if (filter === "mine") {
       list = threads.filter((t) => assignments[t.id]?.assignedTo === currentUserId);
     }
@@ -563,6 +631,15 @@ export function InboxManager({
                 else drafts.deleteReplyDraft(threadId);
               }}
               onDelete={selectedThread ? () => setPendingDeleteId(selectedThread) : undefined}
+              autoAnswered={(() => {
+                const t = threads.find((x) => x.id === selectedThread);
+                return !!t && !t.lastMessageInbound && !!t.hasInboundMessage;
+              })()}
+              manuallyAnsweredBy={
+                threads.find((x) => x.id === selectedThread)?.manuallyAnsweredBy || null
+              }
+              onMarkAnswered={selectedThread ? () => handleToggleMark(selectedThread, true) : undefined}
+              onUnmarkAnswered={selectedThread ? () => handleToggleMark(selectedThread, false) : undefined}
             />
           )}
         </div>

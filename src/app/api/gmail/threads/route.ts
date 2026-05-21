@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { listThreads, getThread, getHeader, extractEmailAddress, extractName, getBody, getAttachments, isInbound } from "@/lib/gmail";
 import { cleanGmailSnippet } from "@/lib/gmail-text";
 import { resolveContactNamesByEmail } from "@/lib/inbox-contact-names";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -142,6 +143,30 @@ export async function GET(request: NextRequest) {
         }
       })
     );
+
+    // Overlay manual "Als beantwortet markieren" marks. One batch query
+    // instead of N. Threads without a mark stay null; threads with one
+    // get marked_by_name + marked_at attached to the summary so the
+    // pill/row tint can render the manual marker's name.
+    const threadIds = threadSummaries.map((t) => t.id).filter(Boolean);
+    if (threadIds.length > 0) {
+      const admin = createAdminClient();
+      const { data: marks } = await admin
+        .from("inbox_thread_marks")
+        .select("thread_id, marked_by_name, marked_at")
+        .in("thread_id", threadIds);
+      const markMap = new Map<string, { name: string; at: string }>();
+      for (const m of marks || []) {
+        markMap.set(m.thread_id, { name: m.marked_by_name, at: m.marked_at });
+      }
+      for (const t of threadSummaries) {
+        const mark = markMap.get(t.id);
+        if (mark) {
+          (t as { manuallyAnsweredBy?: string }).manuallyAnsweredBy = mark.name;
+          (t as { manuallyAnsweredAt?: string }).manuallyAnsweredAt = mark.at;
+        }
+      }
+    }
 
     // Overlay DB-known names whenever the DB has a full first+last for
     // this email. The DB is the canonical source of truth for our

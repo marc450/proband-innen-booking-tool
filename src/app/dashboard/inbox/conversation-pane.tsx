@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Send, X, Reply, Paperclip, FileText, Image, File, UserCircle, ChevronDown, Upload, Trash2 } from "lucide-react";
+import { Loader2, Send, X, Reply, Paperclip, FileText, Image, File, UserCircle, ChevronDown, Upload, Trash2, Check, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "./rich-text-editor";
@@ -66,6 +66,16 @@ interface Props {
   // from one thread into another on rapid thread switches.
   onReplyDraftChange?: (threadId: string, draft: ReplyDraft | null) => void;
   onDelete?: () => void;
+  /** True wenn der Thread bereits durch eine echte E-Mail-Antwort
+   * (FROM = customerlove, vorher inbound) als beantwortet gilt.
+   * In dem Fall blendet das UI den manuellen Markier-Button aus,
+   * weil er redundant waere. */
+  autoAnswered?: boolean;
+  /** Anzeigename desjenigen, der den Thread manuell als beantwortet
+   * markiert hat (oder null, falls keine Markierung gesetzt ist). */
+  manuallyAnsweredBy?: string | null;
+  onMarkAnswered?: () => void | Promise<void>;
+  onUnmarkAnswered?: () => void | Promise<void>;
 }
 
 function formatFullDate(dateStr: string) {
@@ -91,6 +101,10 @@ export function ConversationPane({
   replyDraft,
   onReplyDraftChange,
   onDelete,
+  autoAnswered = false,
+  manuallyAnsweredBy = null,
+  onMarkAnswered,
+  onUnmarkAnswered,
 }: Props) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyHtml, setReplyHtml] = useState("");
@@ -354,6 +368,43 @@ export function ConversationPane({
           <span className="text-xs text-muted-foreground">
             {messages.length} Nachricht{messages.length !== 1 && "en"}
           </span>
+
+          {/* Manueller "Als beantwortet markieren" Toggle. Versteckt,
+              wenn der Thread bereits automatisch als beantwortet gilt
+              (echte E-Mail-Antwort vorhanden) — dann waere der Klick
+              redundant. Bei manueller Markierung zeigt das UI ein
+              Pill mit dem Namen + "Markierung entfernen" Link. */}
+          {!autoAnswered && (manuallyAnsweredBy ? (
+            <div className="inline-flex items-center gap-2">
+              <span
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 rounded-full px-2 py-1"
+                title={`Manuell als beantwortet markiert von ${manuallyAnsweredBy}`}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.25} />
+                Markiert von {manuallyAnsweredBy.split(/\s+/).find((w) => !w.endsWith(".")) || manuallyAnsweredBy}
+              </span>
+              {onUnmarkAnswered && (
+                <button
+                  onClick={() => { void onUnmarkAnswered(); }}
+                  className="text-[11px] text-gray-500 hover:text-gray-700 underline"
+                  title="Markierung entfernen"
+                >
+                  Entfernen
+                </button>
+              )}
+            </div>
+          ) : (
+            onMarkAnswered && (
+              <button
+                onClick={() => { void onMarkAnswered(); }}
+                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 text-gray-600 transition-colors"
+                title="Den Thread manuell als beantwortet markieren, z. B. nach einer telefonischen Rueckmeldung."
+              >
+                <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                Als beantwortet markieren
+              </button>
+            )
+          ))}
 
           {onDelete && (
             <button

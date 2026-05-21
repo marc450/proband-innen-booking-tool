@@ -35,6 +35,12 @@ export interface ThreadSummary {
   lastOutboundSentBy?: string | null;
   /** ISO timestamp of the most recent outbound message. Null if none. */
   lastOutboundDate?: string | null;
+  /** Display name set by manual "Als beantwortet markieren" action.
+   * Set when a staff member explicitly marks a thread as handled
+   * (e.g. they called the customer instead of replying by email). */
+  manuallyAnsweredBy?: string | null;
+  /** ISO timestamp of the manual mark, if any. */
+  manuallyAnsweredAt?: string | null;
   hasAttachments?: boolean;
 }
 
@@ -236,11 +242,25 @@ export function ThreadListPane({
               const hasReplyDraft = replyDraftThreadIds.includes(t.id);
               // "Beantwortet" = der Thread hatte einen echten Eingang
               // (FROM != customerlove) UND unsere letzte Nachricht ist
-              // ausgehend. Threads ohne echten Eingang (z. B. Kontakt-
-              // formular-Benachrichtigungen FROM=customerlove To=
-              // customerlove) duerfen NICHT als beantwortet markiert
-              // werden, weil es nichts zu beantworten gab.
-              const isAnswered = !t.lastMessageInbound && !!t.hasInboundMessage;
+              // ausgehend, ODER ein Staff hat den Thread manuell als
+              // erledigt markiert (z. B. Telefon-Antwort). Manuelle
+              // Marks gewinnen visuell auch, wenn der Thread nicht
+              // automatisch als beantwortet gelten wuerde.
+              const autoAnswered = !t.lastMessageInbound && !!t.hasInboundMessage;
+              const manuallyAnswered = !!t.manuallyAnsweredBy;
+              const isAnswered = autoAnswered || manuallyAnswered;
+              // Welcher Name kommt aufs Pill? Auto-Antwort gewinnt, weil
+              // sie der tatsaechliche Sender ist; manueller Mark als
+              // Fallback. Beantwortet ohne Namen, wenn weder Header
+              // noch Mark vorliegen.
+              const answeredByName =
+                (autoAnswered ? t.lastOutboundSentBy : null) ??
+                t.manuallyAnsweredBy ??
+                null;
+              const answeredAt =
+                (autoAnswered ? t.lastOutboundDate : null) ??
+                t.manuallyAnsweredAt ??
+                null;
               return (
                 <li key={t.id}>
                   <button
@@ -326,23 +346,25 @@ export function ThreadListPane({
                       <p className="text-[11px] text-muted-foreground truncate flex-1 min-w-0">
                         {t.snippet}
                       </p>
-                      {!t.lastMessageInbound && (
+                      {isAnswered && (
                         <span
                           className="text-[10px] font-medium text-emerald-700 bg-emerald-50 rounded px-1.5 py-0.5 inline-flex items-center gap-1 flex-shrink-0"
                           title={
-                            t.lastOutboundDate
-                              ? `Beantwortet ${formatDate(t.lastOutboundDate)}${
-                                  t.lastOutboundSentBy ? ` von ${t.lastOutboundSentBy}` : ""
+                            answeredAt
+                              ? `${manuallyAnswered && !autoAnswered ? "Markiert" : "Beantwortet"} ${formatDate(answeredAt)}${
+                                  answeredByName ? ` von ${answeredByName}` : ""
                                 }`
-                              : "Beantwortet"
+                              : manuallyAnswered && !autoAnswered
+                                ? "Manuell markiert"
+                                : "Beantwortet"
                           }
                         >
                           <Check className="h-3 w-3" strokeWidth={2.5} />
-                          {t.lastOutboundSentBy
-                            ? (t.lastOutboundSentBy
+                          {answeredByName
+                            ? (answeredByName
                                 .split(/\s+/)
                                 .find((w) => !w.endsWith(".")) ||
-                                t.lastOutboundSentBy)
+                                answeredByName)
                             : "Beantwortet"}
                         </span>
                       )}
