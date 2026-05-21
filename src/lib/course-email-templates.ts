@@ -98,7 +98,7 @@ const PROBANDINNEN_SECTION = `
       Leite den folgenden Link bitte direkt an Deine:n Proband:in weiter: <a href="https://proband-innen.ephia.de/book/privat" style="color:#0066FF;text-decoration:none;">https://proband-innen.ephia.de/book/privat</a>. Die Registrierung muss persönlich durch Deine:n Proband:in erfolgen, da AGB und Datenschutzerklärung bestätigt werden müssen. Über diesen Link ist die Buchung kostenfrei. Schnelles Handeln ist wichtig, da unsere Termine parallel öffentlich vergeben werden.
     </p>
     <p style="margin:0 0 20px;">
-      Sobald Dein:e Proband:in angemeldet ist, erhält die Person ca. <strong>48 Stunden vor Kursbeginn</strong> alle relevanten Informationen per E-Mail, inklusive genauer Adresse, gewünschter Ankunftszeit und Details zur Behandlung. Bitte denke bei der Auswahl an Personen mit mehreren möglichen Indikationen, damit vor Ort möglichst viele Behandlungstechniken gezeigt und geübt werden können. Achte dabei auf bekannte Kontraindikationen.
+      Sobald Dein:e Proband:in über den Link registriert ist, erhält die Person sofort eine Buchungsbestätigung mit allen relevanten Informationen: genaue Adresse, Ankunftszeit, Behandlungsdetails und Vorbereitungshinweise. <strong>72 und 24 Stunden vor dem Termin</strong> verschicken wir zusätzlich automatische Erinnerungen. Bitte denke bei der Auswahl an Personen mit mehreren möglichen Indikationen, damit vor Ort möglichst viele Behandlungstechniken gezeigt und geübt werden können. Achte dabei auf bekannte Kontraindikationen.
     </p>`;
 
 const VORAUSSETZUNG_SECTION = `
