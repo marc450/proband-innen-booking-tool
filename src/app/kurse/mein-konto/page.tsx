@@ -187,6 +187,14 @@ function normalizeCourseType(raw: string | null): CourseType {
       return "Praxiskurs";
     case "kombikurs":
       return "Kombikurs";
+    // Premium (Komplettpaket) is one course_bookings row that bundles
+    // an Onlinekurs + a Praxiskurs together. Render it as Kombi so
+    // makeEnriched splits it into the right pair of cards — otherwise
+    // the booking falls through to "Kurs" and gets misfiled into
+    // Abgeschlossen with the wrong pill and a "Teilgenommen am"
+    // label on a date that's still in the future.
+    case "premium":
+      return "Kombikurs";
     case "hybrid":
       return "Hybrid";
     default:
