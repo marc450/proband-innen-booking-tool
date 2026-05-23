@@ -102,6 +102,8 @@ export function TasksManager({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   // "Nur meine" is only meaningful for admins; nutzer only see their own.
   const [mineOnly, setMineOnly] = useState(false);
+  // "__all__" = no filter, "__none__" = unassigned, otherwise a staff id.
+  const [assigneeFilter, setAssigneeFilter] = useState<string>("__all__");
 
   // Create dialog
   const [showCreate, setShowCreate] = useState(false);
@@ -134,6 +136,13 @@ export function TasksManager({
     return tasks.filter((t) => {
       if (statusFilter !== "all" && t.status !== statusFilter) return false;
       if (mineOnly && t.assigned_to !== currentUserId) return false;
+      if (assigneeFilter === "__none__" && t.assigned_to !== null) return false;
+      if (
+        assigneeFilter !== "__all__" &&
+        assigneeFilter !== "__none__" &&
+        t.assigned_to !== assigneeFilter
+      )
+        return false;
       if (!q) return true;
       const hay = [
         t.title,
@@ -145,7 +154,7 @@ export function TasksManager({
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [tasks, search, statusFilter, mineOnly, currentUserId]);
+  }, [tasks, search, statusFilter, mineOnly, assigneeFilter, currentUserId]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -583,6 +592,33 @@ export function TasksManager({
                 <SelectItem value="done">Erledigt</SelectItem>
               </SelectContent>
             </Select>
+            {isAdmin && (
+              <Select
+                value={assigneeFilter}
+                onValueChange={(v) => setAssigneeFilter(v || "__all__")}
+              >
+                <SelectTrigger className="h-9 w-[200px]">
+                  <span className="truncate">
+                    {assigneeFilter === "__all__"
+                      ? "Alle Zugewiesenen"
+                      : assigneeFilter === "__none__"
+                        ? "Nicht zugewiesen"
+                        : displayName(
+                            staff.find((s) => s.id === assigneeFilter) ?? null,
+                          )}
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Alle Zugewiesenen</SelectItem>
+                  <SelectItem value="__none__">Nicht zugewiesen</SelectItem>
+                  {staff.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {displayName(s)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             {isAdmin && (
               <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
                 <input
