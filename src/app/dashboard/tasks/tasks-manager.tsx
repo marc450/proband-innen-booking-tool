@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Plus, Trash2, GraduationCap, CalendarClock } from "lucide-react";
+import { Plus, Trash2, GraduationCap, CalendarClock, Paperclip, Upload, X } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -114,6 +114,10 @@ export function TasksManager({
   const [newAssignee, setNewAssignee] = useState<string>("");
   const [newCourseId, setNewCourseId] = useState<string>("");
   const [newDueDate, setNewDueDate] = useState<string>("");
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const createFileInputRef = useRef<HTMLInputElement>(null);
+  // 25 MB matches MAX_BYTES in /api/admin/tasks/[id]/attachments/route.ts
+  const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 
   // Delete
   const [deleteTarget, setDeleteTarget] = useState<Task | null>(null);
@@ -183,7 +187,35 @@ export function TasksManager({
     setNewAssignee("");
     setNewCourseId("");
     setNewDueDate("");
+    setNewFiles([]);
     setCreateError(null);
+    if (createFileInputRef.current) createFileInputRef.current.value = "";
+  };
+
+  const handleAddFiles = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const picked = Array.from(files);
+    const tooBig = picked.find((f) => f.size > MAX_ATTACHMENT_BYTES);
+    if (tooBig) {
+      setCreateError(
+        `Die Datei "${tooBig.name}" ist groesser als 25 MB und kann nicht angehaengt werden.`,
+      );
+      if (createFileInputRef.current) createFileInputRef.current.value = "";
+      return;
+    }
+    setCreateError(null);
+    setNewFiles((prev) => [...prev, ...picked]);
+    if (createFileInputRef.current) createFileInputRef.current.value = "";
+  };
+
+  const removeFile = (index: number) => {
+    setNewFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const formatBytes = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const openCreate = () => {
@@ -223,12 +255,40 @@ export function TasksManager({
       )
       .single();
 
-    setCreating(false);
     if (error || !data) {
+      setCreating(false);
       setCreateError(error?.message || "Aufgabe konnte nicht erstellt werden.");
       return;
     }
-    setTasks((prev) => [data as unknown as Task, ...prev]);
+
+    const createdTask = data as unknown as Task;
+
+    // Upload queued attachments sequentially. On failure we keep the task
+    // and surface the error so the user can retry via the detail page.
+    const failed: string[] = [];
+    for (const file of newFiles) {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(
+        `/api/admin/tasks/${createdTask.id}/attachments`,
+        { method: "POST", body: form },
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        failed.push(`${file.name}: ${body?.error || res.status}`);
+      }
+    }
+
+    setCreating(false);
+    setTasks((prev) => [createdTask, ...prev]);
+
+    if (failed.length > 0) {
+      setAlertState({
+        title: "Aufgabe angelegt, aber Anhänge fehlgeschlagen",
+        description: failed.join("\n"),
+      });
+    }
+
     setShowCreate(false);
     resetCreateForm();
   };
@@ -414,6 +474,53 @@ export function TasksManager({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5">
+              <Label>Anhänge (optional)</Label>
+              <input
+                ref={createFileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => handleAddFiles(e.target.files)}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => createFileInputRef.current?.click()}
+                disabled={creating}
+              >
+                <Upload className="h-4 w-4 mr-1.5" />
+                Dateien auswählen
+              </Button>
+              {newFiles.length > 0 && (
+                <ul className="space-y-1.5 pt-1">
+                  {newFiles.map((file, idx) => (
+                    <li
+                      key={`${file.name}-${idx}`}
+                      className="flex items-center justify-between gap-2 rounded-md bg-muted/50 px-2.5 py-1.5"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="text-sm truncate">{file.name}</span>
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          {formatBytes(file.size)}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(idx)}
+                        disabled={creating}
+                        className="text-muted-foreground hover:text-red-500 disabled:opacity-50"
+                        title="Entfernen"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             {createError && (
               <p className="text-sm text-destructive">{createError}</p>
             )}
@@ -430,7 +537,11 @@ export function TasksManager({
               Abbrechen
             </Button>
             <Button onClick={handleCreate} disabled={creating}>
-              {creating ? "Wird angelegt..." : "Aufgabe anlegen"}
+              {creating
+                ? newFiles.length > 0
+                  ? "Wird hochgeladen..."
+                  : "Wird angelegt..."
+                : "Aufgabe anlegen"}
             </Button>
           </DialogFooter>
         </DialogContent>
