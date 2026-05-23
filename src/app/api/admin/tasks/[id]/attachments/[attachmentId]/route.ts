@@ -5,7 +5,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const BUCKET = "task-attachments";
 const SIGNED_URL_TTL = 60; // seconds
 
-async function assertStaff() {
+type StaffRole = "admin" | "nutzer";
+
+async function assertStaff(): Promise<
+  { id: string; role: StaffRole } | null
+> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -18,8 +22,29 @@ async function assertStaff() {
     .eq("id", user.id)
     .single();
 
-  if (profile?.role === "admin" || profile?.role === "nutzer") return user;
+  if (profile?.role === "admin" || profile?.role === "nutzer") {
+    return { id: user.id, role: profile.role as StaffRole };
+  }
   return null;
+}
+
+async function assertCanAccessTask(
+  admin: ReturnType<typeof createAdminClient>,
+  taskId: string,
+  user: { id: string; role: StaffRole },
+): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  if (user.role === "admin") return { ok: true };
+  const { data: task, error } = await admin
+    .from("tasks")
+    .select("assigned_to")
+    .eq("id", taskId)
+    .maybeSingle();
+  if (error) return { ok: false, status: 500, error: error.message };
+  if (!task)
+    return { ok: false, status: 404, error: "Aufgabe nicht gefunden." };
+  if (task.assigned_to !== user.id)
+    return { ok: false, status: 403, error: "Forbidden" };
+  return { ok: true };
 }
 
 // GET: return a short-lived signed URL the browser can open to download
@@ -40,6 +65,10 @@ export async function GET(
 
   const { id: taskId, attachmentId } = await params;
   const admin = createAdminClient();
+
+  const gate = await assertCanAccessTask(admin, taskId, user);
+  if (!gate.ok)
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
 
   const { data: att, error } = await admin
     .from("task_attachments")
@@ -84,6 +113,10 @@ export async function DELETE(
 
   const { id: taskId, attachmentId } = await params;
   const admin = createAdminClient();
+
+  const gate = await assertCanAccessTask(admin, taskId, user);
+  if (!gate.ok)
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
 
   const { data: att, error } = await admin
     .from("task_attachments")

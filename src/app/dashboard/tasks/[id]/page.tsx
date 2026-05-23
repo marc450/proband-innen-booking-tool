@@ -41,6 +41,7 @@ export default async function TaskDetailPage({
   if (!profile || (profile.role !== "admin" && profile.role !== "nutzer")) {
     redirect("/dashboard");
   }
+  const role = profile.role as "admin" | "nutzer";
 
   const admin = createAdminClient();
 
@@ -59,6 +60,12 @@ export default async function TaskDetailPage({
     ]);
 
   if (!taskData) notFound();
+
+  // Nutzer can only open tasks assigned to them.
+  const task = taskData as unknown as Task;
+  if (role === "nutzer" && task.assigned_to !== user.id) {
+    redirect("/dashboard/tasks");
+  }
 
   const [{ data: notesData }, { data: attachmentsData }] = await Promise.all([
     admin
@@ -79,12 +86,13 @@ export default async function TaskDetailPage({
 
   return (
     <TaskDetail
-      initialTask={taskData as unknown as Task}
+      initialTask={task}
       initialNotes={(notesData ?? []) as unknown as TaskNote[]}
       initialAttachments={(attachmentsData ?? []) as unknown as TaskAttachment[]}
       staff={(staffData ?? []) as TaskProfileRef[]}
       courseSessions={(sessionsData ?? []) as TaskCourseSessionRef[]}
       currentUserId={user.id}
+      role={role}
     />
   );
 }

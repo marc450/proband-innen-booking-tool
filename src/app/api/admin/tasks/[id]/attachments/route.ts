@@ -6,7 +6,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const BUCKET = "task-attachments";
 const MAX_BYTES = 25 * 1024 * 1024; // 25 MB
 
-async function assertStaff() {
+type StaffRole = "admin" | "nutzer";
+
+async function assertStaff(): Promise<
+  { id: string; email?: string | null; role: StaffRole } | null
+> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -19,7 +23,9 @@ async function assertStaff() {
     .eq("id", user.id)
     .single();
 
-  if (profile?.role === "admin" || profile?.role === "nutzer") return user;
+  if (profile?.role === "admin" || profile?.role === "nutzer") {
+    return { id: user.id, email: user.email, role: profile.role as StaffRole };
+  }
   return null;
 }
 
@@ -53,10 +59,11 @@ export async function POST(
 
   const admin = createAdminClient();
 
-  // Make sure the task exists (avoid orphaned uploads).
+  // Make sure the task exists and the caller is allowed to act on it.
+  // Nutzer can only upload to tasks assigned to them.
   const { data: task, error: taskErr } = await admin
     .from("tasks")
-    .select("id")
+    .select("id, assigned_to")
     .eq("id", taskId)
     .maybeSingle();
   if (taskErr)
@@ -65,6 +72,9 @@ export async function POST(
     return NextResponse.json({ error: "Aufgabe nicht gefunden." }, {
       status: 404,
     });
+  if (user.role === "nutzer" && task.assigned_to !== user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const safeName = file.name.replace(/[^\w.\-]+/g, "_").slice(0, 200) ||
     "datei";

@@ -48,6 +48,7 @@ interface Props {
   staff: TaskProfileRef[];
   courseSessions: TaskCourseSessionRef[];
   currentUserId: string;
+  role: "admin" | "nutzer";
 }
 
 type SortKey =
@@ -92,13 +93,16 @@ export function TasksManager({
   staff,
   courseSessions,
   currentUserId,
+  role,
 }: Props) {
   const router = useRouter();
   const supabase = createClient();
+  const isAdmin = role === "admin";
 
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  // "Nur meine" is only meaningful for admins; nutzer only see their own.
   const [mineOnly, setMineOnly] = useState(false);
 
   // Create dialog
@@ -449,22 +453,26 @@ export function TasksManager({
                 <SelectItem value="done">Erledigt</SelectItem>
               </SelectContent>
             </Select>
-            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={mineOnly}
-                onChange={(e) => setMineOnly(e.target.checked)}
-                className="h-4 w-4 rounded"
-              />
-              <span>Nur meine</span>
-            </label>
+            {isAdmin && (
+              <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={mineOnly}
+                  onChange={(e) => setMineOnly(e.target.checked)}
+                  className="h-4 w-4 rounded"
+                />
+                <span>Nur meine</span>
+              </label>
+            )}
           </div>
         }
         actions={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-1.5" />
-            Neue Aufgabe
-          </Button>
+          isAdmin ? (
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4 mr-1.5" />
+              Neue Aufgabe
+            </Button>
+          ) : null
         }
       />
 
@@ -485,13 +493,15 @@ export function TasksManager({
                 direction={sortDir}
                 onSort={handleSort}
               />
-              <SortableHead
-                label="Zugewiesen"
-                sortKey="assignee"
-                currentKey={sortKey}
-                direction={sortDir}
-                onSort={handleSort}
-              />
+              {isAdmin && (
+                <SortableHead
+                  label="Zugewiesen"
+                  sortKey="assignee"
+                  currentKey={sortKey}
+                  direction={sortDir}
+                  onSort={handleSort}
+                />
+              )}
               <SortableHead
                 label="Status"
                 sortKey="status"
@@ -520,7 +530,7 @@ export function TasksManager({
                 direction={sortDir}
                 onSort={handleSort}
               />
-              <TableHead />
+              {isAdmin && <TableHead />}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -544,33 +554,38 @@ export function TasksManager({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell
-                    className="align-top"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Select
-                      value={t.assigned_to || "__none__"}
-                      onValueChange={(v) =>
-                        handleAssigneeChange(t, !v || v === "__none__" ? "" : v)
-                      }
+                  {isAdmin && (
+                    <TableCell
+                      className="align-top"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <SelectTrigger className="h-8 w-[180px]">
-                        <span className="truncate">
-                          {displayName(t.assignee)}
-                        </span>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none__">
-                          Nicht zugewiesen
-                        </SelectItem>
-                        {staff.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {displayName(s)}
+                      <Select
+                        value={t.assigned_to || "__none__"}
+                        onValueChange={(v) =>
+                          handleAssigneeChange(
+                            t,
+                            !v || v === "__none__" ? "" : v,
+                          )
+                        }
+                      >
+                        <SelectTrigger className="h-8 w-[180px]">
+                          <span className="truncate">
+                            {displayName(t.assignee)}
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">
+                            Nicht zugewiesen
                           </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
+                          {staff.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {displayName(s)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                  )}
                   <TableCell
                     className="align-top"
                     onClick={(e) => e.stopPropagation()}
@@ -633,19 +648,21 @@ export function TasksManager({
                       locale: de,
                     })}
                   </TableCell>
-                  <TableCell
-                    className="align-top"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDeleteTarget(t)}
-                      title="Löschen"
+                  {isAdmin && (
+                    <TableCell
+                      className="align-top"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500" />
-                    </Button>
-                  </TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleteTarget(t)}
+                        title="Löschen"
+                      >
+                        <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500" />
+                      </Button>
+                    </TableCell>
+                  )}
                 </TableRow>
               );
             })}

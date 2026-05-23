@@ -29,15 +29,22 @@ export default async function TasksPage() {
   if (!profile || (profile.role !== "admin" && profile.role !== "nutzer")) {
     redirect("/dashboard");
   }
+  const role = profile.role as "admin" | "nutzer";
 
   const admin = createAdminClient();
 
+  // Nutzer only see tasks assigned to them. Admin sees everything.
+  let tasksQuery = admin
+    .from("tasks")
+    .select(TASK_SELECT)
+    .order("created_at", { ascending: false });
+  if (role === "nutzer") {
+    tasksQuery = tasksQuery.eq("assigned_to", user.id);
+  }
+
   const [{ data: tasksData }, { data: staffData }, { data: sessionsData }] =
     await Promise.all([
-      admin
-        .from("tasks")
-        .select(TASK_SELECT)
-        .order("created_at", { ascending: false }),
+      tasksQuery,
       admin
         .from("profiles")
         .select("id, title, first_name, last_name")
@@ -59,6 +66,7 @@ export default async function TasksPage() {
       staff={staff}
       courseSessions={sessions}
       currentUserId={user.id}
+      role={role}
     />
   );
 }
