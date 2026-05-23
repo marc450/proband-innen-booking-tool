@@ -38,15 +38,23 @@ export default async function SettingsPage() {
 
   // Only staff (admin / nutzer) belong in this table. Customer accounts
   // created via the LW SSO bridge get role='student' and must be excluded.
-  const [{ data: { users: authUsers } }, { data: profiles }] = await Promise.all([
-    adminClient.auth.admin.listUsers(),
-    adminClient
-      .from("profiles")
-      .select("id, title, first_name, last_name, role, is_dozent, is_kursbetreuung")
-      .in("role", ["admin", "nutzer"]),
-  ]);
+  const { data: profiles } = await adminClient
+    .from("profiles")
+    .select("id, title, first_name, last_name, role, is_dozent, is_kursbetreuung")
+    .in("role", ["admin", "nutzer"]);
 
-  const authMap = new Map(authUsers.map((u) => [u.id, u]));
+  // Fetch each staff auth row by id. listUsers() is paginated (50/page
+  // default, 1000 max), so after the LW SSO migration added many
+  // 'student' auth rows the staff ids no longer fit on the first page.
+  const authRecords = await Promise.all(
+    (profiles ?? []).map((p: any) => adminClient.auth.admin.getUserById(p.id))
+  );
+  const authMap = new Map(
+    authRecords
+      .map((r) => r.data?.user)
+      .filter((u): u is NonNullable<typeof u> => !!u)
+      .map((u) => [u.id, u])
+  );
 
   const users: AdminUser[] = (profiles || [])
     .map((p: any) => {

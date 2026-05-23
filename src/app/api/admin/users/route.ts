@@ -33,13 +33,18 @@ export async function GET() {
     .in("role", ["admin", "nutzer"]);
   if (profilesErr) return NextResponse.json({ error: profilesErr.message }, { status: 500 });
 
-  const {
-    data: { users: authUsers },
-    error,
-  } = await adminClient.auth.admin.listUsers();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  const authMap = new Map(authUsers.map((u) => [u.id, u]));
+  // Fetch each staff auth row by id. listUsers() is paginated (50/page
+  // default, 1000 max), so after the LW SSO migration added many
+  // 'student' auth rows the staff ids no longer fit on the first page.
+  const authRecords = await Promise.all(
+    (profiles ?? []).map((p) => adminClient.auth.admin.getUserById(p.id))
+  );
+  const authMap = new Map(
+    authRecords
+      .map((r) => r.data?.user)
+      .filter((u): u is NonNullable<typeof u> => !!u)
+      .map((u) => [u.id, u])
+  );
 
   const result = (profiles || [])
     .map((p) => {
