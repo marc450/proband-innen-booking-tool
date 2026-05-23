@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { ReactNode } from "react";
 
 interface Props {
-  title: string;
+  /** Omit when the surrounding page already renders the section title. */
+  title?: string;
   count?: number;
   countLabel?: string;
   searchValue?: string;
@@ -31,7 +32,7 @@ export function TableHeaderBar({
     <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
       {/* Left: title + count */}
       <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-bold">{title}</h1>
+        {title && <h1 className="text-2xl font-bold">{title}</h1>}
         {count !== undefined && (
           <span className="text-sm text-muted-foreground">
             {count} {countLabel || "Einträge"}
