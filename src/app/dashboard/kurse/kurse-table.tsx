@@ -10,7 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, FileDown } from "lucide-react";
+import { hasProgramTemplate } from "@/lib/course-program-pdf-meta";
 
 export interface KurseRow {
   id: string;
@@ -19,6 +20,8 @@ export interface KurseRow {
   startTime: string | null;
   durationMinutes: number | null;
   courseTitle: string;
+  /** course_templates.course_key — used to gate the Programm-PDF button. */
+  courseKey: string | null;
   instructorName: string | null;
   betreuerName: string | null;
   aerztBooked: number;
@@ -271,6 +274,11 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
             <SortableHead sortKey="zahnmedizin" current={sortKey} dir={sortDir} onSort={onSort} />
             <SortableHead sortKey="cme" current={sortKey} dir={sortDir} onSort={onSort} />
             <SortableHead sortKey="vnr" current={sortKey} dir={sortDir} onSort={onSort} />
+            <TableHead className="text-right">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Programm
+              </span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -398,6 +406,20 @@ export function KurseTable({ rows }: { rows: KurseRow[] }) {
                   <Link href={`/dashboard/kurse/${r.id}`} className="block text-xs font-mono text-muted-foreground">
                     {r.vnrPraxis ?? "—"}
                   </Link>
+                </TableCell>
+                <TableCell className="text-right">
+                  {hasProgramTemplate(r.courseKey) ? (
+                    <a
+                      href={`/api/admin/course-program-pdf?sessionId=${r.id}`}
+                      title="Programm-PDF für die Landesärztekammer herunterladen"
+                      className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      <FileDown className="h-4 w-4" />
+                      <span className="sr-only">Programm-PDF herunterladen</span>
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
               </TableRow>
             );

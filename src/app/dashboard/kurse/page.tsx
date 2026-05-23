@@ -33,9 +33,9 @@ export default async function KursePage() {
     templateIds.length
       ? admin
           .from("course_templates")
-          .select("id, title, course_label_de")
+          .select("id, title, course_label_de, course_key")
           .in("id", templateIds)
-      : Promise.resolve({ data: [] as Array<{ id: string; title: string; course_label_de: string | null }> }),
+      : Promise.resolve({ data: [] as Array<{ id: string; title: string; course_label_de: string | null; course_key: string | null }> }),
     sessionList.length
       ? admin
           .from("courses")
@@ -131,6 +131,7 @@ export default async function KursePage() {
       startTime: (s.start_time as string | null) ?? null,
       durationMinutes: (s.duration_minutes as number | null) ?? null,
       courseTitle: tmpl?.course_label_de || tmpl?.title || "—",
+      courseKey: (tmpl?.course_key as string | null) ?? null,
       instructorName: (s.instructor_name as string | null) ?? null,
       betreuerName: (s.betreuer_name as string | null) ?? null,
       aerztBooked: (s.booked_seats as number | null) ?? 0,
