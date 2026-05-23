@@ -386,6 +386,7 @@ export interface TaskCourseSessionRef {
   date_iso: string;
   label_de: string | null;
   instructor_name: string | null;
+  template: { title: string } | null;
 }
 
 export interface Task {

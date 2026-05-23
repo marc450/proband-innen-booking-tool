@@ -17,7 +17,7 @@ const TASK_SELECT = `
   course_session_id, due_date, created_at, updated_at,
   assignee:profiles!tasks_assigned_to_fkey(id, title, first_name, last_name),
   creator:profiles!tasks_created_by_fkey(id, title, first_name, last_name),
-  course_session:course_sessions!tasks_course_session_id_fkey(id, date_iso, label_de, instructor_name)
+  course_session:course_sessions!tasks_course_session_id_fkey(id, date_iso, label_de, instructor_name, template:course_templates!course_sessions_template_id_fkey(title))
 `;
 
 export default async function TaskDetailPage({
@@ -55,7 +55,7 @@ export default async function TaskDetailPage({
         .order("last_name", { ascending: true }),
       admin
         .from("course_sessions")
-        .select("id, date_iso, label_de, instructor_name")
+        .select("id, date_iso, label_de, instructor_name, template:course_templates!course_sessions_template_id_fkey(title)")
         .order("date_iso", { ascending: false }),
     ]);
 
@@ -90,7 +90,7 @@ export default async function TaskDetailPage({
       initialNotes={(notesData ?? []) as unknown as TaskNote[]}
       initialAttachments={(attachmentsData ?? []) as unknown as TaskAttachment[]}
       staff={(staffData ?? []) as TaskProfileRef[]}
-      courseSessions={(sessionsData ?? []) as TaskCourseSessionRef[]}
+      courseSessions={(sessionsData ?? []) as unknown as TaskCourseSessionRef[]}
       currentUserId={user.id}
       role={role}
     />

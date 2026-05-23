@@ -10,7 +10,7 @@ const TASK_SELECT = `
   course_session_id, due_date, created_at, updated_at,
   assignee:profiles!tasks_assigned_to_fkey(id, title, first_name, last_name),
   creator:profiles!tasks_created_by_fkey(id, title, first_name, last_name),
-  course_session:course_sessions!tasks_course_session_id_fkey(id, date_iso, label_de, instructor_name)
+  course_session:course_sessions!tasks_course_session_id_fkey(id, date_iso, label_de, instructor_name, template:course_templates!course_sessions_template_id_fkey(title))
 `;
 
 type StaffRole = "admin" | "nutzer";
@@ -37,13 +37,14 @@ async function assertStaff(): Promise<
 function sessionLabel(s: {
   date_iso: string | null;
   label_de: string | null;
+  template: { title: string } | null;
 } | null): string | null {
   if (!s) return null;
   const date = s.date_iso
     ? format(new Date(s.date_iso), "dd.MM.yyyy", { locale: de })
     : "";
-  const base = s.label_de || "Kurstermin";
-  return [date, base].filter(Boolean).join(", ") || null;
+  const title = s.template?.title || s.label_de || "Kurstermin";
+  return [title, date].filter(Boolean).join(", ") || null;
 }
 
 export async function POST(req: NextRequest) {
@@ -118,6 +119,7 @@ export async function POST(req: NextRequest) {
             course_session: {
               date_iso: string | null;
               label_de: string | null;
+              template: { title: string } | null;
             } | null;
           }).course_session,
         ),

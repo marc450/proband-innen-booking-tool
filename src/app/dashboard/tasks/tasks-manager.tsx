@@ -83,8 +83,8 @@ function sessionLabel(s: TaskCourseSessionRef | null | undefined): string {
   const date = s.date_iso
     ? format(new Date(s.date_iso), "dd.MM.yyyy", { locale: de })
     : "";
-  const base = s.label_de || "Kurstermin";
-  return [date, base].filter(Boolean).join(", ");
+  const title = s.template?.title || s.label_de || "Kurstermin";
+  return [title, date].filter(Boolean).join(", ");
 }
 
 export function TasksManager({
@@ -742,6 +742,11 @@ export function TasksManager({
                         <GraduationCap className="h-4 w-4 mt-0.5 text-[#0066FF] shrink-0" />
                         <div className="flex flex-col leading-tight">
                           <span className="font-medium">
+                            {t.course_session.template?.title ||
+                              t.course_session.label_de ||
+                              "Kurstermin"}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
                             {t.course_session.date_iso
                               ? format(
                                   new Date(t.course_session.date_iso),
@@ -749,9 +754,6 @@ export function TasksManager({
                                   { locale: de },
                                 )
                               : ""}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {t.course_session.label_de || "Kurstermin"}
                           </span>
                         </div>
                       </div>
