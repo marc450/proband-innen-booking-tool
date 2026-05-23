@@ -363,17 +363,15 @@ export function TaskDetail({
           <ArrowLeft className="h-4 w-4" />
           Zurück zur Übersicht
         </Link>
-        {isAdmin && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setDeleteTask(true)}
-            className="text-red-600 hover:text-red-700"
-          >
-            <Trash2 className="h-4 w-4 mr-1.5" />
-            Aufgabe löschen
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setDeleteTask(true)}
+          className="text-red-600 hover:text-red-700"
+        >
+          <Trash2 className="h-4 w-4 mr-1.5" />
+          Aufgabe löschen
+        </Button>
       </div>
 
       <Card>
@@ -384,7 +382,6 @@ export function TaskDetail({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="text-base font-medium"
-              readOnly={!isAdmin}
             />
           </div>
 
@@ -395,7 +392,6 @@ export function TaskDetail({
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
               placeholder="Optionaler Kontext."
-              readOnly={!isAdmin}
             />
           </div>
 
@@ -445,7 +441,6 @@ export function TaskDetail({
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  readOnly={!isAdmin}
                 />
                 {overdue && (
                   <span className="inline-flex items-center gap-1 text-xs text-red-600 font-medium whitespace-nowrap">
@@ -461,7 +456,6 @@ export function TaskDetail({
               <Select
                 value={task.course_session_id || "__none__"}
                 onValueChange={handleCourseChange}
-                disabled={!isAdmin}
               >
                 <SelectTrigger>
                   <span className="truncate">
@@ -495,16 +489,14 @@ export function TaskDetail({
                 locale: de,
               })}
             </div>
-            {isAdmin && (
-              <Button
-                onClick={handleSaveMeta}
-                disabled={!metaDirty || savingMeta}
-                size="sm"
-              >
-                <Save className="h-4 w-4 mr-1.5" />
-                {savingMeta ? "Speichern..." : "Speichern"}
-              </Button>
-            )}
+            <Button
+              onClick={handleSaveMeta}
+              disabled={!metaDirty || savingMeta}
+              size="sm"
+            >
+              <Save className="h-4 w-4 mr-1.5" />
+              {savingMeta ? "Speichern..." : "Speichern"}
+            </Button>
           </div>
         </CardContent>
       </Card>

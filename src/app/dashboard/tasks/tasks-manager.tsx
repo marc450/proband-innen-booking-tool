@@ -200,10 +200,12 @@ export function TasksManager({
     setCreating(true);
     setCreateError(null);
 
+    // Nutzer can only create self-assigned tasks (they would lose visibility
+    // otherwise, and RLS would block any other assignee anyway).
     const insertRow = {
       title,
       description: newDescription.trim() || null,
-      assigned_to: newAssignee || null,
+      assigned_to: isAdmin ? newAssignee || null : currentUserId,
       created_by: currentUserId,
       course_session_id: newCourseId || null,
       due_date: newDueDate || null,
@@ -339,34 +341,42 @@ export function TasksManager({
                 rows={3}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Zugewiesen an</Label>
-                <Select
-                  value={newAssignee || "__none__"}
-                  onValueChange={(v) =>
-                    setNewAssignee(!v || v === "__none__" ? "" : v)
-                  }
-                >
-                  <SelectTrigger>
-                    <span>
-                      {newAssignee
-                        ? displayName(
-                            staff.find((s) => s.id === newAssignee) ?? null,
-                          )
-                        : "Niemandem"}
-                    </span>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Niemandem</SelectItem>
-                    {staff.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {displayName(s)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div
+              className={
+                isAdmin
+                  ? "grid grid-cols-2 gap-3"
+                  : "grid grid-cols-1 gap-3"
+              }
+            >
+              {isAdmin && (
+                <div className="space-y-1.5">
+                  <Label>Zugewiesen an</Label>
+                  <Select
+                    value={newAssignee || "__none__"}
+                    onValueChange={(v) =>
+                      setNewAssignee(!v || v === "__none__" ? "" : v)
+                    }
+                  >
+                    <SelectTrigger>
+                      <span>
+                        {newAssignee
+                          ? displayName(
+                              staff.find((s) => s.id === newAssignee) ?? null,
+                            )
+                          : "Niemandem"}
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Niemandem</SelectItem>
+                      {staff.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {displayName(s)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label>Fällig am</Label>
                 <Input
@@ -467,12 +477,10 @@ export function TasksManager({
           </div>
         }
         actions={
-          isAdmin ? (
-            <Button onClick={openCreate}>
-              <Plus className="h-4 w-4 mr-1.5" />
-              Neue Aufgabe
-            </Button>
-          ) : null
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Neue Aufgabe
+          </Button>
         }
       />
 
@@ -530,7 +538,7 @@ export function TasksManager({
                 direction={sortDir}
                 onSort={handleSort}
               />
-              {isAdmin && <TableHead />}
+              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -648,21 +656,19 @@ export function TasksManager({
                       locale: de,
                     })}
                   </TableCell>
-                  {isAdmin && (
-                    <TableCell
-                      className="align-top"
-                      onClick={(e) => e.stopPropagation()}
+                  <TableCell
+                    className="align-top"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDeleteTarget(t)}
+                      title="Löschen"
                     >
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeleteTarget(t)}
-                        title="Löschen"
-                      >
-                        <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500" />
-                      </Button>
-                    </TableCell>
-                  )}
+                      <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               );
             })}
