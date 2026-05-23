@@ -6,7 +6,6 @@ import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { Plus, Trash2, GraduationCap, CalendarClock, Paperclip, Upload, X } from "lucide-react";
 
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -96,7 +95,6 @@ export function TasksManager({
   role,
 }: Props) {
   const router = useRouter();
-  const supabase = createClient();
   const isAdmin = role === "admin";
 
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
@@ -232,36 +230,27 @@ export function TasksManager({
     setCreating(true);
     setCreateError(null);
 
-    // Nutzer can only create self-assigned tasks (they would lose visibility
-    // otherwise, and RLS would block any other assignee anyway).
-    const insertRow = {
+    const payload = {
       title,
       description: newDescription.trim() || null,
       assigned_to: isAdmin ? newAssignee || null : currentUserId,
-      created_by: currentUserId,
       course_session_id: newCourseId || null,
       due_date: newDueDate || null,
     };
 
-    const { data, error } = await supabase
-      .from("tasks")
-      .insert(insertRow)
-      .select(
-        `id, title, description, status, assigned_to, created_by,
-         course_session_id, due_date, created_at, updated_at,
-         assignee:profiles!tasks_assigned_to_fkey(id, title, first_name, last_name),
-         creator:profiles!tasks_created_by_fkey(id, title, first_name, last_name),
-         course_session:course_sessions!tasks_course_session_id_fkey(id, date_iso, label_de, instructor_name)`,
-      )
-      .single();
-
-    if (error || !data) {
+    const res = await fetch("/api/admin/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
       setCreating(false);
-      setCreateError(error?.message || "Aufgabe konnte nicht erstellt werden.");
+      setCreateError(data?.error || "Aufgabe konnte nicht erstellt werden.");
       return;
     }
 
-    const createdTask = data as unknown as Task;
+    const createdTask = data.task as Task;
 
     // Upload queued attachments sequentially. On failure we keep the task
     // and surface the error so the user can retry via the detail page.
@@ -269,13 +258,13 @@ export function TasksManager({
     for (const file of newFiles) {
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch(
+      const upRes = await fetch(
         `/api/admin/tasks/${createdTask.id}/attachments`,
         { method: "POST", body: form },
       );
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        failed.push(`${file.name}: ${body?.error || res.status}`);
+      if (!upRes.ok) {
+        const body = await upRes.json().catch(() => ({}));
+        failed.push(`${file.name}: ${body?.error || upRes.status}`);
       }
     }
 
@@ -293,21 +282,38 @@ export function TasksManager({
     resetCreateForm();
   };
 
+  const patchTask = async (
+    taskId: string,
+    patch: Record<string, unknown>,
+  ): Promise<Task | null> => {
+    const res = await fetch(`/api/admin/tasks/${taskId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setAlertState({
+        title: "Fehler",
+        description: data?.error || "Aktion fehlgeschlagen.",
+      });
+      return null;
+    }
+    return data.task as Task;
+  };
+
   const handleStatusChange = async (task: Task, status: TaskStatus) => {
     const prev = tasks;
     setTasks((curr) =>
       curr.map((t) => (t.id === task.id ? { ...t, status } : t)),
     );
-    const { error } = await supabase
-      .from("tasks")
-      .update({ status })
-      .eq("id", task.id);
-    if (error) {
+    const updated = await patchTask(task.id, { status });
+    if (!updated) {
       setTasks(prev);
-      setAlertState({
-        title: "Fehler",
-        description: error.message,
-      });
+    } else {
+      setTasks((curr) =>
+        curr.map((t) => (t.id === updated.id ? updated : t)),
+      );
     }
   };
 
@@ -321,26 +327,29 @@ export function TasksManager({
         t.id === task.id ? { ...t, assigned_to: next, assignee } : t,
       ),
     );
-    const { error } = await supabase
-      .from("tasks")
-      .update({ assigned_to: next })
-      .eq("id", task.id);
-    if (error) {
+    const updated = await patchTask(task.id, { assigned_to: next });
+    if (!updated) {
       setTasks(prev);
-      setAlertState({ title: "Fehler", description: error.message });
+    } else {
+      setTasks((curr) =>
+        curr.map((t) => (t.id === updated.id ? updated : t)),
+      );
     }
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
-    const { error } = await supabase
-      .from("tasks")
-      .delete()
-      .eq("id", deleteTarget.id);
+    const res = await fetch(`/api/admin/tasks/${deleteTarget.id}`, {
+      method: "DELETE",
+    });
     setDeleting(false);
-    if (error) {
-      setAlertState({ title: "Fehler", description: error.message });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setAlertState({
+        title: "Fehler",
+        description: data?.error || "Aufgabe konnte nicht gelöscht werden.",
+      });
     } else {
       setTasks((prev) => prev.filter((t) => t.id !== deleteTarget.id));
     }

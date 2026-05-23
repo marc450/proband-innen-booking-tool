@@ -68,6 +68,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
   const [isKursbetreuung, setIsKursbetreuung] = useState(false);
   const [dozentEmployer, setDozentEmployer] = useState("");
   const [dozentSpecialization, setDozentSpecialization] = useState("");
+  const [slackUserId, setSlackUserId] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
   const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -82,6 +83,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
   const [editIsKursbetreuung, setEditIsKursbetreuung] = useState(false);
   const [editDozentEmployer, setEditDozentEmployer] = useState("");
   const [editDozentSpecialization, setEditDozentSpecialization] = useState("");
+  const [editSlackUserId, setEditSlackUserId] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
@@ -122,6 +124,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     setTitle(""); setFirstName(""); setLastName(""); setEmail(""); setPassword("");
     setRole("nutzer"); setIsDozent(false); setIsKursbetreuung(false);
     setDozentEmployer(""); setDozentSpecialization("");
+    setSlackUserId("");
     setCreateError(null); setCreatedCredentials(null); setCopied(false);
   };
 
@@ -140,7 +143,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     const res = await fetch("/api/admin/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: title || null, first_name: firstName, last_name: lastName, email, password, role, is_dozent: isDozent, is_kursbetreuung: isKursbetreuung, dozent_employer: isDozent ? dozentEmployer : null, dozent_specialization: isDozent ? dozentSpecialization : null }),
+      body: JSON.stringify({ title: title || null, first_name: firstName, last_name: lastName, email, password, role, is_dozent: isDozent, is_kursbetreuung: isKursbetreuung, slack_user_id: slackUserId || null, dozent_employer: isDozent ? dozentEmployer : null, dozent_specialization: isDozent ? dozentSpecialization : null }),
     });
     const data = await res.json();
     setSaving(false);
@@ -172,6 +175,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     setEditIsKursbetreuung(u.is_kursbetreuung);
     setEditDozentEmployer(u.dozent_employer || "");
     setEditDozentSpecialization(u.dozent_specialization || "");
+    setEditSlackUserId(u.slack_user_id || "");
     setEditError(null);
   };
 
@@ -186,7 +190,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     const res = await fetch(`/api/admin/users/${editTarget.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: editTitle || null, first_name: editFirstName, last_name: editLastName, role: editRole, is_dozent: editIsDozent, is_kursbetreuung: editIsKursbetreuung, dozent_employer: editIsDozent ? editDozentEmployer : null, dozent_specialization: editIsDozent ? editDozentSpecialization : null }),
+      body: JSON.stringify({ title: editTitle || null, first_name: editFirstName, last_name: editLastName, role: editRole, is_dozent: editIsDozent, is_kursbetreuung: editIsKursbetreuung, slack_user_id: editSlackUserId || null, dozent_employer: editIsDozent ? editDozentEmployer : null, dozent_specialization: editIsDozent ? editDozentSpecialization : null }),
     });
     const data = await res.json();
     setEditSaving(false);
@@ -207,6 +211,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
               role: editRole,
               is_dozent: editIsDozent,
               is_kursbetreuung: editIsKursbetreuung,
+              slack_user_id: editSlackUserId.trim() || null,
               dozent_employer: editIsDozent ? (editDozentEmployer.trim() || null) : null,
               dozent_specialization: editIsDozent ? (editDozentSpecialization.trim() || null) : null,
             }
@@ -361,6 +366,18 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
               />
               <span className="text-sm">Als Kursbetreuung verfügbar</span>
             </label>
+            <div className="space-y-1.5">
+              <Label>Slack Member ID</Label>
+              <Input
+                value={editSlackUserId}
+                onChange={(e) => setEditSlackUserId(e.target.value)}
+                placeholder="z.B. U02ABC1234"
+                className="font-mono"
+              />
+              <p className="text-xs text-muted-foreground">
+                Optional. In Slack: Profil öffnen, Drei-Punkte-Menü, Member ID kopieren. Wird für Aufgaben-Benachrichtigungen verwendet.
+              </p>
+            </div>
             {editError && <p className="text-sm text-destructive">{editError}</p>}
           </div>
           <DialogFooter>
@@ -498,6 +515,18 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                   />
                   <span className="text-sm">Als Kursbetreuung verfügbar</span>
                 </label>
+                <div className="space-y-1.5">
+                  <Label>Slack Member ID</Label>
+                  <Input
+                    value={slackUserId}
+                    onChange={(e) => setSlackUserId(e.target.value)}
+                    placeholder="z.B. U02ABC1234"
+                    className="font-mono"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Optional. In Slack: Profil öffnen, Drei-Punkte-Menü, Member ID kopieren. Wird für Aufgaben-Benachrichtigungen verwendet.
+                  </p>
+                </div>
                 {createError && <p className="text-sm text-destructive">{createError}</p>}
               </div>
               <DialogFooter>

@@ -126,6 +126,25 @@ export function TaskDetail({
     (description || "") !== (task.description || "") ||
     (dueDate || "") !== (task.due_date || "");
 
+  const patchTask = async (
+    patch: Record<string, unknown>,
+  ): Promise<Task | null> => {
+    const res = await fetch(`/api/admin/tasks/${task.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setAlertState({
+        title: "Fehler",
+        description: data?.error || "Aktion fehlgeschlagen.",
+      });
+      return null;
+    }
+    return data.task as Task;
+  };
+
   const handleSaveMeta = async () => {
     if (!title.trim()) {
       setAlertState({
@@ -135,38 +154,21 @@ export function TaskDetail({
       return;
     }
     setSavingMeta(true);
-    const { error } = await supabase
-      .from("tasks")
-      .update({
-        title: title.trim(),
-        description: description.trim() || null,
-        due_date: dueDate || null,
-      })
-      .eq("id", task.id);
-    setSavingMeta(false);
-    if (error) {
-      setAlertState({ title: "Fehler", description: error.message });
-      return;
-    }
-    setTask((t) => ({
-      ...t,
+    const updated = await patchTask({
       title: title.trim(),
       description: description.trim() || null,
       due_date: dueDate || null,
-    }));
+    });
+    setSavingMeta(false);
+    if (updated) setTask(updated);
   };
 
   const handleStatusChange = async (status: TaskStatus) => {
     const prev = task;
     setTask((t) => ({ ...t, status }));
-    const { error } = await supabase
-      .from("tasks")
-      .update({ status })
-      .eq("id", task.id);
-    if (error) {
-      setTask(prev);
-      setAlertState({ title: "Fehler", description: error.message });
-    }
+    const updated = await patchTask({ status });
+    if (!updated) setTask(prev);
+    else setTask(updated);
   };
 
   const handleAssigneeChange = async (assigneeId: string | null) => {
@@ -174,14 +176,9 @@ export function TaskDetail({
     const assignee = next ? staff.find((s) => s.id === next) ?? null : null;
     const prev = task;
     setTask((t) => ({ ...t, assigned_to: next, assignee }));
-    const { error } = await supabase
-      .from("tasks")
-      .update({ assigned_to: next })
-      .eq("id", task.id);
-    if (error) {
-      setTask(prev);
-      setAlertState({ title: "Fehler", description: error.message });
-    }
+    const updated = await patchTask({ assigned_to: next });
+    if (!updated) setTask(prev);
+    else setTask(updated);
   };
 
   const handleCourseChange = async (courseId: string | null) => {
@@ -191,14 +188,9 @@ export function TaskDetail({
       : null;
     const prev = task;
     setTask((t) => ({ ...t, course_session_id: next, course_session }));
-    const { error } = await supabase
-      .from("tasks")
-      .update({ course_session_id: next })
-      .eq("id", task.id);
-    if (error) {
-      setTask(prev);
-      setAlertState({ title: "Fehler", description: error.message });
-    }
+    const updated = await patchTask({ course_session_id: next });
+    if (!updated) setTask(prev);
+    else setTask(updated);
   };
 
   const handleAddNote = async () => {
@@ -303,10 +295,16 @@ export function TaskDetail({
 
   const handleDeleteTask = async () => {
     setBusy(true);
-    const { error } = await supabase.from("tasks").delete().eq("id", task.id);
+    const res = await fetch(`/api/admin/tasks/${task.id}`, {
+      method: "DELETE",
+    });
     setBusy(false);
-    if (error) {
-      setAlertState({ title: "Fehler", description: error.message });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setAlertState({
+        title: "Fehler",
+        description: data?.error || "Aufgabe konnte nicht gelöscht werden.",
+      });
       setDeleteTask(false);
       return;
     }

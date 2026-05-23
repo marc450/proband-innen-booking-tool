@@ -29,7 +29,7 @@ export async function GET() {
   // created via the LW SSO bridge get role='student' and must be excluded.
   const { data: profiles, error: profilesErr } = await adminClient
     .from("profiles")
-    .select("id, title, first_name, last_name, role, is_dozent, is_kursbetreuung, dozent_employer, dozent_specialization")
+    .select("id, title, first_name, last_name, role, is_dozent, is_kursbetreuung, slack_user_id, dozent_employer, dozent_specialization")
     .in("role", ["admin", "nutzer"]);
   if (profilesErr) return NextResponse.json({ error: profilesErr.message }, { status: 500 });
 
@@ -59,6 +59,7 @@ export async function GET() {
         role: p.role as "admin" | "nutzer",
         is_dozent: p.is_dozent ?? false,
         is_kursbetreuung: p.is_kursbetreuung ?? false,
+        slack_user_id: p.slack_user_id ?? null,
         dozent_employer: p.dozent_employer ?? null,
         dozent_specialization: p.dozent_specialization ?? null,
         created_at: auth.created_at,
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
   const user = await assertAdmin();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-  const { title, first_name, last_name, email, role, is_dozent, is_kursbetreuung, dozent_employer, dozent_specialization, password } = await req.json();
+  const { title, first_name, last_name, email, role, is_dozent, is_kursbetreuung, slack_user_id, dozent_employer, dozent_specialization, password } = await req.json();
   if (!email || !first_name || !last_name || !password) {
     return NextResponse.json({ error: "Bitte alle Pflichtfelder ausfüllen." }, { status: 400 });
   }
@@ -99,6 +100,7 @@ export async function POST(req: NextRequest) {
     role: role === "admin" ? "admin" : "nutzer",
     is_dozent: isDozentFinal,
     is_kursbetreuung: is_kursbetreuung ?? false,
+    slack_user_id: typeof slack_user_id === "string" && slack_user_id.trim() ? slack_user_id.trim() : null,
     dozent_employer: isDozentFinal ? (dozent_employer?.trim() || null) : null,
     dozent_specialization: isDozentFinal ? (dozent_specialization?.trim() || null) : null,
   });
