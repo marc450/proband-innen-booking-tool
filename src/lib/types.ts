@@ -367,3 +367,60 @@ export interface MerchOrder {
   created_at: string;
   updated_at: string;
 }
+
+// ---------------------------------------------------------------------------
+// Tasks (admin task board)
+// ---------------------------------------------------------------------------
+
+export type TaskStatus = "open" | "in_progress" | "done";
+
+export interface TaskProfileRef {
+  id: string;
+  title: string | null;
+  first_name: string | null;
+  last_name: string | null;
+}
+
+export interface TaskCourseSessionRef {
+  id: string;
+  date_iso: string;
+  label_de: string | null;
+  instructor_name: string | null;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  assigned_to: string | null;
+  created_by: string | null;
+  course_session_id: string | null;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
+  assignee: TaskProfileRef | null;
+  creator: TaskProfileRef | null;
+  course_session: TaskCourseSessionRef | null;
+}
+
+export interface TaskNote {
+  id: string;
+  task_id: string;
+  author_id: string | null;
+  body: string;
+  created_at: string;
+  author: TaskProfileRef | null;
+}
+
+export interface TaskAttachment {
+  id: string;
+  task_id: string;
+  uploaded_by: string | null;
+  file_name: string;
+  file_size: number | null;
+  mime_type: string | null;
+  storage_path: string;
+  created_at: string;
+  uploader: TaskProfileRef | null;
+}

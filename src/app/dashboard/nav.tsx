@@ -29,6 +29,7 @@ import {
   TrendingUp,
   ShoppingBag,
   Globe,
+  CheckSquare,
   LucideIcon,
 } from "lucide-react";
 import { Manage2faDialog } from "@/components/2fa/manage-2fa-dialog";
@@ -97,6 +98,14 @@ const navGroups: NavGroup[] = [
     icon: CalendarDays,
     items: [
       { href: "/dashboard/kurse", label: "Kurse" },
+    ],
+  },
+  {
+    key: "tasks",
+    label: "Aufgaben",
+    icon: CheckSquare,
+    items: [
+      { href: "/dashboard/tasks", label: "Aufgaben" },
     ],
   },
   {
