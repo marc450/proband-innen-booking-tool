@@ -15,6 +15,8 @@ export interface AdminUser {
   role: "admin" | "nutzer";
   is_dozent: boolean;
   is_kursbetreuung: boolean;
+  dozent_employer: string | null;
+  dozent_specialization: string | null;
   created_at: string;
 }
 
@@ -40,7 +42,7 @@ export default async function SettingsPage() {
   // created via the LW SSO bridge get role='student' and must be excluded.
   const { data: profiles } = await adminClient
     .from("profiles")
-    .select("id, title, first_name, last_name, role, is_dozent, is_kursbetreuung")
+    .select("id, title, first_name, last_name, role, is_dozent, is_kursbetreuung, dozent_employer, dozent_specialization")
     .in("role", ["admin", "nutzer"]);
 
   // Fetch each staff auth row by id. listUsers() is paginated (50/page
@@ -69,6 +71,8 @@ export default async function SettingsPage() {
         role: p.role as "admin" | "nutzer",
         is_dozent: p.is_dozent ?? false,
         is_kursbetreuung: p.is_kursbetreuung ?? false,
+        dozent_employer: p.dozent_employer ?? null,
+        dozent_specialization: p.dozent_specialization ?? null,
         created_at: auth.created_at,
       };
     })

@@ -24,12 +24,23 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  const { title, first_name, last_name, role, is_dozent, is_kursbetreuung } = await req.json();
+  const { title, first_name, last_name, role, is_dozent, is_kursbetreuung, dozent_employer, dozent_specialization } = await req.json();
 
+  const isDozentFinal = is_dozent ?? false;
   const adminClient = createAdminClient();
   const { error } = await adminClient
     .from("profiles")
-    .upsert({ id, title, first_name, last_name, role, is_dozent, is_kursbetreuung: is_kursbetreuung ?? false });
+    .upsert({
+      id,
+      title,
+      first_name,
+      last_name,
+      role,
+      is_dozent: isDozentFinal,
+      is_kursbetreuung: is_kursbetreuung ?? false,
+      dozent_employer: isDozentFinal ? (dozent_employer?.trim() || null) : null,
+      dozent_specialization: isDozentFinal ? (dozent_specialization?.trim() || null) : null,
+    });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
