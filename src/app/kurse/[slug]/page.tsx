@@ -15,7 +15,13 @@ import { LocationInfo } from "../_components/sections/location-info";
 import { LearningPath } from "../_components/sections/learning-path";
 import { ProseSection } from "../_components/sections/prose-section";
 import { RelatedCourses } from "../_components/sections/related-courses";
+import { Reviews, type PublicReview } from "../_components/sections/reviews";
 import { CourseCardsPage } from "../_components/widget/course-cards-page";
+
+// Slug-gate: only this landing surfaces the Reviews section + the
+// AggregateRating/Review JSON-LD. Marc wants to test SERP rich-results
+// on a single high-traffic page before rolling out broadly.
+const REVIEWS_ENABLED_SLUGS = new Set<string>(["botox-kurs-fuer-aerzte"]);
 
 export const dynamic = "force-dynamic";
 
@@ -100,6 +106,89 @@ export default async function KursPage({
     .eq("template_id", sessionTemplateId)
     .eq("is_live", true)
     .order("date_iso", { ascending: true });
+
+  // Public reviews — only fetched on slugs that opt in (see
+  // REVIEWS_ENABLED_SLUGS above). Marc decided to surface ALL published
+  // reviews on this page (not just the ones tied to the current
+  // template), so the carousel reads cross-course feedback as one
+  // signal.
+  //
+  // Display name composition: first_name comes from the review itself
+  // (the doctor typed it on the form, signalling intent to publish),
+  // while title + last-name initial are derived from the linked
+  // auszubildende record. We don't ask the reviewer to retype data the
+  // booking already has. Cards fall back to first_name only when no
+  // auszubildende row is linked.
+  //
+  // The course_template join gives each card a "Bewertung zum Kurs X"
+  // line so readers know which course was rated.
+  type ReviewRow = {
+    id: string;
+    rating: number;
+    first_name: string;
+    body_text: string | null;
+    submitted_at: string;
+    course_bookings:
+      | {
+          auszubildende:
+            | { title: string | null; last_name: string | null }
+            | { title: string | null; last_name: string | null }[]
+            | null;
+        }
+      | {
+          auszubildende:
+            | { title: string | null; last_name: string | null }
+            | { title: string | null; last_name: string | null }[]
+            | null;
+        }[]
+      | null;
+    course_templates:
+      | { course_label_de: string | null; title: string | null }
+      | { course_label_de: string | null; title: string | null }[]
+      | null;
+  };
+  let publicReviews: PublicReview[] = [];
+  if (REVIEWS_ENABLED_SLUGS.has(content.slug)) {
+    const { data: reviewRows } = await supabase
+      .from("course_reviews")
+      .select(
+        `id, rating, first_name, body_text, submitted_at,
+         course_bookings:booking_id (
+           auszubildende:auszubildende_id ( title, last_name )
+         ),
+         course_templates:template_id ( course_label_de, title )`,
+      )
+      .eq("is_published", true)
+      .order("submitted_at", { ascending: false });
+    publicReviews = ((reviewRows ?? []) as ReviewRow[]).map((r) => {
+      const tpl = Array.isArray(r.course_templates)
+        ? r.course_templates[0]
+        : r.course_templates;
+      const booking = Array.isArray(r.course_bookings)
+        ? r.course_bookings[0]
+        : r.course_bookings;
+      const azubi = booking
+        ? Array.isArray(booking.auszubildende)
+          ? booking.auszubildende[0]
+          : booking.auszubildende
+        : null;
+      // Single-letter, uppercase, A-Z + umlauts only. Anything weirder
+      // (e.g. last_name starts with a digit) is dropped to NULL so the
+      // displayed line stays clean.
+      const rawInitial = azubi?.last_name?.trim().charAt(0).toUpperCase() ?? "";
+      const lastInitial = /^[A-ZÄÖÜ]$/.test(rawInitial) ? rawInitial : null;
+      return {
+        id: r.id,
+        rating: r.rating,
+        firstName: r.first_name,
+        title: azubi?.title?.trim() || null,
+        lastInitial,
+        bodyText: r.body_text,
+        submittedAt: r.submitted_at,
+        courseLabel: tpl?.course_label_de || tpl?.title || null,
+      };
+    });
+  }
 
   // Template-token substitution. Lets content files reference live
   // template values (e.g. `{cme_online}` in the hero subheadline) so a
@@ -195,6 +284,44 @@ export default async function KursPage({
     })),
   ];
 
+  // AggregateRating + review[] — only when this slug opts into the
+  // Reviews section AND we have ≥1 published review. Google rejects
+  // schema where the ratings/reviews aren't visibly on the page, so
+  // both must be gated on the same condition that renders <Reviews />.
+  const aggregateRating =
+    publicReviews.length > 0
+      ? {
+          "@type": "AggregateRating",
+          ratingValue: (
+            publicReviews.reduce((s, r) => s + r.rating, 0) /
+            publicReviews.length
+          ).toFixed(2),
+          reviewCount: publicReviews.length,
+          bestRating: 5,
+          worstRating: 1,
+        }
+      : null;
+  const reviewSchema =
+    publicReviews.length > 0
+      ? publicReviews.map((r) => ({
+          "@type": "Review",
+          author: {
+            "@type": "Person",
+            name: [r.title, r.firstName, r.lastInitial ? `${r.lastInitial}.` : null]
+              .filter(Boolean)
+              .join(" "),
+          },
+          datePublished: r.submittedAt,
+          reviewRating: {
+            "@type": "Rating",
+            ratingValue: r.rating,
+            bestRating: 5,
+            worstRating: 1,
+          },
+          ...(r.bodyText ? { reviewBody: r.bodyText } : {}),
+        }))
+      : null;
+
   const courseJsonLd = {
     "@context": "https://schema.org",
     "@type": "Course",
@@ -207,6 +334,8 @@ export default async function KursPage({
       url: "https://ephia.de",
     },
     ...(hasCourseInstance.length > 0 ? { hasCourseInstance } : {}),
+    ...(aggregateRating ? { aggregateRating } : {}),
+    ...(reviewSchema ? { review: reviewSchema } : {}),
   };
 
   // BreadcrumbList JSON-LD — helps Google render the breadcrumb trail
@@ -348,6 +477,7 @@ export default async function KursPage({
             : undefined
         }
       />
+      {publicReviews.length > 0 && <Reviews reviews={publicReviews} />}
       <Testimonials content={content.testimonials} />
       <Faq content={faqContent} />
       {content.relatedCourses && content.relatedCourses.length > 0 && (
