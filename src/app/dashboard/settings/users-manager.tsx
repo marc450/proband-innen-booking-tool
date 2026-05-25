@@ -444,6 +444,11 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                 <div className="space-y-1.5">
                   <Label>E-Mail-Adresse *</Label>
                   <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="max@ephia.de" />
+                  <p className="rounded-[10px] bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    Wichtig: Verwende dieselbe E-Mail, die die Person in Slack nutzt.
+                    Sonst können Aufgaben, Inbox-Zuweisungen und andere
+                    Slack-Benachrichtigungen nicht direkt zugestellt werden.
+                  </p>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Temporäres Passwort *</Label>
