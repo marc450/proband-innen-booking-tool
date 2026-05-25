@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Loader2, Calendar, Clock } from "lucide-react";
-import { ConfirmDialog } from "@/components/confirm-dialog";
+import { ConfirmDialog, AlertDialog } from "@/components/confirm-dialog";
 import { createClient } from "@/lib/supabase/client";
 import type { BookingWithDetails, BookingStatus, CourseBookingStatus } from "@/lib/types";
 
@@ -112,6 +112,14 @@ export function BookingsList({
   const [statusSheet, setStatusSheet] = useState<string | null>(null);
   const [noShowConfirm, setNoShowConfirm] = useState<string | null>(null);
   const [charging, setCharging] = useState(false);
+  // Cancellation flow: mirrors the desktop bookings-manager so flipping a
+  // Proband:in booking to "Storniert" fires the same Stornierungs-E-Mail
+  // via /api/send-booking-cancellation-email. The confirm dialog gates
+  // the email so an accidental tap doesn't notify, and alertState is
+  // used to surface Resend failures explicitly (same UX as desktop).
+  const [cancelPending, setCancelPending] = useState<BookingWithDetails | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [alertState, setAlertState] = useState<{ title: string; description: string } | null>(null);
 
   /* ── Proband:innen filtering ── */
   const filteredProband = bookings.filter((b) => {
@@ -151,6 +159,20 @@ export function BookingsList({
       setStatusSheet(null);
       return;
     }
+
+    // Switching to "cancelled" sends the Proband:in a cancellation email.
+    // Only email on the transition INTO cancelled (not re-saves) and gate
+    // behind a confirmation so an accidental tap doesn't notify. Mirrors
+    // the desktop bookings-manager handleStatusChange branch.
+    if (newStatus === "cancelled") {
+      const booking = bookings.find((b) => b.id === bookingId);
+      if (booking && booking.status !== "cancelled") {
+        setCancelPending(booking);
+        setStatusSheet(null);
+        return;
+      }
+    }
+
     await supabase
       .from("bookings")
       .update({ status: newStatus })
@@ -161,24 +183,126 @@ export function BookingsList({
     setStatusSheet(null);
   };
 
+  const handleConfirmCancel = async () => {
+    if (!cancelPending) return;
+    setCancelling(true);
+
+    // Capture everything the cancellation email needs BEFORE the update,
+    // matching the desktop flow exactly so both surfaces produce the
+    // same Stornierungs-E-Mail body.
+    const emailPayload = (() => {
+      const b = cancelPending;
+      if (!b.email || !b.slots?.start_time) return null;
+      const date = new Date(b.slots.start_time).toLocaleDateString("de-DE", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: "Europe/Berlin",
+      });
+      const time = new Date(b.slots.start_time).toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Europe/Berlin",
+      });
+      return {
+        email: b.email,
+        firstName: b.first_name || b.name?.split(" ")[0] || "",
+        courseTitle:
+          b.slots?.courses?.treatment_title || b.slots?.courses?.title || "",
+        date,
+        time,
+        location: b.slots?.courses?.location || "",
+      };
+    })();
+
+    try {
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: "cancelled" })
+        .eq("id", cancelPending.id);
+
+      if (!error) {
+        setBookings((prev) =>
+          prev.map((b) =>
+            b.id === cancelPending.id ? { ...b, status: "cancelled" } : b,
+          ),
+        );
+        // Awaited so we can surface delivery failures. Status is already
+        // flipped at this point — if the email fails, we tell the admin
+        // explicitly so they can notify the Proband:in manually instead
+        // of silently swallowing a Resend hiccup.
+        if (emailPayload) {
+          try {
+            const emailRes = await fetch("/api/send-booking-cancellation-email", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(emailPayload),
+            });
+            if (!emailRes.ok) {
+              const data = await emailRes.json().catch(() => ({}));
+              setAlertState({
+                title: "Storniert, aber E-Mail nicht versendet",
+                description: `Die Stornierungs-E-Mail an ${emailPayload.email} konnte nicht gesendet werden${data.error ? `: ${data.error}` : "."} Bitte den/die Proband:in manuell informieren.`,
+              });
+            }
+          } catch (err) {
+            setAlertState({
+              title: "Storniert, aber E-Mail nicht versendet",
+              description: `Netzwerkfehler beim Senden der Stornierungs-E-Mail an ${emailPayload.email}${err instanceof Error ? `: ${err.message}` : ""}. Bitte den/die Proband:in manuell informieren.`,
+            });
+          }
+        }
+      }
+    } finally {
+      setCancelling(false);
+      setCancelPending(null);
+    }
+  };
+
   const handleNoShowConfirm = async () => {
     if (!noShowConfirm) return;
+    const bookingId = noShowConfirm;
+    const booking = bookings.find((b) => b.id === bookingId);
     setCharging(true);
     try {
       await supabase
         .from("bookings")
         .update({ status: "no_show" })
-        .eq("id", noShowConfirm);
-      await fetch("/api/charge-no-show", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bookingId: noShowConfirm }),
-      });
+        .eq("id", bookingId);
       setBookings((prev) =>
         prev.map((b) =>
-          b.id === noShowConfirm ? { ...b, status: "no_show" as BookingStatus } : b
+          b.id === bookingId ? { ...b, status: "no_show" as BookingStatus } : b
         )
       );
+
+      // Surface Stripe charge outcomes the same way the desktop manager
+      // does. A silently-swallowed 50€ charge failure is the worst
+      // failure mode here — staff need to see it so they can chase the
+      // Proband:in or the payment method manually.
+      const chargeRes = await fetch("/api/charge-no-show", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId }),
+      });
+      const chargeData = await chargeRes.json().catch(() => ({}));
+
+      if (!chargeRes.ok || chargeData.error) {
+        setAlertState({
+          title: "Status gesetzt, Zahlung fehlgeschlagen",
+          description: chargeData.error || "Unbekannter Fehler",
+        });
+      } else {
+        setAlertState({
+          title: "No-Show bestätigt",
+          description: `50,00 EUR wurden erfolgreich von ${booking?.first_name || booking?.name || "der/dem Proband:in"} erhoben.`,
+        });
+      }
+    } catch {
+      setAlertState({
+        title: "Fehler",
+        description: "Ein unerwarteter Fehler ist aufgetreten.",
+      });
     } finally {
       setCharging(false);
       setNoShowConfirm(null);
@@ -430,6 +554,25 @@ export function BookingsList({
             }
             onConfirm={handleNoShowConfirm}
             variant="destructive"
+          />
+
+          {/* Status → Storniert confirmation (triggers the cancellation email) */}
+          <ConfirmDialog
+            open={!!cancelPending}
+            title="Buchung stornieren"
+            description={`Die Buchung von ${cancelPending?.first_name || cancelPending?.name || "diesem/dieser Proband:in"} (${cancelPending?.slots?.courses?.title || ""}) wird auf "Storniert" gesetzt. ${cancelPending?.email ? "Der/die Proband:in erhält eine Stornierungs-E-Mail." : "Achtung: Keine E-Mail-Adresse hinterlegt, es wird keine Benachrichtigung versendet."}`}
+            confirmLabel={cancelling ? "Wird storniert..." : "Stornieren & benachrichtigen"}
+            variant="destructive"
+            onConfirm={handleConfirmCancel}
+            onCancel={() => setCancelPending(null)}
+          />
+
+          {/* Alert for cancel-email + no-show-charge failures */}
+          <AlertDialog
+            open={!!alertState}
+            title={alertState?.title ?? ""}
+            description={alertState?.description ?? ""}
+            onClose={() => setAlertState(null)}
           />
         </>
       )}

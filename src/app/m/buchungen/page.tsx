@@ -24,6 +24,8 @@ export default async function MobileBookingsPage() {
           end_time,
           courses (
             title,
+            treatment_title,
+            location,
             course_date,
             instructor:profiles!instructor_id ( title, first_name, last_name )
           )

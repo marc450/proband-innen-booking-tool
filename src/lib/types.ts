@@ -285,6 +285,11 @@ export interface BookingWithDetails extends Booking {
       // { title, instructor } — the patient-facing emails live behind
       // the bookings-page query which does fetch treatment_title.
       treatment_title?: string | null;
+      // Optional for the same reason. Currently fetched by the mobile
+      // bookings list so the in-card cancellation flow can embed the
+      // course location in the Proband:in's Stornierungs-E-Mail without
+      // a second courses query.
+      location?: string | null;
       instructor: { title: string | null; first_name: string | null; last_name: string | null } | null;
     };
   };
