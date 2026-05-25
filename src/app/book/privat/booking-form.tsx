@@ -236,7 +236,7 @@ export function PrivatBookingForm({ slot, indication }: Props) {
                 <div>
                   <h4 className="font-semibold">§1 Kein Anspruch auf Behandlung</h4>
                   <p className="mt-1">Die Registrierung bzw. Buchung eines Termins als Proband:in begründet keinen rechtlichen Anspruch auf Durchführung einer Behandlung. Die Auswahl der Proband:innen sowie die Entscheidung über Art und Umfang der Behandlung erfolgt ausschließlich durch die behandelnde Ärztin oder den behandelnden Arzt auf Grundlage medizinischer und organisatorischer Kriterien.</p>
-                  <p className="mt-1">Die behandelnde Ärzt:in ist jederzeit berechtigt, eine Behandlung auch kurzfristig und ohne Angabe von Gründen abzulehnen, insbesondere wenn medizinische oder organisatorische Gründe entgegenstehen.</p>
+                  <p className="mt-1">Die behandelnde Ärzt:in ist berechtigt, eine Behandlung auch kurzfristig aus medizinischen Gründen abzulehnen, oder wenn organisatorische Gründe entgegenstehen (insbesondere das Nichterreichen der für die Weiterbildungsveranstaltung erforderlichen Mindestanzahl an Proband:innen; eine Absage aus diesem Grund hat spätestens 3 Tage vor dem Termin zu erfolgen).</p>
                 </div>
 
                 <div>
@@ -270,8 +270,8 @@ export function PrivatBookingForm({ slot, indication }: Props) {
 
                 <div>
                   <h4 className="font-semibold">§6 Terminänderung durch EPHIA</h4>
-                  <p className="mt-1">Um einen lückenlosen Behandlungsablauf innerhalb der Kurse sicherzustellen, ist EPHIA berechtigt, gebuchte Zeitfenster auf einen anderen verfügbaren Termin innerhalb desselben Kurstages umzulegen oder die Buchung ersatzlos zu stornieren, sofern das gewählte Zeitfenster zu Behandlungslücken im Kursablauf führen würde.</p>
-                  <p className="mt-1">EPHIA wird die Proband:in in einem solchen Fall rechtzeitig per E-Mail über die Änderung oder Stornierung informieren.</p>
+                  <p className="mt-1">Um einen lückenlosen Behandlungsablauf innerhalb der Kurse sicherzustellen, ist EPHIA berechtigt, gebuchte Zeitfenster auf einen anderen verfügbaren Termin innerhalb desselben Kurstages umzulegen, sofern dies für die Proband:in zumutbar ist, oder die Buchung zu stornieren, falls das gewählte Zeitfenster zu Behandlungslücken im Kursablauf führen würde. Eine Stornierung erfolgt spätestens 3 Tage vor dem Termin.</p>
+                  <p className="mt-1">EPHIA wird die Proband:in in diesen Fällen unverzüglich per E-Mail informieren. Ein Anspruch auf Ersatz von Aufwendungen (z. B. Anreisekosten) besteht nicht.</p>
                 </div>
 
                 <div>
@@ -284,7 +284,7 @@ export function PrivatBookingForm({ slot, indication }: Props) {
                     <li>Frisch gereinigte Haut ohne unmittelbar zuvor aufgetragene Pflegeprodukte</li>
                     <li>Pünktliches Erscheinen (empfohlen: mindestens 10 Minuten vor Terminbeginn)</li>
                   </ul>
-                  <p className="mt-1">Bei Nichteinhaltung kann die Behandlung aus medizinischen oder organisatorischen Gründen abgelehnt werden.</p>
+                  <p className="mt-1">Bei Nichteinhaltung dieser Hinweise kann die Behandlung abgelehnt werden, sofern eine sichere oder termingerechte Durchführung dadurch unmöglich wird.</p>
                 </div>
 
                 <div>

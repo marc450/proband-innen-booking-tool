@@ -215,7 +215,7 @@ export function BookingForm({ slot, guidePriceCents, indication }: BookingFormPr
                 <div>
                   <h4 className="font-semibold">§1 Kein Anspruch auf Behandlung</h4>
                   <p className="mt-1">Die Registrierung bzw. Buchung eines Termins als Proband:in begründet keinen rechtlichen Anspruch auf Durchführung einer Behandlung. Die Auswahl der Proband:innen sowie die Entscheidung über Art und Umfang der Behandlung erfolgt ausschließlich durch die behandelnde Ärztin oder den behandelnden Arzt auf Grundlage medizinischer und organisatorischer Kriterien.</p>
-                  <p className="mt-1">Die behandelnde Ärzt:in ist jederzeit berechtigt, eine Behandlung auch kurzfristig und ohne Angabe von Gründen abzulehnen, insbesondere wenn medizinische oder organisatorische Gründe entgegenstehen.</p>
+                  <p className="mt-1">Die behandelnde Ärzt:in ist berechtigt, eine Behandlung auch kurzfristig aus medizinischen Gründen abzulehnen, oder wenn organisatorische Gründe entgegenstehen (insbesondere das Nichterreichen der für die Weiterbildungsveranstaltung erforderlichen Mindestanzahl an Proband:innen; eine Absage aus diesem Grund hat spätestens 3 Tage vor dem Termin zu erfolgen).</p>
                 </div>
 
                 <div>
@@ -243,16 +243,17 @@ export function BookingForm({ slot, guidePriceCents, indication }: BookingFormPr
                 <div className="bg-amber-50 border border-amber-200 rounded-md p-3 -mx-1">
                   <h4 className="font-bold text-amber-900">§5 Verbindlichkeit der Buchung, Stornierung und No-Show-Gebühr</h4>
                   <p className="mt-1 text-amber-900">Die Buchung eines Behandlungstermins ist verbindlich. Aufgrund begrenzter Kapazitäten und des hohen organisatorischen Aufwands ist eine zuverlässige Teilnahme erforderlich.</p>
-                  <p className="mt-1 text-amber-900">Eine kostenfreie Stornierung ist bis spätestens 48 Stunden vor dem gebuchten Termin möglich.</p>
+                  <p className="mt-1 text-amber-900">Eine kostenfreie Stornierung ist bis spätestens 48 Stunden vor dem gebuchten Termin in Textform (z. B. per E-Mail an customerlove@ephia.de oder über das Buchungsportal) möglich.</p>
                   <p className="mt-2 font-bold text-amber-900">Bei einer Absage weniger als 48 Stunden vor dem Termin oder bei Nichterscheinen (No-Show) wird eine Ausfallgebühr in Höhe von 50 € erhoben.</p>
+                  <p className="mt-1 text-amber-900">Der Proband:in bleibt der Nachweis vorbehalten, dass kein oder ein geringerer Ausfall entstanden ist (z. B. weil der Termin anderweitig vergeben werden konnte). Das Recht zur Kündigung des Behandlungsvertrags aus wichtigem Grund bleibt unberührt.</p>
                   <p className="mt-1 text-amber-900">Mit der Buchung eines Termins und der Zustimmung zu diesen AGB erklärt sich die Proband:in ausdrücklich mit der Erhebung dieser Ausfallgebühr einverstanden.</p>
                   <p className="mt-1 text-amber-900">EPHIA behält sich darüber hinaus vor, Proband:innen bei wiederholtem unzuverlässigem Verhalten vom Proband:innenprogramm auszuschließen.</p>
                 </div>
 
                 <div>
                   <h4 className="font-semibold">§6 Terminänderung durch EPHIA</h4>
-                  <p className="mt-1">Um einen lückenlosen Behandlungsablauf innerhalb der Kurse sicherzustellen, ist EPHIA berechtigt, gebuchte Zeitfenster auf einen anderen verfügbaren Termin innerhalb desselben Kurstages umzulegen oder die Buchung ersatzlos zu stornieren, sofern das gewählte Zeitfenster zu Behandlungslücken im Kursablauf führen würde.</p>
-                  <p className="mt-1">EPHIA wird die Proband:in in einem solchen Fall rechtzeitig per E-Mail über die Änderung oder Stornierung informieren.</p>
+                  <p className="mt-1">Um einen lückenlosen Behandlungsablauf innerhalb der Kurse sicherzustellen, ist EPHIA berechtigt, gebuchte Zeitfenster auf einen anderen verfügbaren Termin innerhalb desselben Kurstages umzulegen, sofern dies für die Proband:in zumutbar ist, oder die Buchung zu stornieren, falls das gewählte Zeitfenster zu Behandlungslücken im Kursablauf führen würde. Eine Stornierung erfolgt spätestens 3 Tage vor dem Termin.</p>
+                  <p className="mt-1">EPHIA wird die Proband:in in diesen Fällen unverzüglich per E-Mail informieren. Ein Anspruch auf Ersatz von Aufwendungen (z. B. Anreisekosten) besteht nicht.</p>
                 </div>
 
                 <div>
@@ -265,7 +266,7 @@ export function BookingForm({ slot, guidePriceCents, indication }: BookingFormPr
                     <li>Frisch gereinigte Haut ohne unmittelbar zuvor aufgetragene Pflegeprodukte</li>
                     <li>Pünktliches Erscheinen (empfohlen: mindestens 10 Minuten vor Terminbeginn)</li>
                   </ul>
-                  <p className="mt-1">Bei Nichteinhaltung kann die Behandlung aus medizinischen oder organisatorischen Gründen abgelehnt werden.</p>
+                  <p className="mt-1">Bei Nichteinhaltung dieser Hinweise kann die Behandlung abgelehnt werden, sofern eine sichere oder termingerechte Durchführung dadurch unmöglich wird.</p>
                 </div>
 
                 <div>

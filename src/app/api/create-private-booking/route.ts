@@ -209,6 +209,13 @@ export async function POST(req: NextRequest) {
       const prepBlock = `
         ${PATIENT_PREPARATION_BLOCK}
 
+        <p style="margin:20px 0 4px; font-weight:bold;">Unsere Teilnahmebedingungen</p>
+        <p style="margin:0 0 20px;">
+          Du hast bei der Buchung unsere Allgemeinen Teilnahmebedingungen für Proband:innen bestätigt. Wenn Du sie noch einmal nachlesen oder Deinen Termin umbuchen bzw. stornieren möchtest, findest Du alle Regeln hier:
+          <br>
+          <a href="https://ephia.de/proband-agb" style="color:#0066FF; text-decoration:underline;">https://ephia.de/proband-agb</a>
+        </p>
+
         <p style="margin:0 0 20px;">
           Solltest Du weitere Fragen haben, melde Dich jederzeit bei uns:
           <a href="mailto:customerlove@ephia.de" style="color:#0066FF; text-decoration:none;">customerlove@ephia.de</a>

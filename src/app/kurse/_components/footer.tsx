@@ -3,6 +3,7 @@ import Image from "next/image";
 const FOOTER_LINKS = [
   { label: "Impressum", href: "/kurse/impressum" },
   { label: "AGB", href: "/kurse/agb" },
+  { label: "AGB für Proband:innen", href: "/kurse/proband-agb" },
   { label: "Datenschutz", href: "/kurse/datenschutz" },
 ];
 

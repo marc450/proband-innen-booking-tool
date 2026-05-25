@@ -461,6 +461,13 @@ export async function POST(req: NextRequest) {
       Solltest Du nach Deiner Behandlung noch weitere Fragen haben, möchten wir Dich bitten, Dich zunächst an die Ärztin oder den Arzt zu wenden, die/der Dich behandelt hat. Sollte es dennoch weiterhin Unklarheiten geben, bieten wir allen Ärzt:innen, die wir ausgebildet haben, eine direkte Anlaufstelle für solche Situationen.
     </p>
 
+    <p style="margin:20px 0 4px; font-weight:bold;">Unsere Teilnahmebedingungen</p>
+    <p style="margin:0 0 20px;">
+      Du hast bei der Buchung unsere Allgemeinen Teilnahmebedingungen für Proband:innen bestätigt. Wenn Du sie noch einmal nachlesen oder Deinen Termin umbuchen bzw. stornieren möchtest, findest Du alle Regeln hier:
+      <br>
+      <a href="https://ephia.de/proband-agb" style="color:#0066FF; text-decoration:underline;">https://ephia.de/proband-agb</a>
+    </p>
+
     <p style="margin:0 0 20px;">
       Herzliche Grüße,<br>
       Dein EPHIA-Team

@@ -35,12 +35,12 @@ const usps = [
   {
     icon: ShieldCheck,
     title: "Behandlungen auf höchstem Niveau",
-    body: "Alle Behandlungen erfolgen durch approbierte Ärzt:innen, begleitet von erfahrenen Fachdozent:innen. So hast Du maximale Sicherheit und Transparenz während Deiner gesamten Behandlung.",
+    body: "Alle Behandlungen erfolgen durch approbierte Ärzt:innen, begleitet von erfahrenen Fachdozent:innen. So hast Du größtmögliche Sicherheit und Transparenz während Deiner gesamten Behandlung.",
   },
   {
     icon: Sparkles,
     title: "Moderne Produkte & Techniken",
-    body: "Wir arbeiten ausschließlich mit hochwertigen, zugelassenen Präparaten und den aktuellen Methoden der ästhetischen Medizin. Dieselben Standards wie in einer Privatpraxis.",
+    body: "Wir arbeiten ausschließlich mit hochwertigen, zugelassenen Präparaten und den aktuellen Methoden der ästhetischen Medizin. Entsprechend den Standards einer modernen Privatpraxis.",
   },
   {
     icon: HeartHandshake,
@@ -103,7 +103,7 @@ const faq = {
     {
       question: "Ist die Behandlung sicher?",
       answer:
-        "Ja. Wir arbeiten ausschließlich mit zugelassenen Präparaten, nach geltenden Hygienestandards und mit doppelter Aufsicht durch Dozent:in und Ärzt:in. Solltest Du medizinische Fragen oder Vorerkrankungen haben, klären wir diese vorab gemeinsam im Anamnesegespräch.",
+        "Wir legen großen Wert auf Sicherheit: Wir arbeiten ausschließlich mit zugelassenen Präparaten, nach geltenden Hygienestandards und mit doppelter Aufsicht durch Dozent:in und Ärzt:in. Solltest Du medizinische Fragen oder Vorerkrankungen haben, klären wir diese vorab gemeinsam im Anamnesegespräch.",
     },
   ],
 };
