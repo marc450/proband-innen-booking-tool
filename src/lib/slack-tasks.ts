@@ -1,18 +1,16 @@
 // Slack notifications for the task system.
 //
-// We post to a channel webhook (no bot token available on this Slack
-// workspace tier) and rely on `<@USER_ID>` syntax to ping the relevant
-// person. If a staff member has no slack_user_id stored, the message
-// still goes out but uses their display name without a ping.
+// Tasks are personal: an assignment goes to exactly one staff member,
+// and a status change goes back to exactly one assigner. We used to
+// post these to a public #aufgaben channel via an incoming webhook,
+// which leaked task content to everyone and required the channel to be
+// joined. We now DM the recipient directly via the EPHIA Slack bot.
 //
-// Set SLACK_WEBHOOK_URL_TASKS for a dedicated #aufgaben channel. If
-// unset, we fall back to the generic SLACK_WEBHOOK_URL (the
-// #proband-innen booking channel), which works but is noisier.
+// All transport lives in `slack-dm.ts` (shared with the inbox/thread
+// assignment notifier). This module only composes the message strings.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-
-const TASKS_URL =
-  process.env.SLACK_WEBHOOK_URL_TASKS || process.env.SLACK_WEBHOOK_URL;
+import { sendSlackDm } from "./slack-dm";
 
 const ADMIN_BASE = "https://admin.ephia.de";
 
@@ -22,41 +20,13 @@ type StaffRow = {
   first_name: string | null;
   last_name: string | null;
   slack_user_id: string | null;
+  email: string | null;
 };
 
 function displayName(p: StaffRow | null | undefined): string {
   if (!p) return "Jemand";
   const parts = [p.title, p.first_name, p.last_name].filter(Boolean);
   return parts.length ? parts.join(" ") : "Unbekannt";
-}
-
-function mention(p: StaffRow | null | undefined): string {
-  if (!p) return "Jemand";
-  if (p.slack_user_id) return `<@${p.slack_user_id}>`;
-  return displayName(p);
-}
-
-async function postToSlack(text: string): Promise<void> {
-  if (!TASKS_URL) {
-    console.warn("[slack-tasks] No webhook URL configured; skipping.");
-    return;
-  }
-  try {
-    const res = await fetch(TASKS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-    if (!res.ok) {
-      console.error(
-        "[slack-tasks] Webhook returned",
-        res.status,
-        await res.text().catch(() => ""),
-      );
-    }
-  } catch (err) {
-    console.error("[slack-tasks] Webhook fetch failed:", err);
-  }
 }
 
 async function fetchStaff(
@@ -70,7 +40,35 @@ async function fetchStaff(
     .select("id, title, first_name, last_name, slack_user_id")
     .in("id", unique);
   const map = new Map<string, StaffRow>();
-  for (const row of data ?? []) map.set(row.id, row as StaffRow);
+  for (const row of data ?? []) {
+    map.set(row.id, {
+      id: row.id as string,
+      title: (row.title as string | null) ?? null,
+      first_name: (row.first_name as string | null) ?? null,
+      last_name: (row.last_name as string | null) ?? null,
+      slack_user_id: (row.slack_user_id as string | null) ?? null,
+      email: null,
+    });
+  }
+
+  // Pull emails from auth.users for anyone missing a Slack ID, so the
+  // DM helper can fall back to users.lookupByEmail. Cheap when nobody
+  // is missing; entirely skipped when every staff member has their
+  // slack_user_id stored.
+  const needEmail = unique.filter((id) => !map.get(id)?.slack_user_id);
+  if (needEmail.length > 0) {
+    for (const id of needEmail) {
+      try {
+        const { data } = await admin.auth.admin.getUserById(id);
+        const email = data.user?.email ?? null;
+        const existing = map.get(id);
+        if (existing) map.set(id, { ...existing, email });
+      } catch {
+        // Best-effort: a missing email just means we skip the DM later.
+      }
+    }
+  }
+
   return map;
 }
 
@@ -92,8 +90,8 @@ export type TaskNotifyContext = {
 };
 
 /**
- * Notify the assignee that a task has been created or reassigned to them.
- * No-ops if assignee === assigner (self-assigned).
+ * DM the assignee that a task has just been assigned to them. No-ops
+ * when the assignee is also the assigner (self-assignment).
  */
 export async function notifyTaskAssigned(
   admin: SupabaseClient,
@@ -109,9 +107,10 @@ export async function notifyTaskAssigned(
   );
   const assignee = staff.get(assigneeId);
   const assigner = assignerId ? staff.get(assignerId) : null;
+  if (!assignee) return;
 
   const lines = [
-    `${mention(assignee)}, Dir wurde eine neue Aufgabe zugewiesen:`,
+    `Dir wurde eine neue Aufgabe zugewiesen:`,
     `*${ctx.title}*`,
     bullet("Beschreibung", ctx.description?.trim() || null),
     bullet("Fällig", ctx.dueDate),
@@ -120,12 +119,18 @@ export async function notifyTaskAssigned(
     taskUrl(ctx.taskId),
   ].filter(Boolean);
 
-  await postToSlack(lines.join("\n"));
+  await sendSlackDm({
+    slackUserId: assignee.slack_user_id,
+    email: assignee.email,
+    text: lines.join("\n"),
+    logTag: "slack-tasks/assigned",
+  });
 }
 
 /**
- * Notify the assigner that the assignee changed a task's status.
- * No-ops if assigner === changer (the assigner moved their own task).
+ * DM the assigner that the assignee changed a task's status. No-ops
+ * when the assigner is the same person who changed it (they moved
+ * their own task).
  */
 export async function notifyTaskStatusChanged(
   admin: SupabaseClient,
@@ -139,6 +144,7 @@ export async function notifyTaskStatusChanged(
   const staff = await fetchStaff(admin, [assignerId, changerId]);
   const assigner = staff.get(assignerId);
   const changer = staff.get(changerId);
+  if (!assigner) return;
 
   const statusLabel: Record<typeof newStatus, string> = {
     open: "Offen",
@@ -147,11 +153,16 @@ export async function notifyTaskStatusChanged(
   };
 
   const lines = [
-    `${mention(assigner)}, ${displayName(changer)} hat den Status einer Aufgabe geändert:`,
+    `${displayName(changer)} hat den Status einer Aufgabe geändert:`,
     `*${ctx.title}*`,
     `Neuer Status: ${statusLabel[newStatus]}`,
     taskUrl(ctx.taskId),
   ];
 
-  await postToSlack(lines.join("\n"));
+  await sendSlackDm({
+    slackUserId: assigner.slack_user_id,
+    email: assigner.email,
+    text: lines.join("\n"),
+    logTag: "slack-tasks/status",
+  });
 }

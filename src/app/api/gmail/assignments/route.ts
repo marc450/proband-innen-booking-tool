@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendSlackDm } from "@/lib/slack-dm";
 
 export async function GET() {
   const supabase = await createClient();
@@ -57,48 +58,32 @@ export async function GET() {
 }
 
 // ---------------------------------------------------------------------------
-// Slack DM helper — looks up assignee by email, sends a direct message
+// Slack DM helper — composes the inbox-assignment message and delegates
+// transport to lib/slack-dm.ts (shared with the task-assignment
+// notifier). Prefers profiles.slack_user_id, falls back to lookup by
+// email inside sendSlackDm.
 // ---------------------------------------------------------------------------
-async function notifyAssigneeOnSlack(
-  assigneeEmail: string,
-  assignerName: string,
-  threadSubject: string,
-  senderEmail: string,
-  threadId: string,
-) {
-  const token = process.env.SLACK_BOT_TOKEN;
-  if (!token) return;
+async function notifyAssigneeOnSlack(opts: {
+  slackUserId: string | null;
+  assigneeEmail: string | null;
+  assignerName: string;
+  threadSubject: string;
+  senderEmail: string;
+  threadId: string;
+}) {
+  const { slackUserId, assigneeEmail, assignerName, threadSubject, senderEmail, threadId } = opts;
+  // The inbox lives behind staff auth on admin.ephia.de.
+  // NEXT_PUBLIC_APP_URL points at the public booking domain
+  // (proband-innen.ephia.de), which rewrites /dashboard/* to
+  // /not-found, so we hardcode admin.ephia.de here.
+  const text = `📩 *${assignerName}* hat Dir eine Konversation zugewiesen:\n„${threadSubject || "Kein Betreff"}"${senderEmail ? `\nVon: ${senderEmail}` : ""}\n<https://admin.ephia.de/dashboard/inbox?thread=${threadId}|Zur Konversation>`;
 
-  try {
-    // 1. Look up Slack user by email
-    const lookupRes = await fetch(
-      `https://slack.com/api/users.lookupByEmail?email=${encodeURIComponent(assigneeEmail)}`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
-    const lookupData = await lookupRes.json();
-    if (!lookupData.ok || !lookupData.user?.id) return;
-
-    const slackUserId = lookupData.user.id;
-
-    // 2. Send DM (using user ID as channel works with chat:write)
-    await fetch("https://slack.com/api/chat.postMessage", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        channel: slackUserId,
-        // The inbox lives behind staff auth on admin.ephia.de.
-        // NEXT_PUBLIC_APP_URL points at the public booking domain
-        // (proband-innen.ephia.de), which rewrites /dashboard/* to
-        // /not-found, so it can't be used here.
-        text: `📩 *${assignerName}* hat Dir eine Konversation zugewiesen:\n„${threadSubject || "Kein Betreff"}"${senderEmail ? `\nVon: ${senderEmail}` : ""}\n<https://admin.ephia.de/dashboard/inbox?thread=${threadId}|Zur Konversation>`,
-      }),
-    });
-  } catch {
-    // Slack notification is best-effort, never block the response
-  }
+  await sendSlackDm({
+    slackUserId,
+    email: assigneeEmail,
+    text,
+    logTag: "gmail/assignments",
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -137,7 +122,7 @@ export async function POST(request: NextRequest) {
   if (assignedTo !== user.id) {
     const admin = createAdminClient();
 
-    // Get assigner name
+    // Assigner name (used in the DM body).
     const { data: assignerProfile } = await supabase
       .from("profiles")
       .select("title, first_name, last_name")
@@ -147,11 +132,25 @@ export async function POST(request: NextRequest) {
       ? [assignerProfile.title, assignerProfile.first_name, assignerProfile.last_name].filter(Boolean).join(" ")
       : "Jemand";
 
-    // Get assignee email from auth.users (requires admin client)
+    // Prefer profiles.slack_user_id (already stored for most staff)
+    // so we can skip the users.lookupByEmail round-trip. Email is
+    // pulled as a fallback for legacy accounts that predate the
+    // column.
+    const { data: assigneeProfile } = await admin
+      .from("profiles")
+      .select("slack_user_id")
+      .eq("id", assignedTo)
+      .single();
     const { data: { user: assigneeUser } } = await admin.auth.admin.getUserById(assignedTo);
-    if (assigneeUser?.email) {
-      notifyAssigneeOnSlack(assigneeUser.email, assignerName, threadSubject || "", senderEmail || "", threadId);
-    }
+
+    notifyAssigneeOnSlack({
+      slackUserId: (assigneeProfile?.slack_user_id as string | null) ?? null,
+      assigneeEmail: assigneeUser?.email ?? null,
+      assignerName,
+      threadSubject: threadSubject || "",
+      senderEmail: senderEmail || "",
+      threadId,
+    });
   }
 
   return NextResponse.json({ ok: true });
