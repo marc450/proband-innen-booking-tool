@@ -68,10 +68,6 @@ export function Reviews({ heading = "BEWERTUNGEN VON ÄRZT:INNEN", reviews }: Re
             </span>
             <StarRow rating={Math.round(avg)} size="lg" />
           </div>
-          <p className="text-sm md:text-base text-black/70">
-            basierend auf {reviews.length}{" "}
-            {reviews.length === 1 ? "verifizierten Bewertung" : "verifizierten Bewertungen"}
-          </p>
         </div>
 
         <ReviewsCarousel
