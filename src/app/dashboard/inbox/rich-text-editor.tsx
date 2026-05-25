@@ -528,12 +528,22 @@ export function RichTextEditor({
                     value={aiInstruction}
                     onChange={(e) => setAiInstruction(e.target.value)}
                     onKeyDown={(e) => {
+                      // The parent compose pane attaches a window-level
+                      // Cmd+Enter handler that sends the mail (see
+                      // compose-pane.tsx). Without stopPropagation the
+                      // event still bubbles to that listener after
+                      // preventDefault, so Cmd+Enter in this popup used
+                      // to fire an empty send instead of drafting with
+                      // the AI. Same for Escape — keep it scoped to the
+                      // popup so it never closes outer surfaces.
                       if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                         e.preventDefault();
+                        e.stopPropagation();
                         void handleAiSubmit();
                       }
                       if (e.key === "Escape" && !aiBusy) {
                         e.preventDefault();
+                        e.stopPropagation();
                         setShowAi(false);
                       }
                     }}
