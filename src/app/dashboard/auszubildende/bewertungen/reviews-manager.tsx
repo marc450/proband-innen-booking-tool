@@ -47,10 +47,13 @@ export interface ReviewRow {
   rating: number;
   first_name: string;
   body_text: string | null;
+  display_title: string | null;
+  display_last_initial: string | null;
+  is_imported: boolean;
   is_published: boolean;
   submitted_at: string;
   published_at: string | null;
-  booking_id: string;
+  booking_id: string | null;
   template_id: string;
   course_bookings: Joined<BookingJoin>;
   course_templates: Joined<TemplateJoin>;
@@ -314,7 +317,13 @@ export function ReviewsManager({
                     <div className="flex items-center gap-3 flex-wrap">
                       <StarRow rating={r.rating} />
                       <span className="text-sm font-semibold text-gray-900">
-                        {r.first_name}
+                        {[
+                          r.display_title,
+                          r.first_name,
+                          r.display_last_initial ? `${r.display_last_initial}.` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
                       </span>
                       {r.is_published ? (
                         <Badge className="bg-[#0066FF]/10 text-[#0066FF] hover:bg-[#0066FF]/10 text-[10px]">
@@ -323,6 +332,11 @@ export function ReviewsManager({
                       ) : (
                         <Badge variant="secondary" className="text-[10px]">
                           Wartend
+                        </Badge>
+                      )}
+                      {r.is_imported && (
+                        <Badge className="bg-[#BF785E]/15 text-[#733D29] hover:bg-[#BF785E]/15 text-[10px]">
+                          Importiert
                         </Badge>
                       )}
                     </div>

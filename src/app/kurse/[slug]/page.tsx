@@ -128,6 +128,8 @@ export default async function KursPage({
     first_name: string;
     body_text: string | null;
     submitted_at: string;
+    display_title: string | null;
+    display_last_initial: string | null;
     course_bookings:
       | {
           auszubildende:
@@ -153,6 +155,7 @@ export default async function KursPage({
       .from("course_reviews")
       .select(
         `id, rating, first_name, body_text, submitted_at,
+         display_title, display_last_initial,
          course_bookings:booking_id (
            auszubildende:auszubildende_id ( title, last_name )
          ),
@@ -175,13 +178,19 @@ export default async function KursPage({
       // Single-letter, uppercase, A-Z + umlauts only. Anything weirder
       // (e.g. last_name starts with a digit) is dropped to NULL so the
       // displayed line stays clean.
-      const rawInitial = azubi?.last_name?.trim().charAt(0).toUpperCase() ?? "";
-      const lastInitial = /^[A-ZÄÖÜ]$/.test(rawInitial) ? rawInitial : null;
+      const azubiRawInitial = azubi?.last_name?.trim().charAt(0).toUpperCase() ?? "";
+      const azubiInitial = /^[A-ZÄÖÜ]$/.test(azubiRawInitial) ? azubiRawInitial : null;
+      // Cascade: prefer the auszubildende-derived values (they're
+      // canonical for the doctor's booking record), fall back to the
+      // manually-set display_* columns for imported testimonials that
+      // have no booking link.
+      const title = azubi?.title?.trim() || r.display_title?.trim() || null;
+      const lastInitial = azubiInitial || r.display_last_initial?.trim().toUpperCase() || null;
       return {
         id: r.id,
         rating: r.rating,
         firstName: r.first_name,
-        title: azubi?.title?.trim() || null,
+        title,
         lastInitial,
         bodyText: r.body_text,
         submittedAt: r.submitted_at,
@@ -478,7 +487,15 @@ export default async function KursPage({
         }
       />
       {publicReviews.length > 0 && <Reviews reviews={publicReviews} />}
-      <Testimonials content={content.testimonials} />
+      {/* On Reviews-enabled slugs, the long-form hand-curated
+          <Testimonials> would duplicate names that now live in
+          <Reviews> (e.g. Laura B., Nadja G., Lawik R. imported as
+          is_imported rows). Suppress it on those slugs only — other
+          course landings still surface the long-form quotes until we
+          migrate them too. */}
+      {!REVIEWS_ENABLED_SLUGS.has(content.slug) && (
+        <Testimonials content={content.testimonials} />
+      )}
       <Faq content={faqContent} />
       {content.relatedCourses && content.relatedCourses.length > 0 && (
         <RelatedCourses slugs={content.relatedCourses} />

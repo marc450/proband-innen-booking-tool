@@ -19,6 +19,7 @@ export default async function ReviewsPage() {
     .from("course_reviews")
     .select(
       `id, rating, first_name, body_text,
+       display_title, display_last_initial, is_imported,
        is_published, submitted_at, published_at,
        booking_id, template_id,
        course_bookings:booking_id (
