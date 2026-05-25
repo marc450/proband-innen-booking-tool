@@ -111,7 +111,11 @@ export function ReviewsCarousel({ items }: ReviewsCarouselProps) {
               </div>
             </div>
 
-            <blockquote className="flex-1 text-sm md:text-base text-black/80 leading-relaxed mb-5">
+            {/* line-clamp keeps any one extra-long review from forcing
+                every other card to stretch. Full body_text still lives
+                in the JSON-LD reviewBody so Google sees the unclipped
+                version. */}
+            <blockquote className="text-sm md:text-base text-black/80 leading-relaxed mb-5 line-clamp-[8]">
               {item.bodyText ? `„${item.bodyText}"` : null}
             </blockquote>
 
