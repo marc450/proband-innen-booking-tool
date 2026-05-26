@@ -332,14 +332,24 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
                 <>
                   {(() => {
                     const idx = teamMembers.findIndex((m) => m.id === assignment.assignedTo);
+                    const member = idx >= 0 ? teamMembers[idx] : null;
                     const color = AVATAR_COLORS[Math.max(0, idx) % AVATAR_COLORS.length];
+                    // First name + two-letter initials from teamMembers,
+                    // see conversation-pane.tsx for the rationale.
+                    const initials =
+                      member?.initials ||
+                      assignment.assignedToName.charAt(0).toUpperCase() ||
+                      "?";
+                    const label = member?.name || assignment.assignedToName;
                     return (
-                      <span className={`w-4 h-4 rounded-full ${color.bg} ${color.text} text-[8px] font-bold flex items-center justify-center`}>
-                        {assignment.assignedToName.split(" ").map((w) => w[0]).slice(-2).join("").toUpperCase()}
-                      </span>
+                      <>
+                        <span className={`w-4 h-4 rounded-full ${color.bg} ${color.text} text-[8px] font-bold flex items-center justify-center`}>
+                          {initials}
+                        </span>
+                        <span className="text-gray-700 max-w-[60px] truncate">{label}</span>
+                      </>
                     );
                   })()}
-                  <span className="text-gray-700 max-w-[60px] truncate">{assignment.assignedToName.split(" ").pop()}</span>
                 </>
               ) : (
                 <>

@@ -25,10 +25,12 @@ export async function GET() {
       .select("id, first_name, last_name, title")
       .in("id", userIds);
 
+    // First-name-only display: inbox is staff-internal, full names
+    // with title were too long for the assigned pill (Marc, 2026-05).
     const profileMap = new Map(
       (profiles || []).map((p) => [
         p.id,
-        [p.title, p.first_name, p.last_name].filter(Boolean).join(" ") || "Unbekannt",
+        p.first_name?.trim() || p.last_name?.trim() || "Unbekannt",
       ])
     );
 
@@ -45,9 +47,9 @@ export async function GET() {
   const assignments: Record<string, { assignedTo: string; assignedToName: string }> = {};
   for (const row of data || []) {
     const profile = row.profiles as unknown as { first_name: string | null; last_name: string | null; title: string | null } | null;
-    const name = profile
-      ? [profile.title, profile.first_name, profile.last_name].filter(Boolean).join(" ")
-      : "Unbekannt";
+    // First-name-only display, see note on profileMap above.
+    const name =
+      profile?.first_name?.trim() || profile?.last_name?.trim() || "Unbekannt";
     assignments[row.thread_id] = {
       assignedTo: row.assigned_to,
       assignedToName: name,

@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { canAccessInbox } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { formatPersonName } from "@/lib/utils";
 import { InboxManager } from "./inbox-manager";
 
 export default async function InboxPage() {
@@ -21,9 +20,14 @@ export default async function InboxPage() {
   // Get current user ID
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Inbox is internal-only, so we show first names only in the
+  // assignment dropdown and on the assigned pill. Titles and last names
+  // are still pulled from `profiles` because the initials below need
+  // the last-name letter, and so the data source matches the gmail-
+  // assignments API which also returns first-name-only.
   const teamMembers = (profiles || []).map((p) => ({
     id: p.id,
-    name: formatPersonName({ title: p.title, firstName: p.first_name, lastName: p.last_name }) || "Unbekannt",
+    name: p.first_name?.trim() || p.last_name?.trim() || "Unbekannt",
     initials: ((p.first_name?.[0] || "") + (p.last_name?.[0] || "")).toUpperCase() || "?",
   }));
 

@@ -15,9 +15,12 @@ export default async function MobileConversationPage({
     .eq("role", "admin")
     .order("last_name", { ascending: true });
 
+  // Mirror of the desktop inbox: first names only since this is
+  // staff-internal. Keep the two-letter initials computed from
+  // first+last for the avatar pill.
   const teamMembers = (profiles || []).map((p) => ({
     id: p.id,
-    name: [p.title, p.first_name, p.last_name].filter(Boolean).join(" ") || "Unbekannt",
+    name: p.first_name?.trim() || p.last_name?.trim() || "Unbekannt",
     initials: ((p.first_name?.[0] || "") + (p.last_name?.[0] || "")).toUpperCase() || "?",
   }));
 
