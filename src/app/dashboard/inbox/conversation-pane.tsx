@@ -583,7 +583,7 @@ export function ConversationPane({
                 {/* Message body */}
                 <div className="px-5 py-4">
                   <div
-                    className="prose prose-sm max-w-none text-sm [&_img]:max-w-full [&_table]:text-sm [&_a]:text-[#0066FF] [&_a]:underline"
+                    className="prose prose-sm max-w-none text-sm [&_img]:max-w-full [&_table]:text-sm [&_a]:text-[#0066FF] [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 [&_li]:mb-1"
                     dangerouslySetInnerHTML={{
                       __html:
                         msg.body.html || msg.body.text.replace(/\n/g, "<br>"),
