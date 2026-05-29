@@ -96,6 +96,10 @@ export function CertificateTestForm({ courseTypes }: Props) {
         templateSlug: courseType.certSlug,
         vnrTheorie: requiresVnr ? vnrTheorie : "",
         vnrPraxis: requiresVnr ? vnrPraxis : "",
+        // Drive the dynamic "Berlin, <Monat> <Jahr>" stamp from the
+        // selected Kurstermin. Without this, every cert showed the
+        // month that was baked into the master PDF (the original bug).
+        sessionDateIso: session.dateIso,
         preview: true,
       }),
     });

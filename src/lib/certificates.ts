@@ -23,6 +23,32 @@ export interface VnrStampPosition {
   size?: number;
 }
 
+/** Dynamic date stamp for the "Berlin, <Monat> <Jahr>" line in the footer.
+ *  The master PDF for these certs was exported with a fixed month baked
+ *  into the layout (e.g. "Berlin, November 2025"). To make the cert show
+ *  the right month per session WITHOUT re-exporting the master, we draw
+ *  a rose-coloured rectangle over the baked line and stamp the dynamic
+ *  date on top in the same brownish footer colour. */
+export interface DateStampPosition {
+  /** Visual centre X of the new date line. Same convention as the name
+   *  + VNR stamps: the text is centred around this X. */
+  x: number;
+  /** Baseline Y of the new date text. PDF origin is bottom-left. */
+  y: number;
+  /** Font size in points. Defaults to 8pt — matches the footer copy. */
+  size?: number;
+  /** Cover rectangle that hides the baked-in date line. Drawn in the
+   *  rose brand colour to blend with the cert background. Box origin
+   *  is bottom-left in PDF user units. Make it slightly wider than the
+   *  longest expected month name to avoid visible edges. */
+  cover: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
 export interface CertificateTemplate {
   /** URL slug + filename stem under public/certificates/<slug>.pdf */
   slug: string;
@@ -51,6 +77,12 @@ export interface CertificateTemplate {
     minSize: number;
     vnrTheorie?: VnrStampPosition;
     vnrPraxis?: VnrStampPosition;
+    /** Optional: when set, the generator covers the baked-in date line
+     *  with a rose rectangle and stamps "Berlin, <Monat> <Jahr>" from
+     *  the session's date_iso on top. Templates without a baked date
+     *  (e.g. the Zahnmedizin variant) omit this and the generator
+     *  silently skips the stamp. */
+    dateStamp?: DateStampPosition;
   };
 }
 
@@ -84,6 +116,18 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       // baked-in "VNR Theorie:" / "VNR Praxis:" labels.
       vnrTheorie: { x: 173, y: 57, size: 8 },
       vnrPraxis: { x: 173, y: 33, size: 8 },
+      // The master PDF has "Berlin, November 2025" baked into the
+      // footer between "Landesärztekammer Berlin" and "VNR Theorie:".
+      // We cover that line with a rose rectangle and stamp the actual
+      // session month on top. Sized to fit the longest month name
+      // ("September"); the cover height has a small margin so the
+      // baked descenders/ascenders don't peek through.
+      dateStamp: {
+        x: 173,
+        y: 81,
+        size: 8,
+        cover: { x: 73, y: 76, width: 200, height: 14 },
+      },
     },
   },
   {
@@ -130,6 +174,16 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       maxWidth: 290,
       targetSize: 28,
       minSize: 10,
+      // Master PDF has "Berlin, April 2026" baked in as the only footer
+      // line (no VNR section because CME ist noch nicht akkreditiert).
+      // Same cover-and-stamp trick as the Botulinum cert; calibrated
+      // a touch lower since the line sits alone in the footer.
+      dateStamp: {
+        x: 173,
+        y: 75,
+        size: 8,
+        cover: { x: 73, y: 70, width: 200, height: 14 },
+      },
     },
   },
 ];
@@ -241,6 +295,21 @@ function spaceDigits(value: string): string {
   return value.split("").join(" ");
 }
 
+const MONTHS_DE_LONG = [
+  "Januar", "Februar", "März", "April", "Mai", "Juni",
+  "Juli", "August", "September", "Oktober", "November", "Dezember",
+];
+
+/** Build the "Berlin, <Monat> <Jahr>" footer line for a given session
+ *  date_iso (YYYY-MM-DD). Returns null if the input can't be parsed —
+ *  the caller then skips the stamp so we never accidentally draw a
+ *  blank cover that hides the baked text without replacing it. */
+function formatBerlinDateLine(dateIso: string): string | null {
+  const [y, m] = dateIso.split("-").map(Number);
+  if (!y || !m || m < 1 || m > 12) return null;
+  return `Berlin, ${MONTHS_DE_LONG[m - 1]} ${y}`;
+}
+
 export async function generateCertificatePdf(opts: {
   template: CertificateTemplate;
   fullName: string;
@@ -248,8 +317,14 @@ export async function generateCertificatePdf(opts: {
   vnrTheorie?: string;
   /** VNR Praxis. Ignored if the template has no vnrPraxis layout. */
   vnrPraxis?: string;
+  /** Session date in YYYY-MM-DD. When set AND the template has a
+   *  `dateStamp` layout slot, the generator covers the baked footer
+   *  date line and stamps "Berlin, <Monat> <Jahr>" in its place. When
+   *  omitted, the baked date is left as-is, which matches the legacy
+   *  behaviour for callers that haven't been migrated yet. */
+  sessionDateIso?: string;
 }): Promise<Uint8Array> {
-  const { template, fullName, vnrTheorie, vnrPraxis } = opts;
+  const { template, fullName, vnrTheorie, vnrPraxis, sessionDateIso } = opts;
 
   const cwd = process.cwd();
   const [templateBytes, boldBytes, regBytes] = await Promise.all([
@@ -317,6 +392,44 @@ export async function generateCertificatePdf(opts: {
       font: regFont,
       color: rose,
     });
+  }
+
+  // Dynamic "Berlin, <Monat> <Jahr>" line. Two gates have to pass:
+  //  1. The template registers a dateStamp slot (the Zahnmedizin cert
+  //     does not, because its master PDF carries no date line).
+  //  2. The caller supplied a session date_iso we can parse.
+  // When both apply, we draw a rose-coloured rectangle over the baked
+  // line in the master PDF and stamp the new date centred on top.
+  // The rectangle colour matches the cert's rose background (#FAEBE1)
+  // so the cover blends with the surrounding area.
+  const dateLayout = template.layout.dateStamp;
+  if (dateLayout && sessionDateIso) {
+    const dateLine = formatBerlinDateLine(sessionDateIso);
+    if (dateLine) {
+      // The cert master PDFs were exported with a slightly warmer beige
+      // than the canonical brand rose #FAEBE1 — using the pure brand
+      // colour here leaves a visibly pink patch over the baked date.
+      // This value was calibrated against the actual rendered cert
+      // background. If the master PDFs are ever re-exported, re-sample
+      // and update here.
+      const certBackground = rgb(0.965, 0.91, 0.847);
+      page.drawRectangle({
+        x: dateLayout.cover.x,
+        y: dateLayout.cover.y,
+        width: dateLayout.cover.width,
+        height: dateLayout.cover.height,
+        color: certBackground,
+      });
+      const dSize = dateLayout.size ?? 8;
+      const dWidth = regFont.widthOfTextAtSize(dateLine, dSize);
+      page.drawText(dateLine, {
+        x: dateLayout.x - dWidth / 2,
+        y: dateLayout.y,
+        size: dSize,
+        font: regFont,
+        color: rose,
+      });
+    }
   }
 
   return await pdf.save();

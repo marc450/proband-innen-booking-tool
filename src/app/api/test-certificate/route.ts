@@ -27,6 +27,14 @@ export async function POST(req: NextRequest) {
   const templateSlug = String(body.templateSlug || "").trim();
   const vnrTheorie = String(body.vnrTheorie || "").trim();
   const vnrPraxis = String(body.vnrPraxis || "").trim();
+  // sessionDateIso drives the dynamic "Berlin, <Monat> <Jahr>" stamp
+  // in the footer. Optional: legacy callers without the date still get
+  // a valid PDF, just with whatever date the master PDF was exported
+  // with (which is exactly the bug we're fixing for the test form).
+  const sessionDateIsoRaw = String(body.sessionDateIso || "").trim();
+  const sessionDateIso = /^\d{4}-\d{2}-\d{2}$/.test(sessionDateIsoRaw)
+    ? sessionDateIsoRaw
+    : "";
 
   if (!name) {
     return NextResponse.json({ error: "Name fehlt" }, { status: 400 });
@@ -62,6 +70,7 @@ export async function POST(req: NextRequest) {
       fullName: name,
       vnrTheorie,
       vnrPraxis,
+      sessionDateIso: sessionDateIso || undefined,
     });
   } catch (err) {
     console.error("Certificate render failed:", err);

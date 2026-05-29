@@ -233,6 +233,7 @@ export async function sendPostPraxisCertificates(
           fullName,
           vnrTheorie,
           vnrPraxis,
+          sessionDateIso: session.date_iso,
         });
 
         await supabase
@@ -263,6 +264,9 @@ async function sendCertificateEmail(opts: {
   fullName: string;
   vnrTheorie: string;
   vnrPraxis: string;
+  /** date_iso of the Praxiskurs session. Drives the dynamic
+   *  "Berlin, <Monat> <Jahr>" stamp in the footer. */
+  sessionDateIso: string;
 }) {
   const {
     to,
@@ -273,16 +277,20 @@ async function sendCertificateEmail(opts: {
     fullName,
     vnrTheorie,
     vnrPraxis,
+    sessionDateIso,
   } = opts;
 
   // generateCertificatePdf gates VNR drawing on both the layout slot
   // and a non-empty value, so the dentist cert silently ignores the
-  // empty strings we pass in here.
+  // empty strings we pass in here. Same gating applies to the date
+  // stamp: certs without a dateStamp layout (Zahnmedizin) ignore the
+  // session date and leave the master PDF untouched.
   const pdfBytes = await generateCertificatePdf({
     template: cert,
     fullName,
     vnrTheorie,
     vnrPraxis,
+    sessionDateIso,
   });
 
   const subject = buildPostPraxisEmailSubject({ courseName });
