@@ -455,6 +455,151 @@ export async function archiveSentMessage(opts: {
   }
 }
 
+// ── Push Notifications (Gmail Watch + Pub/Sub) ──
+
+export interface GmailWatchResponse {
+  /** Snapshot historyId at the moment of the watch call. Used as the
+   *  startHistoryId for the very first history.list call that follows
+   *  this watch. */
+  historyId: string;
+  /** Expiration time as a unix-millis string. Watches last at most 7
+   *  days, so we renew daily. */
+  expiration: string;
+}
+
+/** Register a Gmail push watch on the INBOX label. Gmail will then
+ *  publish a notification to `topicName` every time a new message
+ *  arrives. The returned historyId is the watch checkpoint and must
+ *  be persisted before any push notification is processed. */
+export async function startGmailWatch(
+  topicName: string,
+): Promise<GmailWatchResponse> {
+  return gmailFetch("watch", {
+    method: "POST",
+    body: JSON.stringify({
+      topicName,
+      labelIds: ["INBOX"],
+      // labelFilterAction default is "include" → only fire for the
+      // labels we listed, i.e. real INBOX arrivals. Spam-only mail
+      // never triggers a notification, which is exactly what we want.
+    }),
+  }) as Promise<GmailWatchResponse>;
+}
+
+/** Stop the active Gmail watch. Use to cleanly tear down before
+ *  reconnecting / when rotating Pub/Sub topics. */
+export async function stopGmailWatch(): Promise<void> {
+  await gmailFetch("stop", { method: "POST" });
+}
+
+interface GmailHistoryRecord {
+  id: string;
+  messages?: { id: string; threadId: string }[];
+  messagesAdded?: {
+    message: { id: string; threadId: string; labelIds?: string[] };
+  }[];
+}
+
+export interface GmailHistoryList {
+  history?: GmailHistoryRecord[];
+  /** Latest historyId in the response. Push handlers store this so
+   *  the next call can resume from here. */
+  historyId: string;
+  nextPageToken?: string;
+}
+
+/** List Gmail history records since `startHistoryId`. We filter to
+ *  `messageAdded` records because we only care about new arrivals.
+ *  The history API surfaces every change since the checkpoint
+ *  (labels, deletes, drafts, …) — restricting to messageAdded keeps
+ *  the response small and the call cheap. */
+export async function listHistorySinceMessageAdded(
+  startHistoryId: string,
+  pageToken?: string,
+): Promise<GmailHistoryList> {
+  const params = new URLSearchParams({
+    startHistoryId,
+    historyTypes: "messageAdded",
+    labelId: "INBOX",
+  });
+  if (pageToken) params.set("pageToken", pageToken);
+  return gmailFetch(`history?${params}`) as Promise<GmailHistoryList>;
+}
+
+/** Read the persisted Gmail-watch state for the customerlove inbox.
+ *  Used by the push webhook to know where to resume from and by the
+ *  renewal cron to decide whether the current watch is close to
+ *  expiring. */
+export async function getGmailWatchState(
+  email: string = GMAIL_USER_EMAIL,
+): Promise<{
+  watchHistoryId: string | null;
+  watchExpiration: string | null;
+  lastProcessedHistoryId: string | null;
+} | null> {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("gmail_tokens")
+    .select(
+      "watch_history_id, watch_expiration, last_processed_history_id",
+    )
+    .eq("email", email)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    watchHistoryId: data.watch_history_id ?? null,
+    watchExpiration: data.watch_expiration ?? null,
+    lastProcessedHistoryId: data.last_processed_history_id ?? null,
+  };
+}
+
+/** Persist the watch checkpoint after a successful users.watch call.
+ *  We also reset last_processed_history_id to the new watch_history_id
+ *  so the next push notification's history.list call starts from a
+ *  valid resume point. */
+export async function saveGmailWatchState(opts: {
+  email?: string;
+  watchHistoryId: string;
+  watchExpiration: string;
+}): Promise<void> {
+  const email = opts.email ?? GMAIL_USER_EMAIL;
+  const supabase = createAdminClient();
+  await supabase
+    .from("gmail_tokens")
+    .update({
+      watch_history_id: opts.watchHistoryId,
+      watch_expiration: opts.watchExpiration,
+      last_processed_history_id: opts.watchHistoryId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("email", email);
+}
+
+/** Advance the resume cursor after a push notification finishes
+ *  processing. Idempotent: a smaller historyId is silently ignored
+ *  so out-of-order Pub/Sub retries can't rewind us. */
+export async function advanceLastProcessedHistoryId(
+  newHistoryId: string,
+  email: string = GMAIL_USER_EMAIL,
+): Promise<void> {
+  const supabase = createAdminClient();
+  const { data: current } = await supabase
+    .from("gmail_tokens")
+    .select("last_processed_history_id")
+    .eq("email", email)
+    .maybeSingle();
+  const currentId = BigInt(current?.last_processed_history_id || "0");
+  const candidate = BigInt(newHistoryId || "0");
+  if (candidate <= currentId) return;
+  await supabase
+    .from("gmail_tokens")
+    .update({
+      last_processed_history_id: newHistoryId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("email", email);
+}
+
 // Modify labels (mark read/unread, archive, etc.)
 export async function modifyLabels(messageId: string, addLabels: string[] = [], removeLabels: string[] = []) {
   return gmailFetch(`messages/${messageId}/modify`, {

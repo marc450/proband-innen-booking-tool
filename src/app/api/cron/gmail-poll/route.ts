@@ -1,27 +1,18 @@
 import { NextResponse } from "next/server";
+import { getValidAccessToken } from "@/lib/gmail";
 import {
-  getValidAccessToken,
-  getMessage,
-  getHeader,
-  getBody,
-  extractEmailAddress,
-  extractName,
-  isInbound,
-} from "@/lib/gmail";
-import { decodeHtmlEntities } from "@/lib/gmail-text";
-import {
-  sanitiseFirstName,
-  sendInboxAutoReply,
-} from "@/lib/inbox-auto-reply";
+  NOTIFIED_LABEL_NAME,
+  processInboundMessage,
+} from "@/lib/gmail-inbound-processor";
 
-// Polled every 5 min by Railway customerlove-cron. Finds unread INBOX
-// messages that haven't been Slack-notified yet, posts a card to the
-// customerlove webhook for each one, then tags the message with the
-// "slack-notified" Gmail label so the next poll skips it. No DB state
-// — Gmail itself is the bookmark.
+// LEGACY: this route was the original 5-minute polling cron. Push
+// notifications via Pub/Sub (/api/gmail/push-webhook) are now the
+// primary delivery channel; this route is kept as a manual fallback
+// that staff can hit if the push pipeline ever fails. It is no longer
+// wired to the Railway cron service — invoke it manually with a
+// `Bearer <CRON_SECRET>` header to drain anything Pub/Sub missed.
 
 const GMAIL_API = "https://gmail.googleapis.com/gmail/v1";
-const NOTIFIED_LABEL = "slack-notified";
 
 async function gmailFetch(path: string, token: string, options?: RequestInit) {
   const res = await fetch(`${GMAIL_API}/users/me/${path}`, {
@@ -39,17 +30,16 @@ async function gmailFetch(path: string, token: string, options?: RequestInit) {
   return res.json();
 }
 
-// Find or create the user-defined "slack-notified" label. Returns its id.
 async function ensureNotifiedLabelId(token: string): Promise<string> {
   const list = (await gmailFetch("labels", token)) as {
     labels: { id: string; name: string }[];
   };
-  const existing = list.labels.find((l) => l.name === NOTIFIED_LABEL);
+  const existing = list.labels.find((l) => l.name === NOTIFIED_LABEL_NAME);
   if (existing) return existing.id;
   const created = (await gmailFetch("labels", token, {
     method: "POST",
     body: JSON.stringify({
-      name: NOTIFIED_LABEL,
+      name: NOTIFIED_LABEL_NAME,
       labelListVisibility: "labelHide",
       messageListVisibility: "hide",
     }),
@@ -63,11 +53,8 @@ interface GmailListResponse {
 }
 
 async function listUnnotifiedMessages(token: string): Promise<{ id: string }[]> {
-  // newer_than:1d as a safety window so we never spam old history if the
-  // label-tag step fails. -from:me skips outbound that ends up in INBOX
-  // via aliasing.
   const q = encodeURIComponent(
-    `label:INBOX -label:${NOTIFIED_LABEL} -from:me newer_than:1d`,
+    `label:INBOX -label:${NOTIFIED_LABEL_NAME} -from:me newer_than:1d`,
   );
   const data = (await gmailFetch(
     `messages?q=${q}&maxResults=25`,
@@ -76,96 +63,7 @@ async function listUnnotifiedMessages(token: string): Promise<{ id: string }[]> 
   return data.messages || [];
 }
 
-async function applyNotifiedLabel(
-  token: string,
-  messageId: string,
-  labelId: string,
-) {
-  await gmailFetch(`messages/${messageId}/modify`, token, {
-    method: "POST",
-    body: JSON.stringify({ addLabelIds: [labelId] }),
-  });
-}
-
-function buildSlackPayload(args: {
-  fromName: string;
-  fromEmail: string;
-  subject: string;
-  preview: string;
-  threadId: string;
-}) {
-  // Slack auto-links anything that looks like an email address,
-  // regardless of angle brackets. Wrapping the address in backticks
-  // renders it in monospace and disables that auto-linking — Marc
-  // doesn't want a clickable mailto: in the notification.
-  const emailFormatted = `\`${args.fromEmail}\``;
-  const displayFromMrkdwn = args.fromName
-    ? `${args.fromName} ${emailFormatted}`
-    : emailFormatted;
-  // Plain-text variant for the OS notification banner / fallback,
-  // where Slack mrkdwn isn't rendered.
-  const displayFromPlain = args.fromName
-    ? `${args.fromName} (${args.fromEmail})`
-    : args.fromEmail;
-  const subjectLine = args.subject || "(kein Betreff)";
-  const bodyLines = [
-    `*Von:* ${displayFromMrkdwn}`,
-    `*Betreff:* ${subjectLine}`,
-  ];
-  if (args.preview) bodyLines.push(`*Inhalt:* ${args.preview}`);
-  return {
-    // Bot identity (name + avatar) is set on the Slack app itself
-    // ("Neue E-Mail!"). New-style Incoming Webhooks ignore any
-    // username/icon_emoji override in the payload, so we don't bother.
-    // The fallback `text` is what shows in notifications/desktop banners.
-    text: `Neue E-Mail von ${displayFromPlain}`,
-    blocks: [
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: bodyLines.join("\n"),
-        },
-      },
-      {
-        type: "actions",
-        elements: [
-          {
-            type: "button",
-            // Hardcoded: the inbox lives behind staff auth on the admin
-            // host. NEXT_PUBLIC_APP_URL points at the public booking
-            // domain (proband-innen.ephia.de), which doesn't render
-            // /dashboard/inbox at all.
-            text: { type: "plain_text", text: "Im Dashboard öffnen" },
-            // Deep-link to the specific thread via ?thread=<id>. The
-            // inbox-manager reads searchParams.get("thread") and opens
-            // that thread directly, which works even if the thread is
-            // no longer in the INBOX list view (Gmail filter archived
-            // it, marked spam, etc.).
-            url: `https://admin.ephia.de/dashboard/inbox?thread=${args.threadId}`,
-          },
-        ],
-      },
-      {
-        type: "context",
-        elements: [
-          {
-            type: "mrkdwn",
-            text: "_Bitte Haken setzen wenn beantwortet._",
-          },
-        ],
-      },
-    ],
-  };
-}
-
-async function postToSlack(payload: object) {
-  // Dedicated webhook for the #customerlove channel. We deliberately do
-  // NOT fall back to SLACK_WEBHOOK_URL — that webhook posts into the
-  // Proband:innen booking channel and the wrong channel is worse than
-  // a missing notification. If the env var isn't set, we throw and the
-  // route returns the error in its response, the cron logs it, and
-  // nothing leaks into the wrong channel.
+async function postToSlackCustomerLove(payload: object) {
   const url = process.env.SLACK_WEBHOOK_URL_CUSTOMERLOVE;
   if (!url) throw new Error("SLACK_WEBHOOK_URL_CUSTOMERLOVE not set");
   const res = await fetch(url, {
@@ -190,98 +88,39 @@ export async function POST(req: Request) {
   try {
     token = await getValidAccessToken();
   } catch (e) {
-    // Don't crash the cron container — return 200 with a noop so the
-    // Railway service stays "ready" while Gmail is being reconnected.
     return NextResponse.json({
       ok: false,
       reason: e instanceof Error ? e.message : "no gmail token",
     });
   }
 
-  const labelId = await ensureNotifiedLabelId(token);
+  const notifiedLabelId = await ensureNotifiedLabelId(token);
   const messages = await listUnnotifiedMessages(token);
 
+  const outcomes = [] as unknown[];
   let notified = 0;
   let skipped = 0;
   let autoRepliedSent = 0;
-  let autoRepliedSkipped = 0;
   const errors: string[] = [];
 
   for (const m of messages) {
     try {
-      const full = await getMessage(m.id);
-      if (!isInbound(full)) {
+      const outcome = await processInboundMessage(m.id, {
+        notifiedLabelId,
+        postSlack: postToSlackCustomerLove,
+      });
+      outcomes.push(outcome);
+      if (outcome.status === "notified" || outcome.status === "auto-replied") {
+        notified++;
+        if (outcome.autoReply?.status === "sent") autoRepliedSent++;
+      } else if (
+        outcome.status === "skipped-outbound" ||
+        outcome.status === "skipped-already-notified"
+      ) {
         skipped++;
-        await applyNotifiedLabel(token, m.id, labelId);
-        continue;
+      } else if (outcome.status === "error") {
+        errors.push(`${m.id}: ${outcome.reason}`);
       }
-      const fromHeader = getHeader(full, "From");
-      const subject = getHeader(full, "Subject");
-      const { text, html } = getBody(full);
-      const preview = decodeHtmlEntities(
-        text || html.replace(/<[^>]+>/g, " "),
-      )
-        .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, 280);
-
-      const fromName = extractName(fromHeader);
-      const fromEmail = extractEmailAddress(fromHeader);
-
-      await postToSlack(
-        buildSlackPayload({
-          fromName,
-          fromEmail,
-          subject,
-          preview,
-          threadId: full.threadId,
-        }),
-      );
-
-      // Fire the customerlove auto-reply ("Vielen Dank, wir haben Deine
-      // Nachricht erhalten…"). All anti-loop guards live inside
-      // sendInboxAutoReply: internal @ephia.de senders, bounce
-      // mailboxes, RFC 3834 headers, and a per-thread dedup row are
-      // all checked before Gmail is touched. Anything that goes wrong
-      // here only logs into the cron response so a single bad message
-      // can't block Slack notifications for the rest of the batch.
-      try {
-        const result = await sendInboxAutoReply({
-          to: fromEmail,
-          firstName: sanitiseFirstName(fromName),
-          threadKey: full.threadId,
-          threading: {
-            gmailThreadId: full.threadId,
-            inReplyToMessageId: getHeader(full, "Message-ID"),
-            referencesHeader: getHeader(full, "References") || undefined,
-          },
-          inboundHeaders: {
-            autoSubmitted: getHeader(full, "Auto-Submitted"),
-            precedence: getHeader(full, "Precedence"),
-            listId: getHeader(full, "List-Id"),
-            xAutoResponseSuppress: getHeader(
-              full,
-              "X-Auto-Response-Suppress",
-            ),
-          },
-        });
-        if (result.status === "sent") {
-          autoRepliedSent++;
-        } else if (result.status === "skipped") {
-          autoRepliedSkipped++;
-        } else if (result.status === "error") {
-          errors.push(`auto-reply ${m.id}: ${result.reason}`);
-        }
-      } catch (autoErr) {
-        errors.push(
-          `auto-reply ${m.id}: ${
-            autoErr instanceof Error ? autoErr.message : "unknown"
-          }`,
-        );
-      }
-
-      await applyNotifiedLabel(token, m.id, labelId);
-      notified++;
     } catch (e) {
       errors.push(
         `${m.id}: ${e instanceof Error ? e.message : "unknown error"}`,
@@ -295,7 +134,7 @@ export async function POST(req: Request) {
     notified,
     skipped,
     autoRepliedSent,
-    autoRepliedSkipped,
     errors,
+    outcomes,
   });
 }
