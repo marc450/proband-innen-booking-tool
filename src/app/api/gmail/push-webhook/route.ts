@@ -186,6 +186,16 @@ export async function POST(req: NextRequest) {
             postSlack: postToSlackCustomerLove,
           });
           processed.push(outcome);
+          console.log(
+            `[push-webhook] ${id} → ${outcome.status}` +
+              (outcome.autoReply
+                ? ` autoReply=${outcome.autoReply.status}` +
+                  ("reason" in outcome.autoReply && outcome.autoReply.reason
+                    ? `(${outcome.autoReply.reason})`
+                    : "")
+                : "") +
+              (outcome.reason ? ` reason=${outcome.reason}` : ""),
+          );
         } catch (err) {
           console.error("push-webhook: processInboundMessage threw", err);
           processed.push({

@@ -97,6 +97,17 @@ export async function POST(req: Request) {
   const notifiedLabelId = await ensureNotifiedLabelId(token);
   const messages = await listUnnotifiedMessages(token);
 
+  // Verbose-by-default in the cron path. Railway's deploy logs surface
+  // any console.log to the service log stream, which until now has
+  // been silent for this route because the curl command in
+  // customerlove-cron uses `-fsS` and discards the response body.
+  // Logging the input scan + per-message outcome here gives us
+  // post-hoc visibility ("did the auto-reply fire? did the recipient
+  // get skipped? why?") without needing to capture HTTP responses.
+  console.log(
+    `[gmail-poll] scan: ${messages.length} unnotified message(s)`,
+  );
+
   const outcomes = [] as unknown[];
   let notified = 0;
   let skipped = 0;
@@ -110,6 +121,16 @@ export async function POST(req: Request) {
         postSlack: postToSlackCustomerLove,
       });
       outcomes.push(outcome);
+      console.log(
+        `[gmail-poll] ${m.id} → ${outcome.status}` +
+          (outcome.autoReply
+            ? ` autoReply=${outcome.autoReply.status}` +
+              ("reason" in outcome.autoReply && outcome.autoReply.reason
+                ? `(${outcome.autoReply.reason})`
+                : "")
+            : "") +
+          (outcome.reason ? ` reason=${outcome.reason}` : ""),
+      );
       if (outcome.status === "notified" || outcome.status === "auto-replied") {
         notified++;
         if (outcome.autoReply?.status === "sent") autoRepliedSent++;
@@ -124,6 +145,10 @@ export async function POST(req: Request) {
     } catch (e) {
       errors.push(
         `${m.id}: ${e instanceof Error ? e.message : "unknown error"}`,
+      );
+      console.error(
+        `[gmail-poll] ${m.id} threw`,
+        e instanceof Error ? e.message : e,
       );
     }
   }
