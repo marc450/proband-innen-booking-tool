@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  contactFormThreadKey,
+  sendInboxAutoReply,
+} from "@/lib/inbox-auto-reply";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 // Contact-form messages are customerlove territory (someone needs to
@@ -143,6 +147,24 @@ export async function POST(req: NextRequest) {
       } catch (slackErr) {
         console.error("Slack contact notification failed:", slackErr);
       }
+    }
+
+    // Send the customerlove auto-reply ("Vielen Dank, wir haben Deine
+    // Nachricht erhalten…") to the form-submitter. Best-effort: a
+    // failure here must not flip the form to an error state, since
+    // the internal notification (above) already succeeded and the
+    // staff can reply manually if the ACK never went out.
+    try {
+      const autoReply = await sendInboxAutoReply({
+        to: email,
+        firstName,
+        threadKey: contactFormThreadKey(email),
+      });
+      if (autoReply.status === "error") {
+        console.error("contact-message: auto-reply error", autoReply);
+      }
+    } catch (autoReplyErr) {
+      console.error("contact-message: auto-reply threw", autoReplyErr);
     }
 
     return NextResponse.json({ ok: true });

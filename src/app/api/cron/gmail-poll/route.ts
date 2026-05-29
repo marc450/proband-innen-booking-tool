@@ -9,6 +9,10 @@ import {
   isInbound,
 } from "@/lib/gmail";
 import { decodeHtmlEntities } from "@/lib/gmail-text";
+import {
+  sanitiseFirstName,
+  sendInboxAutoReply,
+} from "@/lib/inbox-auto-reply";
 
 // Polled every 5 min by Railway customerlove-cron. Finds unread INBOX
 // messages that haven't been Slack-notified yet, posts a card to the
@@ -199,6 +203,8 @@ export async function POST(req: Request) {
 
   let notified = 0;
   let skipped = 0;
+  let autoRepliedSent = 0;
+  let autoRepliedSkipped = 0;
   const errors: string[] = [];
 
   for (const m of messages) {
@@ -219,15 +225,61 @@ export async function POST(req: Request) {
         .trim()
         .slice(0, 280);
 
+      const fromName = extractName(fromHeader);
+      const fromEmail = extractEmailAddress(fromHeader);
+
       await postToSlack(
         buildSlackPayload({
-          fromName: extractName(fromHeader),
-          fromEmail: extractEmailAddress(fromHeader),
+          fromName,
+          fromEmail,
           subject,
           preview,
           threadId: full.threadId,
         }),
       );
+
+      // Fire the customerlove auto-reply ("Vielen Dank, wir haben Deine
+      // Nachricht erhalten…"). All anti-loop guards live inside
+      // sendInboxAutoReply: internal @ephia.de senders, bounce
+      // mailboxes, RFC 3834 headers, and a per-thread dedup row are
+      // all checked before Gmail is touched. Anything that goes wrong
+      // here only logs into the cron response so a single bad message
+      // can't block Slack notifications for the rest of the batch.
+      try {
+        const result = await sendInboxAutoReply({
+          to: fromEmail,
+          firstName: sanitiseFirstName(fromName),
+          threadKey: full.threadId,
+          threading: {
+            gmailThreadId: full.threadId,
+            inReplyToMessageId: getHeader(full, "Message-ID"),
+            referencesHeader: getHeader(full, "References") || undefined,
+          },
+          inboundHeaders: {
+            autoSubmitted: getHeader(full, "Auto-Submitted"),
+            precedence: getHeader(full, "Precedence"),
+            listId: getHeader(full, "List-Id"),
+            xAutoResponseSuppress: getHeader(
+              full,
+              "X-Auto-Response-Suppress",
+            ),
+          },
+        });
+        if (result.status === "sent") {
+          autoRepliedSent++;
+        } else if (result.status === "skipped") {
+          autoRepliedSkipped++;
+        } else if (result.status === "error") {
+          errors.push(`auto-reply ${m.id}: ${result.reason}`);
+        }
+      } catch (autoErr) {
+        errors.push(
+          `auto-reply ${m.id}: ${
+            autoErr instanceof Error ? autoErr.message : "unknown"
+          }`,
+        );
+      }
+
       await applyNotifiedLabel(token, m.id, labelId);
       notified++;
     } catch (e) {
@@ -242,6 +294,8 @@ export async function POST(req: Request) {
     scanned: messages.length,
     notified,
     skipped,
+    autoRepliedSent,
+    autoRepliedSkipped,
     errors,
   });
 }

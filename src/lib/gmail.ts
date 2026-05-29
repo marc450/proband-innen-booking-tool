@@ -249,6 +249,13 @@ export async function sendEmail(
   bcc?: string,
   attachments?: EmailAttachment[],
   sentBy?: string,
+  /** Optional extra raw headers to add to the outgoing MIME message.
+   *  Used by the inbox auto-reply to set RFC 3834 markers
+   *  (Auto-Submitted: auto-replied, Precedence: bulk) so that other
+   *  mail servers can recognise our ACK as machine-generated and not
+   *  bounce it back at us. Keys are header names, values are raw
+   *  header values (no CRLF). */
+  extraHeaders?: Record<string, string>,
 ) {
   // RFC 2047: encode header values that contain non-ASCII characters
   const encodeHeader = (value: string): string => {
@@ -280,6 +287,15 @@ export async function sendEmail(
   if (sentBy) rawHeaders.push(`X-EPHIA-Sent-By: ${sentBy}`);
   if (inReplyTo) rawHeaders.push(`In-Reply-To: ${inReplyTo}`);
   if (references) rawHeaders.push(`References: ${references}`);
+  if (extraHeaders) {
+    for (const [name, value] of Object.entries(extraHeaders)) {
+      // Strip CR/LF so a caller can't smuggle additional headers into
+      // the message via the value. Header names are trusted because
+      // they come from server-side call sites.
+      const safeValue = value.replace(/[\r\n]+/g, " ").trim();
+      if (safeValue) rawHeaders.push(`${name}: ${safeValue}`);
+    }
+  }
 
   const parts: string[] = [rawHeaders.join("\r\n"), ""];
 
