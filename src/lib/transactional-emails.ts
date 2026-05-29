@@ -11,6 +11,10 @@ import {
   buildProbandinnenInfoEmail,
   buildSessionChangeEmail,
 } from "@/lib/course-email-templates";
+import {
+  AUTO_REPLY_SUBJECT_LINE,
+  buildAutoReplyHtml,
+} from "@/lib/inbox-auto-reply";
 
 /**
  * Catalog of every transactional email the booking tool sends, grouped by
@@ -587,31 +591,14 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
     codeRef: "src/lib/inbox-auto-reply.ts",
     description:
       "Sofortige Bestätigung an die anfragende Person, dass die Nachricht angekommen ist. Antwortzeit-Versprechen: 24h, am Wochenende und an Feiertagen spätestens am nächsten Werktag. Wird per Gmail API gesendet und in den Original-Thread eingehängt. Interne @ephia.de Absender, Bounce-Adressen und RFC-3834-Auto-Mails werden übersprungen. Geht an Proband:innen UND Ärzt:innen, je nachdem, wer sich meldet.",
-    renderSample: () => {
-      // Mirror buildAutoReplyHtml output 1:1 so the catalog preview matches
-      // exactly what the recipient sees. Keep this in sync if the live copy
-      // changes.
-      const firstName = SAMPLE.firstName;
-      return {
-        subject: "Wir haben Deine Nachricht erhalten",
-        html: `<!doctype html>
-<html lang="de">
-  <body style="margin:0; padding:0; background:#f6f6f6; font-family:Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-    <div style="max-width:560px; margin:0 auto; padding:24px;">
-      <div style="background:#ffffff; border-radius:10px; padding:28px; color:#222; font-size:15px; line-height:1.55;">
-        <p style="margin:0 0 14px;">Hi ${firstName},</p>
-        <p style="margin:0 0 14px;">vielen Dank für Deine Nachricht. Wir haben sie erhalten und melden uns innerhalb von 24 Stunden bei Dir.</p>
-        <p style="margin:0 0 14px;">Am Wochenende und an Feiertagen kann es etwas länger dauern. Spätestens am nächsten Werktag hörst Du von uns.</p>
-        <p style="margin:18px 0 0;">Liebe Grüße<br>Dein EPHIA Team</p>
-      </div>
-      <p style="text-align:center; color:#999; font-size:11px; margin-top:14px;">
-        Diese Nachricht wurde automatisch verschickt. Eine persönliche Antwort folgt.
-      </p>
-    </div>
-  </body>
-</html>`,
-      };
-    },
+    renderSample: () => ({
+      subject: AUTO_REPLY_SUBJECT_LINE,
+      // Direct call into the live builder so the catalog preview can
+      // never drift from what the recipient actually sees. If the copy
+      // ever changes, update AUTO_REPLY_INTRO_HTML in inbox-auto-reply.ts
+      // and the preview here updates automatically.
+      html: buildAutoReplyHtml({ firstName: SAMPLE.firstName }),
+    }),
   },
   {
     id: "contact-message",

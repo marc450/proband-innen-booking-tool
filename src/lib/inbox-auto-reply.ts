@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { buildEmailHtml } from "@/lib/email-template";
 import { sendEmail } from "@/lib/gmail";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -248,29 +249,35 @@ interface AutoReplyHtmlOpts {
   firstName?: string | null;
 }
 
+/** Body intro shown above the standard transactional footer. Kept as
+ *  a constant so the renderSample preview in transactional-emails.ts
+ *  can reuse it without copy drift. The "automatisch versendet" line
+ *  is a discreet italic sentence at the end rather than a
+ *  "Wichtiger Hinweis" box, because for an auto-reply that disclosure
+ *  is housekeeping, not a warning. */
+export const AUTO_REPLY_INTRO_HTML =
+  `vielen Dank für Deine Nachricht. Wir haben sie erhalten und melden uns innerhalb von 24 Stunden bei Dir.<br><br>` +
+  `Am Wochenende und an Feiertagen kann es etwas länger dauern. Spätestens am nächsten Werktag hörst Du von uns.<br><br>` +
+  `<em style="color:#666;">Diese E-Mail wurde automatisch versendet. Eine persönliche Antwort folgt.</em>`;
+
+/** No-name fallback for the salutation. The shared buildEmailHtml
+ *  template hard-codes "Hi ${firstName}," — passing a normal German
+ *  conversational stand-in keeps the line readable for senders we
+ *  couldn't extract a first name for. */
+const NO_NAME_FALLBACK = "zusammen";
+
 export function buildAutoReplyHtml(opts: AutoReplyHtmlOpts): string {
   const clean = sanitiseFirstName(opts.firstName);
-  const greeting = clean ? `Hi ${escapeHtml(clean)},` : "Hi,";
-  // No fancy CTA, no banner image — the auto-reply has to read like a
-  // short personal note, not a marketing email. Single white card on
-  // light grey, system / Arial font stack to match what the rest of the
-  // inbox uses. No dashes anywhere in the copy (BRAND_MANUAL rule).
-  return `<!doctype html>
-<html lang="de">
-  <body style="margin:0; padding:0; background:#f6f6f6; font-family:Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-    <div style="max-width:560px; margin:0 auto; padding:24px;">
-      <div style="background:#ffffff; border-radius:10px; padding:28px; color:#222; font-size:15px; line-height:1.55;">
-        <p style="margin:0 0 14px;">${greeting}</p>
-        <p style="margin:0 0 14px;">vielen Dank für Deine Nachricht. Wir haben sie erhalten und melden uns innerhalb von 24 Stunden bei Dir.</p>
-        <p style="margin:0 0 14px;">Am Wochenende und an Feiertagen kann es etwas länger dauern. Spätestens am nächsten Werktag hörst Du von uns.</p>
-        <p style="margin:18px 0 0;">Liebe Grüße<br>Dein EPHIA Team</p>
-      </div>
-      <p style="text-align:center; color:#999; font-size:11px; margin-top:14px;">
-        Diese Nachricht wurde automatisch verschickt. Eine persönliche Antwort folgt.
-      </p>
-    </div>
-  </body>
-</html>`;
+  // Match the standard transactional-email skeleton: white card on
+  // white, EPHIA logo + company footer, "Hi {firstName}," opener,
+  // "Herzliche Grüße, Dein EPHIA-Team" closing. No dashes anywhere
+  // (BRAND_MANUAL.md). The note box mirrors the visual treatment used
+  // for "Wichtiger Hinweis" elsewhere so the auto-reply marker stays
+  // visually consistent with the rest of the family.
+  return buildEmailHtml({
+    firstName: clean ? escapeHtml(clean) : NO_NAME_FALLBACK,
+    intro: AUTO_REPLY_INTRO_HTML,
+  });
 }
 
 export const AUTO_REPLY_SUBJECT_LINE = AUTO_REPLY_SUBJECT;
