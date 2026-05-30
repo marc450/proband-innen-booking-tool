@@ -24,29 +24,18 @@ export interface VnrStampPosition {
 }
 
 /** Dynamic date stamp for the "Berlin, <Monat> <Jahr>" line in the footer.
- *  The master PDF for these certs was exported with a fixed month baked
- *  into the layout (e.g. "Berlin, November 2025"). To make the cert show
- *  the right month per session WITHOUT re-exporting the master, we draw
- *  a rose-coloured rectangle over the baked line and stamp the dynamic
- *  date on top in the same brownish footer colour. */
+ *  The baked-in date line was redacted out of the master PDFs, so the
+ *  generator simply stamps the per-session date into the empty gap
+ *  between "Landesärztekammer Berlin" and "VNR Theorie:" — letter-spaced
+ *  in the footer's rose colour, no cover rectangle needed. */
 export interface DateStampPosition {
-  /** Visual centre X of the new date line. Same convention as the name
-   *  + VNR stamps: the text is centred around this X. */
+  /** Visual centre X of the date line. Same convention as the name +
+   *  VNR stamps: the text is centred around this X. */
   x: number;
-  /** Baseline Y of the new date text. PDF origin is bottom-left. */
+  /** Baseline Y of the date text. PDF origin is bottom-left. */
   y: number;
   /** Font size in points. Defaults to 8pt — matches the footer copy. */
   size?: number;
-  /** Cover rectangle that hides the baked-in date line. Drawn in the
-   *  rose brand colour to blend with the cert background. Box origin
-   *  is bottom-left in PDF user units. Make it slightly wider than the
-   *  longest expected month name to avoid visible edges. */
-  cover: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
 }
 
 export interface CertificateTemplate {
@@ -77,11 +66,10 @@ export interface CertificateTemplate {
     minSize: number;
     vnrTheorie?: VnrStampPosition;
     vnrPraxis?: VnrStampPosition;
-    /** Optional: when set, the generator covers the baked-in date line
-     *  with a rose rectangle and stamps "Berlin, <Monat> <Jahr>" from
-     *  the session's date_iso on top. Templates without a baked date
-     *  (e.g. the Zahnmedizin variant) omit this and the generator
-     *  silently skips the stamp. */
+    /** Optional: when set, the generator stamps "Berlin, <Monat> <Jahr>"
+     *  from the session's date_iso into the footer gap. Templates whose
+     *  master carries no date line (e.g. the Zahnmedizin variant) omit
+     *  this and the generator silently skips the stamp. */
     dateStamp?: DateStampPosition;
   };
 }
@@ -116,18 +104,11 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       // baked-in "VNR Theorie:" / "VNR Praxis:" labels.
       vnrTheorie: { x: 173, y: 57, size: 8 },
       vnrPraxis: { x: 173, y: 33, size: 8 },
-      // The master PDF has "Berlin, November 2025" baked into the
-      // footer between "Landesärztekammer Berlin" and "VNR Theorie:".
-      // We cover that line with a rose rectangle and stamp the actual
-      // session month on top. Sized to fit the longest month name
-      // ("September"); the cover height has a small margin so the
-      // baked descenders/ascenders don't peek through.
-      dateStamp: {
-        x: 173,
-        y: 81,
-        size: 8,
-        cover: { x: 73, y: 76, width: 200, height: 14 },
-      },
+      // The baked "Berlin, <Monat> <Jahr>" line was redacted out of the
+      // master, leaving an empty gap between "Landesärztekammer Berlin"
+      // and "VNR Theorie:". We stamp the per-session date back into that
+      // gap at the original baseline, letter-spaced and at the VNR size.
+      dateStamp: { x: 173, y: 81, size: 8 },
     },
   },
   {
@@ -174,16 +155,11 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       maxWidth: 290,
       targetSize: 28,
       minSize: 10,
-      // Master PDF has "Berlin, April 2026" baked in as the only footer
-      // line (no VNR section because CME ist noch nicht akkreditiert).
-      // Same cover-and-stamp trick as the Botulinum cert; calibrated
-      // a touch lower since the line sits alone in the footer.
-      dateStamp: {
-        x: 173,
-        y: 75,
-        size: 8,
-        cover: { x: 73, y: 70, width: 200, height: 14 },
-      },
+      // The baked "Berlin, April 2026" line (the only footer line, no
+      // VNR section because CME ist noch nicht akkreditiert) was
+      // redacted out of the master. We stamp the per-session date back
+      // at its original baseline, letter-spaced like the rest.
+      dateStamp: { x: 173, y: 75, size: 8 },
     },
   },
   {
@@ -214,12 +190,10 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       minSize: 10,
       vnrTheorie: { x: 173, y: 57, size: 8 },
       vnrPraxis: { x: 173, y: 33, size: 8 },
-      dateStamp: {
-        x: 173,
-        y: 81,
-        size: 8,
-        cover: { x: 73, y: 76, width: 200, height: 14 },
-      },
+      // Baked date line redacted out of the master; per-session date is
+      // stamped back into the gap at the original baseline, letter-
+      // spaced and at the VNR size. Same as the Botulinum cert.
+      dateStamp: { x: 173, y: 81, size: 8 },
     },
   },
 ];
@@ -434,31 +408,17 @@ export async function generateCertificatePdf(opts: {
   //  1. The template registers a dateStamp slot (the Zahnmedizin cert
   //     does not, because its master PDF carries no date line).
   //  2. The caller supplied a session date_iso we can parse.
-  // When both apply, we draw a rose-coloured rectangle over the baked
-  // line in the master PDF and stamp the new date centred on top.
-  // The rectangle colour matches the cert's rose background (#FAEBE1)
-  // so the cover blends with the surrounding area.
+  // The baked date line was redacted out of the master PDFs, so we just
+  // stamp the date into the now-empty gap — letter-spaced and at the
+  // same size as the VNR numbers so it matches the surrounding footer.
   const dateLayout = template.layout.dateStamp;
   if (dateLayout && sessionDateIso) {
     const dateLine = formatBerlinDateLine(sessionDateIso);
     if (dateLine) {
-      // The cert master PDFs were exported with a slightly warmer beige
-      // than the canonical brand rose #FAEBE1 — using the pure brand
-      // colour here leaves a visibly pink patch over the baked date.
-      // This value was calibrated against the actual rendered cert
-      // background. If the master PDFs are ever re-exported, re-sample
-      // and update here.
-      const certBackground = rgb(0.965, 0.91, 0.847);
-      page.drawRectangle({
-        x: dateLayout.cover.x,
-        y: dateLayout.cover.y,
-        width: dateLayout.cover.width,
-        height: dateLayout.cover.height,
-        color: certBackground,
-      });
       const dSize = dateLayout.size ?? 8;
-      const dWidth = regFont.widthOfTextAtSize(dateLine, dSize);
-      page.drawText(dateLine, {
+      const dSpaced = spaceDigits(dateLine);
+      const dWidth = regFont.widthOfTextAtSize(dSpaced, dSize);
+      page.drawText(dSpaced, {
         x: dateLayout.x - dWidth / 2,
         y: dateLayout.y,
         size: dSize,
