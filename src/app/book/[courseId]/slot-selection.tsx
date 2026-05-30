@@ -290,11 +290,6 @@ export function SlotSelection({
                         aria-expanded={isExpanded}
                       >
                         <div className="px-5 md:px-6 py-5">
-                          {isMasseterCourse && (
-                            <span className="inline-flex items-center text-[10px] md:text-[11px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-[#0066FF]/10 text-[#0066FF] mb-2">
-                              Masseterbehandlung im Grundkurs Botulinum
-                            </span>
-                          )}
                           <div className="flex items-center justify-between gap-4">
                             <p className="text-base md:text-lg font-bold text-black leading-tight">
                               {dateLabel}

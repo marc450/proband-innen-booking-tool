@@ -27,7 +27,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { ArrowLeft, Ban, Calendar, Check, Clock, Copy, GraduationCap, Loader2, Mail, MapPin, Plus, Trash2, User } from "lucide-react";
+import { ArrowLeft, Ban, Calendar, Check, Clock, Copy, GraduationCap, Loader2, LockOpen, Mail, MapPin, Plus, Trash2, User } from "lucide-react";
 import { buildProfileCompletionUrl } from "@/lib/profile-link";
 
 export interface DetailSlot {
@@ -284,6 +284,28 @@ export function KursDetailClient({
     setSlots((prev) =>
       prev.map((sl) =>
         sl.id === slot.id ? { ...sl, blocked: false, blocked_note: null } : sl,
+      ),
+    );
+    refresh();
+  };
+
+  // One-click release of a masseter reservation back to a free slot. A
+  // slot that already holds a masseter booking is left alone, freeing it
+  // would orphan that booking (same invariant as masseterGuardError).
+  const releaseMasseter = async (slot: DetailSlot) => {
+    const hasMasseterBooking = bookings.some(
+      (b) => b.slot_id === slot.id && b.indication === "masseter",
+    );
+    if (hasMasseterBooking) return;
+    await supabase
+      .from("slots")
+      .update({ masseter_eligible: false, masseter_capacity: 0 })
+      .eq("id", slot.id);
+    setSlots((prev) =>
+      prev.map((sl) =>
+        sl.id === slot.id
+          ? { ...sl, masseter_eligible: false, masseter_capacity: 0 }
+          : sl,
       ),
     );
     refresh();
@@ -958,15 +980,27 @@ export function KursDetailClient({
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Notizen */}
                       <TableCell className="w-[180px]">{/* Aktionen */}
                         <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditSlot(slot)}
-                            title="Slot sperren oder Masseter-Plätze reservieren"
-                          >
-                            <Ban className="h-4 w-4 mr-1" />
-                            Sperren / Masseter
-                          </Button>
+                          {slot.masseter_eligible && slot.masseter_capacity > 0 ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => releaseMasseter(slot)}
+                              title="Reservierung aufheben, Slot wieder für reguläre Buchungen freigeben"
+                            >
+                              <LockOpen className="h-4 w-4 mr-1" />
+                              Reservierung aufheben
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEditSlot(slot)}
+                              title="Slot sperren oder für Masseter reservieren"
+                            >
+                              <Ban className="h-4 w-4 mr-1" />
+                              Sperren / Masseter
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
