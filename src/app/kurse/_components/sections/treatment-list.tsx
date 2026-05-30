@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowRight, Check, ImageIcon } from "lucide-react";
 import type { AvailableSlot, Course } from "@/lib/types";
+import { INDICATIONS } from "@/lib/indications";
 import { TYPO } from "../typography";
 
 interface TreatmentListProps {
@@ -66,11 +67,13 @@ const TEMP_ZONES_BY_TITLE: Record<
   },
   "Behandlung therapeutischer Indikationen": {
     label: "Behandelbare Indikationen",
-    items: [
-      "Hyperhidrosis (Achseln)",
-      "Bruxismus (Masseter)",
-      "Migräne",
-    ],
+    // Derived from INDICATIONS in src/lib/indications.ts so the bullets
+    // on the landing card always mirror what the slot picker offers
+    // one step later. Used to be hardcoded and had silently drifted
+    // (e.g. "Bruxismus (Masseter)" hid the Gesichtsverschmälerung use
+    // case, "Migräne" hid the Spannungskopfschmerz one). Single source
+    // of truth lives in indications.ts now.
+    items: INDICATIONS.map((i) => i.label),
   },
   "Behandlung des Gesichts mit Dermalfiller": {
     label: "Behandelbare Zonen",
