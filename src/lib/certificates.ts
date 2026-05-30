@@ -192,9 +192,9 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       vnrPraxis: { x: 173, y: 33, size: 8 },
       // Baked date line redacted out of the master; per-session date is
       // stamped back into the gap, letter-spaced and at the VNR size.
-      // Sits a touch lower than the Botulinum cert (y 77 vs 81) so it
+      // Sits a touch lower than the Botulinum cert (y 79 vs 81) so it
       // isn't crowding the "Landesärztekammer Berlin" line above it.
-      dateStamp: { x: 173, y: 77, size: 8 },
+      dateStamp: { x: 173, y: 79, size: 8 },
     },
   },
 ];
