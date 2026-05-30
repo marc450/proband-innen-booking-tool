@@ -17,6 +17,21 @@ interface Props {
 
 type Step = "details" | "agb" | "privacy" | "confirm";
 
+/** Inline asterisk used to mark required input labels. Functional
+ *  mandatoriness lives in canProceedFromDetails + the route handler
+ *  (/api/create-private-booking) — this is purely the visual cue. */
+function RequiredMark() {
+  return (
+    <span
+      aria-hidden="true"
+      className="text-red-500 ml-0.5"
+      title="Pflichtfeld"
+    >
+      *
+    </span>
+  );
+}
+
 export function PrivatBookingForm({ slot, indication }: Props) {
   const router = useRouter();
 
@@ -116,11 +131,18 @@ export function PrivatBookingForm({ slot, indication }: Props) {
           {/* Step 1: Contact details */}
           {currentStep === "details" && (
             <div className="space-y-4">
-              <h3 className="font-semibold text-base mb-2">Deine Kontaktdaten</h3>
+              <div className="mb-2">
+                <h3 className="font-semibold text-base">Deine Kontaktdaten</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Felder mit <span className="text-red-500">*</span> sind Pflichtfelder.
+                </p>
+              </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="firstName" className="text-sm font-medium">Vorname</Label>
+                  <Label htmlFor="firstName" className="text-sm font-medium">
+                    Vorname<RequiredMark />
+                  </Label>
                   <Input
                     id="firstName"
                     type="text"
@@ -132,7 +154,9 @@ export function PrivatBookingForm({ slot, indication }: Props) {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="lastName" className="text-sm font-medium">Nachname</Label>
+                  <Label htmlFor="lastName" className="text-sm font-medium">
+                    Nachname<RequiredMark />
+                  </Label>
                   <Input
                     id="lastName"
                     type="text"
@@ -146,7 +170,9 @@ export function PrivatBookingForm({ slot, indication }: Props) {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-sm font-medium">E-Mail</Label>
+                <Label htmlFor="email" className="text-sm font-medium">
+                  E-Mail<RequiredMark />
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -159,7 +185,9 @@ export function PrivatBookingForm({ slot, indication }: Props) {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="phone" className="text-sm font-medium">Telefon</Label>
+                <Label htmlFor="phone" className="text-sm font-medium">
+                  Telefon<RequiredMark />
+                </Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -172,7 +200,9 @@ export function PrivatBookingForm({ slot, indication }: Props) {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="referringDoctor" className="text-sm font-medium">Name der zuweisenden Ärzt:in</Label>
+                <Label htmlFor="referringDoctor" className="text-sm font-medium">
+                  Name der zuweisenden Ärzt:in<RequiredMark />
+                </Label>
                 <Input
                   id="referringDoctor"
                   type="text"
