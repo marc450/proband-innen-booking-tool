@@ -1063,7 +1063,11 @@ export function KursDetailClient({
           <DialogHeader>
             <DialogTitle>{editingSlot ? "Slot bearbeiten" : "Neuen Slot anlegen"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          {/* min-w-0: the dialog content is a CSS grid, whose items
+              default to min-width:auto. Without this the time/number
+              inputs push this wrapper past the padded track and overflow
+              the modal's right edge. */}
+          <div className="space-y-4 py-2 min-w-0">
             <div className="space-y-1.5">
               <Label>Uhrzeit</Label>
               <Input
