@@ -1059,7 +1059,7 @@ export function KursDetailClient({
 
       {/* Slot dialog */}
       <Dialog open={slotDialogOpen} onOpenChange={setSlotDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{editingSlot ? "Slot bearbeiten" : "Neuen Slot anlegen"}</DialogTitle>
           </DialogHeader>
