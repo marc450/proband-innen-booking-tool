@@ -105,7 +105,7 @@ export function ReviewForm({ token, previewMode = false }: Props) {
           Wie war Dein Kurs?
         </h1>
         <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
-          Wir wären Dir wahnsinnig dankbar für eine kurze Bewertung. Und
+          Wir wären Dir super dankbar für eine kurze Bewertung. Und
           falls es etwas gibt, das wir besser machen können, sag es uns
           bitte ehrlich. Dein Feedback hilft uns, EPHIA für alle
           Ärzt:innen, die nach Dir kommen, ein Stück besser zu machen.
