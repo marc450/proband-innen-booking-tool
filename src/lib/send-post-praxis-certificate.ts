@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  certificateCanStampVnr,
   certificateRequiresVnr,
   formatParticipantName,
   generateCertificatePdf,
@@ -25,14 +24,12 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY!;
  *  - The course template has no registered CertificateTemplate
  *    (getCertificateForCourseKey → undefined).
  *  - The cert requires VNR (certificateRequiresVnr) but it isn't ready
- *    yet: vnr_theorie (template) or vnr_praxis (session) is empty, OR the
- *    cert can't stamp its VNR yet (master PDF still lacks the baked
- *    labels, so the layout has no vnr* slots). This is a HOLD, not a
- *    permanent skip: cert_sent_at stays null, so the booking is retried
- *    on every later cron run and the cert ships automatically once the
- *    VNRs are filled in and the cert gains its stamp slots. Used for CME
- *    courses whose VNR is assigned by the LÄK after the course was held
- *    (e.g. Grundkurs Dermalfiller).
+ *    yet: vnr_theorie (template) or vnr_praxis (session) is empty. This
+ *    is a HOLD, not a permanent skip: cert_sent_at stays null, so the
+ *    booking is retried on every later cron run and the cert ships
+ *    automatically once the VNRs are filled in. Used for CME courses
+ *    whose VNR is assigned by the LÄK after the course was held (e.g.
+ *    Grundkurs Dermalfiller).
  *  - Booking course_type is Onlinekurs (no practical day, no cert).
  *  - Booking status ≠ 'completed'. The default 'booked' state from
  *    Stripe checkout is NOT enough — staff must mark the booking as
@@ -201,28 +198,22 @@ export async function sendPostPraxisCertificates(
           continue; // Silent skip — no cert for this booking.
         }
 
-        // VNRs only matter for certs that actually carry CME. The
+        // VNRs only matter for certs that actually stamp them. The
         // Zahnmedizin cert carries no CME and therefore no VNRs, so
         // skipping the check lets legacy dentist bookings receive a
         // cert even if vnr_theorie / vnr_praxis are empty.
         //
-        // For a CME cert we hold the booking back (no email, retried on
-        // the next run) until BOTH the DB VNR values are present AND the
-        // cert can stamp them. The canStamp guard covers the window where
-        // a CME course (e.g. Dermalfiller) is flagged requiresVnr but its
-        // master PDF still lacks the baked VNR labels, so issuing a cert
-        // would silently drop the VNR — a Landesärztekammer-relevant
-        // document must never go out without its VNR printed.
-        if (certificateRequiresVnr(cert)) {
-          const ready =
-            !!vnrTheorie && !!vnrPraxis && certificateCanStampVnr(cert);
-          if (!ready) {
-            result.skippedNoVnr += 1;
-            console.warn(
-              `post-praxis cert: holding booking ${booking.id} on session ${session.id} — VNR not ready for ${cert.slug} (theorie=${!!vnrTheorie}, praxis=${!!vnrPraxis}, canStamp=${certificateCanStampVnr(cert)})`,
-            );
-            continue;
-          }
+        // For a CME cert (Botulinum, Dermalfiller) this is a HOLD, not a
+        // permanent skip: cert_sent_at stays null, so the booking is
+        // retried on every later cron run and the cert ships
+        // automatically once the LÄK-assigned VNRs are filled into
+        // course_templates.vnr_theorie + course_sessions.vnr_praxis.
+        if (certificateRequiresVnr(cert) && (!vnrTheorie || !vnrPraxis)) {
+          result.skippedNoVnr += 1;
+          console.warn(
+            `post-praxis cert: holding booking ${booking.id} on session ${session.id} — VNR missing for ${cert.slug} (theorie=${!!vnrTheorie}, praxis=${!!vnrPraxis})`,
+          );
+          continue;
         }
 
         // Prefer the canonical name from the auszubildende profile over
