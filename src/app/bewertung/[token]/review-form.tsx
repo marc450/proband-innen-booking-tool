@@ -211,12 +211,6 @@ export function ReviewForm({ token, previewMode = false }: Props) {
         >
           Dein Vorname
         </label>
-        <p className="text-xs text-gray-600">
-          Erscheint öffentlich neben Deiner Bewertung, ergänzt um Deinen
-          Titel (z.B. Dr.) und den ersten Buchstaben Deines Nachnamens
-          (z.B. „Dr. Anna B."). Vollständiger Nachname und E-Mail bleiben
-          bei uns.
-        </p>
         <input
           id="bewertung-firstname"
           type="text"
