@@ -259,6 +259,18 @@ export async function createSatelliteForSession(
     if (slotsErr) {
       return { ok: false, sessionId, reason: `slots insert failed: ${slotsErr.message}` };
     }
+
+    // Grundkurs Botulinum: seed the default masseter baseline (reserve the
+    // free 3rd/4th-last slots). reconcile_masseter_reservation gates on
+    // course_key itself, so this is a no-op for any other course type.
+    if ((template.course_key as string | null)?.startsWith("grundkurs_botulinum")) {
+      const { error: reconcileErr } = await admin.rpc("reconcile_masseter_reservation", {
+        p_course_id: newCourse.id,
+      });
+      if (reconcileErr) {
+        console.error("masseter baseline seed failed", reconcileErr);
+      }
+    }
   }
 
   return {

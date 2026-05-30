@@ -813,8 +813,11 @@ export function KursDetailClient({
                 </div>
               ) : eligibleSlots.length > 0 ? (
                 <div className="rounded-lg bg-emerald-50 text-emerald-800 px-4 py-3">
-                  Genug Slots für alle Zahnmediziner:innen auf dieser Session
-                  reserviert.
+                  <strong>{reservedTotal}</strong> Masseter-Slot
+                  {reservedTotal === 1 ? "" : "s"} reserviert
+                  {dentistCount > 0
+                    ? ", genug für alle Zahnmediziner:innen auf dieser Session."
+                    : "."}
                 </div>
               ) : (
                 <div className="rounded-lg bg-amber-50 text-amber-800 px-4 py-3">
@@ -1136,9 +1139,9 @@ export function KursDetailClient({
                 </label>
                 <p className="text-xs text-muted-foreground pl-6">
                   Der ganze Slot wird für Masseterproband:innen reserviert und
-                  regulären Proband:innen nicht angeboten. Zahnmediziner:innen
-                  bekommen automatisch passende Slots reserviert. Häkchen
-                  entfernen gibt den Slot wieder frei.
+                  regulären Proband:innen nicht angeboten. Beim Grundkurs
+                  Botulinum sind die beiden vorletzten freien Slots automatisch
+                  reserviert. Häkchen entfernen gibt den Slot wieder frei.
                 </p>
                 {masseterGuardError && (
                   <p className="text-xs text-destructive pt-1">{masseterGuardError}</p>
