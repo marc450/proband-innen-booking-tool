@@ -43,6 +43,10 @@ export function ReviewForm({ token, previewMode = false }: Props) {
     rating >= 1 &&
     rating <= 5 &&
     firstName.trim().length > 0 &&
+    // Body text now required: Marc-Entscheidung 2026-05-31, eine
+    // reine Sterne-Bewertung ohne Worte nutzt weder uns noch anderen
+    // Ärzt:innen, also wird der Submit blockiert bis Text da ist.
+    bodyText.trim().length > 0 &&
     !submitting;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -229,11 +233,15 @@ export function ReviewForm({ token, previewMode = false }: Props) {
           className="block text-sm font-semibold text-gray-900"
         >
           Was möchtest Du anderen Ärzt:innen über diesen Kurs sagen?
+          <span aria-hidden="true" className="text-red-500 ml-0.5">
+            *
+          </span>
         </label>
         <textarea
           id="bewertung-body"
           value={bodyText}
           onChange={(e) => setBodyText(e.target.value)}
+          required
           rows={4}
           maxLength={1000}
           placeholder="Was hat Dir geholfen? Was nimmst Du mit in Deinen Klinikalltag?"

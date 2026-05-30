@@ -47,6 +47,20 @@ export async function POST(req: NextRequest) {
   const trimmedFirstName = firstName.trim().slice(0, 80);
   const trimmedBody =
     typeof bodyText === "string" ? bodyText.trim().slice(0, 2000) : "";
+  // Body text is now required. A reine Sterne-Bewertung ohne Worte
+  // bringt weder uns noch anderen Ärzt:innen etwas, also lehnen wir
+  // sie an dieser Stelle ab (Marc-Entscheidung 2026-05-31). Doppelt
+  // mit der client-seitigen canSubmit-Prüfung, damit ein direkter
+  // POST den Gate nicht umgehen kann.
+  if (trimmedBody.length === 0) {
+    return NextResponse.json(
+      {
+        error:
+          "Bitte schreibe ein paar Worte, was Du anderen Ärzt:innen über diesen Kurs sagen möchtest.",
+      },
+      { status: 400 },
+    );
+  }
   const trimmedInternal =
     typeof internalFeedback === "string"
       ? internalFeedback.trim().slice(0, 4000)
@@ -76,7 +90,7 @@ export async function POST(req: NextRequest) {
     template_id: booking.template_id,
     rating: ratingNum,
     first_name: trimmedFirstName,
-    body_text: trimmedBody || null,
+    body_text: trimmedBody,
     is_published: false,
   });
 
