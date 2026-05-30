@@ -81,7 +81,7 @@ const statusVariants: Record<BookingStatus, "default" | "secondary" | "destructi
 
 const allStatuses: BookingStatus[] = ["booked", "attended", "no_show", "cancelled"];
 
-type SortKey = "name" | "kurs" | "termin" | "typ" | "arzt" | "indikation" | "status" | "created";
+type SortKey = "name" | "kurs" | "termin" | "typ" | "arzt" | "zuweiser" | "indikation" | "status" | "created";
 
 function StatusBadgeDropdown({
   booking,
@@ -296,6 +296,14 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
           const aI = (formatInstructor(a.slots?.courses?.instructor) || "").toLowerCase();
           const bI = (formatInstructor(b.slots?.courses?.instructor) || "").toLowerCase();
           return dir * aI.localeCompare(bI, "de");
+        }
+        case "zuweiser": {
+          // referring_doctor is only filled on private bookings; rows
+          // without it sort below filled ones in asc, above in desc, so
+          // staff can find unassigned/standard rows next to each other.
+          const rA = (a.referring_doctor || "").toLowerCase();
+          const rB = (b.referring_doctor || "").toLowerCase();
+          return dir * rA.localeCompare(rB, "de");
         }
         case "indikation": {
           const iA = a.indication || "";
@@ -892,6 +900,7 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
                 <SortableHead label="Termin" sortKey="termin" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
                 <SortableHead label="Typ" sortKey="typ" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
                 <SortableHead label="Ärzt:in" sortKey="arzt" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
+                <SortableHead label="Zuweiser:in" sortKey="zuweiser" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
                 <SortableHead label="Indikation" sortKey="indikation" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
                 <SortableHead label="Status" sortKey="status" currentKey={sortKey} direction={sortDir} onSort={handleSort as (key: string) => void} />
                 <TableHead />
@@ -939,6 +948,16 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
                   </TableCell>
                   <TableCell className="text-sm whitespace-nowrap">
                     {formatInstructor(booking.slots?.courses?.instructor) || "—"}
+                  </TableCell>
+                  <TableCell
+                    className="text-sm whitespace-nowrap"
+                    title={booking.referring_doctor ?? undefined}
+                  >
+                    {booking.referring_doctor ? (
+                      booking.referring_doctor
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
                     {booking.indication ? (
