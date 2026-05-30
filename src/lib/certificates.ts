@@ -64,6 +64,17 @@ export interface CertificateTemplate {
    *  audience_tag = "Zahnmediziner:in" or whose linked auszubildende has
    *  specialty = "Zahnmedizin". Optional: a regular cert leaves it unset. */
   isDentist?: boolean;
+  /** Explicit "this cert carries CME and must NOT be issued without its
+   *  VNR numbers" flag. Use it for a CME course whose master PDF does
+   *  NOT yet have the baked "VNR Theorie:" / "VNR Praxis:" labels (so
+   *  the layout.vnr* stamp slots can't be calibrated yet). The cron then
+   *  holds every booking on such a cert — no email goes out — until both
+   *  the DB VNR values are filled in AND the cert gains its stamp slots.
+   *  When omitted, VNR-requirement is inferred from the presence of the
+   *  layout.vnrTheorie + layout.vnrPraxis stamp slots (legacy behaviour).
+   *  Set it to `false` to force a cert to be CME-free even if it somehow
+   *  carries stamp slots (not currently needed). */
+  requiresVnr?: boolean;
   /** Name-line calibration. Coordinates are in PDF user units with
    *  origin at the bottom-left of the page. VNR fields are optional —
    *  certs that don't carry CME points (e.g. the Zahnmedizin variant)
@@ -184,6 +195,37 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
         size: 8,
         cover: { x: 73, y: 70, width: 200, height: 14 },
       },
+    },
+  },
+  {
+    // Grundkurs Dermalfiller. Same visual layout as the Botulinum certs
+    // (left-column name above the dotted line, photo on the right) —
+    // A4 landscape 842 × 595 pt — so the name calibration is shared.
+    // Der Kurs ist mit 18 CME-Punkten durch die LÄK Berlin zertifiziert,
+    // aber der aktuelle Master trägt noch KEINE gebackenen VNR-Labels
+    // und keine "Berlin, <Monat> <Jahr>"-Zeile. Deshalb hier vorerst nur
+    // der Namensstempel, kein VNR-Layout und kein dateStamp.
+    //
+    // requiresVnr: true hält ALLE Dermalfiller-Zertifikate zurück, bis
+    // die VNR-Nummern vorliegen — kein Zertifikat geht ohne VNR raus.
+    // Sobald die LÄK die VNRs vergibt: (1) neuen Master mit gebackenen
+    // "VNR Theorie:" / "VNR Praxis:"-Labels (und ggf. Datumszeile)
+    // einspielen, (2) vnrTheorie/vnrPraxis + dateStamp analog zum
+    // Botulinum-Cert ergänzen und visuell kalibrieren, (3) vnr_theorie
+    // (course_templates) + vnr_praxis (course_sessions) in der DB füllen.
+    // Der nächste Cron-Lauf verschickt die zurückgehaltenen Zertifikate
+    // dann automatisch.
+    slug: "grundkurs-dermalfiller",
+    label: "Grundkurs Dermalfiller",
+    courseKeys: ["grundkurs_dermalfiller"],
+    requiresVnr: true,
+    layout: {
+      page: 1,
+      centerX: 173,
+      baselineY: 388,
+      maxWidth: 290,
+      targetSize: 28,
+      minSize: 10,
     },
   },
 ];
@@ -439,5 +481,20 @@ export async function generateCertificatePdf(opts: {
  *  callers (the test form) use this to decide whether to require VNR
  *  inputs at submit time. */
 export function certificateRequiresVnr(template: CertificateTemplate): boolean {
+  // Explicit opt-in/out wins. Used for CME certs whose master PDF has no
+  // baked VNR labels yet, so the stamp slots can't exist but the cert
+  // must still be held back until VNRs land (e.g. Grundkurs Dermalfiller).
+  if (template.requiresVnr !== undefined) return template.requiresVnr;
+  // Legacy inference: a cert that carries both VNR stamp slots requires
+  // VNR by construction (e.g. Grundkurs Botulinum).
+  return !!(template.layout.vnrTheorie && template.layout.vnrPraxis);
+}
+
+/** True when the cert can actually STAMP its VNR numbers onto the PDF,
+ *  i.e. both stamp slots are calibrated. A cert can `requiresVnr` without
+ *  yet being able to stamp (master PDF still missing the baked labels);
+ *  the cron uses this to hold such certs back even if the DB VNR values
+ *  were filled in early. */
+export function certificateCanStampVnr(template: CertificateTemplate): boolean {
   return !!(template.layout.vnrTheorie && template.layout.vnrPraxis);
 }
