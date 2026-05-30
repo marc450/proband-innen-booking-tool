@@ -166,12 +166,6 @@ export function KursDetailClient({
   const [slotMasseterEligibleInput, setSlotMasseterEligibleInput] = useState(false);
   const [slotMasseterCapacityInput, setSlotMasseterCapacityInput] = useState("0");
   const [deleteSlotId, setDeleteSlotId] = useState<string | null>(null);
-  // Inline "Sperren" flow direkt aus der Slot-Tabelle (ohne den vollen
-  // Slot-bearbeiten-Dialog öffnen zu müssen). Der Notiz-Input ist
-  // optional, deckt aber den häufigsten Fall ("Bereits extern gebucht")
-  // direkt am Tisch ab.
-  const [blockSlotId, setBlockSlotId] = useState<string | null>(null);
-  const [blockNoteInput, setBlockNoteInput] = useState("");
 
   const openAddSlot = () => {
     setEditingSlot(null);
@@ -284,28 +278,6 @@ export function KursDetailClient({
     await supabase.from("slots").delete().eq("id", deleteSlotId);
     setSlots((prev) => prev.filter((sl) => sl.id !== deleteSlotId));
     setDeleteSlotId(null);
-  };
-
-  const openBlockSlot = (slotId: string) => {
-    setBlockSlotId(slotId);
-    setBlockNoteInput("");
-  };
-
-  const confirmBlockSlot = async () => {
-    if (!blockSlotId) return;
-    const note = blockNoteInput.trim() || null;
-    await supabase
-      .from("slots")
-      .update({ blocked: true, blocked_note: note })
-      .eq("id", blockSlotId);
-    setSlots((prev) =>
-      prev.map((sl) =>
-        sl.id === blockSlotId ? { ...sl, blocked: true, blocked_note: note } : sl,
-      ),
-    );
-    setBlockSlotId(null);
-    setBlockNoteInput("");
-    refresh();
   };
 
   const unblockSlot = async (slot: DetailSlot) => {
@@ -990,11 +962,11 @@ export function KursDetailClient({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => openBlockSlot(slot.id)}
-                            title="Slot für Buchungen sperren"
+                            onClick={() => openEditSlot(slot)}
+                            title="Slot sperren oder Masseter-Plätze reservieren"
                           >
                             <Ban className="h-4 w-4 mr-1" />
-                            Sperren
+                            Sperren / Masseter
                           </Button>
                           <Button
                             variant="ghost"
@@ -1229,52 +1201,6 @@ export function KursDetailClient({
         onConfirm={deleteSlot}
         onCancel={() => setDeleteSlotId(null)}
       />
-
-      {/* Inline-Sperren-Dialog: leichtgewichtiger Notiz-Prompt für die
-          häufigste Aktion direkt aus der Slot-Tabelle. Der vollständige
-          Slot-bearbeiten-Dialog kann weiterhin per Klick auf die Uhrzeit
-          geöffnet werden, wenn z.B. zusätzlich Zeit oder Plätze
-          geändert werden sollen. */}
-      <Dialog
-        open={!!blockSlotId}
-        onOpenChange={(open) => {
-          if (!open) {
-            setBlockSlotId(null);
-            setBlockNoteInput("");
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Slot sperren</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2 py-2">
-            <Label htmlFor="block-note-input">Notiz (optional)</Label>
-            <Input
-              id="block-note-input"
-              placeholder="z.B. Bereits extern gebucht"
-              value={blockNoteInput}
-              onChange={(e) => setBlockNoteInput(e.target.value)}
-              autoFocus
-            />
-            <p className="text-xs text-muted-foreground">
-              Die Notiz erscheint in der Slot-Liste neben &quot;Gesperrt&quot;.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setBlockSlotId(null);
-                setBlockNoteInput("");
-              }}
-            >
-              Abbrechen
-            </Button>
-            <Button onClick={confirmBlockSlot}>Sperren</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Booking → Storniert: Confirm-Dialog mit E-Mail-Hinweis */}
       <ConfirmDialog
