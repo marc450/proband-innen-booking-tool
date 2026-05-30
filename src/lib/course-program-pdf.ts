@@ -91,15 +91,18 @@ const DERMALFILLER_GRUNDKURS: ProgramTemplate = {
 // Aufbaukurs Botulinum: Therapeutische Indikationen — gleiche Tages-
 // struktur wie die Grundkurse, aber andere LÄK-Akkreditierung mit 890€
 // Teilnehmendegebühr. Der Wiederholungsfragen-Slot um 10:15 verweist
-// laut Sophias Referenz-PDF auf den "Grundkurs Botulinum" Onlinekurs
-// (nicht auf den Aufbaukurs selbst); falls das ein Typo im Quell-PDF
-// ist, hier korrigieren.
+// auf den passenden Onlineteil "Aufbaukurs Botulinum therapeutische
+// Indikationen" (Marc-bestätigt 2026-05-30, wich vom Quell-PDF ab).
 const AUFBAUKURS_THERAPEUTISCHE_INDIKATIONEN_BOTULINUM: ProgramTemplate = {
   referenceStartMinutes: 10 * 60,
   teilnehmendegebuehrEur: 890,
   rows: [
     { offsetMin: 0, label: "Begrüßung und Registrierung der Teilnehmenden" },
-    { offsetMin: 15, label: "Wiederholungsfragen aus dem Onlineteil Grundkurs Botulinum" },
+    {
+      offsetMin: 15,
+      label:
+        "Wiederholungsfragen aus dem Onlineteil Aufbaukurs Botulinum therapeutische Indikationen",
+    },
     { offsetMin: 60, label: "Aufklärung und Beratung von Patient:innen" },
     {
       offsetMin: 90,
