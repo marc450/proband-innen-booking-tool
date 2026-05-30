@@ -39,12 +39,18 @@ interface ProgramTemplate {
    *  actual session's start_time shifts every row by the delta. */
   referenceStartMinutes: number;
   rows: ProgramRow[];
+  /** LÄK-approved Teilnehmendegebühr in EUR for this course type.
+   *  Has to match the price that was registered with the Landes-
+   *  ärztekammer Berlin when the course was accredited, so it is
+   *  fixed per template and not pulled from the session. */
+  teilnehmendegebuehrEur: number;
 }
 
 // Grundkurs Botulinum schedule, authored against a 10:00 start.
 // Offsets: 0, +15m, +1h, +1h30, +3h15 (Pause), +3h45, +8h (Ende).
 const BOTULINUM_GRUNDKURS: ProgramTemplate = {
   referenceStartMinutes: 10 * 60,
+  teilnehmendegebuehrEur: 1040,
   rows: [
     { offsetMin: 0, label: "Begrüßung und Registrierung der Teilnehmenden" },
     { offsetMin: 15, label: "Wiederholungsfragen aus dem Onlineteil Grundkurs Botulinum" },
@@ -60,8 +66,31 @@ const BOTULINUM_GRUNDKURS: ProgramTemplate = {
   ],
 };
 
+// Grundkurs Dermalfiller — identical timing structure to the Botulinum
+// Grundkurs (gleiche Tagesstruktur, gleiche LÄK-Akkreditierung mit
+// 1040€), nur die Online-Wiederholungsfragen verweisen auf den Filler-
+// Onlinekurs statt auf Botulinum.
+const DERMALFILLER_GRUNDKURS: ProgramTemplate = {
+  referenceStartMinutes: 10 * 60,
+  teilnehmendegebuehrEur: 1040,
+  rows: [
+    { offsetMin: 0, label: "Begrüßung und Registrierung der Teilnehmenden" },
+    { offsetMin: 15, label: "Wiederholungsfragen aus dem Onlineteil Grundkurs Dermalfiller" },
+    { offsetMin: 60, label: "Aufklärung und Beratung von Patient:innen" },
+    {
+      offsetMin: 90,
+      label:
+        "Indikationsbesprechung und Behandlung von Patient:innen durch unsere Dozentin",
+    },
+    { offsetMin: 195, label: "Pause" },
+    { offsetMin: 225, label: "Unterrichtung der Teilnehmenden an Patient:innen" },
+    { offsetMin: 480, label: "Ende der Veranstaltung" },
+  ],
+};
+
 const PROGRAM_TEMPLATES: Record<string, ProgramTemplate> = {
   grundkurs_botulinum: BOTULINUM_GRUNDKURS,
+  grundkurs_dermalfiller: DERMALFILLER_GRUNDKURS,
 };
 
 // Guard against the server registry and the client-side meta list
@@ -323,7 +352,7 @@ export async function buildCourseProgramPdf(
     `Referent:in: ${input.instructorLine}`,
     "Veranstalterin und Organisatorin: Dr. Sophia Wilk-Vollmann, DESAIC",
     "Wissenschaftliche Leitung: Dr. Sophia Wilk-Vollmann, DESAIC",
-    "Teilnehmendegebühr: 1040€",
+    `Teilnehmendegebühr: ${template.teilnehmendegebuehrEur}€`,
     "Kein Sponsoring",
     "Anmeldung: fortlaufend über www.ephia.de",
   ];

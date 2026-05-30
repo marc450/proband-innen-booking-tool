@@ -8,6 +8,7 @@
 
 export const COURSE_KEYS_WITH_PROGRAM_PDF: ReadonlySet<string> = new Set([
   "grundkurs_botulinum",
+  "grundkurs_dermalfiller",
 ]);
 
 export function hasProgramTemplate(courseKey: string | null | undefined): boolean {
