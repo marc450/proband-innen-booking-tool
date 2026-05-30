@@ -88,9 +88,35 @@ const DERMALFILLER_GRUNDKURS: ProgramTemplate = {
   ],
 };
 
+// Aufbaukurs Botulinum: Therapeutische Indikationen — gleiche Tages-
+// struktur wie die Grundkurse, aber andere LÄK-Akkreditierung mit 890€
+// Teilnehmendegebühr. Der Wiederholungsfragen-Slot um 10:15 verweist
+// laut Sophias Referenz-PDF auf den "Grundkurs Botulinum" Onlinekurs
+// (nicht auf den Aufbaukurs selbst); falls das ein Typo im Quell-PDF
+// ist, hier korrigieren.
+const AUFBAUKURS_THERAPEUTISCHE_INDIKATIONEN_BOTULINUM: ProgramTemplate = {
+  referenceStartMinutes: 10 * 60,
+  teilnehmendegebuehrEur: 890,
+  rows: [
+    { offsetMin: 0, label: "Begrüßung und Registrierung der Teilnehmenden" },
+    { offsetMin: 15, label: "Wiederholungsfragen aus dem Onlineteil Grundkurs Botulinum" },
+    { offsetMin: 60, label: "Aufklärung und Beratung von Patient:innen" },
+    {
+      offsetMin: 90,
+      label:
+        "Indikationsbesprechung und Behandlung von Patient:innen durch unsere Dozentin",
+    },
+    { offsetMin: 195, label: "Pause" },
+    { offsetMin: 225, label: "Unterrichtung der Teilnehmenden an Patient:innen" },
+    { offsetMin: 480, label: "Ende der Veranstaltung" },
+  ],
+};
+
 const PROGRAM_TEMPLATES: Record<string, ProgramTemplate> = {
   grundkurs_botulinum: BOTULINUM_GRUNDKURS,
   grundkurs_dermalfiller: DERMALFILLER_GRUNDKURS,
+  aufbaukurs_therapeutische_indikationen_botulinum:
+    AUFBAUKURS_THERAPEUTISCHE_INDIKATIONEN_BOTULINUM,
 };
 
 // Guard against the server registry and the client-side meta list
@@ -145,6 +171,38 @@ function minutesToTime(total: number): string {
 function formatDateDe(dateIso: string): string {
   const [y, m, d] = dateIso.split("-");
   return `${d}.${m}.${y}`;
+}
+
+/** Break a course title into up to two centred lines. If the title
+ *  contains a colon (e.g. "Aufbaukurs Botulinum: Therapeutische
+ *  Indikationen"), the part before the colon goes on line 1 in
+ *  uppercase and the part after on line 2 in title case — matches the
+ *  Aufbaukurs reference PDF Sophia uses. Otherwise the title is
+ *  rendered as a single uppercase line, unless it overflows the
+ *  available width, in which case word-wrap kicks in. */
+function composeTitleLines(
+  rawTitle: string,
+  font: PDFFont,
+  size: number,
+  maxWidth: number,
+): string[] {
+  const trimmed = rawTitle.trim();
+  // Colon split: e.g. "Aufbaukurs Botulinum: Therapeutische Indikationen"
+  // → ["AUFBAUKURS BOTULINUM", "Therapeutische Indikationen"]. Bewusst
+  // nur dann zwei Zeilen, wenn ein Doppelpunkt da ist, damit
+  // Grundkurs-Titel weiterhin als einzelne Zeile gerendert werden.
+  const colonIdx = trimmed.indexOf(":");
+  if (colonIdx > 0 && colonIdx < trimmed.length - 1) {
+    const head = trimmed.slice(0, colonIdx).trim().toUpperCase();
+    const tail = trimmed.slice(colonIdx + 1).trim();
+    return [head, tail];
+  }
+  // Single-line: try as-is in uppercase, fall back to word-wrap if too wide.
+  const upper = trimmed.toUpperCase();
+  if (font.widthOfTextAtSize(upper, size) <= maxWidth) {
+    return [upper];
+  }
+  return wrapText(upper, font, size, maxWidth);
 }
 
 /** Word-wrap by measuring against the embedded font. Returns the lines
@@ -253,18 +311,29 @@ export async function buildCourseProgramPdf(
   drawHeaderBar(page, bold);
 
   // ---- Title block (title + date, centred) ----
-  const titleUpper = input.title.toUpperCase();
+  // Auto-wrap the title so longer course names (e.g. "Aufbaukurs
+  // Botulinum: Therapeutische Indikationen") spread across two lines
+  // instead of overflowing the page width. The first segment of a
+  // colon-separated title goes on line 1 in uppercase, the rest on
+  // line 2 in title case — that matches the visual treatment Sophia
+  // used in her reference PDF for the Aufbaukurs. Single-line titles
+  // (Grundkurse) render exactly as before.
   const titleSize = 26;
-  const titleWidth = bold.widthOfTextAtSize(titleUpper, titleSize);
+  const titleLineHeight = 32;
+  const titleMaxWidth = A4_WIDTH - MARGIN_X * 2;
+  const titleLines = composeTitleLines(input.title, bold, titleSize, titleMaxWidth);
   let cursorY = A4_HEIGHT - HEADER_HEIGHT - 60;
-  page.drawText(titleUpper, {
-    x: (A4_WIDTH - titleWidth) / 2,
-    y: cursorY,
-    size: titleSize,
-    font: bold,
-    color: TEXT_BLACK,
-  });
-  cursorY -= 32;
+  for (const line of titleLines) {
+    const lineWidth = bold.widthOfTextAtSize(line, titleSize);
+    page.drawText(line, {
+      x: (A4_WIDTH - lineWidth) / 2,
+      y: cursorY,
+      size: titleSize,
+      font: bold,
+      color: TEXT_BLACK,
+    });
+    cursorY -= titleLineHeight;
+  }
   const dateStr = formatDateDe(input.dateIso);
   const dateWidth = bold.widthOfTextAtSize(dateStr, titleSize);
   page.drawText(dateStr, {
