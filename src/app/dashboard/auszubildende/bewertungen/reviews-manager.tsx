@@ -55,7 +55,7 @@ export interface ReviewRow {
   submitted_at: string;
   published_at: string | null;
   booking_id: string | null;
-  template_id: string;
+  template_id: string | null;
   course_bookings: Joined<BookingJoin>;
   course_templates: Joined<TemplateJoin>;
 }
@@ -375,8 +375,11 @@ export function ReviewsManager({
             const tpl = unwrap(r.course_templates);
             const azubi = booking ? unwrap(booking.auszubildende) : null;
             const session = booking ? unwrap(booking.course_sessions) : null;
-            const courseTitle =
-              tpl?.course_label_de || tpl?.title || "Kurs unbekannt";
+            // A null template_id is a general (course-agnostic) review from
+            // the one-time bulk past-attendee pass, not an unknown course.
+            const courseTitle = r.template_id
+              ? tpl?.course_label_de || tpl?.title || "Kurs unbekannt"
+              : "Allgemeine Bewertung";
             const azubiName = azubi
               ? [azubi.title, azubi.first_name, azubi.last_name]
                   .filter(Boolean)

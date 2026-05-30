@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
 
   const { data: booking, error: bookingErr } = await supabase
     .from("course_bookings")
-    .select("id, template_id")
+    .select("id, template_id, review_request_general")
     .eq("review_submit_token", token)
     .maybeSingle();
 
@@ -85,9 +85,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Link ungültig." }, { status: 404 });
   }
 
+  // General requests (one-time bulk past-attendee pass) produce a
+  // course-agnostic review: template_id stays null so /kurse/[slug] renders
+  // it in the shared pool without a per-card "Bewertung zum Kurs X" label.
+  const reviewTemplateId = booking.review_request_general
+    ? null
+    : booking.template_id;
+
   const { error: insertErr } = await supabase.from("course_reviews").insert({
     booking_id: booking.id,
-    template_id: booking.template_id,
+    template_id: reviewTemplateId,
     rating: ratingNum,
     first_name: trimmedFirstName,
     body_text: trimmedBody,
