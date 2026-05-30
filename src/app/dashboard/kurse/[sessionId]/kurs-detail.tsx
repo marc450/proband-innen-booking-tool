@@ -1083,77 +1083,82 @@ export function KursDetailClient({
                 disabled={slotBlockedInput}
               />
             </div>
-            <div className="space-y-1.5 pt-2 border-t">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={slotBlockedInput}
-                  onChange={(e) => {
-                    setSlotBlockedInput(e.target.checked);
-                    if (!e.target.checked) setSlotBlockNoteInput("");
-                  }}
-                  disabled={
-                    !!editingSlot && bookings.some((b) => b.slot_id === editingSlot.id)
-                  }
-                  className="h-4 w-4"
-                />
-                <span className="text-sm font-medium">Slot sperren</span>
-              </label>
-              {!!editingSlot && bookings.some((b) => b.slot_id === editingSlot.id) && (
-                <p className="text-xs text-muted-foreground pl-6">
-                  Slot mit Buchung kann nicht gesperrt werden.
-                </p>
-              )}
-              {slotBlockedInput && (
-                <Input
-                  className="mt-2"
-                  placeholder="Notiz (optional, z.B. Bereits extern gebucht)"
-                  value={slotBlockNoteInput}
-                  onChange={(e) => setSlotBlockNoteInput(e.target.value)}
-                />
-              )}
-            </div>
-            {/* Masseter-Reservierung (nur Grundkurs Botulinum). Markiert
-                den Slot als Masseter-fähig und hält Plätze für
-                Masseterproband:innen zurück. Auf 0 setzen gibt den Platz
-                wieder für normale Proband:innen frei. */}
-            <div className="space-y-1.5 pt-2 border-t">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={slotMasseterEligibleInput}
-                  onChange={(e) => {
-                    setSlotMasseterEligibleInput(e.target.checked);
-                    if (!e.target.checked) setSlotMasseterCapacityInput("0");
-                    else if (slotMasseterCapacityInput === "0")
-                      setSlotMasseterCapacityInput("1");
-                  }}
-                  disabled={slotBlockedInput}
-                  className="h-4 w-4"
-                />
-                <span className="text-sm font-medium">
-                  Masseter-Plätze reservieren
-                </span>
-              </label>
-              {slotMasseterEligibleInput && (
-                <div className="space-y-1.5 pt-1">
-                  <Label>Reservierte Masseter-Plätze</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={slotMasseterCapacityInput}
-                    onChange={(e) => setSlotMasseterCapacityInput(e.target.value)}
+            {/* Sperren + Masseter-Reservierung teilen sich einen
+                Trenner, damit der Dialog nicht zwei dicht gestapelte
+                Divider zeigt. */}
+            <div className="pt-4 border-t space-y-4">
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={slotBlockedInput}
+                    onChange={(e) => {
+                      setSlotBlockedInput(e.target.checked);
+                      if (!e.target.checked) setSlotBlockNoteInput("");
+                    }}
+                    disabled={
+                      !!editingSlot && bookings.some((b) => b.slot_id === editingSlot.id)
+                    }
+                    className="h-4 w-4"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Diese Plätze sind für Masseterproband:innen reserviert und
-                    werden normalen Proband:innen nicht angeboten. Auf 0 setzen
-                    gibt sie wieder frei.
+                  <span className="text-sm font-medium">Slot sperren</span>
+                </label>
+                {!!editingSlot && bookings.some((b) => b.slot_id === editingSlot.id) && (
+                  <p className="text-xs text-muted-foreground pl-6">
+                    Slot mit Buchung kann nicht gesperrt werden.
                   </p>
-                </div>
-              )}
-              {masseterGuardError && (
-                <p className="text-xs text-destructive pt-1">{masseterGuardError}</p>
-              )}
+                )}
+                {slotBlockedInput && (
+                  <Input
+                    className="mt-2"
+                    placeholder="Notiz (optional, z.B. Bereits extern gebucht)"
+                    value={slotBlockNoteInput}
+                    onChange={(e) => setSlotBlockNoteInput(e.target.value)}
+                  />
+                )}
+              </div>
+              {/* Masseter-Reservierung (nur Grundkurs Botulinum). Markiert
+                  den Slot als Masseter-fähig und hält Plätze für
+                  Masseterproband:innen zurück. Auf 0 setzen gibt den Platz
+                  wieder für normale Proband:innen frei. */}
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={slotMasseterEligibleInput}
+                    onChange={(e) => {
+                      setSlotMasseterEligibleInput(e.target.checked);
+                      if (!e.target.checked) setSlotMasseterCapacityInput("0");
+                      else if (slotMasseterCapacityInput === "0")
+                        setSlotMasseterCapacityInput("1");
+                    }}
+                    disabled={slotBlockedInput}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm font-medium">
+                    Masseter-Plätze reservieren
+                  </span>
+                </label>
+                {slotMasseterEligibleInput && (
+                  <div className="space-y-1.5 pt-1">
+                    <Label>Reservierte Masseter-Plätze</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={slotMasseterCapacityInput}
+                      onChange={(e) => setSlotMasseterCapacityInput(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Diese Plätze sind für Masseterproband:innen reserviert und
+                      werden normalen Proband:innen nicht angeboten. Auf 0 setzen
+                      gibt sie wieder frei.
+                    </p>
+                  </div>
+                )}
+                {masseterGuardError && (
+                  <p className="text-xs text-destructive pt-1">{masseterGuardError}</p>
+                )}
+              </div>
             </div>
           </div>
           <DialogFooter className="sm:justify-between">
