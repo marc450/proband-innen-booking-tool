@@ -101,14 +101,25 @@ function buildToken(): string {
   return randomBytes(32).toString("base64url");
 }
 
+// Live copy: fired 1h before course end, doctor is still in the room.
+const REVIEW_INTRO_LIVE =
+  "vielen Dank, dass Du heute bei uns bist. Solange Dein Eindruck noch frisch ist, ist Dein Feedback für uns am wertvollsten. Bitte nimm Dir 1 Minute, bevor Du gehst.";
+
+// Retroactive copy: one-time pass to past attendees, the course was a
+// while ago. No "heute", and it names why the review helps medically.
+// Includes the one-time SONJA x EPHIA shirt Verlosung (3 shirts among
+// all reviewers). Remove the Verlosung sentence once that promo ends.
+const REVIEW_INTRO_RETRO =
+  'vielen Dank, dass Du an unserem Kurs teilgenommen hast. Dein fachlicher Eindruck hilft uns, die Kurse für Kolleg:innen weiter zu schärfen. Bitte nimm Dir eine Minute für Deine Bewertung. Unter allen, die eine Bewertung abgeben, verlosen wir 3 <a href="https://ephia.de/merch/sonja-x-ephia-shirt?color=Weiss" target="_blank" style="color:#0066FF;text-decoration:underline;">SONJA x EPHIA Shirts</a>.';
+
 function buildReviewEmailHtml(opts: {
   firstName: string;
   reviewUrl: string;
+  intro?: string;
 }): string {
   return buildEmailHtml({
     firstName: opts.firstName,
-    intro:
-      "vielen Dank, dass Du heute bei uns bist. Solange Dein Eindruck noch frisch ist, ist Dein Feedback für uns am wertvollsten. Bitte nimm Dir 1 Minute, bevor Du gehst.",
+    intro: opts.intro ?? REVIEW_INTRO_LIVE,
     buttons: [
       {
         label: "Bewertung abgeben",
@@ -132,7 +143,9 @@ async function scheduleViaResend(opts: {
   to: string;
   subject: string;
   html: string;
-  scheduledAtIso: string;
+  // Omit to send immediately. The rolling cron passes a future time;
+  // the past-participant pass leaves it undefined so Resend fires now.
+  scheduledAtIso?: string;
 }): Promise<string> {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -145,7 +158,7 @@ async function scheduleViaResend(opts: {
       to: [opts.to],
       subject: opts.subject,
       html: opts.html,
-      scheduled_at: opts.scheduledAtIso,
+      ...(opts.scheduledAtIso ? { scheduled_at: opts.scheduledAtIso } : {}),
       tags: [{ name: "ephia-purpose", value: "course-review-request" }],
     }),
   });
@@ -331,6 +344,207 @@ export async function scheduleCourseReviewEmails(
       captureError(`Unexpected: ${msg}`);
       console.error(
         `schedule-review-emails: unexpected error for booking ${booking.id}`,
+        err,
+      );
+      result.errors++;
+    }
+  }
+
+  return result;
+}
+
+// ── One-time bulk pass: review requests to PAST attendees ──────────────────
+
+interface PastCandidateRow {
+  id: string;
+  email: string | null;
+  first_name: string | null;
+  review_submit_token: string | null;
+  status: string;
+  course_sessions: SessionRow | SessionRow[] | null;
+  course_templates:
+    | { title: string | null; course_label_de: string | null }
+    | { title: string | null; course_label_de: string | null }[]
+    | null;
+  course_reviews: { id: string }[] | { id: string } | null;
+}
+
+interface PastCandidate {
+  bookingId: string;
+  email: string;
+  firstName: string;
+  courseTitle: string;
+  existingToken: string | null;
+}
+
+// True if the session has already finished. Prefer the precise wall-clock
+// end (start_time + duration); fall back to a strictly-before-today date
+// comparison in Europe/Berlin when those fields are missing.
+function isPastSession(session: SessionRow, nowMs: number): boolean {
+  const endAt = computeSessionEnd(session);
+  if (endAt) return endAt.getTime() < nowMs;
+  if (!session.date_iso) return false;
+  const todayBerlin = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Berlin",
+  }).format(new Date(nowMs));
+  return session.date_iso < todayBerlin;
+}
+
+// Selects past course_bookings eligible for a one-time review request:
+// has an email, belongs to a finished session, has no review yet, and has
+// not already been bulk-emailed (review_request_resent_at IS NULL). Shared
+// by the count (GET) and send (POST) paths so they never diverge.
+async function selectPastReviewCandidates(
+  supabase: SupabaseClient,
+): Promise<PastCandidate[]> {
+  const { data, error } = await supabase
+    .from("course_bookings")
+    .select(
+      `id, email, first_name, review_submit_token, status,
+       course_sessions ( id, date_iso, start_time, duration_minutes ),
+       course_templates:template_id ( title, course_label_de ),
+       course_reviews ( id )`,
+    )
+    .is("review_request_resent_at", null)
+    .in("status", ["booked", "completed"])
+    .not("email", "is", null)
+    .not("session_id", "is", null)
+    .returns<PastCandidateRow[]>();
+
+  if (error) throw new Error(error.message);
+  if (!data) return [];
+
+  const nowMs = Date.now();
+  const candidates: PastCandidate[] = [];
+
+  for (const row of data) {
+    if (!row.email) continue;
+    const reviews = Array.isArray(row.course_reviews)
+      ? row.course_reviews
+      : row.course_reviews
+        ? [row.course_reviews]
+        : [];
+    if (reviews.length > 0) continue;
+
+    const session = Array.isArray(row.course_sessions)
+      ? row.course_sessions[0]
+      : row.course_sessions;
+    if (!session || !isPastSession(session, nowMs)) continue;
+
+    const tpl = Array.isArray(row.course_templates)
+      ? row.course_templates[0]
+      : row.course_templates;
+    candidates.push({
+      bookingId: row.id,
+      email: row.email,
+      firstName: row.first_name?.trim() || "Du",
+      courseTitle: tpl?.course_label_de || tpl?.title || "Deinem EPHIA-Kurs",
+      existingToken: row.review_submit_token,
+    });
+  }
+
+  return candidates;
+}
+
+export async function countPastReviewCandidates(
+  supabase: SupabaseClient,
+): Promise<number> {
+  const candidates = await selectPastReviewCandidates(supabase);
+  return candidates.length;
+}
+
+// Marc-triggered one-time pass. NEVER runs on a cron or as a side effect.
+// For every eligible past attendee: reuse the existing review token (so any
+// link already in their inbox keeps working) or mint a fresh one, send the
+// review email immediately via Resend, then stamp review_request_resent_at
+// so a second click can't re-ping them.
+export async function sendPastParticipantReviewEmails(
+  supabase: SupabaseClient,
+): Promise<ScheduleResult> {
+  const result: ScheduleResult = {
+    scheduled: 0,
+    skipped: 0,
+    errors: 0,
+    errorSamples: [],
+  };
+  const captureError = (msg: string) => {
+    if (result.errorSamples.length < 3) result.errorSamples.push(msg);
+  };
+
+  let candidates: PastCandidate[];
+  try {
+    candidates = await selectPastReviewCandidates(supabase);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("send-past-review-emails: candidate query failed", msg);
+    return { ...result, errors: 1, errorSamples: [`Query: ${msg}`] };
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const token = candidate.existingToken || buildToken();
+
+      // Persist the token first so a successful Resend call always has a
+      // matching DB row to validate against. No-op when reusing an
+      // existing token, but keeps the mint-fresh path consistent.
+      const { error: tokenErr } = await supabase
+        .from("course_bookings")
+        .update({ review_submit_token: token })
+        .eq("id", candidate.bookingId);
+      if (tokenErr) {
+        captureError(`Token persist: ${tokenErr.message}`);
+        result.errors++;
+        continue;
+      }
+
+      const reviewUrl = `${APP_URL}/bewertung/${token}`;
+      const subject = buildReviewSubject(candidate.courseTitle);
+      const html = buildReviewEmailHtml({
+        firstName: candidate.firstName,
+        reviewUrl,
+        intro: REVIEW_INTRO_RETRO,
+      });
+
+      let resendId: string;
+      try {
+        resendId = await scheduleViaResend({
+          to: candidate.email,
+          subject,
+          html,
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        captureError(`Resend: ${msg}`);
+        result.errors++;
+        await sleep(RESEND_RATE_LIMIT_DELAY_MS);
+        continue;
+      }
+
+      // review_request_resent_at is the sole idempotency marker for this
+      // pass. We deliberately do NOT touch review_email_resend_id /
+      // review_email_sent_at here so the rolling cron's fields stay
+      // untouched and the reschedule route never picks these up.
+      void resendId;
+      const { error: markErr } = await supabase
+        .from("course_bookings")
+        .update({
+          review_request_resent_at: new Date().toISOString(),
+        })
+        .eq("id", candidate.bookingId);
+      if (markErr) {
+        captureError(`DB mark: ${markErr.message}`);
+        result.errors++;
+        await sleep(RESEND_RATE_LIMIT_DELAY_MS);
+        continue;
+      }
+
+      result.scheduled++;
+      await sleep(RESEND_RATE_LIMIT_DELAY_MS);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      captureError(`Unexpected: ${msg}`);
+      console.error(
+        `send-past-review-emails: unexpected error for booking ${candidate.bookingId}`,
         err,
       );
       result.errors++;
