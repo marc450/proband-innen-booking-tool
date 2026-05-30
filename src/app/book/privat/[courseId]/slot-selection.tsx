@@ -21,10 +21,22 @@ interface Props {
   course: Course;
   allCourses: Course[];
   slots: AvailableSlot[];
+  // Reserved masseter seats in Grundkurs Botulinum courses, plus their
+  // courses. Only populated for the Therap. Indikationen course and only
+  // shown once the masseter indication is picked.
+  masseterSlots: AvailableSlot[];
+  masseterCourses: Course[];
   firstSlotByCourse: Record<string, string>;
 }
 
-export function PrivatSlotSelection({ course, allCourses, slots, firstSlotByCourse }: Props) {
+export function PrivatSlotSelection({
+  course,
+  allCourses,
+  slots,
+  masseterSlots,
+  masseterCourses,
+  firstSlotByCourse,
+}: Props) {
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
   const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
 
@@ -32,15 +44,37 @@ export function PrivatSlotSelection({ course, allCourses, slots, firstSlotByCour
   const [selectedIndication, setSelectedIndication] = useState<IndicationKey | null>(null);
   const showPicker = usesIndications && !selectedIndication;
 
-  const indicationStats = INDICATIONS.map((ind) => ({
-    ...ind,
-    remaining: ind.max as number,
-  }));
+  // Free seats a patient can still book on a given slot. Masseter seats in
+  // a Botulinum course come from the reserved bucket (masseter_remaining);
+  // everything else comes from the general bucket (general_remaining).
+  const slotFree = (slot: AvailableSlot, isMasseterCourse: boolean) =>
+    isMasseterCourse
+      ? slot.masseter_remaining ?? slot.remaining_capacity
+      : slot.general_remaining ?? slot.remaining_capacity;
+
+  const generalSeatsTotal = slots.reduce(
+    (n, s) => n + (s.general_remaining ?? s.remaining_capacity),
+    0,
+  );
+  const masseterSeatsTotal = masseterSlots.reduce(
+    (n, s) => n + (s.masseter_remaining ?? 0),
+    0,
+  );
+
+  const indicationStats = INDICATIONS.map((ind) => {
+    const available =
+      ind.key === "masseter"
+        ? generalSeatsTotal + masseterSeatsTotal
+        : generalSeatsTotal;
+    return { ...ind, remaining: Math.min(available, ind.max as number) };
+  });
+
+  const isMasseter = usesIndications && selectedIndication === "masseter";
 
   // Privatfunnel: der absolut erste Slot des Kurses ("Behandlung durch
   // Dozent:in") ist Proband:innen aus dem oeffentlichen Funnel
   // vorbehalten und darf hier nicht buchbar sein.
-  const dateEntries = allCourses
+  const baseEntries = allCourses
     .map((c) => ({
       course: c,
       slots: slots.filter(
@@ -48,8 +82,32 @@ export function PrivatSlotSelection({ course, allCourses, slots, firstSlotByCour
           s.course_id === c.id &&
           firstSlotByCourse[s.course_id] !== s.start_time,
       ),
+      isMasseterCourse: false,
     }))
     .filter((entry) => entry.slots.length > 0);
+
+  // Reserved masseter seats are never the first slot of a course, so the
+  // Dozent:in exclusion above does not apply to them.
+  const masseterEntries = isMasseter
+    ? masseterCourses
+        .map((c) => ({
+          course: c,
+          slots: masseterSlots.filter((s) => s.course_id === c.id),
+          isMasseterCourse: true,
+        }))
+        .filter((entry) => entry.slots.length > 0)
+    : [];
+
+  const dateEntries = [...baseEntries, ...masseterEntries];
+
+  const selectedIsMasseterCourse =
+    !!selectedSlot && masseterCourses.some((c) => c.id === selectedSlot.course_id);
+  const selectedSlotCourse =
+    (selectedSlot &&
+      (allCourses.find((c) => c.id === selectedSlot.course_id) ||
+        masseterCourses.find((c) => c.id === selectedSlot.course_id))) ||
+    course;
+  const selectedMasseterLabel = INDICATIONS.find((i) => i.key === "masseter")?.label;
 
   return (
     <div className="min-h-screen bg-[#FAEBE1]">
@@ -71,8 +129,15 @@ export function PrivatSlotSelection({ course, allCourses, slots, firstSlotByCour
               &larr; Zurück zur Terminauswahl
             </button>
             <div className="bg-white rounded-[10px] p-6 md:p-7 mb-6">
+              {selectedIsMasseterCourse && (
+                <span className="inline-flex items-center text-[10px] md:text-[11px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-[#0066FF]/10 text-[#0066FF] mb-2">
+                  Masseterbehandlung im Grundkurs Botulinum
+                </span>
+              )}
               <h2 className="text-xl md:text-2xl font-bold tracking-wide leading-tight text-black text-balance">
-                {course.treatment_title || course.title}
+                {selectedIsMasseterCourse
+                  ? selectedMasseterLabel
+                  : selectedSlotCourse.treatment_title || selectedSlotCourse.title}
               </h2>
               <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-3 text-sm text-black/70">
                 <span className="flex items-center gap-1.5">
@@ -198,12 +263,15 @@ export function PrivatSlotSelection({ course, allCourses, slots, firstSlotByCour
               </div>
             ) : (
               <div className="space-y-4">
-                {dateEntries.map(({ course: dateCourse, slots: dateSlots }) => {
+                {dateEntries.map(({ course: dateCourse, slots: dateSlots, isMasseterCourse }) => {
                   const isExpanded = expandedCourseId === dateCourse.id;
                   const dateLabel = dateCourse.course_date
                     ? formatBerlinLongDateWithWeekday(parseDateOnly(dateCourse.course_date))
                     : "Datum wird bekannt gegeben";
-                  const totalCapacity = dateSlots.reduce((s, sl) => s + sl.remaining_capacity, 0);
+                  const totalCapacity = dateSlots.reduce(
+                    (s, sl) => s + slotFree(sl, isMasseterCourse),
+                    0,
+                  );
 
                   return (
                     <article
@@ -216,6 +284,11 @@ export function PrivatSlotSelection({ course, allCourses, slots, firstSlotByCour
                         aria-expanded={isExpanded}
                       >
                         <div className="px-5 md:px-6 py-5">
+                          {isMasseterCourse && (
+                            <span className="inline-flex items-center text-[10px] md:text-[11px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-[#0066FF]/10 text-[#0066FF] mb-2">
+                              Masseterbehandlung im Grundkurs Botulinum
+                            </span>
+                          )}
                           <div className="flex items-center justify-between gap-4">
                             <p className="text-base md:text-lg font-bold text-black leading-tight">
                               {dateLabel}
@@ -264,6 +337,7 @@ export function PrivatSlotSelection({ course, allCourses, slots, firstSlotByCour
                             {dateSlots.map((slot) => {
                               const isFirstOfCourse =
                                 firstSlotByCourse[slot.course_id] === slot.start_time;
+                              const free = slotFree(slot, isMasseterCourse);
                               return (
                               <button
                                 key={slot.id}
@@ -278,7 +352,7 @@ export function PrivatSlotSelection({ course, allCourses, slots, firstSlotByCour
                                     </span>
                                   </div>
                                   <span className="text-xs md:text-sm text-black/60 whitespace-nowrap">
-                                    {slot.remaining_capacity} {slot.remaining_capacity === 1 ? "Platz" : "Plätze"} frei
+                                    {free} {free === 1 ? "Platz" : "Plätze"} frei
                                   </span>
                                   {isFirstOfCourse && (
                                     <span className="inline-flex items-center text-[10px] md:text-[11px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-[#0066FF]/10 text-[#0066FF]">

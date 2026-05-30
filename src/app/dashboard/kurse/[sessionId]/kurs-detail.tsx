@@ -37,6 +37,11 @@ export interface DetailSlot {
   capacity: number;
   blocked: boolean;
   blocked_note: string | null;
+  // Masseter reservation (migration 117). On a Grundkurs Botulinum
+  // course, masseter_eligible slots hold masseter_capacity seats back
+  // from general probands for Masseterproband:innen.
+  masseter_eligible: boolean;
+  masseter_capacity: number;
 }
 
 export interface DetailBooking {
@@ -53,6 +58,9 @@ export interface DetailBooking {
   status: "booked" | "attended" | "no_show" | "cancelled";
   booking_type: string | null;
   referring_doctor: string | null;
+  // Therapeutic indication (plaintext). 'masseter' marks a booking that
+  // sits on a reserved masseter seat.
+  indication: string | null;
   created_at: string;
 }
 
@@ -98,6 +106,9 @@ interface Props {
   slots: DetailSlot[];
   bookings: DetailBooking[];
   aerztBookings: AerztBooking[];
+  // Count of Zahnmediziner:innen booked on this session. Drives the
+  // masseter reservation summary + shortfall warning.
+  dentistCount: number;
 }
 
 const BOOKING_STATUS_OPTIONS: Array<{ value: DetailBooking["status"]; label: string }> = [
@@ -132,6 +143,7 @@ export function KursDetailClient({
   slots: initialSlots,
   bookings: initialBookings,
   aerztBookings,
+  dentistCount,
 }: Props) {
   const router = useRouter();
   const supabase = createClient();
@@ -149,6 +161,10 @@ export function KursDetailClient({
   const [slotCapacityInput, setSlotCapacityInput] = useState("1");
   const [slotBlockedInput, setSlotBlockedInput] = useState(false);
   const [slotBlockNoteInput, setSlotBlockNoteInput] = useState("");
+  // Masseter reservation (migration 117). Marks a slot as eligible to
+  // hold seats back for Masseterproband:innen on a Grundkurs Botulinum.
+  const [slotMasseterEligibleInput, setSlotMasseterEligibleInput] = useState(false);
+  const [slotMasseterCapacityInput, setSlotMasseterCapacityInput] = useState("0");
   const [deleteSlotId, setDeleteSlotId] = useState<string | null>(null);
   // Inline "Sperren" flow direkt aus der Slot-Tabelle (ohne den vollen
   // Slot-bearbeiten-Dialog öffnen zu müssen). Der Notiz-Input ist
@@ -163,6 +179,8 @@ export function KursDetailClient({
     setSlotCapacityInput("1");
     setSlotBlockedInput(false);
     setSlotBlockNoteInput("");
+    setSlotMasseterEligibleInput(false);
+    setSlotMasseterCapacityInput("0");
     setSlotDialogOpen(true);
   };
 
@@ -172,12 +190,40 @@ export function KursDetailClient({
     setSlotCapacityInput(String(slot.capacity));
     setSlotBlockedInput(slot.blocked);
     setSlotBlockNoteInput(slot.blocked_note ?? "");
+    setSlotMasseterEligibleInput(slot.masseter_eligible);
+    setSlotMasseterCapacityInput(String(slot.masseter_capacity));
     setSlotDialogOpen(true);
   };
 
-  const saveSlot = async () => {
-    if (!satelliteId || !slotTimeInput) return;
+  // Guard reason for the dialog: masseter_capacity must stay >= the
+  // number of masseter bookings already sitting on this slot and <=
+  // total capacity. Returns a message string when the current inputs
+  // are invalid, otherwise null.
+  const masseterGuardError = (() => {
+    if (!slotMasseterEligibleInput) return null;
     const capacity = parseInt(slotCapacityInput) || 1;
+    const masseter = parseInt(slotMasseterCapacityInput) || 0;
+    if (masseter > capacity) {
+      return "Reservierte Masseter-Plätze dürfen die Gesamtplätze nicht übersteigen.";
+    }
+    if (editingSlot) {
+      const bookedMasseter = bookings.filter(
+        (b) => b.slot_id === editingSlot.id && b.indication === "masseter",
+      ).length;
+      if (masseter < bookedMasseter) {
+        return `Es gibt bereits ${bookedMasseter} Masseter-Buchung${bookedMasseter === 1 ? "" : "en"} auf diesem Slot. Die Reservierung kann nicht darunter liegen.`;
+      }
+    }
+    return null;
+  })();
+
+  const saveSlot = async () => {
+    if (!satelliteId || !slotTimeInput || masseterGuardError) return;
+    const capacity = parseInt(slotCapacityInput) || 1;
+    const masseterEligible = slotMasseterEligibleInput;
+    const masseterCapacity = masseterEligible
+      ? Math.min(parseInt(slotMasseterCapacityInput) || 0, capacity)
+      : 0;
     const startTime = buildBerlinTimestamp(session.dateIso, slotTimeInput);
     const blockedNote = slotBlockedInput ? slotBlockNoteInput.trim() || null : null;
     const payload = {
@@ -185,6 +231,8 @@ export function KursDetailClient({
       capacity,
       blocked: slotBlockedInput,
       blocked_note: blockedNote,
+      masseter_eligible: masseterEligible,
+      masseter_capacity: masseterCapacity,
     };
     if (editingSlot) {
       await supabase.from("slots").update(payload).eq("id", editingSlot.id);
@@ -197,6 +245,8 @@ export function KursDetailClient({
                 capacity,
                 blocked: slotBlockedInput,
                 blocked_note: blockedNote,
+                masseter_eligible: masseterEligible,
+                masseter_capacity: masseterCapacity,
               }
             : s,
         ),
@@ -218,6 +268,8 @@ export function KursDetailClient({
               capacity,
               blocked: slotBlockedInput,
               blocked_note: blockedNote,
+              masseter_eligible: masseterEligible,
+              masseter_capacity: masseterCapacity,
             },
           ].sort((a, b) => a.start_time.localeCompare(b.start_time)),
         );
@@ -747,6 +799,67 @@ export function KursDetailClient({
         )}
       </section>
 
+      {/* ── Masseter-Reservierung ───────────────────────────────────── */}
+      {(() => {
+        const eligibleSlots = slots.filter((s) => s.masseter_eligible);
+        // Only surface this panel where masseter reservation is in play:
+        // either eligible slots exist, or there are dentists on this
+        // session (then staff needs the prompt to set seats up).
+        if (eligibleSlots.length === 0 && dentistCount === 0) return null;
+
+        const reservedTotal = eligibleSlots.reduce(
+          (sum, s) => sum + s.masseter_capacity,
+          0,
+        );
+        const masseterBooked = bookings.filter(
+          (b) => b.indication === "masseter",
+        ).length;
+        const shortfall = dentistCount - reservedTotal;
+
+        return (
+          <section className="rounded-[10px] bg-card ring-1 ring-black/5 overflow-hidden">
+            <div className="px-6 pt-6 pb-3">
+              <h2 className="text-lg font-semibold">Masseter-Reservierung</h2>
+            </div>
+            <div className="px-6 pb-6 space-y-3 text-sm">
+              <div className="flex flex-wrap gap-x-8 gap-y-2">
+                <span>
+                  Zahnmediziner:innen auf dieser Session:{" "}
+                  <strong>{dentistCount}</strong>
+                </span>
+                <span>
+                  Reservierte Masseter-Plätze: <strong>{reservedTotal}</strong>
+                </span>
+                <span>
+                  Davon gebucht: <strong>{masseterBooked}</strong>
+                </span>
+              </div>
+              {shortfall > 0 ? (
+                <div className="rounded-lg bg-amber-50 text-amber-800 px-4 py-3">
+                  Es fehlen <strong>{shortfall}</strong> Masseter-Plätze. Es sind{" "}
+                  {dentistCount} Zahnmediziner:innen gebucht, aber nur{" "}
+                  {reservedTotal} Masseter-Plätze reserviert. Markiere weitere
+                  Slots als Masseter-fähig oder erhöhe die reservierten Plätze,
+                  damit jede:r Zahnmediziner:in eine:n Masseterproband:in
+                  bekommt.
+                </div>
+              ) : eligibleSlots.length > 0 ? (
+                <div className="rounded-lg bg-emerald-50 text-emerald-800 px-4 py-3">
+                  Genug Masseter-Plätze reserviert für alle Zahnmediziner:innen
+                  auf dieser Session.
+                </div>
+              ) : (
+                <div className="rounded-lg bg-amber-50 text-amber-800 px-4 py-3">
+                  Es sind {dentistCount} Zahnmediziner:innen gebucht, aber noch
+                  keine Masseter-Plätze reserviert. Öffne einen Proband:innen-Slot
+                  und aktiviere &quot;Masseter-Plätze reservieren&quot;.
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      })()}
+
       {/* ── Proband:innen Slots & Buchungen ─────────────────────────── */}
       <section className="rounded-[10px] bg-card ring-1 ring-black/5 overflow-hidden">
         <div className="px-6 pt-6 pb-3 flex items-center justify-between gap-3">
@@ -852,7 +965,18 @@ export function KursDetailClient({
                 if (slotBookings.length === 0) {
                   return [
                     <TableRow key={slot.id} className="h-14">
-                      <TableCell className="text-sm text-muted-foreground italic">Frei</TableCell>{/* Name */}
+                      <TableCell className="text-sm text-muted-foreground italic">{/* Name */}
+                        {slot.masseter_eligible && slot.masseter_capacity > 0 ? (
+                          <Badge
+                            variant="outline"
+                            className="text-[#0066FF] border-[#0066FF]/30 bg-[#0066FF]/5 not-italic font-normal"
+                          >
+                            Masseter reserviert ({slot.masseter_capacity})
+                          </Badge>
+                        ) : (
+                          "Frei"
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* E-Mail */}
                       <TableCell className="font-medium">{/* Uhrzeit */}
                         <button onClick={() => openEditSlot(slot)} className="hover:underline">
@@ -1017,6 +1141,48 @@ export function KursDetailClient({
                 />
               )}
             </div>
+            {/* Masseter-Reservierung (nur Grundkurs Botulinum). Markiert
+                den Slot als Masseter-fähig und hält Plätze für
+                Masseterproband:innen zurück. Auf 0 setzen gibt den Platz
+                wieder für normale Proband:innen frei. */}
+            <div className="space-y-1.5 pt-2 border-t">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={slotMasseterEligibleInput}
+                  onChange={(e) => {
+                    setSlotMasseterEligibleInput(e.target.checked);
+                    if (!e.target.checked) setSlotMasseterCapacityInput("0");
+                    else if (slotMasseterCapacityInput === "0")
+                      setSlotMasseterCapacityInput("1");
+                  }}
+                  disabled={slotBlockedInput}
+                  className="h-4 w-4"
+                />
+                <span className="text-sm font-medium">
+                  Masseter-Plätze reservieren
+                </span>
+              </label>
+              {slotMasseterEligibleInput && (
+                <div className="space-y-1.5 pt-1">
+                  <Label>Reservierte Masseter-Plätze</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={slotMasseterCapacityInput}
+                    onChange={(e) => setSlotMasseterCapacityInput(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Diese Plätze sind für Masseterproband:innen reserviert und
+                    werden normalen Proband:innen nicht angeboten. Auf 0 setzen
+                    gibt sie wieder frei.
+                  </p>
+                </div>
+              )}
+              {masseterGuardError && (
+                <p className="text-xs text-destructive pt-1">{masseterGuardError}</p>
+              )}
+            </div>
           </div>
           <DialogFooter className="sm:justify-between">
             {editingSlot ? (
@@ -1046,7 +1212,7 @@ export function KursDetailClient({
               <Button variant="ghost" onClick={() => setSlotDialogOpen(false)}>
                 Abbrechen
               </Button>
-              <Button onClick={saveSlot} disabled={!slotTimeInput}>
+              <Button onClick={saveSlot} disabled={!slotTimeInput || !!masseterGuardError}>
                 Speichern
               </Button>
             </div>

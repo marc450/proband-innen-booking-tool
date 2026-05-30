@@ -38,23 +38,58 @@ export default async function PrivatCourseBookingPage({
 
   const allCourses = (siblingCourses as Course[]) || [course as Course];
 
-  // Fetch available slots for all sibling courses
+  // Fetch available slots for all sibling courses. Filter on
+  // general_remaining so masseter-reserved seats (held for
+  // Masseterproband:innen on Grundkurs Botulinum courses) never show up
+  // as general availability. On non-eligible slots general_remaining
+  // equals remaining_capacity, so cosmetic courses are unaffected.
   const courseIds = allCourses.map((c) => c.id);
   const { data: slots } = await supabase
     .from("available_slots")
     .select("*")
     .in("course_id", courseIds)
-    .gt("remaining_capacity", 0)
+    .gt("general_remaining", 0)
     .gt("start_time", new Date().toISOString())
     .order("start_time", { ascending: true });
+
+  // When this is the Therap. Indikationen course, the masseter indication
+  // may also be booked into a reserved masseter seat in a Grundkurs
+  // Botulinum course. masseter_eligible is only set on Botulinum courses.
+  const usesIndications = /therap.*indikation/i.test(course.title);
+
+  let masseterSlots: AvailableSlot[] = [];
+  let masseterCourses: Course[] = [];
+  if (usesIndications) {
+    const { data: mSlots } = await supabase
+      .from("available_slots")
+      .select("*")
+      .eq("masseter_eligible", true)
+      .gt("masseter_remaining", 0)
+      .gt("start_time", new Date().toISOString())
+      .gte("course_date", today)
+      .order("start_time", { ascending: true });
+    masseterSlots = (mSlots as AvailableSlot[]) || [];
+
+    const masseterCourseIds = Array.from(new Set(masseterSlots.map((s) => s.course_id)));
+    if (masseterCourseIds.length > 0) {
+      const { data: mCourses } = await supabase
+        .from("courses")
+        .select("*, instructor:profiles!instructor_id(title, first_name, last_name)")
+        .in("id", masseterCourseIds);
+      masseterCourses = (mCourses as Course[]) || [];
+    }
+  }
 
   // Earliest slot per course across ALL slots (incl. booked-out). The
   // "Behandlung durch Dozent:in" pill must mark the absolute first slot
   // of the day, not just the first one still available.
+  const allCourseIds = Array.from(
+    new Set([...courseIds, ...masseterCourses.map((c) => c.id)]),
+  );
   const { data: allSlots } = await supabase
     .from("slots")
     .select("course_id, start_time")
-    .in("course_id", courseIds)
+    .in("course_id", allCourseIds)
     .order("start_time", { ascending: true });
 
   const firstSlotByCourse: Record<string, string> = {};
@@ -69,6 +104,8 @@ export default async function PrivatCourseBookingPage({
       course={course as Course}
       allCourses={allCourses}
       slots={(slots as AvailableSlot[]) || []}
+      masseterSlots={masseterSlots}
+      masseterCourses={masseterCourses}
       firstSlotByCourse={firstSlotByCourse}
     />
   );

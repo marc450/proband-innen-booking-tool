@@ -40,7 +40,9 @@ export default async function KursDetailPage({
   if (satellite) {
     const { data: slotData } = await admin
       .from("slots")
-      .select("id, start_time, end_time, capacity, blocked, blocked_note")
+      .select(
+        "id, start_time, end_time, capacity, blocked, blocked_note, masseter_eligible, masseter_capacity",
+      )
       .eq("course_id", satellite.id)
       .order("start_time", { ascending: true });
     slots = (slotData ?? []) as DetailSlot[];
@@ -49,7 +51,7 @@ export default async function KursDetailPage({
       const { data: bookingRows } = await admin
         .from("bookings")
         .select(
-          "id, slot_id, patient_id, status, encrypted_data, encrypted_key, encryption_iv, booking_type, referring_doctor, created_at",
+          "id, slot_id, patient_id, status, encrypted_data, encrypted_key, encryption_iv, booking_type, referring_doctor, indication, created_at",
         )
         .in(
           "slot_id",
@@ -71,6 +73,7 @@ export default async function KursDetailPage({
           status: decrypted.status,
           booking_type: decrypted.booking_type ?? null,
           referring_doctor: decrypted.referring_doctor ?? null,
+          indication: (row.indication as string | null) ?? null,
           created_at: decrypted.created_at,
         };
       })) as DetailBooking[];
@@ -183,8 +186,16 @@ export default async function KursDetailPage({
     priorTitlesByAuszubildendeId.get(id)!.push(name);
   }
 
+  // Zahnmediziner:innen on this session drive the masseter reservation:
+  // each one needs a masseter proband. aerztBookings is already filtered
+  // to non-cancelled rows above.
+  const dentistCount = (aerztBookings ?? []).filter(
+    (b) => b.audience_tag === "Zahnmediziner:in",
+  ).length;
+
   return (
     <KursDetailClient
+      dentistCount={dentistCount}
       session={{
         id: session.id as string,
         templateTitle:

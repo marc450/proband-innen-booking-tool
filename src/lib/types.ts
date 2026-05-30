@@ -112,6 +112,10 @@ export type BookingStatus = "booked" | "attended" | "no_show" | "cancelled";
 export interface Course {
   id: string;
   template_id: string | null;
+  // Bridge to the learner-side course_sessions row (migration: proband
+  // satellite courses are auto-created from a learner session). NULL for
+  // standalone proband courses with no learner session behind them.
+  session_id: string | null;
   title: string;
   treatment_title: string | null;
   description: string | null;
@@ -137,6 +141,14 @@ export interface Slot {
   capacity: number;
   blocked: boolean;
   blocked_note: string | null;
+  // Masseter reservation (migration 117). `masseter_eligible` marks a
+  // slot that may hold reserved masseter seats (later part of a Grundkurs
+  // Botulinum course, not the two latest slots). `masseter_capacity` is
+  // how many of the slot's seats are held for masseter bookings
+  // (indication = 'masseter'); held from general probands but bookable by
+  // Masseterproband:innen. Always <= capacity.
+  masseter_eligible: boolean;
+  masseter_capacity: number;
   created_at: string;
 }
 
@@ -145,6 +157,11 @@ export interface AvailableSlot extends Slot {
   course_description: string | null;
   course_date: string | null;
   remaining_capacity: number;
+  // Split buckets from the available_slots view (migration 117).
+  // general_remaining = (capacity - masseter_capacity) - general bookings.
+  // masseter_remaining = masseter_capacity - masseter bookings.
+  general_remaining: number;
+  masseter_remaining: number;
 }
 
 export interface Booking {
