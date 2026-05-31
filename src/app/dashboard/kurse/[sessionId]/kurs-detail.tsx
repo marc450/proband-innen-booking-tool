@@ -663,11 +663,16 @@ export function KursDetailClient({
             Noch keine Buchungen für diese Session.
           </p>
         ) : (
-          <Table className="table-fixed">
+          <Table className="table-fixed" containerClassName="overflow-x-auto">
             {/* Auszubildende table has an extra Notizen column (240px)
                 that the Proband:innen table below does not. Other column
                 widths still match the Proband:innen <colgroup> so the
-                two tables read as a stacked pair. */}
+                two tables read as a stacked pair. Total width ~1560px,
+                so on mobile we explicitly opt back into horizontal
+                scrolling via containerClassName, otherwise the parent
+                section's overflow-hidden would clip the right half of
+                the rows and the assistant could not see most columns
+                (Marc-Bugreport 2026-05-31). */}
             <colgroup>
               <col style={{ width: "200px" }} />{/* Name */}
               <col style={{ width: "280px" }} />{/* E-Mail */}
@@ -886,9 +891,11 @@ export function KursDetailClient({
             Noch keine Slots angelegt. Klicke auf &quot;Slot hinzufügen&quot;, um den ersten anzulegen.
           </p>
         ) : (
-          <Table className="table-fixed">
+          <Table className="table-fixed" containerClassName="overflow-x-auto">
             {/* Same column widths as the Auszubildende table above so
-                the two tables align column-for-column on the page. */}
+                the two tables align column-for-column on the page.
+                Total width ~1320px → explicit horizontal scroll on
+                mobile (same Bugreport as the Auszubildende table). */}
             <colgroup>
               <col style={{ width: "200px" }} />{/* Name */}
               <col style={{ width: "280px" }} />{/* E-Mail */}
