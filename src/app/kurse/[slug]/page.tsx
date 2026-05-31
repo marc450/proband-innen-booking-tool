@@ -470,6 +470,7 @@ export default async function KursPage({
       {!content.hideBookingWidget && (
         <CourseCardsPage template={template} sessions={sessions ?? []} />
       )}
+      {publicReviews.length > 0 && <Reviews reviews={publicReviews} />}
       {content.location && <LocationInfo content={content.location} />}
       {content.learningPath && <LearningPath content={content.learningPath} />}
       {content.differentiators && (
@@ -499,7 +500,6 @@ export default async function KursPage({
             : undefined
         }
       />
-      {publicReviews.length > 0 && <Reviews reviews={publicReviews} />}
       {/* On Reviews-enabled slugs, the long-form hand-curated
           <Testimonials> would duplicate names that now live in
           <Reviews> (e.g. Laura B., Nadja G., Lawik R. imported as
