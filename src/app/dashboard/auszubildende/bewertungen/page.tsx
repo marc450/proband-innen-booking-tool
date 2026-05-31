@@ -21,12 +21,13 @@ export default async function ReviewsPage() {
       `id, rating, first_name, body_text,
        display_title, display_last_initial, is_imported,
        is_published, submitted_at, published_at,
-       booking_id, template_id,
+       booking_id, template_id, auszubildende_id,
        course_bookings:booking_id (
          id, auszubildende_id, email, last_name,
          course_sessions ( date_iso, label_de ),
          auszubildende:auszubildende_id ( id, title, first_name, last_name )
        ),
+       auszubildende:auszubildende_id ( id, title, first_name, last_name ),
        course_templates:template_id ( title, course_label_de )`,
     )
     .order("submitted_at", { ascending: false });

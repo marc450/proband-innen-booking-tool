@@ -81,58 +81,116 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
-  if (!booking) {
+
+  // Two token populations coexist: legacy booking-anchored tokens (already
+  // sitting in inboxes) and the doctor-anchored token on `auszubildende`
+  // (the one-time "alle Teilnehmer:innen anschreiben" pass). Booking tokens
+  // win the lookup; if there's no booking, fall back to the doctor token.
+  if (booking) {
+    // General requests (one-time bulk past-attendee pass) produce a
+    // course-agnostic review: template_id stays null so /kurse/[slug] renders
+    // it in the shared pool without a per-card "Bewertung zum Kurs X" label.
+    const reviewTemplateId = booking.review_request_general
+      ? null
+      : booking.template_id;
+
+    const { error: insertErr } = await supabase.from("course_reviews").insert({
+      booking_id: booking.id,
+      template_id: reviewTemplateId,
+      rating: ratingNum,
+      first_name: trimmedFirstName,
+      body_text: trimmedBody,
+      is_published: false,
+    });
+
+    if (insertErr) {
+      // 23505 = unique violation. The UNIQUE constraint on
+      // course_reviews.booking_id catches double submissions even if the
+      // page-level "already submitted" check was bypassed.
+      if (insertErr.code === "23505") {
+        return NextResponse.json(
+          { error: "Für diese Buchung wurde bereits eine Bewertung abgegeben." },
+          { status: 409 },
+        );
+      }
+      console.error("submit-review: insert failed", insertErr);
+      return NextResponse.json(
+        { error: "Da ist etwas schiefgelaufen." },
+        { status: 500 },
+      );
+    }
+
+    // Anonymes Team-Feedback goes into its own table with no booking_id
+    // and a day-level date so it can't be correlated back to this
+    // specific reviewer. Best-effort: a failure here doesn't roll back
+    // the public review — the doctor still gets credit for submitting.
+    // course_internal_feedback.template_id is NOT NULL, so we only insert
+    // when the booking actually has a template.
+    if (trimmedInternal && booking.template_id) {
+      const { error: feedbackErr } = await supabase
+        .from("course_internal_feedback")
+        .insert({
+          template_id: booking.template_id,
+          body: trimmedInternal,
+        });
+      if (feedbackErr) {
+        console.error("submit-review: internal feedback insert failed", feedbackErr);
+      }
+    }
+
+    return NextResponse.json({ ok: true });
+  }
+
+  // Doctor-anchored token path. The review hangs off the doctor directly:
+  // booking_id and template_id stay null (course-agnostic, shared pool).
+  const { data: doctor, error: doctorErr } = await supabase
+    .from("auszubildende")
+    .select("id")
+    .eq("review_submit_token", token)
+    .maybeSingle();
+
+  if (doctorErr) {
+    console.error("submit-review: doctor lookup failed", doctorErr);
+    return NextResponse.json(
+      { error: "Da ist etwas schiefgelaufen." },
+      { status: 500 },
+    );
+  }
+  if (!doctor) {
     return NextResponse.json({ error: "Link ungültig." }, { status: 404 });
   }
 
-  // General requests (one-time bulk past-attendee pass) produce a
-  // course-agnostic review: template_id stays null so /kurse/[slug] renders
-  // it in the shared pool without a per-card "Bewertung zum Kurs X" label.
-  const reviewTemplateId = booking.review_request_general
-    ? null
-    : booking.template_id;
+  const { error: doctorInsertErr } = await supabase
+    .from("course_reviews")
+    .insert({
+      auszubildende_id: doctor.id,
+      booking_id: null,
+      template_id: null,
+      rating: ratingNum,
+      first_name: trimmedFirstName,
+      body_text: trimmedBody,
+      is_published: false,
+    });
 
-  const { error: insertErr } = await supabase.from("course_reviews").insert({
-    booking_id: booking.id,
-    template_id: reviewTemplateId,
-    rating: ratingNum,
-    first_name: trimmedFirstName,
-    body_text: trimmedBody,
-    is_published: false,
-  });
-
-  if (insertErr) {
-    // 23505 = unique violation. The UNIQUE constraint on
-    // course_reviews.booking_id catches double submissions even if the
-    // page-level "already submitted" check was bypassed.
-    if (insertErr.code === "23505") {
+  if (doctorInsertErr) {
+    // 23505 = unique violation on course_reviews.auszubildende_id (one
+    // general review per doctor), catches double submissions.
+    if (doctorInsertErr.code === "23505") {
       return NextResponse.json(
-        { error: "Für diese Buchung wurde bereits eine Bewertung abgegeben." },
+        { error: "Für diesen Link wurde bereits eine Bewertung abgegeben." },
         { status: 409 },
       );
     }
-    console.error("submit-review: insert failed", insertErr);
+    console.error("submit-review: doctor insert failed", doctorInsertErr);
     return NextResponse.json(
       { error: "Da ist etwas schiefgelaufen." },
       { status: 500 },
     );
   }
 
-  // Anonymes Team-Feedback goes into its own table with no booking_id
-  // and a day-level date so it can't be correlated back to this
-  // specific reviewer. Best-effort: a failure here doesn't roll back
-  // the public review — the doctor still gets credit for submitting.
-  if (trimmedInternal) {
-    const { error: feedbackErr } = await supabase
-      .from("course_internal_feedback")
-      .insert({
-        template_id: booking.template_id,
-        body: trimmedInternal,
-      });
-    if (feedbackErr) {
-      console.error("submit-review: internal feedback insert failed", feedbackErr);
-    }
-  }
+  // Doctor-anchored reviews have no template, so anonymous team feedback
+  // (template_id NOT NULL) cannot be attributed to a course. We skip it
+  // rather than drop it into an arbitrary template.
 
   return NextResponse.json({ ok: true });
 }

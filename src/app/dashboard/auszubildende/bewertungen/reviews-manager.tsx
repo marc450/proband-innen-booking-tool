@@ -56,7 +56,16 @@ export interface ReviewRow {
   published_at: string | null;
   booking_id: string | null;
   template_id: string | null;
+  auszubildende_id: string | null;
   course_bookings: Joined<BookingJoin>;
+  // Doctor-anchored reviews (one-time bulk pass) link the doctor directly
+  // instead of through a booking.
+  auszubildende: Joined<{
+    id: string;
+    title: string | null;
+    first_name: string | null;
+    last_name: string | null;
+  }>;
   course_templates: Joined<TemplateJoin>;
 }
 
@@ -373,7 +382,11 @@ export function ReviewsManager({
           {visible.map((r) => {
             const booking = unwrap(r.course_bookings);
             const tpl = unwrap(r.course_templates);
-            const azubi = booking ? unwrap(booking.auszubildende) : null;
+            // Doctor link comes from the booking when present, otherwise
+            // straight from the doctor-anchored auszubildende join.
+            const azubi =
+              (booking ? unwrap(booking.auszubildende) : null) ??
+              unwrap(r.auszubildende);
             const session = booking ? unwrap(booking.course_sessions) : null;
             // A null template_id is a general (course-agnostic) review from
             // the one-time bulk past-attendee pass, not an unknown course.

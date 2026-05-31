@@ -364,37 +364,33 @@ export async function scheduleCourseReviewEmails(
   return result;
 }
 
-// ── One-time bulk pass: review requests to PAST attendees ──────────────────
+// ── One-time bulk pass: review requests to the doctor base ─────────────────
 
-interface PastCandidateRow {
-  id: string;
-  email: string | null;
-  first_name: string | null;
-  review_submit_token: string | null;
-  status: string;
-  created_at: string | null;
-  course_sessions: SessionRow | SessionRow[] | null;
-  course_reviews: { id: string }[] | { id: string } | null;
-}
-
-// One person (deduped by email). The review request is GENERAL, so we no
-// longer carry a course title. `representativeBookingId` is the booking we
-// actually email + flag review_request_general on (their latest touchpoint);
-// `allBookingIds` are every eligible unreviewed booking for this person, all
-// of which get review_request_resent_at stamped so no future click re-pings.
-// `representativeRankMs` ranks bookings to pick that latest touchpoint: a
-// session end time when there is one, else the booking's created_at.
-interface PastCandidate {
+// One doctor (auszubildende). The review request is GENERAL and anchored on
+// the doctor, not a booking, so doctors with no course_bookings row (LW
+// enrollees, legacy imports, contacts) are reachable too. `existingToken` is
+// reused when present so any link already in their inbox keeps working.
+interface DoctorReviewCandidate {
+  auszubildendeId: string;
   email: string;
   firstName: string;
-  representativeBookingId: string;
-  representativeRankMs: number;
   existingToken: string | null;
-  allBookingIds: string[];
 }
 
-// True if the session is still upcoming (not yet finished). A person with
-// any upcoming in-person session hasn't taken that course yet, so we hold off
+interface DoctorRow {
+  id: string;
+  first_name: string | null;
+  status: string | null;
+  contact_type: string | null;
+  review_submit_token: string | null;
+  auszubildende_emails:
+    | { email: string | null; is_primary: boolean | null }[]
+    | { email: string | null; is_primary: boolean | null }
+    | null;
+}
+
+// True if the session is still upcoming (not yet finished). A doctor with any
+// upcoming in-person session hasn't taken that course yet, so we hold off
 // asking them for a review. Prefer the precise wall-clock end; fall back to a
 // date comparison in Europe/Berlin. Returns false when no date is known so an
 // undated session never excludes anyone.
@@ -408,113 +404,112 @@ function isFutureSession(session: SessionRow, nowMs: number): boolean {
   return session.date_iso >= todayBerlin;
 }
 
-// Normalizes an email for dedupe: trims + lowercases. Two bookings with the
-// same person typed differently ("A@x.de" vs "a@x.de ") collapse to one.
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
-
-// Selects attendees eligible for a one-time GENERAL review request, deduped
-// to ONE entry per person (by normalized email). A person qualifies when they
-// have at least one unreviewed, not-yet-bulk-emailed booking AND have never
-// left any review. We no longer require a finished session: online-course
-// buyers (no session) are included. The only timing gate is the inverse, a
-// person is dropped if they have ANY upcoming in-person session, since they
-// haven't taken that course yet. Their latest touchpoint (session end, else
-// created_at) becomes the representative; all of their qualifying bookings get
-// stamped so a second click can't re-ping them. Shared by the count (GET) and
-// send (POST) paths so they never diverge.
-async function selectPastReviewCandidates(
+// Doctors who have any booking on an upcoming session. Excluded from the pass
+// because they haven't taken that course yet.
+async function doctorsWithUpcomingSession(
   supabase: SupabaseClient,
-): Promise<PastCandidate[]> {
+): Promise<Set<string>> {
   const { data, error } = await supabase
     .from("course_bookings")
     .select(
-      `id, email, first_name, review_submit_token, status, created_at,
-       course_sessions ( id, date_iso, start_time, duration_minutes ),
-       course_reviews ( id )`,
+      `auszubildende_id,
+       course_sessions ( id, date_iso, start_time, duration_minutes )`,
+    )
+    .not("auszubildende_id", "is", null)
+    .in("status", ["booked", "completed"]);
+  if (error) throw new Error(error.message);
+
+  const nowMs = Date.now();
+  const set = new Set<string>();
+  for (const row of data ?? []) {
+    const session = Array.isArray(row.course_sessions)
+      ? row.course_sessions[0]
+      : row.course_sessions;
+    if (row.auszubildende_id && session && isFutureSession(session, nowMs)) {
+      set.add(row.auszubildende_id as string);
+    }
+  }
+  return set;
+}
+
+// Doctors who already left a review, whether anchored directly on the doctor
+// (auszubildende_id) or on one of their bookings (booking_id → auszubildende).
+async function doctorsWithReview(
+  supabase: SupabaseClient,
+): Promise<Set<string>> {
+  const { data: reviews, error } = await supabase
+    .from("course_reviews")
+    .select("auszubildende_id, booking_id");
+  if (error) throw new Error(error.message);
+
+  const set = new Set<string>();
+  const bookingIds: string[] = [];
+  for (const r of reviews ?? []) {
+    if (r.auszubildende_id) set.add(r.auszubildende_id as string);
+    else if (r.booking_id) bookingIds.push(r.booking_id as string);
+  }
+  if (bookingIds.length > 0) {
+    const { data: bookings } = await supabase
+      .from("course_bookings")
+      .select("id, auszubildende_id")
+      .in("id", bookingIds);
+    for (const b of bookings ?? []) {
+      if (b.auszubildende_id) set.add(b.auszubildende_id as string);
+    }
+  }
+  return set;
+}
+
+// Selects doctors eligible for the one-time GENERAL review request: every
+// doctor contact (contact_type 'auszubildende' or legacy null) that is active,
+// has a primary email, and has NOT been emailed by this pass yet. Excluded:
+// doctors who already left any review, and doctors with any upcoming in-person
+// session (course not taken yet). Shared by the count (GET) and send (POST)
+// paths so they never diverge.
+async function selectPastReviewCandidates(
+  supabase: SupabaseClient,
+): Promise<DoctorReviewCandidate[]> {
+  const { data, error } = await supabase
+    .from("auszubildende")
+    .select(
+      `id, first_name, status, contact_type, review_submit_token,
+       auszubildende_emails ( email, is_primary )`,
     )
     .is("review_request_resent_at", null)
-    .in("status", ["booked", "completed"])
-    .not("email", "is", null)
-    .returns<PastCandidateRow[]>();
+    .returns<DoctorRow[]>();
 
   if (error) throw new Error(error.message);
   if (!data) return [];
 
-  const nowMs = Date.now();
+  const [upcoming, reviewed] = await Promise.all([
+    doctorsWithUpcomingSession(supabase),
+    doctorsWithReview(supabase),
+  ]);
 
-  // Group eligible bookings by person. A person is dropped entirely if ANY of
-  // their bookings carries a review (already spoken) or sits on an upcoming
-  // session (course not taken yet).
-  const byEmail = new Map<string, PastCandidate>();
-  const reviewedEmails = new Set<string>();
-  const upcomingEmails = new Set<string>();
-
+  const candidates: DoctorReviewCandidate[] = [];
   for (const row of data) {
-    if (!row.email) continue;
-    const key = normalizeEmail(row.email);
+    // Doctor contacts only: the explicit type plus legacy rows from before
+    // contact_type existed (null). "other"/"company" contacts are skipped.
+    const ct = row.contact_type;
+    if (!(ct === "auszubildende" || ct == null)) continue;
+    if (row.status === "inactive") continue;
+    if (upcoming.has(row.id) || reviewed.has(row.id)) continue;
 
-    const reviews = Array.isArray(row.course_reviews)
-      ? row.course_reviews
-      : row.course_reviews
-        ? [row.course_reviews]
+    const emails = Array.isArray(row.auszubildende_emails)
+      ? row.auszubildende_emails
+      : row.auszubildende_emails
+        ? [row.auszubildende_emails]
         : [];
-    if (reviews.length > 0) {
-      reviewedEmails.add(key);
-      continue;
-    }
+    const email =
+      emails.find((e) => e.is_primary)?.email || emails[0]?.email || null;
+    if (!email) continue;
 
-    const session = Array.isArray(row.course_sessions)
-      ? row.course_sessions[0]
-      : row.course_sessions;
-
-    // Upcoming in-person session: hold off on this person entirely.
-    if (session && isFutureSession(session, nowMs)) {
-      upcomingEmails.add(key);
-      continue;
-    }
-
-    // Rank bookings to pick the latest touchpoint as representative: session
-    // end when present, else created_at (online courses have no session).
-    const endAt = session ? computeSessionEnd(session) : null;
-    const rankMs = endAt
-      ? endAt.getTime()
-      : row.created_at
-        ? new Date(row.created_at).getTime()
-        : 0;
-
-    const existing = byEmail.get(key);
-    if (!existing) {
-      byEmail.set(key, {
-        email: row.email,
-        firstName: row.first_name?.trim() || "Du",
-        representativeBookingId: row.id,
-        representativeRankMs: rankMs,
-        existingToken: row.review_submit_token,
-        allBookingIds: [row.id],
-      });
-      continue;
-    }
-
-    existing.allBookingIds.push(row.id);
-    // Keep the latest touchpoint as the representative so the token and first
-    // name come from their most recent booking with us.
-    if (rankMs > existing.representativeRankMs) {
-      existing.representativeRankMs = rankMs;
-      existing.representativeBookingId = row.id;
-      existing.existingToken = row.review_submit_token;
-      existing.firstName = row.first_name?.trim() || existing.firstName;
-    }
-  }
-
-  // Drop anyone who already reviewed or has an upcoming session, even if some
-  // other booking of theirs looked eligible above.
-  const candidates: PastCandidate[] = [];
-  for (const [key, candidate] of byEmail) {
-    if (reviewedEmails.has(key)) continue;
-    if (upcomingEmails.has(key)) continue;
-    candidates.push(candidate);
+    candidates.push({
+      auszubildendeId: row.id,
+      email,
+      firstName: row.first_name?.trim() || "Du",
+      existingToken: row.review_submit_token,
+    });
   }
 
   return candidates;
@@ -528,12 +523,10 @@ export async function countPastReviewCandidates(
 }
 
 // Marc-triggered one-time pass. NEVER runs on a cron or as a side effect.
-// ONE email per person (deduped by email). Reuse the representative
-// booking's existing review token (so any link already in their inbox keeps
-// working) or mint a fresh one, flag that booking review_request_general so
-// submit-review writes a course-agnostic review, send the email immediately
-// via Resend, then stamp review_request_resent_at on EVERY past booking of
-// that person so a second click can't re-ping them.
+// ONE email per doctor (auszubildende). Reuse the doctor's existing review
+// token (so any link already in their inbox keeps working) or mint a fresh
+// one, send the email immediately via Resend, then stamp
+// review_request_resent_at on the doctor so a second click can't re-ping them.
 export async function sendPastParticipantReviewEmails(
   supabase: SupabaseClient,
 ): Promise<ScheduleResult> {
@@ -547,7 +540,7 @@ export async function sendPastParticipantReviewEmails(
     if (result.errorSamples.length < 3) result.errorSamples.push(msg);
   };
 
-  let candidates: PastCandidate[];
+  let candidates: DoctorReviewCandidate[];
   try {
     candidates = await selectPastReviewCandidates(supabase);
   } catch (err) {
@@ -560,16 +553,12 @@ export async function sendPastParticipantReviewEmails(
     try {
       const token = candidate.existingToken || buildToken();
 
-      // Persist the token + general flag on the representative booking
-      // first so a successful Resend call always has a matching DB row to
-      // validate against, and submit-review knows to write template_id=null.
+      // Persist the token on the doctor first so a successful Resend call
+      // always has a matching DB row for submit-review to validate against.
       const { error: tokenErr } = await supabase
-        .from("course_bookings")
-        .update({
-          review_submit_token: token,
-          review_request_general: true,
-        })
-        .eq("id", candidate.representativeBookingId);
+        .from("auszubildende")
+        .update({ review_submit_token: token })
+        .eq("id", candidate.auszubildendeId);
       if (tokenErr) {
         captureError(`Token persist: ${tokenErr.message}`);
         result.errors++;
@@ -598,19 +587,13 @@ export async function sendPastParticipantReviewEmails(
         continue;
       }
 
-      // review_request_resent_at is the sole idempotency marker for this
-      // pass. Stamp it on ALL of this person's past bookings (not just the
-      // representative) so a re-click never queues a second email for them.
-      // We deliberately do NOT touch review_email_resend_id /
-      // review_email_sent_at here so the rolling cron's fields stay
-      // untouched and the reschedule route never picks these up.
+      // review_request_resent_at on the doctor is the sole idempotency marker
+      // for this pass, so a re-click never queues a second email for them.
       void resendId;
       const { error: markErr } = await supabase
-        .from("course_bookings")
-        .update({
-          review_request_resent_at: new Date().toISOString(),
-        })
-        .in("id", candidate.allBookingIds);
+        .from("auszubildende")
+        .update({ review_request_resent_at: new Date().toISOString() })
+        .eq("id", candidate.auszubildendeId);
       if (markErr) {
         captureError(`DB mark: ${markErr.message}`);
         result.errors++;

@@ -144,6 +144,10 @@ export default async function KursPage({
             | null;
         }[]
       | null;
+    auszubildende:
+      | { title: string | null; last_name: string | null }
+      | { title: string | null; last_name: string | null }[]
+      | null;
     course_templates:
       | { course_label_de: string | null; title: string | null }
       | { course_label_de: string | null; title: string | null }[]
@@ -159,6 +163,7 @@ export default async function KursPage({
          course_bookings:booking_id (
            auszubildende:auszubildende_id ( title, last_name )
          ),
+         auszubildende:auszubildende_id ( title, last_name ),
          course_templates:template_id ( course_label_de, title )`,
       )
       .eq("is_published", true)
@@ -170,11 +175,18 @@ export default async function KursPage({
       const booking = Array.isArray(r.course_bookings)
         ? r.course_bookings[0]
         : r.course_bookings;
-      const azubi = booking
-        ? Array.isArray(booking.auszubildende)
-          ? booking.auszubildende[0]
-          : booking.auszubildende
-        : null;
+      // Doctor comes from the booking when present, otherwise from the
+      // doctor-anchored auszubildende join (one-time bulk pass reviews
+      // have no booking link).
+      const directAzubi = Array.isArray(r.auszubildende)
+        ? r.auszubildende[0]
+        : r.auszubildende;
+      const azubi =
+        (booking
+          ? Array.isArray(booking.auszubildende)
+            ? booking.auszubildende[0]
+            : booking.auszubildende
+          : null) ?? directAzubi;
       // Single-letter, uppercase, A-Z + umlauts only. Anything weirder
       // (e.g. last_name starts with a digit) is dropped to NULL so the
       // displayed line stays clean.

@@ -27,17 +27,41 @@ export default async function BewertungPage({ params }: PageProps) {
     .eq("review_submit_token", token)
     .maybeSingle();
 
-  if (!booking) {
+  if (booking) {
+    // booking.course_reviews is an array because of the FK direction.
+    // Single review per booking is enforced by the UNIQUE constraint on
+    // course_reviews.booking_id, so length 1 means already-submitted.
+    const alreadySubmitted =
+      Array.isArray(booking.course_reviews) && booking.course_reviews.length > 0;
+
+    if (alreadySubmitted) {
+      return <Shell>{<AlreadyDoneCard />}</Shell>;
+    }
+
+    return (
+      <Shell>
+        <ReviewForm token={token} />
+      </Shell>
+    );
+  }
+
+  // Doctor-anchored token fallback (one-time "alle Teilnehmer:innen
+  // anschreiben" pass). The token lives on `auszubildende`; already-submitted
+  // is enforced by the UNIQUE constraint on course_reviews.auszubildende_id.
+  const { data: doctor } = await supabase
+    .from("auszubildende")
+    .select(`id, course_reviews ( id )`)
+    .eq("review_submit_token", token)
+    .maybeSingle();
+
+  if (!doctor) {
     return <Shell>{<NotFoundCard />}</Shell>;
   }
 
-  // booking.course_reviews is an array because of the FK direction.
-  // Single review per booking is enforced by the UNIQUE constraint on
-  // course_reviews.booking_id, so length 1 means already-submitted.
-  const alreadySubmitted =
-    Array.isArray(booking.course_reviews) && booking.course_reviews.length > 0;
+  const doctorAlreadySubmitted =
+    Array.isArray(doctor.course_reviews) && doctor.course_reviews.length > 0;
 
-  if (alreadySubmitted) {
+  if (doctorAlreadySubmitted) {
     return <Shell>{<AlreadyDoneCard />}</Shell>;
   }
 
