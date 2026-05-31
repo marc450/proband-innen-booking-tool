@@ -128,6 +128,7 @@ export default async function KursPage({
     first_name: string;
     body_text: string | null;
     submitted_at: string;
+    is_pinned: boolean | null;
     display_title: string | null;
     display_last_initial: string | null;
     course_bookings:
@@ -158,7 +159,7 @@ export default async function KursPage({
     const { data: reviewRows } = await supabase
       .from("course_reviews")
       .select(
-        `id, rating, first_name, body_text, submitted_at,
+        `id, rating, first_name, body_text, submitted_at, is_pinned,
          display_title, display_last_initial,
          course_bookings:booking_id (
            auszubildende:auszubildende_id ( title, last_name )
@@ -207,6 +208,7 @@ export default async function KursPage({
         lastInitial,
         bodyText: r.body_text,
         submittedAt: r.submitted_at,
+        isPinned: r.is_pinned ?? false,
         courseLabel: tpl?.course_label_de || tpl?.title || null,
       };
     });

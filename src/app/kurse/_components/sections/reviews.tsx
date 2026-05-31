@@ -9,7 +9,24 @@ export interface PublicReview {
   lastInitial: string | null;
   bodyText: string | null;
   submittedAt: string;
+  isPinned: boolean;
   courseLabel: string | null;
+}
+
+// On desktop the carousel shows 3 cards, so a pinned review sitting at
+// position 1 lands at the visible left edge. Marc wants it as the
+// second card so it reads as the centered, most-prominent one. On
+// mobile (one card per view) first is best, so we keep the DB order
+// there. We can't reorder via CSS alone because the carousel hook reads
+// cards in DOM order, so we feed two DOM orders and toggle by breakpoint.
+function withPinnedSecond(reviews: PublicReview[]): PublicReview[] {
+  if (reviews.length < 2) return reviews;
+  const pinnedIdx = reviews.findIndex((r) => r.isPinned);
+  if (pinnedIdx < 0 || pinnedIdx === 1) return reviews;
+  const copy = [...reviews];
+  const [pinned] = copy.splice(pinnedIdx, 1);
+  copy.splice(1, 0, pinned);
+  return copy;
 }
 
 interface ReviewsProps {
@@ -70,16 +87,26 @@ export function Reviews({ heading = "BEWERTUNGEN VON ÄRZT:INNEN", reviews }: Re
           </div>
         </div>
 
-        <ReviewsCarousel
-          items={reviews.map((r) => ({
-            id: r.id,
-            rating: r.rating,
-            displayName: formatDisplayName(r),
-            bodyText: r.bodyText,
-            courseLabel: r.courseLabel,
-          }))}
-        />
+        {/* Two DOM orders: mobile keeps the pinned review first, desktop
+            moves it to second (the centered, most-prominent card). Only
+            one is in layout per breakpoint. */}
+        <div className="md:hidden">
+          <ReviewsCarousel items={toItems(reviews)} />
+        </div>
+        <div className="hidden md:block">
+          <ReviewsCarousel items={toItems(withPinnedSecond(reviews))} />
+        </div>
       </div>
     </section>
   );
+}
+
+function toItems(reviews: PublicReview[]) {
+  return reviews.map((r) => ({
+    id: r.id,
+    rating: r.rating,
+    displayName: formatDisplayName(r),
+    bodyText: r.bodyText,
+    courseLabel: r.courseLabel,
+  }));
 }
