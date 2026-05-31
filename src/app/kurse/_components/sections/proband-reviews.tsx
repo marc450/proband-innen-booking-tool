@@ -1,5 +1,6 @@
 import { Star } from "lucide-react";
 import { TYPO } from "../typography";
+import { ProbandReviewsCarousel } from "./proband-reviews-carousel";
 
 /**
  * Proband:innen-Bewertungen auf der werde-proband-in Landingpage.
@@ -11,10 +12,10 @@ import { TYPO } from "../typography";
  * gar nichts (kein „Noch keine Bewertungen"-Platzhalter, damit die
  * Landingpage nicht leerer wirkt als sie ist).
  *
- * Layout spiegelt die /kurse-Testimonials (weiße Karten auf Rose),
- * ist aber an die Proband:innen-Realität angepasst: keine Headshots
- * (nur Vorname), Sterne als Hauptsignal, kompakte Aggregat-Zeile mit
- * Durchschnitt + Gesamtzahl darüber.
+ * Layout: weiße Karten auf Rose-Hintergrund (Brand-Konsistenz mit
+ * /kurse-Testimonials). Karten laufen als horizontaler Snap-Carousel
+ * mit Pfeil-Buttons (Desktop) und Dot-Indicators (alle Viewports),
+ * gleiche Mechanik wie die Ärzt:innen-Reviews auf /kurse/[slug].
  */
 
 const PRIMARY = "#0066FF";
@@ -104,25 +105,7 @@ export function ProbandReviews({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {reviews.map((r) => (
-            <figure
-              key={r.id}
-              className="bg-white rounded-[10px] p-6 md:p-7 flex flex-col"
-            >
-              <StarRow
-                rating={r.rating}
-                label={`${r.rating} von 5 Sternen`}
-              />
-              <blockquote className="flex-1 text-sm md:text-base text-black/80 leading-relaxed mt-4 mb-5">
-                „{r.body}&ldquo;
-              </blockquote>
-              <figcaption>
-                <div className="font-bold text-black">{r.firstName}</div>
-              </figcaption>
-            </figure>
-          ))}
-        </div>
+        <ProbandReviewsCarousel reviews={reviews} />
       </div>
     </section>
   );
