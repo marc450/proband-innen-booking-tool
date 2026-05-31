@@ -469,6 +469,18 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
      */
     cmeOnlineOverride?: string;
     /**
+     * Override für den Online- & Praxiskurs (Kombi) CME-Wert. Hat
+     * Vorrang vor `course_templates.cme_kombi` aus der DB. Nützlich
+     * wenn das Marketing schon mit dem Akkreditierungs-Wert leben
+     * soll bevor der DB-Eintrag nachgezogen ist.
+     */
+    cmeKombiOverride?: string;
+    /**
+     * Override für den standalone Praxiskurs CME-Wert. Hat Vorrang
+     * vor `course_templates.cme_praxis` aus der DB.
+     */
+    cmePraxisOverride?: string;
+    /**
      * When true, the Online- & Praxiskurs (Kombikurs) card shows an
      * amber "CME beantragt" pill instead of a numeric CME badge.
      */
@@ -528,6 +540,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
       hidePraxis: true,
       hasKomplettpaket: true,
       kombiFeatures: [
+        { text: "Akkreditiert mit 24 CME-Punkten" },
         { text: "Vollständiger Onlinekurs inkludiert" },
         { text: "6+ Stunden gemeinsames Behandeln" },
         { text: "Üben an echten Proband:innen" },
@@ -536,9 +549,16 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
         { text: "Ärzt:innen-Community" },
         { text: "EPHIA-Zertifikat nach Abschluss" },
       ],
-      // CME for Lippen is still pending LÄK approval, so hide the numeric
-      // CME badge everywhere until that changes.
-      hideCme: true,
+      // Akkreditierung steht (Marc-Bestätigung 2026-05-31): 11 CME
+      // für den Onlineteil, 13 CME für den Praxiskurs, 24 CME für die
+      // Kombi-Variante. Overrides nutzen wir damit das Marketing schon
+      // anziehen kann, bevor course_templates.cme_* in der DB gepflegt
+      // wird; sobald DB-Werte gesetzt sind, ziehen die Overrides
+      // gleich (gleicher Wert) und können bei der nächsten Aufräum-
+      // Runde entfernt werden.
+      cmeOnlineOverride: "11",
+      cmePraxisOverride: "13",
+      cmeKombiOverride: "24",
     },
     masterclass_botulinum: {
       // Make the equivalence with the Periorale Zone Onlinekurs explicit
@@ -845,7 +865,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   }}
                   isLoading={loadingCheckout?.startsWith("Praxiskurs-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Praxiskurs-", "")}
-                  cmePoints={overrides.hideCme ? undefined : (template.cme_praxis || undefined)}
+                  cmePoints={overrides.hideCme ? undefined : (overrides.cmePraxisOverride || template.cme_praxis || undefined)}
                   cmePending={overrides.praxisCmePending}
                 />
               )}
@@ -864,7 +884,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   highlighted={!hasKomplettpaket}
                   isLoading={loadingCheckout?.startsWith("Kombikurs-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
-                  cmePoints={overrides.hideCme ? undefined : (template.cme_kombi || undefined)}
+                  cmePoints={overrides.hideCme ? undefined : (overrides.cmeKombiOverride || template.cme_kombi || undefined)}
                   cmePending={overrides.kombiCmePending}
                   inclusionHeading="Im Online- & Praxiskurs inkludiert:"
                   titleClassName="text-[1.75rem] whitespace-nowrap"
@@ -900,11 +920,13 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   price="EUR 1.998"
                   originalPrice="EUR 2.220"
                   discountLabel=""
-                  // Sum of included online-course CME points: Dermalfiller
-                  // (11) + Hautpflege (7) + Periorale Zone (4) = 22. Lippen
-                  // itself is still pending LÄK accreditation so it doesn't
-                  // contribute yet.
-                  cmeTotal="22"
+                  // CME-Summe für das Lippen-Komplettpaket: Lippen
+                  // Kombi (24) + Dermalfiller Online (11) + Hautpflege
+                  // (7) + Periorale Zone Online (10) = 52. Lippen ist
+                  // seit 2026-05-31 LÄK-akkreditiert und trägt jetzt
+                  // mit zum Gesamttotal bei, vorher war es als
+                  // pending ausgeschlossen.
+                  cmeTotal="52"
                   includedCourses={LIPPEN_INCLUDED_COURSES}
                 />
               )}
