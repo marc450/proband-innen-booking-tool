@@ -75,7 +75,51 @@ export function ProbandReviewsCarousel({ reviews }: Props) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [atEnd, setAtEnd] = useState(false);
+  // Reachable scroll positions = wieviele unterschiedliche "leftmost
+  // card"-Stände der Scroller erreichen kann. Bei 12 Reviews auf 3-
+  // per-view sind das nur 10 Positionen (Karten 1-10 als linkester
+  // Eintrag). Default fallback ist reviews.length, damit die Dots vor
+  // dem ersten Layout-Measurement nicht 0 sind und durch ein Re-Render
+  // einbrechen. Wird in useEffect korrigiert sobald gemessen werden
+  // kann. Vorher hat die Sektion fälschlich 12 Dots gezeigt, der
+  // Carousel aber nur 10 erreicht — Marc-Bugreport 2026-05-31.
+  const [reachableCount, setReachableCount] = useState(reviews.length);
   const [openReview, setOpenReview] = useState<ProbandReviewItem | null>(null);
+
+  // Re-measure reachable scroll positions whenever the scroller layout
+  // changes (initial mount, viewport resize, content swap). Pure DOM
+  // measurement: scrollWidth - clientWidth gives the max horizontal
+  // scroll distance, dividing by the per-card stride gives the number
+  // of distinct snap positions.
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    const measure = () => {
+      const cards = scroller.querySelectorAll<HTMLElement>("[data-card]");
+      if (cards.length === 0) {
+        setReachableCount(0);
+        return;
+      }
+      const cardWidth = cards[0].offsetWidth;
+      const gapPx = parseFloat(getComputedStyle(scroller).gap) || 0;
+      const stride = cardWidth + gapPx;
+      const maxScrollLeft = scroller.scrollWidth - scroller.clientWidth;
+      if (stride <= 0 || maxScrollLeft <= 0) {
+        // Alle Karten passen ins Sichtfeld, keine Pagination nötig.
+        setReachableCount(1);
+        return;
+      }
+      // +1 weil Position 0 (alle Anfangs-Karten sichtbar) auch zählt.
+      const positions = Math.floor(maxScrollLeft / stride + 0.5) + 1;
+      setReachableCount(Math.min(positions, cards.length));
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(scroller);
+    return () => ro.disconnect();
+  }, [reviews.length]);
 
   // Active card is the one whose left edge is closest to the scroller's
   // left edge. atEnd disables the "next" button when the user has
@@ -134,6 +178,10 @@ export function ProbandReviewsCarousel({ reviews }: Props) {
 
   const canPrev = activeIndex > 0;
   const canNext = !atEnd;
+  // Aktive Position auf den Dot-Index clampen, damit der letzte Dot
+  // beim Rechts-Scroll-Ende auch wirklich aktiv wird (statt Dot 10 bei
+  // einer 10-Dot-Leiste, wenn activeIndex auf 9 hängen bliebe).
+  const activeDotIdx = Math.min(activeIndex, Math.max(0, reachableCount - 1));
 
   return (
     <div className="relative">
@@ -181,7 +229,7 @@ export function ProbandReviewsCarousel({ reviews }: Props) {
         })}
       </div>
 
-      {reviews.length > 1 && (
+      {reachableCount > 1 && (
         <>
           <button
             type="button"
@@ -203,14 +251,14 @@ export function ProbandReviewsCarousel({ reviews }: Props) {
           </button>
 
           <div className="flex justify-center gap-2 mt-6">
-            {reviews.map((r, idx) => (
+            {Array.from({ length: reachableCount }, (_, idx) => (
               <button
-                key={r.id}
+                key={idx}
                 type="button"
-                aria-label={`Zu Bewertung ${idx + 1}`}
+                aria-label={`Zu Position ${idx + 1} von ${reachableCount}`}
                 onClick={() => scrollToIndex(idx)}
                 className={`h-2 rounded-full transition-all ${
-                  idx === activeIndex
+                  idx === activeDotIdx
                     ? "w-8 bg-[#0066FF]"
                     : "w-2 bg-black/20"
                 }`}

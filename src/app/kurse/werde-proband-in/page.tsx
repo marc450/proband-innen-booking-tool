@@ -204,13 +204,6 @@ export default async function WerdeProbandInPage() {
         submitted_at: string;
       }[]
     | null) ?? [];
-  console.log(
-    `[werde-proband-in] reviewRows.length=${
-      reviewSource.length
-    } reviewCount=${reviewCount ?? "null"} ratingAggRows.length=${
-      (ratingAggRows as { rating: number }[] | null)?.length ?? 0
-    } reviewSourceIds=${reviewSource.map((r) => r.id).join(",")}`,
-  );
   const reviews: ProbandReviewItem[] = reviewSource.map((r) => ({
     id: r.id,
     rating: r.rating,
