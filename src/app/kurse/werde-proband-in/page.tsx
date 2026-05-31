@@ -2,11 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowDown, HeartHandshake, ShieldCheck, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { AvailableSlot, Course } from "@/lib/types";
 import { HeroVideo } from "../_components/sections/hero-video";
 import { BackgroundVideo } from "../_components/sections/background-video";
 import { Faq } from "../_components/sections/faq";
 import { TreatmentList } from "../_components/sections/treatment-list";
+import {
+  ProbandReviews,
+  type ProbandReviewItem,
+} from "../_components/sections/proband-reviews";
 import { TYPO } from "../_components/typography";
 
 export const revalidate = 60;
@@ -126,7 +131,21 @@ export default async function WerdeProbandInPage() {
   horizonDate.setMonth(horizonDate.getMonth() + 2);
   const horizon = horizonDate.toISOString().slice(0, 10);
 
-  const [{ data: coursesData }, { data: slotsData }, { data: templatesData }] = await Promise.all([
+  // Reviews-Fetch läuft über den Admin-Client, weil proband_reviews
+  // bisher keine anon-Grants hat (Migration 123 hat das bewusst noch
+  // nicht geöffnet, da die Tabelle erst jetzt eine öffentliche Anzeige
+  // bekommt). Server-side ist das unkritisch, der Service-Role-Token
+  // bleibt im Server, an den Browser geht nur die freigegebene Auswahl.
+  const adminForReviews = createAdminClient();
+
+  const [
+    { data: coursesData },
+    { data: slotsData },
+    { data: templatesData },
+    { data: reviewRows },
+    { count: reviewCount },
+    { data: ratingAggRows },
+  ] = await Promise.all([
     supabase
       .from("courses")
       .select("*, instructor:profiles!instructor_id(title, first_name, last_name)")
@@ -143,6 +162,23 @@ export default async function WerdeProbandInPage() {
     supabase
       .from("course_templates")
       .select("id, image_url_probanden"),
+    adminForReviews
+      .from("proband_reviews")
+      .select("id, rating, first_name, body_text")
+      .eq("is_published", true)
+      .order("submitted_at", { ascending: false })
+      // Landingpage-Teaser: max 6 Karten, danach kommt die nächste
+      // Sektion. Wenn die Bewertungslage stark wächst, könnte später
+      // eine eigene /bewertungen Seite mit Vollliste sinnvoll werden.
+      .limit(6),
+    adminForReviews
+      .from("proband_reviews")
+      .select("id", { count: "exact", head: true })
+      .eq("is_published", true),
+    adminForReviews
+      .from("proband_reviews")
+      .select("rating")
+      .eq("is_published", true),
   ]);
 
   // Proband:innen-specific hero image overrides the course's default
@@ -156,6 +192,28 @@ export default async function WerdeProbandInPage() {
     return override ? { ...c, image_url: override } : c;
   });
   const slots = (slotsData as AvailableSlot[] | null) ?? [];
+
+  const reviews: ProbandReviewItem[] = (
+    (reviewRows as
+      | { id: string; rating: number; first_name: string; body_text: string }[]
+      | null) ?? []
+  ).map((r) => ({
+    id: r.id,
+    rating: r.rating,
+    firstName: r.first_name,
+    body: r.body_text,
+  }));
+  const totalReviewCount = reviewCount ?? reviews.length;
+  // Durchschnitt direkt aus der vollständigen Rating-Liste (nicht nur
+  // aus den 6 angezeigten), damit die Aggregat-Zeile auch dann ehrlich
+  // bleibt, wenn die Karten nur eine Auswahl zeigen.
+  const ratingList = (
+    (ratingAggRows as { rating: number }[] | null) ?? []
+  ).map((r) => r.rating);
+  const averageRating =
+    ratingList.length > 0
+      ? ratingList.reduce((sum, r) => sum + r, 0) / ratingList.length
+      : 0;
 
   return (
     <>
@@ -193,6 +251,16 @@ export default async function WerdeProbandInPage() {
           </div>
         </div>
       </section>
+
+      {/* Proband:innen-Bewertungen — Social Proof direkt unter dem Hero.
+          Rendert nichts, solange noch keine Bewertung freigegeben ist,
+          damit die Landingpage nicht leer wirkt (siehe Empty-Branch in
+          ProbandReviews). */}
+      <ProbandReviews
+        reviews={reviews}
+        totalCount={totalReviewCount}
+        averageRating={averageRating}
+      />
 
       {/* So läuft's ab — 4 numbered steps. */}
       <section
