@@ -219,7 +219,10 @@ export function ProbandReviewsCarousel({ reviews }: Props) {
           if (!open) setOpenReview(null);
         }}
       >
-        <DialogContent className="max-w-lg">
+        {/* bg-white override: das Default-bg-background-Token rendert
+            auf der werde-proband-in Domain rose, was im Modal-Kontext
+            zu nah am Section-Hintergrund liegt und die Karte zerläuft. */}
+        <DialogContent className="max-w-lg bg-white">
           <DialogHeader>
             <DialogTitle className="sr-only">
               Bewertung von {openReview?.firstName ?? ""}
