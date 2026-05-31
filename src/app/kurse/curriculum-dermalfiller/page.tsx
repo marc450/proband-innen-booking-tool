@@ -166,7 +166,7 @@ const FAQS = [
   {
     question: "Erhalte ich CME-Punkte?",
     answer:
-      "Ja, jeder akkreditierte Kurs im Curriculum bringt CME-Punkte. Die genaue Anzahl siehst Du auf der jeweiligen Kurskarte. Aktuell sind Grundkurs Dermalfiller und Medizinische Hautpflege akkreditiert; die CME-Punkte für Aufbaukurs Lippen und Aufbaukurs Biostimulation & Skinbooster sind bei der LÄK Berlin beantragt.",
+      "Ja, jeder akkreditierte Kurs im Curriculum bringt CME-Punkte. Die genaue Anzahl siehst Du auf der jeweiligen Kurskarte. Aktuell sind Grundkurs Dermalfiller, Medizinische Hautpflege und Aufbaukurs Dermalfiller: Lippen akkreditiert (Lippen mit 11 Punkten für den Onlineteil und 13 Punkten für den Praxiskurs); die CME-Punkte für Aufbaukurs Biostimulation & Skinbooster sind bei der LÄK Berlin beantragt.",
   },
   {
     question: "Was, wenn ich einen Praxistermin verpassen muss?",
@@ -292,9 +292,10 @@ export default async function CurriculumDermalfillerPage() {
 
   // Build LernpfadStep[] in curriculum order. CME is picked for the
   // courseType configured on the curriculum (Onlinekurs vs Kombikurs).
-  // Aufbaukurs Lippen and Aufbaukurs Biostimulation are currently
-  // pending CME accreditation at the LÄK Berlin, so they render with
-  // a "CME beantragt" pill until the approval lands.
+  // Aufbaukurs Biostimulation is currently pending CME accreditation
+  // at the LÄK Berlin, so it renders with a "CME beantragt" pill until
+  // the approval lands. Aufbaukurs Lippen ist seit 2026-05-31
+  // akkreditiert (24 CME Kombi = 11 Online + 13 Praxis).
   const steps: LernpfadStep[] = CURRICULUM_DERMALFILLER.courses
     .slice()
     .sort((a, b) => a.sort - b.sort)
@@ -303,13 +304,14 @@ export default async function CurriculumDermalfillerPage() {
       const tmpl = templateMap.get(c.courseKey);
       const isOnline = c.courseType === "Onlinekurs";
       let cme: string | null = null;
-      const PENDING_CME = new Set(["aufbaukurs_lippen", "aufbaukurs_skulptra"]);
+      const PENDING_CME = new Set(["aufbaukurs_skulptra"]);
       if (PENDING_CME.has(c.courseKey)) {
         cme = "CME beantragt";
       } else {
         const FALLBACK_CME: Record<string, string> = {
           grundkurs_dermalfiller: "18 CME",
           grundkurs_medizinische_hautpflege: "7 CME",
+          aufbaukurs_lippen: "24 CME",
         };
         const dbCme = isOnline ? tmpl?.cme_online : tmpl?.cme_kombi;
         if (dbCme) {
@@ -385,7 +387,7 @@ export default async function CurriculumDermalfillerPage() {
           ),
           cmeTotal: cmeTotalLabel,
           cmeNote:
-            "CME-Punkte für Aufbaukurs Lippen und Aufbaukurs Biostimulation & Skinbooster sind beantragt und werden nach Genehmigung ergänzt.",
+            "CME-Punkte für Aufbaukurs Biostimulation & Skinbooster sind beantragt und werden nach Genehmigung ergänzt.",
         }}
       />
 

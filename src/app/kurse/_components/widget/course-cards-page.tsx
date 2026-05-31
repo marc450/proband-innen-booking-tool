@@ -203,7 +203,8 @@ const THERAPEUTISCHE_INDIKATIONEN_INCLUDED_COURSES: IncludedCourse[] = [
 // Dermalfiller Komplettpaket: Dermalfiller Online- & Praxiskurs (base)
 // plus Medizinische Hautpflege + Aufbaukurs Lippen Onlinekurs.
 // Only the two add-ons are listed here; the base course is the card headline.
-// Lippen CME are currently pending LÄK Berlin approval.
+// Lippen Onlinekurs jetzt mit 11 CME akkreditiert (Praxiskurs separat
+// 13 CME, gesamt 24 CME — Marc-Bestätigung 2026-05-31).
 const DERMALFILLER_INCLUDED_COURSES: IncludedCourse[] = [
   {
     name: "Aufbaukurs Dermalfiller: Lippen",
@@ -211,8 +212,7 @@ const DERMALFILLER_INCLUDED_COURSES: IncludedCourse[] = [
     type: "Onlinekurs",
     level: "Aufbaukurs · setzt Grundkurs Dermalfiller voraus",
     description: "Vertiefe Deine Behandlungssicherheit in der perioralen Zone. Der Aufbaukurs Lippen deckt Anatomie, Indikationen, Produktwahl, Technik, Patient:innenkommunikation und Komplikationsmanagement ab, mit praxisnahen Behandlungsvideos und klaren Schritt-für-Schritt-Anleitungen.",
-    cmePoints: "",
-    cmePending: true,
+    cmePoints: "11",
     duration: "~5 Stunden",
     features: [
       "Anatomie der perioralen Zone",
@@ -237,7 +237,7 @@ const DERMALFILLER_INCLUDED_COURSES: IncludedCourse[] = [
       "Behandlungstechniken",
     ],
     inkludiert: [
-      "CME-Punkte bei der LÄK Berlin beantragt",
+      "11 CME-Punkte (Onlineteil)",
       "Online Lernkapitel & Lehrvideos",
       "Ärzt:innen-Community",
       "1.5 Jahre Zugriff",
@@ -289,12 +289,8 @@ const defaultKombikursFeatures = [
 function formatSessionLabel(session: CourseSession): string {
   let label = session.label_de || session.date_iso;
 
-  if (session.start_time && session.duration_minutes) {
-    const [h, m] = session.start_time.split(":").map(Number);
-    const endMinutes = h * 60 + m + session.duration_minutes;
-    const endH = String(Math.floor(endMinutes / 60)).padStart(2, "0");
-    const endM = String(endMinutes % 60).padStart(2, "0");
-    label = `${label} · ${session.start_time}–${endH}:${endM}`;
+  if (session.start_time) {
+    label = `${label} · ${session.start_time} Uhr`;
   }
 
   return label;

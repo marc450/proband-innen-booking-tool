@@ -4,8 +4,9 @@ import type { CourseLandingContent } from "./types";
  * Aufbaukurs Lippen — landing page content.
  *
  * Content derived from the existing www.ephia.de/aufbaukurs-lippen page.
- * CME accreditation is currently pending at the LÄK Berlin, so the hero
- * badge and modal note reflect that (not "zertifiziert").
+ * Akkreditiert über die LÄK Berlin mit 11 CME (Online) + 13 CME (Praxis)
+ * = 24 CME-Punkte gesamt (Marc-Bestätigung 2026-05-31, vorher beide
+ * Teile pending).
  *
  * Prices, sessions, and availability are pulled dynamically from Supabase
  * via the booking widget — do NOT hardcode them here.
@@ -20,7 +21,7 @@ export const aufbaukursLippen: CourseLandingContent = {
   meta: {
     title: "Aufbaukurs Dermalfiller: Lippen | EPHIA",
     description:
-      "Aufbaukurs Dermalfiller: Lippen für approbierte Ärzt:innen. Vertiefe Deine Behandlungssicherheit in der perioralen Zone. Anatomie, Indikationen, Technik und Komplikationsmanagement, mit praxisnahen Behandlungsvideos. CME-Punkte bei der LÄK Berlin beantragt.",
+      "Aufbaukurs Dermalfiller: Lippen für approbierte Ärzt:innen. Vertiefe Deine Behandlungssicherheit in der perioralen Zone. Anatomie, Indikationen, Technik und Komplikationsmanagement, mit praxisnahen Behandlungsvideos. Akkreditiert mit 24 CME-Punkten (11 Online + 13 Praxis) durch die LÄK Berlin.",
     ogImage: "/kurse/aufbaukurs_lippen/og-image.jpg",
   },
 
@@ -30,11 +31,11 @@ export const aufbaukursLippen: CourseLandingContent = {
       "Vertiefe Deine Behandlungssicherheit in der perioralen Zone, fundiert, praxisnah und diskriminierungssensibel.",
     stats: [
       { icon: "Clock", label: "Format", value: "Online- und als Praxiskurs" },
-      { icon: "Award", label: "Akkreditierung", value: "CME beantragt" },
+      { icon: "Award", label: "Akkreditierung", value: "24 CME-Punkte" },
       { icon: "GraduationCap", label: "Level", value: "Aufbaukurs" },
     ],
     description:
-      "Der Aufbaukurs Lippen richtet sich an approbierte Ärzt:innen mit Grunderfahrung in der Dermalfiller-Anwendung. Er baut auf dem Grundkurs Dermalfiller auf und vertieft Deine Kenntnisse in Anatomie, Indikationen, Produktwahl und Technik der perioralen Zone, mit besonderem Fokus auf Patient:innenkommunikation und Komplikationsmanagement.",
+      "Der Aufbaukurs Lippen richtet sich an approbierte Ärzt:innen mit Grunderfahrung in der Dermalfiller-Anwendung. Er baut auf dem Grundkurs Dermalfiller auf und vertieft Deine Kenntnisse in Anatomie, Indikationen, Produktwahl und Technik der perioralen Zone, mit besonderem Fokus auf Patient:innenkommunikation und Komplikationsmanagement. Akkreditiert mit insgesamt 24 CME-Punkten (11 Online + 13 Praxis) durch die LÄK Berlin.",
     videoPath: "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/aufbaukurs_lippen/4259925118b646f2fb976077d46f196a-compressed.mp4",
     videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
   },
@@ -333,9 +334,9 @@ export const aufbaukursLippen: CourseLandingContent = {
           "Der Aufbaukurs Lippen baut auf dem Grundkurs Dermalfiller auf. Du solltest die Grundlagen der Dermalfiller-Anwendung, die Anatomie des Gesichts und die wichtigsten Injektionstechniken bereits beherrschen. Wenn Du Dir unsicher bist, ob der Kurs für Dich geeignet ist, schreib uns gerne an customerlove@ephia.de.",
       },
       {
-        question: "Sind die CME-Punkte schon akkreditiert?",
+        question: "Wie viele CME-Punkte bekomme ich?",
         answer:
-          "Die CME-Punkte für diesen Kurs sind aktuell bei der LÄK Berlin beantragt. Sobald die Zertifizierung abgeschlossen ist, werden die Punkte allen Teilnehmer:innen rückwirkend gutgeschrieben. Das EPHIA-Zertifikat erhältst Du unabhängig davon direkt nach Abschluss des Kurses.",
+          "Der Aufbaukurs Dermalfiller: Lippen ist durch die LÄK Berlin mit insgesamt 24 CME-Punkten akkreditiert: 11 Punkte für den Onlineteil und 13 Punkte für den Praxiskurs. Dein EPHIA-Zertifikat erhältst Du direkt nach Abschluss des Kurses, die CME-Punkte werden bei der Ärztekammer automatisch gutgeschrieben.",
       },
       {
         question: "Muss ich eine Probandin / einen Probanden zum Praxis-Teil mitbringen?",
