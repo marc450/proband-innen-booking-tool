@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Deine Bewertung | EPHIA",
   description:
-    "Teile Deinen Eindruck zu Deiner Behandlung als Modell bei EPHIA. Du bewertest mit Sternen und schreibst ein paar Worte zu Deiner Erfahrung.",
+    "Teile Deinen Eindruck zu Deiner Behandlung als Proband:in bei EPHIA. Du bewertest mit Sternen und schreibst ein paar Worte zu Deiner Erfahrung.",
 };
 
 interface PageProps {

@@ -18,7 +18,7 @@ const REVIEW_EMAIL_FROM = "EPHIA <customerlove@ephia.de>";
 
 const REVIEW_SUBJECT = "Wie war Deine Behandlung bei EPHIA?";
 const REVIEW_INTRO =
-  "vielen Dank, dass Du als Modell bei einem unserer Kurse dabei warst. Wenn es Dir bei uns gefallen hat, würden wir uns riesig über Deine Bewertung freuen. Dein Feedback hilft uns sehr und unterstützt uns dabei, die Behandlungen noch besser zu machen.";
+  "vielen Dank, dass Du als Proband:in bei einem unserer Kurse dabei warst. Wenn es Dir bei uns gefallen hat, würden wir uns riesig über Deine Bewertung freuen. Dein Feedback hilft uns sehr und unterstützt uns dabei, die Behandlungen noch besser zu machen.";
 
 const sleep = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));

@@ -83,7 +83,7 @@ export function ProbandReviewForm({ token }: Props) {
         </h1>
         <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
           Wir wären Dir super dankbar für eine kurze Bewertung Deiner Erfahrung
-          als Modell bei EPHIA. Und falls es etwas gibt, das wir besser machen
+          als Proband:in bei EPHIA. Und falls es etwas gibt, das wir besser machen
           können, sag es uns bitte ehrlich. Dein Feedback hilft uns sehr.
         </p>
       </header>
