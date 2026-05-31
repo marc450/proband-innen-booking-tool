@@ -89,40 +89,39 @@ export default async function MobileSessionDetailPage({ params }: PageProps) {
   // satellite holds the slots that Proband:innen book into. We load those
   // bookings here so the mobile detail view shows who Dozent:in actually
   // treats at which slot.
-  const { data: satelliteCourse, error: satelliteErr } = await admin
+  const { data: satelliteCourse } = await admin
     .from("courses")
     .select("id")
     .eq("session_id", sessionId)
     .maybeSingle();
-  console.log(
-    `[m/termine/sessions] session=${sessionId} satelliteCourse=${JSON.stringify(satelliteCourse)} error=${satelliteErr ? JSON.stringify(satelliteErr) : "null"}`,
-  );
 
   let probanden: Proband[] = [];
   if (satelliteCourse?.id) {
-    const { data: slotRows, error: slotErr } = await admin
+    const { data: slotRows } = await admin
       .from("slots")
       .select("id, start_time")
       .eq("course_id", satelliteCourse.id);
-    console.log(
-      `[m/termine/sessions] session=${sessionId} satelliteId=${satelliteCourse.id} slotRows.length=${slotRows?.length ?? 0} error=${slotErr ? JSON.stringify(slotErr) : "null"}`,
-    );
     const slotById = new Map(
       (slotRows || []).map((s) => [s.id as string, s.start_time as string]),
     );
     const slotIds = (slotRows || []).map((s) => s.id as string);
 
     if (slotIds.length) {
-      const { data: bookingRows, error: bookingErr } = await admin
+      // first_name / last_name auf bookings sind keine echten Spalten —
+      // sie leben verschlüsselt in encrypted_data und werden unten via
+      // decryptBooking gelesen. Sie hier zu selectieren produziert
+      // einen 42703 "column does not exist" Fehler, der die gesamte
+      // Query auf 0 Rows fallen lässt — exakt das war der "Proband:innen
+      // (0)"-Bug auf dem Mobile-Sessiondetail (Marc-Bugreport
+      // 2026-05-31, vorher unbemerkt weil der Pfad ohne Logging still
+      // gescheitert ist).
+      const { data: bookingRows } = await admin
         .from("bookings")
         .select(
-          "id, slot_id, status, booking_type, referring_doctor, first_name, last_name, encrypted_data, encrypted_key, encryption_iv, patient_id",
+          "id, slot_id, status, booking_type, referring_doctor, encrypted_data, encrypted_key, encryption_iv, patient_id",
         )
         .in("slot_id", slotIds)
         .neq("status", "cancelled");
-      console.log(
-        `[m/termine/sessions] session=${sessionId} slotIds.length=${slotIds.length} bookingRows.length=${bookingRows?.length ?? 0} error=${bookingErr ? JSON.stringify(bookingErr) : "null"}`,
-      );
 
       // Pull patient rows for canonical names (booking row's name snapshot
       // can drift if the patient is corrected later). Mirrors the desktop
