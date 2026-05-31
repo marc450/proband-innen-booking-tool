@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizeTitle } from "@/lib/utils";
 import {
   hashEmail,
   decryptPatient,
@@ -417,7 +418,9 @@ export async function PATCH(req: NextRequest) {
   if (source === "auszubildende") {
     const filtered: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(patch)) {
-      if (AUSZUBILDENDE_WRITABLE.has(k)) filtered[k] = v === "" ? null : v;
+      if (!AUSZUBILDENDE_WRITABLE.has(k)) continue;
+      if (k === "title") filtered[k] = normalizeTitle(v as string | null);
+      else filtered[k] = v === "" ? null : v;
     }
     if (Object.keys(filtered).length === 0) {
       return NextResponse.json({ ok: true, updated: 0 });

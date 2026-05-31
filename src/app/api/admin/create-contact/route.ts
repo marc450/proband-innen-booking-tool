@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { encryptPatientFields, hashEmail } from "@/lib/encryption";
 import { findAuszubildendeIdByAnyEmail } from "@/lib/contact-emails";
+import { normalizeTitle } from "@/lib/utils";
 import type { PatientStatus } from "@/lib/types";
 
 type ContactType = "auszubildende" | "proband" | "other" | "company";
@@ -106,7 +107,7 @@ export async function POST(req: NextRequest) {
     first_name: firstName,
     last_name: blank(body.lastName),
     phone: blank(body.phone),
-    title: blank(body.title),
+    title: normalizeTitle(body.title),
     specialty: blank(body.specialty),
     company_name: blank(body.companyName),
     contact_type: body.type,

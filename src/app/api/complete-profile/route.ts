@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { runPostPurchaseFlow, PostPurchaseData, CourseType } from "@/lib/post-purchase";
 import { normalizeEmail } from "@/lib/email-normalize";
 import { findAuszubildendeIdByAnyEmail } from "@/lib/contact-emails";
+import { normalizeTitle } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
   try {
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
       await supabase
         .from("auszubildende")
         .update({
-          title,
+          title: normalizeTitle(title),
           gender,
           specialty,
           birthdate,

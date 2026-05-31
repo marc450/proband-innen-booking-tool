@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizeTitle } from "@/lib/utils";
 
 // Row shape produced by the client-side CSV parser on the Auszubildende
 // contacts page. Every field except `email` is optional; empty strings are
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
       email,
       first_name: blank(row.first_name),
       last_name: blank(row.last_name),
-      title: blank(row.title),
+      title: normalizeTitle(row.title),
       phone: blank(row.phone),
       company_name: blank(row.company_name),
       address_line1: blank(row.address_line1),

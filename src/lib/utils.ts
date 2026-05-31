@@ -26,6 +26,18 @@ const NO_TITLE_VALUES = new Set([
 ]);
 
 /**
+ * Normalise a title value for STORAGE. Returns null for empty input or any
+ * "no title" sentinel (see NO_TITLE_VALUES), otherwise the trimmed title.
+ * Call this at every DB write so placeholders like "Kein Titel" never land
+ * in the title column; formatPersonName() is only the read-side safety net.
+ */
+export function normalizeTitle(title?: string | null): string | null {
+  const t = title?.trim()
+  if (!t || NO_TITLE_VALUES.has(t.toLowerCase())) return null
+  return t
+}
+
+/**
  * Format a person's display name from title + first + last. Drops any
  * "no title" sentinel value so it doesn't leak into the composed name
  * (see NO_TITLE_VALUES above).
@@ -38,8 +50,7 @@ export function formatPersonName(parts: {
   firstName?: string | null
   lastName?: string | null
 }): string | undefined {
-  const t = parts.title?.trim()
-  const effectiveTitle = !t || NO_TITLE_VALUES.has(t.toLowerCase()) ? null : t
+  const effectiveTitle = normalizeTitle(parts.title)
   const joined = [effectiveTitle, parts.firstName?.trim(), parts.lastName?.trim()]
     .filter((x): x is string => !!x)
     .join(" ")
