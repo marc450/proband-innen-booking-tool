@@ -9,7 +9,6 @@ import {
   EyeOff,
   RefreshCcw,
   MessageSquareText,
-  Send,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -137,11 +136,6 @@ export function ReviewsManager({
   const [confirmReschedule, setConfirmReschedule] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
   const [rescheduleResult, setRescheduleResult] = useState<string | null>(null);
-  const [confirmSendPast, setConfirmSendPast] = useState(false);
-  const [sendingPast, setSendingPast] = useState(false);
-  const [pastCount, setPastCount] = useState<number | null>(null);
-  const [loadingPastCount, setLoadingPastCount] = useState(false);
-  const [sendPastResult, setSendPastResult] = useState<string | null>(null);
 
   const counts = useMemo(() => {
     const pending = reviews.filter((r) => !r.is_published).length;
@@ -251,60 +245,6 @@ export function ReviewsManager({
     }
   }
 
-  async function openSendPast() {
-    setSendPastResult(null);
-    setPastCount(null);
-    setLoadingPastCount(true);
-    setConfirmSendPast(true);
-    try {
-      const res = await fetch("/api/admin/send-past-review-requests");
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setPastCount(typeof data?.count === "number" ? data.count : 0);
-    } catch {
-      setPastCount(null);
-    } finally {
-      setLoadingPastCount(false);
-    }
-  }
-
-  async function sendPast() {
-    setSendingPast(true);
-    setSendPastResult(null);
-    try {
-      const res = await fetch("/api/admin/send-past-review-requests", {
-        method: "POST",
-      });
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        throw new Error(
-          json.error || "Versand fehlgeschlagen, bitte erneut versuchen.",
-        );
-      }
-      const data = await res.json();
-      const sent = data?.result?.scheduled ?? 0;
-      const skipped = data?.result?.skipped ?? 0;
-      const errors = data?.result?.errors ?? 0;
-      const errorSamples: string[] = data?.result?.errorSamples ?? [];
-      const samplesSuffix =
-        errors > 0 && errorSamples.length > 0
-          ? ` Beispielfehler: ${errorSamples.map((s) => `"${s}"`).join("; ")}.`
-          : "";
-      setSendPastResult(
-        `Fertig. ${sent} Bewertungs-Mail(s) verschickt${
-          skipped ? `, ${skipped} übersprungen` : ""
-        }${errors ? `, ${errors} Fehler` : ""}.${samplesSuffix}`,
-      );
-    } catch (err) {
-      setSendPastResult(
-        err instanceof Error ? err.message : "Da ist etwas schiefgelaufen.",
-      );
-    } finally {
-      setSendingPast(false);
-      setConfirmSendPast(false);
-    }
-  }
-
   return (
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -320,15 +260,6 @@ export function ReviewsManager({
           <Button
             size="sm"
             variant="outline"
-            disabled={sendingPast}
-            onClick={openSendPast}
-          >
-            <Send className="h-3.5 w-3.5 mr-1.5" />
-            {sendingPast ? "Versendet..." : "Teilnehmer:innen anschreiben"}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
             disabled={rescheduling}
             onClick={() => setConfirmReschedule(true)}
           >
@@ -340,11 +271,6 @@ export function ReviewsManager({
       {rescheduleResult && (
         <div className="rounded-[10px] bg-white px-4 py-3 text-sm shadow-sm">
           {rescheduleResult}
-        </div>
-      )}
-      {sendPastResult && (
-        <div className="rounded-[10px] bg-white px-4 py-3 text-sm shadow-sm">
-          {sendPastResult}
         </div>
       )}
 
@@ -567,36 +493,6 @@ export function ReviewsManager({
         confirmLabel="Jetzt neu planen"
         onConfirm={rescheduleAll}
         onCancel={() => setConfirmReschedule(false)}
-      />
-
-      <ConfirmDialog
-        open={confirmSendPast}
-        title="Teilnehmer:innen anschreiben"
-        description={
-          loadingPastCount
-            ? "Empfänger:innen werden gezählt..."
-            : pastCount === null
-              ? "Die Anzahl konnte nicht geladen werden. Du kannst den Versand trotzdem starten. Es werden Teilnehmer:innen ohne Bewertung angeschrieben. Personen mit einem anstehenden Kurstermin sowie bereits bewertete oder bereits angeschriebene Personen werden übersprungen."
-              : pastCount === 0
-                ? "Aktuell gibt es keine Teilnehmer:innen ohne Bewertung, die angeschrieben werden können. Es wird nichts verschickt."
-                : `${pastCount} Teilnehmer:innen ohne Bewertung erhalten jetzt sofort eine Bewertungsanfrage per E-Mail. Personen mit einem anstehenden Kurstermin sowie bereits bewertete oder bereits angeschriebene Personen werden übersprungen.`
-        }
-        confirmLabel={
-          loadingPastCount
-            ? "Lädt..."
-            : pastCount && pastCount > 0
-              ? "Jetzt verschicken"
-              : "Schließen"
-        }
-        onConfirm={() => {
-          if (loadingPastCount) return;
-          if (pastCount && pastCount > 0) {
-            sendPast();
-          } else {
-            setConfirmSendPast(false);
-          }
-        }}
-        onCancel={() => setConfirmSendPast(false)}
       />
     </div>
   );
