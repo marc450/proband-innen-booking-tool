@@ -164,7 +164,7 @@ export default async function WerdeProbandInPage() {
       .select("id, image_url_probanden"),
     adminForReviews
       .from("proband_reviews")
-      .select("id, rating, first_name, body_text")
+      .select("id, rating, first_name, body_text, submitted_at")
       .eq("is_published", true)
       .order("submitted_at", { ascending: false })
       // Kein Limit: alle freigegebenen Reviews fließen in den
@@ -195,11 +195,16 @@ export default async function WerdeProbandInPage() {
   });
   const slots = (slotsData as AvailableSlot[] | null) ?? [];
 
-  const reviews: ProbandReviewItem[] = (
-    (reviewRows as
-      | { id: string; rating: number; first_name: string; body_text: string }[]
-      | null) ?? []
-  ).map((r) => ({
+  const reviewSource = (reviewRows as
+    | {
+        id: string;
+        rating: number;
+        first_name: string;
+        body_text: string;
+        submitted_at: string;
+      }[]
+    | null) ?? [];
+  const reviews: ProbandReviewItem[] = reviewSource.map((r) => ({
     id: r.id,
     rating: r.rating,
     firstName: r.first_name,
@@ -217,8 +222,65 @@ export default async function WerdeProbandInPage() {
       ? ratingList.reduce((sum, r) => sum + r, 0) / ratingList.length
       : 0;
 
+  // JSON-LD für Google Rich Results: AggregateRating + Review[].
+  // Anker ist ein Service ("Behandlung als Proband:in"), nicht ein
+  // Product, weil es kein verkauftes Item ist sondern eine Dienst-
+  // leistung. Google rendert Sternchen-Snippets nur, wenn die
+  // Bewertungen AUCH sichtbar im DOM sind — dieselbe Gate-Bedingung
+  // wie das Rendern der ProbandReviews-Sektion (reviews.length > 0).
+  const probandReviewsJsonLd =
+    reviews.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "Service",
+          name: "Behandlung als Proband:in bei EPHIA",
+          description:
+            "Vergünstigte ästhetische Behandlungen durch approbierte Ärzt:innen während praktischer Fortbildungskurse bei EPHIA in Berlin.",
+          provider: {
+            "@type": "Organization",
+            name: "EPHIA",
+            url: "https://ephia.de",
+          },
+          areaServed: {
+            "@type": "City",
+            name: "Berlin",
+          },
+          url: "https://proband-innen.ephia.de/",
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: averageRating.toFixed(2),
+            reviewCount: totalReviewCount,
+            bestRating: 5,
+            worstRating: 1,
+          },
+          review: reviewSource.map((r) => ({
+            "@type": "Review",
+            author: { "@type": "Person", name: r.first_name },
+            datePublished: r.submitted_at,
+            reviewRating: {
+              "@type": "Rating",
+              ratingValue: r.rating,
+              bestRating: 5,
+              worstRating: 1,
+            },
+            reviewBody: r.body_text,
+          })),
+        }
+      : null;
+
   return (
     <>
+      {probandReviewsJsonLd && (
+        <script
+          type="application/ld+json"
+          // JSON.stringify-Output, kein User-Input fließt hier ein —
+          // alle Felder kommen aus moderierten DB-Reviews.
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(probandReviewsJsonLd),
+          }}
+        />
+      )}
+
       {/* Hero — mirrors the home hero two-column split on desktop.
           On mobile (< lg) the same hero clip plays full-bleed behind the
           text, dimmed so the cream brand colour still dominates. */}

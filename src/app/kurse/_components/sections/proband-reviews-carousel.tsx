@@ -122,7 +122,14 @@ export function ProbandReviewsCarousel({ reviews }: Props) {
     const delta =
       card.getBoundingClientRect().left -
       scroller.getBoundingClientRect().left;
-    scroller.scrollTo({ left: scroller.scrollLeft + delta });
+    // behavior: "smooth" animiert den Scroll, statt zu springen, wenn
+    // die Person die Pfeil-Buttons oder Dot-Indicators benutzt. Bei
+    // Touch-Swipes spielt das keine Rolle, weil der Browser dort eh
+    // den nativen Snap-Fluss übernimmt.
+    scroller.scrollTo({
+      left: scroller.scrollLeft + delta,
+      behavior: "smooth",
+    });
   };
 
   const canPrev = activeIndex > 0;
