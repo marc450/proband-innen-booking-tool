@@ -40,6 +40,14 @@ type NavLink = {
   label: string;
   href: string;
   subLinks?: SubLink[];
+  /** Wenn true, ist der Eltern-Eintrag eines Dropdown-Menüs selbst
+   *  klickbar und navigiert zu `href`. Default false bedeutet, der
+   *  Eltern-Eintrag ist nur ein Hover-Trigger (klassisches Verhalten
+   *  von Lernpfade/Über EPHIA). Auf Mobile rendert ein clickableParent
+   *  als einfacher Link ohne Accordion, damit Tap-Verhalten eindeutig
+   *  bleibt — Sub-Items sind auf der Zielseite (z.B. /kurse/unsere-
+   *  kurse) sowieso aufgelistet. */
+  clickableParent?: boolean;
 };
 
 const NAV_LINKS: NavLink[] = [
@@ -54,8 +62,28 @@ const NAV_LINKS: NavLink[] = [
       { label: "Curriculum Hautpflege", href: "#", disabled: true, note: "Coming soon" },
     ],
   },
-  // "Alle Kurse" = direct link to the full overview grid, no dropdown.
-  { label: "Alle Kurse", href: "/kurse/unsere-kurse" },
+  {
+    // Alle Kurse: Eltern-Link führt auf die Vollübersicht, Dropdown
+    // listet alle einzelnen Kurse. Sub-Liste handgepflegt und ge-
+    // spiegelt die Tile-Reihenfolge auf /kurse/unsere-kurse (siehe
+    // src/content/kurse/home.ts) damit Header und Übersicht nicht
+    // auseinanderlaufen. Gruppenbuchungen ist absichtlich nicht
+    // gelistet — keine Kursseite, sondern Anfrageformular.
+    label: "Alle Kurse",
+    href: "/kurse/unsere-kurse",
+    clickableParent: true,
+    subLinks: [
+      { label: "Grundkurs Botulinum (Humanmedizin)", href: "/grundkurs-botulinum" },
+      { label: "Grundkurs Botulinum (Zahnmedizin)", href: "/kurse/grundkurs-botulinum-zahnmedizin" },
+      { label: "Grundkurs Dermalfiller", href: "/grundkurs-dermalfiller" },
+      { label: "Grundkurs Medizinische Hautpflege", href: "/grundkurs-medizinische-hautpflege" },
+      { label: "Aufbaukurs Skulptra & Skinbooster", href: "/kurse/aufbaukurs-biostimulation-skinbooster" },
+      { label: "Aufbaukurs Botulinum: Therapeutische Indikationen", href: "/aufbaukurs-therapeutische-indikationen-botulinum" },
+      { label: "Aufbaukurs Botulinum: Periorale Zone", href: "/aufbaukurs-botulinum-periorale-zone" },
+      { label: "Aufbaukurs Lippen", href: "/aufbaukurs-lippen" },
+      { label: "Masterclass Botulinum", href: "/kurse/masterclass-botulinum" },
+    ],
+  },
   {
     label: "Über EPHIA",
     href: "/vision",
@@ -219,19 +247,33 @@ export function Header() {
             {NAV_LINKS.map((link) =>
               link.subLinks ? (
                 <div key={link.label} className="relative group">
-                  {/* Parent of a dropdown is not a link — only the sub-items
-                      navigate. Rendered as a span (kept buttonless so the
-                      hover chevron rotation from the group: selector still
-                      works cleanly). */}
-                  <span
-                    className="flex items-center gap-1 text-base font-normal text-black group-hover:text-[#0066FF] transition-colors py-2 cursor-default select-none"
-                  >
-                    <span>{link.label}</span>
-                    <ChevronDown
-                      className="w-4 h-4 transition-transform duration-200 group-hover:rotate-180"
-                      strokeWidth={2.25}
-                    />
-                  </span>
+                  {/* Parent ist standardmäßig kein Link (Lernpfade,
+                      Über EPHIA) — nur die Sub-Items navigieren. Wenn
+                      `clickableParent` gesetzt ist (Alle Kurse), wird
+                      der Eltern-Text selbst zum Link, Dropdown bleibt
+                      hover-getriggert. Klassennamen für beide Varianten
+                      identisch, damit Hover-Chevron-Rotation und
+                      Text-Color-Übergang gleich aussehen. */}
+                  {link.clickableParent ? (
+                    <Link
+                      href={link.href}
+                      className="flex items-center gap-1 text-base font-normal text-black group-hover:text-[#0066FF] transition-colors py-2"
+                    >
+                      <span>{link.label}</span>
+                      <ChevronDown
+                        className="w-4 h-4 transition-transform duration-200 group-hover:rotate-180"
+                        strokeWidth={2.25}
+                      />
+                    </Link>
+                  ) : (
+                    <span className="flex items-center gap-1 text-base font-normal text-black group-hover:text-[#0066FF] transition-colors py-2 cursor-default select-none">
+                      <span>{link.label}</span>
+                      <ChevronDown
+                        className="w-4 h-4 transition-transform duration-200 group-hover:rotate-180"
+                        strokeWidth={2.25}
+                      />
+                    </span>
+                  )}
                   {/* Invisible bridge to avoid hover gap */}
                   <div className="absolute left-0 right-0 top-full h-3" />
                   <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+0.5rem)] w-max min-w-[240px] bg-white rounded-[10px] shadow-lg py-3 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200">
@@ -306,7 +348,7 @@ export function Header() {
         <div className="lg:hidden border-t border-black/5 bg-[#FAEBE1]">
           <nav className="max-w-7xl mx-auto px-5 py-4 flex flex-col gap-1">
             {NAV_LINKS.map((link) =>
-              link.subLinks ? (
+              link.subLinks && !link.clickableParent ? (
                 <div key={link.label} className="border-b border-black/5">
                   <button
                     type="button"
