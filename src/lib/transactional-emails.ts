@@ -319,6 +319,33 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
     }),
   },
 
+  {
+    id: "proband-review-request",
+    funnel: "proband-updates",
+    name: "Bewertungs-Anfrage",
+    recipient: "Proband:in",
+    trigger:
+      "Einmaliger, von Marc im Dashboard ausgelöster Versand an vergangene Proband:innen ohne zukünftigen Termin, ohne bestehende Bewertung und ohne bereits versendete Anfrage. Kein Cron, kein automatischer Versand.",
+    codeRef: "src/lib/send-proband-review-request.ts",
+    description:
+      "Bittet vergangene Proband:innen um eine Bewertung mit 1-5 Sternen und ein paar Worten zur Behandlung. Link führt zu /proband-bewertung/[token] auf proband-innen.ephia.de. Eine Bewertung pro Person, Token auf der/dem Patient:in verankert.",
+    renderSample: () => ({
+      subject: "Wie war Deine Behandlung bei EPHIA?",
+      html: buildEmailHtml({
+        firstName: SAMPLE.firstName,
+        intro:
+          "vielen Dank, dass Du als Proband:in bei einem unserer Kurse dabei warst. Wenn es Dir bei uns gefallen hat, würden wir uns riesig über Deine Bewertung freuen. Dein Feedback hilft uns sehr und unterstützt uns dabei, die Behandlungen noch besser zu machen.",
+        buttons: [
+          {
+            label: "Jetzt Bewertung abgeben",
+            url: "https://proband-innen.ephia.de/proband-bewertung/beispiel-token",
+          },
+        ],
+        closing: "Herzliche Grüße,<br>Dein EPHIA-Team",
+      }),
+    }),
+  },
+
   // ── Ärzt:innen — Kursbuchung ───────────────────────────────────────
   {
     id: "course-confirmation-online",
