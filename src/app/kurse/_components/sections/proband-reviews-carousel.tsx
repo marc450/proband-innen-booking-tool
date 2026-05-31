@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 import {
   Dialog,
@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useCarouselScroll } from "../use-carousel-scroll";
 import type { ProbandReviewItem } from "./proband-reviews";
 
 /**
@@ -22,6 +23,9 @@ import type { ProbandReviewItem } from "./proband-reviews";
  * und bekommen ein „...mehr lesen"-Link, das den vollen Text in einem
  * Modal öffnet. Vorher waren sie via line-clamp-[8] still abgeschnitten
  * und die Person konnte das Ende der Bewertung nicht sehen.
+ *
+ * Scroll-, Dot- und Reachability-Logik leben in useCarouselScroll,
+ * geteilt mit reviews-carousel und prose-carousel.
  */
 
 const PRIMARY = "#0066FF";
@@ -72,116 +76,22 @@ function StarRow({ rating }: { rating: number }) {
 }
 
 export function ProbandReviewsCarousel({ reviews }: Props) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [atEnd, setAtEnd] = useState(false);
-  // Reachable scroll positions = wieviele unterschiedliche "leftmost
-  // card"-Stände der Scroller erreichen kann. Bei 12 Reviews auf 3-
-  // per-view sind das nur 10 Positionen (Karten 1-10 als linkester
-  // Eintrag). Default fallback ist reviews.length, damit die Dots vor
-  // dem ersten Layout-Measurement nicht 0 sind und durch ein Re-Render
-  // einbrechen. Wird in useEffect korrigiert sobald gemessen werden
-  // kann. Vorher hat die Sektion fälschlich 12 Dots gezeigt, der
-  // Carousel aber nur 10 erreicht — Marc-Bugreport 2026-05-31.
-  const [reachableCount, setReachableCount] = useState(reviews.length);
+  const {
+    scrollerRef,
+    activeIndex,
+    activeDotIdx,
+    reachableCount,
+    canPrev,
+    canNext,
+    scrollToIndex,
+  } = useCarouselScroll({
+    itemCountKey: reviews.length,
+    // smoothScroll: Marc-Preference 2026-05-31, läuft auf dieser
+    // Sektion ohne Snap-Conflict weil die Karten alle gleich groß
+    // sind und die Snap-Stops genau die Stride-Distanz haben.
+    smoothScroll: true,
+  });
   const [openReview, setOpenReview] = useState<ProbandReviewItem | null>(null);
-
-  // Re-measure reachable scroll positions whenever the scroller layout
-  // changes (initial mount, viewport resize, content swap). Pure DOM
-  // measurement: scrollWidth - clientWidth gives the max horizontal
-  // scroll distance, dividing by the per-card stride gives the number
-  // of distinct snap positions.
-  useEffect(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
-
-    const measure = () => {
-      const cards = scroller.querySelectorAll<HTMLElement>("[data-card]");
-      if (cards.length === 0) {
-        setReachableCount(0);
-        return;
-      }
-      const cardWidth = cards[0].offsetWidth;
-      const gapPx = parseFloat(getComputedStyle(scroller).gap) || 0;
-      const stride = cardWidth + gapPx;
-      const maxScrollLeft = scroller.scrollWidth - scroller.clientWidth;
-      if (stride <= 0 || maxScrollLeft <= 0) {
-        // Alle Karten passen ins Sichtfeld, keine Pagination nötig.
-        setReachableCount(1);
-        return;
-      }
-      // +1 weil Position 0 (alle Anfangs-Karten sichtbar) auch zählt.
-      const positions = Math.floor(maxScrollLeft / stride + 0.5) + 1;
-      setReachableCount(Math.min(positions, cards.length));
-    };
-
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(scroller);
-    return () => ro.disconnect();
-  }, [reviews.length]);
-
-  // Active card is the one whose left edge is closest to the scroller's
-  // left edge. atEnd disables the "next" button when the user has
-  // scrolled as far right as possible. Re-runs on every scroll so dot
-  // indicators stay in sync with finger swipes / mouse drag.
-  useEffect(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
-
-    const update = () => {
-      const cards = Array.from(
-        scroller.querySelectorAll<HTMLElement>("[data-card]"),
-      );
-      if (!cards.length) return;
-      const scrollerLeft = scroller.getBoundingClientRect().left;
-      let bestIdx = 0;
-      let bestDist = Infinity;
-      cards.forEach((card, idx) => {
-        const dist = Math.abs(
-          card.getBoundingClientRect().left - scrollerLeft,
-        );
-        if (dist < bestDist) {
-          bestDist = dist;
-          bestIdx = idx;
-        }
-      });
-      setActiveIndex(bestIdx);
-      setAtEnd(
-        scroller.scrollLeft + scroller.clientWidth >=
-          scroller.scrollWidth - 1,
-      );
-    };
-
-    update();
-    scroller.addEventListener("scroll", update, { passive: true });
-    return () => scroller.removeEventListener("scroll", update);
-  }, []);
-
-  const scrollToIndex = (idx: number) => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
-    const card = scroller.querySelectorAll<HTMLElement>("[data-card]")[idx];
-    if (!card) return;
-    const delta =
-      card.getBoundingClientRect().left -
-      scroller.getBoundingClientRect().left;
-    // behavior: "smooth" animiert den Scroll, statt zu springen, wenn
-    // die Person die Pfeil-Buttons oder Dot-Indicators benutzt. Bei
-    // Touch-Swipes spielt das keine Rolle, weil der Browser dort eh
-    // den nativen Snap-Fluss übernimmt.
-    scroller.scrollTo({
-      left: scroller.scrollLeft + delta,
-      behavior: "smooth",
-    });
-  };
-
-  const canPrev = activeIndex > 0;
-  const canNext = !atEnd;
-  // Aktive Position auf den Dot-Index clampen, damit der letzte Dot
-  // beim Rechts-Scroll-Ende auch wirklich aktiv wird (statt Dot 10 bei
-  // einer 10-Dot-Leiste, wenn activeIndex auf 9 hängen bliebe).
-  const activeDotIdx = Math.min(activeIndex, Math.max(0, reachableCount - 1));
 
   return (
     <div className="relative">
