@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { formatPersonName } from "@/lib/utils";
 
 // Supabase typed-join responses come back as arrays for one-to-many
 // relationships even when we know there is only one row. We accept the
@@ -320,9 +321,11 @@ export function ReviewsManager({
               ? tpl?.course_label_de || tpl?.title || "Kurs unbekannt"
               : "Allgemeine Bewertung";
             const azubiName = azubi
-              ? [azubi.title, azubi.first_name, azubi.last_name]
-                  .filter(Boolean)
-                  .join(" ")
+              ? formatPersonName({
+                  title: azubi.title,
+                  firstName: azubi.first_name,
+                  lastName: azubi.last_name,
+                }) ?? null
               : null;
             const isBusy = busyIds.has(r.id);
             return (
