@@ -167,10 +167,12 @@ export default async function WerdeProbandInPage() {
       .select("id, rating, first_name, body_text")
       .eq("is_published", true)
       .order("submitted_at", { ascending: false })
-      // Landingpage-Teaser: max 6 Karten, danach kommt die nächste
-      // Sektion. Wenn die Bewertungslage stark wächst, könnte später
-      // eine eigene /bewertungen Seite mit Vollliste sinnvoll werden.
-      .limit(6),
+      // Kein Limit: alle freigegebenen Reviews fließen in den
+      // Carousel. Die Moderations-Tür im Dashboard ist der Gate —
+      // wenn Staff eine Review freigibt, soll sie auch erscheinen.
+      // Sollte die Anzahl irgendwann pathologisch wachsen, hier
+      // einen Cap (z.B. .limit(50)) einziehen.
+      ,
     adminForReviews
       .from("proband_reviews")
       .select("id", { count: "exact", head: true })
