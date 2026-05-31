@@ -30,7 +30,7 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
   courseKey: "grundkurs_botulinum",
 
   meta: {
-    title: "Botox-Kurs für Ärzte & Ärztinnen | Ärztekammer Berlin | EPHIA",
+    title: "Botox-Kurs für Ärzte & Ärztinnen | bis zu 49 CME-Punkte | EPHIA",
     description:
       "Praxisnaher Botox-Kurs für approbierte Ärzte: Hands-on Training an echten Proband:innen in Berlin-Mitte, max. 7 Teilnehmer, Ärztekammer-akkreditiert (bis zu 49 CME). Drei Pakete ab 490 €.",
     ogImage: "/kurse/grundkurs_botulinum/og-image.jpg",
