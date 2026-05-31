@@ -41,6 +41,43 @@ export function ReviewsCarousel({ items }: ReviewsCarouselProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [atEnd, setAtEnd] = useState(false);
+  // Reachable scroll positions = wieviele unterschiedliche "leftmost
+  // card"-Stände der Scroller erreichen kann. Auf 3-per-view Desktop
+  // sind das nur items.length - 2 Positionen, nicht items.length.
+  // Vorher hätten Dots length - 2 bis length unerreichbar gerendert,
+  // gleich wie der Proband:innen-Carousel-Bug (Fix 2026-05-31).
+  const [reachableCount, setReachableCount] = useState(items.length);
+
+  // Re-measure reachable scroll positions on mount + every layout
+  // change. ResizeObserver fängt sowohl Viewport-Resizes als auch
+  // Content-Swaps (z.B. Style-Reflow nach Font-Load) ab.
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    const measure = () => {
+      const cards = scroller.querySelectorAll<HTMLElement>("[data-card]");
+      if (cards.length === 0) {
+        setReachableCount(0);
+        return;
+      }
+      const cardWidth = cards[0].offsetWidth;
+      const gapPx = parseFloat(getComputedStyle(scroller).gap) || 0;
+      const stride = cardWidth + gapPx;
+      const maxScrollLeft = scroller.scrollWidth - scroller.clientWidth;
+      if (stride <= 0 || maxScrollLeft <= 0) {
+        setReachableCount(1);
+        return;
+      }
+      const positions = Math.floor(maxScrollLeft / stride + 0.5) + 1;
+      setReachableCount(Math.min(positions, cards.length));
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(scroller);
+    return () => ro.disconnect();
+  }, [items.length]);
 
   // Mirror the active-card / atEnd logic from prose-carousel so the
   // dot indicators + next-button-disabled state behave identically.
@@ -87,6 +124,10 @@ export function ReviewsCarousel({ items }: ReviewsCarouselProps) {
 
   const canPrev = activeIndex > 0;
   const canNext = !atEnd;
+  // Active-Index auf den letzten Dot kappen, damit der rechte Dot
+  // beim End-Scroll auch leuchtet (statt unsichtbar zu bleiben weil
+  // activeIndex weiter rechts wäre als reachableCount-1).
+  const activeDotIdx = Math.min(activeIndex, Math.max(0, reachableCount - 1));
 
   return (
     <div className="relative">
@@ -131,7 +172,7 @@ export function ReviewsCarousel({ items }: ReviewsCarouselProps) {
         ))}
       </div>
 
-      {items.length > 1 && (
+      {reachableCount > 1 && (
         <>
           <button
             type="button"
@@ -153,14 +194,14 @@ export function ReviewsCarousel({ items }: ReviewsCarouselProps) {
           </button>
 
           <div className="flex justify-center gap-2 mt-6">
-            {items.map((item, idx) => (
+            {Array.from({ length: reachableCount }, (_, idx) => (
               <button
-                key={item.id}
+                key={idx}
                 type="button"
-                aria-label={`Zu Bewertung ${idx + 1}`}
+                aria-label={`Zu Position ${idx + 1} von ${reachableCount}`}
                 onClick={() => scrollToIndex(idx)}
                 className={`h-2 rounded-full transition-all ${
-                  idx === activeIndex ? "w-8 bg-[#0066FF]" : "w-2 bg-black/20"
+                  idx === activeDotIdx ? "w-8 bg-[#0066FF]" : "w-2 bg-black/20"
                 }`}
               />
             ))}
