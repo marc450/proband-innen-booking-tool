@@ -80,7 +80,7 @@ const NAV_LINKS: NavLink[] = [
       { label: "Aufbaukurs Skulptra & Skinbooster", href: "/kurse/aufbaukurs-biostimulation-skinbooster" },
       { label: "Aufbaukurs Botulinum: Therapeutische Indikationen", href: "/aufbaukurs-therapeutische-indikationen-botulinum" },
       { label: "Aufbaukurs Botulinum: Periorale Zone", href: "/aufbaukurs-botulinum-periorale-zone" },
-      { label: "Aufbaukurs Lippen", href: "/aufbaukurs-lippen" },
+      { label: "Aufbaukurs Dermalfiller: Lippen", href: "/aufbaukurs-lippen" },
       { label: "Masterclass Botulinum", href: "/kurse/masterclass-botulinum" },
     ],
   },

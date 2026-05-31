@@ -250,7 +250,7 @@ const STEP_META: Record<
     benefit:
       "Vertiefe Anatomie, Indikationen, Produktwahl und Technik der perioralen Zone, mit klarem Fokus auf Komplikationsmanagement.",
     href: "/kurse/aufbaukurs-lippen",
-    fallbackTitle: "Aufbaukurs Lippen",
+    fallbackTitle: "Aufbaukurs Dermalfiller: Lippen",
   },
   aufbaukurs_skulptra: {
     formats: ["Praxiskurs"],

@@ -206,7 +206,7 @@ const THERAPEUTISCHE_INDIKATIONEN_INCLUDED_COURSES: IncludedCourse[] = [
 // Lippen CME are currently pending LÄK Berlin approval.
 const DERMALFILLER_INCLUDED_COURSES: IncludedCourse[] = [
   {
-    name: "Aufbaukurs Lippen",
+    name: "Aufbaukurs Dermalfiller: Lippen",
     shortName: "Onlinekurs Lippen",
     type: "Onlinekurs",
     level: "Aufbaukurs · setzt Grundkurs Dermalfiller voraus",
