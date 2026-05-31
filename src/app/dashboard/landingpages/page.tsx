@@ -42,16 +42,13 @@ const HAUPTSEITEN: PageGroup = {
   ],
 };
 
-const BOTOX_LANDINGS: PageGroup = {
-  label: "Botox-Performance-Landingpages",
-  description:
-    "Eigenständige Landingpages für Botox-Suchanfragen. Inhaltlich Botulinum-Curriculum, mit Botox-Wording im Title/Hook.",
-  host: HOST_MARKETING,
-  pages: [
-    { title: "CME-Online-Kurse Botox", path: "/cme-onlinekurse-botox" },
-    { title: "Kostenloser Botox-Kurs", path: "/kostenloser-botox-kurs" },
-  ],
-};
+// Standalone Botox-performance pages that live as their own route files
+// (not in the /kurse/[slug] registry). The botox-named course slugs are
+// merged in dynamically below.
+const BOTOX_STANDALONE: PageEntry[] = [
+  { title: "CME-Online-Kurse Botox", path: "/cme-onlinekurse-botox" },
+  { title: "Kostenloser Botox-Kurs", path: "/kostenloser-botox-kurs" },
+];
 
 const RECHTLICHES: PageGroup = {
   label: "Rechtliches",
@@ -100,32 +97,55 @@ const REVIEWS: PageGroup = {
   ],
 };
 
-function buildCourseGroup(): PageGroup {
-  const pages: PageEntry[] = getAllCourseSlugs()
-    .map((slug) => {
-      const content = getCourseContent(slug);
-      const rawTitle = content?.meta.title ?? slug;
-      const cleanTitle = rawTitle
-        .replace(/\s*\|\s*EPHIA\s*$/i, "")
-        .replace(/\s*—\s*EPHIA\s*$/i, "")
-        .trim();
-      return { title: cleanTitle, path: `/${slug}` };
-    })
-    .sort((a, b) => a.title.localeCompare(b.title, "de"));
+// Split the /kurse/[slug] registry into two groups by wording: slugs
+// carrying "botox" are SEO-performance pages (Botox wording in
+// title/hook, per the brand rule that "Botox" only appears on
+// performance pages), everything else is a regular Botulinum/Filler
+// curriculum page.
+function buildCourseGroups(): { botox: PageGroup; kurse: PageGroup } {
+  const entries = getAllCourseSlugs().map((slug) => {
+    const content = getCourseContent(slug);
+    const rawTitle = content?.meta.title ?? slug;
+    const cleanTitle = rawTitle
+      .replace(/\s*\|\s*EPHIA\s*$/i, "")
+      .replace(/\s*—\s*EPHIA\s*$/i, "")
+      .trim();
+    return { slug, page: { title: cleanTitle, path: `/${slug}` } as PageEntry };
+  });
+  const byTitle = (a: PageEntry, b: PageEntry) =>
+    a.title.localeCompare(b.title, "de");
+  const botoxPages = [
+    ...BOTOX_STANDALONE,
+    ...entries.filter((e) => /botox/i.test(e.slug)).map((e) => e.page),
+  ].sort(byTitle);
+  const kursePages = entries
+    .filter((e) => !/botox/i.test(e.slug))
+    .map((e) => e.page)
+    .sort(byTitle);
   return {
-    label: "Kurs-Landingpages",
-    description:
-      "Eine Landingpage pro Kursangebot, gerendert über /kurse/[slug] und auf ephia.de unter dem clean Slug ausgespielt.",
-    host: HOST_MARKETING,
-    pages,
+    botox: {
+      label: "Botox-Performance-Landingpages",
+      description:
+        "Eigenständige Landingpages für Botox-Suchanfragen. Inhaltlich Botulinum-Curriculum, mit Botox-Wording im Title/Hook.",
+      host: HOST_MARKETING,
+      pages: botoxPages,
+    },
+    kurse: {
+      label: "Kurs-Landingpages",
+      description:
+        "Eine Landingpage pro Kursangebot, gerendert über /kurse/[slug] und auf ephia.de unter dem clean Slug ausgespielt.",
+      host: HOST_MARKETING,
+      pages: kursePages,
+    },
   };
 }
 
 export default function LandingPagesPage() {
+  const { botox, kurse } = buildCourseGroups();
   const groups: PageGroup[] = [
     HAUPTSEITEN,
-    BOTOX_LANDINGS,
-    buildCourseGroup(),
+    botox,
+    kurse,
     RECHTLICHES,
     SHOP,
     FUNNELS,
