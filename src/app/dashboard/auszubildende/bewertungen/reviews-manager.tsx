@@ -315,7 +315,7 @@ export function ReviewsManager({
             onClick={openSendPast}
           >
             <Send className="h-3.5 w-3.5 mr-1.5" />
-            {sendingPast ? "Versendet..." : "Vergangene anschreiben"}
+            {sendingPast ? "Versendet..." : "Teilnehmer:innen anschreiben"}
           </Button>
           <Button
             size="sm"
@@ -558,15 +558,15 @@ export function ReviewsManager({
 
       <ConfirmDialog
         open={confirmSendPast}
-        title="Vergangene Teilnehmer:innen anschreiben"
+        title="Teilnehmer:innen anschreiben"
         description={
           loadingPastCount
             ? "Empfänger:innen werden gezählt..."
             : pastCount === null
-              ? "Die Anzahl konnte nicht geladen werden. Du kannst den Versand trotzdem starten. Es werden nur vergangene Teilnehmer:innen ohne Bewertung angeschrieben, bereits angeschriebene Personen werden übersprungen."
+              ? "Die Anzahl konnte nicht geladen werden. Du kannst den Versand trotzdem starten. Es werden Teilnehmer:innen ohne Bewertung angeschrieben. Personen mit einem anstehenden Kurstermin sowie bereits bewertete oder bereits angeschriebene Personen werden übersprungen."
               : pastCount === 0
-                ? "Aktuell gibt es keine vergangenen Teilnehmer:innen ohne Bewertung. Es wird nichts verschickt."
-                : `${pastCount} vergangene Teilnehmer:innen ohne Bewertung erhalten jetzt sofort eine Bewertungsanfrage per E-Mail. Bereits bewertete oder bereits angeschriebene Personen werden übersprungen.`
+                ? "Aktuell gibt es keine Teilnehmer:innen ohne Bewertung, die angeschrieben werden können. Es wird nichts verschickt."
+                : `${pastCount} Teilnehmer:innen ohne Bewertung erhalten jetzt sofort eine Bewertungsanfrage per E-Mail. Personen mit einem anstehenden Kurstermin sowie bereits bewertete oder bereits angeschriebene Personen werden übersprungen.`
         }
         confirmLabel={
           loadingPastCount

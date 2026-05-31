@@ -372,35 +372,40 @@ interface PastCandidateRow {
   first_name: string | null;
   review_submit_token: string | null;
   status: string;
+  created_at: string | null;
   course_sessions: SessionRow | SessionRow[] | null;
   course_reviews: { id: string }[] | { id: string } | null;
 }
 
 // One person (deduped by email). The review request is GENERAL, so we no
 // longer carry a course title. `representativeBookingId` is the booking we
-// actually email + flag review_request_general on (most recent past one);
-// `allBookingIds` are every past unreviewed booking for this person, all of
-// which get review_request_resent_at stamped so no future click re-pings.
+// actually email + flag review_request_general on (their latest touchpoint);
+// `allBookingIds` are every eligible unreviewed booking for this person, all
+// of which get review_request_resent_at stamped so no future click re-pings.
+// `representativeRankMs` ranks bookings to pick that latest touchpoint: a
+// session end time when there is one, else the booking's created_at.
 interface PastCandidate {
   email: string;
   firstName: string;
   representativeBookingId: string;
-  representativeEndMs: number;
+  representativeRankMs: number;
   existingToken: string | null;
   allBookingIds: string[];
 }
 
-// True if the session has already finished. Prefer the precise wall-clock
-// end (start_time + duration); fall back to a strictly-before-today date
-// comparison in Europe/Berlin when those fields are missing.
-function isPastSession(session: SessionRow, nowMs: number): boolean {
+// True if the session is still upcoming (not yet finished). A person with
+// any upcoming in-person session hasn't taken that course yet, so we hold off
+// asking them for a review. Prefer the precise wall-clock end; fall back to a
+// date comparison in Europe/Berlin. Returns false when no date is known so an
+// undated session never excludes anyone.
+function isFutureSession(session: SessionRow, nowMs: number): boolean {
   const endAt = computeSessionEnd(session);
-  if (endAt) return endAt.getTime() < nowMs;
+  if (endAt) return endAt.getTime() >= nowMs;
   if (!session.date_iso) return false;
   const todayBerlin = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Berlin",
   }).format(new Date(nowMs));
-  return session.date_iso < todayBerlin;
+  return session.date_iso >= todayBerlin;
 }
 
 // Normalizes an email for dedupe: trims + lowercases. Two bookings with the
@@ -409,28 +414,29 @@ function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-// Selects past attendees eligible for a one-time GENERAL review request,
-// deduped to ONE entry per person (by normalized email). A person qualifies
-// when they have at least one finished, unreviewed, not-yet-bulk-emailed
-// booking AND have never left any review at all. The most recent such past
-// booking becomes the representative (the one we email + flag general); all
-// of the person's qualifying past bookings get stamped so a second click
-// can't re-ping them. Shared by the count (GET) and send (POST) paths so
-// they never diverge.
+// Selects attendees eligible for a one-time GENERAL review request, deduped
+// to ONE entry per person (by normalized email). A person qualifies when they
+// have at least one unreviewed, not-yet-bulk-emailed booking AND have never
+// left any review. We no longer require a finished session: online-course
+// buyers (no session) are included. The only timing gate is the inverse, a
+// person is dropped if they have ANY upcoming in-person session, since they
+// haven't taken that course yet. Their latest touchpoint (session end, else
+// created_at) becomes the representative; all of their qualifying bookings get
+// stamped so a second click can't re-ping them. Shared by the count (GET) and
+// send (POST) paths so they never diverge.
 async function selectPastReviewCandidates(
   supabase: SupabaseClient,
 ): Promise<PastCandidate[]> {
   const { data, error } = await supabase
     .from("course_bookings")
     .select(
-      `id, email, first_name, review_submit_token, status,
+      `id, email, first_name, review_submit_token, status, created_at,
        course_sessions ( id, date_iso, start_time, duration_minutes ),
        course_reviews ( id )`,
     )
     .is("review_request_resent_at", null)
     .in("status", ["booked", "completed"])
     .not("email", "is", null)
-    .not("session_id", "is", null)
     .returns<PastCandidateRow[]>();
 
   if (error) throw new Error(error.message);
@@ -438,10 +444,12 @@ async function selectPastReviewCandidates(
 
   const nowMs = Date.now();
 
-  // Group qualifying past bookings by person. A person is dropped entirely
-  // if ANY of their bookings carries a review (they've already spoken).
+  // Group eligible bookings by person. A person is dropped entirely if ANY of
+  // their bookings carries a review (already spoken) or sits on an upcoming
+  // session (course not taken yet).
   const byEmail = new Map<string, PastCandidate>();
   const reviewedEmails = new Set<string>();
+  const upcomingEmails = new Set<string>();
 
   for (const row of data) {
     if (!row.email) continue;
@@ -460,11 +468,21 @@ async function selectPastReviewCandidates(
     const session = Array.isArray(row.course_sessions)
       ? row.course_sessions[0]
       : row.course_sessions;
-    if (!session || !isPastSession(session, nowMs)) continue;
 
-    // End time used only to pick the most-recent booking as representative.
-    const endAt = computeSessionEnd(session);
-    const endMs = endAt ? endAt.getTime() : 0;
+    // Upcoming in-person session: hold off on this person entirely.
+    if (session && isFutureSession(session, nowMs)) {
+      upcomingEmails.add(key);
+      continue;
+    }
+
+    // Rank bookings to pick the latest touchpoint as representative: session
+    // end when present, else created_at (online courses have no session).
+    const endAt = session ? computeSessionEnd(session) : null;
+    const rankMs = endAt
+      ? endAt.getTime()
+      : row.created_at
+        ? new Date(row.created_at).getTime()
+        : 0;
 
     const existing = byEmail.get(key);
     if (!existing) {
@@ -472,7 +490,7 @@ async function selectPastReviewCandidates(
         email: row.email,
         firstName: row.first_name?.trim() || "Du",
         representativeBookingId: row.id,
-        representativeEndMs: endMs,
+        representativeRankMs: rankMs,
         existingToken: row.review_submit_token,
         allBookingIds: [row.id],
       });
@@ -480,21 +498,22 @@ async function selectPastReviewCandidates(
     }
 
     existing.allBookingIds.push(row.id);
-    // Keep the most recent past booking as the representative so the token
-    // and first name come from their latest touchpoint with us.
-    if (endMs > existing.representativeEndMs) {
-      existing.representativeEndMs = endMs;
+    // Keep the latest touchpoint as the representative so the token and first
+    // name come from their most recent booking with us.
+    if (rankMs > existing.representativeRankMs) {
+      existing.representativeRankMs = rankMs;
       existing.representativeBookingId = row.id;
       existing.existingToken = row.review_submit_token;
       existing.firstName = row.first_name?.trim() || existing.firstName;
     }
   }
 
-  // Drop anyone who has already left a review on any booking, even if some
+  // Drop anyone who already reviewed or has an upcoming session, even if some
   // other booking of theirs looked eligible above.
   const candidates: PastCandidate[] = [];
   for (const [key, candidate] of byEmail) {
     if (reviewedEmails.has(key)) continue;
+    if (upcomingEmails.has(key)) continue;
     candidates.push(candidate);
   }
 
