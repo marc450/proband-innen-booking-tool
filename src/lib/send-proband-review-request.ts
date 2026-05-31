@@ -20,6 +20,20 @@ const REVIEW_SUBJECT = "Wie war Deine Behandlung bei EPHIA?";
 const REVIEW_INTRO =
   "vielen Dank, dass Du als Proband:in bei einem unserer Kurse dabei warst. Wenn es Dir bei uns gefallen hat, würden wir uns riesig über Deine Bewertung freuen. Dein Feedback hilft uns sehr und unterstützt uns dabei, die Behandlungen noch besser zu machen.";
 
+// Copy for the automated post-treatment sweep: the proband was treated a
+// day or two ago, so the framing is "kürzlich" rather than the manual
+// pass's open-ended "bei einem unserer Kurse".
+const REVIEW_INTRO_POST_TREATMENT =
+  "vielen Dank, dass Du kürzlich als Proband:in bei uns warst. Solange Dein Eindruck noch frisch ist, freuen wir uns riesig über Deine Bewertung. Dein Feedback hilft uns sehr und unterstützt uns dabei, die Behandlungen noch besser zu machen.";
+
+// Post-treatment sweep timing. Wait at least 24h after the slot ends
+// before asking, so staff have time to mark no-shows (no-show probands
+// are billed 50 EUR and must never get a review request). Only look back
+// POST_TREATMENT_WINDOW_DAYS so a first run doesn't blast the back catalog;
+// the manual "Vergangene anschreiben" button covers older attendees.
+const POST_TREATMENT_MIN_AGE_HOURS = 24;
+const POST_TREATMENT_WINDOW_DAYS = 7;
+
 const sleep = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -45,10 +59,11 @@ function buildToken(): string {
 function buildReviewEmailHtml(opts: {
   firstName: string;
   reviewUrl: string;
+  intro?: string;
 }): string {
   return buildEmailHtml({
     firstName: opts.firstName,
-    intro: REVIEW_INTRO,
+    intro: opts.intro ?? REVIEW_INTRO,
     buttons: [{ label: "Jetzt Bewertung abgeben", url: opts.reviewUrl }],
     closing: "Herzliche Grüße,<br>Dein EPHIA-Team",
   });
@@ -127,13 +142,50 @@ async function probandsWithReview(
   return set;
 }
 
-// Selects probands eligible for the one-time review request: every patient
-// that is active (not inactive/blacklist), has a decryptable email, and has NOT
-// been emailed by this pass yet. Excluded: probands who already reviewed, and
-// probands with any upcoming booking (treatment not done yet). Shared by the
-// count (GET) and send (POST) paths so they never diverge.
+// Probands whose treatment ended recently enough to ask for a review, but
+// long enough ago that staff have had time to mark no-shows. Returns the
+// patient ids of attendees of any non-cancelled, non-no_show booking whose
+// slot end (fallback start) falls in [now - WINDOW_DAYS, now - MIN_AGE_HOURS].
+// No-show probands are billed 50 EUR and must never be asked, so they are
+// excluded here by status.
+async function probandsWithRecentEndedTreatment(
+  supabase: SupabaseClient,
+): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from("bookings")
+    .select(`patient_id, status, slots ( start_time, end_time )`)
+    .not("patient_id", "is", null)
+    .neq("status", "cancelled")
+    .neq("status", "no_show");
+  if (error) throw new Error(error.message);
+
+  const nowMs = Date.now();
+  const upperMs = nowMs - POST_TREATMENT_MIN_AGE_HOURS * 60 * 60 * 1000;
+  const lowerMs = nowMs - POST_TREATMENT_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+  const set = new Set<string>();
+  for (const row of data ?? []) {
+    const slot = Array.isArray(row.slots) ? row.slots[0] : row.slots;
+    const endRaw = slot?.end_time || slot?.start_time;
+    if (!endRaw || !row.patient_id) continue;
+    const endMs = new Date(endRaw).getTime();
+    if (Number.isNaN(endMs)) continue;
+    if (endMs >= lowerMs && endMs <= upperMs) {
+      set.add(row.patient_id as string);
+    }
+  }
+  return set;
+}
+
+// Selects probands eligible for the review request: every patient that is
+// active (not inactive/blacklist), has a decryptable email, and has NOT been
+// emailed yet (review_request_resent_at IS NULL). Excluded: probands who
+// already reviewed, and probands with any upcoming booking (treatment not done
+// yet). When `restrictTo` is given, only patients in that set are considered
+// (used by the automated post-treatment sweep). Shared by the manual count
+// (GET), manual send (POST), and the cron path so they never diverge.
 async function selectProbandReviewCandidates(
   supabase: SupabaseClient,
+  restrictTo?: Set<string>,
 ): Promise<ProbandReviewCandidate[]> {
   const { data, error } = await supabase
     .from("patients")
@@ -150,6 +202,7 @@ async function selectProbandReviewCandidates(
   const candidates: ProbandReviewCandidate[] = [];
   const seenEmails = new Set<string>();
   for (const row of data) {
+    if (restrictTo && !restrictTo.has(row.id)) continue;
     // Deliverability/safety: never ask blacklisted (banned) or inactive
     // (unsubscribed/invalid) probands for a review.
     if (row.patient_status === "inactive" || row.patient_status === "blacklist")
@@ -182,13 +235,16 @@ export async function countProbandReviewCandidates(
   return candidates.length;
 }
 
-// Marc-triggered one-time pass. NEVER runs on a cron or as a side effect.
-// ONE email per proband. Reuse the proband's existing token (so any link
-// already in their inbox keeps working) or mint a fresh one, send immediately
-// via Resend, then stamp review_request_resent_at so a second click can't
-// re-ping them.
-export async function sendPastProbandReviewEmails(
+// Shared send loop for both the manual bulk pass and the automated
+// post-treatment sweep. ONE email per proband: reuse the proband's existing
+// token (so any link already in their inbox keeps working) or mint a fresh
+// one, send immediately via Resend, then stamp review_request_resent_at so a
+// second pass can't re-ping them. review_request_resent_at is the sole shared
+// idempotency marker across both callers.
+async function dispatchProbandReviewEmails(
   supabase: SupabaseClient,
+  candidates: ProbandReviewCandidate[],
+  intro?: string,
 ): Promise<ScheduleResult> {
   const result: ScheduleResult = {
     scheduled: 0,
@@ -199,15 +255,6 @@ export async function sendPastProbandReviewEmails(
   const captureError = (msg: string) => {
     if (result.errorSamples.length < 3) result.errorSamples.push(msg);
   };
-
-  let candidates: ProbandReviewCandidate[];
-  try {
-    candidates = await selectProbandReviewCandidates(supabase);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("send-past-proband-review-emails: candidate query failed", msg);
-    return { ...result, errors: 1, errorSamples: [`Query: ${msg}`] };
-  }
 
   for (const candidate of candidates) {
     try {
@@ -229,6 +276,7 @@ export async function sendPastProbandReviewEmails(
       const html = buildReviewEmailHtml({
         firstName: candidate.firstName,
         reviewUrl,
+        intro,
       });
 
       try {
@@ -245,7 +293,6 @@ export async function sendPastProbandReviewEmails(
         continue;
       }
 
-      // review_request_resent_at is the sole idempotency marker for this pass.
       const { error: markErr } = await supabase
         .from("patients")
         .update({ review_request_resent_at: new Date().toISOString() })
@@ -263,7 +310,7 @@ export async function sendPastProbandReviewEmails(
       const msg = err instanceof Error ? err.message : String(err);
       captureError(`Unexpected: ${msg}`);
       console.error(
-        `send-past-proband-review-emails: unexpected error for ${candidate.email}`,
+        `dispatch-proband-review-emails: unexpected error for ${candidate.email}`,
         err,
       );
       result.errors++;
@@ -271,4 +318,47 @@ export async function sendPastProbandReviewEmails(
   }
 
   return result;
+}
+
+// Marc-triggered one-time pass over the whole eligible back catalog. NEVER
+// runs on a cron or as a side effect.
+export async function sendPastProbandReviewEmails(
+  supabase: SupabaseClient,
+): Promise<ScheduleResult> {
+  let candidates: ProbandReviewCandidate[];
+  try {
+    candidates = await selectProbandReviewCandidates(supabase);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("send-past-proband-review-emails: candidate query failed", msg);
+    return { scheduled: 0, skipped: 0, errors: 1, errorSamples: [`Query: ${msg}`] };
+  }
+  return dispatchProbandReviewEmails(supabase, candidates);
+}
+
+// Automated daily sweep. Asks every proband whose treatment ended in the last
+// POST_TREATMENT_WINDOW_DAYS (but at least POST_TREATMENT_MIN_AGE_HOURS ago) for
+// a review, exactly once. No-show / cancelled bookings are excluded upstream in
+// probandsWithRecentEndedTreatment, and review_request_resent_at guarantees one
+// email per proband across this sweep and the manual pass.
+export async function sendPostTreatmentProbandReviews(
+  supabase: SupabaseClient,
+): Promise<ScheduleResult> {
+  let candidates: ProbandReviewCandidate[];
+  try {
+    const treated = await probandsWithRecentEndedTreatment(supabase);
+    if (treated.size === 0) {
+      return { scheduled: 0, skipped: 0, errors: 0, errorSamples: [] };
+    }
+    candidates = await selectProbandReviewCandidates(supabase, treated);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("send-post-treatment-proband-reviews: candidate query failed", msg);
+    return { scheduled: 0, skipped: 0, errors: 1, errorSamples: [`Query: ${msg}`] };
+  }
+  return dispatchProbandReviewEmails(
+    supabase,
+    candidates,
+    REVIEW_INTRO_POST_TREATMENT,
+  );
 }

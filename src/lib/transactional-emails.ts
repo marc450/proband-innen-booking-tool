@@ -346,6 +346,33 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
     }),
   },
 
+  {
+    id: "proband-review-request-auto",
+    funnel: "proband-updates",
+    name: "Bewertungs-Anfrage (automatisch nach Behandlung)",
+    recipient: "Proband:in",
+    trigger:
+      "Täglicher Cron (/api/send-reminders). Geht einmalig an Proband:innen, deren Behandlung in den letzten 7 Tagen (aber mindestens 24h her) war, ohne No-Show/Absage, ohne bestehende Bewertung und ohne bereits versendete Anfrage.",
+    codeRef: "src/lib/send-proband-review-request.ts",
+    description:
+      "Automatische Variante der Bewertungs-Anfrage, die kurz nach der Behandlung verschickt wird, solange der Eindruck noch frisch ist. Gleiche Idempotenz-Sperre (review_request_resent_at) wie der manuelle Versand, eine E-Mail pro Person.",
+    renderSample: () => ({
+      subject: "Wie war Deine Behandlung bei EPHIA?",
+      html: buildEmailHtml({
+        firstName: SAMPLE.firstName,
+        intro:
+          "vielen Dank, dass Du kürzlich als Proband:in bei uns warst. Solange Dein Eindruck noch frisch ist, freuen wir uns riesig über Deine Bewertung. Dein Feedback hilft uns sehr und unterstützt uns dabei, die Behandlungen noch besser zu machen.",
+        buttons: [
+          {
+            label: "Jetzt Bewertung abgeben",
+            url: "https://proband-innen.ephia.de/proband-bewertung/beispiel-token",
+          },
+        ],
+        closing: "Herzliche Grüße,<br>Dein EPHIA-Team",
+      }),
+    }),
+  },
+
   // ── Ärzt:innen — Kursbuchung ───────────────────────────────────────
   {
     id: "course-confirmation-online",

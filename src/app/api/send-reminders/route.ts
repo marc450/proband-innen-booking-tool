@@ -5,6 +5,7 @@ import { buildEmailHtml } from "@/lib/email-template";
 import { sendProfileReminderEmail } from "@/lib/post-purchase";
 import { sendPostPraxisCertificates } from "@/lib/send-post-praxis-certificate";
 import { scheduleCourseReviewEmails } from "@/lib/send-course-review-request";
+import { sendPostTreatmentProbandReviews } from "@/lib/send-proband-review-request";
 import { sweepStaleReviewEmails } from "@/lib/cancel-scheduled-review-email";
 import { archiveSentMessage } from "@/lib/gmail";
 
@@ -34,6 +35,7 @@ export async function GET(req: NextRequest) {
     certSkippedNoVnr: 0,
     reviewEmailsScheduled: 0,
     reviewEmailsSkipped: 0,
+    probandReviewEmailsSent: 0,
     staleReviewEmailsFound: 0,
     staleReviewEmailsCancelled: 0,
     errors: 0,
@@ -67,6 +69,21 @@ export async function GET(req: NextRequest) {
       results.errors += reviewResult.errors;
     } catch (reviewErr) {
       console.error("Course review scheduling pass failed:", reviewErr);
+      results.errors += 1;
+    }
+
+    // ── Post-treatment Proband:innen review requests ──
+    // Asks each proband who attended a treatment in the last few days (but
+    // at least 24h ago, so no-shows have already been marked) for a review,
+    // exactly once. No-show / cancelled bookings are excluded upstream;
+    // patients.review_request_resent_at is the shared one-email-per-proband
+    // lock with the manual "Vergangene anschreiben" pass.
+    try {
+      const probandReview = await sendPostTreatmentProbandReviews(supabase);
+      results.probandReviewEmailsSent = probandReview.scheduled;
+      results.errors += probandReview.errors;
+    } catch (probandErr) {
+      console.error("Post-treatment proband review pass failed:", probandErr);
       results.errors += 1;
     }
 
