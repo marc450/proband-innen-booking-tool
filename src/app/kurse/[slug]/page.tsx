@@ -167,6 +167,7 @@ export default async function KursPage({
          course_templates:template_id ( course_label_de, title )`,
       )
       .eq("is_published", true)
+      .order("is_pinned", { ascending: false })
       .order("submitted_at", { ascending: false });
     publicReviews = ((reviewRows ?? []) as ReviewRow[]).map((r) => {
       const tpl = Array.isArray(r.course_templates)
