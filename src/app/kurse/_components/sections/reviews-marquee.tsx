@@ -93,15 +93,22 @@ function CompactReviewCard({
 }
 
 export function ReviewsMarquee({ items }: { items: ReviewItem[] }) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [openReview, setOpenReview] = useState<ReviewItem | null>(null);
   // Animation duration in seconds, derived from one copy's width so the
   // pixel speed stays constant no matter how many reviews there are.
   const [durationS, setDurationS] = useState(0);
-  // Touch viewports get a native swipe-snap scroller instead of the
-  // auto-marquee: a transform-driven CSS animation can't be dragged with
-  // a finger, so mobile users could never page through the reviews.
+  // Touch viewports keep the same continuous drift but driven by
+  // scrollLeft instead of a CSS transform, because a transform-animated
+  // track can't be dragged with a finger. The JS auto-advance below
+  // gives the marquee motion AND leaves the container natively
+  // swipeable; the finger pauses it, then it resumes.
   const [isMobile, setIsMobile] = useState(false);
+  // Mirror modal-open into a ref so the rAF loop reads it without being
+  // torn down and rebuilt every time a review modal opens.
+  const modalOpenRef = useRef(false);
+  modalOpenRef.current = !!openReview;
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -128,17 +135,68 @@ export function ReviewsMarquee({ items }: { items: ReviewItem[] }) {
     return () => ro.disconnect();
   }, []);
 
-  // Desktop marquee needs two identical copies so the -50% translate
-  // loops seamlessly. Mobile swipes through a single set (duplicates
-  // would just look like the same review twice while paging).
-  const loopItems = isMobile ? items : [...items, ...items];
+  // Mobile auto-advance: nudge scrollLeft each frame at the same px/s as
+  // the desktop marquee, wrapping by one copy's width so the two
+  // identical copies loop seamlessly. Pauses while the finger is down
+  // (so swiping wins) and while a review modal is open. Reduced-motion
+  // users get no auto-advance but can still swipe.
+  useEffect(() => {
+    if (!isMobile) return;
+    const scroller = scrollerRef.current;
+    const track = trackRef.current;
+    if (!scroller || !track) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let raf = 0;
+    let last = performance.now();
+    let interacting = false;
+    const step = (now: number) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      if (!interacting && !modalOpenRef.current) {
+        const oneCopyWidth = track.scrollWidth / 2;
+        let next = scroller.scrollLeft + SPEED_PX_PER_SEC * dt;
+        // Wrapping by exactly one copy lands on a pixel-identical
+        // position, so the reset is invisible.
+        if (oneCopyWidth > 0 && next >= oneCopyWidth) next -= oneCopyWidth;
+        scroller.scrollLeft = next;
+      }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+
+    const pause = () => {
+      interacting = true;
+    };
+    const resume = () => {
+      interacting = false;
+    };
+    scroller.addEventListener("pointerdown", pause);
+    scroller.addEventListener("pointerup", resume);
+    scroller.addEventListener("pointercancel", resume);
+    scroller.addEventListener("touchstart", pause, { passive: true });
+    scroller.addEventListener("touchend", resume, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      scroller.removeEventListener("pointerdown", pause);
+      scroller.removeEventListener("pointerup", resume);
+      scroller.removeEventListener("pointercancel", resume);
+      scroller.removeEventListener("touchstart", pause);
+      scroller.removeEventListener("touchend", resume);
+    };
+  }, [isMobile]);
+
+  // Two identical copies so the loop is seamless on both paths: desktop
+  // translateX(-50%), mobile scrollLeft wrap by one copy's width.
+  const loopItems = [...items, ...items];
 
   return (
     <>
       <div
+        ref={scrollerRef}
         className={`-mx-5 md:-mx-8 px-5 md:px-8 ${
           isMobile
-            ? "overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            ? "overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             : "relative overflow-hidden"
         }`}
       >
@@ -162,10 +220,7 @@ export function ReviewsMarquee({ items }: { items: ReviewItem[] }) {
           }
         >
           {loopItems.map((item, i) => (
-            <div
-              key={`${item.id}-${i}`}
-              className={`mr-4 md:mr-6 ${isMobile ? "snap-start" : ""}`}
-            >
+            <div key={`${item.id}-${i}`} className="mr-4 md:mr-6">
               <CompactReviewCard item={item} onOpen={setOpenReview} />
             </div>
           ))}
