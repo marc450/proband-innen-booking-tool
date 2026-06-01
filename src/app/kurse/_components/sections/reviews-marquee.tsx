@@ -98,6 +98,18 @@ export function ReviewsMarquee({ items }: { items: ReviewItem[] }) {
   // Animation duration in seconds, derived from one copy's width so the
   // pixel speed stays constant no matter how many reviews there are.
   const [durationS, setDurationS] = useState(0);
+  // Touch viewports get a native swipe-snap scroller instead of the
+  // auto-marquee: a transform-driven CSS animation can't be dragged with
+  // a finger, so mobile users could never page through the reviews.
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     const track = trackRef.current;
@@ -116,21 +128,31 @@ export function ReviewsMarquee({ items }: { items: ReviewItem[] }) {
     return () => ro.disconnect();
   }, []);
 
-  // Two identical copies so the -50% translate loops seamlessly.
-  const loopItems = [...items, ...items];
+  // Desktop marquee needs two identical copies so the -50% translate
+  // loops seamlessly. Mobile swipes through a single set (duplicates
+  // would just look like the same review twice while paging).
+  const loopItems = isMobile ? items : [...items, ...items];
 
   return (
     <>
-      <div className="relative overflow-hidden -mx-5 md:-mx-8 px-5 md:px-8">
+      <div
+        className={`-mx-5 md:-mx-8 px-5 md:px-8 ${
+          isMobile
+            ? "overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            : "relative overflow-hidden"
+        }`}
+      >
         <div
           ref={trackRef}
           // Spacing via right margin (not flex gap) so every card —
           // including the last of each copy — carries equal trailing
           // space, which makes translateX(-50%) land exactly on the
           // second copy's first card.
-          className="ephia-review-marquee flex w-max will-change-transform"
+          className={`flex w-max ${
+            isMobile ? "" : "ephia-review-marquee will-change-transform"
+          }`}
           style={
-            durationS
+            !isMobile && durationS
               ? {
                   animationDuration: `${durationS}s`,
                   // Hover-pause is CSS; this only adds the modal-open pause.
@@ -140,7 +162,10 @@ export function ReviewsMarquee({ items }: { items: ReviewItem[] }) {
           }
         >
           {loopItems.map((item, i) => (
-            <div key={`${item.id}-${i}`} className="mr-4 md:mr-6">
+            <div
+              key={`${item.id}-${i}`}
+              className={`mr-4 md:mr-6 ${isMobile ? "snap-start" : ""}`}
+            >
               <CompactReviewCard item={item} onOpen={setOpenReview} />
             </div>
           ))}
