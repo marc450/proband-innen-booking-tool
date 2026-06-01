@@ -101,7 +101,7 @@ export function Reviews({
 
         {summary === "proud" ? (
           <p className="max-w-2xl mx-auto text-center text-xl md:text-2xl font-bold text-black/80 mb-10">
-            Von Ärzt:innen mit {avgProse}/5 bewertet
+            Von Ärzt:innen mit {avgProse}/5 Sternen bewertet
           </p>
         ) : (
           <div className="flex flex-col items-center gap-2 mb-10">
