@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { homeContent } from "@/content/kurse/home";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchPublicReviews } from "@/lib/fetch-public-reviews";
 
 import { HomeHero } from "./_components/sections/home/hero";
 import { WerWirSind } from "./_components/sections/home/wer-wir-sind";
 import { UnsereKurse } from "./_components/sections/home/unsere-kurse";
 import { InstagramFeed } from "./_components/sections/home/instagram-feed";
-import { Testimonials } from "./_components/sections/testimonials";
+import { Reviews } from "./_components/sections/reviews";
 
 export const dynamic = "force-dynamic";
 
@@ -49,8 +50,14 @@ export default async function HomePage() {
       card_description: string | null;
     }
   >();
+  const supabase = createAdminClient();
+
+  // Published Ärzt:innen reviews for the auto-rotating carousel below
+  // the hero. Same loader as the botox landing; renders nothing when
+  // there are no published reviews.
+  const reviews = await fetchPublicReviews(supabase);
+
   if (courseKeys.length > 0) {
-    const supabase = createAdminClient();
     const { data: templates } = await supabase
       .from("course_templates")
       .select("course_key, image_url, title, audience, level, card_description")
@@ -85,9 +92,9 @@ export default async function HomePage() {
   return (
     <>
       <HomeHero content={homeContent.hero} />
+      <Reviews reviews={reviews} heading={null} summary="proud" autoRotate />
       <WerWirSind content={homeContent.werWirSind} />
       <UnsereKurse content={mergedCourses} />
-      <Testimonials content={homeContent.testimonials} />
       <InstagramFeed content={homeContent.instagram} />
     </>
   );

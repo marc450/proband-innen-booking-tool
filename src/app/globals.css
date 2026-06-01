@@ -411,3 +411,25 @@ body:has([data-dashboard-root]) [data-slot="select-trigger"][data-size="default"
   100% { background-position: -200% 0; }
 }
 
+/* Continuous review marquee on the home page. The track renders two
+   identical copies of the cards; translating it by -50% scrolls exactly
+   one copy past, then loops seamlessly because the second copy is
+   pixel-identical at that point. Speed is held constant across review
+   counts via an inline animation-duration. Pauses on hover and for
+   reduced-motion users. Kept outside @layer so it resolves at top level. */
+@keyframes ephia-review-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.ephia-review-marquee {
+  animation: ephia-review-marquee linear infinite;
+}
+.ephia-review-marquee:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ephia-review-marquee {
+    animation: none;
+  }
+}
+

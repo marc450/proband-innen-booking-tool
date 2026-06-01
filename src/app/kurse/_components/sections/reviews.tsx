@@ -1,5 +1,6 @@
 import { Star } from "lucide-react";
 import { ReviewsCarousel } from "./reviews-carousel";
+import { ReviewsMarquee } from "./reviews-marquee";
 
 export interface PublicReview {
   id: string;
@@ -30,8 +31,16 @@ function withPinnedSecond(reviews: PublicReview[]): PublicReview[] {
 }
 
 interface ReviewsProps {
-  heading?: string;
+  // Section heading. Pass null to hide it entirely (home page).
+  heading?: string | null;
   reviews: PublicReview[];
+  // Continuous marquee with hover-pause instead of the manual
+  // snap-scroll carousel. Used on the home page; course landings leave
+  // it off.
+  autoRotate?: boolean;
+  // "rating": big average number + stars (course landings).
+  // "proud": the home-page sentence about the average rating.
+  summary?: "rating" | "proud";
 }
 
 function formatDisplayName(r: PublicReview): string {
@@ -60,12 +69,22 @@ function StarRow({ rating, size = "md" }: { rating: number; size?: "md" | "lg" }
   );
 }
 
-export function Reviews({ heading = "BEWERTUNGEN VON ÄRZT:INNEN", reviews }: ReviewsProps) {
+export function Reviews({
+  heading = "BEWERTUNGEN VON ÄRZT:INNEN",
+  reviews,
+  autoRotate = false,
+  summary = "rating",
+}: ReviewsProps) {
   if (reviews.length === 0) return null;
 
   const avg =
     reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
   const avgDisplay = avg.toFixed(1).replace(".", ",");
+  // Whole averages read cleaner without a trailing ",0" in prose
+  // ("5/5" not "5,0/5"); fractional ones keep one decimal with a comma.
+  const avgProse = Number.isInteger(avg)
+    ? String(avg)
+    : avg.toFixed(1).replace(".", ",");
   // Schema spec accepts a single review with rating, but a public-page
   // AggregateRating still needs the rating to be visibly displayed.
   // Both happen here so the JSON-LD in the page.tsx mirrors what users
@@ -74,28 +93,43 @@ export function Reviews({ heading = "BEWERTUNGEN VON ÄRZT:INNEN", reviews }: Re
   return (
     <section className="bg-white py-16 md:py-24">
       <div className="max-w-7xl mx-auto px-5 md:px-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-center tracking-wide mb-3">
-          {heading}
-        </h2>
+        {heading && (
+          <h2 className="text-3xl md:text-4xl font-bold text-center tracking-wide mb-3">
+            {heading}
+          </h2>
+        )}
 
-        <div className="flex flex-col items-center gap-2 mb-10">
-          <div className="flex items-baseline gap-3">
-            <span className="text-5xl md:text-6xl font-bold text-[#0066FF] leading-none">
-              {avgDisplay}
-            </span>
-            <StarRow rating={Math.round(avg)} size="lg" />
+        {summary === "proud" ? (
+          <p className="max-w-2xl mx-auto text-center text-xl md:text-2xl font-bold text-black/80 mb-10">
+            Wir sind super stolz auf eine durchschnittliche Bewertung von{" "}
+            {avgProse}/5 Sternen
+          </p>
+        ) : (
+          <div className="flex flex-col items-center gap-2 mb-10">
+            <div className="flex items-baseline gap-3">
+              <span className="text-5xl md:text-6xl font-bold text-[#0066FF] leading-none">
+                {avgDisplay}
+              </span>
+              <StarRow rating={Math.round(avg)} size="lg" />
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Two DOM orders: mobile keeps the pinned review first, desktop
-            moves it to second (the centered, most-prominent card). Only
-            one is in layout per breakpoint. */}
-        <div className="md:hidden">
-          <ReviewsCarousel items={toItems(reviews)} />
-        </div>
-        <div className="hidden md:block">
-          <ReviewsCarousel items={toItems(withPinnedSecond(reviews))} />
-        </div>
+        {autoRotate ? (
+          <ReviewsMarquee items={toItems(reviews)} />
+        ) : (
+          <>
+            {/* Two DOM orders: mobile keeps the pinned review first,
+                desktop moves it to second (the centered, most-prominent
+                card). Only one is in layout per breakpoint. */}
+            <div className="md:hidden">
+              <ReviewsCarousel items={toItems(reviews)} />
+            </div>
+            <div className="hidden md:block">
+              <ReviewsCarousel items={toItems(withPinnedSecond(reviews))} />
+            </div>
+          </>
+        )}
       </div>
     </section>
   );

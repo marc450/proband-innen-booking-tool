@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { useCarouselScroll } from "../use-carousel-scroll";
 
-interface ReviewItem {
+export interface ReviewItem {
   id: string;
   rating: number;
   displayName: string;
@@ -35,7 +35,7 @@ function truncateAtWord(text: string, limit: number): string {
   return (lastSpace > limit * 0.6 ? slice.slice(0, lastSpace) : slice).trimEnd();
 }
 
-function StarRow({ rating }: { rating: number }) {
+export function StarRow({ rating }: { rating: number }) {
   return (
     <div
       className="flex items-center gap-0.5"
@@ -133,7 +133,7 @@ export function ReviewsCarousel({ items }: ReviewsCarouselProps) {
                 <div className="font-bold text-black">{item.displayName}</div>
                 {item.courseLabel && (
                   <div className="text-xs text-black/60">
-                    Bewertung zum Kurs „{item.courseLabel}"
+                    Bewertung zum Kurs „{item.courseLabel}&ldquo;
                   </div>
                 )}
               </figcaption>
@@ -206,7 +206,7 @@ export function ReviewsCarousel({ items }: ReviewsCarouselProps) {
                 <p className="font-bold text-black">{openReview.displayName}</p>
                 {openReview.courseLabel && (
                   <p className="text-xs text-black/60 mt-1">
-                    Bewertung zum Kurs „{openReview.courseLabel}"
+                    Bewertung zum Kurs „{openReview.courseLabel}&ldquo;
                   </p>
                 )}
               </div>
