@@ -75,8 +75,6 @@ export default async function CourseSuccessPage({ searchParams }: Props) {
           booking={booking ? {
             id: booking.id,
             email: booking.email,
-            firstName: booking.first_name,
-            lastName: booking.last_name,
             courseType: booking.course_type,
             templateId: booking.template_id,
             sessionId: booking.session_id,

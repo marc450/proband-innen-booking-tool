@@ -24,8 +24,6 @@ const SPECIALTIES = [
 interface BookingInfo {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
   courseType: string;
   templateId: string;
   sessionId: string | null;
