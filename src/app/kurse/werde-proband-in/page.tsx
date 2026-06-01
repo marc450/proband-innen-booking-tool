@@ -223,27 +223,27 @@ export default async function WerdeProbandInPage() {
       : 0;
 
   // JSON-LD für Google Rich Results: AggregateRating + Review[].
-  // Anker ist ein Service ("Behandlung als Proband:in"), nicht ein
-  // Product, weil es kein verkauftes Item ist sondern eine Dienst-
-  // leistung. Google rendert Sternchen-Snippets nur, wenn die
+  // Anker ist ein Product ("Behandlung als Proband:in"). Google
+  // unterstützt Review-Snippets nur auf einer festen Liste von Typen;
+  // der frühere `Service`-Anker stand NICHT darauf und löste in der
+  // Search Console "Invalid object type for field <parent_node>" aus.
+  // Product ist unterstützt und fällt nicht unter die Self-serving-
+  // Regel (die Google nur für Organization/LocalBusiness durchsetzt),
+  // ist also die SEO-sichere Wahl für ein buchbares, bepreistes
+  // Behandlungsangebot. Google rendert die Sterne nur, wenn die
   // Bewertungen AUCH sichtbar im DOM sind — dieselbe Gate-Bedingung
   // wie das Rendern der ProbandReviews-Sektion (reviews.length > 0).
   const probandReviewsJsonLd =
     reviews.length > 0
       ? {
           "@context": "https://schema.org",
-          "@type": "Service",
+          "@type": "Product",
           name: "Behandlung als Proband:in bei EPHIA",
           description:
             "Vergünstigte ästhetische Behandlungen durch approbierte Ärzt:innen während praktischer Fortbildungskurse bei EPHIA in Berlin.",
-          provider: {
-            "@type": "Organization",
+          brand: {
+            "@type": "Brand",
             name: "EPHIA",
-            url: "https://ephia.de",
-          },
-          areaServed: {
-            "@type": "City",
-            name: "Berlin",
           },
           url: "https://proband-innen.ephia.de/",
           aggregateRating: {
