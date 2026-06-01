@@ -210,6 +210,7 @@ export const homeContent: HomeContent = {
 
   instagram: {
     heading: "NEWSLETTER SIND VON GESTERN",
+    subheading: "...folge uns einfach auf Insta!",
     widgetId: "6fbfcc53812a55ec9db620f1a9d278b6",
   },
 };
