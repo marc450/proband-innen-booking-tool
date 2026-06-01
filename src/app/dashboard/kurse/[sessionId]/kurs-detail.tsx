@@ -29,6 +29,11 @@ import {
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ArrowLeft, Ban, Calendar, Check, Clock, Copy, GraduationCap, Loader2, LockOpen, Mail, MapPin, Plus, Trash2, User } from "lucide-react";
 import { buildProfileCompletionUrl } from "@/lib/profile-link";
+import { INDICATIONS } from "@/lib/indications";
+
+function indicationLabel(key: string): string {
+  return INDICATIONS.find((i) => i.key === key)?.label ?? key;
+}
 
 export interface DetailSlot {
   id: string;
@@ -151,6 +156,11 @@ export function KursDetailClient({
 
   const [slots, setSlots] = useState<DetailSlot[]>(initialSlots);
   const [bookings, setBookings] = useState<DetailBooking[]>(initialBookings);
+
+  // Only the Therap. Indikationen course (and masseter seats borrowed
+  // into Botulinum courses) carry an indication. Show the column only
+  // when at least one booking has one, so cosmetic courses stay clean.
+  const showIndication = bookings.some((b) => b.indication);
 
   const refresh = () => startTransition(() => router.refresh());
 
@@ -901,6 +911,7 @@ export function KursDetailClient({
               <col style={{ width: "280px" }} />{/* E-Mail */}
               <col style={{ width: "220px" }} />{/* Uhrzeit */}
               <col style={{ width: "200px" }} />{/* Überweiser:in */}
+              {showIndication && <col style={{ width: "260px" }} />}{/* Indikation */}
               <col style={{ width: "240px" }} />{/* Notizen */}
               <col style={{ width: "180px" }} />{/* Status */}
             </colgroup>
@@ -910,6 +921,7 @@ export function KursDetailClient({
                 <TableHead>E-Mail</TableHead>
                 <TableHead>Uhrzeit</TableHead>
                 <TableHead>Überweiser:in</TableHead>
+                {showIndication && <TableHead>Indikation</TableHead>}
                 <TableHead>Notizen</TableHead>
                 <TableHead>
                   <div className="flex justify-end">
@@ -937,6 +949,9 @@ export function KursDetailClient({
                         </button>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Überweiser:in */}
+                      {showIndication && (
+                        <TableCell className="text-sm text-muted-foreground">—</TableCell>
+                      )}{/* Indikation */}
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Notizen */}
                       <TableCell className="w-[180px]">{/* Aktionen */}
                         <div className="flex justify-end gap-1">
@@ -984,6 +999,9 @@ export function KursDetailClient({
                         </button>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Überweiser:in */}
+                      {showIndication && (
+                        <TableCell className="text-sm text-muted-foreground">—</TableCell>
+                      )}{/* Indikation */}
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>{/* Notizen */}
                       <TableCell className="w-[180px]">{/* Aktionen */}
                         <div className="flex justify-end gap-1">
@@ -1059,6 +1077,20 @@ export function KursDetailClient({
                     >{/* Überweiser:in */}
                       {booking.referring_doctor ?? <span className="text-muted-foreground">—</span>}
                     </TableCell>
+                    {showIndication && (
+                      <TableCell className="whitespace-nowrap">{/* Indikation */}
+                        {booking.indication ? (
+                          <Badge
+                            variant="outline"
+                            className="bg-[#0066FF]/10 text-[#0066FF] border-transparent"
+                          >
+                            {indicationLabel(booking.indication)}
+                          </Badge>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Input
                         defaultValue={booking.notes ?? ""}
