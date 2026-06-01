@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { CheckCircle, ClipboardList, Loader2 } from "lucide-react";
-
-const TITLE_OPTIONS = ["Dr. med.", "Dr. med. dent.", "Prof. Dr.", "PD Dr.", "Kein Titel"];
+import { TITLE_OPTIONS } from "@/lib/utils";
 const GENDER_OPTIONS = ["Weiblich", "Männlich", "Divers"];
 const SPECIALTIES = [
   "Allgemeinmedizin", "Anatomie", "Anästhesiologie", "Arbeitsmedizin",

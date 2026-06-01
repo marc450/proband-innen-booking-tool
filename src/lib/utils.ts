@@ -25,6 +25,19 @@ const NO_TITLE_VALUES = new Set([
   "–",
 ]);
 
+// Canonical academic-title dropdown options, shared by every title <select>
+// (profile completion, inbox sidebar, Termin-Update modal). A bare "Dr." is
+// deliberately absent: it can't be classified as human vs. dental medicine,
+// which is the inconsistency migration 126 had to clean up. "Kein Titel" is
+// the no-title sentinel and gets normalised to null on write.
+export const TITLE_OPTIONS: string[] = [
+  "Dr. med.",
+  "Dr. med. dent.",
+  "Prof. Dr.",
+  "PD Dr.",
+  "Kein Titel",
+];
+
 /**
  * Normalise a title value for STORAGE. Returns null for empty input or any
  * "no title" sentinel (see NO_TITLE_VALUES), otherwise the trimmed title.

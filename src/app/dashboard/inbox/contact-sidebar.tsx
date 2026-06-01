@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { EditableField } from "./editable-field";
 import { EmailManagerModal } from "@/components/email-manager-modal";
+import { TITLE_OPTIONS } from "@/lib/utils";
 
 export interface ContactDTO {
   source: "auszubildende" | "patient" | "unknown";
@@ -102,7 +103,6 @@ function formatDate(iso: string | null) {
   });
 }
 
-const TITLE_OPTIONS = ["Dr. med.", "Dr. med. dent.", "Prof. Dr.", "PD Dr.", "Kein Titel"];
 const GENDER_OPTIONS = ["Weiblich", "Männlich", "Divers"];
 // "inactive" = hard unsubscribe; excluded from all campaign emails. Kept
 // separate from "blacklist" so that blacklist (behavior flag) and inactive

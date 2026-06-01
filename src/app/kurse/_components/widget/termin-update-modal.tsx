@@ -3,15 +3,14 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
 import { X, Loader2, CheckCircle } from "lucide-react";
+import { TITLE_OPTIONS } from "@/lib/utils";
 
 interface Props {
   onClose: () => void;
 }
 
-const TITLE_OPTIONS = ["Dr.", "Prof. Dr.", "PD Dr.", "Prof.", "Kein Titel"];
-
 export function TerminUpdateModal({ onClose }: Props) {
-  const [title, setTitle] = useState("Dr.");
+  const [title, setTitle] = useState("Kein Titel");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
