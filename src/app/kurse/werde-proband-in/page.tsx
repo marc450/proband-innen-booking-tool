@@ -316,16 +316,6 @@ export default async function WerdeProbandInPage() {
         </div>
       </section>
 
-      {/* Proband:innen-Bewertungen — Social Proof direkt unter dem Hero.
-          Rendert nichts, solange noch keine Bewertung freigegeben ist,
-          damit die Landingpage nicht leer wirkt (siehe Empty-Branch in
-          ProbandReviews). */}
-      <ProbandReviews
-        reviews={reviews}
-        totalCount={totalReviewCount}
-        averageRating={averageRating}
-      />
-
       {/* So läuft's ab — 4 numbered steps. */}
       <section
         id="so-laeufts-ab"
@@ -399,6 +389,15 @@ export default async function WerdeProbandInPage() {
           </div>
         </div>
       </section>
+
+      {/* Proband:innen-Bewertungen — Social Proof unter "Darum zu EPHIA".
+          Rendert nichts, solange noch keine Bewertung freigegeben ist
+          (siehe Empty-Branch in ProbandReviews). */}
+      <ProbandReviews
+        reviews={reviews}
+        totalCount={totalReviewCount}
+        averageRating={averageRating}
+      />
 
       {/* FAQ — reuses the shared /kurse Faq section. */}
       <Faq content={faq} />
