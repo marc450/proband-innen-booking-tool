@@ -178,7 +178,7 @@ export function ReviewsMarquee({ items }: { items: ReviewItem[] }) {
           if (!open) setOpenReview(null);
         }}
       >
-        <DialogContent className="max-w-lg bg-white">
+        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-lg bg-white">
           <DialogHeader>
             <DialogTitle className="sr-only">
               Bewertung von {openReview?.displayName ?? ""}

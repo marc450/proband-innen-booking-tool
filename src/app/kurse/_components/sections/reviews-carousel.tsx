@@ -188,7 +188,7 @@ export function ReviewsCarousel({ items }: ReviewsCarouselProps) {
         {/* bg-white override: das Default-bg-background-Token rendert
             auf manchen Hosts rose, was im Modal-Kontext zu nah am
             Rose-Card-Hintergrund liegt. */}
-        <DialogContent className="max-w-lg bg-white">
+        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-lg bg-white">
           <DialogHeader>
             <DialogTitle className="sr-only">
               Bewertung von {openReview?.displayName ?? ""}
