@@ -12,8 +12,25 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { formatPersonName } from "@/lib/utils";
+
+// Sentinel value for the "no course / Allgemeine Bewertung" option. The
+// base-ui Select wants a non-empty string, so we map this to template_id
+// null on the wire.
+const NO_COURSE = "__none__";
+
+export interface CourseOption {
+  id: string;
+  label: string;
+}
 
 // Supabase typed-join responses come back as arrays for one-to-many
 // relationships even when we know there is only one row. We accept the
@@ -89,6 +106,7 @@ interface Props {
   initialReviews: ReviewRow[];
   initialFeedback?: InternalFeedbackByCourse[];
   feedbackThreshold?: number;
+  courses?: CourseOption[];
 }
 
 function unwrap<T>(v: T | T[] | null): T | null {
@@ -129,6 +147,7 @@ export function ReviewsManager({
   initialReviews,
   initialFeedback = [],
   feedbackThreshold = 2,
+  courses = [],
 }: Props) {
   const [reviews, setReviews] = useState<ReviewRow[]>(initialReviews);
   const [filter, setFilter] = useState<Filter>("all");
@@ -178,6 +197,42 @@ export function ReviewsManager({
                   !current && !r.published_at
                     ? new Date().toISOString()
                     : r.published_at,
+              }
+            : r,
+        ),
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setBusy(id, false);
+    }
+  }
+
+  async function assignCourse(id: string, selectValue: string | null) {
+    const templateId =
+      !selectValue || selectValue === NO_COURSE ? null : selectValue;
+    setBusy(id, true);
+    try {
+      const res = await fetch(`/api/admin/reviews/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ template_id: templateId }),
+      });
+      if (!res.ok) throw new Error("Kurszuordnung fehlgeschlagen");
+      const label = templateId
+        ? courses.find((c) => c.id === templateId)?.label ?? null
+        : null;
+      setReviews((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? {
+                ...r,
+                template_id: templateId,
+                // Mirror the new label into the join shape the card reads
+                // so the dropdown selection sticks without a refetch.
+                course_templates: templateId
+                  ? { title: label, course_label_de: label }
+                  : null,
               }
             : r,
         ),
@@ -308,18 +363,12 @@ export function ReviewsManager({
         <div className="space-y-3">
           {visible.map((r) => {
             const booking = unwrap(r.course_bookings);
-            const tpl = unwrap(r.course_templates);
             // Doctor link comes from the booking when present, otherwise
             // straight from the doctor-anchored auszubildende join.
             const azubi =
               (booking ? unwrap(booking.auszubildende) : null) ??
               unwrap(r.auszubildende);
             const session = booking ? unwrap(booking.course_sessions) : null;
-            // A null template_id is a general (course-agnostic) review from
-            // the one-time bulk past-attendee pass, not an unknown course.
-            const courseTitle = r.template_id
-              ? tpl?.course_label_de || tpl?.title || "Kurs unbekannt"
-              : "Allgemeine Bewertung";
             const azubiName = azubi
               ? formatPersonName({
                   title: azubi.title,
@@ -361,10 +410,37 @@ export function ReviewsManager({
                         </Badge>
                       )}
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {courseTitle}
-                      {session?.date_iso ? ` · ${formatDate(session.date_iso)}` : ""}
-                      {session?.label_de ? ` · ${session.label_de}` : ""}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Manuelle Kurszuordnung. "Allgemeine Bewertung"
+                          setzt template_id zurück auf null. */}
+                      <Select
+                        value={r.template_id ?? NO_COURSE}
+                        onValueChange={(v) => assignCourse(r.id, v)}
+                        disabled={isBusy}
+                      >
+                        <SelectTrigger
+                          size="sm"
+                          className="h-7 w-auto min-w-[220px] text-xs"
+                        >
+                          <SelectValue placeholder="Kurs zuordnen" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={NO_COURSE}>
+                            Allgemeine Bewertung
+                          </SelectItem>
+                          {courses.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {(session?.date_iso || session?.label_de) && (
+                        <span className="text-xs text-muted-foreground">
+                          {session?.date_iso ? formatDate(session.date_iso) : ""}
+                          {session?.label_de ? ` · ${session.label_de}` : ""}
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       Eingegangen am {formatDate(r.submitted_at)}

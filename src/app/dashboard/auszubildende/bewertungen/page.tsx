@@ -3,6 +3,7 @@ import {
   ReviewsManager,
   type ReviewRow,
   type InternalFeedbackByCourse,
+  type CourseOption,
 } from "./reviews-manager";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +32,20 @@ export default async function ReviewsPage() {
        course_templates:template_id ( title, course_label_de )`,
     )
     .order("submitted_at", { ascending: false });
+
+  // Course list for the manual "assign review to course" dropdown.
+  // course_label_de is the public label; fall back to the internal title.
+  const { data: templates } = await supabase
+    .from("course_templates")
+    .select("id, title, course_label_de")
+    .order("title", { ascending: true });
+  const courseOptions: CourseOption[] = (templates ?? []).map((t) => ({
+    id: t.id as string,
+    label:
+      ((t.course_label_de as string | null) ||
+        (t.title as string | null) ||
+        "Kurs") ?? "Kurs",
+  }));
 
   // Anonymous team feedback, fetched independently. No join, no
   // booking link — by design.
@@ -103,6 +118,7 @@ export default async function ReviewsPage() {
       initialReviews={initial}
       initialFeedback={feedbackByCourse}
       feedbackThreshold={FEEDBACK_VISIBILITY_THRESHOLD}
+      courses={courseOptions}
     />
   );
 }
