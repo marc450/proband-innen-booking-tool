@@ -135,6 +135,14 @@ export function LwAccessPanel({ auszubildendeId }: { auszubildendeId: string }) 
             )}
           </p>
         )}
+        {!loading && !loadError && items && items.length > 0 && (
+          <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
+            <span className="font-medium text-emerald-700">Zugriff aktiv</span>{" "}
+            = freigeschaltet, kein Handlungsbedarf.{" "}
+            <span className="font-medium text-red-600">Kein Zugriff</span>{" "}
+            = gebucht, aber noch nicht in LearnWorlds, über Freischalten beheben.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="px-0 pb-0">
         {loading ? (
@@ -170,15 +178,23 @@ export function LwAccessPanel({ auszubildendeId }: { auszubildendeId: string }) 
                   </div>
                 </div>
                 {item.status === "enrolled" ? (
-                  <Badge variant="secondary" className="shrink-0 text-[10px] gap-1">
+                  <Badge
+                    variant="outline"
+                    className="shrink-0 text-[10px] gap-1 bg-emerald-50 text-emerald-700 border-emerald-200"
+                    title="Bei uns gebucht und in LearnWorlds freigeschaltet. Alles korrekt."
+                  >
                     <CheckCircle2 className="h-3 w-3" />
-                    In LW
+                    Zugriff aktiv
                   </Badge>
                 ) : item.status === "missing" ? (
                   <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant="destructive" className="text-[10px] gap-1">
+                    <Badge
+                      variant="destructive"
+                      className="text-[10px] gap-1"
+                      title="Bei uns gebucht, aber in LearnWorlds noch nicht freigeschaltet. Über Freischalten beheben."
+                    >
                       <AlertTriangle className="h-3 w-3" />
-                      Nicht in LW
+                      Kein Zugriff
                     </Badge>
                     <Button
                       size="sm"
@@ -192,15 +208,19 @@ export function LwAccessPanel({ auszubildendeId }: { auszubildendeId: string }) 
                 ) : item.status === "lw_only" ? (
                   <Badge
                     variant="outline"
-                    className="shrink-0 text-[10px] gap-1 bg-blue-50 text-blue-700 border-blue-200"
-                    title="LearnWorlds-Enrollment ohne Buchungsdatensatz (z.B. Legacy-Import oder direkter LW-Grant)"
+                    className="shrink-0 text-[10px] gap-1 bg-emerald-50 text-emerald-700 border-emerald-200"
+                    title="In LearnWorlds freigeschaltet, aber ohne Buchungsdatensatz bei uns (z.B. nach einem Merge oder Alt-Import). Zugriff besteht."
                   >
                     <CheckCircle2 className="h-3 w-3" />
-                    Nur LW
+                    Zugriff aktiv (ohne Buchung)
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="shrink-0 text-[10px]">
-                    Kein Online-Anteil
+                  <Badge
+                    variant="outline"
+                    className="shrink-0 text-[10px]"
+                    title="Präsenzkurs ohne Onlinekurs. Es gibt nichts in LearnWorlds freizuschalten."
+                  >
+                    Kein Onlinekurs
                   </Badge>
                 )}
               </div>
