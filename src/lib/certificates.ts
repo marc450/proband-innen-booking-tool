@@ -200,15 +200,22 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
   {
     // Aufbaukurs Botulinum "Therapeutische Indikationen". Same visual
     // layout as the other certs (left-column name above the dotted line,
-    // photo on the right) — A4 landscape 842 × 595 pt — so the name
-    // calibration is shared. The master PDF carries no footer at all:
-    // no "Berlin, <Monat> <Jahr>" line and no "VNR Theorie:" / "VNR
-    // Praxis:" labels. CME ist mit 21 Punkten ausgewiesen, aber die
-    // LÄK-Akkreditierung steht noch aus, deshalb kein VNR-Layout und
-    // kein dateStamp hier (sonst würde certificateRequiresVnr den
-    // Versand blockieren). Sobald die Akkreditierung landet, neuen
-    // Master mit gebackenen Labels einspielen und vnrTheorie/vnrPraxis
-    // (+ ggf. dateStamp) ergänzen.
+    // photo on the right) — A4 landscape 842 × 595 pt. The supplied
+    // master had no footer, so the CME/VNR footer block was copied 1:1
+    // from the Grundkurs Botulinum master (identical text: "Der Kurs
+    // ist zertifiziert mit 21 CME-Punkten durch die Landesärztekammer
+    // Berlin" + "VNR Theorie:" / "VNR Praxis:" labels). Because the
+    // baked footer is identical, the stamp coordinates match the
+    // Grundkurs Botulinum cert exactly.
+    //
+    // Der Kurs ist mit 21 CME-Punkten LÄK-akkreditiert; die VNRs werden
+    // pro Termin von der LÄK vergeben. Da vnrTheorie + vnrPraxis-Slots
+    // gesetzt sind, gibt certificateRequiresVnr true zurück und der
+    // Post-Praxis-Cron hält jede Buchung zurück (cert_sent_at bleibt
+    // null), bis course_templates.vnr_theorie und
+    // course_sessions.vnr_praxis in der DB gefüllt sind. Die
+    // zurückgehaltenen Certs gehen dann beim nächsten Cron-Lauf
+    // automatisch raus, ohne Code-Änderung.
     slug: "aufbaukurs-therapeutische-indikationen-botulinum",
     label: "Aufbaukurs Botulinum Therapeutische Indikationen",
     courseKeys: ["aufbaukurs_therapeutische_indikationen_botulinum"],
@@ -219,6 +226,9 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       maxWidth: 290,
       targetSize: 28,
       minSize: 10,
+      vnrTheorie: { x: 173, y: 57, size: 8 },
+      vnrPraxis: { x: 173, y: 33, size: 8 },
+      dateStamp: { x: 173, y: 81, size: 8 },
     },
   },
 ];
