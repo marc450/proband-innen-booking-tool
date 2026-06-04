@@ -660,3 +660,12 @@ export function isInbound(message: GmailMessage): boolean {
   const from = extractEmailAddress(getHeader(message, "From"));
   return from !== GMAIL_USER_EMAIL;
 }
+
+// True for the automated customerlove acknowledgement we send back to a
+// contact on inbound (see lib/inbox-auto-reply.ts, header stamped on send).
+// These are outbound by From-address but are NOT a human reply, so the
+// inbox "Beantwortet" logic must ignore them when deciding whether a
+// thread still needs an answer.
+export function isAutoReply(message: GmailMessage): boolean {
+  return !!getHeader(message, "X-EPHIA-Auto-Reply");
+}

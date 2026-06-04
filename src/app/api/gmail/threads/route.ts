@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listThreads, getThread, getHeader, extractEmailAddress, extractName, getBody, getAttachments, isInbound } from "@/lib/gmail";
+import { listThreads, getThread, getHeader, extractEmailAddress, extractName, getBody, getAttachments, isInbound, isAutoReply } from "@/lib/gmail";
 import { cleanGmailSnippet } from "@/lib/gmail-text";
 import { resolveContactNamesByEmail } from "@/lib/inbox-contact-names";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -56,7 +56,15 @@ export async function GET(request: NextRequest) {
           // Whether the most recent message was sent by the contact (inbound)
           // or by us (outbound). Used by the "Beantwortet" filter in the
           // inbox UI to hide threads that still need a reply.
-          const lastMessageInbound = isInbound(lastMsg);
+          //
+          // The automated customerlove acknowledgement (isAutoReply) is
+          // outbound by From-address but is NOT a human reply, so we ignore
+          // it here: otherwise an unanswered thread whose newest message is
+          // just our auto-ack would wrongly show as "Beantwortet". We base
+          // the direction on the last NON-auto-reply message.
+          const lastHumanMsg =
+            [...full.messages].reverse().find((m) => !isAutoReply(m)) || lastMsg;
+          const lastMessageInbound = isInbound(lastHumanMsg);
           // Date of the most recent INBOUND message — used by the inbox
           // list as the sort key so a staff reply does not bump the
           // thread to the top. Falls back to lastDate when the thread
@@ -78,9 +86,11 @@ export async function GET(request: NextRequest) {
           // OUTBOUND message and read its X-EPHIA-Sent-By header,
           // which is stamped by /api/gmail/send when staff fire off
           // a reply. Threads with no outbound message return null.
+          // Auto-replies are excluded so the auto-ack never registers as
+          // a staff response.
           const lastOutboundMsg = [...full.messages]
             .reverse()
-            .find((m) => !isInbound(m));
+            .find((m) => !isInbound(m) && !isAutoReply(m));
           const lastOutboundSentBy = lastOutboundMsg
             ? getHeader(lastOutboundMsg, "X-EPHIA-Sent-By") || null
             : null;
