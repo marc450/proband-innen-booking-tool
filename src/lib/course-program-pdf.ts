@@ -115,16 +115,16 @@ const AUFBAUKURS_THERAPEUTISCHE_INDIKATIONEN_BOTULINUM: ProgramTemplate = {
   ],
 };
 
-// Masterclass Botulinum — gleiche Tagesstruktur wie die übrigen Praxis-
-// kurse, aber 1040€ Teilnehmendegebühr (eigene LÄK-Akkreditierung) und
-// zwei Masterclass-spezifische Zeilen: die Wiederholungsfragen verweisen
-// auf den Onlineteil Aufbaukurs Botulinum Periorale Zone (der Online-
-// kurs der Masterclass IST die Periorale Zone), und die Indikations-
-// besprechung nennt explizit die ästhetischen Indikationen. Das Quell-
-// PDF (Marc, 14.06.2026) listet Pause und Unterrichtung mit den
-// Uhrzeiten 11:15 / 11:45, was bei einer Veranstaltung bis 18:00 ein
-// offensichtlicher Tippfehler ist. Wir setzen die korrekten Offsets
-// 195/225 (13:15 / 13:45) analog zu den anderen Templates.
+// Masterclass Botulinum — eigene, kürzere Tagesstruktur als die übrigen
+// Praxiskurse (Marc-bestätigt 04.06.2026): die getakteten Programmblöcke
+// liegen kompakt am Vormittag (Pause schon 11:15, letzter Block ab
+// 11:45), danach folgt bis 18:00 der lange praktische Teil. 1040€
+// Teilnehmendegebühr (eigene LÄK-Akkreditierung). Zwei Masterclass-
+// spezifische Zeilen: die Wiederholungsfragen verweisen auf den Online-
+// teil Aufbaukurs Botulinum Periorale Zone (der Onlinekurs der Master-
+// class IST die Periorale Zone), und die Indikationsbesprechung nennt
+// explizit die ästhetischen Indikationen. Reihenfolge hier chronologisch
+// (das Quell-PDF hatte die 11:30- und 11:15-Zeilen vertauscht gedruckt).
 const MASTERCLASS_BOTULINUM: ProgramTemplate = {
   referenceStartMinutes: 10 * 60,
   teilnehmendegebuehrEur: 1040,
@@ -136,13 +136,13 @@ const MASTERCLASS_BOTULINUM: ProgramTemplate = {
         "Wiederholungsfragen aus dem Onlineteil Aufbaukurs Botulinum Periorale Zone",
     },
     { offsetMin: 60, label: "Aufklärung und Beratung von Patient:innen" },
+    { offsetMin: 75, label: "Pause" },
     {
       offsetMin: 90,
       label:
         "Indikationsbesprechung und Behandlung von Patient:innen durch unsere Dozentin (ästhetische Indikationen)",
     },
-    { offsetMin: 195, label: "Pause" },
-    { offsetMin: 225, label: "Unterrichtung der Teilnehmenden an Patient:innen" },
+    { offsetMin: 105, label: "Unterrichtung der Teilnehmenden an Patient:innen" },
     { offsetMin: 480, label: "Ende der Veranstaltung" },
   ],
 };
