@@ -63,6 +63,7 @@ export function InboxManager({
   const [composeBcc, setComposeBcc] = useState("");
   const [composeAttachments, setComposeAttachments] = useState<File[]>([]);
   const [composeSending, setComposeSending] = useState(false);
+  const [composeError, setComposeError] = useState<string | null>(null);
 
   // Ref to capture current compose state for saving drafts (avoids stale closures)
   const composeRef = useRef({ composing: false, to: "", subject: "", body: "", cc: "", bcc: "" });
@@ -396,6 +397,7 @@ export function InboxManager({
 
   const handleComposeSend = async () => {
     setComposeSending(true);
+    setComposeError(null);
     try {
       const attachmentPayloads = await Promise.all(
         composeAttachments.map(async (file) => ({
@@ -428,7 +430,20 @@ export function InboxManager({
         setComposeAttachments([]);
         await drafts.deleteComposeDraft();
         fetchThreads();
+      } else {
+        let detail = `Senden fehlgeschlagen (HTTP ${res.status}).`;
+        try {
+          const data = await res.json();
+          if (data?.error) detail = `Senden fehlgeschlagen: ${data.error}`;
+        } catch {
+          /* response had no JSON body */
+        }
+        setComposeError(detail);
       }
+    } catch (err) {
+      setComposeError(
+        `Senden fehlgeschlagen: ${err instanceof Error ? err.message : "Netzwerkfehler"}`,
+      );
     } finally {
       setComposeSending(false);
     }
@@ -436,6 +451,7 @@ export function InboxManager({
 
   const cancelCompose = async () => {
     setComposing(false);
+    setComposeError(null);
     setComposeTo("");
     setComposeSubject("");
     setComposeBody("");
@@ -601,6 +617,7 @@ export function InboxManager({
               attachments={composeAttachments}
               onAttachmentsChange={setComposeAttachments}
               onSend={handleComposeSend}
+              sendError={composeError}
               onCancel={cancelCompose}
               aiContext={{
                 to: composeTo,

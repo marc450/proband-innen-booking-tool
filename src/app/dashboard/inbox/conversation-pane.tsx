@@ -115,6 +115,7 @@ export function ConversationPane({
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [templateNotice, setTemplateNotice] = useState<string | null>(null);
   const [assignDropdownOpen, setAssignDropdownOpen] = useState(false);
   const assignDropdownRef = useRef<HTMLDivElement>(null);
@@ -299,6 +300,7 @@ export function ConversationPane({
   const handleSend = async () => {
     if (!lastMsg) return;
     setSending(true);
+    setSendError(null);
     try {
       const to = (replyToValue || defaultReplyTo).trim();
       const subject = lastMsg.subject.startsWith("Re:")
@@ -343,7 +345,23 @@ export function ConversationPane({
         setShowBcc(false);
         if (threadId) onReplyDraftChange?.(threadId, null);
         onSent();
+      } else {
+        // Surface the failure instead of silently doing nothing. The
+        // Gmail send route returns { error } on 400/500; show it so
+        // staff know the mail did NOT go out (and can report the cause).
+        let detail = `Senden fehlgeschlagen (HTTP ${res.status}).`;
+        try {
+          const data = await res.json();
+          if (data?.error) detail = `Senden fehlgeschlagen: ${data.error}`;
+        } catch {
+          /* response had no JSON body */
+        }
+        setSendError(detail);
       }
+    } catch (err) {
+      setSendError(
+        `Senden fehlgeschlagen: ${err instanceof Error ? err.message : "Netzwerkfehler"}`,
+      );
     } finally {
       setSending(false);
     }
@@ -835,18 +853,25 @@ export function ConversationPane({
                   <Paperclip className="h-4 w-4" />
                 </button>
               </div>
-              <Button
-                onClick={handleSend}
-                disabled={sending || !replyHtml.trim() || !(replyToValue || defaultReplyTo).trim()}
-                className="bg-[#0066FF] hover:bg-[#0055DD]"
-              >
-                {sending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Send className="h-4 w-4 mr-2" />
+              <div className="flex items-center gap-3">
+                {sendError && (
+                  <p className="text-sm text-red-600 max-w-md text-right">
+                    {sendError}
+                  </p>
                 )}
-                Senden
-              </Button>
+                <Button
+                  onClick={handleSend}
+                  disabled={sending || !replyHtml.trim() || !(replyToValue || defaultReplyTo).trim()}
+                  className="bg-[#0066FF] hover:bg-[#0055DD]"
+                >
+                  {sending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Send className="h-4 w-4 mr-2" />
+                  )}
+                  Senden
+                </Button>
+              </div>
             </div>
           </div>
         )}

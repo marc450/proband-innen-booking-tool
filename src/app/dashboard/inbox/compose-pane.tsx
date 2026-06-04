@@ -37,6 +37,9 @@ interface Props {
   onAttachmentsChange: (files: globalThis.File[]) => void;
   onSend: () => void;
   onCancel: () => void;
+  // Surfaced when a send attempt fails, so the composer doesn't appear
+  // to silently do nothing on "Senden".
+  sendError?: string | null;
   // Optional: when present, RichTextEditor renders the KI drafting button.
   aiContext?: AIDraftContext;
 }
@@ -57,6 +60,7 @@ export function ComposePane({
   onAttachmentsChange,
   onSend,
   onCancel,
+  sendError,
   aiContext,
 }: Props) {
   const [showCc, setShowCc] = useState(false);
@@ -349,7 +353,12 @@ export function ComposePane({
             <Paperclip className="h-4 w-4" />
           </button>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          {sendError && (
+            <p className="text-sm text-red-600 max-w-md text-right">
+              {sendError}
+            </p>
+          )}
           <Button variant="outline" onClick={onCancel}>
             Abbrechen
           </Button>
