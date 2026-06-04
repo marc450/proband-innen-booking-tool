@@ -64,7 +64,7 @@ export default function LoginPage() {
       <img
         src="/logo-centered.svg"
         alt="EPHIA by Dr. Sophia"
-        className="w-48 mb-10"
+        className="w-32 mb-10"
       />
 
       <div className="w-full max-w-sm bg-white rounded-[10px] shadow-sm p-8">
