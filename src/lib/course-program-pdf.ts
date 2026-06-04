@@ -115,11 +115,44 @@ const AUFBAUKURS_THERAPEUTISCHE_INDIKATIONEN_BOTULINUM: ProgramTemplate = {
   ],
 };
 
+// Masterclass Botulinum — gleiche Tagesstruktur wie die übrigen Praxis-
+// kurse, aber 1040€ Teilnehmendegebühr (eigene LÄK-Akkreditierung) und
+// zwei Masterclass-spezifische Zeilen: die Wiederholungsfragen verweisen
+// auf den Onlineteil Aufbaukurs Botulinum Periorale Zone (der Online-
+// kurs der Masterclass IST die Periorale Zone), und die Indikations-
+// besprechung nennt explizit die ästhetischen Indikationen. Das Quell-
+// PDF (Marc, 14.06.2026) listet Pause und Unterrichtung mit den
+// Uhrzeiten 11:15 / 11:45, was bei einer Veranstaltung bis 18:00 ein
+// offensichtlicher Tippfehler ist. Wir setzen die korrekten Offsets
+// 195/225 (13:15 / 13:45) analog zu den anderen Templates.
+const MASTERCLASS_BOTULINUM: ProgramTemplate = {
+  referenceStartMinutes: 10 * 60,
+  teilnehmendegebuehrEur: 1040,
+  rows: [
+    { offsetMin: 0, label: "Begrüßung und Registrierung der Teilnehmenden" },
+    {
+      offsetMin: 15,
+      label:
+        "Wiederholungsfragen aus dem Onlineteil Aufbaukurs Botulinum Periorale Zone",
+    },
+    { offsetMin: 60, label: "Aufklärung und Beratung von Patient:innen" },
+    {
+      offsetMin: 90,
+      label:
+        "Indikationsbesprechung und Behandlung von Patient:innen durch unsere Dozentin (ästhetische Indikationen)",
+    },
+    { offsetMin: 195, label: "Pause" },
+    { offsetMin: 225, label: "Unterrichtung der Teilnehmenden an Patient:innen" },
+    { offsetMin: 480, label: "Ende der Veranstaltung" },
+  ],
+};
+
 const PROGRAM_TEMPLATES: Record<string, ProgramTemplate> = {
   grundkurs_botulinum: BOTULINUM_GRUNDKURS,
   grundkurs_dermalfiller: DERMALFILLER_GRUNDKURS,
   aufbaukurs_therapeutische_indikationen_botulinum:
     AUFBAUKURS_THERAPEUTISCHE_INDIKATIONEN_BOTULINUM,
+  masterclass_botulinum: MASTERCLASS_BOTULINUM,
 };
 
 // Guard against the server registry and the client-side meta list
