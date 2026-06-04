@@ -197,6 +197,30 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       dateStamp: { x: 173, y: 79, size: 8 },
     },
   },
+  {
+    // Aufbaukurs Botulinum "Therapeutische Indikationen". Same visual
+    // layout as the other certs (left-column name above the dotted line,
+    // photo on the right) — A4 landscape 842 × 595 pt — so the name
+    // calibration is shared. The master PDF carries no footer at all:
+    // no "Berlin, <Monat> <Jahr>" line and no "VNR Theorie:" / "VNR
+    // Praxis:" labels. CME ist mit 21 Punkten ausgewiesen, aber die
+    // LÄK-Akkreditierung steht noch aus, deshalb kein VNR-Layout und
+    // kein dateStamp hier (sonst würde certificateRequiresVnr den
+    // Versand blockieren). Sobald die Akkreditierung landet, neuen
+    // Master mit gebackenen Labels einspielen und vnrTheorie/vnrPraxis
+    // (+ ggf. dateStamp) ergänzen.
+    slug: "aufbaukurs-therapeutische-indikationen-botulinum",
+    label: "Aufbaukurs Botulinum Therapeutische Indikationen",
+    courseKeys: ["aufbaukurs_therapeutische_indikationen_botulinum"],
+    layout: {
+      page: 1,
+      centerX: 173,
+      baselineY: 388,
+      maxWidth: 290,
+      targetSize: 28,
+      minSize: 10,
+    },
+  },
 ];
 
 export function getCertificateTemplate(
