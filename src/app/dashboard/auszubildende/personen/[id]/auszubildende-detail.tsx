@@ -22,7 +22,7 @@ import { MergeContactModal } from "@/components/merge-contact-modal";
 import { LwAccessPanel } from "@/components/lw-access-panel";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { formatPersonName } from "@/lib/utils";
+import { formatPersonName, normalizeTitle } from "@/lib/utils";
 import { MEDICAL_SPECIALTIES } from "@/lib/medical-specialties";
 import type { Auszubildende, CourseBookingStatus } from "@/lib/types";
 
@@ -361,10 +361,17 @@ export function AuszubildendeDetail({ azubi: initialAzubi, emailAliases = [], bo
           <Card className="overflow-visible">
             <CardContent className="pt-5 pb-4">
               <div className="relative">
-                <div className="flex items-center gap-1.5 group">
-                  <h1 className="text-xl font-semibold break-words min-w-0">
-                    {formatPersonName({ title: azubi.title, firstName: azubi.first_name, lastName: azubi.last_name }) || "Unbekannt"}
-                  </h1>
+                <div className="flex items-start gap-1.5 group">
+                  <div className="min-w-0">
+                    {normalizeTitle(azubi.title) && (
+                      <div className="text-xs font-medium text-muted-foreground">
+                        {normalizeTitle(azubi.title)}
+                      </div>
+                    )}
+                    <h1 className="text-xl font-semibold break-words">
+                      {[azubi.first_name, azubi.last_name].filter(Boolean).join(" ") || "Unbekannt"}
+                    </h1>
+                  </div>
                   <button
                     onClick={() => {
                       if (namePopoverOpen) flushNamePopoverFocus();
