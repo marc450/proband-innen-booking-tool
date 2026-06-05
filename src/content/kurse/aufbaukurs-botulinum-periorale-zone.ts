@@ -27,7 +27,7 @@ export const aufbaukursBotulinumPerioraleZone: CourseLandingContent = {
       "Vertiefe Deine Myomodulations-Skills für die sensible periorale Zone, fundiert, evidenzbasiert und praxisnah.",
     stats: [
       { icon: "Clock", label: "Format", value: "Online" },
-      { icon: "Award", label: "Akkreditiert", value: "CME-Punkte + Zertifikat" },
+      { icon: "Award", label: "Akkreditiert", value: "10 CME-Punkte + Zertifikat" },
       { icon: "GraduationCap", label: "Level", value: "Aufbaukurs" },
     ],
     description:

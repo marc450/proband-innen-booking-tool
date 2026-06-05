@@ -504,6 +504,13 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
       checkboxLabel: string;
     };
   }> = {
+    aufbaukurs_botulinum_periorale_zone: {
+      // Online-only course, accredited by the LÄK with 10 CME points.
+      // Override drives the Onlinekurs CME badge independently of the DB
+      // field course_templates.cme_online (same approach as the
+      // Masterclass, whose Onlinekurs IS this course).
+      cmeOnlineOverride: "10",
+    },
     grundkurs_dermalfiller: {
       hidePraxis: true,
       hasKomplettpaket: true,
