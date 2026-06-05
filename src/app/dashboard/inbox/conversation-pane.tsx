@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "./rich-text-editor";
 import { type PickedTemplate } from "./template-picker";
 import { useFileDrop } from "./use-file-drop";
+import { checkSendPayloadSize } from "./send-limits";
 import type { ReplyDraft } from "@/hooks/use-drafts";
 
 // Middle pane: renders the selected Gmail thread and a reply composer.
@@ -316,13 +317,21 @@ export function ConversationPane({
         }))
       );
 
+      const htmlBody = `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;">${replyHtml}</div>`;
+      const tooLarge = checkSendPayloadSize(htmlBody, attachmentPayloads);
+      if (tooLarge) {
+        setSendError(tooLarge);
+        setSending(false);
+        return;
+      }
+
       const res = await fetch("/api/gmail/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           to,
           subject,
-          htmlBody: `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;">${replyHtml}</div>`,
+          htmlBody,
           threadId: lastMsg.threadId,
           inReplyTo: lastMsg.messageId,
           references: lastMsg.references

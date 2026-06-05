@@ -83,34 +83,56 @@ function exec(command: string, value?: string) {
   document.execCommand(command, false, value);
 }
 
-// Strip inline styles from pasted HTML but keep structural formatting
-function cleanPastedHtml(html: string): string {
+// Strip inline styles from pasted HTML but keep structural formatting.
+// Returns the cleaned HTML plus a flag indicating whether any inline
+// base64 image was dropped, so the caller can warn the user.
+function cleanPastedHtml(html: string): { html: string; droppedInlineImage: boolean } {
   const doc = new DOMParser().parseFromString(html, "text/html");
 
   // Walk all elements and remove style attributes + unwanted tags
   const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT);
   const toRemove: Element[] = [];
+  let droppedInlineImage = false;
 
   while (walker.nextNode()) {
     const el = walker.currentNode as Element;
     // Remove all style attributes (font-size, color, font-family, etc.)
     el.removeAttribute("style");
     el.removeAttribute("class");
+    // Drop inline base64 images. When you copy content from another email
+    // or a document, embedded pictures arrive as <img src="data:...">,
+    // a single screenshot is easily several MB. Left in the body, the
+    // outgoing request grows past the upload limit and the send fails at
+    // the network layer ("Load failed") before it ever reaches the server.
+    // Remote images (http/https/cid) are kept; only the heavy data: URIs go.
+    if (el.tagName === "IMG") {
+      const src = el.getAttribute("src") || "";
+      if (src.startsWith("data:")) {
+        toRemove.push(el);
+        droppedInlineImage = true;
+        continue;
+      }
+    }
     // Remove font tags (legacy formatting)
     if (el.tagName === "FONT") {
       toRemove.push(el);
     }
   }
 
-  // Unwrap font tags (keep their children)
   for (const el of toRemove) {
+    if (el.tagName === "IMG") {
+      // Inline images have no children worth keeping — drop the node.
+      el.parentNode?.removeChild(el);
+      continue;
+    }
+    // Unwrap font tags (keep their children)
     while (el.firstChild) {
       el.parentNode?.insertBefore(el.firstChild, el);
     }
     el.parentNode?.removeChild(el);
   }
 
-  return doc.body.innerHTML;
+  return { html: doc.body.innerHTML, droppedInlineImage };
 }
 
 const FONT_SIZES = [
@@ -143,6 +165,7 @@ export function RichTextEditor({
   const [aiInstruction, setAiInstruction] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [pasteNotice, setPasteNotice] = useState<string | null>(null);
   const aiRef = useRef<HTMLDivElement>(null);
   const aiButtonRef = useRef<HTMLButtonElement>(null);
   // Viewport-relative position for the AI popup. We use position: fixed
@@ -181,6 +204,12 @@ export function RichTextEditor({
       latestHtmlRef.current = value;
     }
   }, [value]);
+
+  useEffect(() => {
+    if (!pasteNotice) return;
+    const t = setTimeout(() => setPasteNotice(null), 8000);
+    return () => clearTimeout(t);
+  }, [pasteNotice]);
 
   useEffect(() => {
     if (autoFocus && ref.current) {
@@ -228,9 +257,14 @@ export function RichTextEditor({
     const clipboardText = e.clipboardData.getData("text/plain");
 
     if (clipboardHtml) {
-      // Paste HTML with styles stripped
-      const clean = cleanPastedHtml(clipboardHtml);
+      // Paste HTML with styles stripped and heavy inline images removed
+      const { html: clean, droppedInlineImage } = cleanPastedHtml(clipboardHtml);
       document.execCommand("insertHTML", false, clean);
+      if (droppedInlineImage) {
+        setPasteNotice(
+          "Eingefügtes Bild wurde entfernt. Bitte Bilder über die Büroklammer als Anhang hinzufügen.",
+        );
+      }
     } else if (clipboardText) {
       // Plain text — insert as-is
       document.execCommand("insertText", false, clipboardText);
@@ -641,6 +675,9 @@ export function RichTextEditor({
         style={{ fontFamily: "Arial, sans-serif" }}
         className="flex-1 px-4 py-3 text-sm leading-[1.5] outline-none overflow-y-auto min-h-[120px] max-h-[320px] [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2 [&_li]:mb-1 [&_blockquote]:pl-3 [&_blockquote]:border-l-2 [&_blockquote]:border-gray-200 [&_blockquote]:text-gray-600 [&_blockquote]:mb-2 [&_a]:text-[#0066FF] [&_a]:underline empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none"
       />
+      {pasteNotice && (
+        <p className="px-4 pb-2 text-xs text-amber-700">{pasteNotice}</p>
+      )}
     </div>
   );
 }

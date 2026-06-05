@@ -9,6 +9,7 @@ import { ThreadListPane, type ThreadSummary, type InboxFilter } from "./thread-l
 import { ConversationPane, type ThreadMessage } from "./conversation-pane";
 import { ContactSidebar } from "./contact-sidebar";
 import { ComposePane } from "./compose-pane";
+import { checkSendPayloadSize } from "./send-limits";
 import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
 
 // Three-pane HubSpot-style inbox. The parent owns all state: thread list,
@@ -407,13 +408,21 @@ export function InboxManager({
         }))
       );
 
+      const htmlBody = `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;">${composeBody}</div>`;
+      const tooLarge = checkSendPayloadSize(htmlBody, attachmentPayloads);
+      if (tooLarge) {
+        setComposeError(tooLarge);
+        setComposeSending(false);
+        return;
+      }
+
       const res = await fetch("/api/gmail/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           to: composeTo,
           subject: composeSubject,
-          htmlBody: `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;">${composeBody}</div>`,
+          htmlBody,
           cc: composeCc || undefined,
           bcc: composeBcc || undefined,
           attachments: attachmentPayloads.length > 0 ? attachmentPayloads : undefined,
