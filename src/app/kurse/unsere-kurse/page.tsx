@@ -28,13 +28,14 @@ export default async function UnsereKursePage() {
       audience: string | null;
       level: string | null;
       card_description: string | null;
+      cme: string | null;
     }
   >();
   if (courseKeys.length > 0) {
     const supabase = createAdminClient();
     const { data: templates } = await supabase
       .from("course_templates")
-      .select("course_key, image_url, title, audience, level, card_description")
+      .select("course_key, image_url, title, audience, level, card_description, cme_kombi, cme_praxis, cme_online")
       .in("course_key", courseKeys);
     for (const t of templates ?? []) {
       templateMap.set(t.course_key as string, {
@@ -43,6 +44,12 @@ export default async function UnsereKursePage() {
         audience: (t.audience as string | null) ?? null,
         level: (t.level as string | null) ?? null,
         card_description: (t.card_description as string | null) ?? null,
+        // Full-course total; fall back to praxis then online.
+        cme:
+          (t.cme_kombi as string | null) ||
+          (t.cme_praxis as string | null) ||
+          (t.cme_online as string | null) ||
+          null,
       });
     }
   }
@@ -59,6 +66,7 @@ export default async function UnsereKursePage() {
         ...(fromDb.audience ? { dbAudience: fromDb.audience } : {}),
         ...(fromDb.level ? { dbLevel: fromDb.level } : {}),
         ...(fromDb.card_description ? { dbCardDescription: fromDb.card_description } : {}),
+        ...(fromDb.cme ? { cme: fromDb.cme } : {}),
       };
     }),
   };

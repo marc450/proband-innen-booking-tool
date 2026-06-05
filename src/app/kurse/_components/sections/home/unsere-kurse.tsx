@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { Award } from "lucide-react";
 import type { HomeCoursesContent, HomeCourseTile } from "@/content/kurse/home-types";
 import { GroupInquiryDialog } from "../group-inquiry-dialog";
 import { TYPO, titleCase } from "../../typography";
@@ -135,6 +136,18 @@ function CourseTile({
     ? { label: "Für Fortgeschrittene" }
     : null;
 
+  // CME badge — mirrors the booking-widget CourseCard. Pending wins over
+  // a numeric value; a bare number gets a "CME" suffix appended.
+  const cmeText = isGroup
+    ? null
+    : tile.cmePending
+    ? "CME beantragt"
+    : tile.cme
+    ? /CME/i.test(tile.cme)
+      ? tile.cme
+      : `${tile.cme} CME`
+    : null;
+
   return (
     <article className="bg-white rounded-[10px] overflow-hidden flex flex-col group">
       {/* Image */}
@@ -148,6 +161,15 @@ function CourseTile({
             sizes="(min-width: 768px) 50vw, 100vw"
             className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
+          {cmeText && (
+            <div
+              className="absolute top-4 right-4 z-10 bg-[#0066FF] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5"
+              style={{ boxShadow: "0 0 0 3px rgba(255,255,255,0.9), 0 2px 8px rgba(0,0,0,0.15)" }}
+            >
+              <Award className="w-4 h-4" aria-hidden="true" />
+              <span className="text-sm font-bold whitespace-nowrap">{cmeText}</span>
+            </div>
+          )}
         </div>
       ) : (
         <div

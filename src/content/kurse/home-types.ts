@@ -86,6 +86,20 @@ export interface HomeCourseTile {
    * can leave the column NULL until he fills each course in.
    */
   dbCardDescription?: string;
+  /**
+   * Runtime-only override populated from `course_templates.cme_kombi`
+   * (the full-course total), with fallback to praxis then online. Drives
+   * the floating CME badge on the card. May be a bare number ("22") or a
+   * value already containing "CME" — the badge normalises it. Empty/NULL
+   * renders no badge. NOT written by hand in content files.
+   */
+  cme?: string;
+  /**
+   * When true, the card shows a "CME beantragt" badge instead of a
+   * numeric CME value (course accreditation pending). Reserved for manual
+   * use; the home loader does not set this from the DB today.
+   */
+  cmePending?: boolean;
   /** Second-line subtitle, e.g. "Für Humanmediziner:innen" */
   audience: string;
   /** Longer body text shown inside the card */
