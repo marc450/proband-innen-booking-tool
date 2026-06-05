@@ -298,9 +298,10 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
           return dir * aI.localeCompare(bI, "de");
         }
         case "zuweiser": {
-          // referring_doctor is only filled on private bookings; rows
-          // without it sort below filled ones in asc, above in desc, so
-          // staff can find unassigned/standard rows next to each other.
+          // referring_doctor is always filled on private bookings and
+          // optionally on standard ones; rows without it sort below filled
+          // ones in asc, above in desc, so staff can find unassigned rows
+          // next to each other.
           const rA = (a.referring_doctor || "").toLowerCase();
           const rB = (b.referring_doctor || "").toLowerCase();
           return dir * rA.localeCompare(rB, "de");
