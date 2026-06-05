@@ -275,9 +275,9 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       maxWidth: 290,
       targetSize: 28,
       minSize: 10,
-      vnrTheorie: { x: 173, y: 49, size: 8 },
-      vnrPraxis: { x: 173, y: 25, size: 8 },
-      dateStamp: { x: 173, y: 73, size: 8 },
+      vnrTheorie: { x: 173, y: 40, size: 8 },
+      vnrPraxis: { x: 173, y: 16, size: 8 },
+      dateStamp: { x: 173, y: 64, size: 8 },
     },
   },
 ];
