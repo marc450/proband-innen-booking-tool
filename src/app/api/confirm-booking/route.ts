@@ -331,6 +331,7 @@ export async function POST(req: NextRequest) {
 
     // Create booking using RPC for atomic slot locking
     const indication: string | null = session.metadata?.indication || null;
+    const referringDoctor: string | null = session.metadata?.referringDoctor || null;
 
     const { data: bookingId, error: rpcError } = await supabase.rpc("create_encrypted_booking", {
       p_slot_id: slotId,
@@ -340,7 +341,7 @@ export async function POST(req: NextRequest) {
       p_encryption_iv: bookingEncrypted.encryption_iv,
       p_stripe_checkout_session_id: sessionId,
       p_booking_type: "standard",
-      p_referring_doctor: null,
+      p_referring_doctor: referringDoctor,
       p_indication: indication,
     });
 

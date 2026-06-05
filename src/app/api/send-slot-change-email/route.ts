@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildEmailHtml, PATIENT_PREPARATION_BLOCK } from "@/lib/email-template";
 import { archiveSentMessage } from "@/lib/gmail";
+import { getCanonicalPatientFirstName } from "@/lib/patient-name";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 
@@ -11,8 +12,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing email or API key" }, { status: 400 });
   }
 
+  // Prefer the canonical profile name over the caller-supplied one, so a
+  // later name correction is always reflected. Falls back to the passed
+  // value when no patient matches the address.
+  const canonicalFirstName = (await getCanonicalPatientFirstName(email)) || firstName;
+
   const html = buildEmailHtml({
-    firstName: firstName || "Proband:in",
+    firstName: canonicalFirstName || "Proband:in",
     intro: `Dein Termin für <strong>${courseTitle}</strong> wurde geändert. Hier sind Deine neuen Termindetails:`,
     infoRows: [
       { label: "Behandlung", value: courseTitle },

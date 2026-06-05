@@ -198,6 +198,15 @@ export async function sendPostPraxisCertificates(
           continue; // Silent skip — no cert for this booking.
         }
 
+        // Generator-only certs are render-by-hand in the
+        // Zertifikatgenerator but must never be auto-dispatched by the
+        // cron (automated sending not signed off). Skip without setting
+        // cert_sent_at so flipping the flag later resumes normal sends.
+        if (cert.generatorOnly) {
+          result.skippedNoCert += 1;
+          continue;
+        }
+
         // VNRs only matter for certs that actually stamp them. The
         // Zahnmedizin cert carries no CME and therefore no VNRs, so
         // skipping the check lets legacy dentist bookings receive a

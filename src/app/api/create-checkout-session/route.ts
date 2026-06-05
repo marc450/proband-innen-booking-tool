@@ -7,7 +7,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: NextRequest) {
   try {
-    const { slotId, email, phone, indication, successUrl, cancelUrl } = await req.json();
+    const { slotId, email, phone, referringDoctor, indication, successUrl, cancelUrl } = await req.json();
 
     if (!slotId) {
       return NextResponse.json({ error: "slotId is required" }, { status: 400 });
@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
       metadata: {
         slotId,
         phone: phone || "",
+        ...(referringDoctor ? { referringDoctor } : {}),
         ...(indication ? { indication } : {}),
       },
       success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,

@@ -48,6 +48,16 @@ export interface CertificateTemplate {
    *  for a given session; if no entry matches the session's course_key,
    *  no email is sent. */
   courseKeys: string[];
+  /** City printed on the "<Stadt>, <Monat> <Jahr>" footer date line.
+   *  Mirrors the accrediting chamber's place (Landesärztekammer Berlin →
+   *  "Berlin", Landesärztekammer Brandenburg → "Brandenburg"). Defaults
+   *  to "Berlin" when omitted. */
+  footerCity?: string;
+  /** When true, this cert is available in the manual Zertifikatgenerator
+   *  but the post-praxis cron NEVER auto-sends it. Used for certs that
+   *  are ready to render by hand but whose automated dispatch is not yet
+   *  signed off. */
+  generatorOnly?: boolean;
   /** When true, this cert is exclusively for Zahnärzt:innen — used as the
    *  override for dentists sitting in a shared Botulinum Praxiskurs whose
    *  audience_tag = "Zahnmediziner:in" or whose linked auszubildende has
@@ -231,6 +241,45 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       dateStamp: { x: 173, y: 81, size: 8 },
     },
   },
+  {
+    // Aufbaukurs Botulinum "Periorale Zone". Same A4-landscape layout as
+    // the other certs (left-column name above the dotted line, photo on
+    // the right). Unlike the Berlin certs this one is accredited by the
+    // Landesärztekammer BRANDENBURG with 10 CME-Punkten, so footerCity is
+    // "Brandenburg" (the date line reads "Brandenburg, <Monat> <Jahr>").
+    //
+    // The supplied master carried only the baked "10 CME-Punkten …
+    // Landesärztekammer Brandenburg" lines; the "VNR Theorie:" / "VNR
+    // Praxis:" labels were baked in afterwards (Roboto-Regular 8pt, rose,
+    // 1.44pt tracking, centred at x≈172 — copied 1:1 from the Grundkurs
+    // Botulinum master) so the footer matches the other certs. The
+    // labels sit lower than the Berlin certs because the periorale CME
+    // block itself sits ~8pt lower; the stamp coordinates below follow
+    // the periorale footer's own 12pt rhythm.
+    //
+    // generatorOnly: true — the cert is selectable in the manual
+    // Zertifikatgenerator, but the post-praxis cron must NOT auto-send it
+    // yet (automated dispatch is not signed off). The cron skips any cert
+    // flagged generatorOnly. vnr_theorie is already filled on the
+    // course_templates row; vnr_praxis would come from a course_sessions
+    // row once Kurstermine are created.
+    slug: "aufbaukurs-botulinum-periorale-zone",
+    label: "Aufbaukurs Botulinum Periorale Zone",
+    courseKeys: ["aufbaukurs_botulinum_periorale_zone"],
+    footerCity: "Brandenburg",
+    generatorOnly: true,
+    layout: {
+      page: 1,
+      centerX: 173,
+      baselineY: 388,
+      maxWidth: 290,
+      targetSize: 28,
+      minSize: 10,
+      vnrTheorie: { x: 173, y: 49, size: 8 },
+      vnrPraxis: { x: 173, y: 25, size: 8 },
+      dateStamp: { x: 173, y: 73, size: 8 },
+    },
+  },
 ];
 
 export function getCertificateTemplate(
@@ -345,14 +394,15 @@ const MONTHS_DE_LONG = [
   "Juli", "August", "September", "Oktober", "November", "Dezember",
 ];
 
-/** Build the "Berlin, <Monat> <Jahr>" footer line for a given session
- *  date_iso (YYYY-MM-DD). Returns null if the input can't be parsed —
+/** Build the "<Stadt>, <Monat> <Jahr>" footer line for a given session
+ *  date_iso (YYYY-MM-DD). The city mirrors the accrediting chamber and
+ *  defaults to "Berlin". Returns null if the input can't be parsed —
  *  the caller then skips the stamp so we never accidentally draw a
  *  blank cover that hides the baked text without replacing it. */
-function formatBerlinDateLine(dateIso: string): string | null {
+function formatChamberDateLine(dateIso: string, city: string): string | null {
   const [y, m] = dateIso.split("-").map(Number);
   if (!y || !m || m < 1 || m > 12) return null;
-  return `Berlin, ${MONTHS_DE_LONG[m - 1]} ${y}`;
+  return `${city}, ${MONTHS_DE_LONG[m - 1]} ${y}`;
 }
 
 export async function generateCertificatePdf(opts: {
@@ -448,7 +498,10 @@ export async function generateCertificatePdf(opts: {
   // same size as the VNR numbers so it matches the surrounding footer.
   const dateLayout = template.layout.dateStamp;
   if (dateLayout && sessionDateIso) {
-    const dateLine = formatBerlinDateLine(sessionDateIso);
+    const dateLine = formatChamberDateLine(
+      sessionDateIso,
+      template.footerCity ?? "Berlin",
+    );
     if (dateLine) {
       const dSize = dateLayout.size ?? 8;
       const dSpaced = spaceDigits(dateLine);

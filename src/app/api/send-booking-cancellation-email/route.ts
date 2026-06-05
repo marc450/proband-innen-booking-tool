@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildEmailHtml } from "@/lib/email-template";
 import { archiveSentMessage } from "@/lib/gmail";
+import { getCanonicalPatientFirstName } from "@/lib/patient-name";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 
@@ -20,8 +21,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "RESEND_API_KEY not configured" }, { status: 500 });
   }
 
+  // Prefer the canonical profile name over the caller-supplied one, so a
+  // later name correction is always reflected. Falls back to the passed
+  // value when no patient matches the address.
+  const canonicalFirstName = (await getCanonicalPatientFirstName(email)) || firstName;
+
   const html = buildEmailHtml({
-    firstName: firstName || "Proband:in",
+    firstName: canonicalFirstName || "Proband:in",
     intro: `Dein Termin für <strong>${courseTitle || "Deine Behandlung"}</strong> wurde storniert. Hier sind die Details des stornierten Termins:`,
     infoRows: [
       { label: "Behandlung", value: courseTitle || "" },

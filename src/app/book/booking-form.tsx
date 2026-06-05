@@ -20,6 +20,7 @@ type Step = "details" | "agb" | "privacy" | "confirm";
 export function BookingForm({ slot, guidePriceCents, indication }: BookingFormProps) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [referringDoctor, setReferringDoctor] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
   const [agreedToEmailComm, setAgreedToEmailComm] = useState(false);
@@ -68,6 +69,7 @@ export function BookingForm({ slot, guidePriceCents, indication }: BookingFormPr
           slotId: slot.id,
           email: email.trim(),
           phone,
+          referringDoctor: referringDoctor.trim(),
           indication: indication ?? null,
           successUrl: `${origin}/book/success`,
           cancelUrl: `${origin}/book`,
@@ -164,6 +166,21 @@ export function BookingForm({ slot, guidePriceCents, indication }: BookingFormPr
                   className="h-11 text-base"
                   required
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="referringDoctor" className="text-sm font-medium">Name der behandelnden Ärzt:in (optional)</Label>
+                <Input
+                  id="referringDoctor"
+                  type="text"
+                  placeholder="z.B. Dr. med. Anna Müller"
+                  value={referringDoctor}
+                  onChange={(e) => setReferringDoctor(e.target.value)}
+                  className="h-11 text-base"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Falls Du von einer Ärzt:in zu diesem Kurs geschickt wurdest, trage hier ihren Namen ein.
+                </p>
               </div>
 
               {isBotulinum && (
@@ -489,6 +506,12 @@ export function BookingForm({ slot, guidePriceCents, indication }: BookingFormPr
                   <span className="text-muted-foreground">Telefon</span>
                   <span className="font-medium">{phone}</span>
                 </div>
+                {referringDoctor.trim() !== "" && (
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-muted-foreground">Behandelnde:r Ärzt:in</span>
+                    <span className="font-medium">{referringDoctor}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 py-2 border-b">
                   <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
                   <span className="text-sm">AGB akzeptiert</span>
