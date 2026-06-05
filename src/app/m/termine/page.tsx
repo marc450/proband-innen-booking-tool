@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { decryptBooking } from "@/lib/encryption";
+import { decryptBookingWithDetails } from "@/lib/encryption";
 import { CoursesOverview, type SlotBooking } from "./courses-overview";
 
 export default async function MobileTerminePage() {
@@ -51,12 +51,38 @@ export default async function MobileTerminePage() {
       .order("date_iso", { ascending: true }),
   ]);
 
+  // Canonical name lookup: a booking's encrypted name snapshot is frozen
+  // at booking time and drifts when the Patient:in is corrected later.
+  // Load linked patients so we can prefer the profile name (same pattern
+  // as the desktop bookings list).
+  const bookingPatientIds = Array.from(
+    new Set(
+      (bookingRows || [])
+        .map((r) => r.patient_id as string | null)
+        .filter((id): id is string => !!id),
+    ),
+  );
+  const { data: bookingPatientRows } = bookingPatientIds.length
+    ? await adminSupabase
+        .from("patients")
+        .select(
+          "id, encrypted_data, encrypted_key, encryption_iv, first_name, last_name",
+        )
+        .in("id", bookingPatientIds)
+    : { data: [] };
+  const bookingPatientById = new Map(
+    (bookingPatientRows || []).map((p) => [p.id as string, p]),
+  );
+
   // Group decrypted bookings by slot_id so the UI can render a clickable
   // patient link per booking.
   const slotBookings: Record<string, SlotBooking[]> = {};
   for (const raw of bookingRows || []) {
     try {
-      const b = decryptBooking(raw);
+      const patient = raw.patient_id
+        ? bookingPatientById.get(raw.patient_id as string)
+        : null;
+      const b = decryptBookingWithDetails(patient ? { ...raw, patient } : raw);
       const fullName =
         [b.first_name, b.last_name].filter(Boolean).join(" ").trim() ||
         b.name ||

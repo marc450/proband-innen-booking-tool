@@ -28,10 +28,16 @@ export default async function MobileContactDetailPage({
     notFound();
   }
 
+  // Attach the patient as the canonical name source: a booking's own
+  // encrypted name snapshot is frozen at booking time and drifts when the
+  // Patient:in is corrected later. decryptBookingWithDetails prefers the
+  // patient name when the patient row is present.
   return (
     <ContactProfile
       patient={decryptPatient(patient)}
-      bookings={(bookings || []).map(decryptBookingWithDetails)}
+      bookings={(bookings || []).map((b) =>
+        decryptBookingWithDetails({ ...b, patient }),
+      )}
       isAdmin={isAdmin}
     />
   );

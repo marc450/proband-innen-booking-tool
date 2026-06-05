@@ -26,10 +26,17 @@ export default async function PatientDetailPage({
     notFound();
   }
 
+  // Every booking on this page belongs to `patient`, so attach it as the
+  // canonical name source. The booking's own encrypted name snapshot is
+  // frozen at booking time and drifts when the Patient:in is later
+  // corrected; decryptBookingWithDetails prefers the patient name when the
+  // patient row is present.
   return (
     <PatientDetail
       patient={decryptPatient(patient)}
-      bookings={(bookings || []).map(decryptBookingWithDetails)}
+      bookings={(bookings || []).map((b) =>
+        decryptBookingWithDetails({ ...b, patient }),
+      )}
       isAdmin={isAdmin}
     />
   );

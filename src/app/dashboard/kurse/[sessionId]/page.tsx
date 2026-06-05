@@ -1,7 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { decryptBooking } from "@/lib/encryption";
+import { decryptBookingWithDetails } from "@/lib/encryption";
 import { KursDetailClient, type DetailBooking, type DetailSlot } from "./kurs-detail";
 
 export const dynamic = "force-dynamic";
@@ -59,8 +59,34 @@ export default async function KursDetailPage({
         )
         .neq("status", "cancelled");
 
+      // Canonical name lookup: a booking carries its own encrypted name
+      // snapshot from booking time, which drifts if the Patient:in is later
+      // corrected. Load the linked patient rows so we can prefer the
+      // profile name (same pattern as the Ärzt:innen list below and the
+      // /dashboard/bookings list). Falls back to the booking snapshot for
+      // bookings without a patient_id.
+      const patientIds = Array.from(
+        new Set(
+          (bookingRows ?? [])
+            .map((r) => r.patient_id as string | null)
+            .filter((id): id is string => !!id),
+        ),
+      );
+      const patientRows = patientIds.length
+        ? (
+            await admin
+              .from("patients")
+              .select(
+                "id, encrypted_data, encrypted_key, encryption_iv, first_name, last_name",
+              )
+              .in("id", patientIds)
+          ).data ?? []
+        : [];
+      const patientById = new Map(patientRows.map((p) => [p.id as string, p]));
+
       bookings = ((bookingRows ?? []).map((row) => {
-        const decrypted = decryptBooking(row);
+        const patient = row.patient_id ? patientById.get(row.patient_id as string) : null;
+        const decrypted = decryptBookingWithDetails(patient ? { ...row, patient } : row);
         return {
           id: decrypted.id,
           slot_id: decrypted.slot_id,
