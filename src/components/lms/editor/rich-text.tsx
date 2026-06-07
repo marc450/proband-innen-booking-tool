@@ -8,7 +8,7 @@
 //
 // TipTap lives only in this admin editor. The public reader (renderer.tsx)
 // stays free of any editor runtime.
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useEditor, EditorContent, type Content } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Bold, Italic, Link as LinkIcon, X } from "lucide-react";
@@ -55,15 +55,29 @@ export function RichTextField({
   mode = "inline",
   placeholder,
   className,
+  emphasized = false,
 }: {
   value: RtNode[];
   onChange: (nodes: RtNode[]) => void;
   mode?: Mode;
   placeholder?: string;
   className?: string;
+  // When true the field renders its text bold and hides the Bold button.
+  // Used inside blocks whose container is already bold (e.g. callouts), so
+  // the editing surface matches the preview and the redundant Bold toggle
+  // (which has no visible effect there) is not shown.
+  emphasized?: boolean;
 }) {
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
+
+  // Always call the latest onChange. useEditor captures its options once,
+  // so without this ref the onUpdate closure would keep calling the
+  // onChange (and the block snapshot it closes over) from first mount.
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  });
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -86,12 +100,13 @@ export function RichTextField({
     ],
     content: toDoc(value, mode) as unknown as Content,
     onUpdate: ({ editor }) => {
-      onChange(fromEditor(editor.getJSON() as { content?: RtNode[] }, mode));
+      onChangeRef.current(fromEditor(editor.getJSON() as { content?: RtNode[] }, mode));
     },
     editorProps: {
       attributes: {
         class:
-          "lms-rt prose-none outline-none min-h-[2.25rem] px-3 py-2 text-sm leading-relaxed",
+          "lms-rt prose-none outline-none min-h-[2.25rem] px-3 py-2 text-sm leading-relaxed" +
+          (emphasized ? " font-bold" : ""),
       },
     },
   });
@@ -122,10 +137,12 @@ export function RichTextField({
   return (
     <div className={`rounded-md border border-input bg-white ${className ?? ""}`}>
       <div className="flex items-center gap-0.5 border-b px-1.5 py-1">
-        <button type="button" className={btn(editor.isActive("bold"))} title="Fett"
-          onClick={() => editor.chain().focus().toggleBold().run()}>
-          <Bold className="h-3.5 w-3.5" />
-        </button>
+        {!emphasized && (
+          <button type="button" className={btn(editor.isActive("bold"))} title="Fett"
+            onClick={() => editor.chain().focus().toggleBold().run()}>
+            <Bold className="h-3.5 w-3.5" />
+          </button>
+        )}
         <button type="button" className={btn(editor.isActive("italic"))} title="Kursiv"
           onClick={() => editor.chain().focus().toggleItalic().run()}>
           <Italic className="h-3.5 w-3.5" />

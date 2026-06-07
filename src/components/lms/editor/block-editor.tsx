@@ -178,7 +178,8 @@ function BlockBody({ block, onChange }: { block: Block; onChange: (b: Block) => 
         <div className="space-y-2">
           <Select value={String(attrs.variant ?? "signal")} onChange={(v) => setAttrs({ variant: v })}
             options={[["signal", "Blau (Signal)"], ["rose", "Rosé"], ["brown1", "Braun"], ["think", "Blau + Glühbirne (Insight)"]]} />
-          <RichTextField mode="multiline" value={content} onChange={setContent} placeholder="Hervorgehobener Text…" />
+          <RichTextField mode="multiline" value={content} onChange={setContent} placeholder="Hervorgehobener Text…" emphasized />
+          <p className="text-[11px] text-muted-foreground">Callout-Text wird immer fett dargestellt.</p>
         </div>
       );
 
@@ -314,8 +315,8 @@ function SummaryBandEditor({ content, setContent }: { content: Block[]; setConte
   return (
     <div className="space-y-2">
       <p className="text-[11px] text-muted-foreground">Blauer Abschnitt mit Überschrift und Häkchen-Karten.</p>
-      <RichTextField mode="inline" value={headingInline} onChange={(h) => rebuild(h, introInline, cards)} placeholder="Überschrift (optional)" />
-      <RichTextField mode="inline" value={introInline} onChange={(p) => rebuild(headingInline, p, cards)} placeholder="Einleitungstext (optional)" />
+      <RichTextField mode="inline" value={headingInline} onChange={(h) => rebuild(h, introInline, cards)} placeholder="Überschrift (optional)" emphasized />
+      <RichTextField mode="inline" value={introInline} onChange={(p) => rebuild(headingInline, p, cards)} placeholder="Einleitungstext (optional)" emphasized />
       <div className="space-y-1.5 pt-1">
         {cards.map((c, idx) => (
           <div key={idx} className="flex items-start gap-1.5">
