@@ -5,6 +5,7 @@
 // public URL. Shows a preview once set, with replace/remove actions.
 import { useRef, useState, useCallback } from "react";
 import { UploadCloud, Loader2, X } from "lucide-react";
+import { pingActivity } from "@/lib/activity";
 
 async function uploadImage(file: File): Promise<string> {
   const form = new FormData();
@@ -43,6 +44,7 @@ export function ImageDropzone({
       if (!file) return;
       setBusy(true);
       setError(null);
+      pingActivity(); // keep the session alive while uploading
       try {
         const url = await uploadImage(file);
         onChange(url);

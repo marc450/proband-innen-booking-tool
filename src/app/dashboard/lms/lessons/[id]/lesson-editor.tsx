@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import type { LmsLesson, TipTapNode, TipTapDoc } from "@/lib/lms/types";
 import { validateTipTapDoc, parseAndValidateDoc } from "@/lib/lms/schema";
@@ -12,6 +12,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, ExternalLink, Check, Eye, Code2 } from "lucide-react";
+
+type Draft = {
+  title: string;
+  slug: string;
+  lessonType: "text" | "video";
+  duration: string;
+  videoId: string;
+  published: boolean;
+  blocks: TipTapNode[];
+  ts: number;
+};
 
 async function patchLesson(id: string, payload: Record<string, unknown>) {
   const res = await fetch(`/api/admin/lms/lessons/${id}`, {
@@ -56,6 +67,83 @@ export function LessonEditor({
   const doc: TipTapDoc = useMemo(() => ({ type: "doc", content: blocks }), [blocks]);
   const validation = useMemo(() => validateTipTapDoc(doc), [doc]);
 
+  // ── Draft autosave + restore ──────────────────────────────────────
+  // Guards against losing work to the inactivity logout, an accidental
+  // navigation, or a reload. The current edit state is mirrored to
+  // localStorage; if a newer unsaved draft is found on load we offer to
+  // restore it. Cleared on a successful server save.
+  const draftKey = `lms-draft:${lesson.id}`;
+  const initialSnapshot = useMemo(
+    () =>
+      JSON.stringify({
+        title: lesson.title,
+        slug: lesson.slug,
+        lessonType: lesson.lesson_type,
+        duration: lesson.duration_seconds != null ? String(lesson.duration_seconds) : "",
+        videoId: lesson.cf_stream_video_id ?? "",
+        published: lesson.is_published,
+        blocks: lesson.body.content ?? [],
+      }),
+    [lesson],
+  );
+  const [restorable, setRestorable] = useState<Draft | null>(null);
+
+  // On mount: surface a draft only if it differs from the saved lesson.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (!raw) return;
+      const d = JSON.parse(raw) as Draft;
+      const snap = JSON.stringify({
+        title: d.title, slug: d.slug, lessonType: d.lessonType,
+        duration: d.duration, videoId: d.videoId, published: d.published, blocks: d.blocks,
+      });
+      if (snap !== initialSnapshot) setRestorable(d);
+      else localStorage.removeItem(draftKey);
+    } catch {
+      // ignore a corrupt draft
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Autosave (debounced). Paused while a restore decision is pending so
+  // it can't overwrite the draft the user hasn't acted on yet.
+  useEffect(() => {
+    if (restorable) return;
+    const snap = JSON.stringify({ title, slug, lessonType, duration, videoId, published, blocks });
+    if (snap === initialSnapshot) {
+      try { localStorage.removeItem(draftKey); } catch {}
+      return;
+    }
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          draftKey,
+          JSON.stringify({ title, slug, lessonType, duration, videoId, published, blocks, ts: Date.now() }),
+        );
+      } catch {
+        // storage full / unavailable — ignore
+      }
+    }, 800);
+    return () => clearTimeout(t);
+  }, [title, slug, lessonType, duration, videoId, published, blocks, restorable, initialSnapshot, draftKey]);
+
+  const restoreDraft = () => {
+    if (!restorable) return;
+    setTitle(restorable.title);
+    setSlug(restorable.slug);
+    setLessonType(restorable.lessonType);
+    setDuration(restorable.duration);
+    setVideoId(restorable.videoId);
+    setPublished(restorable.published);
+    setBlocks(restorable.blocks ?? []);
+    setRestorable(null);
+  };
+  const discardDraft = () => {
+    try { localStorage.removeItem(draftKey); } catch {}
+    setRestorable(null);
+  };
+
   const enterJson = () => {
     setJsonText(JSON.stringify(doc, null, 2));
     setJsonError(null);
@@ -86,6 +174,7 @@ export function LessonEditor({
         is_published: published,
         body: doc,
       });
+      try { localStorage.removeItem(draftKey); } catch {}
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (e) {
@@ -119,6 +208,19 @@ export function LessonEditor({
           </Button>
         </div>
       </div>
+
+      {restorable && (
+        <div className="mb-4 rounded-[10px] bg-blue-50 text-blue-900 text-sm px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+          <span>
+            Ungespeicherter Entwurf von einer früheren Bearbeitung gefunden. Möchtest Du ihn
+            wiederherstellen?
+          </span>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={restoreDraft}>Wiederherstellen</Button>
+            <Button size="sm" variant="outline" onClick={discardDraft}>Verwerfen</Button>
+          </div>
+        </div>
+      )}
 
       {error && <div className="mb-4 rounded-[10px] bg-red-50 text-red-700 text-sm px-4 py-3 whitespace-pre-wrap">{error}</div>}
       {!validation.ok && (

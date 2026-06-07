@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { ACTIVITY_EVENT } from "@/lib/activity";
 import {
   Dialog,
   DialogContent,
@@ -65,6 +66,8 @@ export function InactivityLogout() {
     window.addEventListener("scroll", markActive, { passive: true });
     window.addEventListener("touchstart", markActive, { passive: true });
     window.addEventListener("mousemove", onMouseMove, { passive: true });
+    // Long-running ops (e.g. an upload) emit this so they don't time out.
+    window.addEventListener(ACTIVITY_EVENT, markActive, { passive: true });
 
     return () => {
       window.removeEventListener("mousedown", markActive);
@@ -72,6 +75,7 @@ export function InactivityLogout() {
       window.removeEventListener("scroll", markActive);
       window.removeEventListener("touchstart", markActive);
       window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener(ACTIVITY_EVENT, markActive);
     };
   }, []);
 

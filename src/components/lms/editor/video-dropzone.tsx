@@ -7,6 +7,7 @@
 import { useRef, useState, useCallback } from "react";
 import { Upload } from "tus-js-client";
 import { UploadCloud, Loader2, X, CheckCircle2 } from "lucide-react";
+import { pingActivity } from "@/lib/activity";
 
 // Resumable chunked upload via Cloudflare's direct-creator flow. The tus
 // client POSTs its creation request to our backend (`endpoint`), which
@@ -27,7 +28,10 @@ function tusUpload(file: File, onProgress: (pct: number) => void): Promise<strin
       removeFingerprintOnSuccess: true,
       metadata: { maxDurationSeconds: "7200", name: file.name, filetype: file.type },
       onError: (err) => reject(err instanceof Error ? err : new Error(String(err))),
-      onProgress: (sent, total) => onProgress(Math.round((sent / total) * 100)),
+      onProgress: (sent, total) => {
+        pingActivity(); // keep the session alive during long uploads
+        onProgress(Math.round((sent / total) * 100));
+      },
       onSuccess: () => {
         const m = (upload.url || "").match(/\/tus\/([^/?]+)/);
         if (m) resolve(m[1]);
