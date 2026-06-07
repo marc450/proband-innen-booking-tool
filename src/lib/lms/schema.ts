@@ -32,6 +32,7 @@ const BLOCK_TYPES = new Set([
   "ctaButton",
   "quiz",
   "motivationBlock",
+  "bibliography",
   "text",
 ]);
 

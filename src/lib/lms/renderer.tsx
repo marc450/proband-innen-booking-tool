@@ -303,6 +303,40 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
         </div>
       );
 
+    case "bibliography": {
+      const title = node.attrs?.title?.trim() || "Literaturverzeichnis";
+      return (
+        <section className="my-8">
+          <h2 className="text-3xl font-bold mt-10 mb-5 leading-tight text-black">
+            {title}
+          </h2>
+          <ol className="list-decimal pl-6 space-y-4 text-sm leading-[1.55] text-black/70">
+            {node.content?.map((item, i) => {
+              if (item.type !== "listItem") return null;
+              // Strip the paragraph wrapper so each entry reads as one
+              // continuous citation, mirroring the orderedList "citations"
+              // variant. Bare URLs in plain-text runs get auto-linked.
+              const flat = item.content?.flatMap((c) =>
+                c.type === "paragraph" ? c.content ?? [] : [c],
+              );
+              return (
+                <li key={i} className="break-words pl-1">
+                  {flat?.map((c, j) =>
+                    c.type === "text" &&
+                    !c.marks?.some((m) => m.type === "link") ? (
+                      <span key={j}>{renderRefText(c.text)}</span>
+                    ) : (
+                      <RenderNode key={j} node={c} />
+                    ),
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      );
+    }
+
     case "summaryBand": {
       const headerChildren =
         node.content?.filter(
@@ -417,6 +451,39 @@ function CalloutChild({ node }: { node: TipTapNode }): ReactNode {
     );
   }
   return <RenderNode node={node} />;
+}
+
+// Auto-link bare URLs (DOIs, journal links) inside a Literaturverzeichnis
+// entry so a pasted "https://doi.org/…" becomes clickable without the
+// editor adding a link mark by hand. Trailing sentence punctuation stays
+// outside the link so "…082." doesn't swallow the period into the href.
+function renderRefText(text: string): ReactNode {
+  const urlRe = /(https?:\/\/[^\s]+)/g;
+  if (!urlRe.test(text)) return text;
+  urlRe.lastIndex = 0;
+  const parts: ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = urlRe.exec(text)) !== null) {
+    if (m.index > last) parts.push(text.slice(last, m.index));
+    const raw = m[1];
+    const url = raw.replace(/[.,;)]+$/, "");
+    parts.push(
+      <a
+        key={m.index}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-[#0066FF] underline break-all"
+      >
+        {url}
+      </a>,
+    );
+    if (raw.length > url.length) parts.push(raw.slice(url.length));
+    last = m.index + raw.length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return <>{parts}</>;
 }
 
 function renderText(text: string, marks?: TipTapMark[]): ReactNode {

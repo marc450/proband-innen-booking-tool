@@ -11,7 +11,7 @@ import { VideoDropzone } from "./video-dropzone";
 import {
   Plus, Trash2, ArrowUp, ArrowDown, Type, Heading as HeadingIcon,
   MessageSquare, List, ListOrdered, Image as ImageIcon, Images, Video,
-  MousePointerClick, Smile, LayoutGrid, HelpCircle, ChevronDown,
+  MousePointerClick, Smile, LayoutGrid, HelpCircle, ChevronDown, Library,
 } from "lucide-react";
 
 type Block = RtNode;
@@ -30,6 +30,7 @@ const CATALOG: { type: string; label: string; icon: React.ComponentType<{ classN
   { type: "motivationBlock", label: "Motivation", icon: Smile },
   { type: "summaryBand", label: "Zusammenfassung", icon: LayoutGrid },
   { type: "quiz", label: "Quiz", icon: HelpCircle },
+  { type: "bibliography", label: "Literaturverzeichnis", icon: Library },
 ];
 
 function makeBlock(type: string): Block {
@@ -46,6 +47,7 @@ function makeBlock(type: string): Block {
     case "motivationBlock": return { type: "motivationBlock", attrs: { message: "" } };
     case "summaryBand": return { type: "summaryBand", attrs: { variant: "signal" }, content: [{ type: "summaryCard", content: [{ type: "paragraph", content: [] }] }] };
     case "quiz": return { type: "quiz", attrs: { questions: [newQuestion()], timePerQuestionSeconds: 20 } };
+    case "bibliography": return { type: "bibliography", attrs: { title: "Literaturverzeichnis" }, content: [listItem()] };
     default: return { type: "paragraph", content: [] };
   }
 }
@@ -252,6 +254,9 @@ function BlockBody({ block, onChange }: { block: Block; onChange: (b: Block) => 
     case "quiz":
       return <QuizEditor attrs={attrs} setAttrs={setAttrs} />;
 
+    case "bibliography":
+      return <BibliographyEditor attrs={attrs} setAttrs={setAttrs} content={content} setContent={setContent} />;
+
     default:
       return <p className="text-xs text-muted-foreground">Dieser Blocktyp kann hier nicht bearbeitet werden.</p>;
   }
@@ -377,6 +382,58 @@ function ListEditor({
       <button type="button" onClick={addItem} className="text-xs text-[#0066FF] hover:underline flex items-center gap-1">
         <Plus className="h-3 w-3" /> Punkt hinzufügen
       </button>
+    </div>
+  );
+}
+
+// ── Bibliography editor (Literaturverzeichnis) ───────────────────────
+function BibliographyEditor({
+  attrs, setAttrs, content, setContent,
+}: {
+  attrs: Record<string, unknown>;
+  setAttrs: (p: Record<string, unknown>) => void;
+  content: Block[];
+  setContent: (c: Block[]) => void;
+}) {
+  const items = content.filter((n) => n.type === "listItem") as Block[];
+  const itemInline = (it: Block): Block[] =>
+    (((it.content as Block[] | undefined)?.[0]?.content as Block[]) ?? []);
+  const setItemInline = (idx: number, inline: Block[]) => {
+    const copy = items.map((it) => ({ ...it }));
+    copy[idx] = { type: "listItem", content: [{ type: "paragraph", content: inline }] };
+    setContent(copy);
+  };
+  const addItem = () => setContent([...items, listItem()]);
+  const removeItem = (idx: number) => setContent(items.filter((_, j) => j !== idx));
+
+  return (
+    <div className="space-y-2">
+      <TextInput
+        label="Überschrift"
+        value={String(attrs.title ?? "Literaturverzeichnis")}
+        onChange={(v) => setAttrs({ title: v })}
+        placeholder="Literaturverzeichnis"
+      />
+      <div className="space-y-1.5 pt-1">
+        {items.map((it, idx) => (
+          <div key={idx} className="flex items-start gap-1.5">
+            <span className="mt-2 text-xs text-muted-foreground w-5 text-right">{idx + 1}.</span>
+            <div className="flex-1">
+              <RichTextField
+                mode="inline"
+                value={itemInline(it)}
+                onChange={(inline) => setItemInline(idx, inline)}
+                placeholder="Autor:in, A. (Jahr). Titel. Journal, Band(Heft), Seiten. https://doi.org/…"
+              />
+            </div>
+            <Mini title="Quelle entfernen" onClick={() => removeItem(idx)} danger><Trash2 className="h-3.5 w-3.5" /></Mini>
+          </div>
+        ))}
+      </div>
+      <button type="button" onClick={addItem} className="text-xs text-[#0066FF] hover:underline flex items-center gap-1">
+        <Plus className="h-3 w-3" /> Quelle hinzufügen
+      </button>
+      <p className="text-[11px] text-muted-foreground">DOI- und URL-Links werden für Lernende automatisch klickbar.</p>
     </div>
   );
 }

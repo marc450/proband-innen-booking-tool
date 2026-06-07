@@ -174,6 +174,16 @@ export type TipTapNode =
       type: "motivationBlock";
       attrs: { message: string };
     }
+  | {
+      // Literaturverzeichnis: a titled academic reference list. Renders a
+      // heading (attrs.title, default "Literaturverzeichnis") followed by
+      // a numbered, hanging-indent citation list. Bare URLs/DOIs in an
+      // entry are auto-linked. Children are listItem nodes, each holding a
+      // paragraph of inline text (same shape as orderedList items).
+      type: "bibliography";
+      attrs?: { title?: string };
+      content?: TipTapNode[];
+    }
   | TipTapText;
 
 export type TipTapDoc = Extract<TipTapNode, { type: "doc" }>;
