@@ -5,6 +5,8 @@ import Link from "next/link";
 import type { LmsLesson, TipTapNode, TipTapDoc } from "@/lib/lms/types";
 import { validateTipTapDoc, parseAndValidateDoc } from "@/lib/lms/schema";
 import { BlockEditor } from "@/components/lms/editor/block-editor";
+import { VideoDropzone } from "@/components/lms/editor/video-dropzone";
+import { CfStreamPlayer } from "@/components/lms/cf-stream-player";
 import { LessonBody } from "@/lib/lms/renderer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +40,7 @@ export function LessonEditor({
   const [lessonType, setLessonType] = useState<"text" | "video">(lesson.lesson_type);
   const [duration, setDuration] = useState(lesson.duration_seconds != null ? String(lesson.duration_seconds) : "");
   const [videoId, setVideoId] = useState(lesson.cf_stream_video_id ?? "");
+  const [showVideoId, setShowVideoId] = useState(false);
   const [published, setPublished] = useState(lesson.is_published);
 
   // Content: blocks are the single source of truth.
@@ -136,14 +139,28 @@ export function LessonEditor({
           </select>
         </div>
         <div className="space-y-1.5"><Label>Dauer (Sek.)</Label><Input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} /></div>
-        {lessonType === "video" && (
-          <div className="space-y-1.5 col-span-3"><Label>Cloudflare Video-ID</Label><Input value={videoId} onChange={(e) => setVideoId(e.target.value)} placeholder="a1b2c3…" /></div>
-        )}
         <label className="flex items-center gap-2 text-sm cursor-pointer self-end pb-2 col-span-2">
           <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} />
           Veröffentlicht
         </label>
       </div>
+
+      {/* Video upload (video-type lessons play this clip full-screen) */}
+      {lessonType === "video" && (
+        <div className="bg-white rounded-[10px] shadow-sm p-4 mb-4">
+          <Label>Video</Label>
+          <div className="mt-2 max-w-md space-y-2">
+            <VideoDropzone value={videoId} onChange={(uid) => setVideoId(uid)} />
+            {!showVideoId ? (
+              <button type="button" onClick={() => setShowVideoId(true)} className="text-[11px] text-muted-foreground hover:text-foreground">
+                oder Cloudflare Video-ID manuell eingeben
+              </button>
+            ) : (
+              <Input value={videoId} onChange={(e) => setVideoId(e.target.value)} placeholder="a1b2c3…" />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Editor + live preview */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
@@ -189,13 +206,19 @@ export function LessonEditor({
             <div className="bg-[#FAEBE1] px-6 py-8">
               <h1 className="text-3xl font-bold leading-tight uppercase tracking-tight">{title || "Lektion"}</h1>
             </div>
-            <div className="py-6 min-h-[200px]">
-              {blocks.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">Vorschau erscheint hier, sobald Du Inhalt hinzufügst.</p>
-              ) : (
-                <LessonBody doc={doc} />
-              )}
-            </div>
+            {lessonType === "video" ? (
+              <div className="bg-black">
+                <CfStreamPlayer videoId={videoId || null} />
+              </div>
+            ) : (
+              <div className="py-6 min-h-[200px]">
+                {blocks.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">Vorschau erscheint hier, sobald Du Inhalt hinzufügst.</p>
+                ) : (
+                  <LessonBody doc={doc} />
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
