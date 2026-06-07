@@ -89,6 +89,8 @@ export function PatientsManager({ initialPatients }: Props) {
   >({});
   const [newContactOpen, setNewContactOpen] = useState(false);
   const [prefillEmail, setPrefillEmail] = useState<string | null>(null);
+  const [prefillFirstName, setPrefillFirstName] = useState<string | null>(null);
+  const [prefillLastName, setPrefillLastName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const supabase = createClient();
@@ -101,9 +103,13 @@ export function PatientsManager({ initialPatients }: Props) {
     const newEmail = searchParams?.get("newEmail");
     if (!newEmail) return;
     setPrefillEmail(newEmail);
+    setPrefillFirstName(searchParams.get("newFirstName"));
+    setPrefillLastName(searchParams.get("newLastName"));
     setNewContactOpen(true);
     const next = new URLSearchParams(searchParams.toString());
     next.delete("newEmail");
+    next.delete("newFirstName");
+    next.delete("newLastName");
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname);
   }, [searchParams, pathname, router]);
@@ -271,10 +277,16 @@ export function PatientsManager({ initialPatients }: Props) {
         open={newContactOpen}
         onOpenChange={(o) => {
           setNewContactOpen(o);
-          if (!o) setPrefillEmail(null);
+          if (!o) {
+            setPrefillEmail(null);
+            setPrefillFirstName(null);
+            setPrefillLastName(null);
+          }
         }}
         defaultType="proband"
         defaultEmail={prefillEmail}
+        defaultFirstName={prefillFirstName}
+        defaultLastName={prefillLastName}
       />
 
       {/* Import preview modal */}

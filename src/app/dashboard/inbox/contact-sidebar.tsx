@@ -206,6 +206,18 @@ export function ContactSidebar({ email, displayName }: Props) {
 
   const { contact, courseBookings, patientBookings, invoices, noShows } = data;
   const isUnknown = contact.source === "unknown";
+
+  // For unknown senders we deep-link into the create flow with the email
+  // and, when we have a real display name (e.g. parsed from a contact-form
+  // mail), the split first/last name so the form is prefilled too. Skip if
+  // the "name" is actually an email address.
+  const nameSource = (displayName || "").trim();
+  const nameParts = nameSource && !nameSource.includes("@") ? nameSource.split(/\s+/) : [];
+  const nameQuery =
+    nameParts.length > 0
+      ? `&newFirstName=${encodeURIComponent(nameParts[0])}` +
+        (nameParts.length > 1 ? `&newLastName=${encodeURIComponent(nameParts.slice(1).join(" "))}` : "")
+      : "";
   const fullName =
     [contact.firstName, contact.lastName].filter(Boolean).join(" ") ||
     displayName ||
@@ -259,7 +271,7 @@ export function ContactSidebar({ email, displayName }: Props) {
                 <Link
                   href={`/dashboard/auszubildende/personen?type=auszubildende&newEmail=${encodeURIComponent(
                     contact.email
-                  )}`}
+                  )}${nameQuery}`}
                   className="inline-flex items-center gap-1.5 text-xs text-[#0066FF] hover:underline"
                 >
                   <UserPlus className="h-3 w-3" />
@@ -268,7 +280,7 @@ export function ContactSidebar({ email, displayName }: Props) {
                 <Link
                   href={`/dashboard/patients?newEmail=${encodeURIComponent(
                     contact.email
-                  )}`}
+                  )}${nameQuery}`}
                   className="inline-flex items-center gap-1.5 text-xs text-[#0066FF] hover:underline"
                 >
                   <UserPlus className="h-3 w-3" />
