@@ -137,6 +137,13 @@ export type TipTapNode =
       };
     }
   | {
+      // A row of figures rendered side by side (responsive: stacks on
+      // mobile). Children must be `figure` nodes. Used e.g. for two QR
+      // code cards next to each other.
+      type: "figureRow";
+      content?: TipTapNode[];
+    }
+  | {
       // Big signal-blue call-to-action button, centered. External
       // links open in a new tab.
       type: "ctaButton";

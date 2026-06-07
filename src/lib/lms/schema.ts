@@ -28,6 +28,7 @@ const BLOCK_TYPES = new Set([
   "summaryCard",
   "video",
   "figure",
+  "figureRow",
   "ctaButton",
   "quiz",
   "motivationBlock",
@@ -110,6 +111,20 @@ function validateNode(node: Json, path: string, errors: string[]) {
         errors.push(`${path} (figure) needs attrs.alt (string)`);
       }
       return; // leaf node
+    }
+    case "figureRow": {
+      const kids = Array.isArray(node.content) ? node.content : [];
+      if (kids.length === 0) {
+        errors.push(`${path} (figureRow) needs at least one image`);
+      }
+      // Renderer only renders figure children; reject anything else so
+      // nothing is silently dropped. Each figure is validated below.
+      kids.forEach((c, i) => {
+        if (!isObject(c) || c.type !== "figure") {
+          errors.push(`${path}.content[${i}] (figureRow) may only contain images`);
+        }
+      });
+      break; // recurse into figure children below
     }
     case "ctaButton": {
       const a = isObject(node.attrs) ? node.attrs : {};

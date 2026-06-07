@@ -9,7 +9,7 @@ import { RichTextField, type RtNode } from "./rich-text";
 import { ImageDropzone } from "./image-dropzone";
 import {
   Plus, Trash2, ArrowUp, ArrowDown, Type, Heading as HeadingIcon,
-  MessageSquare, List, ListOrdered, Image as ImageIcon, Video,
+  MessageSquare, List, ListOrdered, Image as ImageIcon, Images, Video,
   MousePointerClick, Smile, LayoutGrid, HelpCircle, ChevronDown,
 } from "lucide-react";
 
@@ -23,6 +23,7 @@ const CATALOG: { type: string; label: string; icon: React.ComponentType<{ classN
   { type: "bulletList", label: "Aufzählung", icon: List },
   { type: "orderedList", label: "Nummerierte Liste", icon: ListOrdered },
   { type: "figure", label: "Bild", icon: ImageIcon },
+  { type: "figureRow", label: "Zwei Bilder nebeneinander", icon: Images },
   { type: "video", label: "Video", icon: Video },
   { type: "ctaButton", label: "Button (CTA)", icon: MousePointerClick },
   { type: "motivationBlock", label: "Motivation", icon: Smile },
@@ -37,7 +38,8 @@ function makeBlock(type: string): Block {
     case "callout": return { type: "callout", attrs: { variant: "signal" }, content: [{ type: "paragraph", content: [] }] };
     case "bulletList": return { type: "bulletList", attrs: { variant: "default" }, content: [listItem()] };
     case "orderedList": return { type: "orderedList", attrs: { variant: "default" }, content: [listItem()] };
-    case "figure": return { type: "figure", attrs: { src: "", alt: "", label: "", caption: "" } };
+    case "figure": return emptyFigure();
+    case "figureRow": return { type: "figureRow", content: [emptyFigure(), emptyFigure()] };
     case "video": return { type: "video", attrs: { cfStreamVideoId: null } };
     case "ctaButton": return { type: "ctaButton", attrs: { label: "Jetzt buchen", href: "" } };
     case "motivationBlock": return { type: "motivationBlock", attrs: { message: "" } };
@@ -47,6 +49,7 @@ function makeBlock(type: string): Block {
   }
 }
 
+const emptyFigure = (): Block => ({ type: "figure", attrs: { src: "", alt: "", label: "", caption: "" } });
 const listItem = (): Block => ({ type: "listItem", content: [{ type: "paragraph", content: [] }] });
 const newQuestion = () => ({ question: "", options: [{ text: "", correct: true }, { text: "", correct: false }] });
 
@@ -225,6 +228,9 @@ function BlockBody({ block, onChange }: { block: Block; onChange: (b: Block) => 
     case "figure":
       return <FigureEditor attrs={attrs} setAttrs={setAttrs} />;
 
+    case "figureRow":
+      return <FigureRowEditor content={content} setContent={setContent} />;
+
     case "video":
       return (
         <div className="space-y-2">
@@ -278,6 +284,39 @@ function FigureEditor({ attrs, setAttrs }: { attrs: Record<string, unknown>; set
         <TextInput label="Label" value={String(attrs.label ?? "")} onChange={(v) => setAttrs({ label: v })} placeholder="z. B. Abb. 1" />
         <TextInput label="Bildunterschrift" value={String(attrs.caption ?? "")} onChange={(v) => setAttrs({ caption: v })} placeholder="optional" />
       </div>
+    </div>
+  );
+}
+
+// ── Figure row editor (images side by side) ──────────────────────────
+function FigureRowEditor({ content, setContent }: { content: Block[]; setContent: (c: Block[]) => void }) {
+  const figures = content.filter((n) => n.type === "figure") as Block[];
+  const setFig = (idx: number, patch: Record<string, unknown>) =>
+    setContent(figures.map((f, j) => (j === idx ? { ...f, attrs: { ...(f.attrs ?? {}), ...patch } } : f)));
+  const addCol = () => setContent([...figures, emptyFigure()]);
+  const removeCol = (idx: number) => setContent(figures.filter((_, j) => j !== idx));
+
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {figures.map((f, idx) => (
+          <div key={idx} className="rounded-md border p-2.5 space-y-2 bg-gray-50/40">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-muted-foreground">Bild {idx + 1}</span>
+              <Mini title="Bild entfernen" onClick={() => removeCol(idx)} danger disabled={figures.length <= 1}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Mini>
+            </div>
+            <FigureEditor attrs={(f.attrs ?? {}) as Record<string, unknown>} setAttrs={(p) => setFig(idx, p)} />
+          </div>
+        ))}
+      </div>
+      {figures.length < 3 && (
+        <button type="button" onClick={addCol} className="text-xs text-[#0066FF] hover:underline flex items-center gap-1">
+          <Plus className="h-3 w-3" /> Spalte hinzufügen
+        </button>
+      )}
+      <p className="text-[11px] text-muted-foreground">Bilder stehen nebeneinander, auf dem Smartphone untereinander.</p>
     </div>
   );
 }

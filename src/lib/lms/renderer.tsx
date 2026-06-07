@@ -224,6 +224,19 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
         </figure>
       );
 
+    case "figureRow": {
+      const figs = node.content?.filter((n) => n.type === "figure") ?? [];
+      const cols = figs.length >= 3 ? "sm:grid-cols-3" : "sm:grid-cols-2";
+      // Reset each figure's own vertical margin; the grid owns spacing.
+      return (
+        <div className={`grid grid-cols-1 ${cols} gap-6 my-8 [&_figure]:my-0`}>
+          {figs.map((n, i) => (
+            <RenderNode key={i} node={n} />
+          ))}
+        </div>
+      );
+    }
+
     case "ctaButton": {
       const isExternal = /^https?:\/\//.test(node.attrs.href);
       return (
