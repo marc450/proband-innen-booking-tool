@@ -80,7 +80,7 @@ const erysipelNachSkinbooster: CaseStudy = {
   title: "Erysipel nach Skinbooster: erkennen, abgrenzen, behandeln",
   metaTitle: "Erysipel nach Skinbooster: Diagnose und Therapie",
   metaDescription:
-    "CME-Fallbeispiel: Wie Du ein Erysipel im Gesicht nach Skinbooster oder Filler erkennst, von einer banalen Rötung abgrenzt und leitlinienorientiert behandelst, auch bei Penicillinallergie.",
+    "Erysipel nach Skinbooster und anderen Injektionsbehandlungen: Was die seltene, aber ernste Komplikation ausmacht, wie Du sie leitlinienorientiert behandelst und wann eine stationäre Therapie nötig ist.",
   teaser:
     "Wie Du eine infektiöse Komplikation nach Injektion sicher von einer banalen Reaktion abgrenzt und leitlinienorientiert behandelst.",
   lead: [
