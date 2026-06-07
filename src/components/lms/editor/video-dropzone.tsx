@@ -5,23 +5,23 @@
 // file straight to Cloudflare (with progress), and stores the returned
 // video uid. Cloudflare needs a few minutes to encode before playback.
 import { useRef, useState, useCallback } from "react";
+import { Upload } from "tus-js-client";
 import { UploadCloud, Loader2, X, CheckCircle2 } from "lucide-react";
 
-function xhrUpload(url: string, file: File, onProgress: (pct: number) => void): Promise<void> {
+// Resumable chunked upload straight to a Cloudflare-issued one-time URL.
+// Chunk size must be a multiple of 256 KiB; 50 MB is Cloudflare's
+// recommendation. Returns the video uid (resolved by the caller).
+function tusUpload(uploadUrl: string, file: File, onProgress: (pct: number) => void): Promise<void> {
   return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", url);
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
-    };
-    xhr.onload = () =>
-      xhr.status >= 200 && xhr.status < 300
-        ? resolve()
-        : reject(new Error(`Upload fehlgeschlagen (${xhr.status}).`));
-    xhr.onerror = () => reject(new Error("Netzwerkfehler beim Upload."));
-    const form = new FormData();
-    form.append("file", file);
-    xhr.send(form);
+    const upload = new Upload(file, {
+      uploadUrl,
+      chunkSize: 52_428_800, // 50 MB (200 * 256 KiB)
+      retryDelays: [0, 3000, 6000, 12000],
+      onError: (err) => reject(err instanceof Error ? err : new Error(String(err))),
+      onProgress: (sent, total) => onProgress(Math.round((sent / total) * 100)),
+      onSuccess: () => resolve(),
+    });
+    upload.start();
   });
 }
 
@@ -49,10 +49,14 @@ export function VideoDropzone({
       setError(null);
       setPct(0);
       try {
-        const res = await fetch("/api/admin/lms/video-upload-url", { method: "POST" });
+        const res = await fetch("/api/admin/lms/video-upload-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ size: file.size, name: file.name }),
+        });
         const json = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(json.error || "Konnte den Upload nicht starten.");
-        await xhrUpload(json.uploadURL, file, setPct);
+        await tusUpload(json.uploadURL, file, setPct);
         onChange(json.uid);
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
@@ -123,7 +127,7 @@ export function VideoDropzone({
           <>
             <UploadCloud className="h-6 w-6 text-muted-foreground" />
             <p className="text-sm text-foreground font-medium">Video hierher ziehen oder klicken</p>
-            <p className="text-[11px] text-muted-foreground">MP4, MOV, WEBM · bis ca. 200 MB</p>
+            <p className="text-[11px] text-muted-foreground">MP4, MOV, WEBM · auch große Dateien (in Teilen)</p>
           </>
         )}
       </div>
