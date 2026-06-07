@@ -6,6 +6,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { TipTapNode } from "@/lib/lms/types";
 import { RichTextField, type RtNode } from "./rich-text";
+import { ImageDropzone } from "./image-dropzone";
 import {
   Plus, Trash2, ArrowUp, ArrowDown, Type, Heading as HeadingIcon,
   MessageSquare, List, ListOrdered, Image as ImageIcon, Video,
@@ -222,20 +223,7 @@ function BlockBody({ block, onChange }: { block: Block; onChange: (b: Block) => 
       );
 
     case "figure":
-      return (
-        <div className="space-y-2">
-          <TextInput label="Bild-URL" value={String(attrs.src ?? "")} onChange={(v) => setAttrs({ src: v })} placeholder="https://…/bild.jpg" />
-          {attrs.src ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={String(attrs.src)} alt="" className="max-h-40 rounded-md border object-contain" />
-          ) : null}
-          <TextInput label="Alt-Text (Barrierefreiheit)" value={String(attrs.alt ?? "")} onChange={(v) => setAttrs({ alt: v })} placeholder="Bildbeschreibung" />
-          <div className="flex gap-2">
-            <TextInput label="Label" value={String(attrs.label ?? "")} onChange={(v) => setAttrs({ label: v })} placeholder="z. B. Abb. 1" />
-            <TextInput label="Bildunterschrift" value={String(attrs.caption ?? "")} onChange={(v) => setAttrs({ caption: v })} placeholder="optional" />
-          </div>
-        </div>
-      );
+      return <FigureEditor attrs={attrs} setAttrs={setAttrs} />;
 
     case "video":
       return (
@@ -270,6 +258,28 @@ function BlockBody({ block, onChange }: { block: Block; onChange: (b: Block) => 
     default:
       return <p className="text-xs text-muted-foreground">Dieser Blocktyp kann hier nicht bearbeitet werden.</p>;
   }
+}
+
+// ── Figure editor ────────────────────────────────────────────────────
+function FigureEditor({ attrs, setAttrs }: { attrs: Record<string, unknown>; setAttrs: (p: Record<string, unknown>) => void }) {
+  const [showUrl, setShowUrl] = useState(false);
+  return (
+    <div className="space-y-2.5">
+      <ImageDropzone value={String(attrs.src ?? "")} onChange={(url) => setAttrs({ src: url })} />
+      {!showUrl ? (
+        <button type="button" onClick={() => setShowUrl(true)} className="text-[11px] text-muted-foreground hover:text-foreground">
+          oder Bild-URL manuell eingeben
+        </button>
+      ) : (
+        <TextInput label="Bild-URL" value={String(attrs.src ?? "")} onChange={(v) => setAttrs({ src: v })} placeholder="https://…/bild.jpg" />
+      )}
+      <TextInput label="Alt-Text (Barrierefreiheit)" value={String(attrs.alt ?? "")} onChange={(v) => setAttrs({ alt: v })} placeholder="Bildbeschreibung" />
+      <div className="flex gap-2">
+        <TextInput label="Label" value={String(attrs.label ?? "")} onChange={(v) => setAttrs({ label: v })} placeholder="z. B. Abb. 1" />
+        <TextInput label="Bildunterschrift" value={String(attrs.caption ?? "")} onChange={(v) => setAttrs({ caption: v })} placeholder="optional" />
+      </div>
+    </div>
+  );
 }
 
 // ── List editor ──────────────────────────────────────────────────────
