@@ -17,6 +17,9 @@ export interface CaseStudySection {
   paragraphs?: string[];
   /** Optional bullet list rendered under the paragraphs. */
   bullets?: string[];
+  /** Optional paragraphs rendered AFTER the bullet list (e.g. a closing
+   *  note that has to sit below the list). */
+  afterBullets?: string[];
 }
 
 export interface CaseStudyFaq {
@@ -54,8 +57,9 @@ export interface CaseStudy {
   /** CME learning objective, shown in a callout near the top. */
   cmeObjective: string;
   /** Internal link down to the matching course landing page. Use the
-   *  internal /kurse/<slug> href (the middleware serves the clean URL). */
-  course: { label: string; href: string };
+   *  internal /kurse/<slug> href (the middleware serves the clean URL).
+   *  `intro` is the lead-in sentence shown above the CTA button. */
+  course: { label: string; href: string; intro?: string };
   /** Clinical body following the CME case-study template. */
   sections: CaseStudySection[];
   faq: CaseStudyFaq[];
@@ -71,70 +75,89 @@ export interface CaseStudy {
 // ─────────────────────────────────────────────────────────────────────
 const erysipelNachSkinbooster: CaseStudy = {
   slug: "erysipel-nach-skinbooster",
-  published: false, // ← flip to true only with real body + real author
+  published: true,
   type: "Komplikation",
-  title: "Erysipel nach Skinbooster: Erkennen, abgrenzen, behandeln",
+  title: "Erysipel nach Skinbooster: erkennen, abgrenzen, behandeln",
   metaTitle: "Erysipel nach Skinbooster: Diagnose und Therapie",
   metaDescription:
-    "CME-Fallbeispiel: Wie Du ein Erysipel im Gesicht nach Skinbooster oder Filler erkennst, von einer banalen Rötung abgrenzt und leitliniengerecht behandelst, auch bei Penicillinallergie.",
+    "CME-Fallbeispiel: Wie Du ein Erysipel im Gesicht nach Skinbooster oder Filler erkennst, von einer banalen Rötung abgrenzt und leitlinienorientiert behandelst, auch bei Penicillinallergie.",
   teaser:
-    "Wie Du eine infektiöse Komplikation nach Injektion sicher von einer banalen Reaktion abgrenzt und leitliniengerecht behandelst.",
+    "Wie Du eine infektiöse Komplikation nach Injektion sicher von einer banalen Reaktion abgrenzt und leitlinienorientiert behandelst.",
   lead: [
-    "[PLATZHALTER-LEAD. Hier den Einstieg aus dem LearnWorlds-Original einsetzen: kurze klinische Einordnung, warum das Erysipel nach Injektionsbehandlungen relevant ist und worum es im Fall geht.]",
+    "Dein Patient kommt zwei Tage nach einer Skinboosterbehandlung mit geröteter, überwärmter Wange in die Praxis zurück. Kein Fieber, aber zunehmender Schmerz. Im ersten Moment wirkt es wie ein lokales Hämatom, im zweiten zeigt sich: Es ist mehr.",
+    "In diesem Beitrag analysieren wir einen dokumentierten Fall aus der Praxis: Ein Patient entwickelt nach einer Skinboosterbehandlung ein Erysipel. Wir schauen auf Verlauf, klinische Einschätzung und therapeutisches Vorgehen, und was wir aus dem Fall gelernt haben.",
+    "Komplikationen sind kein Ausnahmefall. Sie erfordern denselben Anspruch wie jede medizinische Entscheidung: klare Einschätzung, sichere Handlung, aufmerksame Nachsorge.",
   ],
   publishedIso: "2026-06-07",
   updatedIso: "2026-06-07",
   author: {
-    name: "Dr. med. [Autor:in eintragen]",
-    role: "Ärztliche Leitung, EPHIA",
+    name: "Dr. Sophia Wilk-Vollmann",
+    role: "Ärztin und Dozentin, EPHIA",
   },
   cmeObjective:
-    "Nach diesem Fallbeispiel kannst Du ein Erysipel im Gesicht nach Injektionsbehandlung klinisch erkennen, von Differenzialdiagnosen abgrenzen und eine leitliniengerechte Therapie einleiten, inklusive Vorgehen bei Penicillinallergie.",
+    "Nach diesem Fallbeispiel kannst Du ein beginnendes Erysipel nach Injektionsbehandlung im Gesicht klinisch erkennen, es von einer banalen postprozeduralen Reaktion abgrenzen, eine individualisierte antiinfektive Therapie einleiten (inklusive Vorgehen bei Penicillinallergie) und die Kriterien für eine stationäre Vorstellung anwenden.",
   course: {
-    label: "Aufbaukurs Biostimulation & Skinbooster",
-    href: "/kurse/aufbaukurs-biostimulation-skinbooster",
+    label: "Grundkurs Dermalfiller",
+    href: "/kurse/grundkurs-dermalfiller",
+    intro:
+      "In unserem Grundkurs Dermalfiller vermitteln wir umfassendes Wissen über den sicheren Umgang mit Dermalfillern, einschließlich der Erkennung und Behandlung von Komplikationen. Du lernst, wie Du Risiken minimierst und im Ernstfall richtig reagierst.",
   },
   sections: [
     {
-      heading: "Falldarstellung",
+      heading: "Wie es dazu kam",
       paragraphs: [
-        "[PLATZHALTER. Anonymisierte Falldarstellung aus dem LearnWorlds-Original einsetzen: Patient:in, zeitlicher Verlauf nach der Behandlung, Beschwerden, Befund.]",
+        "Der Patient stellte sich in unserer Praxis zur Skinbooster-Behandlung der unteren Gesichtshälfte vor. Die Indikation wurde nach ausführlicher Anamnese, Beratung und Gesichtsanalyse gestellt. Es bestanden keine relevanten Vorerkrankungen oder Dauermedikation. Eine vergleichbare Behandlung war bereits in der Vergangenheit komplikationslos erfolgt.",
+        "Die Behandlung wurde unter Einhaltung aller hygienischen Standards durchgeführt. Nach mehrfacher Desinfektion des Areals erfolgte die Applikation mittels spitzer Technik mit 31G Nadel. Es zeigten sich keine unmittelbaren Auffälligkeiten oder Unverträglichkeiten.",
+        "Am dritten Tag nach der Behandlung meldete sich der Patient mit einer zunehmenden einseitigen Rötung im Bereich der linken Wange. Das klinische Bild sprach für ein beginnendes Erysipel. Systemische Symptome bestanden zu diesem Zeitpunkt nicht. Aufgrund fehlender Penicillinallergie wurde umgehend eine antiinfektive Therapie mit Penicillin eingeleitet. Die Rötung bildete sich innerhalb kurzer Zeit unter der antibiotischen Behandlung deutlich zurück, sodass eine ambulante Weiterbehandlung möglich war. Eine stationäre Vorstellung wurde erwogen, letztlich aber nicht notwendig, insbesondere da keine Allgemeinsymptome oder Ausweitung des Prozesses auftraten.",
+        "Im weiteren Verlauf berichtete der Patient von bereits bekannten wiederkehrenden Hautveränderungen, die bereits dermatologisch abgeklärt worden waren. Ein konkreter immunologischer oder systemischer Hintergrund ließ sich nicht sichern, jedoch wurde eine generelle Barrierestörung der Haut diskutiert.",
       ],
     },
     {
-      heading: "Klinik und Differenzialdiagnose",
+      heading: "Was ist ein Erysipel?",
       paragraphs: [
-        "[PLATZHALTER. Leitsymptome des Erysipels und die wichtigsten Differenzialdiagnosen abgrenzen.]",
+        "Ein Erysipel, auch bekannt als Wundrose, ist eine akute bakterielle Infektion der oberen Hautschichten, verursacht meist durch β-hämolysierende Streptokokken Gruppe A.",
+        "Klinische Merkmale:",
       ],
       bullets: [
-        "Erysipel: scharf begrenzte, überwärmte Rötung, Fieber, rasche Ausbreitung",
-        "Banale postprozedurale Reaktion: begrenzt, rückläufig, kein Fieber",
-        "Allergische bzw. entzündliche Reaktion auf das Produkt",
-        "[Weitere Differenzialdiagnosen aus dem Original ergänzen]",
+        "Flächenhafte, scharf begrenzte Rötung der Haut",
+        "Überwärmung und Schmerzen im betroffenen Areal",
+        "Fieber und allgemeines Krankheitsgefühl",
+        "Schwellung der regionalen Lymphknoten",
       ],
     },
     {
-      heading: "Risikofaktoren und Pathophysiologie",
+      heading: "Allgemeine Therapieoptionen",
       paragraphs: [
-        "[PLATZHALTER. Eintrittspforten, Hygiene, Wirtsfaktoren und der Bezug zur Injektionsbehandlung.]",
+        "Die antiinfektive Therapie des Erysipels erfolgt leitlinienbasiert in Abhängigkeit vom Schweregrad, der Lokalisation und bestehenden Vorerkrankungen. Ziel ist es, β-hämolysierende Streptokokken als häufigste Erreger zuverlässig zu erfassen.",
+        "In unkomplizierten Fällen ohne systemische Zeichen kann eine orale Behandlung ausreichend sein, während in schweren oder ausgedehnten Verläufen eine parenterale Initialtherapie empfohlen wird. Mittel der ersten Wahl sind Penicilline.",
+        "Je nach Schwere und Verlauf können sie oral oder parenteral verabreicht werden. Im Fall einer Allergie gegen Penicilline wird Clindamycin als erste Wahl empfohlen.",
+        "Die Therapiedauer beträgt in der Regel 5 bis 10 Tage, je nach klinischem Verlauf. Zusätzlich sollte eine symptomatische Therapie erfolgen, z. B. mit Kühlung, Hochlagerung und Schmerzreduktion. Lokale Antiseptika oder chirurgische Maßnahmen sind beim Erysipel selten indiziert, können aber im Verlauf bei sekundärer Abszedierung erforderlich werden.",
+        "Wichtiger Hinweis: Dieser Fallbericht mit Therapieoptionen dient ausschließlich der Falldarstellung und soll Deine Aufmerksamkeit hinsichtlich Diagnostik und Therapie schärfen. Eine individuelle Therapieentscheidung muss immer auf Basis der aktuellen Anamnese, klinischen Befunde, lokaler Resistenzlage sowie nach sorgfältiger ärztlicher Abwägung erfolgen. Bitte beachte, dass die zitierte Leitlinie abgelaufen ist. Wie bei jeder antiinfektiven Therapie empfehlen wir die Auswahl der Medikamente anhand des Patient:innenzustandes, der hausinternen Antibiotic-Stewardship-Empfehlungen und Resistenzlagen.",
       ],
     },
     {
-      heading: "Akutmanagement und antibiotische Therapie",
+      heading: "Wann ist eine stationäre Aufnahme erforderlich?",
       paragraphs: [
-        "[PLATZHALTER. Therapieschema inklusive Vorgehen bei Penicillinallergie und Kriterien für eine stationäre Einweisung.]",
+        "In bestimmten Fällen sollte bei einem Erysipel eine stationäre Aufnahme erwogen werden, insbesondere, wenn der Verlauf kompliziert oder Risikofaktoren vorliegen. Dazu gehören:",
+      ],
+      bullets: [
+        "Reduzierter Allgemeinzustand oder das Vorliegen systemischer Symptome (z. B. Fieber, Schüttelfrost)",
+        "Bekannte oder vermutete Immunsuppression (z. B. bei Diabetes mellitus, Tumorerkrankungen, systemischer Medikation)",
+        "Ausbreitung der Infektion trotz adäquater antiinfektiver Therapie",
+        "Beteiligung sensibler Regionen, insbesondere im Gesicht, hier sollte bereits frühzeitig eine stationäre Überwachung erfolgen, insbesondere bei periorbitaler Lokalisation",
+        "Unklare systemische Zeichen oder fehlende Besserung nach 48 Stunden ambulanter Behandlung",
+      ],
+      afterBullets: [
+        "Gerade im Gesichtsbereich kann ein Erysipel rasch fortschreiten und Komplikationen wie eine orbitale Ausbreitung oder eine Sinusvenenthrombose nach sich ziehen. Daher ist hier eine engmaschige Überwachung und ggf. frühzeitige stationäre Vorstellung indiziert.",
+        "Hinweis: Die endgültige Entscheidung zur stationären Aufnahme erfolgt individuell und orientiert sich am klinischen Verlauf, an Komorbiditäten sowie an der Einschätzung durch Dich als behandelnde Ärztin bzw. behandelnden Arzt.",
       ],
     },
     {
-      heading: "Nachsorge, Verlaufskontrolle und Aufklärung",
+      heading: "Was ich daraus gelernt habe",
       paragraphs: [
-        "[PLATZHALTER. Verlaufskontrolle, Red Flags für die Patient:in, Dokumentation und Aufklärung.]",
-      ],
-    },
-    {
-      heading: "Take-home",
-      paragraphs: [
-        "[PLATZHALTER. Drei bis vier Kernaussagen für die Praxis.]",
+        "Auch bei korrekt durchgeführten Behandlungen und gesunden Ausgangsbedingungen kann es zu infektiösen Komplikationen kommen. Gerade beim Auftreten von unspezifischen oder systemisch unklaren Hautreaktionen in der Vorgeschichte sollten Hinweise auf eine gestörte Hautbarriere oder subklinische Immunsuppression ernst genommen werden.",
+        "Komplikationen wie ein Erysipel nach ästhetischen Behandlungen sind selten, aber ernst zu nehmen. Eine frühzeitige Diagnose und Therapie sind entscheidend für den Behandlungserfolg und die Vermeidung schwerwiegender Folgen.",
+        "Tipp aus der Praxis: Nach der Behandlung ist auf eine sorgfältige Nachsorge zu achten. Das schließt den Verzicht auf Make-up unmittelbar nach der Injektion, das Meiden von Berührungen im Behandlungsareal und das Einhalten der hygienischen Empfehlungen mit ein. Bitte wiederhole diese Hinweise im Aufklärungsgespräch explizit und gib sie schriftlich Deinen Patient:innen mit.",
       ],
     },
   ],
@@ -143,20 +166,22 @@ const erysipelNachSkinbooster: CaseStudy = {
       question:
         "Wie unterscheide ich ein Erysipel von einer banalen Rötung nach Skinbooster?",
       answer:
-        "[PLATZHALTER-ANTWORT. Kurze, klare Abgrenzung einsetzen.]",
+        "Für ein Erysipel sprechen eine flächenhafte, scharf begrenzte Rötung, Überwärmung und Schmerzen im Areal sowie ggf. Fieber, allgemeines Krankheitsgefühl und geschwollene regionale Lymphknoten. Eine banale postprozedurale Rötung oder ein Hämatom bleibt lokal begrenzt und ist rückläufig. Bei zunehmender, scharf begrenzter Rötung mit Überwärmung solltest Du an ein beginnendes Erysipel denken.",
     },
     {
       question:
         "Welche Antibiotika kommen beim Erysipel im Gesicht infrage, auch bei Penicillinallergie?",
-      answer: "[PLATZHALTER-ANTWORT.]",
+      answer:
+        "Mittel der ersten Wahl sind Penicilline, bei Penicillinallergie wird Clindamycin als erste Wahl empfohlen. Die Therapiedauer beträgt in der Regel 5 bis 10 Tage. Die konkrete Auswahl richtet sich nach Patient:innenzustand, lokaler Resistenzlage und den hausinternen Antibiotic-Stewardship-Empfehlungen.",
     },
     {
-      question: "Ab wann ist eine stationäre Einweisung nötig?",
-      answer: "[PLATZHALTER-ANTWORT.]",
+      question: "Ab wann ist eine stationäre Aufnahme erforderlich?",
+      answer:
+        "Erwäge eine stationäre Aufnahme bei reduziertem Allgemeinzustand oder systemischen Symptomen, bei bekannter oder vermuteter Immunsuppression, bei Ausbreitung trotz adäquater Therapie, bei Beteiligung sensibler Regionen wie dem Gesicht (insbesondere periorbital) sowie bei fehlender Besserung nach 48 Stunden ambulanter Behandlung.",
     },
   ],
   sources: [
-    "[Quellen prüfen und einsetzen, z. B. AWMF-Leitlinie zu Haut- und Weichgewebeinfektionen.]",
+    "Therapieempfehlungen orientieren sich an den zum Behandlungszeitpunkt gültigen Leitlinien zu Haut- und Weichgewebeinfektionen sowie an hausinternen Antibiotic-Stewardship-Empfehlungen und der lokalen Resistenzlage. Die im Originalbeitrag zitierte Leitlinie ist zwischenzeitlich abgelaufen.",
   ],
 };
 

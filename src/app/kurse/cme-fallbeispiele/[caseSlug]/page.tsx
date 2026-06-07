@@ -160,6 +160,15 @@ export default async function CaseStudyPage({
                     ))}
                   </ul>
                 )}
+                {s.afterBullets && s.afterBullets.length > 0 && (
+                  <div className="mt-4 flex flex-col gap-4">
+                    {s.afterBullets.map((p, j) => (
+                      <p key={j} className={`${TYPO.bodyLead} text-black/80`}>
+                        {p}
+                      </p>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -211,7 +220,7 @@ export default async function CaseStudyPage({
         <div className="max-w-2xl mx-auto px-5 md:px-8 flex flex-col gap-6">
           <div className="rounded-[10px] bg-white p-6 shadow-sm">
             <p className={`${TYPO.bodyCard} text-black/70`}>
-              Dieses Thema vertiefen wir praxisnah im Kurs:
+              {c.course.intro ?? "Dieses Thema vertiefen wir praxisnah im Kurs:"}
             </p>
             <Link
               href={c.course.href}
