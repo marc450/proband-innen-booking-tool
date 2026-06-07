@@ -10,8 +10,19 @@ async function uploadImage(file: File): Promise<string> {
   const form = new FormData();
   form.append("file", file);
   const res = await fetch("/api/admin/lms/upload-image", { method: "POST", body: form });
+  if (!res.ok) {
+    // Surface the HTTP status and any server detail so failures are
+    // diagnosable instead of a bare "failed" message.
+    let detail = "";
+    try {
+      detail = (await res.clone().json()).error ?? "";
+    } catch {
+      detail = (await res.text().catch(() => "")).slice(0, 200);
+    }
+    throw new Error(`Upload fehlgeschlagen (${res.status})${detail ? ": " + detail : ""}.`);
+  }
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error || "Upload fehlgeschlagen.");
+  if (!json.url) throw new Error("Upload-Antwort enthielt keine URL.");
   return json.url as string;
 }
 
