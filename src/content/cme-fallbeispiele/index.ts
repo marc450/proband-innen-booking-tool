@@ -97,10 +97,10 @@ const erysipelNachSkinbooster: CaseStudy = {
   cmeObjective:
     "Nach diesem Fallbeispiel kannst Du ein beginnendes Erysipel nach Injektionsbehandlung im Gesicht klinisch erkennen, es von einer banalen postprozeduralen Reaktion abgrenzen, eine individualisierte antiinfektive Therapie einleiten (inklusive Vorgehen bei Penicillinallergie) und die Kriterien für eine stationäre Vorstellung anwenden.",
   course: {
-    label: "Grundkurs Dermalfiller",
-    href: "/kurse/grundkurs-dermalfiller",
+    label: "Aufbaukurs Biostimulation & Skinbooster",
+    href: "/kurse/aufbaukurs-biostimulation-skinbooster",
     intro:
-      "In unserem Grundkurs Dermalfiller vermitteln wir umfassendes Wissen über den sicheren Umgang mit Dermalfillern, einschließlich der Erkennung und Behandlung von Komplikationen. Du lernst, wie Du Risiken minimierst und im Ernstfall richtig reagierst.",
+      "Im Aufbaukurs Biostimulation & Skinbooster vermitteln wir den sicheren Umgang mit Biostimulatoren und Skinboostern, einschließlich der Erkennung und Behandlung von Komplikationen. Du lernst, wie Du Risiken minimierst und im Ernstfall richtig reagierst.",
   },
   sections: [
     {
