@@ -53,7 +53,7 @@ const COURSE_TYPES: CourseType[] = [
   "Premium",
 ];
 const STATUS_OPTIONS: Array<{ value: BookingStatus; label: string }> = [
-  { value: "completed", label: "Abgeschlossen" },
+  { value: "completed", label: "Erschienen" },
   { value: "booked", label: "Gebucht" },
   { value: "cancelled", label: "Storniert" },
   { value: "refunded", label: "Erstattet" },

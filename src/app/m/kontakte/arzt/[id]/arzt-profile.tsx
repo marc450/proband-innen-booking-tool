@@ -40,7 +40,7 @@ interface Props {
 
 const STATUS_LABELS: Record<string, string> = {
   booked: "Gebucht",
-  completed: "Abgeschlossen",
+  completed: "Erschienen",
   cancelled: "Storniert",
   refunded: "Erstattet",
 };

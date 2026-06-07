@@ -87,7 +87,7 @@ interface AerztBooking {
 
 const AERZT_STATUS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "booked", label: "Gebucht" },
-  { value: "completed", label: "Abgeschlossen" },
+  { value: "completed", label: "Erschienen" },
   { value: "cancelled", label: "Storniert" },
   { value: "refunded", label: "Erstattet" },
 ];

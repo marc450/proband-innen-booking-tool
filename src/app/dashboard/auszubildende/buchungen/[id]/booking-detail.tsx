@@ -74,7 +74,7 @@ interface BookingData {
 
 const statusLabels: Record<string, string> = {
   booked: "Gebucht",
-  completed: "Abgeschlossen",
+  completed: "Erschienen",
   cancelled: "Storniert",
   refunded: "Erstattet",
 };

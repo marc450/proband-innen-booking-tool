@@ -66,7 +66,7 @@ const COURSE_STATUS_COLORS: Record<string, string> = {
 
 const COURSE_STATUS_LABELS: Record<string, string> = {
   booked: "Gebucht",
-  completed: "Abgeschlossen",
+  completed: "Erschienen",
   cancelled: "Storniert",
   refunded: "Erstattet",
 };

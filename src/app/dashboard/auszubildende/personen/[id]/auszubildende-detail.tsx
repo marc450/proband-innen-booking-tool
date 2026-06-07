@@ -85,7 +85,7 @@ interface Props {
 
 const statusLabels: Record<CourseBookingStatus, string> = {
   booked: "Gebucht",
-  completed: "Abgeschlossen",
+  completed: "Erschienen",
   cancelled: "Storniert",
   refunded: "Erstattet",
 };
