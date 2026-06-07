@@ -149,15 +149,16 @@ const MASTERCLASS_BOTULINUM: ProgramTemplate = {
 
 // Aufbaukurs Dermalfiller: Lippen (Periorale Zone) — eigene, vom übrigen
 // Praxiskurs-Schema abweichende Tagesstruktur laut Quell-PDF "Programm
-// Lippen 14.12.25" (Marc-bestätigt 2026-06-07). 750€ Teilnehmendegebühr
-// (eigene LÄK-Akkreditierung). Eigene Themenblöcke (Vorstellungsrunde,
+// Lippen 14.12.25" (Marc-bestätigt 2026-06-07). 1040€ Teilnehmendegebühr
+// wie die übrigen Praxiskurse (Marc-bestätigt 2026-06-07, weicht von den
+// 750€ im Quell-PDF ab). Eigene Themenblöcke (Vorstellungsrunde,
 // Anatomie/Dermalfiller der perioralen Zone, Analgesie und Behandlung der
 // Lippe) statt der generischen Wiederholungsfragen/Indikationsbesprechung-
 // Zeilen. Zwei Zeilen liegen bewusst auf 12:45 ("Behandlung der Lippe" und
 // "Behandlung der Proband:innen"), genau wie im Quell-PDF.
 const AUFBAUKURS_DERMALFILLER_LIPPEN: ProgramTemplate = {
   referenceStartMinutes: 10 * 60,
-  teilnehmendegebuehrEur: 750,
+  teilnehmendegebuehrEur: 1040,
   rows: [
     { offsetMin: 0, label: "Begrüßung und Registrierung der Teilnehmenden" },
     { offsetMin: 15, label: "Vorstellungsrunde" },
