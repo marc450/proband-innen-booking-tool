@@ -197,21 +197,24 @@ export function LmsManager({ initialCatalog }: { initialCatalog: LmsCourseTree[]
                 <button
                   type="button"
                   onClick={() => toggle(openCourses, setOpenCourses, course.id)}
-                  className="text-muted-foreground hover:text-foreground"
+                  className="flex items-center gap-2 flex-1 min-w-0 text-left"
                   aria-label="Aufklappen"
+                  aria-expanded={isOpen}
                 >
-                  {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  <span className="text-muted-foreground flex-shrink-0">
+                    {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="flex items-center gap-2">
+                      <span className="font-semibold truncate">{course.title}</span>
+                      <PublishBadge published={course.is_published} />
+                      <Badge variant="outline" className="text-[10px]">
+                        {course.access_type === "free" ? "frei" : "enrolled"}
+                      </Badge>
+                    </span>
+                    <span className="block text-xs text-muted-foreground">/{course.slug}</span>
+                  </span>
                 </button>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold truncate">{course.title}</span>
-                    <PublishBadge published={course.is_published} />
-                    <Badge variant="outline" className="text-[10px]">
-                      {course.access_type === "free" ? "frei" : "enrolled"}
-                    </Badge>
-                  </div>
-                  <span className="text-xs text-muted-foreground">/{course.slug}</span>
-                </div>
                 <RowActions
                   busy={busy}
                   published={course.is_published}
@@ -246,17 +249,18 @@ export function LmsManager({ initialCatalog }: { initialCatalog: LmsCourseTree[]
                           <button
                             type="button"
                             onClick={() => toggle(openChapters, setOpenChapters, chapter.id)}
-                            className="text-muted-foreground hover:text-foreground"
+                            className="flex items-center gap-2 flex-1 min-w-0 text-left"
                             aria-label="Aufklappen"
+                            aria-expanded={chOpen}
                           >
-                            {chOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                          </button>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground flex-shrink-0">
+                              {chOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            </span>
+                            <span className="flex items-center gap-2 flex-1 min-w-0">
                               <span className="text-sm font-medium truncate">{chapter.title}</span>
                               <PublishBadge published={chapter.is_published} />
-                            </div>
-                          </div>
+                            </span>
+                          </button>
                           <RowActions
                             busy={busy}
                             published={chapter.is_published}

@@ -3,7 +3,7 @@
 // Visual block editor for an LMS lesson body. Edits the lesson as a list
 // of typed blocks (no JSON), each with a human-friendly form. Emits the
 // exact TipTap node array the reader's renderer consumes.
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { TipTapNode } from "@/lib/lms/types";
 import { RichTextField, type RtNode } from "./rich-text";
 import {
@@ -121,9 +121,31 @@ export function BlockEditor({
 }
 
 function InsertBar({ open, onToggle, onPick, last }: { open: boolean; onToggle: () => void; onPick: (type: string) => void; last?: boolean }) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  // Flip the menu up and cap its height so it always fits the viewport,
+  // wherever in the (possibly long) lesson the insert bar sits.
+  const [placement, setPlacement] = useState<{ up: boolean; maxH: number }>({ up: false, maxH: 360 });
+
+  useEffect(() => {
+    if (!open || !btnRef.current) return;
+    const measure = () => {
+      const rect = btnRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const margin = 16;
+      const below = window.innerHeight - rect.bottom - margin;
+      const above = rect.top - margin;
+      const up = below < 280 && above > below;
+      setPlacement({ up, maxH: Math.max(180, Math.floor(up ? above : below)) });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [open]);
+
   return (
     <div className={`relative ${last ? "" : "-mb-1.5 mt-1.5"}`}>
       <button
+        ref={btnRef}
         type="button"
         onClick={onToggle}
         className={`flex items-center gap-1.5 mx-auto text-xs px-3 py-1.5 rounded-full border transition-colors ${
@@ -133,13 +155,18 @@ function InsertBar({ open, onToggle, onPick, last }: { open: boolean; onToggle: 
         <Plus className="h-3.5 w-3.5" /> Block hinzufügen <ChevronDown className="h-3 w-3" />
       </button>
       {open && (
-        <div className="absolute z-20 left-1/2 -translate-x-1/2 mt-1 bg-white border rounded-[10px] shadow-lg py-1 w-64">
+        <div
+          className={`absolute z-30 left-1/2 -translate-x-1/2 bg-white border rounded-[10px] shadow-lg py-1 w-64 overflow-y-auto overscroll-contain ${
+            placement.up ? "bottom-full mb-1" : "top-full mt-1"
+          }`}
+          style={{ maxHeight: placement.maxH }}
+        >
           {CATALOG.map((c) => {
             const Icon = c.icon;
             return (
               <button key={c.type} type="button" onClick={() => onPick(c.type)}
                 className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-left hover:bg-gray-50">
-                <Icon className="h-4 w-4 text-muted-foreground" /> {c.label}
+                <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" /> {c.label}
               </button>
             );
           })}
