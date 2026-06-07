@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireVerifiedStaff } from "@/lib/auth-verify";
 import { decryptBooking } from "@/lib/encryption";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
@@ -19,6 +20,13 @@ async function stripePost(path: string, body: Record<string, string | number>) {
 }
 
 export async function POST(req: NextRequest) {
+  // Verified staff/admin gate — validates the session, never the
+  // forgeable x-user-role cookie. This route uses the service-role
+  // client (bypasses RLS) and is called only from the staff dashboard.
+  const access = await requireVerifiedStaff();
+  if (!access) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
   try {
     const { bookingId } = await req.json();
 

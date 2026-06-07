@@ -3,8 +3,16 @@ import { listThreads, getThread, getHeader, extractEmailAddress, extractName, ge
 import { cleanGmailSnippet } from "@/lib/gmail-text";
 import { resolveContactNamesByEmail } from "@/lib/inbox-contact-names";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireVerifiedStaff } from "@/lib/auth-verify";
 
 export async function GET(request: NextRequest) {
+  // Verified staff/admin gate — validates the session, never the
+  // forgeable x-user-role cookie. This route uses the service-role
+  // client (bypasses RLS) and is called only from the staff dashboard.
+  const access = await requireVerifiedStaff();
+  if (!access) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
   const searchParams = request.nextUrl.searchParams;
   const pageToken = searchParams.get("pageToken") || undefined;
   const q = searchParams.get("q") || undefined;

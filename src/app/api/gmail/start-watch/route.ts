@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAdmin } from "@/lib/auth";
+import { requireVerifiedAdmin } from "@/lib/auth-verify";
 import {
   saveGmailWatchState,
   startGmailWatch,
@@ -17,7 +17,9 @@ import {
  * route is mostly for first-time bootstrap and manual recovery.
  */
 export async function POST() {
-  if (!(await isAdmin())) {
+  // Verified-admin gate (validates the session, never the forgeable
+  // x-user-role cookie the previous isAdmin() check trusted).
+  if (!(await requireVerifiedAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

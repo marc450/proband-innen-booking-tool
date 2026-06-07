@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireVerifiedStaff } from "@/lib/auth-verify";
 import { decryptFields, encryptFields } from "@/lib/encryption";
 
 // Updates a per-booking notes field. Mirrors /api/update-patient-notes
@@ -10,6 +11,13 @@ import { decryptFields, encryptFields } from "@/lib/encryption";
 // fine — the merged object simply gains the new key on first save.
 
 export async function POST(req: NextRequest) {
+  // Verified staff/admin gate — validates the session, never the
+  // forgeable x-user-role cookie. This route uses the service-role
+  // client (bypasses RLS) and is called only from the staff dashboard.
+  const access = await requireVerifiedStaff();
+  if (!access) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
   const { bookingId, notes } = await req.json();
 
   if (!bookingId) {

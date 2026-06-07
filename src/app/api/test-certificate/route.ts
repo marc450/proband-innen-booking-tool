@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdmin } from "@/lib/auth";
+import { requireVerifiedAdmin } from "@/lib/auth-verify";
 import {
   certificateRequiresVnr,
   generateCertificatePdf,
@@ -14,7 +14,9 @@ import {
  * Body: { name: string; templateSlug: string; vnrTheorie?: string; vnrPraxis?: string }
  */
 export async function POST(req: NextRequest) {
-  if (!(await isAdmin())) {
+  // Verified-admin gate (validates the session, never the forgeable
+  // x-user-role cookie the previous isAdmin() check trusted).
+  if (!(await requireVerifiedAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

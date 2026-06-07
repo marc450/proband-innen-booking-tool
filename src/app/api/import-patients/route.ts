@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireVerifiedStaff } from "@/lib/auth-verify";
 import { PatientStatus } from "@/lib/types";
 import { encryptPatientFields, hashEmail } from "@/lib/encryption";
 
@@ -12,6 +13,13 @@ interface ImportRow {
 }
 
 export async function POST(req: NextRequest) {
+  // Verified staff/admin gate — validates the session, never the
+  // forgeable x-user-role cookie. This route uses the service-role
+  // client (bypasses RLS) and is called only from the staff dashboard.
+  const access = await requireVerifiedStaff();
+  if (!access) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
   const rows: ImportRow[] = await req.json();
 
   if (!Array.isArray(rows) || rows.length === 0) {

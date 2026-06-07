@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireVerifiedAdmin } from "@/lib/auth-verify";
 import { encryptPatientFields, encryptBookingFields } from "@/lib/encryption";
 
 export async function POST() {
+  // Verified staff/admin gate — validates the session, never the
+  // forgeable x-user-role cookie. This route uses the service-role
+  // client (bypasses RLS) and is called only from the staff dashboard.
+  const access = await requireVerifiedAdmin();
+  if (!access) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
   const supabase = createAdminClient();
   let patientsMigrated = 0;
   let bookingsMigrated = 0;

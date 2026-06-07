@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { UserRole } from "@/lib/auth";
 
 // ── Verified authorization for sensitive API routes ────────────────────
 //
@@ -21,7 +20,10 @@ import type { UserRole } from "@/lib/auth";
 
 export interface VerifiedAccess {
   userId: string;
-  role: UserRole;
+  /** Raw profiles.role: "admin" | "nutzer" | "student" | … Kept raw so
+   *  callers can tell staff (admin/nutzer) apart from public customer
+   *  accounts (student), which share the same auth.users table. */
+  role: string;
   isKursbetreuung: boolean;
 }
 
@@ -48,7 +50,7 @@ export async function getVerifiedAccess(): Promise<VerifiedAccess | null> {
 
   return {
     userId: user.id,
-    role: profile?.role === "admin" ? "admin" : "nutzer",
+    role: typeof profile?.role === "string" ? profile.role : "nutzer",
     isKursbetreuung: profile?.is_kursbetreuung === true,
   };
 }
@@ -57,6 +59,16 @@ export async function getVerifiedAccess(): Promise<VerifiedAccess | null> {
 export async function requireVerifiedAdmin(): Promise<VerifiedAccess | null> {
   const access = await getVerifiedAccess();
   return access?.role === "admin" ? access : null;
+}
+
+/** Verified-staff gate (admin OR nutzer). This is exactly the role set
+ *  the middleware already requires to reach the dashboard, so it's the
+ *  correct gate for any API route called only from /dashboard or /m.
+ *  Excludes public customer accounts (role 'student'). */
+export async function requireVerifiedStaff(): Promise<VerifiedAccess | null> {
+  const access = await getVerifiedAccess();
+  if (!access) return null;
+  return access.role === "admin" || access.role === "nutzer" ? access : null;
 }
 
 /** Verified inbox-access gate (admin OR kursbetreuung). Mirrors
