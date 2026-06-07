@@ -7,6 +7,7 @@ import { useState, useRef, useEffect } from "react";
 import type { TipTapNode } from "@/lib/lms/types";
 import { RichTextField, type RtNode } from "./rich-text";
 import { ImageDropzone } from "./image-dropzone";
+import { VideoDropzone } from "./video-dropzone";
 import {
   Plus, Trash2, ArrowUp, ArrowDown, Type, Heading as HeadingIcon,
   MessageSquare, List, ListOrdered, Image as ImageIcon, Images, Video,
@@ -232,17 +233,7 @@ function BlockBody({ block, onChange }: { block: Block; onChange: (b: Block) => 
       return <FigureRowEditor content={content} setContent={setContent} />;
 
     case "video":
-      return (
-        <div className="space-y-2">
-          <TextInput
-            label="Cloudflare Stream Video-ID"
-            value={String(attrs.cfStreamVideoId ?? "")}
-            onChange={(v) => setAttrs({ cfStreamVideoId: v.trim() || null })}
-            placeholder="z. B. a1b2c3d4…"
-          />
-          <p className="text-[11px] text-muted-foreground">Die ID findest Du im Cloudflare Stream Dashboard.</p>
-        </div>
-      );
+      return <VideoEditor attrs={attrs} setAttrs={setAttrs} />;
 
     case "ctaButton":
       return (
@@ -284,6 +275,29 @@ function FigureEditor({ attrs, setAttrs }: { attrs: Record<string, unknown>; set
         <TextInput label="Label" value={String(attrs.label ?? "")} onChange={(v) => setAttrs({ label: v })} placeholder="z. B. Abb. 1" />
         <TextInput label="Bildunterschrift" value={String(attrs.caption ?? "")} onChange={(v) => setAttrs({ caption: v })} placeholder="optional" />
       </div>
+    </div>
+  );
+}
+
+// ── Video editor ─────────────────────────────────────────────────────
+function VideoEditor({ attrs, setAttrs }: { attrs: Record<string, unknown>; setAttrs: (p: Record<string, unknown>) => void }) {
+  const [showId, setShowId] = useState(false);
+  const vid = String(attrs.cfStreamVideoId ?? "");
+  return (
+    <div className="space-y-2.5">
+      <VideoDropzone value={vid} onChange={(uid) => setAttrs({ cfStreamVideoId: uid || null })} />
+      {!showId ? (
+        <button type="button" onClick={() => setShowId(true)} className="text-[11px] text-muted-foreground hover:text-foreground">
+          oder Cloudflare Video-ID manuell eingeben
+        </button>
+      ) : (
+        <TextInput
+          label="Cloudflare Stream Video-ID"
+          value={vid}
+          onChange={(v) => setAttrs({ cfStreamVideoId: v.trim() || null })}
+          placeholder="z. B. a1b2c3d4…"
+        />
+      )}
     </div>
   );
 }
