@@ -8,18 +8,31 @@ import { useRef, useState, useCallback } from "react";
 import { Upload } from "tus-js-client";
 import { UploadCloud, Loader2, X, CheckCircle2 } from "lucide-react";
 
-// Resumable chunked upload straight to a Cloudflare-issued one-time URL.
+// Resumable chunked upload via Cloudflare's direct-creator flow. The tus
+// client POSTs its creation request to our backend (`endpoint`), which
+// returns Cloudflare's one-time upload URL; the client then uploads the
+// file directly to Cloudflare in chunks. Resolves with the video uid,
+// which is the last path segment of the upload URL (…/tus/<uid>).
+//
 // Chunk size must be a multiple of 256 KiB; 50 MB is Cloudflare's
-// recommendation. Returns the video uid (resolved by the caller).
-function tusUpload(uploadUrl: string, file: File, onProgress: (pct: number) => void): Promise<void> {
+// recommendation. Resume-fingerprinting is disabled so a failed attempt
+// never tries to resume a dead URL (which Cloudflare's tusv2 rejects).
+function tusUpload(file: File, onProgress: (pct: number) => void): Promise<string> {
   return new Promise((resolve, reject) => {
     const upload = new Upload(file, {
-      uploadUrl,
+      endpoint: "/api/admin/lms/video-upload-url",
       chunkSize: 52_428_800, // 50 MB (200 * 256 KiB)
       retryDelays: [0, 3000, 6000, 12000],
+      storeFingerprintForResuming: false,
+      removeFingerprintOnSuccess: true,
+      metadata: { maxDurationSeconds: "7200", name: file.name, filetype: file.type },
       onError: (err) => reject(err instanceof Error ? err : new Error(String(err))),
       onProgress: (sent, total) => onProgress(Math.round((sent / total) * 100)),
-      onSuccess: () => resolve(),
+      onSuccess: () => {
+        const m = (upload.url || "").match(/\/tus\/([^/?]+)/);
+        if (m) resolve(m[1]);
+        else reject(new Error("Konnte die Video-ID nicht ermitteln."));
+      },
     });
     upload.start();
   });
@@ -49,17 +62,16 @@ export function VideoDropzone({
       setError(null);
       setPct(0);
       try {
-        const res = await fetch("/api/admin/lms/video-upload-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ size: file.size, name: file.name }),
-        });
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(json.error || "Konnte den Upload nicht starten.");
-        await tusUpload(json.uploadURL, file, setPct);
-        onChange(json.uid);
+        const uid = await tusUpload(file, setPct);
+        onChange(uid);
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        const msg = e instanceof Error ? e.message : String(e);
+        // The backend returns 501 when the Cloudflare env vars are unset.
+        setError(
+          /\b501\b/.test(msg)
+            ? "Video-Upload ist noch nicht konfiguriert. Bitte CLOUDFLARE_ACCOUNT_ID und CLOUDFLARE_STREAM_API_TOKEN in Railway setzen, oder die Video-ID manuell eingeben."
+            : msg,
+        );
       } finally {
         setBusy(false);
       }
