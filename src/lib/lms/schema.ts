@@ -33,6 +33,9 @@ const BLOCK_TYPES = new Set([
   "quiz",
   "motivationBlock",
   "bibliography",
+  "table",
+  "tableRow",
+  "tableCell",
   "text",
 ]);
 
@@ -112,6 +115,27 @@ function validateNode(node: Json, path: string, errors: string[]) {
         errors.push(`${path} (figure) needs attrs.alt (string)`);
       }
       return; // leaf node
+    }
+    case "table": {
+      const kids = Array.isArray(node.content) ? node.content : [];
+      if (kids.length === 0) {
+        errors.push(`${path} (table) needs at least one row`);
+      }
+      kids.forEach((c, i) => {
+        if (!isObject(c) || c.type !== "tableRow") {
+          errors.push(`${path}.content[${i}] (table) may only contain rows`);
+        }
+      });
+      break; // recurse into tableRow children below
+    }
+    case "tableRow": {
+      const kids = Array.isArray(node.content) ? node.content : [];
+      kids.forEach((c, i) => {
+        if (!isObject(c) || c.type !== "tableCell") {
+          errors.push(`${path}.content[${i}] (tableRow) may only contain cells`);
+        }
+      });
+      break; // recurse into tableCell children below
     }
     case "figureRow": {
       const kids = Array.isArray(node.content) ? node.content : [];

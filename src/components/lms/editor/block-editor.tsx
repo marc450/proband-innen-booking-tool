@@ -12,6 +12,7 @@ import {
   Plus, Trash2, ArrowUp, ArrowDown, Type, Heading as HeadingIcon,
   MessageSquare, List, ListOrdered, Image as ImageIcon, Images, Video,
   MousePointerClick, Smile, LayoutGrid, HelpCircle, ChevronDown, Library,
+  Table as TableIcon,
 } from "lucide-react";
 
 type Block = RtNode;
@@ -31,6 +32,7 @@ const CATALOG: { type: string; label: string; icon: React.ComponentType<{ classN
   { type: "summaryBand", label: "Zusammenfassung", icon: LayoutGrid },
   { type: "quiz", label: "Quiz", icon: HelpCircle },
   { type: "bibliography", label: "Literaturverzeichnis", icon: Library },
+  { type: "table", label: "Tabelle", icon: TableIcon },
 ];
 
 function makeBlock(type: string): Block {
@@ -48,12 +50,15 @@ function makeBlock(type: string): Block {
     case "summaryBand": return { type: "summaryBand", attrs: { variant: "signal" }, content: [{ type: "summaryCard", content: [{ type: "paragraph", content: [] }] }] };
     case "quiz": return { type: "quiz", attrs: { questions: [newQuestion()], timePerQuestionSeconds: 20 } };
     case "bibliography": return { type: "bibliography", attrs: { title: "Literaturverzeichnis" }, content: [listItem()] };
+    case "table": return { type: "table", attrs: { withHeader: true }, content: [tableRow(2), tableRow(2)] };
     default: return { type: "paragraph", content: [] };
   }
 }
 
 const emptyFigure = (): Block => ({ type: "figure", attrs: { src: "", alt: "", label: "", caption: "" } });
 const listItem = (): Block => ({ type: "listItem", content: [{ type: "paragraph", content: [] }] });
+const tableCell = (): Block => ({ type: "tableCell", content: [{ type: "paragraph", content: [] }] });
+const tableRow = (cols: number): Block => ({ type: "tableRow", content: Array.from({ length: cols }, tableCell) });
 const newQuestion = () => ({ question: "", options: [{ text: "", correct: true }, { text: "", correct: false }] });
 
 const labelFor = (type: string) => CATALOG.find((c) => c.type === type)?.label ?? type;
@@ -257,6 +262,9 @@ function BlockBody({ block, onChange }: { block: Block; onChange: (b: Block) => 
     case "bibliography":
       return <BibliographyEditor attrs={attrs} setAttrs={setAttrs} content={content} setContent={setContent} />;
 
+    case "table":
+      return <TableEditor attrs={attrs} setAttrs={setAttrs} content={content} setContent={setContent} />;
+
     default:
       return <p className="text-xs text-muted-foreground">Dieser Blocktyp kann hier nicht bearbeitet werden.</p>;
   }
@@ -434,6 +442,103 @@ function BibliographyEditor({
         <Plus className="h-3 w-3" /> Quelle hinzufügen
       </button>
       <p className="text-[11px] text-muted-foreground">DOI- und URL-Links werden für Lernende automatisch klickbar.</p>
+    </div>
+  );
+}
+
+// ── Table editor ─────────────────────────────────────────────────────
+function TableEditor({
+  attrs, setAttrs, content, setContent,
+}: {
+  attrs: Record<string, unknown>;
+  setAttrs: (p: Record<string, unknown>) => void;
+  content: Block[];
+  setContent: (c: Block[]) => void;
+}) {
+  const rows = content.filter((n) => n.type === "tableRow") as Block[];
+  const colCount = Math.max(1, ...rows.map((r) => ((r.content as Block[] | undefined)?.length ?? 0)));
+  const withHeader = Boolean(attrs.withHeader);
+
+  const cellOf = (r: Block, ci: number): Block =>
+    (((r.content as Block[] | undefined)?.[ci]) ?? tableCell());
+  const cellContent = (cell: Block): Block[] => ((cell.content as Block[] | undefined) ?? []);
+
+  const setCellContent = (ri: number, ci: number, c: Block[]) => {
+    setContent(
+      rows.map((r, rI) => {
+        if (rI !== ri) return r;
+        // Pad short rows up to colCount so every cell index is editable.
+        const cells: Block[] = Array.from({ length: colCount }, (_, k) => cellOf(r, k));
+        cells[ci] = { type: "tableCell", content: c };
+        return { ...r, content: cells };
+      }),
+    );
+  };
+
+  const addRow = () => setContent([...rows, tableRow(colCount)]);
+  const removeRow = (ri: number) => setContent(rows.filter((_, i) => i !== ri));
+  const addCol = () =>
+    setContent(rows.map((r) => ({
+      ...r,
+      content: [...Array.from({ length: colCount }, (_, k) => cellOf(r, k)), tableCell()],
+    })));
+  const removeCol = (ci: number) =>
+    setContent(rows.map((r) => ({
+      ...r,
+      content: Array.from({ length: colCount }, (_, k) => cellOf(r, k)).filter((_, k) => k !== ci),
+    })));
+
+  return (
+    <div className="space-y-2">
+      <label className="flex items-center gap-2 text-xs cursor-pointer">
+        <input type="checkbox" checked={withHeader} onChange={(e) => setAttrs({ withHeader: e.target.checked })} />
+        Erste Zeile als Kopfzeile
+      </label>
+      <div className="overflow-x-auto">
+        <table className="border-separate border-spacing-1">
+          <tbody>
+            {rows.map((r, ri) => (
+              <tr key={ri}>
+                <td className="align-top pt-2 pr-1">
+                  <Mini title="Zeile entfernen" onClick={() => removeRow(ri)} danger disabled={rows.length <= 1}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Mini>
+                </td>
+                {Array.from({ length: colCount }).map((_, ci) => (
+                  <td key={ci} className="align-top min-w-[200px]">
+                    <RichTextField
+                      mode="multiline"
+                      value={cellContent(cellOf(r, ci))}
+                      onChange={(c) => setCellContent(ri, ci, c)}
+                      placeholder={withHeader && ri === 0 ? "Spaltentitel" : "Zelleninhalt"}
+                      emphasized={withHeader && ri === 0}
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+            <tr>
+              <td />
+              {Array.from({ length: colCount }).map((_, ci) => (
+                <td key={ci} className="text-center">
+                  <Mini title="Spalte entfernen" onClick={() => removeCol(ci)} danger disabled={colCount <= 1}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Mini>
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div className="flex items-center gap-3">
+        <button type="button" onClick={addRow} className="text-xs text-[#0066FF] hover:underline flex items-center gap-1">
+          <Plus className="h-3 w-3" /> Zeile hinzufügen
+        </button>
+        <button type="button" onClick={addCol} className="text-xs text-[#0066FF] hover:underline flex items-center gap-1">
+          <Plus className="h-3 w-3" /> Spalte hinzufügen
+        </button>
+      </div>
+      <p className="text-[11px] text-muted-foreground">In einer Zelle erzeugt Enter eine neue Zeile. Fett/Kursiv/Link über die Zellen-Leiste.</p>
     </div>
   );
 }

@@ -184,6 +184,17 @@ export type TipTapNode =
       attrs?: { title?: string };
       content?: TipTapNode[];
     }
+  | {
+      // Data table. `withHeader` renders the first row as bold header
+      // cells. Children are `tableRow` nodes, each holding `tableCell`
+      // nodes; a cell holds block content (paragraphs), so cells can be
+      // multi-line and carry inline marks (bold/italic/link).
+      type: "table";
+      attrs?: { withHeader?: boolean };
+      content?: TipTapNode[];
+    }
+  | { type: "tableRow"; content?: TipTapNode[] }
+  | { type: "tableCell"; content?: TipTapNode[] }
   | TipTapText;
 
 export type TipTapDoc = Extract<TipTapNode, { type: "doc" }>;

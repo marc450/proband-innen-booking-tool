@@ -303,6 +303,48 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
         </div>
       );
 
+    case "table": {
+      const rows = node.content?.filter((r) => r.type === "tableRow") ?? [];
+      if (rows.length === 0) return null;
+      const withHeader = node.attrs?.withHeader ?? false;
+      const renderCells = (row: TipTapNode, isHeader: boolean) =>
+        (row.type === "tableRow" ? row.content ?? [] : [])
+          .filter((c) => c.type === "tableCell")
+          .map((cell, ci) => {
+            const Tag = isHeader ? "th" : "td";
+            return (
+              <Tag
+                key={ci}
+                className={`border border-black/15 align-top px-4 py-3 text-[0.95rem] leading-[1.5] text-black ${
+                  isHeader ? "bg-[#FAEBE1] font-bold text-left" : ""
+                }`}
+              >
+                {cell.content?.map((c, j) => (
+                  <TableCellChild key={j} node={c} />
+                ))}
+              </Tag>
+            );
+          });
+      const headerRow = withHeader ? rows[0] : null;
+      const bodyRows = withHeader ? rows.slice(1) : rows;
+      return (
+        <div className="my-6 overflow-x-auto">
+          <table className="w-full border-collapse border border-black/15">
+            {headerRow ? (
+              <thead>
+                <tr>{renderCells(headerRow, true)}</tr>
+              </thead>
+            ) : null}
+            <tbody>
+              {bodyRows.map((row, ri) => (
+                <tr key={ri}>{renderCells(row, false)}</tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
     case "bibliography": {
       const title = node.attrs?.title?.trim() || "Literaturverzeichnis";
       return (
@@ -429,6 +471,20 @@ function ListItemChild({ node }: { node: TipTapNode }): ReactNode {
   return <RenderNode node={node} />;
 }
 
+// Inside a table cell, each paragraph renders as a tight line (small
+// bottom margin, none on the last) so multi-line cells read as a stacked
+// list of entries without the body paragraph's full 20px gap.
+function TableCellChild({ node }: { node: TipTapNode }): ReactNode {
+  if (node.type === "paragraph") {
+    return (
+      <p className="mb-1.5 last:mb-0">
+        {node.content?.map((n, i) => <RenderNode key={i} node={n} />)}
+      </p>
+    );
+  }
+  return <RenderNode node={node} />;
+}
+
 // Inside a callout, paragraphs get a small bottom margin so multi-
 // paragraph callouts (e.g. "Frage Dich selbst:" + the question) read
 // as distinct lines without merging into a wall of text. Last child
@@ -487,25 +543,36 @@ function renderRefText(text: string): ReactNode {
 }
 
 function renderText(text: string, marks?: TipTapMark[]): ReactNode {
-  // Inline scholarly citations in the form (1) / (2, 3) / (8, 9) get
-  // rendered as superscript without parens — matches academic
-  // typographic convention and brings the body text in line with what
-  // editors expect. The pattern is purely numeric inside the parens
-  // so things like (BoNT-A), (MCS), (Abb. 2), (z. B.) are unaffected.
-  const citationRe = /\((\d+(?:\s*,\s*\d+)*)\)/g;
+  // Two things get raised to superscript:
+  //  - Scholarly citations (1) / (2, 3) / (8, 9): rendered without the
+  //    parens, academic convention. Purely numeric inside the parens, so
+  //    (BoNT-A), (MCS), (Abb. 2), (z. B.) are unaffected.
+  //  - Trademark symbols ® ™ ℠ directly after a product name
+  //    (e.g. Relfydess®), always superscript per house style.
+  const tokenRe = /(\((\d+(?:\s*,\s*\d+)*)\))|([®™℠])/g;
   let node: ReactNode = text;
-  if (citationRe.test(text)) {
+  if (tokenRe.test(text)) {
     const parts: ReactNode[] = [];
     let lastIdx = 0;
-    citationRe.lastIndex = 0;
+    tokenRe.lastIndex = 0;
     let m: RegExpExecArray | null;
-    while ((m = citationRe.exec(text)) !== null) {
+    while ((m = tokenRe.exec(text)) !== null) {
       if (m.index > lastIdx) parts.push(text.slice(lastIdx, m.index));
-      parts.push(
-        <sup key={`c-${m.index}`} className="text-[0.7em] ml-0.5">
-          {m[1]}
-        </sup>,
-      );
+      if (m[2] !== undefined) {
+        // Numeric citation: superscript the digits, drop the parens.
+        parts.push(
+          <sup key={`c-${m.index}`} className="text-[0.7em] ml-0.5">
+            {m[2]}
+          </sup>,
+        );
+      } else {
+        // Trademark symbol: superscript, no extra margin (hugs the word).
+        parts.push(
+          <sup key={`tm-${m.index}`} className="text-[0.6em]">
+            {m[3]}
+          </sup>,
+        );
+      }
       lastIdx = m.index + m[0].length;
     }
     if (lastIdx < text.length) parts.push(text.slice(lastIdx));
