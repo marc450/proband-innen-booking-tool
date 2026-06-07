@@ -94,6 +94,12 @@ function formatCurrency(cents: number, currency: string) {
   }).format(cents / 100);
 }
 
+// Our own / internal addresses (customerlove@ephia.de, staff) are never
+// real contacts and must not be offered for creation.
+function isInternalEmail(email: string): boolean {
+  return email.trim().toLowerCase().endsWith("@ephia.de");
+}
+
 function formatDate(iso: string | null) {
   if (!iso) return "–";
   return new Date(iso).toLocaleDateString("de-DE", {
@@ -240,31 +246,37 @@ export function ContactSidebar({ email, displayName }: Props) {
           </div>
         </div>
         {isUnknown && (
-          <div className="mt-4">
-            <p className="text-xs text-muted-foreground mb-2">
-              Dieser Kontakt ist noch nicht im System hinterlegt.
+          isInternalEmail(contact.email) ? (
+            <p className="mt-4 text-xs text-muted-foreground">
+              Interne EPHIA-Adresse, kann nicht als Kontakt angelegt werden.
             </p>
-            <div className="flex flex-col gap-1.5">
-              <Link
-                href={`/dashboard/auszubildende/personen?type=auszubildende&newEmail=${encodeURIComponent(
-                  contact.email
-                )}`}
-                className="inline-flex items-center gap-1.5 text-xs text-[#0066FF] hover:underline"
-              >
-                <UserPlus className="h-3 w-3" />
-                Als Ärzt:in anlegen
-              </Link>
-              <Link
-                href={`/dashboard/patients?newEmail=${encodeURIComponent(
-                  contact.email
-                )}`}
-                className="inline-flex items-center gap-1.5 text-xs text-[#0066FF] hover:underline"
-              >
-                <UserPlus className="h-3 w-3" />
-                Als Proband:in anlegen
-              </Link>
+          ) : (
+            <div className="mt-4">
+              <p className="text-xs text-muted-foreground mb-2">
+                Dieser Kontakt ist noch nicht im System hinterlegt.
+              </p>
+              <div className="flex flex-col gap-1.5">
+                <Link
+                  href={`/dashboard/auszubildende/personen?type=auszubildende&newEmail=${encodeURIComponent(
+                    contact.email
+                  )}`}
+                  className="inline-flex items-center gap-1.5 text-xs text-[#0066FF] hover:underline"
+                >
+                  <UserPlus className="h-3 w-3" />
+                  Als Ärzt:in anlegen
+                </Link>
+                <Link
+                  href={`/dashboard/patients?newEmail=${encodeURIComponent(
+                    contact.email
+                  )}`}
+                  className="inline-flex items-center gap-1.5 text-xs text-[#0066FF] hover:underline"
+                >
+                  <UserPlus className="h-3 w-3" />
+                  Als Proband:in anlegen
+                </Link>
+              </div>
             </div>
-          </div>
+          )
         )}
       </div>
 

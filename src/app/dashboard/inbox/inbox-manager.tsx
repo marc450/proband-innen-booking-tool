@@ -27,6 +27,18 @@ interface Assignment {
   assignedToName: string;
 }
 
+// Our own / internal addresses are never real contacts.
+function isInternalAddress(email: string | null | undefined): boolean {
+  return !!email && email.trim().toLowerCase().endsWith("@ephia.de");
+}
+
+// Contact-form mails carry the sender's name in the subject
+// ("Kontaktanfrage von Max Mustermann"). Pull it out when present.
+function nameFromContactSubject(subject: string | undefined): string | undefined {
+  const m = subject?.match(/^\s*Kontaktanfrage von\s+(.+?)\s*$/i);
+  return m ? m[1] : undefined;
+}
+
 export function InboxManager({
   teamMembers = [],
   currentUserId = "",
@@ -366,24 +378,43 @@ export function InboxManager({
 
   // Contact email for sidebar: while composing, follow the recipient input
   // (once it parses as an email). Otherwise derive from the selected thread.
-  const contactEmail = useMemo(() => {
+  // Resolve the contact a thread is "about". Contact-form submissions
+  // arrive FROM our own address (customerlove@ephia.de) with the real
+  // person in the Reply-To header and the name in the subject, so an
+  // external Reply-To wins over an internal From.
+  const resolvedContact = useMemo<{ email: string | null; name?: string }>(() => {
     if (composing) {
       const trimmed = composeTo.trim();
-      return /\S+@\S+\.\S+/.test(trimmed) ? trimmed : null;
+      return { email: /\S+@\S+\.\S+/.test(trimmed) ? trimmed : null };
     }
-    if (!selectedThread) return null;
+    if (!selectedThread) return { email: null };
+
+    const fromMessage = (m: ThreadMessage): { email: string | null; name?: string } =>
+      isInternalAddress(m.fromEmail) && m.replyTo && !isInternalAddress(m.replyTo)
+        ? { email: m.replyTo, name: nameFromContactSubject(m.subject) }
+        : { email: m.fromEmail || null, name: m.fromName || undefined };
+
+    // 1. Latest genuinely inbound (external sender) message.
     const inbound = [...threadMessages].reverse().find((m) => m.isInbound);
-    if (inbound) return inbound.fromEmail;
+    if (inbound) return fromMessage(inbound);
+    // 2. Mail sent via our own address but addressed to a real person in
+    //    Reply-To — i.e. a contact-form submission.
+    const viaReplyTo = [...threadMessages]
+      .reverse()
+      .find((m) => m.replyTo && !isInternalAddress(m.replyTo));
+    if (viaReplyTo) {
+      return { email: viaReplyTo.replyTo as string, name: nameFromContactSubject(viaReplyTo.subject) };
+    }
+    // 3. Outbound-only thread: the contact is the recipient.
     const first = threadMessages[0];
-    if (first?.to) return first.to.split(",")[0].trim();
-    return threads.find((t) => t.id === selectedThread)?.contactEmail || null;
+    if (first?.to) return { email: first.to.split(",")[0].trim() || null };
+    // 4. Thread summary fallback.
+    const t = threads.find((t) => t.id === selectedThread);
+    return { email: t?.contactEmail || null, name: t?.contactName };
   }, [composing, composeTo, selectedThread, threadMessages, threads]);
 
-  const contactDisplayName = useMemo(() => {
-    if (composing) return undefined;
-    if (!selectedThread) return undefined;
-    return threads.find((t) => t.id === selectedThread)?.contactName;
-  }, [composing, selectedThread, threads]);
+  const contactEmail = resolvedContact.email;
+  const contactDisplayName = resolvedContact.name;
 
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {

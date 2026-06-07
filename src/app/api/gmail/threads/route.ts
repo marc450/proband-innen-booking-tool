@@ -133,6 +133,22 @@ export async function GET(request: NextRequest) {
               break;
             }
           }
+          // Contact-form submissions arrive from our own address but
+          // carry the real person in Reply-To (and their name in the
+          // subject "Kontaktanfrage von …"). Prefer that over the
+          // internal From or the To recipient.
+          if (!contactEmail) {
+            for (const msg of full.messages) {
+              const rt = extractEmailAddress(getHeader(msg, "Reply-To"));
+              if (rt && !rt.toLowerCase().endsWith("@ephia.de")) {
+                const subj = getHeader(msg, "Subject");
+                const nameMatch = subj.match(/^\s*Kontaktanfrage von\s+(.+?)\s*$/i);
+                contactName = (nameMatch ? nameMatch[1] : extractName(getHeader(msg, "Reply-To"))) || rt;
+                contactEmail = rt;
+                break;
+              }
+            }
+          }
           // If all messages are outbound, use the To of the first message
           if (!contactEmail && full.messages.length > 0) {
             const toHeader = getHeader(full.messages[0], "To");
