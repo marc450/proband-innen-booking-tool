@@ -248,6 +248,44 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
     },
   },
   {
+    // Aufbaukurs Dermalfiller "Lippen". Same visual layout as the other
+    // certs (left-column name above the dotted line, photo on the right) —
+    // A4 landscape 842 × 595 pt. The supplied master carried the date baked
+    // in ("Berlin, Dezember 2025") and no VNR section, so we redacted the
+    // date line out (white cover) and baked in the "VNR Theorie:" /
+    // "VNR Praxis:" labels 1:1 with the Grundkurs Dermalfiller footer. The
+    // baked CME line ("zertifiziert mit 13 CME-Punkten durch die
+    // Landesärztekammer Berlin") stays as-is.
+    //
+    // Der Kurs ist mit 13 CME-Punkten LÄK-akkreditiert; die VNRs werden pro
+    // Termin von der LÄK vergeben. Da vnrTheorie + vnrPraxis-Slots gesetzt
+    // sind, gibt certificateRequiresVnr true zurück und der Post-Praxis-Cron
+    // hält jede Buchung zurück (cert_sent_at bleibt null), bis
+    // course_templates.vnr_theorie und course_sessions.vnr_praxis in der DB
+    // gefüllt sind. Die zurückgehaltenen Certs gehen dann beim nächsten
+    // Cron-Lauf automatisch raus, ohne Code-Änderung.
+    slug: "aufbaukurs-lippen",
+    label: "Aufbaukurs Dermalfiller Lippen",
+    courseKeys: ["aufbaukurs_lippen"],
+    layout: {
+      page: 1,
+      centerX: 173,
+      baselineY: 388,
+      maxWidth: 290,
+      targetSize: 28,
+      minSize: 10,
+      // This master's MediaBox y-origin is 8.58pt (not 0), so every footer
+      // coordinate is the visual image-y plus that offset. Date line was
+      // redacted out; the per-session date is stamped back into the gap
+      // between "Landesärztekammer Berlin" and the VNR labels. VNR values
+      // land ~9pt below the baked labels, matching the Grundkurs
+      // Dermalfiller footer rhythm.
+      dateStamp: { x: 173, y: 70.6, size: 8 },
+      vnrTheorie: { x: 173, y: 49.6, size: 8 },
+      vnrPraxis: { x: 173, y: 26.6, size: 8 },
+    },
+  },
+  {
     // Aufbaukurs Botulinum "Periorale Zone" — a STANDALONE ONLINE course.
     // It has no Praxis-Kurstermine, so it never matches the session-driven
     // path; the Zertifikatgenerator surfaces it via the `online` flag
