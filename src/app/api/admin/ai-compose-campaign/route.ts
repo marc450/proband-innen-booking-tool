@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { isAdmin } from "@/lib/auth";
+import { requireVerifiedAdmin } from "@/lib/auth-verify";
+import { checkRateLimit } from "@/lib/rate-limit";
 import type { ContentBlock } from "@/lib/email-template";
 
 /**
@@ -97,8 +98,23 @@ interface BodyShape {
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await isAdmin())) {
+  // Verified admin gate: validates the session JWT and reads the role
+  // from the DB, never trusting the forgeable x-user-role cookie.
+  const access = await requireVerifiedAdmin();
+  if (!access) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+  // Per-admin rate limit so a single account can't loop the Anthropic
+  // call. Generous for real composing; only a runaway/abuse loop hits it.
+  const rl = checkRateLimit(`ai-compose-campaign:${access.userId}`, [
+    { windowMs: 60_000, max: 10 },
+    { windowMs: 3_600_000, max: 100 },
+  ]);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Zu viele Anfragen. Bitte einen Moment warten." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+    );
   }
   if (!ANTHROPIC_API_KEY) {
     return NextResponse.json(

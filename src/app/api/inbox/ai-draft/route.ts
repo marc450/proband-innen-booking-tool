@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireVerifiedInbox } from "@/lib/auth-verify";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { hashEmail, decryptPatient } from "@/lib/encryption";
 import {
   listThreads,
@@ -351,12 +352,25 @@ function stripTrailingClosing(html: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
+  // Verified staff gate: validates the session JWT and reads the role
+  // from the DB (never the forgeable x-user-role cookie). This endpoint
+  // costs money (Anthropic) so it must be limited to inbox staff — admin
+  // or kursbetreuung — not any logged-in account (the auth.users table
+  // also holds hundreds of public customer/student accounts).
+  const access = await requireVerifiedInbox();
+  if (!access) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+  // Per-user rate limit so a single account can't loop the Anthropic call.
+  const rl = checkRateLimit(`ai-draft:${access.userId}`, [
+    { windowMs: 60_000, max: 20 },
+    { windowMs: 3_600_000, max: 200 },
+  ]);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Zu viele Anfragen. Bitte einen Moment warten." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+    );
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
