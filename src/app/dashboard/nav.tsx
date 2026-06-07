@@ -30,6 +30,7 @@ import {
   ShoppingBag,
   Globe,
   CheckSquare,
+  GraduationCap,
   LucideIcon,
 } from "lucide-react";
 import { Manage2faDialog } from "@/components/2fa/manage-2fa-dialog";
@@ -138,6 +139,15 @@ const navGroups: NavGroup[] = [
     adminOnly: true,
     items: [
       { href: "/dashboard/landingpages", label: "Landing Pages" },
+    ],
+  },
+  {
+    key: "lms",
+    label: "Lernzentrum",
+    icon: GraduationCap,
+    adminOnly: true,
+    items: [
+      { href: "/dashboard/lms", label: "Kurse (LMS)" },
     ],
   },
   {
