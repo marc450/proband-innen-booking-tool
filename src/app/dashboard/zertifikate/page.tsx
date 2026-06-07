@@ -3,7 +3,6 @@ import { isAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   CERTIFICATE_TEMPLATES,
-  certificateRequiresVnr,
   getCertificateForBooking,
 } from "@/lib/certificates";
 import { CertificateTestForm, type CourseTypeOption } from "./certificate-test-form";
@@ -31,6 +30,22 @@ export default async function ZertifikatgeneratorPage() {
        course_templates:template_id ( course_key, course_label_de, title, vnr_theorie )`,
     )
     .order("date_iso", { ascending: true });
+
+  // Standalone online courses (e.g. Aufbaukurs Botulinum Periorale Zone)
+  // have no course_sessions, so the session join above never surfaces
+  // them. Pull the templates directly so we can read each online cert's
+  // VNR Theorie straight from its course_templates row.
+  const { data: templates } = await supabase
+    .from("course_templates")
+    .select("course_key, vnr_theorie");
+
+  const vnrTheorieByCourseKey = new Map<string, string>();
+  for (const t of (templates ?? []) as {
+    course_key: string | null;
+    vnr_theorie: string | null;
+  }[]) {
+    if (t.course_key) vnrTheorieByCourseKey.set(t.course_key, t.vnr_theorie || "");
+  }
 
   type EmbeddedTemplate = {
     course_key: string | null;
@@ -81,8 +96,42 @@ export default async function ZertifikatgeneratorPage() {
     courseTypes.push({
       certSlug: cert.slug,
       certLabel: cert.label,
-      requiresVnr: certificateRequiresVnr(cert),
+      online: false,
+      hasTheorie: !!cert.layout.vnrTheorie,
+      hasPraxis: !!cert.layout.vnrPraxis,
       sessions: matchingSessions,
+    });
+  }
+
+  // Append standalone online certs that have no sessions. Each gets a
+  // single synthetic "session" with no date and no VNR Praxis; the VNR
+  // Theorie comes from the course_templates row. The form hides the
+  // Kurstermin picker for these and stamps only name + VNR Theorie.
+  for (const cert of CERTIFICATE_TEMPLATES) {
+    if (!cert.online) continue;
+    if (courseTypes.some((c) => c.certSlug === cert.slug)) continue;
+
+    const vnrTheorie =
+      cert.courseKeys
+        .map((k) => vnrTheorieByCourseKey.get(k))
+        .find((v) => v !== undefined) || "";
+
+    courseTypes.push({
+      certSlug: cert.slug,
+      certLabel: cert.label,
+      online: true,
+      hasTheorie: !!cert.layout.vnrTheorie,
+      hasPraxis: !!cert.layout.vnrPraxis,
+      sessions: [
+        {
+          id: "online",
+          dateIso: "",
+          labelDe: "Onlinekurs",
+          courseLabel: cert.label,
+          vnrTheorie,
+          vnrPraxis: "",
+        },
+      ],
     });
   }
 

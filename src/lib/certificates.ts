@@ -58,6 +58,12 @@ export interface CertificateTemplate {
    *  are ready to render by hand but whose automated dispatch is not yet
    *  signed off. */
   generatorOnly?: boolean;
+  /** When true, this cert belongs to a STANDALONE ONLINE course that has
+   *  no course_sessions. The session-driven Zertifikatgenerator path skips
+   *  it (no Kurstermine to match), so the page surfaces it through a
+   *  session-less course type instead, pulling VNR Theorie straight from
+   *  the course_templates row. No Praxis part, no per-session date. */
+  online?: boolean;
   /** When true, this cert is exclusively for Zahnärzt:innen — used as the
    *  override for dentists sitting in a shared Botulinum Praxiskurs whose
    *  audience_tag = "Zahnmediziner:in" or whose linked auszubildende has
@@ -242,32 +248,30 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
     },
   },
   {
-    // Aufbaukurs Botulinum "Periorale Zone". Same A4-landscape layout as
-    // the other certs (left-column name above the dotted line, photo on
-    // the right). Unlike the Berlin certs this one is accredited by the
-    // Landesärztekammer BRANDENBURG with 10 CME-Punkten, so footerCity is
-    // "Brandenburg" (the date line reads "Brandenburg, <Monat> <Jahr>").
+    // Aufbaukurs Botulinum "Periorale Zone" — a STANDALONE ONLINE course.
+    // It has no Praxis-Kurstermine, so it never matches the session-driven
+    // path; the Zertifikatgenerator surfaces it via the `online` flag
+    // instead (page.tsx builds a session-less course type and pulls
+    // vnr_theorie straight from the course_templates row).
     //
-    // The supplied master carried only the baked "10 CME-Punkten …
-    // Landesärztekammer Brandenburg" lines; the "VNR Theorie:" / "VNR
-    // Praxis:" labels were baked in afterwards (Roboto-Regular 8pt, rose,
-    // 1.44pt tracking, centred at x≈172 — copied 1:1 from the Grundkurs
-    // Botulinum master) so the footer matches the other certs. The
-    // labels sit lower than the Berlin certs because the periorale CME
-    // block itself sits ~8pt lower; the stamp coordinates below follow
-    // the periorale footer's own 12pt rhythm.
+    // Accredited by the Landesärztekammer BRANDENBURG with 10 CME-Punkten.
+    // Online means a single accreditation number: only VNR Theorie is
+    // stamped (from course_templates.vnr_theorie). There is no Praxis part,
+    // so no vnrPraxis slot; and no per-session date, so no dateStamp slot.
+    // The vnrTheorie y-coordinate follows the periorale footer's own 12pt
+    // rhythm (calibrated in d0a804d). footerCity stays "Brandenburg" to
+    // document the accrediting chamber even though no date line is drawn.
+    // The master's baked "VNR Praxis:" label stays empty until a
+    // Praxis-free master is supplied.
     //
-    // generatorOnly: true — the cert is selectable in the manual
-    // Zertifikatgenerator, but the post-praxis cron must NOT auto-send it
-    // yet (automated dispatch is not signed off). The cron skips any cert
-    // flagged generatorOnly. vnr_theorie is already filled on the
-    // course_templates row; vnr_praxis would come from a course_sessions
-    // row once Kurstermine are created.
+    // generatorOnly stays true as a belt-and-braces guard: the post-praxis
+    // cron is session-driven and would never match an online course anyway.
     slug: "aufbaukurs-botulinum-periorale-zone",
     label: "Aufbaukurs Botulinum Periorale Zone",
     courseKeys: ["aufbaukurs_botulinum_periorale_zone"],
     footerCity: "Brandenburg",
     generatorOnly: true,
+    online: true,
     layout: {
       page: 1,
       centerX: 173,
@@ -276,8 +280,6 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       targetSize: 28,
       minSize: 10,
       vnrTheorie: { x: 173, y: 40, size: 8 },
-      vnrPraxis: { x: 173, y: 16, size: 8 },
-      dateStamp: { x: 173, y: 64, size: 8 },
     },
   },
 ];

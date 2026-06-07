@@ -18,7 +18,12 @@ interface SessionOption {
 export interface CourseTypeOption {
   certSlug: string;
   certLabel: string;
-  requiresVnr: boolean;
+  /** Standalone online course: no Kurstermin, only name + VNR Theorie. */
+  online: boolean;
+  /** This cert stamps a VNR Theorie number. */
+  hasTheorie: boolean;
+  /** This cert stamps a VNR Praxis number. */
+  hasPraxis: boolean;
   sessions: SessionOption[];
 }
 
@@ -77,10 +82,18 @@ export function CertificateTestForm({ courseTypes }: Props) {
     description: string;
   } | null>(null);
 
-  const requiresVnr = courseType?.requiresVnr ?? false;
+  const isOnline = courseType?.online ?? false;
+  const hasTheorie = courseType?.hasTheorie ?? false;
+  const hasPraxis = courseType?.hasPraxis ?? false;
   const vnrTheorie = session?.vnrTheorie || "";
   const vnrPraxis = session?.vnrPraxis || "";
-  const vnrComplete = !requiresVnr || (!!vnrTheorie.trim() && !!vnrPraxis.trim());
+  // Each VNR the cert stamps must have a value; VNRs it doesn't stamp are
+  // irrelevant. A cert with no VNRs at all (e.g. Zahnmedizin) is always
+  // complete.
+  const missingTheorie = hasTheorie && !vnrTheorie.trim();
+  const missingPraxis = hasPraxis && !vnrPraxis.trim();
+  const carriesCme = hasTheorie || hasPraxis;
+  const vnrComplete = !missingTheorie && !missingPraxis;
 
   const canSubmit = !!(courseType && session && name.trim() && vnrComplete);
 
@@ -94,8 +107,8 @@ export function CertificateTestForm({ courseTypes }: Props) {
       body: JSON.stringify({
         name,
         templateSlug: courseType.certSlug,
-        vnrTheorie: requiresVnr ? vnrTheorie : "",
-        vnrPraxis: requiresVnr ? vnrPraxis : "",
+        vnrTheorie: hasTheorie ? vnrTheorie : "",
+        vnrPraxis: hasPraxis ? vnrPraxis : "",
         // Drive the dynamic "Berlin, <Monat> <Jahr>" stamp from the
         // selected Kurstermin. Without this, every cert showed the
         // month that was baked into the master PDF (the original bug).
@@ -188,26 +201,34 @@ export function CertificateTestForm({ courseTypes }: Props) {
           </select>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="cert_session">Kurstermin</Label>
-          <select
-            id="cert_session"
-            value={sessionId}
-            onChange={(e) => setSessionId(e.target.value)}
-            className="h-11 w-full rounded-[10px] border border-input bg-white px-4 text-base focus:outline-none focus:ring-2 focus:ring-ring"
-            disabled={!courseType || courseType.sessions.length === 0}
-          >
-            {courseType?.sessions.map((s) => (
-              <option key={s.id} value={s.id}>
-                {formatSessionLabel(s)}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-muted-foreground">
-            VNR Theorie und VNR Praxis werden automatisch aus dem
-            ausgewählten Termin geladen.
+        {isOnline ? (
+          <p className="text-xs text-muted-foreground bg-muted/50 rounded-[10px] px-3 py-2">
+            Onlinekurs ohne Kurstermin. VNR Theorie wird automatisch
+            geladen, eine VNR Praxis und ein Datum werden auf diesem
+            Zertifikat nicht ausgewiesen.
           </p>
-        </div>
+        ) : (
+          <div className="space-y-1.5">
+            <Label htmlFor="cert_session">Kurstermin</Label>
+            <select
+              id="cert_session"
+              value={sessionId}
+              onChange={(e) => setSessionId(e.target.value)}
+              className="h-11 w-full rounded-[10px] border border-input bg-white px-4 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+              disabled={!courseType || courseType.sessions.length === 0}
+            >
+              {courseType?.sessions.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {formatSessionLabel(s)}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              VNR Theorie und VNR Praxis werden automatisch aus dem
+              ausgewählten Termin geladen.
+            </p>
+          </div>
+        )}
 
         <div className="space-y-1.5">
           <Label htmlFor="cert_name">
@@ -226,11 +247,11 @@ export function CertificateTestForm({ courseTypes }: Props) {
           </p>
         </div>
 
-        {requiresVnr && !vnrComplete && (
+        {carriesCme && !vnrComplete && (
           <p className="text-xs text-amber-700 bg-amber-50 rounded-[10px] px-3 py-2">
-            Für diesen Termin fehlt {!vnrTheorie.trim() && !vnrPraxis.trim()
+            Für diesen {isOnline ? "Kurs" : "Termin"} fehlt {missingTheorie && missingPraxis
               ? "VNR Theorie und VNR Praxis"
-              : !vnrTheorie.trim()
+              : missingTheorie
               ? "VNR Theorie"
               : "VNR Praxis"}
             . Bitte zuerst unter Einstellungen → Kurstermine bzw. Kurse
@@ -238,7 +259,7 @@ export function CertificateTestForm({ courseTypes }: Props) {
           </p>
         )}
 
-        {!requiresVnr && (
+        {!carriesCme && (
           <p className="text-xs text-muted-foreground bg-muted/50 rounded-[10px] px-3 py-2">
             Diese Zertifikatsvariante trägt keine CME-Punkte. VNR Theorie
             und VNR Praxis werden auf dem Zertifikat nicht ausgewiesen.
