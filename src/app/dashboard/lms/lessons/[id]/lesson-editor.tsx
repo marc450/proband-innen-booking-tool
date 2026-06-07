@@ -101,7 +101,10 @@ export function LessonEditor({
         <ArrowLeft className="h-4 w-4" /> Zurück zur Übersicht
       </Link>
 
-      <div className="flex items-start justify-between gap-4 mb-4">
+      <div
+        className="sticky top-0 z-30 -mx-8 px-8 py-4 mb-4 flex items-start justify-between gap-4 border-b border-black/5"
+        style={{ backgroundColor: "var(--dashboard-bg)" }}
+      >
         <div>
           <p className="text-xs text-muted-foreground">{breadcrumb.courseTitle ?? "?"} · {breadcrumb.chapterTitle ?? "?"}</p>
           <h1 className="text-2xl font-bold">{title || "Lektion"}</h1>
