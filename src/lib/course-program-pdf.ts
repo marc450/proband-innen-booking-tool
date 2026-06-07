@@ -172,6 +172,30 @@ const AUFBAUKURS_DERMALFILLER_LIPPEN: ProgramTemplate = {
   ],
 };
 
+// Aufbaukurs Biostimulation & Skinbooster — gleiche generische Tages-
+// struktur wie die Grundkurse (Offsets 0/15/60/90/195/225/480, 1040€,
+// eigene LÄK-Akkreditierung). Einziger inhaltlicher Unterschied laut
+// Quell-PDF "Sculptra 10.05.26" (Marc-bestätigt 2026-06-07): der 10:15-
+// Slot ist "Vorstellung von verschiedensten Präparaten" statt der
+// Wiederholungsfragen aus dem Onlineteil.
+const AUFBAUKURS_BIOSTIMULATION_SKINBOOSTER: ProgramTemplate = {
+  referenceStartMinutes: 10 * 60,
+  teilnehmendegebuehrEur: 1040,
+  rows: [
+    { offsetMin: 0, label: "Begrüßung und Registrierung der Teilnehmenden" },
+    { offsetMin: 15, label: "Vorstellung von verschiedensten Präparaten" },
+    { offsetMin: 60, label: "Aufklärung und Beratung von Patient:innen" },
+    {
+      offsetMin: 90,
+      label:
+        "Indikationsbesprechung und Behandlung von Patient:innen durch unsere Dozentin",
+    },
+    { offsetMin: 195, label: "Pause" },
+    { offsetMin: 225, label: "Unterrichtung der Teilnehmenden an Patient:innen" },
+    { offsetMin: 480, label: "Ende der Veranstaltung" },
+  ],
+};
+
 const PROGRAM_TEMPLATES: Record<string, ProgramTemplate> = {
   grundkurs_botulinum: BOTULINUM_GRUNDKURS,
   grundkurs_dermalfiller: DERMALFILLER_GRUNDKURS,
@@ -179,6 +203,7 @@ const PROGRAM_TEMPLATES: Record<string, ProgramTemplate> = {
     AUFBAUKURS_THERAPEUTISCHE_INDIKATIONEN_BOTULINUM,
   masterclass_botulinum: MASTERCLASS_BOTULINUM,
   aufbaukurs_lippen: AUFBAUKURS_DERMALFILLER_LIPPEN,
+  aufbaukurs_skulptra: AUFBAUKURS_BIOSTIMULATION_SKINBOOSTER,
 };
 
 // Guard against the server registry and the client-side meta list

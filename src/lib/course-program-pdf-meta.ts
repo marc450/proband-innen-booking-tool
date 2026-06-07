@@ -12,6 +12,7 @@ export const COURSE_KEYS_WITH_PROGRAM_PDF: ReadonlySet<string> = new Set([
   "aufbaukurs_therapeutische_indikationen_botulinum",
   "masterclass_botulinum",
   "aufbaukurs_lippen",
+  "aufbaukurs_skulptra",
 ]);
 
 export function hasProgramTemplate(courseKey: string | null | undefined): boolean {
