@@ -97,6 +97,12 @@ const LW_MIGRATION_REDIRECTS: Record<string, string> = {
   "/login": "/start",
   "/privacy": "/datenschutz",
   "/ueber-ephia": "/vision",
+
+  // Old LW blog post → new CME case study. Recovers the ranking/impressions
+  // the post still holds ("erysipel nach skinbooster" cluster). Must sit in
+  // this exact-match map so it's hit BEFORE the generic /blog/* → home catch
+  // further down, otherwise the equity leaks to the homepage.
+  "/blog/erysipel-nach-skinbooster": "/cme-fallbeispiele/erysipel-nach-skinbooster",
 };
 
 function withNoindex(response: NextResponse): NextResponse {

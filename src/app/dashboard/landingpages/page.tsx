@@ -50,6 +50,14 @@ const BOTOX_STANDALONE: PageEntry[] = [
   { title: "Kostenloser Botox-Kurs", path: "/kostenloser-botox-kurs" },
 ];
 
+const CME_FALLBEISPIELE: PageGroup = {
+  label: "CME-Fallbeispiele",
+  description:
+    "Klinischer Content-Hub auf ephia.de. Hub-Seite plus eine Unterseite je Fallbeispiel (/cme-fallbeispiele/[slug]). Unveröffentlichte Fallbeispiele sind noindex und hier nicht gelistet.",
+  host: HOST_MARKETING,
+  pages: [{ title: "CME-Fallbeispiele (Übersicht)", path: "/cme-fallbeispiele" }],
+};
+
 const RECHTLICHES: PageGroup = {
   label: "Rechtliches",
   host: HOST_MARKETING,
@@ -146,6 +154,7 @@ export default function LandingPagesPage() {
     HAUPTSEITEN,
     botox,
     kurse,
+    CME_FALLBEISPIELE,
     RECHTLICHES,
     SHOP,
     FUNNELS,

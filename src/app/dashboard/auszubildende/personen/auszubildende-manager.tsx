@@ -138,6 +138,8 @@ export function AuszubildendeManager({
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [newContactOpen, setNewContactOpen] = useState(false);
   const [prefillEmail, setPrefillEmail] = useState<string | null>(null);
+  const [prefillFirstName, setPrefillFirstName] = useState<string | null>(null);
+  const [prefillLastName, setPrefillLastName] = useState<string | null>(null);
 
   // Deep-link from the inbox sidebar: /…?newEmail=foo@bar.de auto-opens
   // the NewContactModal with the address pre-filled, so clicking "Als
@@ -150,9 +152,13 @@ export function AuszubildendeManager({
     const newEmail = searchParams?.get("newEmail");
     if (!newEmail) return;
     setPrefillEmail(newEmail);
+    setPrefillFirstName(searchParams.get("newFirstName"));
+    setPrefillLastName(searchParams.get("newLastName"));
     setNewContactOpen(true);
     const next = new URLSearchParams(searchParams.toString());
     next.delete("newEmail");
+    next.delete("newFirstName");
+    next.delete("newLastName");
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname);
     // searchParams + pathname are stable identities across renders; we
@@ -415,10 +421,16 @@ export function AuszubildendeManager({
         open={newContactOpen}
         onOpenChange={(o) => {
           setNewContactOpen(o);
-          if (!o) setPrefillEmail(null);
+          if (!o) {
+            setPrefillEmail(null);
+            setPrefillFirstName(null);
+            setPrefillLastName(null);
+          }
         }}
         defaultType={scope === "other" ? "other" : "auszubildende"}
         defaultEmail={prefillEmail}
+        defaultFirstName={prefillFirstName}
+        defaultLastName={prefillLastName}
       />
 
       {/* Import preview / result dialog. Skips any email that already

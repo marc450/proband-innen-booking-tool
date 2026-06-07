@@ -33,6 +33,9 @@ interface Props {
   /** Pre-fills the E-Mail field on open. Used when the inbox sidebar
    *  deep-links here with `?newEmail=…` for an unknown sender. */
   defaultEmail?: string | null;
+  /** Pre-fill name fields on open (e.g. parsed from a contact-form mail). */
+  defaultFirstName?: string | null;
+  defaultLastName?: string | null;
   /** Called after a successful create. The parent typically calls router.refresh(). */
   onCreated?: (result: { id: string; type: ContactType }) => void;
 }
@@ -80,6 +83,8 @@ export function NewContactModal({
   onOpenChange,
   defaultType = null,
   defaultEmail = null,
+  defaultFirstName = null,
+  defaultLastName = null,
   onCreated,
 }: Props) {
   const router = useRouter();
@@ -99,8 +104,8 @@ export function NewContactModal({
   useEffect(() => {
     if (open) {
       setType(defaultType);
-      setFirstName("");
-      setLastName("");
+      setFirstName(defaultFirstName ?? "");
+      setLastName(defaultLastName ?? "");
       setEmail(defaultEmail ?? "");
       setPhone("");
       setTitle("");
@@ -111,7 +116,7 @@ export function NewContactModal({
       setError(null);
       setSubmitting(false);
     }
-  }, [open, defaultType, defaultEmail]);
+  }, [open, defaultType, defaultEmail, defaultFirstName, defaultLastName]);
 
   const statusOptions =
     type === "proband" ? PATIENT_STATUS_OPTIONS : AZUBI_STATUS_OPTIONS;
