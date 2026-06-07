@@ -162,8 +162,11 @@ export function LessonEditor({
         </div>
       )}
 
-      {/* Editor + live preview */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      {/* Editor + live preview. Video lessons render only the player to
+          learners (the lesson body is never shown), so the Inhalt editor is
+          hidden for them and the preview takes the full width. */}
+      <div className={`grid grid-cols-1 gap-4 items-start ${lessonType === "video" ? "" : "lg:grid-cols-2"}`}>
+        {lessonType !== "video" && (
         <div className="bg-white rounded-[10px] shadow-sm p-4">
           <div className="flex items-center justify-between mb-3">
             <Label>Inhalt</Label>
@@ -196,9 +199,10 @@ export function LessonEditor({
             </div>
           )}
         </div>
+        )}
 
         {/* Live preview */}
-        <div className="lg:sticky lg:top-4">
+        <div className={lessonType === "video" ? "max-w-3xl" : "lg:sticky lg:top-4"}>
           <div className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground">
             <Eye className="h-3.5 w-3.5" /> Live-Vorschau (so sehen es Lernende)
           </div>
