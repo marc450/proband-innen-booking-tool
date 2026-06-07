@@ -196,12 +196,22 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
   // (e.g. contact-form mails arrive `From: customerlove@ephia.de` with the real
   // sender in `Reply-To`); otherwise fall back to From for inbound, or the
   // original To for outbound threads.
-  const defaultReplyTo = lastMsg
+  const messageReplyTo = lastMsg
     ? (lastMsg.replyTo && lastMsg.replyTo.trim()) ||
       (lastMsg.isInbound
         ? lastMsg.fromEmail
         : lastMsg.to.split(",")[0].trim())
     : "";
+  // If that resolves to one of our own addresses (e.g. a contact-form mail
+  // sent from customerlove@ephia.de), reply to the real person carried in
+  // an external Reply-To anywhere in the thread instead of to ourselves.
+  const externalReplyTo = messages
+    .map((m) => m.replyTo?.trim())
+    .find((rt) => rt && !rt.toLowerCase().endsWith("@ephia.de"));
+  const defaultReplyTo =
+    messageReplyTo.toLowerCase().endsWith("@ephia.de") && externalReplyTo
+      ? externalReplyTo
+      : messageReplyTo;
 
   const openReply = () => {
     const sig = signature?.html ? `<br><br>${signature.html}` : "";

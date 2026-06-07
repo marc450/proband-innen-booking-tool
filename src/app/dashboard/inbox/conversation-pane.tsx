@@ -77,6 +77,10 @@ interface Props {
   manuallyAnsweredBy?: string | null;
   onMarkAnswered?: () => void | Promise<void>;
   onUnmarkAnswered?: () => void | Promise<void>;
+  /** The resolved external contact for this thread (e.g. the Reply-To
+   * person of a contact-form mail). Used as the reply target when the
+   * message-derived target is one of our own @ephia.de addresses. */
+  contactEmail?: string | null;
 }
 
 function formatFullDate(dateStr: string) {
@@ -106,6 +110,7 @@ export function ConversationPane({
   manuallyAnsweredBy = null,
   onMarkAnswered,
   onUnmarkAnswered,
+  contactEmail = null,
 }: Props) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyHtml, setReplyHtml] = useState("");
@@ -237,12 +242,21 @@ export function ConversationPane({
   // (e.g. contact-form mails arrive `From: customerlove@ephia.de` with the real
   // sender in `Reply-To`); otherwise fall back to From for inbound, or the
   // original To for outbound threads.
-  const defaultReplyTo = lastMsg
+  const messageReplyTo = lastMsg
     ? (lastMsg.replyTo && lastMsg.replyTo.trim()) ||
       (lastMsg.isInbound
         ? lastMsg.fromEmail
         : lastMsg.to.split(",")[0].trim())
     : "";
+  // If that resolves to one of our own addresses (a contact-form mail whose
+  // Reply-To header didn't survive, etc.), reply to the resolved external
+  // contact instead so "Antworten" never replies to ourselves.
+  const defaultReplyTo =
+    messageReplyTo.toLowerCase().endsWith("@ephia.de") &&
+    contactEmail &&
+    !contactEmail.toLowerCase().endsWith("@ephia.de")
+      ? contactEmail
+      : messageReplyTo;
 
   const openReply = () => {
     const sig = signature?.html ? `<br><br>${signature.html}` : "";

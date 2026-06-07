@@ -673,6 +673,7 @@ export function InboxManager({
               messages={threadMessages}
               loading={threadLoading}
               signature={signature}
+              contactEmail={contactEmail}
               onSent={handleReplySent}
               assignment={selectedThread ? assignments[selectedThread] || null : null}
               teamMembers={teamMembers}
