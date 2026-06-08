@@ -5,13 +5,44 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowRight, Check, ImageIcon } from "lucide-react";
 import type { AvailableSlot, Course } from "@/lib/types";
-import { INDICATIONS } from "@/lib/indications";
+import { PICKER_INDICATIONS } from "@/lib/indications";
 import { TYPO } from "../typography";
 
 interface TreatmentListProps {
   courses: Course[];
   slots: AvailableSlot[];
+  // When present, a standalone Masseter card is prepended to the grid.
+  // Computed in werde-proband-in/page.tsx from the combined masseter
+  // capacity (general Therap. Indikationen seats + reserved Botulinum
+  // seats). null when no masseter capacity is bookable, so the card hides.
+  masseterCard:
+    | { courseId: string; guidePriceCents: number | null; imageUrl: string | null }
+    | null;
 }
+
+// Static content for the standalone Masseter card. Price and image come
+// from the Therap. Indikationen course (passed in via masseterCard) so they
+// stay in sync; only the masseter-specific copy lives here. Mirrors the
+// "TEMPORARY hardcoded" pattern of TEMP_ZONES_BY_TITLE above.
+const MASSETER_CARD = {
+  title: "__masseter__",
+  treatmentTitle: "Gesichtsverschmälerung / Masseter / Bruxismus",
+  // Dedicated card image, stored in the public Supabase `treatment-images`
+  // bucket (next.config remotePatterns already allows that host + path).
+  // To swap it, overwrite this file in the bucket or change the URL here.
+  imageUrl:
+    "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/treatment-images/Ephia_kathrinschiebler20%20(1).png",
+  serviceDescription:
+    "Im Rahmen dieses Kurses kannst Du eine Behandlung des Musculus masseter mit Botulinum durch eine:n approbierte:n Ärzt:in erhalten. Behandelt werden, je nach Ausgangssituation, Beschwerden wie Bruxismus (Zähneknirschen) und Kieferpressen oder eine Verschmälerung der Gesichtskontur. Ob eine Behandlung medizinisch sinnvoll ist, wird im Aufklärungsgespräch mit unseren Dozent:innen geprüft und in einem individuellen Behandlungsplan festgehalten. Das Ergebnis soll natürlich und harmonisch wirken. In vielen Praxen liegen die Preise für eine entsprechende Behandlung deutlich über unserem Richtpreis.",
+  zones: {
+    label: "Behandelbare Indikationen",
+    items: [
+      "Kieferbreite reduzieren (Gesichtsverschmälerung)",
+      "Bruxismus / Zähneknirschen",
+      "Kieferpressen",
+    ],
+  },
+};
 
 type TreatmentCategory =
   | "botulinum"
@@ -67,13 +98,12 @@ const TEMP_ZONES_BY_TITLE: Record<
   },
   "Behandlung therapeutischer Indikationen": {
     label: "Behandelbare Indikationen",
-    // Derived from INDICATIONS in src/lib/indications.ts so the bullets
-    // on the landing card always mirror what the slot picker offers
-    // one step later. Used to be hardcoded and had silently drifted
-    // (e.g. "Bruxismus (Masseter)" hid the Gesichtsverschmälerung use
-    // case, "Migräne" hid the Spannungskopfschmerz one). Single source
-    // of truth lives in indications.ts now.
-    items: INDICATIONS.map((i) => i.label),
+    // Derived from PICKER_INDICATIONS in src/lib/indications.ts so the
+    // bullets on the landing card always mirror what the slot picker
+    // offers one step later. Masseter is excluded here because it has its
+    // own standalone card (see MASSETER_CARD below); the picker no longer
+    // lists it either, so the two stay in sync.
+    items: PICKER_INDICATIONS.map((i) => i.label),
   },
   "Behandlung des Gesichts mit Dermalfiller": {
     label: "Behandelbare Zonen",
@@ -102,6 +132,14 @@ interface TreatmentGroup {
   firstCourse: Course;
   totalSlots: number;
   category: TreatmentCategory;
+  // Optional overrides for synthetic cards (e.g. Masseter) that don't map
+  // 1:1 to a course row: a deep-link CTA target and a custom zone list.
+  href?: string;
+  zones?: { label: string; items: string[] };
+  // CSS object-position for the cover image. Defaults to center; the
+  // Masseter portrait is anchored higher so the top of the head isn't
+  // cropped by the 16:9 frame.
+  imageObjectPosition?: string;
 }
 
 /**
@@ -111,7 +149,7 @@ interface TreatmentGroup {
  * keine Ränder. Die CTA führt zur bestehenden Slot-Auswahl unter
  * `/book/{courseId}`, sodass der Buchungs-Funnel unverändert bleibt.
  */
-export function TreatmentList({ courses, slots }: TreatmentListProps) {
+export function TreatmentList({ courses, slots, masseterCard }: TreatmentListProps) {
   const groups = useMemo(() => {
     const groupedMap = new Map<string, TreatmentGroup>();
 
@@ -137,8 +175,32 @@ export function TreatmentList({ courses, slots }: TreatmentListProps) {
       groupedMap.get(course.title)!.totalSlots += courseSlots.length;
     }
 
-    return Array.from(groupedMap.values());
-  }, [courses, slots]);
+    const result = Array.from(groupedMap.values());
+
+    // Prepend the standalone Masseter card so it leads the grid (masseter
+    // is the highest-demand treatment). It deep-links into the Therap.
+    // Indikationen flow with the indication pre-selected.
+    if (masseterCard) {
+      result.unshift({
+        title: MASSETER_CARD.title,
+        firstCourse: {
+          id: masseterCard.courseId,
+          title: MASSETER_CARD.treatmentTitle,
+          treatment_title: MASSETER_CARD.treatmentTitle,
+          service_description: MASSETER_CARD.serviceDescription,
+          guide_price_cents: masseterCard.guidePriceCents,
+          image_url: MASSETER_CARD.imageUrl ?? masseterCard.imageUrl,
+        } as Course,
+        totalSlots: 1,
+        category: "botulinum",
+        href: `/book/${masseterCard.courseId}?indication=masseter`,
+        zones: MASSETER_CARD.zones,
+        imageObjectPosition: "center 0%",
+      });
+    }
+
+    return result;
+  }, [courses, slots, masseterCard]);
 
   const availableCategories = useMemo(() => {
     const present = new Set(groups.map((g) => g.category));
@@ -232,6 +294,11 @@ export function TreatmentList({ courses, slots }: TreatmentListProps) {
                       fill
                       quality={85}
                       sizes="(min-width: 768px) 50vw, 100vw"
+                      style={
+                        group.imageObjectPosition
+                          ? { objectPosition: group.imageObjectPosition }
+                          : undefined
+                      }
                       className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                     />
                   </div>
@@ -263,7 +330,7 @@ export function TreatmentList({ courses, slots }: TreatmentListProps) {
                   {(() => {
                     const displayTitle =
                       group.firstCourse.treatment_title || group.firstCourse.title;
-                    const zones = TEMP_ZONES_BY_TITLE[displayTitle];
+                    const zones = group.zones ?? TEMP_ZONES_BY_TITLE[displayTitle];
                     if (!zones || zones.items.length === 0) return null;
                     return (
                       <div className="mt-5">
@@ -307,7 +374,7 @@ export function TreatmentList({ courses, slots }: TreatmentListProps) {
 
                   <div>
                     <Link
-                      href={`/book/${group.firstCourse.id}`}
+                      href={group.href ?? `/book/${group.firstCourse.id}`}
                       className="inline-flex items-center justify-center gap-2 w-full text-sm md:text-base font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-5 py-3 transition-colors"
                     >
                       <span>Termine anschauen</span>

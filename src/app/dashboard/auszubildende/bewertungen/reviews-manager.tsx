@@ -169,6 +169,19 @@ export function ReviewsManager({
     return reviews;
   }, [reviews, filter]);
 
+  // Value -> label map for the course dropdown. base-ui's <Select.Value>
+  // shows the raw value (the UUID, or the "__none__" sentinel) in the
+  // trigger unless the Root is given an `items` map. Each SelectItem still
+  // renders its own label in the open list; this is only for the closed
+  // trigger to read as a name.
+  const courseItems = useMemo(
+    () => ({
+      [NO_COURSE]: "Allgemeine Bewertung",
+      ...Object.fromEntries(courses.map((c) => [c.id, c.label])),
+    }),
+    [courses],
+  );
+
   function setBusy(id: string, on: boolean) {
     setBusyIds((prev) => {
       const next = new Set(prev);
@@ -414,6 +427,7 @@ export function ReviewsManager({
                       {/* Manuelle Kurszuordnung. "Allgemeine Bewertung"
                           setzt template_id zurück auf null. */}
                       <Select
+                        items={courseItems}
                         value={r.template_id ?? NO_COURSE}
                         onValueChange={(v) => assignCourse(r.id, v)}
                         disabled={isBusy}

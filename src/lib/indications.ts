@@ -9,10 +9,16 @@
 export const INDICATIONS = [
   {
     key: "masseter",
-    label: "Masseter / Bruxismus / Gesichtsverschmälerung",
+    label: "Gesichtsverschmälerung / Masseter / Bruxismus",
     description: "Kieferbreite reduzieren, Zähneknirschen, Kieferpressen",
     min: 5,
     max: 9,
+    // Masseter has its own standalone treatment card on the Proband:innen
+    // overview (deep-links into this flow via ?indication=masseter), so it
+    // is hidden from the in-funnel indication picker to avoid a duplicate
+    // entry point. It stays a valid IndicationKey because the deep-link
+    // flow and the reserved-seat merge logic are keyed on it.
+    hiddenFromPicker: true,
   },
   {
     key: "migraene",
@@ -29,6 +35,13 @@ export const INDICATIONS = [
     max: 3,
   },
 ] as const;
+
+// Indications surfaced in the in-funnel picker (slot-selection). Masseter
+// is excluded because it has its own standalone overview card; the picker
+// is then left with the long-tail indications only.
+export const PICKER_INDICATIONS = INDICATIONS.filter(
+  (i) => !("hiddenFromPicker" in i) || !i.hiddenFromPicker,
+);
 
 export type IndicationKey = (typeof INDICATIONS)[number]["key"];
 
