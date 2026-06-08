@@ -115,7 +115,18 @@ export function SlotSelection({
         .filter((entry) => entry.slots.length > 0)
     : [];
 
-  const dateEntries = [...baseEntries, ...masseterEntries];
+  // Merge both buckets chronologically. The base (Therap. general) and the
+  // masseter (Grundkurs Botulinum) lists are fetched separately and the
+  // masseter query has no ORDER BY, so a plain concat left the dates jumbled.
+  // Sort by course_date (ISO "yyyy-MM-dd" sorts lexicographically), nulls last.
+  const dateEntries = [...baseEntries, ...masseterEntries].sort((a, b) => {
+    const da = a.course.course_date || "";
+    const db = b.course.course_date || "";
+    if (da && db) return da < db ? -1 : da > db ? 1 : 0;
+    if (da) return -1;
+    if (db) return 1;
+    return 0;
+  });
 
   // A selected masseter seat lives in a Botulinum course, not the Therap.
   // Indikationen course the proband started on. Resolve the owning course
