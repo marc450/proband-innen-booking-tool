@@ -31,6 +31,7 @@ import {
   Globe,
   CheckSquare,
   GraduationCap,
+  Info,
   LucideIcon,
 } from "lucide-react";
 import { Manage2faDialog } from "@/components/2fa/manage-2fa-dialog";
@@ -517,6 +518,15 @@ export function DashboardNav({
             );
           })}
         </nav>
+
+        {/* Anleitung / Hilfe */}
+        <Link
+          href="/dashboard/anleitung"
+          title="Anleitung für Kursbetreuungen"
+          className="mb-2 h-9 w-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-gray-50 transition-colors"
+        >
+          <Info className="h-5 w-5" />
+        </Link>
 
         {/* User avatar / menu */}
         <div className="relative" ref={userMenuRef}>
