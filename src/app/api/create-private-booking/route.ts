@@ -4,6 +4,7 @@ import { encryptPatientFields, encryptBookingFields, hashEmail, hashPhone } from
 import { findPatientIdByAnyEmail } from "@/lib/contact-emails";
 import { buildEmailHtml, PATIENT_PREPARATION_BLOCK } from "@/lib/email-template";
 import { archiveSentMessage } from "@/lib/gmail";
+import { INDICATIONS } from "@/lib/indications";
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 
@@ -50,7 +51,15 @@ export async function POST(req: NextRequest) {
       .eq("id", slot.course_id)
       .single();
 
-    const displayTreatment = course?.treatment_title || slot.course_title || "EPHIA Kurs";
+    // For indication bookings (e.g. masseter reserved seats inside a
+    // Grundkurs Botulinum course) show the booked indication label instead of
+    // the host course's treatment_title, so a Bruxismus booking doesn't read
+    // as "mimische Falten" in the confirmation. Falls back to the course title.
+    const indicationLabel = indication
+      ? INDICATIONS.find((i) => i.key === indication)?.label ?? null
+      : null;
+    const displayTreatment =
+      indicationLabel || course?.treatment_title || slot.course_title || "EPHIA Kurs";
 
     // Check blacklist — split into two parallel lookups:
     //   1. Email match via primary OR alias (covers the case where a
@@ -300,7 +309,7 @@ export async function POST(req: NextRequest) {
               nameLine ? `*Name:* ${nameLine}` : null,
               email ? `*E-Mail:* ${email}` : null,
               referringDoctor ? `*Zuweiser:in:* ${referringDoctor}` : null,
-              `*Kurs:* ${slot.course_title || ""}`,
+              `*Kurs:* ${displayTreatment}`,
               `*Datum:* ${dateStr}${timeStr ? `, ${timeStr} Uhr` : ""}`,
               `*Freie Plätze:* ${totalRemaining}`,
             ].filter(Boolean).join("\n"),

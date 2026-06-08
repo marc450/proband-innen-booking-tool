@@ -5,6 +5,7 @@ import { findPatientIdByAnyEmail } from "@/lib/contact-emails";
 import { archiveSentMessage } from "@/lib/gmail";
 import { formatBerlinLongDateWithWeekday, parseDateOnly } from "@/lib/date";
 import { isCourseDateBookableByProbands } from "@/lib/proband-visibility";
+import { INDICATIONS } from "@/lib/indications";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
@@ -373,7 +374,15 @@ export async function POST(req: NextRequest) {
       .single();
 
     const courseInfo = slotInfo?.courses as { title?: string; treatment_title?: string; course_date?: string; location?: string } | null;
-    const courseTitle = courseInfo?.treatment_title || courseInfo?.title || "Kurs";
+    // For indication bookings the host course is generic (masseter reserved
+    // seats live inside a "Grundkurs Botulinum" course), so show the booked
+    // indication label instead of the course's treatment_title. Otherwise a
+    // Bruxismus booking would read as "Behandlung mimischer Falten mit
+    // Botulinum" in the confirmation. Falls back to the course title.
+    const indicationLabel = indication
+      ? INDICATIONS.find((i) => i.key === indication)?.label ?? null
+      : null;
+    const courseTitle = indicationLabel || courseInfo?.treatment_title || courseInfo?.title || "Kurs";
     const courseDate = courseInfo?.course_date || "";
     const courseLocation = courseInfo?.location || "";
     const startTime = slotInfo?.start_time || "";
