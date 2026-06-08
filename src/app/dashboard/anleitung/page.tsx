@@ -209,7 +209,8 @@ export default function AnleitungPage() {
             {
               status: "Erschienen",
               pill: "grün",
-              meaning: "Hat am Kurs teilgenommen",
+              meaning:
+                "Hat am Kurs teilgenommen. Löst den Versand des Zertifikats aus, siehe Hinweis unten.",
             },
             { status: "Storniert", pill: "rot", meaning: "Buchung abgesagt" },
             {
@@ -219,6 +220,25 @@ export default function AnleitungPage() {
             },
           ]}
         />
+        <div className="rounded-[10px] bg-[#0066FF]/10 px-4 py-3 my-4">
+          <p className="font-semibold text-[#0066FF] mb-1">
+            Wichtig: „Erschienen“ setzen, sonst kein Zertifikat
+          </p>
+          <p className="leading-relaxed text-sm">
+            War eine Ärzt:in beim Kurs da, musst Du die Buchung unbedingt auf{" "}
+            <strong>Erschienen</strong> setzen. Nur Buchungen mit dem Status
+            „Erschienen“ lösen den Versand des Teilnahme- bzw. CME-Zertifikats
+            aus (Praxiskurs, Kombikurs und Komplettpaket, nicht Onlinekurs). Der
+            Standard-Status „Gebucht“ reicht nicht. Vergisst Du das, bekommt die
+            Ärzt:in ihr Zertifikat nie. Der Versand läuft automatisch über einen
+            täglichen Lauf, Du kannst die Buchung also auch ein paar Tage nach
+            dem Kurs noch auf „Erschienen“ setzen. Fehlt für einen CME-Kurs noch
+            die VNR, wartet das System und verschickt das Zertifikat automatisch,
+            sobald die VNR eingetragen ist. Umgekehrt gilt: Ein CME-Zertifikat
+            ist ein Landesärztekammer-relevantes Dokument, setze „Erschienen“
+            deshalb nie für eine Person, die nicht da war.
+          </p>
+        </div>
         <p className="leading-relaxed mb-4">
           Status per Klick auf die Plakette ändern. Direkt von „Gebucht“ auf
           „Erstattet“ geht nicht, das läuft immer über „Storniert“. Beim
