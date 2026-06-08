@@ -14,6 +14,7 @@ import Link from "next/link";
 import { BookingForm } from "../booking-form";
 import {
   INDICATIONS,
+  PICKER_INDICATIONS,
   IndicationKey,
 } from "@/lib/indications";
 
@@ -28,6 +29,11 @@ interface SlotSelectionProps {
   masseterSlots: AvailableSlot[];
   masseterCourses: Course[];
   firstSlotByCourse: Record<string, string>;
+  // Pre-selected indication when the proband arrived via a deep link
+  // (e.g. the standalone Masseter card → ?indication=masseter). When set,
+  // the picker is skipped and the indication is locked: "Zurück" goes back
+  // to the overview, not to a picker that no longer lists this indication.
+  initialIndication: IndicationKey | null;
 }
 
 export function SlotSelection({
@@ -37,6 +43,7 @@ export function SlotSelection({
   masseterSlots,
   masseterCourses,
   firstSlotByCourse,
+  initialIndication,
 }: SlotSelectionProps) {
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
   const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
@@ -45,7 +52,9 @@ export function SlotSelection({
   // indication. Cosmetic courses (mimische Falten, Dermalfiller, …) keep
   // the original single-step flow.
   const usesIndications = /therap.*indikation/i.test(course.title);
-  const [selectedIndication, setSelectedIndication] = useState<IndicationKey | null>(null);
+  const [selectedIndication, setSelectedIndication] = useState<IndicationKey | null>(initialIndication);
+  // A deep-linked indication is locked: no return path to the picker.
+  const indicationLocked = usesIndications && !!initialIndication;
   const showPicker = usesIndications && !selectedIndication;
 
   // Free seats a proband can still book on a given slot. Masseter seats
@@ -75,6 +84,13 @@ export function SlotSelection({
         : generalSeatsTotal;
     return { ...ind, remaining: Math.min(available, ind.max as number) };
   });
+
+  // Picker shows only the non-hidden indications (masseter has its own
+  // standalone card). indicationStats keeps all keys so the selected-
+  // indication badge can still resolve the masseter label after a deep link.
+  const pickerStats = indicationStats.filter((i) =>
+    PICKER_INDICATIONS.some((p) => p.key === i.key),
+  );
 
   const isMasseter = usesIndications && selectedIndication === "masseter";
 
@@ -139,7 +155,7 @@ export function SlotSelection({
                 </span>
               )}
               <h2 className="text-xl md:text-2xl font-bold tracking-wide leading-tight text-black text-balance">
-                {selectedIsMasseterCourse
+                {isMasseter
                   ? selectedMasseterLabel
                   : selectedSlotCourse.treatment_title || selectedSlotCourse.title}
               </h2>
@@ -178,7 +194,7 @@ export function SlotSelection({
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-              {indicationStats.map((ind) => {
+              {pickerStats.map((ind) => {
                 const isFull = ind.remaining === 0;
                 return (
                   <button
@@ -226,7 +242,7 @@ export function SlotSelection({
           </div>
         ) : (
           <div>
-            {usesIndications ? (
+            {usesIndications && !indicationLocked ? (
               <button
                 onClick={() => {
                   setSelectedIndication(null);
@@ -248,12 +264,14 @@ export function SlotSelection({
             {usesIndications && selectedIndication && (
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <span className="inline-flex items-center text-[11px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-[#0066FF]/10 text-[#0066FF]">
-                  Indikation: {indicationStats.find((i) => i.key === selectedIndication)?.label}
+                  Indikation
                 </span>
               </div>
             )}
             <h1 className="text-2xl md:text-3xl font-bold tracking-wide leading-tight text-black">
-              {course.treatment_title || course.title}
+              {usesIndications && selectedIndication
+                ? indicationStats.find((i) => i.key === selectedIndication)?.label
+                : course.treatment_title || course.title}
             </h1>
             <p className="text-sm md:text-base text-black/70 leading-relaxed mt-3 mb-8">
               Du zahlst erst nach der Behandlung in der Praxis. Wähle Deinen Wunschtermin.

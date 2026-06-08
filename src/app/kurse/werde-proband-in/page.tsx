@@ -195,6 +195,34 @@ export default async function WerdeProbandInPage() {
   });
   const slots = (slotsData as AvailableSlot[] | null) ?? [];
 
+  // Standalone Masseter card. Masseter no longer lives in the in-funnel
+  // picker; instead it gets its own overview card that deep-links into the
+  // Therap. Indikationen flow with ?indication=masseter. Its capacity is the
+  // same two buckets the slot picker merges: general seats on the Therap.
+  // Indikationen course + reserved masseter seats on Grundkurs Botulinum
+  // courses (masseter_eligible slots, migration 117). We compute it from the
+  // already-fetched courses/slots, so no extra query is needed. The card is
+  // hidden (null) when there is no Therap. course in window or zero seats.
+  const therapCourse = courses.find((c) => /therap.*indikation/i.test(c.title));
+  const inWindowCourseIds = new Set(courses.map((c) => c.id));
+  const masseterSeats = therapCourse
+    ? slots.reduce((n, s) => {
+        if (s.course_id === therapCourse.id) return n + s.general_remaining;
+        if (s.masseter_eligible && inWindowCourseIds.has(s.course_id)) {
+          return n + s.masseter_remaining;
+        }
+        return n;
+      }, 0)
+    : 0;
+  const masseterCard =
+    therapCourse && masseterSeats > 0
+      ? {
+          courseId: therapCourse.id,
+          guidePriceCents: therapCourse.guide_price_cents,
+          imageUrl: therapCourse.image_url,
+        }
+      : null;
+
   const reviewSource = (reviewRows as
     | {
         id: string;
@@ -354,7 +382,7 @@ export default async function WerdeProbandInPage() {
       </section>
 
       {/* Behandlungsangebote — synchronisiert mit /book. */}
-      <TreatmentList courses={courses} slots={slots} />
+      <TreatmentList courses={courses} slots={slots} masseterCard={masseterCard} />
 
       {/* USPs — three value pillars. */}
       <section className="bg-[#FAEBE1] py-16 md:py-20">

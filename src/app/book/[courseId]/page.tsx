@@ -5,13 +5,25 @@ import { AvailableSlot, Course } from "@/lib/types";
 import { SlotSelection } from "./slot-selection";
 import { notFound } from "next/navigation";
 import { probandHorizonIso, probandTodayIso } from "@/lib/proband-visibility";
+import { INDICATIONS, IndicationKey } from "@/lib/indications";
 
 export default async function CourseBookingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ courseId: string }>;
+  searchParams: Promise<{ indication?: string }>;
 }) {
   const { courseId } = await params;
+  const { indication } = await searchParams;
+  // Deep-link entry point: the standalone Masseter card on the overview
+  // links to /book/{therapCourseId}?indication=masseter so the proband
+  // skips the indication picker. Only accept a value that is a real
+  // IndicationKey; anything else is ignored and the normal flow runs.
+  const initialIndication: IndicationKey | null =
+    INDICATIONS.some((i) => i.key === indication)
+      ? (indication as IndicationKey)
+      : null;
   const supabase = await createClient();
 
   // Fetch the requested course
@@ -122,6 +134,7 @@ export default async function CourseBookingPage({
       masseterSlots={masseterSlots}
       masseterCourses={masseterCourses}
       firstSlotByCourse={firstSlotByCourse}
+      initialIndication={usesIndications ? initialIndication : null}
     />
   );
 }
