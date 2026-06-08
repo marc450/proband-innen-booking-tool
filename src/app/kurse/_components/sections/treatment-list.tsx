@@ -31,7 +31,7 @@ const MASSETER_CARD = {
   // bucket (next.config remotePatterns already allows that host + path).
   // To swap it, overwrite this file in the bucket or change the URL here.
   imageUrl:
-    "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/treatment-images/Ephia_kathrinschiebler20%20(1).png",
+    "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/treatment-images/fleur-kaan-PG6Em2m7Ar4-unsplash.jpg",
   serviceDescription:
     "Im Rahmen dieses Kurses kannst Du eine Behandlung des Musculus masseter mit Botulinum durch eine:n approbierte:n Ärzt:in erhalten. Behandelt werden, je nach Ausgangssituation, Beschwerden wie Bruxismus (Zähneknirschen) und Kieferpressen oder eine Verschmälerung der Gesichtskontur. Ob eine Behandlung medizinisch sinnvoll ist, wird im Aufklärungsgespräch mit unseren Dozent:innen geprüft und in einem individuellen Behandlungsplan festgehalten. Das Ergebnis soll natürlich und harmonisch wirken. In vielen Praxen liegen die Preise für eine entsprechende Behandlung deutlich über unserem Richtpreis.",
   zones: {
@@ -195,7 +195,7 @@ export function TreatmentList({ courses, slots, masseterCard }: TreatmentListPro
         category: "botulinum",
         href: `/book/${masseterCard.courseId}?indication=masseter`,
         zones: MASSETER_CARD.zones,
-        imageObjectPosition: "center 0%",
+        imageObjectPosition: "center 62%",
       });
     }
 
