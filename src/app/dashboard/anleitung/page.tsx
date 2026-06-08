@@ -74,8 +74,8 @@ export default function AnleitungPage() {
         <p className="leading-relaxed mb-4">
           Proband:innen sind die Patient:innen, die in unseren Kursen behandelt
           werden. Kontakte verwaltest Du unter{" "}
-          <strong>Proband:innen → Kontakte</strong>, Buchungen unter{" "}
-          <strong>Proband:innen → Buchungen</strong>. Alle persönlichen Daten
+          <strong>Kontakte → Proband:innen</strong>, Buchungen unter{" "}
+          <strong>Buchungen → Proband:innen</strong>. Alle persönlichen Daten
           sind Ende-zu-Ende-verschlüsselt und werden nur für die Anzeige
           entschlüsselt.
         </p>
@@ -170,8 +170,9 @@ export default function AnleitungPage() {
             Bestätigung wird automatisch eine Ausfallgebühr von{" "}
             <strong>50,00 EUR</strong> über die hinterlegte Zahlungsmethode
             berechnet. Das ist nicht rückgängig zu machen. Nach erfolgreicher
-            Abbuchung erscheint die Plakette „Belastet“. Erst nach dem Termin
-            setzen, wenn die Person wirklich nicht erschienen ist.
+            Abbuchung erscheint die Plakette „Belastet“. Stimm Dich vorher immer
+            mit dem Team ab, bevor Du jemanden auf No-Show setzt. Wir zeigen in
+            der Regel Kulanz.
           </li>
           <li>
             <strong>Stornieren:</strong> Bei Bestätigung wird der/die Proband:in
@@ -196,7 +197,7 @@ export default function AnleitungPage() {
         <p className="leading-relaxed mb-4">
           Die Ärzt:innen sind unsere Auszubildenden, die Kurse buchen. Ihre
           Buchungen verwaltest Du unter{" "}
-          <strong>Auszubildende → Buchungen</strong>. Anders als bei
+          <strong>Buchungen → Ärzt:innen</strong>. Anders als bei
           Proband:innen sind diese Daten nicht verschlüsselt.
         </p>
         <StatusTable
@@ -258,17 +259,11 @@ export default function AnleitungPage() {
           Kurstermine und Deine Zuständigkeit
         </h3>
         <p className="leading-relaxed mb-4">
-          Kurstermine werden unter <strong>Einstellungen → Kurstermine</strong>{" "}
+          Kurstermine werden unter <strong>Admin → Kurstermine</strong>{" "}
           verwaltet. Jeder Termin hat ein Feld <strong>Kursbetreuung</strong>,
           über das die zuständige Person zugewiesen wird. Filtere die Liste nach
           Kursbetreuung, um nur Deine Termine zu sehen. Jede Änderung an einem
           Termin muss im Dialog „Änderung bestätigen“ gespeichert werden.
-        </p>
-        <h3 className="text-lg font-semibold mt-6 mb-2">Bewertungen</h3>
-        <p className="leading-relaxed mb-4">
-          Unter <strong>Auszubildende → Bewertungen</strong> verwaltest Du die
-          öffentlichen Kursbewertungen: filtern (Alle, Wartend, Freigeschaltet),
-          einem Kurs zuordnen, freischalten oder ausblenden und löschen.
         </p>
       </section>
 
@@ -327,16 +322,15 @@ export default function AnleitungPage() {
         <ul className="list-disc pl-6 space-y-2 leading-relaxed mb-4">
           <li>In der Inbox freundlich antworten (siehe 48-Stunden-Regel unten).</li>
           <li>
-            Prüfen, ob der Termin noch zu halten ist, sonst unter Proband:innen
-            → Buchungen über das Umbuchen-Symbol auf einen Slot am selben
-            Kurstag verschieben.
+            Prüfen, ob der Termin noch zu halten ist, sonst unter{" "}
+            <strong>Buchungen → Proband:innen</strong> über das Umbuchen-Symbol
+            auf einen Slot am selben Kurstag verschieben.
           </li>
           <li>
-            Erscheint die Person trotz Ankündigung gar nicht und liegt die
-            Absage innerhalb von 48 Stunden, nach dem Termin auf{" "}
-            <strong>No-Show</strong> setzen (löst die 50-EUR-Gebühr aus). Bei
-            rechtzeitiger oder kulanter Absage stattdessen{" "}
-            <strong>Storniert</strong>.
+            Setze die Buchung nicht eigenmächtig auf <strong>No-Show</strong>.
+            Wir zeigen in der Regel Kulanz. Stimm Dich vorher immer mit dem Team
+            ab, ob die 50-EUR-Ausfallgebühr berechnet wird oder die Buchung
+            stattdessen auf <strong>Storniert</strong> gesetzt wird.
           </li>
           <li>Den Thread als erledigt markieren.</li>
         </ul>

@@ -13,7 +13,7 @@ Melde Dich mit Deinem Mitarbeiter:innen-Account an. Alle hier beschriebenen Bere
 
 ## 1. Status von Proband:innen verwalten
 
-Proband:innen sind die Patient:innen, die in unseren Kursen behandelt werden. Ihre Daten verwaltest Du unter **Proband:innen → Kontakte** (`/dashboard/patients`). Buchungen verwaltest Du unter **Proband:innen → Buchungen** (`/dashboard/bookings`).
+Proband:innen sind die Patient:innen, die in unseren Kursen behandelt werden. Ihre Daten verwaltest Du unter **Kontakte → Proband:innen** (`/dashboard/patients`). Buchungen verwaltest Du unter **Buchungen → Proband:innen** (`/dashboard/bookings`).
 
 Wichtig: Alle persönlichen Daten der Proband:innen sind Ende-zu-Ende-verschlüsselt. Das Tool entschlüsselt sie nur für Dich in der Anzeige, der Speicher bleibt verschlüsselt.
 
@@ -30,7 +30,7 @@ Jede:r Proband:in hat einen von vier Status. Den Status erkennst Du an der farbi
 
 **So änderst Du den Status:**
 
-1. Gehe zu **Proband:innen → Kontakte**.
+1. Gehe zu **Kontakte → Proband:innen**.
 2. Suche die Person in der Liste.
 3. Klicke auf die farbige **Status-Plakette** in der Zeile.
 4. Wähle im Dropdown den neuen Status. Die Änderung wird sofort gespeichert.
@@ -55,7 +55,7 @@ In der Listenansicht kannst Du außerdem neue Kontakte anlegen (**+ Neuer Kontak
 
 ### 1.3 Buchungsstatus der Proband:innen
 
-Unter **Proband:innen → Buchungen** verwaltest Du den Status einzelner Termine. Jede Buchung hat einen von vier Status:
+Unter **Buchungen → Proband:innen** verwaltest Du den Status einzelner Termine. Jede Buchung hat einen von vier Status:
 
 | Status | Plakette | Bedeutung |
 |---|---|---|
@@ -71,7 +71,7 @@ Unter **Proband:innen → Buchungen** verwaltest Du den Status einzelner Termine
 
 Wechsel zwischen **Gebucht**, **Erschienen** und zurück passieren still und sofort. Zwei Status haben besondere Folgen und fragen vorher nach:
 
-- **No-Show setzen:** Es erscheint ein Bestätigungsdialog "No-Show bestätigen". Bestätigst Du, wird automatisch eine Ausfallgebühr von **50,00 EUR** über die hinterlegte Zahlungsmethode (Stripe) berechnet. Diese Aktion kann nicht rückgängig gemacht werden. Nach erfolgreicher Abbuchung erscheint eine grüne Plakette **Belastet**. Setze No-Show erst, wenn der Termin wirklich verstrichen und die Person nicht erschienen ist.
+- **No-Show setzen:** Es erscheint ein Bestätigungsdialog "No-Show bestätigen". Bestätigst Du, wird automatisch eine Ausfallgebühr von **50,00 EUR** über die hinterlegte Zahlungsmethode (Stripe) berechnet. Diese Aktion kann nicht rückgängig gemacht werden. Nach erfolgreicher Abbuchung erscheint eine grüne Plakette **Belastet**. Stimm Dich vorher immer mit dem Team ab, bevor Du jemanden auf No-Show setzt. Wir zeigen in der Regel Kulanz.
 - **Stornieren:** Es erscheint der Dialog "Buchung stornieren". Bei Bestätigung wird der/die Proband:in automatisch per Storno-E-Mail benachrichtigt. Nutze immer "Storniert" (nicht Löschen), wenn die Person informiert werden soll.
 
 **Termin verschieben:** Über das Symbol mit den zwei Pfeilen kannst Du eine Buchung auf einen anderen Kurs, ein anderes Datum oder einen anderen Slot umbuchen. Der/die Proband:in erhält automatisch eine E-Mail mit dem neuen Termin.
@@ -82,7 +82,7 @@ Wechsel zwischen **Gebucht**, **Erschienen** und zurück passieren still und sof
 
 ## 2. Status von Ärzt:innen (Auszubildende) verwalten
 
-Die Ärzt:innen sind unsere Auszubildenden, die Kurse buchen. Ihre Buchungen verwaltest Du unter **Auszubildende → Buchungen** (`/dashboard/auszubildende/buchungen`). Anders als bei Proband:innen sind diese Daten nicht verschlüsselt.
+Die Ärzt:innen sind unsere Auszubildenden, die Kurse buchen. Ihre Buchungen verwaltest Du unter **Buchungen → Ärzt:innen** (`/dashboard/auszubildende/buchungen`). Anders als bei Proband:innen sind diese Daten nicht verschlüsselt.
 
 ### 2.1 Buchungsstatus der Ärzt:innen
 
@@ -117,13 +117,9 @@ Steht bei einer Buchung **Profil unvollständig**, hat die Person ihr Profil nac
 
 ### 2.3 Kurstermine und Deine Zuständigkeit
 
-Kurstermine werden unter **Einstellungen → Kurstermine** (`/dashboard/settings?tab=kurstermine`) verwaltet. Jeder Termin (Session) hat unter anderem ein Feld **Kursbetreuung**. Dort wird die zuständige Kursbetreuung pro Termin zugewiesen. So siehst Du, für welche Termine Du verantwortlich bist. Filtere die Liste nach **Kursbetreuung**, um nur Deine Termine zu sehen.
+Kurstermine werden unter **Admin → Kurstermine** (`/dashboard/settings?tab=kurstermine`) verwaltet. Jeder Termin (Session) hat unter anderem ein Feld **Kursbetreuung**. Dort wird die zuständige Kursbetreuung pro Termin zugewiesen. So siehst Du, für welche Termine Du verantwortlich bist. Filtere die Liste nach **Kursbetreuung**, um nur Deine Termine zu sehen.
 
 Weitere Felder pro Termin: Status (**Live**/**Offline**), Datum, Startzeit, Dauer, Dozent:in, gebuchte und maximale Plätze sowie der CME-Status. Jede Änderung muss im Dialog **"Änderung bestätigen"** mit **Speichern** bestätigt werden.
-
-### 2.4 Bewertungen
-
-Unter **Auszubildende → Bewertungen** (`/dashboard/auszubildende/bewertungen`) verwaltest Du die öffentlichen Kursbewertungen. Du kannst sie nach **Alle**, **Wartend** und **Freigeschaltet** filtern, einer Bewertung einen Kurs zuordnen, sie freischalten oder ausblenden und löschen.
 
 ---
 
@@ -176,8 +172,8 @@ Es gibt keinen eigenen "Verspätet"-Status. Wenn sich jemand per E-Mail meldet, 
 **Proband:in meldet Verspätung oder kurzfristige Absage:**
 
 1. In der Inbox die E-Mail öffnen und freundlich antworten (siehe AGB-Hinweise unten zur 48-Stunden-Regel).
-2. Prüfe, ob der Termin noch zu halten ist. Wenn nötig, verschiebe die Buchung unter **Proband:innen → Buchungen** über das Umbuchen-Symbol auf einen passenden Slot am selben Kurstag.
-3. Erscheint die Person trotz Ankündigung gar nicht und liegt die Absage innerhalb von 48 Stunden, setze die Buchung erst nach dem Termin auf **No-Show** (löst die 50-EUR-Gebühr aus). Bei rechtzeitiger oder kulanter Absage stattdessen **Storniert**.
+2. Prüfe, ob der Termin noch zu halten ist. Wenn nötig, verschiebe die Buchung unter **Buchungen → Proband:innen** über das Umbuchen-Symbol auf einen passenden Slot am selben Kurstag.
+3. Setze die Buchung nicht eigenmächtig auf **No-Show**. Wir zeigen in der Regel Kulanz. Stimm Dich vorher immer mit dem Team ab, ob die 50-EUR-Ausfallgebühr berechnet wird oder die Buchung stattdessen auf **Storniert** gesetzt wird.
 4. Markiere den Thread als erledigt.
 
 **Ärzt:in meldet Verspätung:**
