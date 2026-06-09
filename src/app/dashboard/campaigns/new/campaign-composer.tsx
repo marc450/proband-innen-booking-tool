@@ -598,8 +598,8 @@ export function CampaignComposer({ patients, auszubildende, existingCampaign }: 
     const dt = new Date(scheduledAt);
     const now = new Date();
     if (dt <= now) return "Zeitpunkt muss in der Zukunft liegen.";
-    const maxDate = new Date(now.getTime() + 72 * 60 * 60 * 1000);
-    if (dt > maxDate) return "Maximal 72 Stunden im Voraus planbar.";
+    const maxDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    if (dt > maxDate) return "Maximal 30 Tage im Voraus planbar.";
     return null;
   }, [scheduleMode, scheduledAt]);
 

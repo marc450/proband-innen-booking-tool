@@ -285,6 +285,46 @@ export async function POST(req: NextRequest) {
     campaignId = campaign.id;
   }
 
+  // Scheduled campaigns: Resend's batch endpoint silently ignores
+  // scheduled_at, so a "scheduled" send would actually go out
+  // immediately. Submit each email via the single-send endpoint (which
+  // honors scheduled_at) and let Resend hold them until delivery time.
+  // Done in the background via after() so the dashboard doesn't block
+  // while we pace requests under Resend's 2 req/s limit.
+  if (sendAtParam) {
+    const { error: schedErr } = await supabase
+      .from("email_campaigns")
+      .update({
+        status: "scheduled",
+        // The Resend webhook archives scheduled sends into Gmail at
+        // actual delivery time, so no archive work happens now.
+        gmail_archive_status: "skipped",
+        gmail_archive_total: 0,
+      })
+      .eq("id", campaignId);
+    if (schedErr) {
+      return NextResponse.json({ error: schedErr.message }, { status: 500 });
+    }
+
+    after(
+      submitScheduledCampaign({
+        campaignId: campaignId!,
+        recipients,
+        contentBlocks,
+        subject,
+        scheduledAt: sendAtParam,
+        attachments: rawAttachments,
+      }),
+    );
+
+    return NextResponse.json({
+      ok: true,
+      campaignId,
+      recipientCount: recipients.length,
+      scheduled: true,
+    });
+  }
+
   try {
     for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
       const batch = recipients.slice(i, i + BATCH_SIZE);
@@ -310,19 +350,6 @@ export async function POST(req: NextRequest) {
             "List-Unsubscribe": `<${oneClickUrl}>, <${unsubscribeUrl}>`,
             "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
           },
-          ...(sendAtParam ? { send_at: sendAtParam } : {}),
-          // Scheduled sends: tag so the Resend webhook archives the
-          // message into Gmail Sent at actual delivery time. Immediate
-          // sends archive in a detached after() callback below, no tag
-          // needed (and no tag means the webhook ignores them,
-          // preventing double-archive).
-          ...(sendAtParam
-            ? {
-                tags: [
-                  { name: "ephia-archive", value: "campaign-scheduled" },
-                ],
-              }
-            : {}),
         };
         if (rawAttachments && rawAttachments.length > 0) {
           payload.attachments = rawAttachments;
@@ -351,26 +378,22 @@ export async function POST(req: NextRequest) {
     }
 
     // Resend has accepted everything. Mark the campaign sent and seed
-    // the Gmail-archive tracking columns. Scheduled sends are marked
-    // 'skipped' here because the Resend webhook handles archiving at
-    // actual delivery time, not now.
-    const archiveSeed = sendAtParam
-      ? { gmail_archive_status: "skipped" as const, gmail_archive_total: 0 }
-      : {
-          gmail_archive_status: "pending" as const,
-          gmail_archive_total: recipients.length,
-          gmail_archive_progress: 0,
-          gmail_archive_failed: 0,
-          gmail_archive_error: null,
-          gmail_archive_started_at: new Date().toISOString(),
-          gmail_archive_finished_at: null,
-        };
+    // the Gmail-archive tracking columns.
+    const archiveSeed = {
+      gmail_archive_status: "pending" as const,
+      gmail_archive_total: recipients.length,
+      gmail_archive_progress: 0,
+      gmail_archive_failed: 0,
+      gmail_archive_error: null,
+      gmail_archive_started_at: new Date().toISOString(),
+      gmail_archive_finished_at: null,
+    };
 
     await supabase
       .from("email_campaigns")
       .update({
-        status: scheduledAt ? "scheduled" : "sent",
-        sent_at: scheduledAt ? null : new Date().toISOString(),
+        status: "sent",
+        sent_at: new Date().toISOString(),
         ...archiveSeed,
       })
       .eq("id", campaignId);
@@ -381,7 +404,7 @@ export async function POST(req: NextRequest) {
     // would otherwise block the response. after() runs the callback
     // after the response is flushed but still inside the same Node
     // process on Railway, so progress updates the email_campaigns row.
-    if (!sendAtParam) {
+    {
       after(
         archiveCampaignToGmail({
           campaignId: campaignId!,
@@ -401,6 +424,104 @@ export async function POST(req: NextRequest) {
       .eq("id", campaignId);
 
     return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+/**
+ * Submit a scheduled campaign to Resend's single-send endpoint, one
+ * email per recipient with `scheduled_at` set so Resend holds each
+ * message until delivery time. The batch endpoint cannot be used here:
+ * it silently ignores scheduled_at and would send everything now.
+ *
+ * Runs detached via `after()`. Sent emails carry the `ephia-archive`
+ * tag so the Resend webhook mirrors them into the Gmail Sent folder at
+ * actual delivery time (immediate sends archive eagerly instead).
+ *
+ * Sequential with a pause per recipient to stay under Resend's 2 req/s
+ * limit. Best-effort: a single failed recipient is logged and counted
+ * but doesn't abort the rest. If everything fails, the campaign is
+ * marked 'failed'.
+ */
+async function submitScheduledCampaign(opts: {
+  campaignId: string;
+  recipients: Recipient[];
+  contentBlocks: ContentBlock[];
+  subject: string;
+  scheduledAt: string;
+  attachments?: { filename: string; content: string }[];
+}) {
+  const supabase = createAdminClient();
+  const { recipients, contentBlocks, subject, scheduledAt, attachments } = opts;
+  let ok = 0;
+  let fail = 0;
+  let lastError: string | null = null;
+
+  for (let idx = 0; idx < recipients.length; idx++) {
+    const r = recipients[idx];
+    const unsubscribeUrl = buildUnsubscribeUrl(r.contactKey);
+    const oneClickUrl = buildListUnsubscribePostUrl(r.contactKey);
+    const html = buildEmailHtml({
+      firstName: r.first_name || "Kolleg:in",
+      contentBlocks,
+      unsubscribeUrl,
+    });
+    const payload: Record<string, unknown> = {
+      from: "EPHIA <customerlove@ephia.de>",
+      to: [r.email],
+      subject,
+      html,
+      scheduled_at: scheduledAt,
+      headers: {
+        "List-Unsubscribe": `<${oneClickUrl}>, <${unsubscribeUrl}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
+      // Archive into Gmail Sent at actual delivery time via the webhook.
+      tags: [{ name: "ephia-archive", value: "campaign-scheduled" }],
+    };
+    if (attachments && attachments.length > 0) {
+      payload.attachments = attachments;
+    }
+
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        throw new Error(`Resend error: ${await res.text()}`);
+      }
+      ok++;
+    } catch (err) {
+      fail++;
+      lastError = err instanceof Error ? err.message : String(err);
+      console.error(
+        `submitScheduledCampaign failed for ${r.email} (non-fatal):`,
+        err,
+      );
+    }
+
+    // Pace under Resend's 2 req/s limit.
+    if (idx < recipients.length - 1) {
+      await new Promise((res) => setTimeout(res, 600));
+    }
+  }
+
+  if (ok === 0) {
+    await supabase
+      .from("email_campaigns")
+      .update({
+        status: "failed",
+        error_message: lastError || "Alle geplanten Sendungen fehlgeschlagen.",
+      })
+      .eq("id", opts.campaignId);
+  } else if (fail > 0) {
+    console.warn(
+      `submitScheduledCampaign: ${ok} scheduled, ${fail} failed for campaign ${opts.campaignId}`,
+    );
   }
 }
 
