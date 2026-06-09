@@ -318,6 +318,7 @@ export const teamContent: TeamPageContent = {
             {
               heading: "Klinische Tätigkeit",
               items: [
+                "seit 2026: Sankt Gertrauden-Krankenhaus",
                 "HYSTUDIO",
                 "2023 bis 2025: angioclinic® Berlin",
                 "2021: KMG Klinikum Luckenwalde",
