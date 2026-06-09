@@ -32,7 +32,7 @@ export const botoxKursFuerZahnaerzte: CourseLandingContent = {
   meta: {
     title: "Botox-Kurs für Zahnärzt:innen, Bruxismus & Migräne | EPHIA",
     description:
-      "Botox-Kurs für approbierte Zahnärzt:innen: Bruxismus, Migräne, Glabella, Stirn und periorale Indikationen. Online-Modul plus Praxistag an echten Proband:innen, kleine Gruppen, EPHIA-Zertifikat.",
+      "Botox-Kurs für approbierte Zahnärzt:innen: Masseter bei Bruxismus und Gesichtsverschmälerung, mit Einblick in Glabella, Stirn und Migräne. Online-Modul plus Praxistag an echten Proband:innen, kleine Gruppen, EPHIA-Zertifikat.",
     ogImage: "/kurse/grundkurs_botulinum_zahnmedizin/og-image.jpg",
   },
 
@@ -41,14 +41,14 @@ export const botoxKursFuerZahnaerzte: CourseLandingContent = {
     socialProof: "Praxisnaher Einstieg, fokussiert auf zahnärztliche Indikationen",
     ctaStacked: true,
     subheadline:
-      "Praxisnahe Botox-Fortbildung für approbierte Zahnärzt:innen, mit Fokus auf Bruxismus, Migräne und periorale Ästhetik.",
+      "Praxisnahe Botox-Fortbildung für approbierte Zahnärzt:innen, mit Fokus auf den Masseter bei Bruxismus und Gesichtsverschmälerung, plus Einblick in die ästhetische Anwendung.",
     stats: [
       { icon: "Clock", label: "Format", value: "10h Online + 6h Präsenz" },
       { icon: "Award", label: "Zertifiziert", value: "EPHIA-Zertifikat" },
       { icon: "GraduationCap", label: "Level", value: "Einsteigerkurs" },
     ],
     description:
-      "Unser Botox-Kurs für Zahnärzt:innen ist Dein praxisnaher Einstieg in die zahnärztliche Botulinum-Anwendung. Im Online-Modul lernst Du Anatomie, Produktkunde und die Indikationen Deines Behandlungsspektrums, von Bruxismus über Migräne bis zu Glabella, Stirn und perioraler Ästhetik. Am Praxistag behandelst Du dann echte Proband:innen unter Aufsicht. Voraussetzung ist ausschließlich Deine Approbation als Zahnärzt:in. Vorerfahrung in ästhetischer Medizin brauchst Du nicht.",
+      "Unser Botox-Kurs für Zahnärzt:innen ist Dein praxisnaher Einstieg in die zahnärztliche Botulinum-Anwendung. Im Zentrum steht Deine Indikation: der Masseter, bei Bruxismus und zur Gesichtsverschmälerung. Im Online-Modul lernst Du Anatomie und Produktkunde und bekommst zusätzlich Einblick in die ästhetische Anwendung an Glabella, Stirn und bei Migräne, damit Du verstehst, wie Botulinum im gesamten Gesicht wirkt. Am Praxistag behandelst Du echte Proband:innen unter Aufsicht, gemeinsam mit Humanmediziner:innen. Voraussetzung ist ausschließlich Deine Approbation als Zahnärzt:in. Vorerfahrung in ästhetischer Medizin brauchst Du nicht.",
     videoPath: grundkursBotulinumZahnmedizin.hero.videoPath,
     videoPoster: grundkursBotulinumZahnmedizin.hero.videoPoster,
   },
@@ -57,11 +57,13 @@ export const botoxKursFuerZahnaerzte: CourseLandingContent = {
     heading: "LERNZIELE",
     audienceLabel: "Nur für approbierte Zahnärzt:innen",
     intro:
-      "Nach unserem Botox-Kurs für Zahnärzt:innen kannst Du Bruxismus, Migräne und ausgewählte ästhetische Indikationen sicher, fundiert und diskriminierungssensibel mit Botulinum behandeln, auch wenn Du bisher noch keine ästhetische Medizin praktiziert hast. Im Fokus stehen folgende Lernziele:",
+      "Nach unserem Botox-Kurs für Zahnärzt:innen behandelst Du den Masseter sicher, fundiert und diskriminierungssensibel mit Botulinum, bei Bruxismus und zur Gesichtsverschmälerung, auch wenn Du bisher noch keine ästhetische Medizin praktiziert hast. Zusätzlich vermitteln wir Dir das ästhetische Gesamtverständnis rund um Glabella, Stirn und Migräne. Im Fokus stehen folgende Lernziele:",
     items: grundkursBotulinumZahnmedizin.lernziele.items,
   },
 
   kursangeboteHeading: "UNSERE KURSANGEBOTE FÜR ZAHNÄRZT:INNEN",
+
+  audience: grundkursBotulinumZahnmedizin.audience,
 
   gruppenbuchungen: {
     heading: "GRUPPENBUCHUNGEN",
@@ -85,7 +87,7 @@ export const botoxKursFuerZahnaerzte: CourseLandingContent = {
         format: "Onlinekurs · 10h",
         title: "Theorie in Deinem Tempo",
         description:
-          "Anatomie der Kau- und mimischen Muskulatur, Produktkunde, dental-relevante Indikationen (Bruxismus, Migräne, Glabella, Stirn, periorale Zone) und Behandlungsvideos. Du lernst flexibel von zu Hause aus, bevor Du das erste Mal injizierst.",
+          "Anatomie der Kau- und mimischen Muskulatur, Produktkunde, Deine zahnärztliche Indikation am Masseter (Bruxismus, Gesichtsverschmälerung) sowie Einblick in die ästhetische Anwendung an Glabella, Stirn und Migräne. Du lernst flexibel von zu Hause aus, bevor Du das erste Mal injizierst.",
       },
       {
         number: 2,
@@ -93,7 +95,7 @@ export const botoxKursFuerZahnaerzte: CourseLandingContent = {
         format: "Praxistag · 6h",
         title: "Praxistag an Proband:innen",
         description:
-          "Du behandelst unter Aufsicht echte Proband:innen in kleinen Gruppen mit max. 7 Teilnehmer:innen. Geübt wird mit Botulinum, nicht mit NaCl. Direktes Feedback von erfahrenen Dozent:innen.",
+          "Du behandelst unter Aufsicht echte Proband:innen, gemeinsam mit Humanmediziner:innen und in kleinen Gruppen mit max. 7 Teilnehmer:innen. Geübt wird mit Botulinum, nicht mit NaCl. So siehst Du neben Deiner Masseterbehandlung auch ästhetische Behandlungen live. Direktes Feedback von erfahrenen Dozent:innen.",
       },
       {
         number: 3,
@@ -126,13 +128,13 @@ export const botoxKursFuerZahnaerzte: CourseLandingContent = {
         question:
           "Welche Botulinum-Indikationen darf ich als Zahnärzt:in behandeln?",
         answer:
-          "Als Zahnärzt:in darfst Du Botulinum innerhalb Deines zahnärztlichen Behandlungsspektrums anwenden. Dazu zählen insbesondere Bruxismus (M. masseter), Migräne, Glabella, Stirn sowie die periorale Zone (Gummy Smile, Lip Flip, Mundwinkel). Behandlungen außerhalb des Kopf-Hals-Bereichs sind nicht Teil Deines Tätigkeitsfelds. Genaue Abgrenzungen ergeben sich aus dem jeweiligen Berufsrecht Deiner Zahnärztekammer. Im Zweifel empfehlen wir Dir eine Rücksprache mit Deiner Kammer und unsere Aufbaukurse für die jeweiligen Indikationen.",
+          "Mit Botulinum behandelst Du als Zahnärzt:in den Masseter, bei Bruxismus und zur Gesichtsverschmälerung. Das ist die Indikation innerhalb Deines zahnärztlichen Behandlungsspektrums. Im Onlinekurs geben wir Dir zusätzlich Einblick in die ästhetische Anwendung an Glabella, Stirn und bei Migräne. Diese Bereiche behandelst Du nicht selbst, sie helfen Dir, die ästhetischen Folgen Deiner Masseterbehandlung einzuordnen und das Gesicht als Ganzes zu verstehen. Genaue Abgrenzungen ergeben sich aus dem jeweiligen Berufsrecht Deiner Zahnärztekammer. Im Zweifel empfehlen wir Dir eine Rücksprache mit Deiner Kammer.",
       },
       {
         question:
-          "Sind Bruxismus, Migräne und ästhetische Indikationen bei Zahnärzt:innen abrechenbar?",
+          "Ist die Masseterbehandlung bei Bruxismus und zur Gesichtsverschmälerung abrechenbar?",
         answer:
-          "Ästhetische Botulinum-Behandlungen sind als IGeL-Leistungen (Selbstzahler:innen) abrechenbar. Funktionelle Indikationen wie ausgeprägter Bruxismus oder Spannungskopfschmerz können je nach Dokumentation und Indikationsstellung über Selbstzahler:innen oder, mit entsprechendem Befund, im Einzelfall über Heilfürsorge laufen. Die Erstattungsfähigkeit über die GKV ist im zahnärztlichen Bereich aktuell sehr eingeschränkt. Im Kurs zeigen wir Dir, wie wir Dokumentation und Aufklärung handhaben.",
+          "Ästhetische Botulinum-Behandlungen wie die Gesichtsverschmälerung sind als IGeL-Leistungen (Selbstzahler:innen) abrechenbar. Funktionelle Indikationen wie ausgeprägter Bruxismus können je nach Dokumentation und Indikationsstellung ebenfalls über Selbstzahler:innen laufen. Die Erstattungsfähigkeit über die GKV ist im zahnärztlichen Bereich aktuell sehr eingeschränkt. Im Kurs zeigen wir Dir, wie wir Dokumentation und Aufklärung handhaben.",
       },
       {
         question:
@@ -144,16 +146,11 @@ export const botoxKursFuerZahnaerzte: CourseLandingContent = {
         question:
           "Unterscheidet sich der Kurs vom Botox-Kurs für Humanmediziner:innen?",
         answer:
-          "Ja. Der Botox-Kurs für Zahnärzt:innen ist explizit auf das zahnärztliche Behandlungsspektrum zugeschnitten: Bruxismus und Migräne sind eigene Kapitel, die im Humanmedizin-Kurs nicht enthalten sind. Im Gegenzug entfallen Inhalte wie Lachfalten, Brow-Lifting und Platysma, die außerhalb Deines Tätigkeitsfelds liegen. Die Praxistage finden gemeinsam mit Humanmediziner:innen im selben Studio statt, der Onlinekurs ist jedoch dental-spezifisch.",
+          "Ja. Der Botox-Kurs für Zahnärzt:innen ist auf Deine zahnärztliche Indikation zugeschnitten: die Masseterbehandlung bei Bruxismus und zur Gesichtsverschmälerung. Damit Du die ästhetischen Folgen dieser Behandlung einordnen kannst, gibt Dir der Onlinekurs zusätzlich Einblick in Glabella, Stirn und Migräne. Inhalte wie Lachfalten, Brow-Lifting und Platysma, die außerhalb Deines Tätigkeitsfelds liegen, sind nicht Teil des Kurses. Den Praxistag teilst Du Dir bewusst mit Humanmediziner:innen, so siehst Du die ästhetischen Behandlungen live an echten Proband:innen.",
       },
       ...grundkursBotulinumZahnmedizin.faq.items,
     ],
   },
 
   breadcrumbLabel: "Botox-Kurs für Zahnärzt:innen",
-  relatedCourses: [
-    "botox-kurs-fuer-aerzte",
-    "botox-kurs-fuer-anfaenger",
-    "botox-kurs-berlin",
-  ],
 };

@@ -23,7 +23,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
   meta: {
     title: "Grundkurs Botulinum für Zahnmediziner:innen | EPHIA",
     description:
-      "Grundkurs Botulinum für approbierte Zahnärzt:innen: Lerne Bruxismus, Migräne, Stirn- und Glabellabehandlung unter Aufsicht an echten Proband:innen. Praxisnah und diskriminierungssensibel.",
+      "Grundkurs Botulinum für approbierte Zahnärzt:innen: Behandle den Masseter bei Bruxismus und Gesichtsverschmälerung, mit Einblick in Glabella, Stirn und Migräne. Praxisnah an echten Proband:innen und diskriminierungssensibel.",
     ogImage: "/kurse/grundkurs_botulinum_zahnmedizin/og-image.jpg",
   },
 
@@ -39,7 +39,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
       { icon: "GraduationCap", label: "Level", value: "Einsteigerkurs" },
     ],
     description:
-      "Lerne die Grundlagen der zahnärztlichen Botulinum-Anwendung mit unserem Online-, Praxis- oder Komplettkurs, speziell für approbierte Zahnärzt:innen. Neben ästhetischen Indikationen wie Stirn und Glabella behandeln wir auch therapeutische Anwendungen wie Bruxismus und Migräne. Mit uns lernst Du patient:innenzentrierte Ansätze kennen und behandelst bewusst und diskriminierungssensibel mit Botulinum und nicht NaCl.",
+      "Lerne die zahnärztliche Botulinum-Anwendung mit unserem Online-, Praxis- oder Komplettkurs, speziell für approbierte Zahnärzt:innen. Im Zentrum steht Deine Indikation: der Masseter, bei Bruxismus und zur Gesichtsverschmälerung. Weil schon diese Behandlung das gesamte untere Gesicht prägt, geben wir Dir im Onlinekurs zusätzlich Einblick in die ästhetische Anwendung an Glabella, Stirn und bei Migräne. Den Praxistag teilst Du Dir mit Humanmediziner:innen, so siehst Du das ganze Spektrum ästhetischer Behandlungen an echten Proband:innen. Mit uns lernst Du patient:innenzentrierte Ansätze kennen und behandelst bewusst und diskriminierungssensibel mit Botulinum und nicht NaCl.",
     videoPath: "/kurse/grundkurs_botulinum/hero-video.mp4",
     videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
   },
@@ -48,7 +48,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
     heading: "LERNZIELE",
     audienceLabel: "Nur für approbierte Zahnmediziner:innen",
     intro:
-      "Nach dem Kurs kannst Du Deine ersten Patient:innen sicher, fundiert und diskriminierungssensibel mit Botulinum behandeln. Dabei konzentrieren wir uns auf die folgenden Lernziele:",
+      "Nach dem Kurs behandelst Du den Masseter sicher, fundiert und diskriminierungssensibel mit Botulinum, bei Bruxismus und zur Gesichtsverschmälerung. Weil jede Behandlung im Gesicht ästhetische Folgen hat, vermitteln wir Dir zusätzlich das nötige ästhetische Gesamtverständnis. Dabei konzentrieren wir uns auf die folgenden Lernziele:",
     items: [
       {
         label: "Anatomie",
@@ -89,6 +89,35 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
     ],
   },
 
+  audience: {
+    heading: "WARUM DU MEHR ALS DEN MASSETER LERNST",
+    intro:
+      "Mit Botulinum behandelst Du als Zahnärzt:in eine Region: den Masseter, bei Bruxismus und zur Gesichtsverschmälerung. Doch diese Behandlung ist nie rein funktionell, sie prägt das gesamte untere Gesicht. Deshalb lernst Du bei uns, das ästhetische Gesicht als Ganzes zu verstehen.",
+    layout: "two-col",
+    items: [
+      {
+        title: "Deine Indikation: der Masseter",
+        description:
+          "Als Zahnärzt:in behandelst Du mit Botulinum den Masseter, bei Bruxismus und zur Gesichtsverschmälerung. Genau darauf bereiten wir Dich am Praxistag vor.",
+      },
+      {
+        title: "Ästhetik gehört dazu",
+        description:
+          "Eine Masseterbehandlung verändert Kieferlinie, Kontur und Symmetrie des unteren Gesichts. Wer nur die Zielregion isoliert betrachtet, übersieht diese ästhetischen Folgen.",
+      },
+      {
+        title: "Einblick ins ganze Gesicht",
+        description:
+          "Im Onlinekurs geben wir Dir zusätzlich Einblick in Glabella, Stirn und Migräne. Diese Bereiche behandelst Du nicht selbst, aber Du verstehst, wie Botulinum im gesamten Gesicht wirkt.",
+      },
+      {
+        title: "Praxistag mit Humanmediziner:innen",
+        description:
+          "Den Praxistag absolvierst Du bewusst gemeinsam mit Humanmediziner:innen. So siehst Du ästhetische Behandlungen live an echten Proband:innen und bekommst das vollständige Bild.",
+      },
+    ],
+  },
+
   kursangeboteHeading: "UNSERE KURSANGEBOTE FÜR ZAHNÄRZT:INNEN",
 
   gruppenbuchungen: {
@@ -101,6 +130,8 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
 
   inhalt: {
     heading: "INHALT ONLINEKURS",
+    intro:
+      "Der Onlinekurs deckt Deine zahnärztliche Indikation am Masseter ab (Bruxismus, Gesichtsverschmälerung) und gibt Dir darüber hinaus Einblick in die ästhetische Anwendung an Glabella, Stirn und bei Migräne, damit Du die ästhetischen Zusammenhänge Deiner Behandlung verstehst.",
     chapters: [
       {
         number: 1,
@@ -427,6 +458,11 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
     heading: "FAQ",
     items: [
       {
+        question: "Nehmen am Praxistag auch Humanmediziner:innen teil?",
+        answer:
+          "Ja, und das ist bewusst so. Als Zahnärzt:in behandelst Du mit Botulinum den Masseter, bei Bruxismus und zur Gesichtsverschmälerung. Weil diese Behandlung das gesamte untere Gesicht prägt, ist ein ästhetisches Gesamtverständnis entscheidend. Im Onlinekurs geben wir Dir deshalb Einblick in Glabella, Stirn und Migräne. Den Praxistag absolvierst Du gemeinsam mit Humanmediziner:innen im selben Studio, so siehst Du diese ästhetischen Behandlungen live an echten Proband:innen. Deine eigenen praktischen Übungen konzentrieren sich auf Deine zahnärztliche Indikation am Masseter.",
+      },
+      {
         question:
           "Muss ich approbierte Zahnärztin / approbierter Zahnarzt sein, um an den Kursen teilnehmen zu können?",
         answer:
@@ -452,9 +488,4 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
     ],
   },
 
-  relatedCourses: [
-    "grundkurs-botulinum",
-    "aufbaukurs-botulinum-periorale-zone",
-    "masterclass-botulinum",
-  ],
 };

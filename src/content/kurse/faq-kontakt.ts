@@ -65,7 +65,7 @@ export const faqKontakt: { faq: CourseFaqContent } = {
       {
         question: "Gibt es Kurse speziell für Zahnärzt:innen?",
         answer:
-          "Ja. Wir bieten einen dedizierten Grundkurs Botulinum für Zahnärzt:innen, der die besonderen Indikationen im zahnmedizinischen Kontext (Bruxismus, Gummy Smile, Masseter-Hypertrophie etc.) abdeckt. Der Kurs richtet sich ausschließlich an approbierte Zahnärzt:innen und berücksichtigt die berufsrechtlichen Rahmenbedingungen für ästhetische Behandlungen durch Zahnärzt:innen in Deutschland.",
+          "Ja. Wir bieten einen dedizierten Grundkurs Botulinum für Zahnärzt:innen. Im Zentrum steht die Indikation innerhalb Deines zahnärztlichen Behandlungsspektrums: der Masseter, bei Bruxismus und zur Gesichtsverschmälerung. Darüber hinaus gibt Dir der Onlinekurs Einblick in die ästhetische Anwendung an Glabella, Stirn und bei Migräne, damit Du die ästhetischen Zusammenhänge Deiner Behandlung verstehst. Der Kurs richtet sich ausschließlich an approbierte Zahnärzt:innen und berücksichtigt die berufsrechtlichen Rahmenbedingungen in Deutschland.",
       },
       {
         question: "Welche Zertifikate erhalte ich nach Abschluss eines Kurses?",
