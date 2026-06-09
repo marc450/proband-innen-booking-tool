@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getAllCourseSlugs } from "@/content/kurse";
+import { getProfilePeople } from "@/content/kurse/team";
 
 // Canonical public host for the marketing site. Once the migration
 // from www.ephia.de (LearnWorlds) to this Next.js app on the bare
@@ -57,5 +58,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: path === "/" ? 1.0 : 0.6,
   }));
 
-  return [...staticEntries, ...courseEntries];
+  // Dozent:innen + Review-Board profile pages (/team/<id>) — indexable
+  // person pages with Person JSON-LD for EEAT.
+  const profileEntries: MetadataRoute.Sitemap = getProfilePeople().map(
+    (person) => ({
+      url: `${SITE_URL}/team/${person.id}`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    }),
+  );
+
+  return [...staticEntries, ...courseEntries, ...profileEntries];
 }

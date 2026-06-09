@@ -1,4 +1,4 @@
-import type { TeamPageContent } from "./team-types";
+import type { Person, TeamPageContent } from "./team-types";
 
 /**
  * Content for the `/kurse/team` page.
@@ -37,9 +37,20 @@ export const teamContent: TeamPageContent = {
         imageAlt: "Porträt von Dr. Sophia Wilk-Vollmann",
         shortBio:
           "Fachärztin für Anästhesie mit eigener Praxis für ästhetische Medizin. Sophia hat EPHIA gegründet, um ästhetische Medizin inklusiver, evidenzbasierter und patient:innenzentrierter zu machen.",
+        sameAs: [
+          "https://www.linkedin.com/in/hy-drsophia/",
+          "https://www.drsophia.de/",
+          "https://www.drsophia.de/ueber-mich",
+          "https://www.instagram.com/hy_drsophia/",
+          "https://www.researchgate.net/profile/Sophia-Wilk-Vollmann",
+          "https://www.arzt-auskunft.de/arzt/aerztin/berlin/dr-sophia-wilk-vollmann-11369471",
+          "https://www1.wdr.de/mediathek/audio/wdr2/joerg-thadeusz/audio-sophia-wilk-vollmann-aerztin-fuer-anaesthesie-und-notfallmedizin-100.html",
+          "https://www.tagesspiegel.de/berlin/bundeswehrarztin-und-berliner-beautydoc-wir-funktionieren-besser-wenn-wir-uns-in-unserer-haut-wohlfuhlen-9478253.html",
+          "https://dransay.com/magazin/talking-health-sophia-wilk-vollmann",
+        ],
         curriculum: {
           tagline:
-            "Praxistätigkeit seit 2017 — spezialisiert auf minimal invasive Verfahren & Lasermedizin.",
+            "Praxistätigkeit seit 2017, spezialisiert auf minimal invasive Verfahren und Lasermedizin.",
           sections: [
             {
               heading: "Ästhetische Medizin",
@@ -129,6 +140,11 @@ export const teamContent: TeamPageContent = {
         imageAlt: "Porträt von Tina Bellinghausen",
         shortBio:
           "Approbierte Ärztin mit Schwerpunkt auf ästhetischer Medizin. Tina unterstützt unsere Kurse als Dozentin und teilt ihre Erfahrung aus der täglichen Praxis.",
+        sameAs: [
+          "https://tinabelle.de/",
+          "https://tinabelle.de/ueber-mich-tina-bellinghausen/",
+          "https://www.instagram.com/doc.tinabelle/",
+        ],
         curriculum: {
           tagline:
             "Praxistätigkeit seit 2020, spezialisiert auf minimal invasive Verfahren.",
@@ -183,7 +199,15 @@ export const teamContent: TeamPageContent = {
           "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sarah.jpg",
         imageAlt: "Porträt von Dr. Sarah Bechstein",
         shortBio:
-          "Dr. Sarah Bechstein ist Fachärztin und erfahrene Dozentin im Bereich ästhetische Medizin. Ihre Schwerpunkte umfassen Botulinum- und Fillerbehandlungen.",
+          "Dr. Sarah Bechstein ist Fachärztin und Gründerin der digitalen Hautarzt-Plattform FormelSkin. Als erfahrene Dozentin im Bereich ästhetische Medizin vermittelt sie ihr Wissen mit Schwerpunkt auf Botulinum- und Fillerbehandlungen.",
+        sameAs: [
+          "https://www.linkedin.com/in/dr-bechstein/",
+          "https://www.formelskin.de/authors/dr-med-sarah-bechstein",
+          "https://www.joinvoy.com/experts/dr-sarah-bechstein",
+          "https://www.jameda.de/sarah-bechstein/hautarzt-dermatologe/berlin",
+          "https://k5.de/podcast/unternehmertum-medizin-dr-sarah-bechstein-formelskin/",
+          "https://open.spotify.com/episode/07fqpzfdBx2WH1DoHgt02i",
+        ],
       },
       {
         id: "sarah-stannek",
@@ -194,6 +218,11 @@ export const teamContent: TeamPageContent = {
         imageAlt: "Porträt von Dr. Sarah Stannek",
         shortBio:
           "Dr. Sarah Stannek begleitet unsere Kurse mit klinischer Expertise und hohem didaktischem Anspruch. Schwerpunkt: evidenzbasierte Injektionstechniken.",
+        sameAs: [
+          "https://hno-prenzlauerberg.com/team",
+          "https://www.kalialab.de/unsere-aerzte",
+          "https://www.instagram.com/drstannek/",
+        ],
         curriculum: {
           tagline:
             "Praxistätigkeit seit 2021, spezialisiert auf minimal invasive Verfahren und Lasermedizin.",
@@ -258,6 +287,10 @@ export const teamContent: TeamPageContent = {
         imageAlt: "Porträt von Pauline Freidl",
         shortBio:
           "Approbierte Ärztin und Dozentin bei EPHIA. Pauline bringt eine ruhige, strukturierte Art in ihre Kurse und begleitet Teilnehmer:innen eng bei den praktischen Übungen.",
+        sameAs: [
+          "https://www.instagram.com/freidlmd/",
+          "https://www.linkedin.com/in/pauline-freidl-a06473360/",
+        ],
         curriculum: {
           tagline:
             "Praxistätigkeit seit 2021, spezialisiert auf minimal invasive Verfahren.",
@@ -338,6 +371,13 @@ export const teamContent: TeamPageContent = {
         imageAlt: "Porträt von Prof. Dr. Yawen Wang",
         shortBio:
           "Prof. Dr. Yawen Wang bringt ihre wissenschaftliche Expertise in unsere Kurskurierung ein und achtet auf Evidenzbasierung.",
+        sameAs: [
+          "https://www.linkedin.com/in/prof-dr-med-yawen-wang-1a6a16226/",
+          "https://www.medicalschool-berlin.de/team-fakultaet-medizin/prof-dr-yawen-wang/",
+          "https://www.esthetiquette.de/",
+          "https://www.esthetiquette.de/about/",
+          "https://www.instagram.com/esthetiquette.de/",
+        ],
       },
       {
         id: "camea-jamet",
@@ -348,6 +388,7 @@ export const teamContent: TeamPageContent = {
         imageAlt: "Porträt von Caméa Jamet",
         shortBio:
           "Caméa Jamet begleitet EPHIA fachlich und achtet besonders auf Inklusivität und Diversität in unseren Kursinhalten.",
+        sameAs: ["https://www.linkedin.com/in/cam%C3%A9a-jamet-3641451a7/"],
       },
       {
         id: "ephsona-shencoru",
@@ -358,6 +399,11 @@ export const teamContent: TeamPageContent = {
         imageAlt: "Porträt von Dr. Ephsona Shencoru",
         shortBio:
           "Dr. Ephsona Shencoru unterstützt das Review-Board mit ihrer klinischen und wissenschaftlichen Erfahrung.",
+        sameAs: [
+          "https://www.linkedin.com/in/dr-med-ephsona-shencoru-062257138/",
+          "https://www.dermis-hautklinik.ch/team/dr-med-ephsona-shencoru/",
+          "https://www.instagram.com/the_skin_questionnaire/",
+        ],
       },
     ],
   },
@@ -369,3 +415,26 @@ export const teamContent: TeamPageContent = {
     bullets: ["Motivationsschreiben", "Lebenslauf (ohne Foto)"],
   },
 };
+
+/**
+ * People who get a dedicated, indexable profile page at `/team/<id>`
+ * with a Person JSON-LD block (EEAT): all Dozent:innen plus the
+ * scientific Review-Board. Operations / founders without a teaching or
+ * review role stay card-only on `/team`.
+ */
+export function getProfilePeople(): Person[] {
+  const dozentinnen = teamContent.team.items.filter((p) =>
+    /Dozent/.test(p.role),
+  );
+  return [...dozentinnen, ...teamContent.reviewBoard.items];
+}
+
+/** Look up a profile person by their `id` (used as the URL slug). */
+export function getPersonBySlug(slug: string): Person | null {
+  return getProfilePeople().find((p) => p.id === slug) ?? null;
+}
+
+/** Whether a person has a dedicated profile page to link to. */
+export function personHasProfile(person: Person): boolean {
+  return getProfilePeople().some((p) => p.id === person.id);
+}

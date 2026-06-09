@@ -54,6 +54,21 @@ export interface Person {
   shortBio?: string;
   /** Detailed curriculum shown in the modal. Only Dozent:innen have this. */
   curriculum?: Curriculum;
+  /**
+   * External profile URLs (LinkedIn, eigene Praxis-Website, Jameda /
+   * Doctolib, professionelles Instagram, ResearchGate / ORCID, …).
+   * Emitted as the Person JSON-LD `sameAs` array on the profile page,
+   * the single strongest EEAT trust-transfer signal. Fill in over time;
+   * an empty array simply omits `sameAs` from the schema.
+   */
+  sameAs?: string[];
+  /**
+   * Optional override for the schema `knowsAbout` topics. Defaults to a
+   * sensible aesthetic-medicine set for Dozent:innen.
+   */
+  knowsAbout?: string[];
+  /** Optional medical specialty for schema `medicalSpecialty`, e.g. "Anästhesiologie". */
+  medicalSpecialty?: string;
 }
 
 export interface PeopleSectionContent {

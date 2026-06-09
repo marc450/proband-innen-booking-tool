@@ -1,6 +1,5 @@
-"use client";
-
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 const CORAL = "#BF785E";
@@ -12,22 +11,24 @@ export interface PersonCardProps {
   imageAlt?: string;
   shortBio?: string;
   /**
-   * Optional vita trigger. When set, the entire card becomes clickable
-   * (role="button") and renders a subtle "Vita ansehen →" link at the
-   * bottom of the body. Omit for people without a curriculum — the card
-   * renders as a static article with no interaction.
+   * Optional profile link. When set, the entire card becomes a real
+   * crawlable anchor pointing at the person's profile page (e.g.
+   * `/team/sophia-wilk-vollmann`) and renders a subtle "Vita ansehen →"
+   * hint at the bottom. Omit for people without a profile page — the
+   * card renders as a static article with no interaction. Using a real
+   * `<a href>` (instead of a JS modal) is what makes the vita crawlable
+   * and indexable, the EEAT win.
    */
   vita?: {
     label: string;
-    onClick: () => void;
+    href: string;
   };
 }
 
 /**
  * Unified person card used for both Dozent:innen and operations team
- * on `/kurse/team`. The only visual difference between a Dozent:in card
- * and a regular team card is a subtle inline "Vita ansehen →" hint at
- * the bottom (plus a cursor-pointer on hover). No giant CTA buttons.
+ * on `/team`. People with a profile page get a subtle inline "Vita
+ * ansehen →" hint at the bottom (plus the whole card becomes a link).
  */
 export function PersonCard({
   name,
@@ -37,33 +38,14 @@ export function PersonCard({
   shortBio,
   vita,
 }: PersonCardProps) {
-  const clickable = Boolean(vita);
+  const cardClasses = `bg-white rounded-[10px] overflow-hidden flex flex-col group outline-none transition-shadow ${
+    vita
+      ? "cursor-pointer hover:shadow-lg focus-visible:ring-2 focus-visible:ring-[#0066FF]"
+      : ""
+  }`;
 
-  const handleClick = () => {
-    vita?.onClick();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (!vita) return;
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      vita.onClick();
-    }
-  };
-
-  return (
-    <article
-      onClick={clickable ? handleClick : undefined}
-      onKeyDown={clickable ? handleKeyDown : undefined}
-      role={clickable ? "button" : undefined}
-      tabIndex={clickable ? 0 : undefined}
-      aria-label={clickable ? `Vita von ${name} ansehen` : undefined}
-      className={`bg-white rounded-[10px] overflow-hidden flex flex-col group outline-none transition-shadow ${
-        clickable
-          ? "cursor-pointer hover:shadow-lg focus-visible:ring-2 focus-visible:ring-[#0066FF]"
-          : ""
-      }`}
-    >
+  const inner = (
+    <>
       {imagePath ? (
         <div
           className="relative w-full bg-black/5 overflow-hidden"
@@ -110,7 +92,9 @@ export function PersonCard({
         )}
 
         {vita && (
-          <div className={`${shortBio ? "mt-5" : "mt-6"} flex items-center gap-1.5 text-sm font-semibold text-[#0066FF] group-hover:text-[#0055DD] transition-colors`}>
+          <div
+            className={`${shortBio ? "mt-5" : "mt-6"} flex items-center gap-1.5 text-sm font-semibold text-[#0066FF] group-hover:text-[#0055DD] transition-colors`}
+          >
             <span className="underline underline-offset-4 decoration-[#0066FF]/30 group-hover:decoration-[#0055DD]">
               {vita.label}
             </span>
@@ -122,6 +106,20 @@ export function PersonCard({
           </div>
         )}
       </div>
-    </article>
+    </>
   );
+
+  if (vita) {
+    return (
+      <Link
+        href={vita.href}
+        aria-label={`Profil von ${name} ansehen`}
+        className={cardClasses}
+      >
+        {inner}
+      </Link>
+    );
+  }
+
+  return <article className={cardClasses}>{inner}</article>;
 }
