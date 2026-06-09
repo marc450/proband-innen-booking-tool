@@ -253,7 +253,7 @@ export default function KostenloserBotoxKursPage() {
               der natürliche nächste Schritt. Vollständige Behandlungsvideos zu allen Indikationen, ein Praxistag mit echten Proband:innen und 22 CME-Punkte der Ärztekammer Berlin.
             </p>
             <Link
-              href="/kurse/grundkurs-botulinum"
+              href="/grundkurs-botulinum"
               className="inline-flex items-center gap-2 text-base md:text-lg font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-7 py-4 transition-colors"
             >
               Zum Grundkurs Botulinum

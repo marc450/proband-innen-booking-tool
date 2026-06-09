@@ -77,7 +77,7 @@ export function CookieConsent() {
         <p className="text-sm text-black/80 leading-relaxed">
           Wir setzen Cookies ein, damit unsere Website zuverlässig funktioniert und wir verstehen, wie Du sie nutzt. Du kannst alle akzeptieren oder ablehnen. Details findest Du in unserer{" "}
           <Link
-            href="/kurse/datenschutz"
+            href="/datenschutz"
             className="text-[#0066FF] underline"
           >
             Datenschutzerklärung

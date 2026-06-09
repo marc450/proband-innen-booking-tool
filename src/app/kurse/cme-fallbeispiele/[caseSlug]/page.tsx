@@ -102,7 +102,7 @@ export default async function CaseStudyPage({
       <section className="bg-[#FAEBE1] pt-12 md:pt-16 pb-8 md:pb-10">
         <div className="max-w-2xl mx-auto px-5 md:px-8">
           <nav className="text-sm font-medium text-black/50">
-            <Link href="/kurse/cme-fallbeispiele" className="hover:text-[#0066FF]">
+            <Link href="/cme-fallbeispiele" className="hover:text-[#0066FF]">
               CME-Fallbeispiele
             </Link>
             <span className="mx-2">/</span>
@@ -236,7 +236,7 @@ export default async function CaseStudyPage({
           </div>
 
           <Link
-            href="/kurse/cme-fallbeispiele"
+            href="/cme-fallbeispiele"
             className="text-sm font-bold text-[#0066FF]"
           >
             ← Alle CME-Fallbeispiele

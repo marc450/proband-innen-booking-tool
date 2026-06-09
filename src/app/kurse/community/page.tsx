@@ -291,7 +291,7 @@ export default function CommunityPage() {
 
           <div className="mt-10">
             <a
-              href="/kurse/unsere-kurse"
+              href="/unsere-kurse"
               className="inline-flex items-center gap-2 text-base md:text-lg font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-7 py-4 transition-colors"
             >
               <span>Kurse entdecken</span>

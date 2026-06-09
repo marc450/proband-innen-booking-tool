@@ -319,6 +319,26 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url, 308);
     }
 
+    // 5b. Canonicalise the internal /kurse/* tree to clean root URLs.
+    // The whole marketing tree under src/app/kurse/* is served at clean
+    // root-level URLs via the rewrite in 6b, so every /kurse/* path is a
+    // duplicate, indexable copy of the same page. Google was indexing and
+    // ranking both (e.g. /botox-kurs-fuer-aerzte AND
+    // /kurse/botox-kurs-fuer-aerzte at two positions), splitting the
+    // ranking signal. 301 the /kurse/* version to its clean equivalent so
+    // only one canonical URL exists. The two /kurse/* paths that must NOT
+    // collapse to root (team, werde-proband-in) are already redirected
+    // above. Internal rewrites in 6/6b don't re-enter middleware, so this
+    // never loops.
+    if (pathname === "/kurse" || pathname.startsWith("/kurse/")) {
+      const cleaned = pathname.replace(/^\/kurse(?=\/|$)/, "") || "/";
+      const target = new URL(
+        cleaned + request.nextUrl.search,
+        `https://${MARKETING_DOMAIN}`,
+      );
+      return NextResponse.redirect(target, 301);
+    }
+
     // 6. Root → /kurse home
     if (pathname === "/") {
       const url = request.nextUrl.clone();

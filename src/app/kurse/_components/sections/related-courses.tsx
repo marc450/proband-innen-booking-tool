@@ -33,7 +33,7 @@ export function RelatedCourses({
           {items.map((item) => (
             <Link
               key={item.slug}
-              href={`/kurse/${item.slug}`}
+              href={`/${item.slug}`}
               className="bg-white rounded-[10px] p-6 md:p-7 flex flex-col hover:shadow-md transition-shadow"
             >
               <h3 className="text-xl font-bold mb-3 text-black">
