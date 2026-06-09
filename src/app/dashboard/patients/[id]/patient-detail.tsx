@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Patient, BookingWithDetails, BookingStatus, PatientStatus } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { EmailHistory } from "@/components/email-history";
-import { ArrowLeft, Pencil, AlertTriangle, Ban, CheckCircle2 } from "lucide-react";
+import { MergeContactModal } from "@/components/merge-contact-modal";
+import { ArrowLeft, Pencil, AlertTriangle, Ban, CheckCircle2, GitMerge } from "lucide-react";
 import { ConfirmDialog, AlertDialog } from "@/components/confirm-dialog";
 import { formatBerlinDate, formatBerlinDateTime, formatBerlinTime } from "@/lib/date";
 
@@ -37,7 +39,9 @@ const fieldClass = "bg-transparent border-0 p-0 text-sm text-foreground focus:ou
 
 export function PatientDetail({ patient: initialPatient, bookings: initialBookings, isAdmin = true }: Props) {
   const supabase = createClient();
+  const router = useRouter();
   const [patient, setPatient] = useState(initialPatient);
+  const [mergeModalOpen, setMergeModalOpen] = useState(false);
   // Bookings move from prop to state so the per-booking status pill
   // can mutate them in place (mirror of /dashboard/kurse/[sessionId]/
   // kurs-detail.tsx which keeps a local copy for the same reason —
@@ -319,14 +323,26 @@ export function PatientDetail({ patient: initialPatient, bookings: initialBookin
 
   return (
     <div className="space-y-4">
-      {/* Back link */}
-      <Link
-        href="/dashboard/patients"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Alle Proband:innen
-      </Link>
+      {/* Back link + merge action */}
+      <div className="flex items-center justify-between">
+        <Link
+          href="/dashboard/patients"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Alle Proband:innen
+        </Link>
+        {isAdmin && (
+          <button
+            onClick={() => setMergeModalOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            title="Mit anderem Profil zusammenführen"
+          >
+            <GitMerge className="h-3.5 w-3.5" />
+            Profile zusammenführen
+          </button>
+        )}
+      </div>
 
       {/* 3-column HubSpot-style layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_320px] gap-5">
@@ -685,6 +701,21 @@ export function PatientDetail({ patient: initialPatient, bookings: initialBookin
         description={cancelAlert?.description ?? ""}
         onClose={() => setCancelAlert(null)}
       />
+
+      {isAdmin && (
+        <MergeContactModal
+          open={mergeModalOpen}
+          onOpenChange={setMergeModalOpen}
+          source="patient"
+          primaryId={patient.id}
+          primaryLabel={personName || patient.email || "Dieser Kontakt"}
+          onMerged={() => {
+            // The merged-away profile is gone and its bookings/emails now
+            // sit on this one — reload the server component to reflect it.
+            router.refresh();
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -48,6 +48,10 @@ export async function GET(req: NextRequest) {
 
   const q = (req.nextUrl.searchParams.get("q") || "").trim();
   const limit = Math.min(Number(req.nextUrl.searchParams.get("limit") || 25), 50);
+  // The invoice dialog only wants billable (active) patients; the merge
+  // modal needs to reach duplicates in any status. Opt-in via query param.
+  const includeAllStatuses =
+    req.nextUrl.searchParams.get("includeAllStatuses") === "1";
 
   if (q.length < 2) {
     return NextResponse.json([]);
@@ -103,10 +107,13 @@ export async function GET(req: NextRequest) {
 
   // 2. Patients (E2EE): fetch all rows, decrypt, then filter in-memory.
   try {
-    const { data: patientRows } = await admin
+    let patientQuery = admin
       .from("patients")
-      .select("id, encrypted_data, encrypted_key, encryption_iv, patient_status, created_at, updated_at")
-      .eq("patient_status", "active");
+      .select("id, encrypted_data, encrypted_key, encryption_iv, patient_status, created_at, updated_at");
+    if (!includeAllStatuses) {
+      patientQuery = patientQuery.eq("patient_status", "active");
+    }
+    const { data: patientRows } = await patientQuery;
 
     for (const row of patientRows ?? []) {
       let p;

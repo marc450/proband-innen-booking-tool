@@ -20,9 +20,9 @@ import { formatPersonName } from "@/lib/utils";
 // primary fall back to merged's value.
 //
 // Search uses the existing /api/admin/contact-search endpoint and is
-// scoped client-side to the same source. PR 5 will add patient support.
+// scoped client-side to the same source.
 
-type Source = "auszubildende"; // "patient" added in PR 5
+type Source = "auszubildende" | "patient";
 
 type SearchResult = {
   id: string;
@@ -90,8 +90,12 @@ export function MergeContactModal({
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       try {
+        // For patients the merge target may be a non-active duplicate
+        // (e.g. a blacklisted second profile), so widen the search past
+        // the default active-only filter.
+        const allStatuses = source === "patient" ? "&includeAllStatuses=1" : "";
         const res = await fetch(
-          `/api/admin/contact-search?q=${encodeURIComponent(query)}&limit=10`,
+          `/api/admin/contact-search?q=${encodeURIComponent(query)}&limit=10${allStatuses}`,
         );
         if (!res.ok) {
           setResults([]);
