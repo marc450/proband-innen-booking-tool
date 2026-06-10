@@ -23,7 +23,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
   meta: {
     title: "Grundkurs Botulinum für Zahnmediziner:innen | EPHIA",
     description:
-      "Grundkurs Botulinum für approbierte Zahnärzt:innen: Behandle den Masseter bei Bruxismus und Gesichtsverschmälerung, mit Einblick in Glabella, Stirn und Migräne. Praxisnah an echten Proband:innen und diskriminierungssensibel.",
+      "Grundkurs Botulinum für approbierte Zahnärzt:innen: Behandle den Masseter, insbesondere bei Bruxismus, mit Einblick in weitere Anwendungsgebiete wie Glabella, Stirn und Migräne. Praxisnah an echten Proband:innen.",
     ogImage: "/kurse/grundkurs_botulinum_zahnmedizin/og-image.jpg",
   },
 
@@ -32,14 +32,14 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
     kicker: "FÜR ZAHNMEDIZINER:INNEN",
     socialProof: "Über 300 zertifizierte Ärzt:innen",
     subheadline:
-      "Dein sicherer Einstieg in die ästhetische Medizin: Praxisnah, fundiert und mit echten Proband:innen.",
+      "Dein sicherer Einstieg in die Botulinum-Anwendung für Zahnärzt:innen: praxisnah, fundiert und mit echten Proband:innen.",
     stats: [
       { icon: "Clock", label: "Format", value: "10h Online + 6h Präsenz" },
       { icon: "Award", label: "Zertifiziert", value: "EPHIA-Zertifikat" },
       { icon: "GraduationCap", label: "Level", value: "Einsteigerkurs" },
     ],
     description:
-      "Lerne die zahnärztliche Botulinum-Anwendung mit unserem Online-, Praxis- oder Komplettkurs, speziell für approbierte Zahnärzt:innen. Im Zentrum steht Deine Indikation: der Masseter, bei Bruxismus und zur Gesichtsverschmälerung. Weil schon diese Behandlung das gesamte untere Gesicht prägt, geben wir Dir im Onlinekurs zusätzlich Einblick in die ästhetische Anwendung an Glabella, Stirn und bei Migräne. Den Praxistag teilst Du Dir mit Humanmediziner:innen, so siehst Du das ganze Spektrum ästhetischer Behandlungen an echten Proband:innen. Mit uns lernst Du patient:innenzentrierte Ansätze kennen und behandelst bewusst und diskriminierungssensibel mit Botulinum und nicht NaCl.",
+      "Lerne die Anwendung von Botulinum mit unserem Online-, Praxis- oder Komplettkurs speziell für approbierte Zahnärzt:innen. Im Mittelpunkt stehen die zahnärztlich relevanten Indikationen rund um den Masseter, insbesondere bei Bruxismus. Weil bereits diese Behandlung funktionelle Zusammenhänge im gesamten Gesicht beeinflusst, geben wir Dir zusätzlich Einblicke in weitere Anwendungsgebiete wie Glabella, Stirn und Migräne. So lernst Du, die Wirkung von Botulinum ganzheitlich zu verstehen und sicher einzuordnen. Den Praxistag teilst Du Dir mit Humanmediziner:innen und erhältst Einblicke in das gesamte Spektrum der Botulinum-Behandlung an echten Proband:innen. Mit uns lernst Du patient:innenzentrierte Ansätze kennen und behandelst bewusst und diskriminierungssensibel.",
     videoPath: "/kurse/grundkurs_botulinum/hero-video.mp4",
     videoPoster: "/kurse/grundkurs_botulinum/hero-poster.jpg",
   },
@@ -48,7 +48,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
     heading: "LERNZIELE",
     audienceLabel: "Nur für approbierte Zahnmediziner:innen",
     intro:
-      "Nach dem Kurs behandelst Du den Masseter sicher, fundiert und diskriminierungssensibel mit Botulinum, bei Bruxismus und zur Gesichtsverschmälerung. Weil jede Behandlung im Gesicht ästhetische Folgen hat, vermitteln wir Dir zusätzlich das nötige ästhetische Gesamtverständnis. Dabei konzentrieren wir uns auf die folgenden Lernziele:",
+      "Nach dem Kurs behandelst Du Deine Patient:innen sicher und fundiert bei Bruxismus. Weil Botulinum im gesamten Gesicht wirkt, vermitteln wir Dir zusätzlich das nötige Verständnis, um die Anwendung ganzheitlich einzuordnen. Dabei konzentrieren wir uns auf die folgenden Lernziele:",
     items: [
       {
         label: "Anatomie",
@@ -92,28 +92,28 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
   audience: {
     heading: "WARUM DU MEHR ALS DEN MASSETER LERNST",
     intro:
-      "Mit Botulinum behandelst Du als Zahnärzt:in eine Region: den Masseter, bei Bruxismus und zur Gesichtsverschmälerung. Doch diese Behandlung ist nie rein funktionell, sie prägt das gesamte untere Gesicht. Deshalb lernst Du bei uns, das ästhetische Gesicht als Ganzes zu verstehen.",
+      "Als Zahnärzt:in behandelst Du mit Botulinum vor allem den Masseter, insbesondere bei Bruxismus. Weil Botulinum funktionelle Zusammenhänge im gesamten Gesicht beeinflusst, lernst Du bei uns, die Wirkung ganzheitlich zu verstehen und sicher einzuordnen.",
     layout: "two-col",
     items: [
       {
         title: "Deine Indikation: der Masseter",
         description:
-          "Als Zahnärzt:in behandelst Du mit Botulinum den Masseter, bei Bruxismus und zur Gesichtsverschmälerung. Genau darauf bereiten wir Dich am Praxistag vor.",
+          "Im Mittelpunkt stehen die zahnärztlich relevanten Indikationen rund um den Masseter, insbesondere bei Bruxismus. Genau darauf bereiten wir Dich am Praxistag vor.",
       },
       {
-        title: "Ästhetik gehört dazu",
+        title: "Botulinum wirkt ganzheitlich",
         description:
-          "Eine Masseterbehandlung verändert Kieferlinie, Kontur und Symmetrie des unteren Gesichts. Wer nur die Zielregion isoliert betrachtet, übersieht diese ästhetischen Folgen.",
+          "Botulinum wirkt nicht isoliert. Eine Behandlung am Masseter steht in funktionellem Zusammenhang mit der übrigen Gesichtsmuskulatur. Dieses Zusammenspiel zu verstehen, macht Dich sicherer.",
       },
       {
-        title: "Einblick ins ganze Gesicht",
+        title: "Einblick in weitere Anwendungsgebiete",
         description:
-          "Im Onlinekurs geben wir Dir zusätzlich Einblick in Glabella, Stirn und Migräne. Diese Bereiche behandelst Du nicht selbst, aber Du verstehst, wie Botulinum im gesamten Gesicht wirkt.",
+          "Im Onlinekurs geben wir Dir zusätzlich Einblick in weitere Anwendungsgebiete wie Glabella, Stirn und Migräne. Diese Bereiche behandelst Du nicht selbst, sie helfen Dir, die Wirkung von Botulinum ganzheitlich zu verstehen.",
       },
       {
         title: "Praxistag mit Humanmediziner:innen",
         description:
-          "Den Praxistag absolvierst Du bewusst gemeinsam mit Humanmediziner:innen. So siehst Du ästhetische Behandlungen live an echten Proband:innen und bekommst das vollständige Bild.",
+          "Den Praxistag absolvierst Du bewusst gemeinsam mit Humanmediziner:innen. So erhältst Du Einblick in das gesamte Spektrum der Botulinum-Behandlung an echten Proband:innen.",
       },
     ],
   },
@@ -131,7 +131,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
   inhalt: {
     heading: "INHALT ONLINEKURS",
     intro:
-      "Der Onlinekurs deckt Deine zahnärztliche Indikation am Masseter ab (Bruxismus, Gesichtsverschmälerung) und gibt Dir darüber hinaus Einblick in die ästhetische Anwendung an Glabella, Stirn und bei Migräne, damit Du die ästhetischen Zusammenhänge Deiner Behandlung verstehst.",
+      "Der Onlinekurs deckt Deine zahnärztliche Indikation am Masseter ab, insbesondere bei Bruxismus, und gibt Dir darüber hinaus Einblick in weitere Anwendungsgebiete wie Glabella, Stirn und Migräne, damit Du die Wirkung von Botulinum ganzheitlich verstehst.",
     chapters: [
       {
         number: 1,
@@ -460,7 +460,12 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
       {
         question: "Nehmen am Praxistag auch Humanmediziner:innen teil?",
         answer:
-          "Ja, und das ist bewusst so. Als Zahnärzt:in behandelst Du mit Botulinum den Masseter, bei Bruxismus und zur Gesichtsverschmälerung. Weil diese Behandlung das gesamte untere Gesicht prägt, ist ein ästhetisches Gesamtverständnis entscheidend. Im Onlinekurs geben wir Dir deshalb Einblick in Glabella, Stirn und Migräne. Den Praxistag absolvierst Du gemeinsam mit Humanmediziner:innen im selben Studio, so siehst Du diese ästhetischen Behandlungen live an echten Proband:innen. Deine eigenen praktischen Übungen konzentrieren sich auf Deine zahnärztliche Indikation am Masseter.",
+          "Ja, und das ist bewusst so. Als Zahnärzt:in behandelst Du mit Botulinum vor allem den Masseter, insbesondere bei Bruxismus. Weil Botulinum im gesamten Gesicht wirkt, ist ein ganzheitliches Verständnis wichtig. Im Onlinekurs geben wir Dir deshalb Einblick in weitere Anwendungsgebiete wie Glabella, Stirn und Migräne. Den Praxistag absolvierst Du gemeinsam mit Humanmediziner:innen im selben Studio, so siehst Du das gesamte Spektrum der Botulinum-Behandlung live an echten Proband:innen. Deine eigenen praktischen Übungen konzentrieren sich auf Deine zahnärztliche Indikation am Masseter.",
+      },
+      {
+        question: "Ist der Kurs zertifiziert? Bekomme ich Fortbildungspunkte?",
+        answer:
+          "Der Praxiskurs ist von der Zahnärztekammer mit 9 Fortbildungspunkten (CME) zertifiziert. Die Zertifizierung des Onlineteils ist derzeit in Vorbereitung. Nach Abschluss erhältst Du zusätzlich Dein EPHIA-Zertifikat.",
       },
       {
         question:
