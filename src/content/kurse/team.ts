@@ -59,13 +59,7 @@ export const teamContent: TeamPageContent = {
               items: [
                 {
                   label: "Ausbildung unter anderem bei:",
-                  items: [
-                    "Dr. Mauricio de Maio (MD Codes™)",
-                    "Dr. Arthur Swift",
-                    "Dr. Raul Cetto",
-                    "Dr. Tatjana Pavicic",
-                    "Dr. Sabrina Fabi",
-                  ],
+                  items: ["Dr. Mauricio de Maio (MD Codes™)"],
                 },
               ],
             },
@@ -85,11 +79,7 @@ export const teamContent: TeamPageContent = {
                 "Langjährige Erfahrung in Anästhesie, Intensiv- und Notfallmedizin",
                 {
                   label: "Rotationen:",
-                  items: [
-                    "Kardioanästhesie",
-                    "Kinderanästhesie",
-                    "Schmerztherapie",
-                  ],
+                  items: ["Kinderanästhesie", "Schmerztherapie"],
                 },
               ],
             },
@@ -108,9 +98,7 @@ export const teamContent: TeamPageContent = {
             {
               heading: "Fachgesellschaftsmitgliedschaften",
               items: [
-                "DGÄPC (Deutsche Gesellschaft für Ästhetisch-Plastische Chirurgie)",
                 "DGBT (Deutsche Gesellschaft für ästhetische Botulinumtoxin-Therapie)",
-                "DDL (Deutsche Dermatologische Lasergesellschaft)",
                 "DGAI (Deutsche Gesellschaft für Anästhesiologie und Intensivmedizin)",
                 "BDA (Berufsverband Deutscher Anästhesisten)",
                 "ESAIC (European Society of Anaesthesiology and Intensive Care)",
