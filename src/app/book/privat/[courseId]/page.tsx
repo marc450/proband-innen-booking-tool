@@ -4,13 +4,25 @@ import { createClient } from "@/lib/supabase/server";
 import { AvailableSlot, Course } from "@/lib/types";
 import { PrivatSlotSelection } from "./slot-selection";
 import { notFound } from "next/navigation";
+import { INDICATIONS, IndicationKey } from "@/lib/indications";
 
 export default async function PrivatCourseBookingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ courseId: string }>;
+  searchParams: Promise<{ indication?: string }>;
 }) {
   const { courseId } = await params;
+  const { indication } = await searchParams;
+  // Deep-link entry point: the standalone Masseter card on the private
+  // overview links to /book/privat/{therapCourseId}?indication=masseter so the
+  // referral skips the indication picker. Only accept a real IndicationKey;
+  // anything else is ignored and the normal flow runs.
+  const initialIndication: IndicationKey | null =
+    INDICATIONS.some((i) => i.key === indication)
+      ? (indication as IndicationKey)
+      : null;
   const supabase = await createClient();
 
   const { data: course } = await supabase
@@ -107,6 +119,7 @@ export default async function PrivatCourseBookingPage({
       masseterSlots={masseterSlots}
       masseterCourses={masseterCourses}
       firstSlotByCourse={firstSlotByCourse}
+      initialIndication={usesIndications ? initialIndication : null}
     />
   );
 }

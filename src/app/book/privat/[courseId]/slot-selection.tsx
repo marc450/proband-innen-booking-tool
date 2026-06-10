@@ -14,6 +14,7 @@ import Link from "next/link";
 import { PrivatBookingForm } from "../booking-form";
 import {
   INDICATIONS,
+  PICKER_INDICATIONS,
   IndicationKey,
 } from "@/lib/indications";
 
@@ -27,6 +28,11 @@ interface Props {
   masseterSlots: AvailableSlot[];
   masseterCourses: Course[];
   firstSlotByCourse: Record<string, string>;
+  // Pre-selected indication when the referral arrived via a deep link
+  // (the standalone Masseter card → ?indication=masseter). When set, the
+  // picker is skipped and the indication is locked: "Zurück" goes back to the
+  // overview, not to a picker that no longer lists this indication.
+  initialIndication: IndicationKey | null;
 }
 
 export function PrivatSlotSelection({
@@ -36,12 +42,15 @@ export function PrivatSlotSelection({
   masseterSlots,
   masseterCourses,
   firstSlotByCourse,
+  initialIndication,
 }: Props) {
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
   const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
 
   const usesIndications = /therap.*indikation/i.test(course.title);
-  const [selectedIndication, setSelectedIndication] = useState<IndicationKey | null>(null);
+  const [selectedIndication, setSelectedIndication] = useState<IndicationKey | null>(initialIndication);
+  // A deep-linked indication is locked: no return path to the picker.
+  const indicationLocked = usesIndications && !!initialIndication;
   const showPicker = usesIndications && !selectedIndication;
 
   // Free seats a patient can still book on a given slot. Masseter seats in
@@ -68,6 +77,14 @@ export function PrivatSlotSelection({
         : generalSeatsTotal;
     return { ...ind, remaining: Math.min(available, ind.max as number) };
   });
+
+  // Picker shows only the non-hidden indications (masseter has its own
+  // standalone overview card). indicationStats keeps all keys so the
+  // selected-indication badge still resolves the masseter label after a
+  // deep link.
+  const pickerStats = indicationStats.filter((i) =>
+    PICKER_INDICATIONS.some((p) => p.key === i.key),
+  );
 
   const isMasseter = usesIndications && selectedIndication === "masseter";
 
@@ -98,7 +115,19 @@ export function PrivatSlotSelection({
         .filter((entry) => entry.slots.length > 0)
     : [];
 
-  const dateEntries = [...baseEntries, ...masseterEntries];
+  // Merge both buckets chronologically. The base (Therap. general) and the
+  // masseter (Grundkurs Botulinum) lists are fetched separately and the
+  // masseter query has no ORDER BY, so a plain concat leaves the dates
+  // jumbled. Sort by course_date (ISO "yyyy-MM-dd" sorts lexicographically),
+  // nulls last. Mirrors the public funnel.
+  const dateEntries = [...baseEntries, ...masseterEntries].sort((a, b) => {
+    const da = a.course.course_date || "";
+    const db = b.course.course_date || "";
+    if (da && db) return da < db ? -1 : da > db ? 1 : 0;
+    if (da) return -1;
+    if (db) return 1;
+    return 0;
+  });
 
   const selectedIsMasseterCourse =
     !!selectedSlot && masseterCourses.some((c) => c.id === selectedSlot.course_id);
@@ -173,7 +202,7 @@ export function PrivatSlotSelection({
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-              {indicationStats.map((ind) => {
+              {pickerStats.map((ind) => {
                 const isFull = ind.remaining === 0;
                 return (
                   <button
@@ -221,7 +250,7 @@ export function PrivatSlotSelection({
           </div>
         ) : (
           <div>
-            {usesIndications ? (
+            {usesIndications && !indicationLocked ? (
               <button
                 onClick={() => {
                   setSelectedIndication(null);

@@ -42,11 +42,39 @@ export default async function PrivatBookPage() {
     const override = c.template_id ? probandenImageByTemplate.get(c.template_id) : undefined;
     return override ? { ...c, image_url: override } : c;
   });
+  const resolvedSlots = (slots as AvailableSlot[]) || [];
+
+  // Standalone Masseter card, mirroring the public funnel
+  // (kurse/werde-proband-in/page.tsx). Masseter is not a separate course; its
+  // capacity is the two buckets the slot picker merges: general seats on the
+  // Therap. Indikationen course + reserved masseter seats on Grundkurs
+  // Botulinum courses (masseter_eligible slots, migration 117). The card
+  // deep-links into /book/privat/{therapCourseId}?indication=masseter. It is
+  // hidden (null) when there is no Therap. course or zero masseter seats.
+  const therapCourse = resolvedCourses.find((c) => /therap.*indikation/i.test(c.title));
+  const inWindowCourseIds = new Set(resolvedCourses.map((c) => c.id));
+  const masseterSeats = therapCourse
+    ? resolvedSlots.reduce((n, s) => {
+        if (s.course_id === therapCourse.id) return n + s.general_remaining;
+        if (s.masseter_eligible && inWindowCourseIds.has(s.course_id)) {
+          return n + s.masseter_remaining;
+        }
+        return n;
+      }, 0)
+    : 0;
+  const masseterCard =
+    therapCourse && masseterSeats > 0
+      ? {
+          courseId: therapCourse.id,
+          imageUrl: therapCourse.image_url,
+        }
+      : null;
 
   return (
     <PrivatCoursesOverview
       courses={resolvedCourses}
-      slots={(slots as AvailableSlot[]) || []}
+      slots={resolvedSlots}
+      masseterCard={masseterCard}
     />
   );
 }

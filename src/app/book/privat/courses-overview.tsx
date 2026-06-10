@@ -2,21 +2,31 @@
 
 import { useEffect } from "react";
 import { AvailableSlot, Course } from "@/lib/types";
-import { ArrowRight, ImageIcon } from "lucide-react";
+import { ArrowRight, Check, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { MASSETER_CARD } from "@/lib/masseter-card";
 
 interface Props {
   courses: Course[];
   slots: AvailableSlot[];
+  // When present, a standalone Masseter card is prepended to the grid,
+  // deep-linking into the Therap. Indikationen flow with
+  // ?indication=masseter. Mirrors the public funnel's masseter card.
+  // null when no masseter capacity is bookable, so the card hides.
+  masseterCard: { courseId: string; imageUrl: string | null } | null;
 }
 
 interface CourseGroup {
   title: string;
   firstCourse: Course;
+  // Optional overrides for the synthetic Masseter card: a deep-link CTA
+  // target and an indication list (the regular course cards have neither).
+  href?: string;
+  zones?: { label: string; items: string[] };
 }
 
-export function PrivatCoursesOverview({ courses, slots }: Props) {
+export function PrivatCoursesOverview({ courses, slots, masseterCard }: Props) {
   useEffect(() => {
     const sendHeight = () => {
       window.parent.postMessage({ type: "ephia-resize", height: document.body.scrollHeight }, "*");
@@ -47,6 +57,24 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
   }
 
   const groups = Array.from(groupedMap.values());
+
+  // Prepend the standalone Masseter card so it leads the lineup (masseter is
+  // the highest-demand treatment). It deep-links into the Therap. Indikationen
+  // flow with the indication pre-selected.
+  if (masseterCard) {
+    groups.unshift({
+      title: MASSETER_CARD.title,
+      firstCourse: {
+        id: masseterCard.courseId,
+        title: MASSETER_CARD.treatmentTitle,
+        treatment_title: MASSETER_CARD.treatmentTitle,
+        service_description: MASSETER_CARD.serviceDescription,
+        image_url: MASSETER_CARD.imageUrl ?? masseterCard.imageUrl,
+      } as Course,
+      href: `/book/privat/${masseterCard.courseId}?indication=masseter`,
+      zones: MASSETER_CARD.zones,
+    });
+  }
 
   return (
     <div className="min-h-screen bg-[#FAEBE1]">
@@ -108,14 +136,40 @@ export function PrivatCoursesOverview({ courses, slots }: Props) {
                     </h3>
 
                     {group.firstCourse.service_description && (
-                      <p className="text-sm md:text-base text-black/75 leading-relaxed mt-4 flex-1">
+                      <p className="text-sm md:text-base text-black/75 leading-relaxed mt-4">
                         {group.firstCourse.service_description}
                       </p>
                     )}
 
+                    {group.zones && group.zones.items.length > 0 && (
+                      <div className="mt-5">
+                        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-black/55 mb-2">
+                          {group.zones.label}
+                        </p>
+                        <ul className="space-y-1.5">
+                          {group.zones.items.map((z) => (
+                            <li
+                              key={z}
+                              className="flex items-start gap-2 text-sm md:text-base text-black/80"
+                            >
+                              <Check
+                                className="w-4 h-4 mt-1 text-[#0066FF] shrink-0"
+                                strokeWidth={2.5}
+                                aria-hidden="true"
+                              />
+                              <span>{z}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Pin the CTA to the bottom regardless of body length. */}
+                    <div className="flex-1" />
+
                     <div className="mt-6">
                       <Link
-                        href={`/book/privat/${group.firstCourse.id}`}
+                        href={group.href ?? `/book/privat/${group.firstCourse.id}`}
                         className="inline-flex items-center justify-center gap-2 w-full text-sm md:text-base font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-5 py-3 transition-colors"
                       >
                         <span>Termine anschauen</span>

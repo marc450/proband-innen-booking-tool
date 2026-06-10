@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { ArrowRight, Check, ImageIcon } from "lucide-react";
 import type { AvailableSlot, Course } from "@/lib/types";
 import { PICKER_INDICATIONS } from "@/lib/indications";
+import { MASSETER_CARD } from "@/lib/masseter-card";
 import { TYPO } from "../typography";
 
 interface TreatmentListProps {
@@ -19,30 +20,6 @@ interface TreatmentListProps {
     | { courseId: string; guidePriceCents: number | null; imageUrl: string | null }
     | null;
 }
-
-// Static content for the standalone Masseter card. Price and image come
-// from the Therap. Indikationen course (passed in via masseterCard) so they
-// stay in sync; only the masseter-specific copy lives here. Mirrors the
-// "TEMPORARY hardcoded" pattern of TEMP_ZONES_BY_TITLE above.
-const MASSETER_CARD = {
-  title: "__masseter__",
-  treatmentTitle: "Gesichtsverschmälerung / Masseter / Bruxismus",
-  // Dedicated card image, stored in the public Supabase `treatment-images`
-  // bucket (next.config remotePatterns already allows that host + path).
-  // To swap it, overwrite this file in the bucket or change the URL here.
-  imageUrl:
-    "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/treatment-images/fleur-kaan-PG6Em2m7Ar4-unsplash.jpg",
-  serviceDescription:
-    "Im Rahmen dieses Kurses kannst Du eine Behandlung des Musculus masseter mit Botulinum durch eine:n approbierte:n Ärzt:in erhalten. Behandelt werden, je nach Ausgangssituation, Beschwerden wie Bruxismus (Zähneknirschen) und Kieferpressen oder eine Verschmälerung der Gesichtskontur. Ob eine Behandlung medizinisch sinnvoll ist, wird im Aufklärungsgespräch mit unseren Dozent:innen geprüft und in einem individuellen Behandlungsplan festgehalten. Das Ergebnis soll natürlich und harmonisch wirken. In vielen Praxen liegen die Preise für eine entsprechende Behandlung deutlich über unserem Richtpreis.",
-  zones: {
-    label: "Behandelbare Indikationen",
-    items: [
-      "Kieferbreite reduzieren (Gesichtsverschmälerung)",
-      "Bruxismus / Zähneknirschen",
-      "Kieferpressen",
-    ],
-  },
-};
 
 type TreatmentCategory =
   | "botulinum"
