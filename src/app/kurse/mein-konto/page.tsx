@@ -102,6 +102,12 @@ interface TemplateRow {
   lw_slug_praxis: string | null;
   lw_slug_kombi: string | null;
   lw_slug_hybrid: string | null;
+  // The course id used for the LW enrollment API + the admin "Zugriff
+  // aktiv" check (migration 018). For LW the enrollment id doubles as
+  // the course URL slug, so we fall back to it when lw_slug_online
+  // (migration 053) was never backfilled — otherwise the online card
+  // renders with no "Zum Kurs" link even though the customer is enrolled.
+  online_course_id: string | null;
 }
 
 // Build a fast lookup that supports three matching strategies, in
@@ -129,6 +135,11 @@ function buildTemplateIndex(templates: TemplateRow[]) {
   for (const t of templates) {
     if (t.course_key) byKey.set(t.course_key, t);
     if (t.lw_slug_online) bySlug.set(t.lw_slug_online.toLowerCase(), { tpl: t, type: "Onlinekurs" });
+    // Fallback so a customer's actual LW enrollment (keyed on
+    // online_course_id) still matches a template when lw_slug_online
+    // was never backfilled. Only register it when it wouldn't shadow an
+    // explicit lw_slug_online mapping.
+    else if (t.online_course_id) bySlug.set(t.online_course_id.toLowerCase(), { tpl: t, type: "Onlinekurs" });
     if (t.lw_slug_praxis) bySlug.set(t.lw_slug_praxis.toLowerCase(), { tpl: t, type: "Praxiskurs" });
     if (t.lw_slug_kombi) bySlug.set(t.lw_slug_kombi.toLowerCase(), { tpl: t, type: "Kombikurs" });
     if (t.lw_slug_hybrid) bySlug.set(t.lw_slug_hybrid.toLowerCase(), { tpl: t, type: "Hybrid" });
@@ -149,7 +160,13 @@ function pickLwSlug(tpl: TemplateRow | undefined, type: CourseType): string | nu
   if (!tpl) return null;
   switch (type) {
     case "Onlinekurs":
-      return tpl.lw_slug_online;
+      // lw_slug_online is the canonical URL slug, but it was only
+      // auto-backfilled from legacy LW imports (migrations 053–055).
+      // Templates onboarded later (or with naming drift) have it null
+      // while online_course_id carries the real LW course id, which for
+      // LW is also the /course/{id} URL slug. Fall back to it so the
+      // online card keeps a working "Zum Kurs" link.
+      return tpl.lw_slug_online ?? tpl.online_course_id;
     case "Praxiskurs":
       return tpl.lw_slug_praxis;
     case "Kombikurs":
@@ -358,7 +375,7 @@ export default async function MeinKontoPage() {
       admin
         .from("course_templates")
         .select(
-          "id, course_key, title, image_url, name_online, name_praxis, name_kombi, lw_slug_online, lw_slug_praxis, lw_slug_kombi, lw_slug_hybrid",
+          "id, course_key, title, image_url, name_online, name_praxis, name_kombi, lw_slug_online, lw_slug_praxis, lw_slug_kombi, lw_slug_hybrid, online_course_id",
         ),
     ]);
 
