@@ -37,6 +37,11 @@ export const teamContent: TeamPageContent = {
         imageAlt: "Porträt von Dr. Sophia Wilk-Vollmann",
         shortBio:
           "Fachärztin für Anästhesie mit eigener Praxis für ästhetische Medizin. Sophia hat EPHIA gegründet, um ästhetische Medizin inklusiver, evidenzbasierter und patient:innenzentrierter zu machen.",
+        bio: [
+          "Sophia ist Fachärztin für Anästhesiologie mit der Zusatzbezeichnung Notfallmedizin. Über Jahre hat sie an universitären Maximalversorgern in Anästhesie, Intensiv- und Notfallmedizin gearbeitet, mit Rotationen in Kinderanästhesie und Schmerztherapie.",
+          "Als Ärztin und Soldatin der Bundeswehr war sie in internationalen Einsätzen tätig, unter anderem in Afghanistan, Mali und am Roten Meer. Weitere Auslandsstationen in medizinischer Versorgung und Lehre führten sie nach Vietnam und Südafrika. Die Arbeit unter Druck und mit begrenzten Mitteln prägt bis heute ihren Anspruch an Entscheidungssicherheit und Verantwortung.",
+          "Seit 2017 führt sie ihre eigene Praxis für ästhetische Medizin und gibt ihr Wissen als Dozentin weiter. Mit EPHIA verbindet sie ihre klinische Tiefe mit dem Ziel, ästhetische Medizin evidenzbasierter, inklusiver und patient:innenzentrierter zu machen.",
+        ],
         sameAs: [
           "https://www.linkedin.com/in/hy-drsophia/",
           "https://www.drsophia.de/",

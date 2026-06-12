@@ -68,8 +68,15 @@ export interface Person {
   /** Optional path to a portrait photo (absolute URL or /public path). */
   imagePath?: string;
   imageAlt?: string;
-  /** Short bio shown on the card. */
+  /** Short bio shown on the card and used as the meta description.
+   *  Keep it concise (one or two sentences). */
   shortBio?: string;
+  /** Longer, multi-paragraph bio shown on the dedicated profile page
+   *  hero. Each string is one paragraph. When present it replaces the
+   *  shortBio on the profile page (the card and meta still use shortBio).
+   *  Use this to convey the person's full depth without bloating the
+   *  team-grid card. */
+  bio?: string[];
   /** Detailed curriculum shown in the modal. Only Dozent:innen have this. */
   curriculum?: Curriculum;
   /**

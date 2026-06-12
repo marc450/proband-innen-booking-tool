@@ -254,9 +254,16 @@ export default async function PersonProfilePage({
                     {person.curriculum.tagline}
                   </p>
                 )}
-                {person.shortBio && (
-                  <p className={`${TYPO.bodyLead} mt-4`}>{person.shortBio}</p>
-                )}
+                {(person.bio && person.bio.length > 0
+                  ? person.bio
+                  : person.shortBio
+                    ? [person.shortBio]
+                    : []
+                ).map((para, i) => (
+                  <p key={i} className={`${TYPO.bodyLead} mt-4`}>
+                    {para}
+                  </p>
+                ))}
 
                 {sameAs.length > 0 && (
                   <div className="mt-6">
