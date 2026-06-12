@@ -5,6 +5,21 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/**
+ * Today's date as a YYYY-MM-DD string in the Europe/Berlin timezone.
+ *
+ * Use this (not `new Date().toISOString().slice(0,10)`, which is UTC) to
+ * compare against `course_sessions.date_iso` so a course is only hidden
+ * once the day is actually over in Germany, not when UTC rolls over. The
+ * value sorts and compares correctly as a plain string against `date_iso`.
+ */
+export function berlinTodayIso(): string {
+  // en-CA formats as YYYY-MM-DD, which matches the `date_iso` column.
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(
+    new Date(),
+  )
+}
+
 // Title strings that mean "no title". Imported data has shown several
 // variants over time:
 //   - "Kein Titel"           — the canonical TITLE_OPTIONS entry

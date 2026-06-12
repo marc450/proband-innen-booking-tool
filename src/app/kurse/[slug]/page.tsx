@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { berlinTodayIso } from "@/lib/utils";
 import { fetchPublicReviews } from "@/lib/fetch-public-reviews";
 import { getCourseContent, getAllCourseSlugs } from "@/content/kurse";
 
@@ -100,12 +101,15 @@ export default async function KursPage({
     if (sharedTemplate) sessionTemplateId = sharedTemplate.id;
   }
 
-  // Fetch live sessions
+  // Fetch live, upcoming sessions. Past sessions (date_iso before today in
+  // Berlin) are excluded so the booking date picker and the JSON-LD event
+  // schema never surface course dates that already happened.
   const { data: sessions } = await supabase
     .from("course_sessions")
     .select("*")
     .eq("template_id", sessionTemplateId)
     .eq("is_live", true)
+    .gte("date_iso", berlinTodayIso())
     .order("date_iso", { ascending: true });
 
   // Public reviews — only fetched on slugs that opt in (see
