@@ -4,12 +4,15 @@ Zentrale Stelle für (a) die Historie der AGB-Änderungen und (b) die
 Sammlung offener Punkte, die bei der nächsten juristischen Prüfung der
 AGB mitgenommen werden sollen.
 
+Deckt AGB **und** Datenschutzerklärung ab.
+
 Betroffene Dokumente, die bei Änderungen **synchron** gehalten werden
 müssen:
 
 - `src/app/kurse/agb/page.tsx` — Kurs-AGB für Ärzt:innen (öffentlich, `ephia.de/agb`)
 - `src/app/kurse/proband-agb/page.tsx` — AGB für Proband:innen (öffentlich)
 - `src/app/book/booking-form.tsx` + `src/app/book/privat/booking-form.tsx` — Inline-AGB im Buchungsfunnel (muss mit der Proband-AGB übereinstimmen)
+- `src/app/kurse/datenschutz/page.tsx` — Datenschutzerklärung (öffentlich, `ephia.de/datenschutz`)
 
 > Hinweis: Die AGB sind rechtlicher Text. Alle hier dokumentierten
 > Formulierungen sind fachlich/redaktionell umgesetzt, aber **nicht
@@ -44,6 +47,58 @@ Tage, Umbuchung bis 7 Tage gegen max. 10 % des Kurswertes) auf:
 - „Stand"-Datum auf der AGB-Seite ergänzt.
 
 Auslöser: Anweisung Marc, 2026-06-12.
+
+### 2026-06-12 — KI-Nutzung für Ärzt:innen-Service erweitert (Datenschutz §8)
+
+Datei: `src/app/kurse/datenschutz/page.tsx`, Abschnitt „8. Einsatz von
+KI-gestützten Hilfswerkzeugen".
+
+Bisher war der Abschnitt auf das Verfassen von E-Mail-Entwürfen mit
+Anthropic Claude beschränkt. Ergänzt um einen Absatz, der die Nutzung
+auf die allgemeine Verbesserung der Service-Qualität für gebuchte
+Ärzt:innen ausweitet (Aufbereitung/Zuordnung von Anfragen, Auswahl
+passender Kurs- und Lernangebote, Qualitätssicherung). Datenkategorien
+unverändert, Proband:innen weiterhin ausgenommen, kein Art.-22-DSGVO-
+Automatismus. Rechtsgrundlage (Art. 6 Abs. 1 lit. f, SCC, AVV mit
+Anthropic) bleibt bestehen.
+
+Auslöser: Anweisung Marc, 2026-06-12.
+
+---
+
+## Vorbereitet, aber NICHT live (vor Go-live zu veröffentlichen)
+
+### Galderma-Datenweitergabe (Datenschutz + AGB-Hinweis)
+
+Status am 2026-06-12: **bewusst NICHT veröffentlicht.** Der zugehörige
+Einwilligungs-Mechanismus (Opt-in-Häkchen der Kursbetreuung,
+Bestätigungs-E-Mail mit Widerrufslink, Export an Galderma,
+Widerruf-Forwarder) ist im Code **noch nicht gebaut**. Eine
+Datenschutz-Klausel zu veröffentlichen, ohne dass Opt-in und Widerruf
+tatsächlich funktionieren, wäre selbst ein DSGVO-Verstoß.
+
+Vor Go-live nötig (siehe Memory `project_galderma_data_sharing.md`):
+
+1. Einwilligungs-Mechanismus bauen (Tabellen `partner_data_consents` +
+   `partner_data_exports`, Häkchen, Bestätigungs-Mail, Widerruf-Endpoint,
+   Export-Button, Widerruf-Forwarder).
+2. Datenweitergabe-Vereinbarung EPHIA ↔ Galderma SA (zwei
+   Verantwortliche, keine AVV).
+3. Formales Zweck-Sign-off durch Galderma.
+4. Anwaltliche Prüfung der Datenschutz-Sektion.
+
+Erst danach: neue Sektion in `datenschutz/page.tsx` unter dem Anker
+`#partner-datenweitergabe` einsetzen. Fertiger Textentwurf liegt in der
+Memory (`project_galderma_data_sharing.md`, Abschnitt
+„Datenschutzerklärung Sektion (Entwurf)") und enthält: Empfänger
+Galderma SA (Lausanne, Schweiz), Datenkategorien (Name, E-Mail,
+absolvierter Kurs), Zweck, Rechtsgrundlage Art. 6 Abs. 1 lit. a,
+Drittlandsübermittlung Schweiz (Angemessenheitsbeschluss),
+Aufbewahrung, Widerrufsrecht, Beschwerderecht. Nur Auszubildende
+(course_bookings, Praxis-/Kombikurse), **nicht** Proband:innen.
+Zusätzlich: Transparenz-Hinweis im Praxiskurs-Buchungsflow, dass die
+Kurse durch Galderma gesponsert werden (keine Einwilligung, nur
+Transparenz).
 
 ---
 

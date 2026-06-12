@@ -220,6 +220,10 @@ const SECTIONS: Section[] = [
       },
       {
         type: "p",
+        text: "Über das Verfassen einzelner E-Mail-Entwürfe hinaus setzen wir dieses KI-gestützte Hilfswerkzeug ein, um die Betreuung der bei uns gebuchten Ärzt:innen und die Qualität unseres Services insgesamt zu verbessern. Dazu gehören zum Beispiel die Aufbereitung und Zuordnung von Anfragen, die Auswahl passender Kurs-, Lern- und Serviceangebote sowie die Qualitätssicherung unserer Kommunikation. Verarbeitet werden dabei dieselben Datenkategorien wie oben genannt, also Name, Kontaktdaten, Fachrichtung sowie Inhalte der mit der jeweiligen Ärzt:in geführten Korrespondenz und Angaben zu ihrer Kursteilnahme. Eine ausschließlich automatisierte Entscheidung mit rechtlicher Wirkung im Sinne von Art. 22 DSGVO findet nicht statt.",
+      },
+      {
+        type: "p",
         text: "Personenbezogene Daten von Proband:innen werden nicht an Anthropic übermittelt. Die KI-Funktion ist im System für die Korrespondenz mit Proband:innen technisch deaktiviert.",
       },
       {
