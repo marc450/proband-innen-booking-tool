@@ -52,7 +52,15 @@ const SECTIONS: Section[] = [
   {
     title: "6. Rücktritt, Umbuchung & Stornierung",
     paragraphs: [
-      "Du kannst Deine Buchung bis spätestens 14 Tage vor Kursbeginn kostenfrei stornieren. Nach diesem Zeitpunkt ist eine Rückerstattung der Kursgebühr nicht mehr möglich. Eine Umbuchung des Praxiskurses auf ein anderes Datum ist einmalig möglich bis 7 Tage vor dem Kursdatum. Für die Umbuchung fällt eine Bearbeitungsgebühr von maximal 10 % des Kurswertes an.",
+      "Maßgeblich für alle Fristen in dieser Ziffer ist der Kursbeginn, also Datum und Uhrzeit des Kursstarts. Ein Tag entspricht 24 Stunden, die rückwärts ab dem Zeitpunkt des Kursbeginns gerechnet werden.",
+      "Du kannst Deine Buchung bis spätestens 14 Tage vor Kursbeginn kostenfrei und ohne weitere Folgen stornieren. Bereits geleistete Zahlungen werden in diesem Fall vollständig zurückerstattet. Nach Ablauf dieser Frist ist eine Stornierung mit Rückerstattung der Kursgebühr ausgeschlossen.",
+      "Für Praxiskurse, einschließlich des Praxisteils von Kombikursen, bieten wir Dir innerhalb der letzten 14 Tage vor Kursbeginn anstelle einer Stornierung die Möglichkeit, denselben Kurs einmalig auf einen anderen verfügbaren Termin umzubuchen. Hierfür gelten gestaffelte Umbuchungsgebühren:",
+      [
+        "weniger als 14 Tage, aber mindestens 7 Tage vor Kursbeginn: 125 € Umbuchungsgebühr,",
+        "weniger als 7 Tage vor Kursbeginn: 250 € Umbuchungsgebühr.",
+      ],
+      "Die Umbuchung setzt voraus, dass ein freier Ersatztermin verfügbar ist. Die Umbuchungsgebühr ist vor der Bestätigung des neuen Termins zu entrichten.",
+      "Erfolgt Deine Absage krankheitsbedingt, ist eine Umbuchung nur möglich, wenn Du Dich damit einverstanden erklärst, ein ärztliches Attest einer von EPHIA benannten, unabhängigen Ärzt:in beizubringen, das Deine Kursunfähigkeit für den gebuchten Termin bestätigt.",
       "EPHIA behält sich das Recht vor, Kurse bis spätestens 5 Werktage vor Beginn abzusagen, z. B. bei zu geringer Teilnehmerzahl oder krankheitsbedingtem Ausfall der Dozent:innen. Bereits geleistete Zahlungen werden in diesem Fall vollständig rückerstattet.",
     ],
   },
@@ -98,9 +106,10 @@ const SECTIONS: Section[] = [
 export default function AGBPage() {
   return (
     <article className="max-w-3xl mx-auto px-5 md:px-8 py-16 md:py-24 text-black">
-      <h1 className="text-3xl md:text-4xl font-bold tracking-wide mb-10">
+      <h1 className="text-3xl md:text-4xl font-bold tracking-wide mb-2">
         ALLGEMEINE GESCHÄFTSBEDINGUNGEN
       </h1>
+      <p className="text-sm text-black/60 mb-10">Stand: 12. Juni 2026</p>
 
       {SECTIONS.map((section) => (
         <section key={section.title} className="mb-10">
