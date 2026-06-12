@@ -320,6 +320,40 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       vnrTheorie: { x: 173, y: 40, size: 8 },
     },
   },
+  {
+    // Grundkurs Medizinische Hautpflege — a STANDALONE ONLINE course, same
+    // shape as the Periorale Zone cert above: no Praxis-Kurstermine, so it
+    // never matches the session-driven path; the Zertifikatgenerator
+    // surfaces it via the `online` flag instead (page.tsx builds a
+    // session-less course type).
+    //
+    // Accredited by the Landesärztekammer BRANDENBURG with 7 CME-Punkten.
+    // Unlike the Periorale Zone master, this master's footer carries ONLY
+    // the baked "7 CME-Punkte durch die Landesärztekammer Brandenburg"
+    // line — there is no "VNR Theorie:" / "VNR Praxis:" label and no date
+    // line. So this cert stamps only the participant name: no vnrTheorie /
+    // vnrPraxis / dateStamp slots. certificateRequiresVnr therefore returns
+    // false and the generator form asks for nothing but the name.
+    // footerCity stays "Brandenburg" to document the accrediting chamber
+    // even though no date line is drawn.
+    //
+    // generatorOnly stays true as a belt-and-braces guard: the post-praxis
+    // cron is session-driven and would never match an online course anyway.
+    slug: "grundkurs-medizinische-hautpflege",
+    label: "Grundkurs Medizinische Hautpflege",
+    courseKeys: ["grundkurs_medizinische_hautpflege"],
+    footerCity: "Brandenburg",
+    generatorOnly: true,
+    online: true,
+    layout: {
+      page: 1,
+      centerX: 173,
+      baselineY: 388,
+      maxWidth: 290,
+      targetSize: 28,
+      minSize: 10,
+    },
+  },
 ];
 
 export function getCertificateTemplate(
