@@ -48,6 +48,13 @@ export const teamContent: TeamPageContent = {
         ],
         media: [
           {
+            url: "https://www.br.de/radio/bayern2/sendungen/eins-zu-eins-der-talk/sophia-wilk-vollmann-notfallaerztin-und-soldatin-das-was-zaehlt-bist-nicht-du-100.html",
+            title:
+              "Sophia Wilk-Vollmann, Notfallärztin und Soldatin: Das, was zählt, bist nicht du",
+            outlet: "Bayern 2, Eins zu Eins. Der Talk",
+            format: "Radio-Interview",
+          },
+          {
             url: "https://www.radioeins.de/programm/sendungen/die_schoene_woche/_/unsichtbare-wunden-soldaten-nach-dem-einsatz.html",
             title:
               "Unsichtbare Wunden: Bundeswehr-Einsätze und ihre psychischen Folgen",
