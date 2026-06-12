@@ -35,6 +35,7 @@ export const teamContent: TeamPageContent = {
         imagePath:
           "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sophia.png",
         imageAlt: "Porträt von Dr. Sophia Wilk-Vollmann",
+        medicalSpecialty: "Anästhesiologie und Notfallmedizin",
         shortBio:
           "Fachärztin für Anästhesiologie und Notfallmedizin, Oberärztin am Bundeswehrkrankenhaus Berlin und Mitgründerin von EPHIA. Sophia verbindet Notfallmedizin und ästhetische Medizin.",
         bio: [
@@ -218,6 +219,7 @@ export const teamContent: TeamPageContent = {
         imagePath:
           "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sarah.jpg",
         imageAlt: "Porträt von Dr. Sarah Bechstein",
+        medicalSpecialty: "Dermatologie",
         shortBio:
           "Dr. Sarah Bechstein ist Fachärztin und Gründerin der digitalen Hautarzt-Plattform FormelSkin. Als erfahrene Dozentin im Bereich ästhetische Medizin vermittelt sie ihr Wissen mit Schwerpunkt auf Botulinum- und Fillerbehandlungen.",
         sameAs: [
@@ -236,6 +238,7 @@ export const teamContent: TeamPageContent = {
         imagePath:
           "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/sarah-stannek.jpg",
         imageAlt: "Porträt von Dr. Sarah Stannek",
+        medicalSpecialty: "Hals-Nasen-Ohren-Heilkunde",
         shortBio:
           "Dr. Sarah Stannek begleitet unsere Kurse mit klinischer Expertise und hohem didaktischem Anspruch. Schwerpunkt: evidenzbasierte Injektionstechniken.",
         sameAs: [
@@ -418,6 +421,7 @@ export const teamContent: TeamPageContent = {
         imagePath:
           "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/ephsona.png",
         imageAlt: "Porträt von Dr. Ephsona Shencoru",
+        medicalSpecialty: "Dermatologie",
         shortBio:
           "Dr. Ephsona Shencoru unterstützt das Review-Board mit ihrer klinischen und wissenschaftlichen Erfahrung.",
         sameAs: [
