@@ -94,6 +94,10 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
 
   // Counter to force-reset defaultValue inputs on cancel
   const [resetKey, setResetKey] = useState(0);
+  // Surfaces a failed inline edit. Without this a rejected update was
+  // swallowed silently and the input just snapped back to the old value,
+  // which read as "the field refuses to change" (e.g. seat count stuck on 6).
+  const [changeError, setChangeError] = useState<string | null>(null);
 
   // Pending change confirmation
   const [pendingChange, setPendingChange] = useState<{
@@ -249,6 +253,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   const confirmChange = async () => {
     if (!pendingChange) return;
     const { id, field, value, isDateChange } = pendingChange;
+    setChangeError(null);
 
     if (isDateChange) {
       const dateIso = String(value);
@@ -257,7 +262,10 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
         .from("course_sessions")
         .update({ date_iso: dateIso, label_de: label })
         .eq("id", id);
-      if (!error) {
+      if (error) {
+        setChangeError(`Datum konnte nicht gespeichert werden: ${error.message}`);
+        setResetKey((k) => k + 1);
+      } else {
         setSessions((prev) =>
           prev.map((s) => (s.id === id ? { ...s, date_iso: dateIso, label_de: label } : s))
         );
@@ -267,7 +275,12 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
         .from("course_sessions")
         .update({ [field]: value })
         .eq("id", id);
-      if (!error) {
+      if (error) {
+        // Revert the input to the stored value and tell the user why, instead
+        // of silently snapping back so the edit looks like it "won't take".
+        setChangeError(`${fieldLabels[field] || field} konnte nicht gespeichert werden: ${error.message}`);
+        setResetKey((k) => k + 1);
+      } else {
         setSessions((prev) =>
           prev.map((s) => (s.id === id ? { ...s, [field]: value } : s))
         );
@@ -392,6 +405,18 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
           <span>{duplicateError}</span>
           <button
             onClick={() => setDuplicateError(null)}
+            className="text-red-600 hover:text-red-800 font-medium shrink-0"
+          >
+            Schliessen
+          </button>
+        </div>
+      )}
+
+      {changeError && (
+        <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800 flex items-start justify-between gap-4">
+          <span>{changeError}</span>
+          <button
+            onClick={() => setChangeError(null)}
             className="text-red-600 hover:text-red-800 font-medium shrink-0"
           >
             Schliessen
