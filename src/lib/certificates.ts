@@ -15,12 +15,21 @@ import fontkit from "@pdf-lib/fontkit";
  */
 
 export interface VnrStampPosition {
-  /** Left edge of the number (right after the ":" of the baked label). */
+  /** Visual centre X of the stamped number (the value is centred on this
+   *  X, mirroring the name stamp). For certs whose master bakes a
+   *  "VNR Theorie:" label, this sits just after that label's colon. */
   x: number;
   /** Baseline Y (PDF origin is bottom-left). */
   y: number;
   /** Font size in points. Defaults to 7pt — matches the footer. */
   size?: number;
+  /** Optional label prefix drawn together with the number, e.g. "VNR".
+   *  Set this only when the master PDF has NO baked "VNR …:" label and the
+   *  generator must stamp the label itself (the standalone online certs).
+   *  When set, the generator renders "<label> <number>" as one centred,
+   *  letter-spaced line; when omitted it stamps just the bare number after
+   *  the baked label, the legacy behaviour. */
+  label?: string;
 }
 
 /** Dynamic date stamp for the "Berlin, <Monat> <Jahr>" line in the footer.
@@ -330,12 +339,12 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
     // Accredited by the Landesärztekammer BRANDENBURG with 7 CME-Punkten.
     // Unlike the Periorale Zone master, this master's footer carries ONLY
     // the baked "7 CME-Punkte durch die Landesärztekammer Brandenburg"
-    // line — there is no "VNR Theorie:" / "VNR Praxis:" label and no date
-    // line. So this cert stamps only the participant name: no vnrTheorie /
-    // vnrPraxis / dateStamp slots. certificateRequiresVnr therefore returns
-    // false and the generator form asks for nothing but the name.
-    // footerCity stays "Brandenburg" to document the accrediting chamber
-    // even though no date line is drawn.
+    // line — there is no baked "VNR Theorie:" label. So the cert stamps a
+    // self-labeled VNR line ("VNR <number>") into the gap below the CME
+    // copy, pulling the number from course_templates.vnr_theorie. Only a
+    // single Veranstaltungsnummer for the online course, so no vnrPraxis;
+    // and no per-session date, so no dateStamp. footerCity stays
+    // "Brandenburg" to document the accrediting chamber.
     //
     // generatorOnly stays true as a belt-and-braces guard: the post-praxis
     // cron is session-driven and would never match an online course anyway.
@@ -352,6 +361,11 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       maxWidth: 290,
       targetSize: 28,
       minSize: 10,
+      // Self-labeled VNR line centred below "Landesärztekammer
+      // Brandenburg". The master bakes no "VNR …:" label, so label:"VNR"
+      // makes the generator draw "VNR <number>" as one letter-spaced rose
+      // line. y=40 sits one footer-line (~12pt) below the CME copy.
+      vnrTheorie: { x: 173, y: 40, size: 8, label: "VNR" },
     },
   },
 ];
@@ -539,7 +553,13 @@ export async function generateCertificatePdf(opts: {
   const theorieLayout = template.layout.vnrTheorie;
   if (theorieLayout && vnrTheorie?.trim()) {
     const tSize = theorieLayout.size ?? 7;
-    const tSpaced = spaceDigits(vnrTheorie);
+    // When the master has no baked "VNR …:" label, the cert supplies its
+    // own via theorieLayout.label and we render "<label> <number>" as one
+    // letter-spaced line. Otherwise stamp the bare number after the baked
+    // label, the legacy behaviour.
+    const tSpaced = spaceDigits(
+      theorieLayout.label ? `${theorieLayout.label} ${vnrTheorie}` : vnrTheorie,
+    );
     const tWidth = regFont.widthOfTextAtSize(tSpaced, tSize);
     page.drawText(tSpaced, {
       x: theorieLayout.x - tWidth / 2,
