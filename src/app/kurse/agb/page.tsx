@@ -54,13 +54,13 @@ const SECTIONS: Section[] = [
     paragraphs: [
       "Maßgeblich für alle Fristen in dieser Ziffer ist der Kursbeginn, also Datum und Uhrzeit des Kursstarts. Ein Tag entspricht 24 Stunden, die rückwärts ab dem Zeitpunkt des Kursbeginns gerechnet werden.",
       "Du kannst Deine Buchung bis spätestens 14 Tage vor Kursbeginn kostenfrei und ohne weitere Folgen stornieren. Bereits geleistete Zahlungen werden in diesem Fall vollständig zurückerstattet. Nach Ablauf dieser Frist ist eine Stornierung mit Rückerstattung der Kursgebühr ausgeschlossen.",
-      "Für Praxiskurse, einschließlich des Praxisteils von Kombikursen, bieten wir Dir innerhalb der letzten 14 Tage vor Kursbeginn anstelle einer Stornierung die Möglichkeit, denselben Kurs einmalig auf einen anderen verfügbaren Termin umzubuchen. Hierfür gelten gestaffelte Umbuchungsgebühren:",
+      "Innerhalb der letzten 14 Tage vor Kursbeginn ist eine Stornierung nicht mehr möglich. Für Praxiskurse, einschließlich des Praxisteils von Kombikursen, besteht in diesem Zeitraum auch kein Anspruch auf eine Umbuchung. EPHIA kann eine einmalige Umbuchung desselben Kurses auf einen anderen verfügbaren Termin jedoch aus Kulanz gewähren. Wird eine solche Umbuchung aus Kulanz gewährt, fällt eine gestaffelte Umbuchungsgebühr an:",
       [
         "weniger als 14 Tage, aber mindestens 7 Tage vor Kursbeginn: 125 € Umbuchungsgebühr,",
         "weniger als 7 Tage vor Kursbeginn: 250 € Umbuchungsgebühr.",
       ],
-      "Die Umbuchung setzt voraus, dass ein freier Ersatztermin verfügbar ist. Die Umbuchungsgebühr ist vor der Bestätigung des neuen Termins zu entrichten.",
-      "Erfolgt Deine Absage krankheitsbedingt, ist eine Umbuchung nur möglich, wenn Du Dich damit einverstanden erklärst, ein ärztliches Attest einer von EPHIA benannten, unabhängigen Ärzt:in beizubringen, das Deine Kursunfähigkeit für den gebuchten Termin bestätigt.",
+      "Eine solche Umbuchung aus Kulanz setzt voraus, dass ein freier Ersatztermin verfügbar ist. Die Umbuchungsgebühr ist vor der Bestätigung des neuen Termins zu entrichten. Ein Anspruch auf Umbuchung entsteht hierdurch nicht.",
+      "Auch bei einer krankheitsbedingten Absage besteht kein Anspruch auf Umbuchung. Eine Umbuchung aus Kulanz setzt in diesem Fall zusätzlich voraus, dass Du Dich damit einverstanden erklärst, ein ärztliches Attest einer von EPHIA benannten, unabhängigen Ärzt:in beizubringen, das Deine Kursunfähigkeit für den gebuchten Termin bestätigt.",
       "EPHIA behält sich das Recht vor, Kurse bis spätestens 5 Werktage vor Beginn abzusagen, z. B. bei zu geringer Teilnehmerzahl oder krankheitsbedingtem Ausfall der Dozent:innen. Bereits geleistete Zahlungen werden in diesem Fall vollständig rückerstattet.",
     ],
   },

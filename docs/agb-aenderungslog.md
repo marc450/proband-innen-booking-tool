@@ -37,13 +37,19 @@ Tage, Umbuchung bis 7 Tage gegen max. 10 % des Kurswertes) auf:
   Folgen, volle Rückerstattung. Danach Stornierung mit Rückerstattung
   ausgeschlossen.
 - **Weniger als 14 Tage vor Kursbeginn (Praxiskurse + Praxisteil von
-  Kombikursen):** keine Stornierung mehr, stattdessen einmalige
-  Umbuchung desselben Kurses gegen gestaffelte Gebühr:
+  Kombikursen):** keine Stornierung mehr und **kein Anspruch** auf
+  Umbuchung. EPHIA kann eine einmalige Umbuchung desselben Kurses
+  **aus Kulanz** gegen gestaffelte Gebühr gewähren:
   - 14 bis 7 Tage vorher: **125 €**
   - weniger als 7 Tage vorher: **250 €**
-- **Krankheitsbedingte Absage:** Umbuchung nur, wenn der/die Ärzt:in
+- **Krankheitsbedingte Absage:** ebenfalls kein Anspruch; eine
+  Umbuchung aus Kulanz setzt zusätzlich voraus, dass der/die Ärzt:in
   sich einverstanden erklärt, ein Attest einer von EPHIA benannten,
   unabhängigen Ärzt:in beizubringen.
+
+  _Update (2026-06-12, Folgeanweisung Marc): Umbuchung ist innerhalb der
+  14-Tage-Frist kein Recht mehr, sondern reine Kulanzentscheidung von
+  EPHIA gegen die o. g. Gebühr._
 - „Stand"-Datum auf der AGB-Seite ergänzt.
 
 Auslöser: Anweisung Marc, 2026-06-12.
