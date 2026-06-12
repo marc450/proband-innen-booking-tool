@@ -36,13 +36,36 @@ function plainName(name: string): string {
   return name.replace(/‑/g, "-");
 }
 
+// Leading academic/professional titles, used both to strip them for the
+// first-name CTA and to surface them as the schema `honorificPrefix`.
+const TITLE_PREFIX_RE = /^((?:Prof\.|Dr\.|Priv\.-Doz\.|Dipl\.\S*)\s+)+/i;
+
 /** Extract the given name from a display name, stripping leading titles
  *  ("Dr.", "Prof. Dr.", …). Used for the warm, first-name CTA. */
 function firstName(name: string): string {
-  const withoutTitles = plainName(name)
-    .replace(/^((Prof\.|Dr\.|Priv\.-Doz\.|Dipl\.\S*)\s+)+/i, "")
-    .trim();
+  const withoutTitles = plainName(name).replace(TITLE_PREFIX_RE, "").trim();
   return withoutTitles.split(" ")[0] || plainName(name);
+}
+
+/** Split a display name into honorific prefix + given + family name for
+ *  richer Person schema. "Dr. Sophia Wilk-Vollmann" →
+ *  { honorificPrefix: "Dr.", givenName: "Sophia", familyName: "Wilk-Vollmann" }. */
+function splitName(display: string): {
+  honorificPrefix?: string;
+  givenName?: string;
+  familyName?: string;
+} {
+  const plain = plainName(display).trim();
+  const titleMatch = plain.match(TITLE_PREFIX_RE);
+  const honorificPrefix = titleMatch ? titleMatch[0].trim() : undefined;
+  const rest = (titleMatch ? plain.slice(titleMatch[0].length) : plain).trim();
+  const parts = rest.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { honorificPrefix };
+  return {
+    honorificPrefix,
+    givenName: parts[0],
+    familyName: parts.length > 1 ? parts.slice(1).join(" ") : undefined,
+  };
 }
 
 // Friendly labels for the visible "Im Netz" links (same data as the
@@ -157,14 +180,33 @@ export default async function PersonProfilePage({
     ? `Lerne bei ${firstName(person.name)} und unserem Team`
     : "Entdecke unsere Kurse";
 
-  // Person JSON-LD — the EEAT signal: connects the (real, credentialed)
-  // instructor to EPHIA's medical course content.
+  // Name parts for richer Person markup (honorific + given/family name).
+  const { honorificPrefix, givenName, familyName } = splitName(person.name);
+
+  // Person node — the EEAT signal: connects the (real, credentialed)
+  // instructor to EPHIA's medical course content. Given a stable @id so other
+  // pages/articles can attribute authorship to this exact node via
+  // `author: { "@id": … }`.
+  const personId = `${profileUrl}#person`;
   const personJsonLd = {
-    "@context": "https://schema.org",
     "@type": "Person",
+    "@id": personId,
     name,
+    ...(honorificPrefix ? { honorificPrefix } : {}),
+    ...(givenName ? { givenName } : {}),
+    ...(familyName ? { familyName } : {}),
     url: profileUrl,
+    mainEntityOfPage: profileUrl,
     jobTitle: person.role,
+    // Explicit Occupation node ("zum Beruf") so Google reads the profession,
+    // not just the free-text jobTitle string.
+    hasOccupation: {
+      "@type": "Occupation",
+      name: person.role,
+      ...(person.medicalSpecialty
+        ? { occupationalCategory: person.medicalSpecialty }
+        : {}),
+    },
     ...(person.imagePath ? { image: person.imagePath } : {}),
     ...(person.shortBio ? { description: person.shortBio } : {}),
     worksFor: {
@@ -185,6 +227,21 @@ export default async function PersonProfilePage({
         }
       : {}),
     ...(schemaSameAs.length ? { sameAs: schemaSameAs } : {}),
+  };
+
+  // Wrap the Person in a ProfilePage — Google's documented profile/author
+  // markup. A bare Person node is valid but isn't a Google rich-result type,
+  // so the Rich Results Test reports nothing. ProfilePage with the Person as
+  // `mainEntity` is what makes the test detect the page and lets Google
+  // attribute authorship to the person.
+  const profilePageJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    "@id": profileUrl,
+    url: profileUrl,
+    name: `${name}, ${person.role}`,
+    ...(person.imagePath ? { image: person.imagePath } : {}),
+    mainEntity: personJsonLd,
   };
 
   const breadcrumbJsonLd = {
@@ -211,7 +268,7 @@ export default async function PersonProfilePage({
     <div className="min-h-screen flex flex-col bg-[#FAEBE1] text-black">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(profilePageJsonLd) }}
       />
       <script
         type="application/ld+json"
