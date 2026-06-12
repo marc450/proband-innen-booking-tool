@@ -49,12 +49,13 @@ export async function POST(req: NextRequest) {
       revoked: boolean;
       used_count: number;
       max_uses: number;
+      rebooking_fee_cents: number | null;
     } | null = null;
     if (inviteToken) {
       const { data: inv } = await supabase
         .from("booking_invites")
         .select(
-          "id, template_id, session_id, course_type, stripe_promotion_code_id, recipient_email, expires_at, revoked, used_count, max_uses",
+          "id, template_id, session_id, course_type, stripe_promotion_code_id, recipient_email, expires_at, revoked, used_count, max_uses, rebooking_fee_cents",
         )
         .eq("token", inviteToken)
         .maybeSingle();
@@ -212,6 +213,17 @@ export async function POST(req: NextRequest) {
       unitAmount = Math.round(unitAmount * 0.9);
     }
 
+    // Umbuchung: when the invite carries a flat rebooking fee, that fee is the
+    // entire charge, independent of variant. Per AGB Ziffer 6 the doctor keeps
+    // the already-paid course and only pays the Kulanz-Umbuchungsgebühr to move
+    // to a new date, so the variant price and any promo code are ignored.
+    const isRebooking = !!invite && invite.rebooking_fee_cents != null;
+    if (isRebooking) {
+      unitAmount = invite!.rebooking_fee_cents as number;
+      productName = `Umbuchung: ${productName}`;
+      description = "Einmalige Umbuchungsgebühr für die Verlegung auf einen neuen Termin (AGB Ziffer 6).";
+    }
+
     if (unitAmount <= 0) {
       return NextResponse.json({ error: "Preis nicht konfiguriert" }, { status: 500 });
     }
@@ -256,7 +268,13 @@ export async function POST(req: NextRequest) {
     //   • Pre-fill the recipient email to discourage link resharing.
     if (invite) {
       params["metadata[inviteToken]"] = inviteToken;
-      if (invite.stripe_promotion_code_id) {
+      // For a rebooking the flat fee IS the price, so never layer a promo code
+      // on top of it. Promo codes only apply to normal full-price invites.
+      if (isRebooking) {
+        // Also stop the doctor from entering their own promo code at Stripe to
+        // chip away at the fixed Umbuchungsgebühr.
+        delete params.allow_promotion_codes;
+      } else if (invite.stripe_promotion_code_id) {
         params["discounts[0][promotion_code]"] = invite.stripe_promotion_code_id;
         // Stripe refuses both `discounts` and `allow_promotion_codes: true`
         // in the same request — drop the latter when we're applying one.

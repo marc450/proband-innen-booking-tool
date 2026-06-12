@@ -65,7 +65,7 @@ export default async function EinladungPage({
   const { data: invite } = await admin
     .from("booking_invites")
     .select(
-      "token, template_id, session_id, course_type, recipient_email, recipient_name, stripe_promotion_code_id, expires_at, revoked, used_count, max_uses, course_templates(title, course_key, course_label_de, price_gross_online_cents, price_gross_praxis_cents, price_gross_kombi_cents, price_gross_premium_cents), course_sessions(label_de, date_iso)",
+      "token, template_id, session_id, course_type, recipient_email, recipient_name, stripe_promotion_code_id, rebooking_fee_cents, expires_at, revoked, used_count, max_uses, course_templates(title, course_key, course_label_de, price_gross_online_cents, price_gross_praxis_cents, price_gross_kombi_cents, price_gross_premium_cents), course_sessions(label_de, date_iso)",
     )
     .eq("token", token)
     .maybeSingle();
@@ -186,11 +186,19 @@ export default async function EinladungPage({
     basePriceCents = Math.round(basePriceCents * 0.9);
   }
 
-  const promo = await fetchPromoSnapshot(invite.stripe_promotion_code_id);
+  // Umbuchung: a flat fee replaces the variant price entirely and no promo
+  // applies, so the doctor sees exactly the Umbuchungsgebühr Stripe will charge.
+  const rebookingFeeCents: number | null = invite.rebooking_fee_cents ?? null;
+  const isRebooking = rebookingFeeCents != null;
+
+  const promo = isRebooking ? null : await fetchPromoSnapshot(invite.stripe_promotion_code_id);
 
   let discountLine: string | null = null;
   let finalPriceCents: number | null = basePriceCents;
-  if (promo && basePriceCents != null) {
+  if (isRebooking) {
+    basePriceCents = rebookingFeeCents;
+    finalPriceCents = rebookingFeeCents;
+  } else if (promo && basePriceCents != null) {
     if (promo.percentOff != null) {
       const off = Math.round((basePriceCents * promo.percentOff) / 100);
       finalPriceCents = Math.max(basePriceCents - off, 0);
@@ -222,7 +230,7 @@ export default async function EinladungPage({
         )}
         {basePriceCents != null && (
           <p>
-            <span className="font-semibold">Preis:</span>{" "}
+            <span className="font-semibold">{isRebooking ? "Umbuchungsgebühr:" : "Preis:"}</span>{" "}
             {promo && finalPriceCents !== basePriceCents ? (
               <>
                 <span className="line-through text-black/50 mr-1.5">{formatEur(basePriceCents)}</span>

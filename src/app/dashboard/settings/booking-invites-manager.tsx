@@ -50,6 +50,7 @@ interface Invite {
   recipient_email: string | null;
   recipient_name: string | null;
   admin_note: string | null;
+  rebooking_fee_cents: number | null;
   max_uses: number;
   used_count: number;
   used_by_booking_id: string | null;
@@ -116,6 +117,12 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
   const [adminNote, setAdminNote] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
+  // Umbuchung (rebooking): "none" = normal full-price invite; otherwise a flat
+  // Umbuchungsgebühr in cents ("12500"/"25000") or "custom" for a manual euro
+  // amount. When active the variant price and any promo code are overridden.
+  const [rebookingFee, setRebookingFee] = useState<string>("none");
+  const [rebookingCustomEur, setRebookingCustomEur] = useState("");
+  const isRebooking = rebookingFee !== "none";
 
   const load = async () => {
     setLoading(true);
@@ -150,6 +157,8 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
     setAdminNote("");
     setExpiresAt("");
     setCreateError(null);
+    setRebookingFee("none");
+    setRebookingCustomEur("");
   };
 
   // Sort doctors alphabetically for the dropdown, pre-formatted label.
@@ -224,6 +233,21 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
     }
     const recipientName = [doctor.firstName, doctor.lastName].filter(Boolean).join(" ").trim() || null;
     const recipientEmail = doctor.email || null;
+
+    // Resolve the Umbuchungsgebühr to cents. "custom" parses a euro amount
+    // (comma or dot); the preset options are already cents.
+    let rebookingFeeCents: number | null = null;
+    if (rebookingFee === "custom") {
+      const eur = parseFloat(rebookingCustomEur.replace(",", "."));
+      if (isNaN(eur) || eur <= 0) {
+        setCreateError("Bitte einen gültigen Umbuchungsbetrag in Euro eingeben.");
+        return;
+      }
+      rebookingFeeCents = Math.round(eur * 100);
+    } else if (rebookingFee !== "none") {
+      rebookingFeeCents = parseInt(rebookingFee, 10);
+    }
+
     setSaving(true);
     const res = await fetch("/api/admin/booking-invites", {
       method: "POST",
@@ -232,7 +256,10 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
         templateId,
         sessionId: needsSession ? sessionId : null,
         courseType,
-        stripePromotionCodeId: promoCodeId && promoCodeId !== NO_PROMO ? promoCodeId : null,
+        // A rebooking charges only the flat fee, so never attach a promo code.
+        stripePromotionCodeId:
+          !isRebooking && promoCodeId && promoCodeId !== NO_PROMO ? promoCodeId : null,
+        rebookingFeeCents,
         recipientEmail,
         recipientName,
         adminNote: adminNote.trim() || null,
@@ -462,8 +489,39 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
             </div>
 
             <div className="space-y-2">
+              <Label>Umbuchung (optional)</Label>
+              <Select value={rebookingFee} onValueChange={(v) => setRebookingFee(v ?? "none")}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Keine Umbuchung (voller Preis)</SelectItem>
+                  <SelectItem value="12500">Umbuchung 125 € (14 bis 7 Tage vorher)</SelectItem>
+                  <SelectItem value="25000">Umbuchung 250 € (unter 7 Tage vorher)</SelectItem>
+                  <SelectItem value="custom">Umbuchung, eigener Betrag</SelectItem>
+                </SelectContent>
+              </Select>
+              {rebookingFee === "custom" && (
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  inputMode="decimal"
+                  placeholder="Betrag in Euro, z.B. 125"
+                  value={rebookingCustomEur}
+                  onChange={(e) => setRebookingCustomEur(e.target.value)}
+                />
+              )}
+              <p className="text-xs text-muted-foreground">
+                {isRebooking
+                  ? "Beim Checkout wird nur diese Gebühr berechnet, unabhängig von der Kursvariante. Der Rabattcode wird dabei ignoriert."
+                  : "Für eine Kulanz-Umbuchung nach AGB Ziffer 6. Berechnet eine feste Gebühr statt des Kurspreises."}
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label>Rabattcode (optional)</Label>
-              <Select value={promoCodeId} onValueChange={(v) => setPromoCodeId(v ?? NO_PROMO)}>
+              <Select value={promoCodeId} onValueChange={(v) => setPromoCodeId(v ?? NO_PROMO)} disabled={isRebooking}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Kein Rabattcode">
                     {promoCodeId === NO_PROMO || !promoCodeId
@@ -576,6 +634,11 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
                   </TableCell>
                   <TableCell className="hidden xl:table-cell text-sm">
                     {variantLabel(invite.course_type)}
+                    {invite.rebooking_fee_cents != null && (
+                      <div className="text-xs font-medium text-amber-600 whitespace-nowrap">
+                        Umbuchung {(invite.rebooking_fee_cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="hidden xl:table-cell text-sm whitespace-nowrap">
                     {invite.course_sessions?.label_de

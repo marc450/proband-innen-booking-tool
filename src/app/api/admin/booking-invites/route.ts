@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
     recipientName,
     adminNote,
     expiresAt,
+    rebookingFeeCents,
   } = body as {
     templateId?: string;
     sessionId?: string | null;
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
     recipientName?: string | null;
     adminNote?: string | null;
     expiresAt?: string | null;
+    rebookingFeeCents?: number | null;
   };
 
   if (!templateId) {
@@ -90,6 +92,20 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Umbuchung: a flat fee (cents) that overrides the variant price at
+  // checkout. Reject anything that isn't a non-negative integer so a typo
+  // can't silently produce a free or fractional charge.
+  let rebookingFee: number | null = null;
+  if (rebookingFeeCents != null) {
+    if (!Number.isInteger(rebookingFeeCents) || rebookingFeeCents < 0) {
+      return NextResponse.json(
+        { error: "rebookingFeeCents muss eine ganze Zahl >= 0 sein." },
+        { status: 400 },
+      );
+    }
+    rebookingFee = rebookingFeeCents;
+  }
+
   const token = randomBytes(16).toString("hex"); // 32 hex chars
 
   const admin = createAdminClient();
@@ -105,6 +121,7 @@ export async function POST(req: NextRequest) {
       recipient_name: recipientName?.trim() || null,
       admin_note: adminNote?.trim() || null,
       expires_at: expiresAt || null,
+      rebooking_fee_cents: rebookingFee,
       created_by: user.id,
     })
     .select("*")
