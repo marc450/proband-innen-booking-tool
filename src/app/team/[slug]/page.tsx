@@ -7,7 +7,11 @@ import {
   getProfilePeople,
   getPersonBySlug,
 } from "@/content/kurse/team";
-import type { Person, CurriculumItem } from "@/content/kurse/team-types";
+import type {
+  Person,
+  CurriculumItem,
+  MediaAppearance,
+} from "@/content/kurse/team-types";
 import { Header } from "@/app/kurse/_components/header";
 import { Footer } from "@/app/kurse/_components/footer";
 import { TYPO } from "@/app/kurse/_components/typography";
@@ -143,6 +147,11 @@ export default async function PersonProfilePage({
   const memberships = extractMemberships(person);
   const knowsAbout = person.knowsAbout ?? DEFAULT_KNOWS_ABOUT;
   const sameAs = (person.sameAs ?? []).filter(Boolean);
+  const media = (person.media ?? []).filter((m) => m.url);
+  // JSON-LD sameAs gets BOTH the social/professional profiles and the
+  // media URLs — every external mention is an EEAT signal — even though
+  // the two render in separate visible sections.
+  const schemaSameAs = [...sameAs, ...media.map((m) => m.url)];
   const isDozent = /Dozent/.test(person.role);
   const ctaHeading = isDozent
     ? `Lerne bei ${firstName(person.name)} und unserem Team`
@@ -175,7 +184,7 @@ export default async function PersonProfilePage({
           })),
         }
       : {}),
-    ...(sameAs.length ? { sameAs } : {}),
+    ...(schemaSameAs.length ? { sameAs: schemaSameAs } : {}),
   };
 
   const breadcrumbJsonLd = {
@@ -280,6 +289,23 @@ export default async function PersonProfilePage({
           </div>
         </section>
 
+        {media.length > 0 && (
+          <section className="bg-[#FAEBE1] pb-10 md:pb-14">
+            <div className="max-w-4xl mx-auto px-5 md:px-8">
+              <div className="bg-white rounded-[10px] p-6 md:p-10">
+                <h2 className="text-xl md:text-2xl font-bold text-black mb-5 tracking-wide">
+                  Podcasts & Interviews
+                </h2>
+                <ul className="flex flex-col gap-2.5">
+                  {media.map((item) => (
+                    <MediaRow key={item.url} item={item} />
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </section>
+        )}
+
         {person.curriculum && (
           <section className="bg-[#FAEBE1] pb-16 md:pb-24">
             <div className="max-w-4xl mx-auto px-5 md:px-8">
@@ -325,6 +351,36 @@ export default async function PersonProfilePage({
 
       <Footer />
     </div>
+  );
+}
+
+function MediaRow({ item }: { item: MediaAppearance }) {
+  return (
+    <li>
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group flex items-start gap-3 rounded-[10px] -mx-3 px-3 py-2.5 hover:bg-[#FAEBE1]/60 transition-colors"
+      >
+        {item.format && (
+          <span className="mt-0.5 shrink-0 rounded-[10px] bg-[#0066FF]/10 px-2.5 py-1 text-xs font-semibold text-[#0066FF]">
+            {item.format}
+          </span>
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm md:text-base font-semibold text-black/85 group-hover:text-[#0066FF] transition-colors">
+            {item.title}
+          </span>
+          <span className="block text-sm text-black/55">{item.outlet}</span>
+        </span>
+        <ExternalLink
+          className="mt-1 w-3.5 h-3.5 shrink-0 text-black/40"
+          strokeWidth={2.25}
+          aria-hidden="true"
+        />
+      </a>
+    </li>
   );
 }
 

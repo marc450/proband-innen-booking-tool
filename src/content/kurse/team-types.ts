@@ -39,6 +39,24 @@ export interface Curriculum {
 }
 
 /**
+ * A media appearance: a podcast episode, radio/TV interview, or press
+ * feature. Rendered in a dedicated "Podcasts & Interviews" section on the
+ * profile page (separate from the social/professional `sameAs` links),
+ * and additionally merged into the Person JSON-LD `sameAs` array so the
+ * URLs still count as EEAT trust signals.
+ */
+export interface MediaAppearance {
+  /** Canonical URL of the episode / interview / article. */
+  url: string;
+  /** Title shown as the link text, e.g. the episode title. */
+  title: string;
+  /** Outlet / show, e.g. "radioeins, Die schöne Woche" or "WDR 2, Jörg Thadeusz". */
+  outlet: string;
+  /** Short format tag shown as a pill, e.g. "Podcast" or "Radio-Interview". */
+  format?: string;
+}
+
+/**
  * A single person on the team page. Covers both Dozent:innen
  * (optional `curriculum`) and operations / founders / brand.
  */
@@ -62,6 +80,13 @@ export interface Person {
    * an empty array simply omits `sameAs` from the schema.
    */
   sameAs?: string[];
+  /**
+   * Podcast episodes, radio/TV interviews and press features. Rendered as
+   * a dedicated "Podcasts & Interviews" section on the profile page and
+   * merged into the JSON-LD `sameAs` for EEAT. Keep social/professional
+   * profiles in `sameAs`; put media coverage here.
+   */
+  media?: MediaAppearance[];
   /**
    * Optional override for the schema `knowsAbout` topics. Defaults to a
    * sensible aesthetic-medicine set for Dozent:innen.

@@ -44,9 +44,29 @@ export const teamContent: TeamPageContent = {
           "https://www.instagram.com/hy_drsophia/",
           "https://www.researchgate.net/profile/Sophia-Wilk-Vollmann",
           "https://www.arzt-auskunft.de/arzt/aerztin/berlin/dr-sophia-wilk-vollmann-11369471",
-          "https://www1.wdr.de/mediathek/audio/wdr2/joerg-thadeusz/audio-sophia-wilk-vollmann-aerztin-fuer-anaesthesie-und-notfallmedizin-100.html",
           "https://www.tagesspiegel.de/berlin/bundeswehrarztin-und-berliner-beautydoc-wir-funktionieren-besser-wenn-wir-uns-in-unserer-haut-wohlfuhlen-9478253.html",
-          "https://dransay.com/magazin/talking-health-sophia-wilk-vollmann",
+        ],
+        media: [
+          {
+            url: "https://www.radioeins.de/programm/sendungen/die_schoene_woche/_/unsichtbare-wunden-soldaten-nach-dem-einsatz.html",
+            title:
+              "Unsichtbare Wunden: Bundeswehr-Einsätze und ihre psychischen Folgen",
+            outlet: "radioeins, Die schöne Woche",
+            format: "Radio-Interview",
+          },
+          {
+            url: "https://www1.wdr.de/mediathek/audio/wdr2/joerg-thadeusz/audio-sophia-wilk-vollmann-aerztin-fuer-anaesthesie-und-notfallmedizin-100.html",
+            title:
+              "Sophia Wilk-Vollmann, Ärztin für Anästhesie und Notfallmedizin",
+            outlet: "WDR 2, Jörg Thadeusz",
+            format: "Radio-Interview",
+          },
+          {
+            url: "https://dransay.com/magazin/talking-health-sophia-wilk-vollmann",
+            title: "Talking Health mit Dr. Sophia Wilk-Vollmann",
+            outlet: "Dr. Ansay",
+            format: "Podcast",
+          },
         ],
         curriculum: {
           tagline:
