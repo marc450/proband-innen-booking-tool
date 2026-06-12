@@ -287,7 +287,7 @@ export default async function PersonProfilePage({
               <span>Zurück zum Team</span>
             </Link>
 
-            <div className="flex flex-col md:flex-row gap-7 md:gap-10 items-start">
+            <div className="flex flex-col items-start gap-6 md:gap-8">
               {person.imagePath && (
                 <div className="relative w-32 h-32 md:w-44 md:h-44 shrink-0 rounded-full overflow-hidden bg-black/5">
                   <Image
@@ -301,7 +301,7 @@ export default async function PersonProfilePage({
                   />
                 </div>
               )}
-              <div className="flex-1 min-w-0">
+              <div className="w-full min-w-0">
                 <h1 className={`${TYPO.h1} text-black`}>{person.name}</h1>
                 <p className="mt-2 text-lg md:text-xl font-semibold text-[#0066FF]">
                   {person.role}
