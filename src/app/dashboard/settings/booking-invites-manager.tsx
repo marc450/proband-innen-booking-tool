@@ -492,7 +492,15 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
               <Label>Umbuchung (optional)</Label>
               <Select value={rebookingFee} onValueChange={(v) => setRebookingFee(v ?? "none")}>
                 <SelectTrigger className="w-full">
-                  <SelectValue />
+                  <SelectValue>
+                    {rebookingFee === "12500"
+                      ? "Umbuchung 125 € (14 bis 7 Tage vorher)"
+                      : rebookingFee === "25000"
+                        ? "Umbuchung 250 € (unter 7 Tage vorher)"
+                        : rebookingFee === "custom"
+                          ? "Umbuchung, eigener Betrag"
+                          : "Keine Umbuchung (voller Preis)"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Keine Umbuchung (voller Preis)</SelectItem>
