@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   buildInvoiceEmail,
+  buildSessionChangeEmail,
+  formatDateDe,
 } from "@/lib/course-email-templates";
 import { buildEmailHtml } from "@/lib/email-template";
 import {
@@ -333,6 +335,60 @@ async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
   console.log(`Curriculum bundle created: ${curriculumSlug}, ${bookingIds.length} bookings (bundleGroupId: ${bundleGroupId})`);
 }
 
+// Gated Umbuchung: the doctor paid the Umbuchungsgebühr, so apply the stored
+// move atomically (idempotent RPC) and email the new course details.
+async function handleCourseRebookingPaid(requestId: string) {
+  const supabase = createAdminClient();
+
+  const { data: bookingId, error: rpcError } = await supabase.rpc(
+    "apply_course_rebooking",
+    { p_request_id: requestId },
+  );
+  if (rpcError) {
+    console.error("apply_course_rebooking error:", rpcError);
+    return;
+  }
+
+  // Pull the moved booking + its new session for the confirmation email.
+  const { data: booking } = await supabase
+    .from("course_bookings")
+    .select(
+      "first_name, email, course_templates(course_label_de, title), course_sessions(date_iso, label_de, start_time, duration_minutes, address, instructor_name)",
+    )
+    .eq("id", bookingId)
+    .single();
+
+  if (!booking?.email || !RESEND_API_KEY) return;
+
+  const tmpl = booking.course_templates as { course_label_de?: string; title?: string } | null;
+  const sess = booking.course_sessions as {
+    date_iso?: string;
+    start_time?: string;
+    duration_minutes?: number;
+    address?: string;
+    instructor_name?: string;
+  } | null;
+  const courseName = tmpl?.course_label_de || tmpl?.title || "EPHIA Kurs";
+
+  const startTime = sess?.start_time || "10:00";
+  const [h, m] = startTime.split(":").map(Number);
+  const totalMin = h * 60 + m + (sess?.duration_minutes || 360);
+  const endTime = `${String(Math.floor(totalMin / 60)).padStart(2, "0")}:${String(totalMin % 60).padStart(2, "0")}`;
+
+  const html = buildSessionChangeEmail(booking.first_name || "Teilnehmer:in", courseName, {
+    address: sess?.address || "",
+    dateFormatted: sess?.date_iso ? formatDateDe(sess.date_iso) : "",
+    startTime,
+    endTime,
+    instructor: sess?.instructor_name || "",
+  });
+  try {
+    await sendEmail(booking.email, `Terminänderung: ${courseName}`, html);
+  } catch (err) {
+    console.error("Rebooking confirmation email failed (non-fatal):", err);
+  }
+}
+
 // Handle checkout.session.completed: create booking + send confirmation
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const metadata = session.metadata || {};
@@ -345,6 +401,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Route to curriculum handler if this is a curriculum purchase
   if (metadata.curriculumSlug) {
     return handleCurriculumCheckout(session);
+  }
+
+  // Route to the gated-rebooking handler: this checkout paid an
+  // Umbuchungsgebühr, so apply the stored move instead of creating a booking.
+  if (metadata.rebookingRequestId) {
+    return handleCourseRebookingPaid(metadata.rebookingRequestId);
   }
 
   // Only process course bookings (identified by courseKey in metadata)

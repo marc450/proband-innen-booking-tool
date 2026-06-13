@@ -129,6 +129,21 @@ function getSortValue(booking: BookingRow, key: SortKey): string | number {
   }
 }
 
+// Default Umbuchungsgebühr by AGB Ziffer 6, staffed by how close the move is
+// to the originally booked start: more than 14 days = free, 14 to 7 days =
+// 125 €, under 7 days = 250 €. Returns the select value ("none"/"12500"/"25000").
+function defaultRebookingFee(dateIso?: string | null, startTime?: string | null): string {
+  if (!dateIso) return "none";
+  const [hh, mm] = (startTime || "10:00").split(":").map(Number);
+  const start = new Date(
+    `${dateIso}T${String(hh || 0).padStart(2, "0")}:${String(mm || 0).padStart(2, "0")}:00`,
+  );
+  const days = (start.getTime() - Date.now()) / 86_400_000;
+  if (days > 14) return "none";
+  if (days >= 7) return "12500";
+  return "25000";
+}
+
 export function CourseBookingsManager({ initialBookings, isAdmin = false }: Props) {
   const router = useRouter();
   const supabase = createClient();
@@ -146,6 +161,12 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
   const [availableSessions, setAvailableSessions] = useState<SessionOption[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string>("");
   const [changingSession, setChangingSession] = useState(false);
+  // Umbuchungsgebühr for the move: "none" = free (immediate move), otherwise a
+  // flat fee in cents ("12500"/"25000") or "custom". A fee gates the move
+  // behind payment via /api/admin/course-rebooking.
+  const [rebookingFee, setRebookingFee] = useState<string>("none");
+  const [rebookingCustomEur, setRebookingCustomEur] = useState("");
+  const [rebookingNotice, setRebookingNotice] = useState<{ title: string; description: string } | null>(null);
 
   // Cancellation state
   // Bundle filter
@@ -344,10 +365,80 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
     const available = (sessions || []).filter((s: SessionOption) => s.booked_seats < s.max_seats);
     setAvailableSessions(available);
     setSelectedSessionId(available[0]?.id || "");
+    // Pre-select the AGB-staffed fee based on proximity to the current start.
+    setRebookingFee(
+      defaultRebookingFee(booking.course_sessions?.date_iso, booking.course_sessions?.start_time),
+    );
+    setRebookingCustomEur("");
     setChangeBooking(booking);
   };
 
+  // Resolve the selected Umbuchungsgebühr to cents. 0 = free move.
+  const resolveRebookingFeeCents = (): number | null => {
+    if (rebookingFee === "none") return 0;
+    if (rebookingFee === "custom") {
+      const eur = parseFloat(rebookingCustomEur.replace(",", "."));
+      if (isNaN(eur) || eur <= 0) return null; // invalid
+      return Math.round(eur * 100);
+    }
+    return parseInt(rebookingFee, 10);
+  };
+
+  // Dispatcher for the dialog's confirm button. A free move is applied
+  // immediately; a fee gates the move behind payment (a link is emailed and
+  // the move only lands once the webhook sees the paid checkout).
   const confirmSessionChange = async () => {
+    if (!changeBooking || !selectedSessionId) return;
+    const feeCents = resolveRebookingFeeCents();
+    if (feeCents === null) {
+      setRebookingNotice({
+        title: "Ungültiger Betrag",
+        description: "Bitte einen gültigen Umbuchungsbetrag in Euro eingeben.",
+      });
+      return;
+    }
+    if (feeCents === 0) {
+      await applyFreeMove();
+      return;
+    }
+    setChangingSession(true);
+    try {
+      const res = await fetch("/api/admin/course-rebooking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: changeBooking.id,
+          toSessionId: selectedSessionId,
+          feeCents,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setRebookingNotice({
+          title: "Umbuchung nicht gestartet",
+          description: data.error || "Die Umbuchung konnte nicht gestartet werden.",
+        });
+        return;
+      }
+      setChangeBooking(null);
+      setRebookingNotice({
+        title: "Zahlungslink gesendet",
+        description:
+          "Die Ärzt:in hat einen Zahlungslink für die Umbuchungsgebühr per E-Mail erhalten. Die Umbuchung auf den neuen Termin wird nach Zahlungseingang automatisch durchgeführt.",
+      });
+    } catch {
+      setRebookingNotice({
+        title: "Fehler",
+        description: "Netzwerkfehler. Bitte versuche es erneut.",
+      });
+    } finally {
+      setChangingSession(false);
+    }
+  };
+
+  // Immediate, unpaid move (no Umbuchungsgebühr). Updates the booking, rebalances
+  // seats and emails the doctor, exactly as before.
+  const applyFreeMove = async () => {
     if (!changeBooking || !selectedSessionId || !changeBooking.session_id) return;
     setChangingSession(true);
 
@@ -917,12 +1008,47 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                   </select>
                 </div>
 
+                <div>
+                  <Label>Umbuchungsgebühr</Label>
+                  <select
+                    value={rebookingFee}
+                    onChange={(e) => setRebookingFee(e.target.value)}
+                    className="w-full mt-1 border rounded px-3 py-2 text-sm"
+                  >
+                    <option value="none">Keine Gebühr (kostenlose Umbuchung)</option>
+                    <option value="12500">125 € (14 bis 7 Tage vorher)</option>
+                    <option value="25000">250 € (unter 7 Tage vorher)</option>
+                    <option value="custom">Eigener Betrag</option>
+                  </select>
+                  {rebookingFee === "custom" && (
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      inputMode="decimal"
+                      placeholder="Betrag in Euro, z.B. 125"
+                      value={rebookingCustomEur}
+                      onChange={(e) => setRebookingCustomEur(e.target.value)}
+                      className="w-full mt-2 border rounded px-3 py-2 text-sm"
+                    />
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {rebookingFee === "none"
+                      ? "Die Umbuchung wird sofort durchgeführt und die Ärzt:in per E-Mail informiert."
+                      : "Die Ärzt:in erhält einen Zahlungslink. Die Umbuchung wird erst nach Zahlungseingang durchgeführt."}
+                  </p>
+                </div>
+
                 <Button
                   onClick={confirmSessionChange}
                   disabled={changingSession || !selectedSessionId}
                   className="w-full"
                 >
-                  {changingSession ? "Wird geändert..." : "Termin ändern & E-Mail senden"}
+                  {changingSession
+                    ? "Wird verarbeitet..."
+                    : rebookingFee === "none"
+                      ? "Termin ändern & E-Mail senden"
+                      : "Umbuchen & Zahlungslink senden"}
                 </Button>
               </>
             )}
@@ -935,6 +1061,13 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
         title="Stornierung gespeichert, E-Mail nicht versendet"
         description={emailWarning || ""}
         onClose={() => setEmailWarning(null)}
+      />
+
+      <AlertDialog
+        open={!!rebookingNotice}
+        title={rebookingNotice?.title || ""}
+        description={rebookingNotice?.description || ""}
+        onClose={() => setRebookingNotice(null)}
       />
     </div>
   );
