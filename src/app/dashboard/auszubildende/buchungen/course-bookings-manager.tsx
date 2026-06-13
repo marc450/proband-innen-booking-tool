@@ -83,6 +83,7 @@ interface SessionOption {
   booked_seats: number;
   max_seats: number;
   template_id: string;
+  is_live: boolean;
 }
 
 interface Props {
@@ -352,12 +353,23 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
   const openSessionChange = async (booking: BookingRow) => {
     if (!booking.session_id) return;
 
-    // Fetch available sessions for the same template, excluding current session
+    // Filter by the CURRENT SESSION's template, not booking.template_id.
+    // Inheriting courses (e.g. Grundkurs Zahnmedizin) seat their bookings in a
+    // parent template's sessions, so the booking's own template hosts zero
+    // sessions and would yield "keine verfügbaren Termine".
+    const { data: curSession } = await supabase
+      .from("course_sessions")
+      .select("template_id")
+      .eq("id", booking.session_id)
+      .single();
+    const templateId = curSession?.template_id || booking.template_id || "";
+
+    // Include sessions that aren't live yet: staff need to rebook people into
+    // future dates that haven't been published to the public funnel.
     const { data: sessions } = await supabase
       .from("course_sessions")
-      .select("id, date_iso, label_de, start_time, duration_minutes, address, instructor_name, booked_seats, max_seats, template_id")
-      .eq("template_id", booking.template_id || "")
-      .eq("is_live", true)
+      .select("id, date_iso, label_de, start_time, duration_minutes, address, instructor_name, booked_seats, max_seats, template_id, is_live")
+      .eq("template_id", templateId)
       .neq("id", booking.session_id)
       .gte("date_iso", new Date().toISOString().slice(0, 10))
       .order("date_iso", { ascending: true });
@@ -1003,6 +1015,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                         {s.label_de || s.date_iso}
                         {s.start_time ? ` – ${s.start_time} Uhr` : ""}
                         {` (${s.booked_seats}/${s.max_seats} Plätze)`}
+                        {s.is_live ? "" : " · noch nicht live"}
                       </option>
                     ))}
                   </select>
