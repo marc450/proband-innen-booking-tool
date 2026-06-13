@@ -101,15 +101,16 @@ export default async function KursPage({
     if (sharedTemplate) sessionTemplateId = sharedTemplate.id;
   }
 
-  // Fetch live, upcoming sessions. Past sessions (date_iso before today in
-  // Berlin) are excluded so the booking date picker and the JSON-LD event
-  // schema never surface course dates that already happened.
+  // Fetch live, upcoming sessions. A course is hidden from the day it
+  // starts onward (date_iso strictly after today in Berlin), so the
+  // booking date picker and the JSON-LD event schema never surface a
+  // course on or after its start day.
   const { data: sessions } = await supabase
     .from("course_sessions")
     .select("*")
     .eq("template_id", sessionTemplateId)
     .eq("is_live", true)
-    .gte("date_iso", berlinTodayIso())
+    .gt("date_iso", berlinTodayIso())
     .order("date_iso", { ascending: true });
 
   // Public reviews — only fetched on slugs that opt in (see

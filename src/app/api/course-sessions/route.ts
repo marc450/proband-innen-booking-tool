@@ -32,14 +32,14 @@ export async function GET(req: NextRequest) {
   }
 
   // Only live, upcoming sessions. Mirrors the SSR query in
-  // src/app/kurse/[slug]/page.tsx so the 60s polling never re-adds past
-  // dates that the initial render correctly hid.
+  // src/app/kurse/[slug]/page.tsx so the 60s polling never re-adds a
+  // course on or after its start day that the initial render correctly hid.
   const { data: sessions } = await supabase
     .from("course_sessions")
     .select("*")
     .eq("template_id", sessionTemplateId)
     .eq("is_live", true)
-    .gte("date_iso", berlinTodayIso())
+    .gt("date_iso", berlinTodayIso())
     .order("date_iso", { ascending: true });
 
   return NextResponse.json({ sessions: sessions ?? [] });

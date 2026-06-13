@@ -9,9 +9,10 @@ export function cn(...inputs: ClassValue[]) {
  * Today's date as a YYYY-MM-DD string in the Europe/Berlin timezone.
  *
  * Use this (not `new Date().toISOString().slice(0,10)`, which is UTC) to
- * compare against `course_sessions.date_iso` so a course is only hidden
- * once the day is actually over in Germany, not when UTC rolls over. The
- * value sorts and compares correctly as a plain string against `date_iso`.
+ * compare against `course_sessions.date_iso`. Callers filter with
+ * `.gt("date_iso", berlinTodayIso())` so a course drops off the booking
+ * picker from its start day onward, judged by the Berlin date rather than
+ * the UTC rollover. The value compares correctly as a plain string.
  */
 export function berlinTodayIso(): string {
   // en-CA formats as YYYY-MM-DD, which matches the `date_iso` column.
