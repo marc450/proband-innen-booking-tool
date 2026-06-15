@@ -468,6 +468,14 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
      */
     onlineCmePending?: boolean;
     /**
+     * Accreditation unit label for the CME badges on this course's
+     * cards. Defaults to "CME". Zahnmedizin courses are accredited by
+     * the Zahnärztekammer with "Fortbildungspunkte", so set
+     * `cmeUnit: "Fortbildungspunkte"` there. Applies to the Onlinekurs,
+     * Praxiskurs, Kombikurs and Komplettpaket cards alike.
+     */
+    cmeUnit?: string;
+    /**
      * Override for the Onlinekurs CME badge value. Takes precedence
      * over `course_templates.cme_online` from the DB. Used when the
      * Onlinekurs on a landing page corresponds to a different course
@@ -635,6 +643,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
       // .cme_* in der DB (noch) leer ist.
       onlineCmePending: true,
       cmeKombiOverride: "9",
+      cmeUnit: "Fortbildungspunkte",
     },
   };
 
@@ -855,6 +864,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   isLoading={loadingCheckout === "Onlinekurs-direct"}
                   cmePoints={overrides.hideCme ? undefined : (overrides.cmeOnlineOverride || template.cme_online || undefined)}
                   cmePending={overrides.onlineCmePending}
+                  cmeUnit={overrides.cmeUnit}
                 />
               )}
 
@@ -890,6 +900,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   selectedDateForLoading={loadingCheckout?.replace("Praxiskurs-", "")}
                   cmePoints={overrides.hideCme ? undefined : (overrides.cmePraxisOverride || template.cme_praxis || undefined)}
                   cmePending={overrides.praxisCmePending}
+                  cmeUnit={overrides.cmeUnit}
                 />
               )}
 
@@ -909,6 +920,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   selectedDateForLoading={loadingCheckout?.replace("Kombikurs-", "")}
                   cmePoints={overrides.hideCme ? undefined : (overrides.cmeKombiOverride || template.cme_kombi || undefined)}
                   cmePending={overrides.kombiCmePending}
+                  cmeUnit={overrides.cmeUnit}
                   inclusionHeading="Im Online- & Praxiskurs inkludiert:"
                   titleClassName="text-[1.75rem] whitespace-nowrap"
                 />
@@ -982,10 +994,11 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   price="EUR 1.490"
                   originalPrice="EUR 1.540"
                   discountLabel=""
-                  // Praxiskurs ist mit 9 CME-Punkten zertifiziert
+                  // Praxiskurs ist mit 9 Fortbildungspunkten zertifiziert
                   // (Onlineteil beantragt). Wir zeigen die zertifizierten
-                  // 9 CME als Headline-Wert auf dem Komplettpaket.
+                  // 9 Punkte als Headline-Wert auf dem Komplettpaket.
                   cmeTotal="9"
+                  cmeUnit={overrides.cmeUnit}
                   includedCourses={ZAHNMEDIZIN_INCLUDED_COURSES}
                 />
               )}

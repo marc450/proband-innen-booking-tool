@@ -137,15 +137,17 @@ function CourseTile({
     : null;
 
   // CME badge — mirrors the booking-widget CourseCard. Pending wins over
-  // a numeric value; a bare number gets a "CME" suffix appended.
+  // a numeric value; a bare number gets the unit suffix appended. The unit
+  // defaults to "CME" but is "Fortbildungspunkte" for Zahnmedizin courses.
+  const cmeUnit = tile.cmeUnit || "CME";
   const cmeText = isGroup
     ? null
     : tile.cmePending
-    ? "CME beantragt"
+    ? `${cmeUnit} beantragt`
     : tile.cme
-    ? /CME/i.test(tile.cme)
+    ? tile.cme.includes(cmeUnit) || /CME/i.test(tile.cme)
       ? tile.cme
-      : `${tile.cme} CME`
+      : `${tile.cme} ${cmeUnit}`
     : null;
 
   return (

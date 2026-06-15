@@ -54,6 +54,14 @@ interface PremiumCardProps {
   originalPrice?: string;
   discountLabel?: string;
   cmeTotal?: string;
+  /**
+   * Accreditation unit label. Defaults to "CME" (LÄK courses). Pass
+   * "Fortbildungspunkte" for Zahnmedizin packages accredited by the
+   * Zahnärztekammer. Drives the floating badge ("9 Fortbildungspunkte")
+   * and the "Akkreditiert mit …" feature bullet
+   * ("Akkreditiert mit 9 Fortbildungspunkten").
+   */
+  cmeUnit?: string;
   buttonText?: string;
   includedCourses?: IncludedCourse[];
   inclusionHeading?: string;
@@ -356,6 +364,7 @@ export function PremiumCard({
   originalPrice = "EUR 2.220",
   discountLabel = "",
   cmeTotal = "49",
+  cmeUnit = "CME",
   buttonText = "Komplettpaket buchen",
   includedCourses = DEFAULT_INCLUDED_COURSES,
   inclusionHeading = "Im Komplettpaket inkludiert:",
@@ -417,13 +426,22 @@ export function PremiumCard({
     onBook(selectedDate);
   };
 
+  // Dative-plural form used in the "Akkreditiert mit N …" bullet.
+  // "CME" → "CME-Punkten"; "Fortbildungspunkte" → "Fortbildungspunkten".
+  const accreditedUnit =
+    cmeUnit === "CME"
+      ? "CME-Punkten"
+      : /punkte$/i.test(cmeUnit)
+        ? `${cmeUnit}n`
+        : cmeUnit;
+
   return (
     <div className="bg-white rounded-lg flex flex-col h-full shadow-lg relative overflow-visible ring-2 ring-[#0066FF] shadow-2xl">
       {/* CME badge — sits on the top edge of the card */}
       {cmeTotal && (
         <div className="absolute -top-4 right-5 z-10 bg-[#0066FF] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5" style={{ boxShadow: "0 0 0 3px rgba(255,255,255,0.9), 0 2px 8px rgba(0,0,0,0.15)" }}>
           <Award className="w-4 h-4" aria-hidden="true" />
-          <span className="text-sm font-bold">{cmeTotal} CME</span>
+          <span className="text-sm font-bold">{cmeTotal} {cmeUnit}</span>
         </div>
       )}
 
@@ -545,7 +563,7 @@ export function PremiumCard({
           {cmeTotal && (
             <li className="flex items-center gap-2">
               <Check className="w-5 h-5 text-[#0066FF] flex-shrink-0" aria-hidden="true" />
-              <span className="text-base text-black">Akkreditiert mit {cmeTotal} CME-Punkten</span>
+              <span className="text-base text-black">Akkreditiert mit {cmeTotal} {accreditedUnit}</span>
             </li>
           )}
           <li className="flex items-start gap-2">

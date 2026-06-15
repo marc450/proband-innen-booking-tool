@@ -100,6 +100,12 @@ export interface HomeCourseTile {
    * use; the home loader does not set this from the DB today.
    */
   cmePending?: boolean;
+  /**
+   * Accreditation unit label for the CME badge. Defaults to "CME". Set to
+   * "Fortbildungspunkte" for Zahnmedizin courses (Zahnärztekammer), so the
+   * badge reads "9 Fortbildungspunkte" instead of "9 CME".
+   */
+  cmeUnit?: string;
   /** Second-line subtitle, e.g. "Für Humanmediziner:innen" */
   audience: string;
   /** Longer body text shown inside the card */

@@ -64,11 +64,13 @@ export const homeContent: HomeContent = {
         imageAlt: "Grundkurs Botulinum für Zahnmediziner:innen",
         ctaLabel: "Zu den Kursdetails",
         href: "/kurse/grundkurs-botulinum-zahnmedizin",
-        // Praxiskurs ist von der Zahnärztekammer mit 9 CME-Punkten
+        // Praxiskurs ist von der Zahnärztekammer mit 9 Fortbildungspunkten
         // zertifiziert (Onlineteil beantragt). Statisch gesetzt, weil
         // course_templates.cme_* für diesen Kurs noch leer ist; sobald ein
         // DB-Wert vorhanden ist, hat dieser laut Loader Vorrang.
+        // Zahnärztekammer-Punkte heißen "Fortbildungspunkte", nicht "CME".
         cme: "9",
+        cmeUnit: "Fortbildungspunkte",
       },
       {
         kicker: "GRUNDKURS",
