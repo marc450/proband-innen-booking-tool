@@ -111,13 +111,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Target session must exist and be live.
+  // Target session must exist. We intentionally do NOT require is_live: staff
+  // need to rebook doctors onto future dates that aren't published to the
+  // public funnel yet. The rebooking modal already surfaces such dates with a
+  // "noch nicht live" hint, so the API must accept them too.
   const { data: toSession, error: sErr } = await admin
     .from("course_sessions")
     .select("id, label_de, date_iso, is_live")
     .eq("id", toSessionId)
     .single();
-  if (sErr || !toSession || !toSession.is_live) {
+  if (sErr || !toSession) {
     return NextResponse.json({ error: "Zieltermin nicht verfügbar." }, { status: 400 });
   }
 
