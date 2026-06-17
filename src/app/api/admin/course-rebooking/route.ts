@@ -18,7 +18,7 @@ import { archiveSentMessage } from "@/lib/gmail";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const SITE_URL = "https://ephia.de";
+const BOOKING_SITE_URL = "https://proband-innen.ephia.de";
 
 async function stripePost(endpoint: string, body: Record<string, string>) {
   const res = await fetch(`https://api.stripe.com/v1${endpoint}`, {
@@ -152,53 +152,14 @@ export async function POST(req: NextRequest) {
     (booking.course_templates as { title?: string } | null)?.title ||
     "EPHIA Kurs";
 
-  // Create the Stripe Checkout for the fee. No courseKey metadata, so the
-  // webhook will not mistake this for a new course booking.
-  let checkout: { id: string; url: string };
-  try {
-    const params: Record<string, string> = {
-      mode: "payment",
-      // Land on the homepage, not /courses/success: this checkout pays a fee
-      // and creates no course booking, so the post-purchase page would have
-      // nothing to show. The confirmation email explains the next step.
-      success_url: SITE_URL,
-      cancel_url: SITE_URL,
-      locale: "de",
-      billing_address_collection: "required",
-      "automatic_tax[enabled]": "true",
-      "tax_id_collection[enabled]": "true",
-      "invoice_creation[enabled]": "true",
-      "line_items[0][quantity]": "1",
-      "line_items[0][price_data][currency]": "eur",
-      "line_items[0][price_data][unit_amount]": String(fee),
-      "line_items[0][price_data][product_data][name]": `Umbuchungsgebühr: ${courseName}`,
-      "line_items[0][price_data][product_data][description]":
-        "Einmalige Umbuchungsgebühr für die Verlegung auf einen neuen Termin (AGB Ziffer 6).",
-      "metadata[rebookingRequestId]": request.id,
-    };
-    if (booking.stripe_customer_id) {
-      params.customer = booking.stripe_customer_id;
-    } else {
-      params.customer_creation = "always";
-      params.customer_email = booking.email;
-    }
-    checkout = await stripePost("/checkout/sessions", params);
-  } catch (err) {
-    console.error("Rebooking checkout error:", err);
-    // Roll the request back so a failed Stripe call doesn't leave an orphan.
-    await admin.from("course_rebooking_requests").delete().eq("id", request.id);
-    return NextResponse.json(
-      { error: "Zahlungslink konnte nicht erstellt werden." },
-      { status: 500 },
-    );
-  }
+  // The Stripe Checkout session is created lazily when the doctor opens the
+  // EPHIA payment page (/umbuchung/bezahlen/{requestId}). This avoids the 24h
+  // Stripe session expiry: the emailed link points to our own page and never
+  // expires (until the request is applied or cancelled).
 
-  await admin
-    .from("course_rebooking_requests")
-    .update({ stripe_checkout_session_id: checkout.id })
-    .eq("id", request.id);
+  const paymentPageUrl = `${BOOKING_SITE_URL}/umbuchung/bezahlen/${request.id}`;
 
-  // Email the payment link to the doctor (best effort).
+  // Email the payment page link to the doctor (best effort).
   if (RESEND_API_KEY) {
     try {
       const feeEur = (fee / 100).toLocaleString("de-DE", {
@@ -211,7 +172,7 @@ export async function POST(req: NextRequest) {
           `Du möchtest Deinen Platz im Kurs <strong>${courseName}</strong> auf einen neuen Termin verlegen. ` +
           `Dafür fällt eine einmalige Umbuchungsgebühr von <strong>${feeEur}</strong> an (AGB Ziffer 6). ` +
           `Sobald Deine Zahlung eingegangen ist, buchen wir Dich automatisch auf den neuen Termin um.`,
-        buttons: [{ label: "Umbuchungsgebühr bezahlen", url: checkout.url }],
+        buttons: [{ label: "Umbuchungsgebühr bezahlen", url: paymentPageUrl }],
         note: "Der neue Termin wird erst nach Zahlungseingang verbindlich gebucht.",
       });
       const subject = `Umbuchung: ${courseName}`;
@@ -238,5 +199,5 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, paymentUrl: checkout.url, requestId: request.id });
+  return NextResponse.json({ ok: true, paymentUrl: paymentPageUrl, requestId: request.id });
 }
