@@ -384,7 +384,10 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
         email: b.email,
         firstName: b.first_name || b.name?.split(" ")[0] || "",
         courseTitle:
-          b.slots?.courses?.treatment_title || b.slots?.courses?.title || "",
+          (b.indication ? indicationLabel(b.indication) : null) ||
+          b.slots?.courses?.treatment_title ||
+          b.slots?.courses?.title ||
+          "",
         date,
         time,
         location: courseLocation,
@@ -609,8 +612,10 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
           body: JSON.stringify({
             email: slotChangePending.email,
             firstName: slotChangePending.first_name || slotChangePending.name?.split(" ")[0] || "",
-            // Prefer the public Behandlungsname over the internal title.
+            // For indication bookings (e.g. masseter) use the indication label
+            // so the email doesn't say "Behandlung mimischer Falten".
             courseTitle:
+              (slotChangePending.indication ? indicationLabel(slotChangePending.indication) : null) ||
               newCourseForEmail?.treatment_title ||
               newCourseForEmail?.title ||
               slotChangePending.slots?.courses?.treatment_title ||

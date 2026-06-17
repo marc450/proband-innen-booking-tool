@@ -8,6 +8,7 @@ import { scheduleCourseReviewEmails } from "@/lib/send-course-review-request";
 import { sendPostTreatmentProbandReviews } from "@/lib/send-proband-review-request";
 import { sweepStaleReviewEmails } from "@/lib/cancel-scheduled-review-email";
 import { archiveSentMessage } from "@/lib/gmail";
+import { INDICATIONS } from "@/lib/indications";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -141,7 +142,7 @@ export async function GET(req: NextRequest) {
     const { data: bookings, error } = await supabase
       .from("bookings")
       .select(`
-        id, patient_id, status, reminder_72h_sent, reminder_24h_sent,
+        id, patient_id, status, reminder_72h_sent, reminder_24h_sent, indication,
         slots (
           id, start_time, end_time,
           courses (
@@ -191,7 +192,10 @@ export async function GET(req: NextRequest) {
 
         const firstName = patient.first_name || "Du";
         const course = slot.courses as any;
-        const treatmentTitle = course?.treatment_title || course?.title || "Dein Termin";
+        const indicationLabel = (booking as any).indication
+          ? INDICATIONS.find((i) => i.key === (booking as any).indication)?.label ?? null
+          : null;
+        const treatmentTitle = indicationLabel || course?.treatment_title || course?.title || "Dein Termin";
         const courseLocation = course?.location || "";
 
         // Format date and time
