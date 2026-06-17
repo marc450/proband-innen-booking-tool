@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Plus, Trash2, GraduationCap, CalendarClock, Paperclip, Upload, X } from "lucide-react";
+import { Plus, Trash2, Copy, GraduationCap, CalendarClock, Paperclip, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,6 +122,8 @@ export function TasksManager({
   // Delete
   const [deleteTarget, setDeleteTarget] = useState<Task | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // Duplicate (single-click copy of a row)
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [alertState, setAlertState] = useState<
     { title: string; description: string } | null
   >(null);
@@ -363,6 +365,39 @@ export function TasksManager({
       setTasks((prev) => prev.filter((t) => t.id !== deleteTarget.id));
     }
     setDeleteTarget(null);
+  };
+
+  const handleDuplicate = async (task: Task) => {
+    if (duplicatingId) return;
+    setDuplicatingId(task.id);
+
+    const payload = {
+      title: `${task.title} (Kopie)`,
+      description: task.description,
+      // Nutzer always self-assign server-side; for admins we keep the original
+      // assignee so the copy lands with the same person.
+      assigned_to: isAdmin ? task.assigned_to : currentUserId,
+      course_session_id: task.course_session_id,
+      due_date: task.due_date,
+    };
+
+    const res = await fetch("/api/admin/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    setDuplicatingId(null);
+
+    if (!res.ok) {
+      setAlertState({
+        title: "Fehler",
+        description: data?.error || "Aufgabe konnte nicht dupliziert werden.",
+      });
+      return;
+    }
+
+    setTasks((prev) => [data.task as Task, ...prev]);
   };
 
   const today = new Date();
@@ -818,14 +853,25 @@ export function TasksManager({
                     className="align-top"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDeleteTarget(t)}
-                      title="Löschen"
-                    >
-                      <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500" />
-                    </Button>
+                    <div className="flex items-center justify-end gap-0.5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDuplicate(t)}
+                        disabled={duplicatingId === t.id}
+                        title="Duplizieren"
+                      >
+                        <Copy className="h-4 w-4 text-muted-foreground hover:text-[#0066FF]" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleteTarget(t)}
+                        title="Löschen"
+                      >
+                        <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               );
