@@ -28,5 +28,27 @@ export default async function MobileArztDetailPage({
     .eq("auszubildende_id", id)
     .order("created_at", { ascending: false });
 
-  return <ArztProfile azubi={azubi} bookings={bookings ?? []} />;
+  const bookingIds = (bookings ?? []).map((b) => b.id);
+  const { data: consentRows } = bookingIds.length
+    ? await supabase
+        .from("partner_data_consents")
+        .select("id, consented_at, revoked_at, exported_at, signed_payload")
+        .eq("partner", "galderma")
+        .in("course_booking_id", bookingIds)
+        .order("consented_at", { ascending: false, nullsFirst: false })
+    : { data: [] };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const partnerConsents = (consentRows ?? []).map((r: any) => ({
+    id: r.id as string,
+    consentedAt: (r.consented_at as string | null) ?? null,
+    revokedAt: (r.revoked_at as string | null) ?? null,
+    exportedAt: (r.exported_at as string | null) ?? null,
+    courseTitle: (r.signed_payload?.course_title as string | null) ?? "EPHIA-Kurs",
+    courseDate: (r.signed_payload?.course_date as string | null) ?? "",
+  }));
+
+  return (
+    <ArztProfile azubi={azubi} bookings={bookings ?? []} partnerConsents={partnerConsents} />
+  );
 }

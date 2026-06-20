@@ -71,6 +71,15 @@ interface ReviewRow {
     | null;
 }
 
+interface PartnerConsentRow {
+  id: string;
+  consentedAt: string | null;
+  revokedAt: string | null;
+  exportedAt: string | null;
+  courseTitle: string;
+  courseDate: string;
+}
+
 interface Props {
   azubi: Auszubildende;
   // Additional email addresses attached to this contact via
@@ -80,6 +89,7 @@ interface Props {
   bookings: BookingRow[];
   legacyBookings: LegacyBookingRow[];
   reviews?: ReviewRow[];
+  partnerConsents?: PartnerConsentRow[];
   isAdmin?: boolean;
 }
 
@@ -99,7 +109,7 @@ const statusVariants: Record<CourseBookingStatus, "default" | "secondary" | "des
 
 const fieldClass = "bg-transparent border-0 p-0 text-sm text-foreground focus:outline-none focus:ring-0 placeholder:text-muted-foreground/50 w-full";
 
-export function AuszubildendeDetail({ azubi: initialAzubi, emailAliases = [], bookings, legacyBookings, reviews = [], isAdmin = true }: Props) {
+export function AuszubildendeDetail({ azubi: initialAzubi, emailAliases = [], bookings, legacyBookings, reviews = [], partnerConsents = [], isAdmin = true }: Props) {
   const supabase = createClient();
   const [azubi, setAzubi] = useState(initialAzubi);
   const [editingNotes, setEditingNotes] = useState(false);
@@ -804,6 +814,59 @@ export function AuszubildendeDetail({ azubi: initialAzubi, emailAliases = [], bo
                             </p>
                           </div>
                         )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Galderma data-forwarding consent — one row per Praxis/Kombi
+              booking the contact signed for. Status + signed PDF download. */}
+          {partnerConsents.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Datenweitergabe Galderma
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y">
+                  {partnerConsents.map((c) => {
+                    const status = c.revokedAt
+                      ? { label: "Widerrufen", cls: "bg-red-50 text-red-700" }
+                      : c.exportedAt
+                        ? { label: "Exportiert", cls: "bg-[#0066FF]/10 text-[#0066FF]" }
+                        : { label: "Eingewilligt", cls: "bg-emerald-50 text-emerald-700" };
+                    return (
+                      <div key={c.id} className="px-4 py-3 space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium truncate" title={c.courseTitle}>
+                            {c.courseTitle}
+                            {c.courseDate ? ` · ${c.courseDate}` : ""}
+                          </span>
+                          <Badge className={`shrink-0 text-[10px] hover:${status.cls} ${status.cls}`}>
+                            {status.label}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                          <span>
+                            {c.revokedAt
+                              ? `Widerrufen am ${formatDate(c.revokedAt)}`
+                              : c.consentedAt
+                                ? `Eingewilligt am ${formatDate(c.consentedAt)}`
+                                : ""}
+                          </span>
+                          <a
+                            href={`/api/partner-consent/pdf?id=${c.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#0066FF] hover:underline shrink-0"
+                          >
+                            Unterschrift (PDF)
+                          </a>
+                        </div>
                       </div>
                     );
                   })}

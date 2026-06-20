@@ -55,17 +55,37 @@ export default async function AuszubildendeDetailPage({
   // under booking_id, which is FK'd to course_bookings — we already have
   // the full list above, so we can scope cheaply by booking_id IN(...).
   const bookingIds = (bookings ?? []).map((b) => b.id);
-  const { data: reviews } = bookingIds.length
-    ? await supabase
-        .from("course_reviews")
-        .select(
-          `id, rating, first_name, body_text, internal_feedback,
-           is_published, submitted_at, published_at, booking_id, template_id,
-           course_templates:template_id ( title, course_label_de )`,
-        )
-        .in("booking_id", bookingIds)
-        .order("submitted_at", { ascending: false })
-    : { data: [] };
+  const [{ data: reviews }, { data: consentRows }] = await Promise.all([
+    bookingIds.length
+      ? supabase
+          .from("course_reviews")
+          .select(
+            `id, rating, first_name, body_text, internal_feedback,
+             is_published, submitted_at, published_at, booking_id, template_id,
+             course_templates:template_id ( title, course_label_de )`,
+          )
+          .in("booking_id", bookingIds)
+          .order("submitted_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+    bookingIds.length
+      ? supabase
+          .from("partner_data_consents")
+          .select("id, consented_at, revoked_at, exported_at, signed_payload")
+          .eq("partner", "galderma")
+          .in("course_booking_id", bookingIds)
+          .order("consented_at", { ascending: false, nullsFirst: false })
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const partnerConsents = (consentRows ?? []).map((r: any) => ({
+    id: r.id as string,
+    consentedAt: (r.consented_at as string | null) ?? null,
+    revokedAt: (r.revoked_at as string | null) ?? null,
+    exportedAt: (r.exported_at as string | null) ?? null,
+    courseTitle: (r.signed_payload?.course_title as string | null) ?? "EPHIA-Kurs",
+    courseDate: (r.signed_payload?.course_date as string | null) ?? "",
+  }));
 
   return (
     <AuszubildendeDetail
@@ -74,6 +94,7 @@ export default async function AuszubildendeDetailPage({
       bookings={bookings ?? []}
       legacyBookings={legacyBookings ?? []}
       reviews={reviews ?? []}
+      partnerConsents={partnerConsents}
       isAdmin={isAdmin}
     />
   );

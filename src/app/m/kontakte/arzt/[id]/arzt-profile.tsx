@@ -33,9 +33,19 @@ interface BookingRow {
   } | null;
 }
 
+interface PartnerConsentRow {
+  id: string;
+  consentedAt: string | null;
+  revokedAt: string | null;
+  exportedAt: string | null;
+  courseTitle: string;
+  courseDate: string;
+}
+
 interface Props {
   azubi: Auszubildende;
   bookings: BookingRow[];
+  partnerConsents?: PartnerConsentRow[];
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -67,7 +77,7 @@ function formatDate(dateStr: string) {
   });
 }
 
-export function ArztProfile({ azubi: initial, bookings }: Props) {
+export function ArztProfile({ azubi: initial, bookings, partnerConsents = [] }: Props) {
   const router = useRouter();
   const supabase = createClient();
   const [azubi, setAzubi] = useState(initial);
@@ -255,6 +265,58 @@ export function ArztProfile({ azubi: initial, bookings }: Props) {
             </div>
           )}
         </div>
+
+        {/* Galderma data-forwarding consent */}
+        {partnerConsents.length > 0 && (
+          <div className="bg-white rounded-[10px] p-4">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
+              Datenweitergabe Galderma
+            </h3>
+            <div className="space-y-2">
+              {partnerConsents.map((c) => {
+                const status = c.revokedAt
+                  ? { label: "Widerrufen", cls: "bg-red-100 text-red-700" }
+                  : c.exportedAt
+                    ? { label: "Exportiert", cls: "bg-blue-100 text-blue-700" }
+                    : { label: "Eingewilligt", cls: "bg-emerald-100 text-emerald-700" };
+                return (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold text-black truncate">
+                        {c.courseTitle}
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <span className="text-xs text-gray-500">
+                          {c.revokedAt
+                            ? `Widerrufen am ${formatDate(c.revokedAt)}`
+                            : c.consentedAt
+                              ? `Eingewilligt am ${formatDate(c.consentedAt)}`
+                              : c.courseDate}
+                        </span>
+                        <a
+                          href={`/api/partner-consent/pdf?id=${c.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-[#0066FF] underline"
+                        >
+                          PDF
+                        </a>
+                      </div>
+                    </div>
+                    <span
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${status.cls}`}
+                    >
+                      {status.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Email action */}
         {azubi.email && (
