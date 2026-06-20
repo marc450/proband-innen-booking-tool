@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendWithdrawalForwardEmail } from "@/lib/partner-galderma-emails";
+import {
+  sendWithdrawalForwardEmail,
+  sendWithdrawalConfirmationEmail,
+} from "@/lib/partner-galderma-emails";
 import { GALDERMA_PARTNER } from "@/lib/partner-galderma";
 
 // Public, token-gated withdrawal of a Galderma data-forwarding consent.
@@ -78,10 +81,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Confirm the withdrawal to the participant (best-effort; the revoke
+    // stands regardless). Uses the email snapshot from signing.
+    const p = consent.signed_payload ?? {};
+    if (p.email) {
+      const confirm = await sendWithdrawalConfirmationEmail({
+        to: p.email,
+        firstName: p.first_name ?? "",
+      });
+      if (!confirm.ok) {
+        console.error(
+          `withdraw: confirmation email to participant failed for consent ${consent.id}: ${confirm.error}`,
+        );
+      }
+    }
+
     // Forward to Galderma only if they actually received this contact.
     let forwarded = false;
     if (consent.exported_at) {
-      const p = consent.signed_payload ?? {};
       const result = await sendWithdrawalForwardEmail({
         firstName: p.first_name ?? "",
         lastName: p.last_name ?? "",

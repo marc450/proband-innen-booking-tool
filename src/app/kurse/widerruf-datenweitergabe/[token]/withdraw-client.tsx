@@ -38,7 +38,7 @@ export function WithdrawClient({ token }: { token: string }) {
   if (status === "done") {
     return (
       <div className="rounded-[10px] bg-white shadow-sm p-6 md:p-8">
-        <h2 className="text-xl font-bold mb-3">Widerruf bestätigt</h2>
+        <h2 className="text-xl font-bold mb-3 text-[#111111]">Widerruf bestätigt</h2>
         <p className="text-base leading-relaxed text-black/80">
           Deine Einwilligung zur Datenweitergabe an die Galderma Laboratorium
           GmbH ist widerrufen. Wir geben Deine Daten nicht weiter und haben

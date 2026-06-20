@@ -19,7 +19,10 @@ export default async function WiderrufDatenweitergabePage({
 
   return (
     <article className="max-w-2xl mx-auto px-5 md:px-8 py-16 md:py-24 text-black">
-      <h1 className="text-3xl md:text-4xl font-bold mb-2">
+      {/* Explicit arbitrary color, not text-black: the dashboard dark-mode
+          utility remap (.dark .text-black) would otherwise flip this title
+          to light on the rose marketing background. */}
+      <h1 className="text-3xl md:text-4xl font-bold mb-2 text-[#111111]">
         Datenweitergabe an Galderma widerrufen
       </h1>
       <p className="text-sm text-black/60 mb-10">EPHIA Medical GmbH</p>

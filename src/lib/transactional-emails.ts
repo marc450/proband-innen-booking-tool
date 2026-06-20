@@ -15,7 +15,10 @@ import {
   AUTO_REPLY_SUBJECT_LINE,
   buildAutoReplyHtml,
 } from "@/lib/inbox-auto-reply";
-import { buildConsentConfirmationEmail } from "@/lib/partner-galderma-emails";
+import {
+  buildConsentConfirmationEmail,
+  buildWithdrawalConfirmationEmail,
+} from "@/lib/partner-galderma-emails";
 
 /**
  * Catalog of every transactional email the booking tool sends, grouped by
@@ -617,6 +620,20 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
         betreuerName: "Lena Muster",
         withdrawalToken: "beispiel-token",
       }),
+  },
+  {
+    id: "galderma-consent-withdrawal",
+    funnel: "arzt-kursupdates",
+    name: "Widerruf Datenweitergabe bestätigt (Galderma)",
+    recipient: "Ärzt:in",
+    trigger:
+      "Sofort nachdem die Teilnehmer:in ihre Galderma-Einwilligung über den Widerruf-Link widerrufen hat",
+    codeRef:
+      "src/lib/partner-galderma-emails.ts (buildWithdrawalConfirmationEmail), src/app/api/partner-consent/withdraw/route.ts",
+    description:
+      "Bestätigt der Teilnehmer:in den Widerruf ihrer Einwilligung zur Datenweitergabe an Galderma.",
+    renderSample: () =>
+      buildWithdrawalConfirmationEmail({ firstName: SAMPLE.firstName }),
   },
 
   // ── Kontakt & Anfragen ─────────────────────────────────────────────

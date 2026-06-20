@@ -151,6 +151,31 @@ export async function sendConsentConfirmationEmail(args: {
   return resendSend({ to: args.to, subject, html });
 }
 
+// ── 1b. Withdrawal confirmation to the participant ──────────────────────────
+export function buildWithdrawalConfirmationEmail(args: {
+  firstName: string;
+}): { subject: string; html: string } {
+  const html = buildEmailHtml({
+    firstName: args.firstName || "Du",
+    intro:
+      `wir bestätigen Dir den Widerruf Deiner Einwilligung zur Weitergabe Deiner ` +
+      `Kontaktdaten an die ${GALDERMA_ENTITY.name}. Wir geben Deine Daten nicht ` +
+      `weiter. Falls wir Deine Daten zuvor bereits übermittelt hatten, haben wir ` +
+      `Galderma aufgefordert, sie zu löschen.`,
+    note: "Der Widerruf wirkt sich nicht auf die Rechtmäßigkeit der bis dahin erfolgten Verarbeitung aus.",
+  });
+
+  return { subject: "Dein Widerruf ist bestätigt", html };
+}
+
+export async function sendWithdrawalConfirmationEmail(args: {
+  to: string;
+  firstName: string;
+}): Promise<SendResult> {
+  const { subject, html } = buildWithdrawalConfirmationEmail(args);
+  return resendSend({ to: args.to, subject, html });
+}
+
 // ── 2. Withdrawal forwarder to Galderma ─────────────────────────────────────
 export async function sendWithdrawalForwardEmail(args: {
   firstName: string;
