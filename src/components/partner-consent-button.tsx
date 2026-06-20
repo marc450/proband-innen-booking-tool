@@ -71,6 +71,26 @@ export function PartnerConsentButton({
   const drawing = useRef(false);
   const hasInk = useRef(false);
 
+  // Keep the dialog inside the visible area when the on-screen keyboard
+  // opens. iOS shrinks the visual viewport but leaves a position:fixed
+  // element sized to the full layout viewport, which pushes the footer
+  // behind the keyboard. Track visualViewport and cap height + top.
+  const [viewport, setViewport] = useState<{ top: number; height: number } | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setViewport({ top: vv.offsetTop, height: vv.height });
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+      setViewport(null);
+    };
+  }, [open]);
+
   const isActive = !!consent?.consentedAt && !consent?.revokedAt;
   const fullName = [firstName, lastName].filter(Boolean).join(" ") || "—";
 
@@ -208,7 +228,14 @@ export function PartnerConsentButton({
       </Button>
 
       <Dialog open={open} onOpenChange={(o) => !submitting && setOpen(o)}>
-        <DialogContent className="top-4 translate-y-0 flex max-h-[calc(100dvh-2rem)] flex-col bg-white sm:max-w-[640px]">
+        <DialogContent
+          className="top-4 translate-y-0 flex max-h-[calc(100dvh-2rem)] flex-col bg-white sm:max-w-[640px]"
+          style={
+            viewport
+              ? { top: viewport.top + 16, maxHeight: viewport.height - 32 }
+              : undefined
+          }
+        >
           <DialogHeader>
             <DialogTitle>Einwilligung Datenweitergabe an Galderma</DialogTitle>
           </DialogHeader>
