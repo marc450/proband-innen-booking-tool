@@ -208,12 +208,12 @@ export function PartnerConsentButton({
       </Button>
 
       <Dialog open={open} onOpenChange={(o) => !submitting && setOpen(o)}>
-        <DialogContent className="sm:max-w-[640px]">
+        <DialogContent className="top-4 translate-y-0 flex max-h-[calc(100dvh-2rem)] flex-col bg-white sm:max-w-[640px]">
           <DialogHeader>
             <DialogTitle>Einwilligung Datenweitergabe an Galderma</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-1 max-h-[70vh] overflow-y-auto">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-1 py-1">
             <p className="text-sm text-muted-foreground">
               Bitte dem/der Teilnehmer:in <strong>{fullName}</strong> das Tablet
               reichen. Daten prüfen, dann unterschreiben lassen.
