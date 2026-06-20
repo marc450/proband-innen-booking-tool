@@ -261,7 +261,13 @@ export async function POST(req: NextRequest) {
           .maybeSingle();
 
         if (existingCourseBooking) {
-          return NextResponse.json({ error: "Du hast für diesen Kurs bereits einen Termin gebucht." }, { status: 409 });
+          return NextResponse.json(
+            {
+              error: "Du hast für diesen Kurs bereits einen Termin gebucht. Eine zweite Indikation im selben Kurs ist nicht möglich.",
+              code: "DUPLICATE_BOOKING",
+            },
+            { status: 409 }
+          );
         }
       }
     }
@@ -353,7 +359,13 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Dieser Termin ist leider bereits ausgebucht." }, { status: 409 });
       }
       if (msg.includes("DUPLICATE_BOOKING")) {
-        return NextResponse.json({ error: "Du hast bereits eine Buchung für diesen Termin." }, { status: 409 });
+        return NextResponse.json(
+          {
+            error: "Du hast für diesen Kurs bereits einen Termin gebucht. Eine zweite Indikation im selben Kurs ist nicht möglich.",
+            code: "DUPLICATE_BOOKING",
+          },
+          { status: 409 }
+        );
       }
       return NextResponse.json({ error: "Buchung konnte nicht erstellt werden." }, { status: 500 });
     }

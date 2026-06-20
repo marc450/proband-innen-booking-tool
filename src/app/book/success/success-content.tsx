@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Loader2, XCircle } from "lucide-react";
+import { CheckCircle, Info, Loader2, XCircle } from "lucide-react";
 
 export function SuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "success" | "error" | "duplicate">("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
@@ -26,6 +26,15 @@ export function SuccessContent() {
           body: JSON.stringify({ sessionId }),
         });
         const data = await res.json();
+
+        // A duplicate is a final, expected outcome, not a transient error:
+        // don't retry, and show a clear "already booked" message instead of
+        // the red error card.
+        if (data?.code === "DUPLICATE_BOOKING") {
+          setStatus("duplicate");
+          setErrorMessage(data?.error || "");
+          return;
+        }
 
         if (!res.ok) {
           throw new Error(data?.error || "Buchung konnte nicht bestätigt werden.");
@@ -60,6 +69,33 @@ export function SuccessContent() {
             <CardDescription className="text-base mt-2">
               Bitte warte einen Moment.
             </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  if (status === "duplicate") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-lg w-full shadow-sm">
+          <CardHeader className="text-center px-8 py-10">
+            <Info className="h-16 w-16 text-primary mx-auto mb-6" />
+            <CardTitle className="text-primary text-2xl font-bold">Du bist bereits angemeldet</CardTitle>
+            <CardDescription className="text-base mt-4 leading-relaxed">
+              {errorMessage ||
+                "Du hast für diesen Kurs bereits einen Termin gebucht. Eine zweite Indikation im selben Kurs ist nicht möglich."}
+            </CardDescription>
+            <div className="mt-6 bg-muted/50 border rounded-lg px-5 py-4 text-sm text-muted-foreground leading-relaxed text-left">
+              <p>
+                Deine erste Buchung bleibt bestehen, es wurde nichts doppelt berechnet. Bei Fragen melde Dich gerne
+                bei uns unter{" "}
+                <a href="mailto:customerlove@ephia.de" className="text-primary font-medium underline">
+                  customerlove@ephia.de
+                </a>
+                .
+              </p>
+            </div>
           </CardHeader>
         </Card>
       </div>
