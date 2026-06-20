@@ -7,6 +7,7 @@ import { sendPostPraxisCertificates } from "@/lib/send-post-praxis-certificate";
 import { scheduleCourseReviewEmails } from "@/lib/send-course-review-request";
 import { sendPostTreatmentProbandReviews } from "@/lib/send-proband-review-request";
 import { sweepStaleReviewEmails } from "@/lib/cancel-scheduled-review-email";
+import { runGaldermaExport } from "@/lib/run-galderma-export";
 import { archiveSentMessage } from "@/lib/gmail";
 import { INDICATIONS } from "@/lib/indications";
 
@@ -39,10 +40,25 @@ export async function GET(req: NextRequest) {
     probandReviewEmailsSent: 0,
     staleReviewEmailsFound: 0,
     staleReviewEmailsCancelled: 0,
+    galdermaExported: 0,
     errors: 0,
   };
 
   try {
+    // ── Galderma partner data export (day after the course) ──
+    // Same nightly cadence and idempotency model as the certificate pass:
+    // scans already-passed Praxis/Kombi sessions and sends each consenting
+    // participant to Galderma exactly once (stamped via exported_at).
+    // No-ops entirely while GALDERMA_EXPORT_LIVE is off.
+    try {
+      const galderma = await runGaldermaExport(supabase);
+      results.galdermaExported = galderma.exported;
+      results.errors += galderma.errors;
+    } catch (galdermaErr) {
+      console.error("Galderma export pass failed:", galdermaErr);
+      results.errors += 1;
+    }
+
     // ── Post-praxis certificates (24h after the praxis day) ──
     // Scans course_sessions whose praxis day has already passed and
     // emails the certificate PDF to each participant that hasn't been
