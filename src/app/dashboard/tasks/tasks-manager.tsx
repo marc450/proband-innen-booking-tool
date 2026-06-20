@@ -58,7 +58,9 @@ type SortKey =
   | "due_date"
   | "created";
 
-type StatusFilter = "all" | TaskStatus;
+// "not_done" is the default: everything except Erledigt (open + in_progress).
+// It's what staff want on load — the open worklist, not the full archive.
+type StatusFilter = "all" | "not_done" | TaskStatus;
 
 const STATUS_LABEL: Record<TaskStatus, string> = {
   open: "Offen",
@@ -99,7 +101,7 @@ export function TasksManager({
 
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("not_done");
   // "Nur meine" is only meaningful for admins; nutzer only see their own.
   const [mineOnly, setMineOnly] = useState(false);
   // "__all__" = no filter, "__none__" = unassigned, otherwise a staff id.
@@ -136,7 +138,11 @@ export function TasksManager({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return tasks.filter((t) => {
-      if (statusFilter !== "all" && t.status !== statusFilter) return false;
+      if (statusFilter === "not_done") {
+        if (t.status === "done") return false;
+      } else if (statusFilter !== "all" && t.status !== statusFilter) {
+        return false;
+      }
       if (mineOnly && t.assigned_to !== currentUserId) return false;
       if (assigneeFilter === "__none__" && t.assigned_to !== null) return false;
       if (
@@ -617,10 +623,13 @@ export function TasksManager({
                 <span>
                   {statusFilter === "all"
                     ? "Alle Status"
-                    : STATUS_LABEL[statusFilter]}
+                    : statusFilter === "not_done"
+                      ? "Nicht erledigt"
+                      : STATUS_LABEL[statusFilter]}
                 </span>
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="not_done">Nicht erledigt</SelectItem>
                 <SelectItem value="all">Alle Status</SelectItem>
                 <SelectItem value="open">Offen</SelectItem>
                 <SelectItem value="in_progress">In Arbeit</SelectItem>
