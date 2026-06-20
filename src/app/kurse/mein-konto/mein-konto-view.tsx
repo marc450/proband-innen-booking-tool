@@ -66,7 +66,11 @@ interface Props {
 }
 
 const CORAL = "#BF785E";
-const PROBAND_FUNNEL_URL = "https://proband-innen.ephia.de/";
+// Private (doctor-referred) Proband:innen funnel: no payment capture,
+// since the proband comes in as the Auszubildende's own guest. NOT the
+// public root funnel (proband-innen.ephia.de/), which captures a card
+// for the no-show fee.
+const PROBAND_FUNNEL_URL = "https://proband-innen.ephia.de/book/privat";
 
 const MONTHS_DE = [
   "Jan",
