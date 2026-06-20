@@ -30,6 +30,8 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ArrowLeft, Ban, Calendar, Check, Clock, Copy, GraduationCap, Loader2, LockOpen, Mail, MapPin, Plus, Trash2, User } from "lucide-react";
 import { buildProfileCompletionUrl } from "@/lib/profile-link";
 import { INDICATIONS } from "@/lib/indications";
+import { PartnerConsentButton, type ConsentState } from "@/components/partner-consent-button";
+import { isGaldermaEligible } from "@/lib/partner-galderma";
 
 function indicationLabel(key: string): string {
   return INDICATIONS.find((i) => i.key === key)?.label ?? key;
@@ -83,6 +85,10 @@ interface AerztBooking {
   priorCourses: string[];
   profileComplete: boolean;
   notes: string | null;
+  // Galderma partner-consent state + prefill for the tablet form.
+  consent: ConsentState | null;
+  prefillPhone: string | null;
+  prefillAddress: string | null;
 }
 
 const AERZT_STATUS_OPTIONS: Array<{ value: string; label: string }> = [
@@ -114,6 +120,8 @@ interface Props {
   // Count of Zahnmediziner:innen booked on this session. Drives the
   // masseter reservation summary + shortfall warning.
   dentistCount: number;
+  // Human-readable course date for the Galderma consent form.
+  courseDate: string;
 }
 
 const BOOKING_STATUS_OPTIONS: Array<{ value: DetailBooking["status"]; label: string }> = [
@@ -149,6 +157,7 @@ export function KursDetailClient({
   bookings: initialBookings,
   aerztBookings,
   dentistCount,
+  courseDate,
 }: Props) {
   const router = useRouter();
   const supabase = createClient();
@@ -606,6 +615,13 @@ export function KursDetailClient({
     }
   };
 
+  // Galderma data-forwarding consent applies only to in-person
+  // (Praxis/Kombi) bookings. Show the column only when at least one such
+  // booking is on this session, so cosmetic/online sessions stay clean.
+  const showGalderma = aerztBookingsState.some((b) =>
+    isGaldermaEligible({ course_type: b.courseType, session_id: session.id }),
+  );
+
   // ── Render ────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
@@ -690,6 +706,7 @@ export function KursDetailClient({
               <col style={{ width: "200px" }} />{/* Spezialisierung */}
               <col style={{ width: "240px" }} />{/* Profil */}
               <col style={{ width: "240px" }} />{/* Notizen */}
+              {showGalderma && <col style={{ width: "210px" }} />}{/* Galderma */}
               <col style={{ width: "180px" }} />{/* Status */}
             </colgroup>
             <TableHeader>
@@ -700,6 +717,7 @@ export function KursDetailClient({
                 <TableHead>Spezialisierung</TableHead>
                 <TableHead>Profil</TableHead>
                 <TableHead>Notizen</TableHead>
+                {showGalderma && <TableHead>Galderma</TableHead>}
                 <TableHead>
                   <div className="flex justify-end">
                     <span className="w-[140px]">Status</span>
@@ -778,6 +796,26 @@ export function KursDetailClient({
                       {b.notes || "Notizen…"}
                     </button>
                   </TableCell>
+                  {showGalderma && (
+                    <TableCell>
+                      {isGaldermaEligible({ course_type: b.courseType, session_id: session.id }) ? (
+                        <PartnerConsentButton
+                          bookingId={b.id}
+                          firstName={b.firstName}
+                          lastName={b.lastName}
+                          email={b.email}
+                          prefillPhone={b.prefillPhone}
+                          prefillAddress={b.prefillAddress}
+                          courseTitle={session.templateTitle}
+                          courseDate={courseDate}
+                          consent={b.consent}
+                          onChanged={refresh}
+                        />
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                  )}
                   <TableCell className="w-[180px]">
                     <div className="flex justify-end">
                       <select

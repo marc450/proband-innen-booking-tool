@@ -24,6 +24,9 @@ type Block =
 type Section = {
   title: string;
   blocks: Block[];
+  // Optional anchor id so deep links (e.g. the Galderma confirmation email's
+  // #partner-datenweitergabe) jump straight to the section.
+  id?: string;
 };
 
 const INTRO: Block[] = [
@@ -264,6 +267,56 @@ const SECTIONS: Section[] = [
       },
     ],
   },
+  {
+    id: "partner-datenweitergabe",
+    title: "11. Datenweitergabe an Sponsoring-Partner",
+    blocks: [
+      {
+        type: "p",
+        text: "Einzelne unserer Kurse mit Praxisanteil (Praxis- und Kombikurse) werden durch pharmazeutische Unternehmen gesponsert. Für diese Kurse hast Du als teilnehmende:r Ärzt:in oder Zahnmediziner:in am Kursende die Möglichkeit, ausdrücklich einzuwilligen, dass wir Deine Kontaktdaten an den jeweiligen Sponsoring-Partner zu dessen eigener Nutzung übermitteln. Daten von Proband:innen werden nicht übermittelt.",
+      },
+      { type: "h3", text: "Aktuelle Partner" },
+      {
+        type: "p",
+        text: "Galderma Laboratorium GmbH, Toulouser Allee 23a, 40211 Düsseldorf, Deutschland. Empfänger sind die Galderma Laboratorium GmbH sowie von ihr beauftragte Dienstleister, die personenbezogene Daten in ihrem Auftrag verarbeiten.",
+      },
+      { type: "h3", text: "Übermittelte Datenkategorien" },
+      {
+        type: "ul",
+        items: [
+          "Vor- und Nachname",
+          "E-Mail-Adresse",
+          "Postanschrift und Telefonnummer",
+          "Information über den von Dir absolvierten EPHIA-Kurs (Kurstitel und Kursdatum)",
+        ],
+      },
+      { type: "h3", text: "Zweck der Weitergabe" },
+      {
+        type: "p",
+        text: "Die übermittelten Daten werden von der Galderma Laboratorium GmbH genutzt, um Dir Produktinformationen zu Produkten der ästhetischen Medizin zukommen zu lassen, wissenschaftliche Studienzusammenfassungen und Fachartikel zu übermitteln und Dich zu Fortbildungen und Fachveranstaltungen einzuladen. Eine Nutzung zu anderen Zwecken oder eine Weitergabe an unbeteiligte Dritte ist ausgeschlossen.",
+      },
+      { type: "h3", text: "Rechtsgrundlage" },
+      {
+        type: "p",
+        text: "Art. 6 Abs. 1 lit. a DSGVO (Einwilligung). Die Einwilligung wird am Kursende durch Deine Unterschrift erteilt und von uns nachweisbar dokumentiert. Eine Übermittlung erfolgt einmalig nach Kursende und wird nicht wiederholt. Die Daten werden nicht in ein Drittland übermittelt.",
+      },
+      { type: "h3", text: "Aufbewahrungsdauer" },
+      {
+        type: "p",
+        text: "Wir speichern den Nachweis Deiner Einwilligung bis zu deren Widerruf und darüber hinaus so lange, wie dies zur Verteidigung gegen rechtliche Ansprüche erforderlich ist.",
+      },
+      { type: "h3", text: "Widerrufsrecht" },
+      {
+        type: "p",
+        text: "Du kannst Deine Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen, ohne dass Dir dadurch Nachteile entstehen. Den Widerruf-Link findest Du in der Bestätigungs-E-Mail, die Du unmittelbar nach Erteilung der Einwilligung erhalten hast. Alternativ genügt eine Nachricht an customerlove@ephia.de. Der Widerruf wirkt sich nicht auf die Rechtmäßigkeit der bis dahin erfolgten Verarbeitung aus. Wir leiten Deinen Widerruf umgehend an den Sponsoring-Partner weiter, damit dieser Deine Daten ebenfalls löscht.",
+      },
+      { type: "h3", text: "Beschwerderecht" },
+      {
+        type: "p",
+        text: "Du hast das Recht, Dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren, insbesondere bei der Behörde Deines gewöhnlichen Aufenthaltsorts.",
+      },
+    ],
+  },
 ];
 
 function renderBlock(block: Block, idx: number) {
@@ -318,7 +371,11 @@ export default function DatenschutzPage() {
       <div className="mb-10">{INTRO.map(renderBlock)}</div>
 
       {SECTIONS.map((section) => (
-        <section key={section.title} className="mb-10">
+        <section
+          key={section.title}
+          id={section.id}
+          className="mb-10 scroll-mt-24"
+        >
           <h2 className="text-lg md:text-xl font-bold mb-3">{section.title}</h2>
           {section.blocks.map(renderBlock)}
         </section>

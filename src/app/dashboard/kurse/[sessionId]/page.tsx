@@ -125,7 +125,9 @@ export default async function KursDetailPage({
     auszubildendeIds.length
       ? admin
           .from("v_auszubildende")
-          .select("id, specialty, first_name, last_name")
+          .select(
+            "id, specialty, first_name, last_name, phone, address_line1, address_postal_code, address_city, address_country",
+          )
           .in("id", auszubildendeIds)
       : Promise.resolve({
           data: [] as Array<{
@@ -133,6 +135,11 @@ export default async function KursDetailPage({
             specialty: string | null;
             first_name: string | null;
             last_name: string | null;
+            phone: string | null;
+            address_line1: string | null;
+            address_postal_code: string | null;
+            address_city: string | null;
+            address_country: string | null;
           }>,
         }),
     auszubildendeIds.length
@@ -157,6 +164,65 @@ export default async function KursDetailPage({
 
   const specialtyByAuszubildendeId = new Map<string, string | null>(
     (contactRows ?? []).map((c) => [c.id as string, (c.specialty as string | null) ?? null]),
+  );
+
+  // Phone + composed postal address for the Galderma consent prefill, so
+  // the Kursbetreuung sees what's on file and only corrects if needed.
+  const composeAddr = (c: {
+    address_line1: string | null;
+    address_postal_code: string | null;
+    address_city: string | null;
+    address_country: string | null;
+  }): string | null => {
+    const cityLine = [c.address_postal_code, c.address_city].filter(Boolean).join(" ");
+    const parts = [c.address_line1, cityLine, c.address_country].filter((p) => p && p.trim());
+    return parts.length ? parts.join(", ") : null;
+  };
+  const prefillByAuszubildendeId = new Map<
+    string,
+    { phone: string | null; address: string | null }
+  >(
+    (contactRows ?? []).map((c) => [
+      c.id as string,
+      {
+        phone: (c.phone as string | null) ?? null,
+        address: composeAddr(
+          c as {
+            address_line1: string | null;
+            address_postal_code: string | null;
+            address_city: string | null;
+            address_country: string | null;
+          },
+        ),
+      },
+    ]),
+  );
+
+  // Galderma consent state per booking on this session.
+  const allBookingIds = (aerztBookings ?? []).map((b) => b.id as string);
+  const { data: consentRows } = allBookingIds.length
+    ? await admin
+        .from("partner_data_consents")
+        .select("course_booking_id, consented_at, revoked_at")
+        .eq("partner", "galderma")
+        .in("course_booking_id", allBookingIds)
+    : { data: [] as Array<{ course_booking_id: string; consented_at: string | null; revoked_at: string | null }> };
+  const consentByBookingId = new Map<
+    string,
+    { consentedAt: string | null; revokedAt: string | null }
+  >(
+    (consentRows ?? []).map((r) => [
+      r.course_booking_id as string,
+      {
+        consentedAt: (r.consented_at as string | null) ?? null,
+        revokedAt: (r.revoked_at as string | null) ?? null,
+      },
+    ]),
+  );
+
+  const courseDateHuman = new Date(`${session.date_iso as string}T12:00:00`).toLocaleDateString(
+    "de-DE",
+    { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Berlin" },
   );
 
   // Canonical name lookup: course_bookings.first_name/last_name is a
@@ -271,9 +337,13 @@ export default async function KursDetailPage({
               : [],
           profileComplete: (b.profile_complete as boolean | null) ?? false,
           notes: (b.notes as string | null) ?? null,
+          consent: consentByBookingId.get(b.id as string) ?? null,
+          prefillPhone: azid ? prefillByAuszubildendeId.get(azid)?.phone ?? null : null,
+          prefillAddress: azid ? prefillByAuszubildendeId.get(azid)?.address ?? null : null,
           });
         })
       }
+      courseDate={courseDateHuman}
     />
   );
 }

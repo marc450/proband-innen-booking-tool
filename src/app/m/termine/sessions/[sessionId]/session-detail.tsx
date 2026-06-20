@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   MapPin,
@@ -17,6 +18,8 @@ import {
   FileText,
 } from "lucide-react";
 import { formatPersonName } from "@/lib/utils";
+import { PartnerConsentButton, type ConsentState } from "@/components/partner-consent-button";
+import { isGaldermaEligible } from "@/lib/partner-galderma";
 
 export interface Participant {
   bookingId: string;
@@ -40,6 +43,10 @@ export interface Participant {
   bookingStatus: string;
   createdAt: string;
   priorSessionsCount: number;
+  // Galderma partner-consent state + prefill for the tablet form.
+  consent: ConsentState | null;
+  prefillPhone: string | null;
+  prefillAddress: string | null;
 }
 
 export interface Proband {
@@ -68,6 +75,8 @@ interface Props {
   bookedSeats: number;
   participants: Participant[];
   probanden: Proband[];
+  // Human-readable course date for the Galderma consent form.
+  courseDate: string;
 }
 
 const COURSE_TYPE_LABEL: Record<string, string> = {
@@ -124,7 +133,10 @@ export function SessionDetail({
   bookedSeats,
   participants,
   probanden,
+  courseDate,
 }: Props) {
+  const router = useRouter();
+  const courseTitle = courseLabelDe || templateTitle;
   const totalCount = participants.length;
 
   const stats = useMemo(() => {
@@ -308,7 +320,13 @@ export function SessionDetail({
             </div>
             <ul>
               {rows.map((p) => (
-                <ParticipantRow key={p.bookingId} p={p} />
+                <ParticipantRow
+                  key={p.bookingId}
+                  p={p}
+                  courseTitle={courseTitle}
+                  courseDate={courseDate}
+                  onConsentChanged={() => router.refresh()}
+                />
               ))}
             </ul>
           </div>
@@ -459,7 +477,17 @@ function LinkableName({
   return <span className={className}>{name}</span>;
 }
 
-function ParticipantRow({ p }: { p: Participant }) {
+function ParticipantRow({
+  p,
+  courseTitle,
+  courseDate,
+  onConsentChanged,
+}: {
+  p: Participant;
+  courseTitle: string;
+  courseDate: string;
+  onConsentChanged: () => void;
+}) {
   const name =
     formatPersonName({
       title: p.title,
@@ -468,6 +496,12 @@ function ParticipantRow({ p }: { p: Participant }) {
     }) ||
     p.email ||
     "Unbekannt";
+
+  const eligible = isGaldermaEligible({
+    course_type: p.courseType,
+    session_id: "mobile", // session_id is always present in this view; the
+    // real eligibility hinges on course_type (Praxis/Kombi).
+  });
 
   const row = (
     <div className="px-4 py-3 active:bg-gray-50 transition-colors">
@@ -519,14 +553,39 @@ function ParticipantRow({ p }: { p: Participant }) {
     </div>
   );
 
+  // Rendered outside the row's navigation Link so tapping the consent
+  // button never bounces to the contact page.
+  const consentBlock = eligible ? (
+    <div className="px-4 pb-3 -mt-1">
+      <PartnerConsentButton
+        bookingId={p.bookingId}
+        firstName={p.firstName}
+        lastName={p.lastName}
+        email={p.email}
+        prefillPhone={p.prefillPhone}
+        prefillAddress={p.prefillAddress}
+        courseTitle={courseTitle}
+        courseDate={courseDate}
+        consent={p.consent}
+        onChanged={onConsentChanged}
+      />
+    </div>
+  ) : null;
+
   if (p.auszubildendeId) {
     return (
       <li>
         <Link href={`/m/kontakte/arzt/${p.auszubildendeId}`} className="block">
           {row}
         </Link>
+        {consentBlock}
       </li>
     );
   }
-  return <li>{row}</li>;
+  return (
+    <li>
+      {row}
+      {consentBlock}
+    </li>
+  );
 }

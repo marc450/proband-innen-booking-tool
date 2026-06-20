@@ -87,6 +87,7 @@ const SECTIONS: Section[] = [
     title: "9. Datenschutz",
     paragraphs: [
       "Der Schutz Deiner Daten ist uns wichtig. Alle Informationen zur Erhebung, Speicherung und Verarbeitung personenbezogener Daten findest Du in unserer Datenschutzerklärung. Mit Vertragsabschluss stimmst Du der dort beschriebenen Datenverarbeitung zu.",
+      "Einwilligungsbasierte Verarbeitungen, etwa die Weitergabe Deiner Kontaktdaten an Sponsoring-Partner, holen wir stets separat und ausdrücklich ein. Sie sind freiwillig, jederzeit widerrufbar und nicht Gegenstand dieser AGB oder Voraussetzung für eine Buchung.",
     ],
   },
   {

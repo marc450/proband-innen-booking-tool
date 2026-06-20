@@ -69,10 +69,43 @@ export default async function MobileSessionDetailPage({ params }: PageProps) {
     birthdate: string | null;
     profile_complete: boolean | null;
     address_city: string | null;
+    address_line1: string | null;
+    address_postal_code: string | null;
+    address_country: string | null;
   };
 
   const azubiById = new Map<string, AzubiRow>();
   for (const row of (auszubildendeRows || []) as AzubiRow[]) azubiById.set(row.id, row);
+
+  // Galderma consent state per booking, for the in-room tablet flow.
+  const bookingIds = bookings.map((b) => b.id);
+  const { data: consentRows } = bookingIds.length
+    ? await admin
+        .from("partner_data_consents")
+        .select("course_booking_id, consented_at, revoked_at")
+        .eq("partner", "galderma")
+        .in("course_booking_id", bookingIds)
+    : { data: [] as Array<{ course_booking_id: string; consented_at: string | null; revoked_at: string | null }> };
+  const consentByBookingId = new Map<string, { consentedAt: string | null; revokedAt: string | null }>(
+    (consentRows ?? []).map((r) => [
+      r.course_booking_id as string,
+      {
+        consentedAt: (r.consented_at as string | null) ?? null,
+        revokedAt: (r.revoked_at as string | null) ?? null,
+      },
+    ]),
+  );
+
+  const composeAddr = (a: AzubiRow): string | null => {
+    const cityLine = [a.address_postal_code, a.address_city].filter(Boolean).join(" ");
+    const parts = [a.address_line1, cityLine, a.address_country].filter((p) => p && p.trim());
+    return parts.length ? parts.join(", ") : null;
+  };
+
+  const courseDateHuman = new Date(`${session.date_iso as string}T12:00:00`).toLocaleDateString(
+    "de-DE",
+    { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Berlin" },
+  );
 
   // Count prior completed or booked sessions (excluding this session) per
   // auszubildende, so we can flag returning participants for the Dozent:in.
@@ -198,6 +231,9 @@ export default async function MobileSessionDetailPage({ params }: PageProps) {
       bookingStatus: b.status,
       createdAt: b.created_at,
       priorSessionsCount: b.auszubildende_id ? priorCountsById.get(b.auszubildende_id) || 0 : 0,
+      consent: consentByBookingId.get(b.id) ?? null,
+      prefillPhone: azubi?.phone ?? b.phone ?? null,
+      prefillAddress: azubi ? composeAddr(azubi) : null,
     };
   });
 
@@ -216,6 +252,7 @@ export default async function MobileSessionDetailPage({ params }: PageProps) {
       bookedSeats={session.booked_seats}
       participants={participants}
       probanden={probanden}
+      courseDate={courseDateHuman}
     />
   );
 }

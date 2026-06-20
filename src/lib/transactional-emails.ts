@@ -15,6 +15,7 @@ import {
   AUTO_REPLY_SUBJECT_LINE,
   buildAutoReplyHtml,
 } from "@/lib/inbox-auto-reply";
+import { buildConsentConfirmationEmail } from "@/lib/partner-galderma-emails";
 
 /**
  * Catalog of every transactional email the booking tool sends, grouped by
@@ -596,6 +597,26 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
         note: "Falls Du Fragen hast, melde Dich gerne bei uns.",
       }),
     }),
+  },
+  {
+    id: "galderma-consent-confirmation",
+    funnel: "arzt-kursupdates",
+    name: "Einwilligung Datenweitergabe (Galderma)",
+    recipient: "Ärzt:in",
+    trigger:
+      "Sofort nachdem die Kursbetreuung am Kursende die unterschriebene Galderma-Einwilligung auf dem Tablet erfasst hat",
+    codeRef:
+      "src/lib/partner-galderma-emails.ts (buildConsentConfirmationEmail), src/app/api/partner-consent/record/route.ts",
+    description:
+      "Dokumentiert transparent die erteilte Einwilligung zur Datenweitergabe an die Galderma Laboratorium GmbH und enthält den Widerruf-Link (DSGVO Art. 7 Nachweis).",
+    renderSample: () =>
+      buildConsentConfirmationEmail({
+        firstName: SAMPLE.firstName,
+        courseTitle: SAMPLE.courseTitle,
+        courseDate: "12. Juni 2026",
+        betreuerName: "Lena Muster",
+        withdrawalToken: "beispiel-token",
+      }),
   },
 
   // ── Kontakt & Anfragen ─────────────────────────────────────────────

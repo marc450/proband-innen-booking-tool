@@ -186,6 +186,7 @@ const navGroups: NavGroup[] = [
       { href: "/dashboard/auszubildende/bewertungen", label: "Bewertungen Ärzt:innen" },
       { href: "/dashboard/patients/bewertungen", label: "Bewertungen Proband:innen" },
       { href: "/dashboard/zertifikate", label: "Zertifikatgenerator" },
+      { href: "/dashboard/auszubildende/partner-einwilligungen", label: "Galderma-Einwilligungen" },
     ],
   },
 ];
