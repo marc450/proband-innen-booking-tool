@@ -68,6 +68,7 @@ export function PartnerConsentButton({
   const [info, setInfo] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
   const drawing = useRef(false);
   const hasInk = useRef(false);
 
@@ -230,6 +231,7 @@ export function PartnerConsentButton({
       <Dialog open={open} onOpenChange={(o) => !submitting && setOpen(o)}>
         <DialogContent
           className="top-4 translate-y-0 flex max-h-[calc(100dvh-2rem)] flex-col bg-white sm:max-w-[640px]"
+          initialFocus={scrollRef}
           style={
             viewport
               ? { top: viewport.top + 16, maxHeight: viewport.height - 32 }
@@ -240,7 +242,11 @@ export function PartnerConsentButton({
             <DialogTitle>Einwilligung Datenweitergabe an Galderma</DialogTitle>
           </DialogHeader>
 
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-1 py-1">
+          <div
+            ref={scrollRef}
+            tabIndex={-1}
+            className="min-h-0 flex-1 space-y-4 overflow-y-auto px-1 py-1 outline-none"
+          >
             <p className="text-sm text-muted-foreground">
               Bitte dem/der Teilnehmer:in <strong>{fullName}</strong> das Tablet
               reichen. Daten prüfen, dann unterschreiben lassen.
