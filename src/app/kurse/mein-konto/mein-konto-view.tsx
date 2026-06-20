@@ -22,13 +22,10 @@ import { parseDateOnly } from "@/lib/date";
 //
 // Sign-out lives in the header CTA on /mein-konto, not on this page.
 
-export type CourseType =
-  | "Onlinekurs"
-  | "Praxiskurs"
-  | "Kombikurs"
-  | "Hybrid"
-  | "Merch"
-  | "Kurs";
+// Canonical definition lives in the shared resolver; re-exported here so
+// existing importers (page.tsx) keep working unchanged.
+import type { CourseType } from "@/lib/lw-course-resolve";
+export type { CourseType };
 
 export interface EnrichedBooking {
   id: string;

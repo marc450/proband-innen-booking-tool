@@ -3,6 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { listUserProgress } from "@/lib/learnworlds";
 import { enrollInLearnWorlds } from "@/lib/post-purchase";
+import {
+  buildTemplateIndex,
+  deriveCourseKey,
+  deriveCourseType,
+  type CourseType,
+  type TemplateRow,
+} from "@/lib/lw-course-resolve";
 
 // Each LW call can take a few seconds; the POST does up to 3 sequential
 // calls (create-user, get-user fallback, enroll). Default platform timeouts
@@ -104,6 +111,33 @@ export async function GET(
     .neq("status", "cancelled")
     .order("created_at", { ascending: false });
 
+  // Pre-cutover (Lovable/LW/HubSpot import) purchases live in
+  // legacy_bookings, which the course_bookings reconciliation below is
+  // blind to. We pull them too, plus a course_key → online_course_id
+  // index, so a legacy online entitlement that's missing from LW gets a
+  // "Freischalten" button instead of being invisible.
+  const [{ data: legacyBookings }, { data: allTemplates }] = await Promise.all([
+    admin
+      .from("legacy_bookings")
+      .select("id, product_name, purchased_at, source")
+      .eq("auszubildende_id", id)
+      .order("purchased_at", { ascending: false, nullsFirst: false }),
+    admin
+      .from("course_templates")
+      .select(
+        "id, course_key, title, image_url, name_online, name_praxis, name_kombi, lw_slug_online, lw_slug_praxis, lw_slug_kombi, lw_slug_hybrid, online_course_id",
+      ),
+  ]);
+  // Same resolver the customer dashboard uses, so the panel's verdict
+  // matches what the customer sees on /mein-konto.
+  const tplIndex = buildTemplateIndex((allTemplates ?? []) as TemplateRow[]);
+  const tplIdByOnlineCourseId = new Map<string, string>();
+  for (const t of (allTemplates ?? []) as Array<TemplateRow & { id: string }>) {
+    if (t.online_course_id) {
+      tplIdByOnlineCourseId.set(t.online_course_id.toLowerCase(), t.id);
+    }
+  }
+
   // LW-side enrollments via the user_id we have on the row. If we don't
   // have an lw_user_id, the user has never been bridged into LW so all
   // bookings register as "missing" (action: enroll, which will also
@@ -165,6 +199,65 @@ export async function GET(
       status,
       progressPct: lwCourseId ? (progressByCourse.get(lwCourseId) ?? null) : null,
       boughtAt: b.created_at,
+    });
+  }
+
+  // Legacy entitlements: surface any online course the contact bought
+  // pre-cutover (legacy_bookings) but isn't enrolled in on LW, so it
+  // gets a "missing" → Freischalten row just like a course_bookings gap.
+  // Enrolled legacy courses are intentionally skipped here — they still
+  // surface via the lw_only orphan pass below ("Zugriff aktiv ohne
+  // Buchung"), so we don't double-list or restyle the working ones.
+  const seenLwCourseIds = new Set(
+    items
+      .map((i) => i.lwCourseId)
+      .filter((x): x is string => !!x),
+  );
+  for (const lb of legacyBookings ?? []) {
+    const productName = lb.product_name as string;
+    const isLw = (lb.source as string | null)?.startsWith("lw_") ?? false;
+
+    // Resolve template + type with the same strategy mein-konto uses:
+    // LW imports match on slug first, HubSpot imports on display name,
+    // both falling back to course_key derivation.
+    let tpl: TemplateRow | undefined;
+    let courseType: CourseType;
+    const primary = isLw
+      ? tplIndex.matchSlug(productName)
+      : tplIndex.matchHubspotName(productName);
+    if (primary) {
+      tpl = primary.tpl;
+      courseType = primary.type;
+    } else {
+      courseType = deriveCourseType(productName);
+      const key = deriveCourseKey(productName);
+      tpl = key ? tplIndex.byKey.get(key) : undefined;
+    }
+
+    // Only online-bearing entitlements map to an LW course. Kombi
+    // bundles an online course; Praxis/Hybrid/Merch/Kurs don't.
+    if (courseType !== "Onlinekurs" && courseType !== "Kombikurs") continue;
+
+    const lwCourseId = tpl?.online_course_id ?? null;
+    // Already enrolled in LW → leave it to the lw_only orphan pass.
+    if (lwCourseId && lwCourseIds.has(lwCourseId)) continue;
+    // Already represented by a course_bookings row → don't duplicate.
+    if (lwCourseId && seenLwCourseIds.has(lwCourseId)) continue;
+    if (lwCourseId) {
+      seenLwCourseIds.add(lwCourseId);
+      claimedLwCourseIds.add(lwCourseId);
+    }
+    items.push({
+      bookingId: null,
+      templateId: lwCourseId
+        ? (tplIdByOnlineCourseId.get(lwCourseId.toLowerCase()) ?? null)
+        : null,
+      templateTitle: tpl?.title ?? productName,
+      lwCourseId,
+      courseType: "Onlinekurs",
+      status: lwCourseId ? "missing" : "no_lw_template",
+      progressPct: null,
+      boughtAt: (lb.purchased_at as string | null) ?? null,
     });
   }
 
