@@ -84,35 +84,81 @@ export async function resolveContactNamesByEmail(
       emailByHash.set(hashEmail(e), e);
     }
     const hashes = Array.from(emailByHash.keys());
-    // Only encrypted columns + the lookup hash — first_name/last_name
-    // do not exist as plaintext columns on `patients`. Naming them in
-    // the SELECT used to fail the whole query and silently dropped
-    // every patient lookup, which is why Patient:innen rows kept
-    // showing the bare email in the inbox list.
-    const { data: pats } = await admin
-      .from("patients")
-      .select(
-        "email_hash, encrypted_data, encrypted_key, encryption_iv",
-      )
+
+    // Resolve each email to its canonical patient id the SAME way the
+    // profile + inbox sidebar do: via patient_email_hashes (the
+    // multi-email alias table) first, then fall back to the legacy
+    // patients.email_hash column. Resolving by hash alone broke when an
+    // address was an alias on one contact (post-merge) or when a stale
+    // duplicate row still owned the legacy hash — the thread list then
+    // showed an outdated name (e.g. "Vera Schwärzler") while the profile
+    // already showed the corrected one. Routing through the same lookup
+    // keeps the inbox list and the patient profile in agreement.
+    const patientIdByEmail = new Map<string, string>();
+
+    // 2a. Multi-email alias table (canonical source of truth).
+    const { data: aliasRows } = await admin
+      .from("patient_email_hashes")
+      .select("email_hash, patient_id")
       .in("email_hash", hashes);
-    for (const p of pats ?? []) {
-      try {
-        const decrypted = decryptPatient(
-          p as Parameters<typeof decryptPatient>[0],
-        );
-        const hash = p.email_hash as string | null;
+    for (const row of aliasRows ?? []) {
+      const hash = row.email_hash as string | null;
+      const pid = row.patient_id as string | null;
+      const email = hash ? emailByHash.get(hash) : null;
+      if (email && pid) patientIdByEmail.set(email, pid);
+    }
+
+    // 2b. Legacy fallback for addresses not yet backfilled into the
+    // alias table.
+    const legacyHashes = hashes.filter((h) => {
+      const e = emailByHash.get(h);
+      return e ? !patientIdByEmail.has(e) : false;
+    });
+    if (legacyHashes.length > 0) {
+      const { data: legacy } = await admin
+        .from("patients")
+        .select("id, email_hash")
+        .in("email_hash", legacyHashes);
+      for (const row of legacy ?? []) {
+        const hash = row.email_hash as string | null;
+        const pid = row.id as string | null;
         const email = hash ? emailByHash.get(hash) : null;
-        if (!email) continue;
-        // Require both names — see auszubildende pass above.
-        const firstName = decrypted.first_name?.trim() || null;
-        const lastName = decrypted.last_name?.trim() || null;
-        if (!firstName || !lastName) continue;
-        const name = formatPersonName({ firstName, lastName });
+        if (email && pid && !patientIdByEmail.has(email)) {
+          patientIdByEmail.set(email, pid);
+        }
+      }
+    }
+
+    const patientIds = Array.from(new Set(patientIdByEmail.values()));
+    if (patientIds.length > 0) {
+      // Only encrypted columns + the id — first_name/last_name do not
+      // exist as plaintext columns on `patients`. Naming them in the
+      // SELECT fails the whole query.
+      const { data: pats } = await admin
+        .from("patients")
+        .select("id, encrypted_data, encrypted_key, encryption_iv")
+        .in("id", patientIds);
+      const nameById = new Map<string, string>();
+      for (const p of pats ?? []) {
+        try {
+          const decrypted = decryptPatient(
+            p as Parameters<typeof decryptPatient>[0],
+          );
+          // Require both names — see auszubildende pass above.
+          const firstName = decrypted.first_name?.trim() || null;
+          const lastName = decrypted.last_name?.trim() || null;
+          if (!firstName || !lastName) continue;
+          const name = formatPersonName({ firstName, lastName });
+          if (name) nameById.set(p.id as string, name);
+        } catch {
+          // Best-effort: legacy or malformed rows are skipped silently.
+          // The thread list will fall back to the From-header name or
+          // the bare email, which is the prior behaviour anyway.
+        }
+      }
+      for (const [email, pid] of patientIdByEmail.entries()) {
+        const name = nameById.get(pid);
         if (name) result.set(email, name);
-      } catch {
-        // Best-effort: legacy or malformed rows are skipped silently.
-        // The thread list will fall back to the From-header name or
-        // the bare email, which is the prior behaviour anyway.
       }
     }
   }
