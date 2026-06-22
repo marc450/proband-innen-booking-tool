@@ -57,17 +57,16 @@ export function MerchCheckoutLauncher({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDoctor, setIsDoctor] = useState<"" | "yes" | "no">("");
-  const [pastCourse, setPastCourse] = useState<"" | "yes" | "no">("");
   const [delivery, setDelivery] = useState<"" | "shipping" | "pickup">("");
 
   const soldOut = stock <= 0;
 
-  // Whether the modal should ask "Versand oder Abholung?". Only shown
-  // for products on the eligibility list AND only while the pickup
-  // window is still open. We also re-check on a 60s interval so the
-  // option correctly disappears if a session sits idle past the
-  // cutoff (relevant for buyers who left the modal open near 19:30
-  // CEST on the event day).
+  // Whether the modal should ask "Versand oder Abholung?". During the
+  // community event window we offer free pickup to every guest on every
+  // product, so this shows whenever the pickup window is still open. We
+  // re-check on a 30s interval so the option correctly disappears if a
+  // session sits idle past the midnight cutoff (relevant for buyers who
+  // left the modal open near the end of the event).
   const productAllowsPickup = isProductPickupEligible(productSlug);
   const [pickupWindowOpen, setPickupWindowOpen] = useState(() =>
     isPickupOpen(),
@@ -75,26 +74,14 @@ export function MerchCheckoutLauncher({
   useEffect(() => {
     if (!productAllowsPickup) return;
     const tick = () => setPickupWindowOpen(isPickupOpen());
-    const id = window.setInterval(tick, 60_000);
+    const id = window.setInterval(tick, 30_000);
     return () => window.clearInterval(id);
   }, [productAllowsPickup]);
-  // Only doctors get asked about a past course (non-doctors can't have
-  // attended one of our courses).
-  const showPastCourseQuestion =
-    productAllowsPickup && pickupWindowOpen && isDoctor === "yes";
-  const showDeliveryQuestion = showPastCourseQuestion && pastCourse === "yes";
+  const showDeliveryQuestion = productAllowsPickup && pickupWindowOpen;
 
-  // Clear the past-course answer whenever the question disappears
-  // (e.g. user switches from "Ja" back to "Nein" on the doctor
-  // question) so a stale "yes" can't keep the delivery picker open.
-  useEffect(() => {
-    if (!showPastCourseQuestion) setPastCourse("");
-  }, [showPastCourseQuestion]);
-
-  // Default the delivery choice to "shipping" for any non-eligible
-  // product (cap, future merch) and for buyers who haven't attended a
-  // past course. Only past course attendees get to choose Versand vs
-  // Abholung.
+  // Default the delivery choice to "shipping" once the event window has
+  // closed (or for any product that doesn't allow pickup). While the
+  // window is open every buyer actively chooses Versand vs Abholung.
   useEffect(() => {
     if (!showDeliveryQuestion) {
       setDelivery("shipping");
@@ -105,7 +92,6 @@ export function MerchCheckoutLauncher({
 
   const reset = () => {
     setIsDoctor("");
-    setPastCourse("");
     setDelivery(showDeliveryQuestion ? "" : "shipping");
     setError(null);
     setSubmitting(false);
@@ -117,10 +103,6 @@ export function MerchCheckoutLauncher({
 
     if (!isDoctor) {
       setError("Bitte eine Auswahl treffen.");
-      return;
-    }
-    if (showPastCourseQuestion && !pastCourse) {
-      setError("Bitte angeben, ob Du schon an einem Kurs teilgenommen hast.");
       return;
     }
     if (showDeliveryQuestion && !delivery) {
@@ -271,38 +253,6 @@ export function MerchCheckoutLauncher({
                   </button>
                 </div>
               </div>
-
-              {showPastCourseQuestion && (
-                <div className="space-y-3">
-                  <label className="text-sm font-medium block">
-                    Hast Du als Ärzt:in bei uns schonmal an einem Kurs teilgenommen?
-                  </label>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setPastCourse("yes")}
-                      className={`flex-1 rounded-[10px] border py-2.5 text-sm font-medium transition-colors cursor-pointer ${
-                        pastCourse === "yes"
-                          ? "border-[#0066FF] bg-[#0066FF]/5 text-[#0066FF]"
-                          : "border-input bg-white hover:bg-gray-50"
-                      }`}
-                    >
-                      Ja
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPastCourse("no")}
-                      className={`flex-1 rounded-[10px] border py-2.5 text-sm font-medium transition-colors cursor-pointer ${
-                        pastCourse === "no"
-                          ? "border-[#0066FF] bg-[#0066FF]/5 text-[#0066FF]"
-                          : "border-input bg-white hover:bg-gray-50"
-                      }`}
-                    >
-                      Nein
-                    </button>
-                  </div>
-                </div>
-              )}
 
               {showDeliveryQuestion && (
                 <div className="space-y-4">
