@@ -70,30 +70,36 @@ export async function GET() {
   return NextResponse.json(result);
 }
 
+// Find an auth user by email. supabase-js admin has no getUserByEmail,
+// so we page through listUsers. Only called on the rare conflict path,
+// so the extra requests are acceptable. perPage 1000 = the max.
+async function findAuthUserByEmail(
+  adminClient: ReturnType<typeof createAdminClient>,
+  email: string,
+) {
+  const target = email.trim().toLowerCase();
+  for (let page = 1; page <= 100; page++) {
+    const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error || !data) return null;
+    const match = data.users.find((u) => (u.email || "").toLowerCase() === target);
+    if (match) return match;
+    if (data.users.length < 1000) return null;
+  }
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   const user = await assertAdmin();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-  const { title, first_name, last_name, email, role, is_dozent, is_kursbetreuung, slack_user_id, dozent_employer, dozent_specialization, password } = await req.json();
+  const { title, first_name, last_name, email, role, is_dozent, is_kursbetreuung, slack_user_id, dozent_employer, dozent_specialization, password, promote } = await req.json();
   if (!email || !first_name || !last_name || !password) {
     return NextResponse.json({ error: "Bitte alle Pflichtfelder ausfüllen." }, { status: 400 });
   }
 
   const adminClient = createAdminClient();
-
-  // createUser with email_confirm: true — no email is sent
-  const { data, error } = await adminClient.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: { first_name, last_name },
-  });
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
   const isDozentFinal = is_dozent ?? false;
-  await adminClient.from("profiles").insert({
-    id: data.user.id,
+  const profileFields = {
     title: title || null,
     first_name,
     last_name,
@@ -103,7 +109,67 @@ export async function POST(req: NextRequest) {
     slack_user_id: typeof slack_user_id === "string" && slack_user_id.trim() ? slack_user_id.trim() : null,
     dozent_employer: isDozentFinal ? (dozent_employer?.trim() || null) : null,
     dozent_specialization: isDozentFinal ? (dozent_specialization?.trim() || null) : null,
+  };
+
+  // Promote path: the admin confirmed they want to upgrade an existing
+  // account (e.g. a 'student' customer from the LW SSO bridge) to staff.
+  // We reuse the same auth row, set the new staff password, and upsert
+  // the profile. Their existing login password is replaced.
+  if (promote) {
+    const existing = await findAuthUserByEmail(adminClient, email);
+    if (!existing) {
+      return NextResponse.json({ error: "Bestehendes Konto nicht gefunden." }, { status: 404 });
+    }
+    const { error: updateErr } = await adminClient.auth.admin.updateUserById(existing.id, {
+      password,
+      email_confirm: true,
+      user_metadata: { first_name, last_name },
+    });
+    if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
+
+    const { error: profileErr } = await adminClient
+      .from("profiles")
+      .upsert({ id: existing.id, ...profileFields });
+    if (profileErr) return NextResponse.json({ error: profileErr.message }, { status: 500 });
+
+    return NextResponse.json({ ok: true, userId: existing.id, promoted: true });
+  }
+
+  // createUser with email_confirm: true — no email is sent
+  const { data, error } = await adminClient.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { first_name, last_name },
   });
+
+  if (error) {
+    // Email already taken: surface the existing account so the UI can
+    // offer to promote it instead of dead-ending on a generic error.
+    const existing = await findAuthUserByEmail(adminClient, email);
+    if (existing) {
+      const { data: prof } = await adminClient
+        .from("profiles")
+        .select("role, first_name, last_name")
+        .eq("id", existing.id)
+        .maybeSingle();
+      return NextResponse.json(
+        {
+          conflict: true,
+          existing: {
+            email: existing.email,
+            role: prof?.role ?? null,
+            first_name: prof?.first_name ?? null,
+            last_name: prof?.last_name ?? null,
+          },
+        },
+        { status: 409 },
+      );
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  await adminClient.from("profiles").insert({ id: data.user.id, ...profileFields });
 
   return NextResponse.json({ ok: true, userId: data.user.id });
 }

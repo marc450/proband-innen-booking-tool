@@ -72,6 +72,9 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
   const [createError, setCreateError] = useState<string | null>(null);
   const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  // Set when the entered email already belongs to an account; the
+  // confirm dialog offers to promote that account to staff.
+  const [promoteTarget, setPromoteTarget] = useState<{ email: string; role: string | null; first_name: string | null; last_name: string | null } | null>(null);
 
   // Edit dialog
   const [editTarget, setEditTarget] = useState<AdminUser | null>(null);
@@ -126,9 +129,10 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     setDozentEmployer(""); setDozentSpecialization("");
     setSlackUserId("");
     setCreateError(null); setCreatedCredentials(null); setCopied(false);
+    setPromoteTarget(null);
   };
 
-  const handleCreate = async () => {
+  const handleCreate = async (promote = false) => {
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
       setCreateError("Bitte alle Felder ausfüllen.");
       return;
@@ -143,16 +147,24 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     const res = await fetch("/api/admin/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: title || null, first_name: firstName, last_name: lastName, email, password, role, is_dozent: isDozent, is_kursbetreuung: isKursbetreuung, slack_user_id: slackUserId || null, dozent_employer: isDozent ? dozentEmployer : null, dozent_specialization: isDozent ? dozentSpecialization : null }),
+      body: JSON.stringify({ title: title || null, first_name: firstName, last_name: lastName, email, password, role, is_dozent: isDozent, is_kursbetreuung: isKursbetreuung, slack_user_id: slackUserId || null, dozent_employer: isDozent ? dozentEmployer : null, dozent_specialization: isDozent ? dozentSpecialization : null, promote }),
     });
     const data = await res.json();
     setSaving(false);
+
+    // Email already in use (e.g. a Kund:innen-Konto from the LW SSO
+    // bridge). Offer to promote the existing account to staff.
+    if (res.status === 409 && data.conflict) {
+      setPromoteTarget(data.existing);
+      return;
+    }
 
     if (!res.ok) {
       setCreateError(data.error || "Fehler beim Erstellen.");
       return;
     }
 
+    setPromoteTarget(null);
     setCreatedCredentials({ email, password });
     const listRes = await fetch("/api/admin/users");
     if (listRes.ok) setUsers(await listRes.json());
@@ -293,6 +305,21 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
         variant="destructive"
         onConfirm={handleMfaReset}
         onCancel={() => setMfaResetTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={!!promoteTarget}
+        title="Bestehendes Konto hochstufen"
+        description={`${promoteTarget?.email ?? "Diese E-Mail"} gehört bereits zu einem Konto${
+          promoteTarget?.role === "student"
+            ? " (aktuell: Kund:in)"
+            : promoteTarget?.role
+              ? ` (aktuell: ${promoteTarget.role === "admin" ? "Admin" : "Nutzer:in"})`
+              : ""
+        }. Möchtest Du dieses Konto zu Staff (${role === "admin" ? "Admin" : "Nutzer:in"}) hochstufen? Name und Rolle werden überschrieben und das eingegebene Passwort wird als neues Login-Passwort gesetzt. Das bisherige Passwort gilt dann nicht mehr.`}
+        confirmLabel={saving ? "Wird hochgestuft..." : "Konto hochstufen"}
+        onConfirm={() => handleCreate(true)}
+        onCancel={() => setPromoteTarget(null)}
       />
 
       {/* Edit dialog */}
@@ -538,7 +565,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                 <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }} disabled={saving}>
                   Abbrechen
                 </Button>
-                <Button onClick={handleCreate} disabled={saving}>
+                <Button onClick={() => handleCreate()} disabled={saving}>
                   {saving ? "Wird angelegt..." : "Benutzer anlegen"}
                 </Button>
               </DialogFooter>
