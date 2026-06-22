@@ -103,7 +103,8 @@ export function TasksManager({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("not_done");
   // "Nur meine" is only meaningful for admins; nutzer only see their own.
-  const [mineOnly, setMineOnly] = useState(false);
+  // Default to showing only the current user's tasks.
+  const [mineOnly, setMineOnly] = useState(true);
   // "__all__" = no filter, "__none__" = unassigned, otherwise a staff id.
   const [assigneeFilter, setAssigneeFilter] = useState<string>("__all__");
 
