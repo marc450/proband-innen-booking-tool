@@ -15,6 +15,7 @@ import {
   GALDERMA_RECIPIENT_TO,
   GALDERMA_RECIPIENT_CC,
   GALDERMA_ENTITY,
+  GALDERMA_CONTACT,
   GALDERMA_PURPOSES,
 } from "@/lib/partner-galderma";
 
@@ -173,6 +174,57 @@ export async function sendWithdrawalConfirmationEmail(args: {
   firstName: string;
 }): Promise<SendResult> {
   const { subject, html } = buildWithdrawalConfirmationEmail(args);
+  return resendSend({ to: args.to, subject, html });
+}
+
+// ── 1c. Galderma contact intro to the participant (24h after consent) ───────
+// Sent 24h after the doctor signs the consent: introduces their personal
+// Galderma contact so they know whom to reach, and that she can name the
+// right Außendienstmitarbeiter:in for a practice visit. Goes to the doctor,
+// not to Galderma.
+export function buildGaldermaContactIntroEmail(args: {
+  firstName: string;
+  courseTitle?: string | null;
+}): { subject: string; html: string } {
+  const kursTeil = args.courseTitle
+    ? `Deines Kurses <strong>${args.courseTitle}</strong>`
+    : "Deines EPHIA-Kurses";
+
+  const intro =
+    `Du hast beim Abschluss ${kursTeil} eingewilligt, dass wir Deine ` +
+    `Kontaktdaten an die ${GALDERMA_ENTITY.name} weitergeben dürfen. ` +
+    `Damit Du von Anfang an weißt, an wen Du Dich wenden kannst, stellen ` +
+    `wir Dir hier Deine persönliche Ansprechpartnerin bei Galderma vor.`;
+
+  const html = buildEmailHtml({
+    firstName: args.firstName || "Du",
+    intro,
+    infoRows: [
+      { label: "Ansprechpartnerin", value: GALDERMA_CONTACT.name },
+      { label: "Funktion", value: GALDERMA_CONTACT.role },
+      { label: "E-Mail", value: GALDERMA_CONTACT.email },
+    ],
+    buttons: [
+      { label: "Galderma kontaktieren", url: `mailto:${GALDERMA_CONTACT.email}` },
+    ],
+    note:
+      `Falls Du einen Besuch in Deiner Praxis wünschst, benennt Dir ` +
+      `${GALDERMA_CONTACT.name} gerne die richtige Außendienstmitarbeiter:in ` +
+      `für Deine Region. Melde Dich dafür einfach direkt bei ihr.`,
+  });
+
+  return {
+    subject: `Deine Ansprechpartnerin bei ${GALDERMA_ENTITY.name}`,
+    html,
+  };
+}
+
+export async function sendGaldermaContactIntroEmail(args: {
+  to: string;
+  firstName: string;
+  courseTitle?: string | null;
+}): Promise<SendResult> {
+  const { subject, html } = buildGaldermaContactIntroEmail(args);
   return resendSend({ to: args.to, subject, html });
 }
 

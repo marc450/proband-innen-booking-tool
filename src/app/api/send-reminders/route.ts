@@ -8,6 +8,7 @@ import { scheduleCourseReviewEmails } from "@/lib/send-course-review-request";
 import { sendPostTreatmentProbandReviews } from "@/lib/send-proband-review-request";
 import { sweepStaleReviewEmails } from "@/lib/cancel-scheduled-review-email";
 import { runGaldermaExport } from "@/lib/run-galderma-export";
+import { runGaldermaContactIntros } from "@/lib/run-galderma-contact-intros";
 import { archiveSentMessage } from "@/lib/gmail";
 import { INDICATIONS } from "@/lib/indications";
 
@@ -41,6 +42,7 @@ export async function GET(req: NextRequest) {
     staleReviewEmailsFound: 0,
     staleReviewEmailsCancelled: 0,
     galdermaExported: 0,
+    galdermaContactIntros: 0,
     errors: 0,
   };
 
@@ -56,6 +58,20 @@ export async function GET(req: NextRequest) {
       results.errors += galderma.errors;
     } catch (galdermaErr) {
       console.error("Galderma export pass failed:", galdermaErr);
+      results.errors += 1;
+    }
+
+    // ── Galderma contact intro (24h after the doctor signs the consent) ──
+    // Emails each consenting Ärzt:in their personal Galderma contact (the
+    // überregionale Ansprechpartnerin) exactly once, 24h after signing
+    // (stamped via contact_intro_sent_at). Goes to the doctor, not Galderma.
+    // No-ops entirely while GALDERMA_EXPORT_LIVE is off.
+    try {
+      const contactIntros = await runGaldermaContactIntros(supabase);
+      results.galdermaContactIntros = contactIntros.sent;
+      results.errors += contactIntros.errors;
+    } catch (contactErr) {
+      console.error("Galderma contact-intro pass failed:", contactErr);
       results.errors += 1;
     }
 

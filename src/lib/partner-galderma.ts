@@ -30,6 +30,15 @@ export const GALDERMA_ENTITY = {
   country: "Deutschland",
 } as const;
 
+// The doctor's personal Galderma contact, introduced 24h after consent.
+// She is the überregionale Ansprechpartnerin and names the right
+// Außendienstmitarbeiter:in if a practice visit is wanted.
+export const GALDERMA_CONTACT = {
+  name: "Miya Middelton",
+  role: "Überregionale Ansprechpartnerin",
+  email: "miyanika.middleton@galderma.com",
+} as const;
+
 // Bump on any wording change. Stored on every consent row.
 export const CONSENT_TEXT_VERSION = "galderma-2026-06-20";
 
