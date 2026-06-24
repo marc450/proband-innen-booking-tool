@@ -204,9 +204,6 @@ export function buildGaldermaContactIntroEmail(args: {
       { label: "Funktion", value: GALDERMA_CONTACT.role },
       { label: "E-Mail", value: GALDERMA_CONTACT.email },
     ],
-    buttons: [
-      { label: "Galderma kontaktieren", url: `mailto:${GALDERMA_CONTACT.email}` },
-    ],
     note:
       `Falls Du einen Besuch in Deiner Praxis wünschst, benennt Dir ` +
       `${GALDERMA_CONTACT.name} gerne die richtige Außendienstmitarbeiter:in ` +
