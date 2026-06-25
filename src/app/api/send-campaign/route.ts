@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireVerifiedStaff } from "@/lib/auth-verify";
 import { buildEmailHtml, type ContentBlock } from "@/lib/email-template";
 import { decryptPatient } from "@/lib/encryption";
 import { normalizeEmail } from "@/lib/email-normalize";
@@ -69,6 +69,16 @@ function sanitizeRecipientEmail(raw: string | null | undefined): string | null {
 }
 
 export async function POST(req: NextRequest) {
+  // Staff-only. This endpoint sends mail to the entire patient/doctor
+  // base via the admin client, so it must never be reachable by an
+  // unauthenticated caller or a public 'student' account. Use the
+  // verified gate (validates the JWT + reads the role from the DB),
+  // not the forgeable x-user-role cookie.
+  const access = await requireVerifiedStaff();
+  if (!access) {
+    return NextResponse.json({ error: "Nicht autorisiert." }, { status: 403 });
+  }
+
   const {
     id: draftId,
     name,
@@ -97,23 +107,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Pflichtfelder fehlen." }, { status: 400 });
   }
 
+  // Cap total attachment payload. Content is base64 (≈ +33% over raw),
+  // so ~20 MB base64 is roughly a 15 MB file. Resend rejects oversized
+  // mail anyway; fail fast with a clear message instead of timing out.
+  const attachmentBytes = (rawAttachments ?? []).reduce(
+    (sum, a) => sum + (a?.content?.length ?? 0),
+    0,
+  );
+  if (attachmentBytes > 20_000_000) {
+    return NextResponse.json(
+      { error: "Anhänge sind zu groß (max. ca. 15 MB insgesamt)." },
+      { status: 413 },
+    );
+  }
+
   if (!RESEND_API_KEY) {
     return NextResponse.json({ error: "RESEND_API_KEY nicht konfiguriert." }, { status: 500 });
   }
 
-  // Capture the logged-in staff member so the dashboard can attribute
-  // the send. Done via the SSR cookie-aware client; the rest of the
-  // handler keeps using the admin client to bypass RLS. If the request
-  // somehow has no session (e.g. an internal call), sentByUserId stays
-  // null and the insert still succeeds.
-  let sentByUserId: string | null = null;
-  try {
-    const ssr = await createClient();
-    const { data: { user } } = await ssr.auth.getUser();
-    sentByUserId = user?.id ?? null;
-  } catch {
-    // Non-fatal: the attribution column is nullable.
-  }
+  // Attribute the send to the verified staff member (id came from the
+  // validated JWT above, so there's nothing to spoof).
+  const sentByUserId: string | null = access.userId;
 
   const supabase = createAdminClient();
   const excludedSet = new Set(excludedIds || []);

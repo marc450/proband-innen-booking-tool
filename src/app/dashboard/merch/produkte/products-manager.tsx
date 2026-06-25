@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { isSafeImageUrl } from "@/lib/safe-url";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -107,6 +108,14 @@ export function ProductsManager({ initialProducts, initialVariants }: Props) {
       setAlertState({ title: "Fehler", description: "Slug und Titel sind Pflicht." });
       return;
     }
+    const imageFields = [
+      pForm.image_url, pForm.image_url_2, pForm.image_url_3,
+      pForm.image_url_4, pForm.image_url_5, pForm.image_url_6,
+    ];
+    if (!imageFields.every(isSafeImageUrl)) {
+      setAlertState({ title: "Fehler", description: "Bild-URLs müssen mit http:// oder https:// beginnen." });
+      return;
+    }
     const payload = {
       slug: pForm.slug.trim(),
       title: pForm.title.trim(),
@@ -183,6 +192,10 @@ export function ProductsManager({ initialProducts, initialVariants }: Props) {
     if (!variantParentId) return;
     if (!vForm.name.trim()) {
       setAlertState({ title: "Fehler", description: "Name ist Pflicht." });
+      return;
+    }
+    if (!isSafeImageUrl(vForm.image_url)) {
+      setAlertState({ title: "Fehler", description: "Bild-URL muss mit http:// oder https:// beginnen." });
       return;
     }
     const priceCents = Math.round(parseFloat(vForm.price_gross_eur) * 100) || 0;

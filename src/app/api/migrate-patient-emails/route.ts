@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireVerifiedAdmin } from "@/lib/auth-verify";
 import {
   decryptFields,
   encryptFields,
@@ -19,9 +19,12 @@ import {
 // once from the dashboard after migration 044 has been applied.
 
 export async function POST() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  // Admin-only. This decrypts every patient's email out of E2EE storage,
+  // so it must never be reachable by a public 'student' account. Verified
+  // gate (validates the JWT + reads the role from the DB), not the
+  // forgeable x-user-role cookie or a bare getUser() existence check.
+  const access = await requireVerifiedAdmin();
+  if (!access) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

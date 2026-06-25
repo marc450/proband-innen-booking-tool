@@ -26,6 +26,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No data" }, { status: 400 });
   }
 
+  // Cap the batch. Each row is hashed + encrypted in-process, so an
+  // unbounded array would pin memory/CPU. 10k comfortably covers any
+  // real CSV import; anything larger should be split.
+  const MAX_IMPORT_ROWS = 10_000;
+  if (rows.length > MAX_IMPORT_ROWS) {
+    return NextResponse.json(
+      { error: `Maximal ${MAX_IMPORT_ROWS} Zeilen pro Import. Bitte in kleineren Blöcken importieren.` },
+      { status: 413 },
+    );
+  }
+
   const supabase = createAdminClient();
 
   // Dedup against BOTH the legacy patients.email_hash column AND the

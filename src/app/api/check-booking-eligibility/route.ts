@@ -2,8 +2,30 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hashEmail, hashPhone } from "@/lib/encryption";
 import { findPatientIdByAnyEmail } from "@/lib/contact-emails";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+// This endpoint answers "is this email/phone blacklisted or already
+// booked", so its distinct responses let someone probe whether an
+// address is known to us. The booking form calls it a handful of times
+// per session, so a generous per-IP cap stops bulk enumeration without
+// ever touching a real booker. Per-instance (in-process) like the AI
+// limiter; treat as a brake, not a hard guarantee.
+function clientIp(req: NextRequest): string {
+  return (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
+}
 
 export async function POST(req: NextRequest) {
+  const rl = checkRateLimit(`eligibility:${clientIp(req)}`, [
+    { windowMs: 60_000, max: 30 },
+    { windowMs: 3_600_000, max: 150 },
+  ]);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Zu viele Anfragen. Bitte versuche es später erneut." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+    );
+  }
+
   try {
     const { email, phone, courseId } = await req.json();
 

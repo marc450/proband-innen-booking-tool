@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireVerifiedInbox } from "@/lib/auth-verify";
 import { normalizeTitle } from "@/lib/utils";
 import {
   hashEmail,
@@ -66,13 +66,6 @@ type PatientBookingRow = {
   startTime: string | null;
   courseTitle: string | null;
 };
-
-async function assertStaff() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  return user;
-}
 
 async function lookupAuszubildende(email: string): Promise<ContactDTO | null> {
   const admin = createAdminClient();
@@ -311,8 +304,8 @@ async function fetchNoShows(email: string, patientId: string | null) {
 }
 
 export async function GET(req: NextRequest) {
-  const user = await assertStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const access = await requireVerifiedInbox();
+  if (!access) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
   const email = (req.nextUrl.searchParams.get("email") || "").trim().toLowerCase();
   if (!email) {
@@ -405,8 +398,8 @@ const PATIENT_WRITABLE = new Set([
 ]);
 
 export async function PATCH(req: NextRequest) {
-  const user = await assertStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const access = await requireVerifiedInbox();
+  if (!access) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
   const { source, id, patch } = await req.json();
   if (!source || !id || !patch || typeof patch !== "object") {

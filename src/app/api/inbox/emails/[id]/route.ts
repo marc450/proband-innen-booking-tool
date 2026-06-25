@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireVerifiedInbox } from "@/lib/auth-verify";
 import { setAuszubildendePrimary, setPatientPrimary } from "@/lib/contact-emails";
 
 // Per-row email operations.
@@ -13,18 +13,12 @@ import { setAuszubildendePrimary, setPatientPrimary } from "@/lib/contact-emails
 
 type EmailSource = "auszubildende" | "patient";
 
-async function assertStaff() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
-}
-
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const user = await assertStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const access = await requireVerifiedInbox();
+  if (!access) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
   const { id } = await params;
   const body = await req.json();
@@ -68,8 +62,8 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const user = await assertStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const access = await requireVerifiedInbox();
+  if (!access) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
   const { id } = await params;
   const source = req.nextUrl.searchParams.get("source") as EmailSource | null;

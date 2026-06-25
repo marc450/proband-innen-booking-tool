@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireVerifiedInbox } from "@/lib/auth-verify";
 import {
   encryptFields,
   hashEmail,
@@ -21,19 +21,16 @@ type EmailSource = "auszubildende" | "patient";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-async function assertStaff() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
-}
-
 function normaliseEmail(raw: string): string {
   return raw.trim().toLowerCase();
 }
 
 export async function GET(req: NextRequest) {
-  const user = await assertStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  // Inbox access = admin OR kursbetreuung, verified against the DB
+  // (not the forgeable x-user-role cookie). Public 'student' accounts
+  // and plain authenticated users without inbox rights are rejected.
+  const access = await requireVerifiedInbox();
+  if (!access) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
   const source = req.nextUrl.searchParams.get("source") as EmailSource | null;
   const id = req.nextUrl.searchParams.get("id");
@@ -69,8 +66,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const user = await assertStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const access = await requireVerifiedInbox();
+  if (!access) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
   const body = await req.json();
   const source = body.source as EmailSource | undefined;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireVerifiedAdmin } from "@/lib/auth-verify";
 import { randomUUID } from "crypto";
 
 /**
@@ -32,18 +32,14 @@ const BUCKET = "marketing-assets";
 const FOLDER = "campaigns";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
-async function assertAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
-}
-
 export async function POST(req: NextRequest) {
-  const user = await assertAdmin();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Verified admin gate. The previous assertAdmin() only checked that a
+  // user existed, so any logged-in account (incl. public 'student')
+  // could upload into the marketing-assets bucket. requireVerifiedAdmin
+  // validates the JWT and reads the role from the DB.
+  const access = await requireVerifiedAdmin();
+  if (!access) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   const form = await req.formData().catch(() => null);

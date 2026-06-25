@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireVerifiedAdmin } from "@/lib/auth-verify";
+import { requireVerifiedAdmin, requireVerifiedStaff } from "@/lib/auth-verify";
 import { enrollInLearnWorlds } from "@/lib/post-purchase";
 import {
   decryptPatient,
@@ -472,20 +471,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Patient profiles hold E2EE PII and the merge hard-deletes a record, so
-  // gate it behind a verified-admin check (never the forgeable cookie).
-  // The auszubildende path keeps its existing authenticated-staff gate.
+  // Both merge paths hard-delete a record and reassign bookings, so they
+  // must never be reachable by a public 'student' account. Patient
+  // profiles additionally hold E2EE PII, so that path requires admin; the
+  // auszubildende path requires verified staff (admin or nutzer). Neither
+  // trusts the forgeable x-user-role cookie.
   if (source === "patient") {
     const access = await requireVerifiedAdmin();
     if (!access) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
   } else {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
+    const access = await requireVerifiedStaff();
+    if (!access) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
   }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // First step of the lazy-migration login flow on ephia.de/start.
 // The user types their email; this route reports whether they
@@ -30,6 +31,23 @@ interface CheckResponse {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
+  // Distinct responses (has_password / needs_password / not_a_customer)
+  // let someone probe whether an email is a known customer. A real user
+  // checks one or two addresses on /start, so a generous per-IP cap
+  // throttles bulk enumeration without hitting legitimate logins.
+  // In-process / per-instance, same as the AI limiter.
+  const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
+  const rl = checkRateLimit(`check-email:${ip}`, [
+    { windowMs: 60_000, max: 15 },
+    { windowMs: 3_600_000, max: 80 },
+  ]);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Zu viele Anfragen. Bitte versuche es später erneut." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+    );
+  }
+
   let body: RequestBody;
   try {
     body = (await req.json()) as RequestBody;
