@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { Clock, User, MapPin, Info, Users } from "lucide-react";
 import { parseDateOnly } from "@/lib/date";
+import { TITLE_OPTIONS } from "@/lib/utils";
 
 // Customer-facing dashboard view.
 //
@@ -268,8 +269,14 @@ function ProfileCard({ initial }: { initial: AccountProfile }) {
         setError(data?.error ?? "Speichern fehlgeschlagen.");
         return;
       }
-      // Keep the email (read-only, server doesn't echo it back).
-      const next: AccountProfile = { ...form, email: saved.email };
+      // Reflect the server-normalised title ("Kein Titel" → null) so the
+      // read view doesn't render the sentinel. Email stays as-is (read-only,
+      // not echoed back).
+      const next: AccountProfile = {
+        ...form,
+        title: (data?.profile?.title as string | null) ?? "",
+        email: saved.email,
+      };
       setSaved(next);
       setEditing(false);
       setJustSaved(true);
@@ -317,11 +324,11 @@ function ProfileCard({ initial }: { initial: AccountProfile }) {
         ) : (
           <div className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <EditField
+              <SelectField
                 label="Titel"
                 value={form.title}
                 onChange={(v) => set("title", v)}
-                placeholder="z. B. Dr. med."
+                options={TITLE_OPTIONS}
               />
               <EditField
                 label="Vorname"
@@ -425,6 +432,41 @@ function ReadField({ label, value }: { label: string; value: string }) {
       <dd className="text-sm text-black/85 break-words">
         {value?.trim() ? value : <span className="text-black/35">Nicht angegeben</span>}
       </dd>
+    </div>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
+  // The stored title may be empty (no title) or a legacy value not in the
+  // canonical list. Fall back to the "Kein Titel" sentinel so the select
+  // always shows a valid, selected option.
+  const selected = options.includes(value) ? value : "Kein Titel";
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-black/60 mb-1.5">
+        {label}
+      </label>
+      <select
+        value={selected}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-[#FAEBE1] rounded-[10px] px-4 py-3 text-sm text-black/85 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/30 appearance-none cursor-pointer"
+      >
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
