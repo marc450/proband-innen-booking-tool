@@ -58,8 +58,24 @@ export interface EnrichedBooking {
   progressPct?: number | null;
 }
 
+export interface AccountProfile {
+  firstName: string;
+  lastName: string;
+  title: string;
+  // Read-only: the auth login + booking-dedup key. Shown but not editable
+  // here; changing it needs a separate verified flow.
+  email: string;
+  companyName: string;
+  vatId: string;
+  addressLine1: string;
+  addressPostalCode: string;
+  addressCity: string;
+  addressCountry: string;
+}
+
 interface Props {
   firstName: string | null;
+  profile: AccountProfile | null;
   upcoming: EnrichedBooking[];
   online: EnrichedBooking[];
   done: EnrichedBooking[];
@@ -98,7 +114,7 @@ function formatLongDate(iso: string | null): string | null {
   });
 }
 
-export function MeinKontoView({ firstName, upcoming, online, done }: Props) {
+export function MeinKontoView({ firstName, profile, upcoming, online, done }: Props) {
   const [probandOpen, setProbandOpen] = useState(false);
   const empty = upcoming.length === 0 && online.length === 0 && done.length === 0;
 
@@ -111,6 +127,8 @@ export function MeinKontoView({ firstName, upcoming, online, done }: Props) {
         <h1 className="text-2xl md:text-3xl font-bold text-black mb-2">
           Hi {firstName ?? "Du"}
         </h1>
+
+        {profile && <ProfileCard initial={profile} />}
 
         {empty && (
           <div className="bg-white rounded-[10px] shadow-sm p-8 mt-10 text-center">
@@ -186,6 +204,257 @@ function Section({
       </h2>
       {children}
     </section>
+  );
+}
+
+/* ──────────────── Profile card (Deine Daten) ──────────────── */
+
+function fullName(p: AccountProfile): string {
+  return [p.title, p.firstName, p.lastName].filter(Boolean).join(" ");
+}
+
+function fullAddress(p: AccountProfile): string {
+  const cityLine = [p.addressPostalCode, p.addressCity].filter(Boolean).join(" ");
+  return [p.addressLine1, cityLine, p.addressCountry].filter(Boolean).join(", ");
+}
+
+function ProfileCard({ initial }: { initial: AccountProfile }) {
+  const [saved, setSaved] = useState<AccountProfile>(initial);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<AccountProfile>(initial);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [justSaved, setJustSaved] = useState(false);
+
+  const startEdit = () => {
+    setForm(saved);
+    setError(null);
+    setEditing(true);
+  };
+
+  const cancel = () => {
+    setEditing(false);
+    setError(null);
+  };
+
+  const set = (key: keyof AccountProfile, value: string) =>
+    setForm((f) => ({ ...f, [key]: value }));
+
+  const save = async () => {
+    if (!form.firstName.trim() || !form.lastName.trim()) {
+      setError("Vor- und Nachname sind erforderlich.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/account/update-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: form.firstName,
+          lastName: form.lastName,
+          title: form.title,
+          companyName: form.companyName,
+          vatId: form.vatId,
+          addressLine1: form.addressLine1,
+          addressPostalCode: form.addressPostalCode,
+          addressCity: form.addressCity,
+          addressCountry: form.addressCountry,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data?.error ?? "Speichern fehlgeschlagen.");
+        return;
+      }
+      // Keep the email (read-only, server doesn't echo it back).
+      const next: AccountProfile = { ...form, email: saved.email };
+      setSaved(next);
+      setEditing(false);
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 2500);
+    } catch {
+      setError("Speichern fehlgeschlagen. Bitte versuch es erneut.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="mt-8">
+      <div className="bg-white rounded-[10px] shadow-sm p-6 md:p-8">
+        <div className="flex items-start justify-between gap-4 mb-5">
+          <h2 className="text-lg font-bold text-black">Deine Daten</h2>
+          {!editing && (
+            <button
+              type="button"
+              onClick={startEdit}
+              className="text-sm font-bold text-[#0066FF] hover:underline shrink-0"
+            >
+              Bearbeiten
+            </button>
+          )}
+        </div>
+
+        {!editing ? (
+          <>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+              <ReadField label="Name" value={fullName(saved)} />
+              <ReadField label="E-Mail" value={saved.email} />
+              <ReadField label="Praxisname" value={saved.companyName} />
+              <ReadField label="USt-IdNr." value={saved.vatId} />
+              <div className="sm:col-span-2">
+                <ReadField label="Adresse" value={fullAddress(saved)} />
+              </div>
+            </dl>
+            {justSaved && (
+              <p className="text-sm font-medium text-[#0066FF] mt-5">
+                Gespeichert.
+              </p>
+            )}
+          </>
+        ) : (
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <EditField
+                label="Titel"
+                value={form.title}
+                onChange={(v) => set("title", v)}
+                placeholder="z. B. Dr. med."
+              />
+              <EditField
+                label="Vorname"
+                value={form.firstName}
+                onChange={(v) => set("firstName", v)}
+                required
+              />
+              <EditField
+                label="Nachname"
+                value={form.lastName}
+                onChange={(v) => set("lastName", v)}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-black/60 mb-1.5">
+                E-Mail
+              </label>
+              <input
+                readOnly
+                value={saved.email}
+                className="w-full bg-black/[0.04] text-black/50 rounded-[10px] px-4 py-3 text-sm focus:outline-none cursor-not-allowed"
+              />
+              <p className="text-xs text-black/40 mt-1.5">
+                Deine E-Mail ist Dein Login. Melde Dich bei uns, wenn Du sie ändern möchtest.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <EditField
+                label="Praxisname"
+                value={form.companyName}
+                onChange={(v) => set("companyName", v)}
+              />
+              <EditField
+                label="USt-IdNr."
+                value={form.vatId}
+                onChange={(v) => set("vatId", v)}
+                placeholder="z. B. DE123456789"
+              />
+            </div>
+
+            <EditField
+              label="Straße und Hausnummer"
+              value={form.addressLine1}
+              onChange={(v) => set("addressLine1", v)}
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <EditField
+                label="PLZ"
+                value={form.addressPostalCode}
+                onChange={(v) => set("addressPostalCode", v)}
+              />
+              <div className="sm:col-span-2">
+                <EditField
+                  label="Ort"
+                  value={form.addressCity}
+                  onChange={(v) => set("addressCity", v)}
+                />
+              </div>
+            </div>
+            <EditField
+              label="Land"
+              value={form.addressCountry}
+              onChange={(v) => set("addressCountry", v)}
+              placeholder="z. B. Deutschland"
+            />
+
+            {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
+              <button
+                type="button"
+                onClick={save}
+                disabled={saving}
+                className="text-sm font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-6 py-3 transition-colors disabled:opacity-60"
+              >
+                {saving ? "Speichern …" : "Speichern"}
+              </button>
+              <button
+                type="button"
+                onClick={cancel}
+                disabled={saving}
+                className="text-sm font-medium text-black/60 hover:text-black rounded-[10px] px-6 py-3 transition-colors"
+              >
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function ReadField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-xs font-semibold text-black/60 mb-1">{label}</dt>
+      <dd className="text-sm text-black/85 break-words">
+        {value?.trim() ? value : <span className="text-black/35">Nicht angegeben</span>}
+      </dd>
+    </div>
+  );
+}
+
+function EditField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  required,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  required?: boolean;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-black/60 mb-1.5">
+        {label}
+        {required && <span className="text-[#0066FF]"> *</span>}
+      </label>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full bg-[#FAEBE1] rounded-[10px] px-4 py-3 text-sm text-black/85 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/30"
+      />
+    </div>
   );
 }
 

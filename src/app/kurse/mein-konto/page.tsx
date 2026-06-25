@@ -324,7 +324,9 @@ export default async function MeinKontoPage() {
 
   const { data: contact } = await admin
     .from("v_auszubildende")
-    .select("id, first_name, last_name, email, lw_user_id")
+    .select(
+      "id, first_name, last_name, title, email, lw_user_id, company_name, vat_id, address_line1, address_postal_code, address_city, address_country",
+    )
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -567,6 +569,22 @@ export default async function MeinKontoPage() {
   return (
     <MeinKontoView
       firstName={contact?.first_name ?? null}
+      profile={
+        contact
+          ? {
+              firstName: contact.first_name ?? "",
+              lastName: contact.last_name ?? "",
+              title: contact.title ?? "",
+              email: contact.email ?? "",
+              companyName: contact.company_name ?? "",
+              vatId: contact.vat_id ?? "",
+              addressLine1: contact.address_line1 ?? "",
+              addressPostalCode: contact.address_postal_code ?? "",
+              addressCity: contact.address_city ?? "",
+              addressCountry: contact.address_country ?? "",
+            }
+          : null
+      }
       upcoming={upcoming}
       online={online}
       done={done}
