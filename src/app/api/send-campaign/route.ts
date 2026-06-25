@@ -79,6 +79,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Nicht autorisiert." }, { status: 403 });
   }
 
+  const body = (await req.json().catch(() => null)) as {
+    id?: string;
+    name: string;
+    subject: string;
+    contentBlocks: ContentBlock[];
+    audienceType: AudienceType;
+    excludedIds: string[];
+    includedIds?: string[];
+    excludeBlacklisted: boolean;
+    scheduledAt: string | null;
+    attachments?: { filename: string; content: string }[];
+  } | null;
+
+  if (!body) {
+    return NextResponse.json({ error: "Ungültige Anfrage." }, { status: 400 });
+  }
+
   const {
     id: draftId,
     name,
@@ -90,18 +107,7 @@ export async function POST(req: NextRequest) {
     excludeBlacklisted,
     scheduledAt,
     attachments: rawAttachments,
-  } = await req.json() as {
-    id?: string;
-    name: string;
-    subject: string;
-    contentBlocks: ContentBlock[];
-    audienceType: AudienceType;
-    excludedIds: string[];
-    includedIds?: string[];
-    excludeBlacklisted: boolean;
-    scheduledAt: string | null;
-    attachments?: { filename: string; content: string }[];
-  };
+  } = body;
 
   if (!subject || !contentBlocks?.length) {
     return NextResponse.json({ error: "Pflichtfelder fehlen." }, { status: 400 });

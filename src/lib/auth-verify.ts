@@ -50,7 +50,18 @@ export async function getVerifiedAccess(): Promise<VerifiedAccess | null> {
 
   return {
     userId: user.id,
-    role: typeof profile?.role === "string" ? profile.role : "nutzer",
+    // Fail CLOSED. If there is no profiles row (or the role is blank),
+    // resolve to a non-staff role rather than defaulting to "nutzer".
+    // The old "nutzer" default was fail-OPEN: any authenticated account
+    // WITHOUT a profile (e.g. a customer who never went through the
+    // student set-password / SSO flow) was treated as staff and passed
+    // requireVerifiedStaff, reaching send-campaign, import-patients,
+    // inbox/merge, delete-patient, etc. A missing role must never grant
+    // access; only an explicit admin/nutzer role does.
+    role:
+      typeof profile?.role === "string" && profile.role.length > 0
+        ? profile.role
+        : "",
     isKursbetreuung: profile?.is_kursbetreuung === true,
   };
 }
