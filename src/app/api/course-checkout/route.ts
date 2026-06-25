@@ -22,7 +22,8 @@ async function stripePost(endpoint: string, body: Record<string, string>) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { courseKey, courseType, sessionId, inviteToken } = await req.json();
+    const { courseKey, courseType, sessionId, inviteToken, gaClientId, gaSessionId } =
+      await req.json();
 
     if (!courseKey || !courseType) {
       return NextResponse.json({ error: "courseKey and courseType required" }, { status: 400 });
@@ -199,6 +200,16 @@ export async function POST(req: NextRequest) {
       "metadata[sessionDateISO]": sessionDateISO,
       "metadata[audienceTag]": courseKey === "grundkurs_botulinum_zahnmedizin" ? "Zahnmediziner:in" : "Humanmediziner:in",
     };
+
+    // GA4 attribution: carry the client/session id through Stripe so the
+    // webhook can send a server-side `purchase` conversion bound to the
+    // original organic-search session. Only set when actually present.
+    if (typeof gaClientId === "string" && gaClientId) {
+      params["metadata[gaClientId]"] = gaClientId;
+    }
+    if (typeof gaSessionId === "string" && gaSessionId) {
+      params["metadata[gaSessionId]"] = gaSessionId;
+    }
 
     // Invite-specific additions:
     //   • Carry the token as metadata so the webhook can use the

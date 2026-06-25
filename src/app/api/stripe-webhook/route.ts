@@ -18,6 +18,7 @@ import { normalizeEmail } from "@/lib/email-normalize";
 import { buildCourseLineItem, type CourseVariant } from "@/lib/course-pricing";
 import { findAuszubildendeIdByAnyEmail, upsertAuszubildendeByEmail } from "@/lib/contact-emails";
 import { cancelScheduledReviewEmail } from "@/lib/cancel-scheduled-review-email";
+import { sendGa4Purchase } from "@/lib/ga4-measurement";
 import Stripe from "stripe";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
@@ -861,6 +862,18 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       .update({ audience_tag: audienceTag })
       .eq("id", bookingId);
   }
+
+  // GA4 conversion: record the paid course booking against the user's
+  // original organic-search session. PII-free, best-effort, never blocks.
+  await sendGa4Purchase({
+    clientId: metadata.gaClientId,
+    sessionId: metadata.gaSessionId,
+    transactionId: checkoutSessionId,
+    valueCents: amountTotal,
+    courseKey,
+    courseType,
+    itemName: `${courseKey} (${courseType})`,
+  });
 
   // Auto-flag session as containing a dentist booking
   if (sessionId && audienceTag === "Zahnmediziner:in") {

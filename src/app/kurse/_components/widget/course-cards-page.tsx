@@ -9,6 +9,7 @@ import { PremiumCard, BADGE_COLORS } from "./premium-card";
 import type { IncludedCourse } from "./premium-card";
 import type { CourseTemplate, CourseSession, CourseType } from "@/lib/types";
 import { getCurriculumForCourseKey } from "@/lib/curricula";
+import { getGa4Ids } from "@/lib/ga-client";
 
 // Shared base for the Medizinische Hautpflege Onlinekurs so the modal
 // looks identical on every package (Zahnmedizin, Dermalfiller, etc.).
@@ -403,6 +404,11 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
         return;
       }
 
+      // Read the GA4 client/session id (if GA loaded via cookie consent) so
+      // the conversion fired from the Stripe webhook is credited to this
+      // organic-search session. Resolves to empty when GA isn't present.
+      const { clientId: gaClientId, sessionId: gaSessionId } = await getGa4Ids();
+
       const res = await fetch("/api/course-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -410,6 +416,8 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
           courseKey: template.course_key,
           courseType,
           sessionId: sessionId ?? null,
+          gaClientId,
+          gaSessionId,
         }),
       });
 

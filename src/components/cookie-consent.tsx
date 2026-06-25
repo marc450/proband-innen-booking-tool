@@ -57,6 +57,12 @@ export function CookieConsent() {
       /* localStorage unavailable (Safari private mode etc.) — banner
          will reappear next visit, which is acceptable. */
     }
+    // Let consent-gated scripts (e.g. GoogleAnalytics) react without a reload.
+    try {
+      window.dispatchEvent(new Event("ephia-consent-change"));
+    } catch {
+      /* no-op */
+    }
     setDecided(true);
   };
 
