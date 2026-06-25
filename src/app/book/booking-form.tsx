@@ -49,16 +49,23 @@ export function BookingForm({ slot, guidePriceCents, indication }: BookingFormPr
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), phone: phone.trim(), courseId: slot.course_id }),
       });
-      const eligibility = await eligibilityRes.json();
 
-      if (!eligibility.eligible) {
-        setError(
-          eligibility.reason === "already_booked"
-            ? "Du hast für diesen Kurs bereits einen Termin gebucht."
-            : "Eine Buchung ist mit diesen Daten leider nicht möglich. Bitte wende Dich direkt an uns."
-        );
-        setLoading(false);
-        return;
+      // This is only an advisory pre-check: blacklist and duplicate
+      // bookings are re-enforced server-side at confirm-booking. So fail
+      // OPEN, block only on an explicit negative answer. On a 429 (rate
+      // limit) or any other non-OK status the body has no `eligible`
+      // field, and we must NOT turn a legitimate buyer away mid-checkout.
+      if (eligibilityRes.ok) {
+        const eligibility = await eligibilityRes.json();
+        if (eligibility.eligible === false) {
+          setError(
+            eligibility.reason === "already_booked"
+              ? "Du hast für diesen Kurs bereits einen Termin gebucht."
+              : "Eine Buchung ist mit diesen Daten leider nicht möglich. Bitte wende Dich direkt an uns."
+          );
+          setLoading(false);
+          return;
+        }
       }
 
       const origin = window.location.origin;
