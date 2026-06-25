@@ -4,12 +4,23 @@ import { useState } from "react";
 
 interface Props {
   token: string;
-  courseKey: string;
-  courseType: string;
-  sessionId: string | null;
+  // Single-course invite fields. Ignored when `multi` is true.
+  courseKey?: string;
+  courseType?: string;
+  sessionId?: string | null;
+  // Multi-course invite: pay for every attached course in one checkout.
+  multi?: boolean;
+  label?: string;
 }
 
-export function EinladungCheckout({ token, courseKey, courseType, sessionId }: Props) {
+export function EinladungCheckout({
+  token,
+  courseKey,
+  courseType,
+  sessionId,
+  multi = false,
+  label,
+}: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,15 +28,19 @@ export function EinladungCheckout({ token, courseKey, courseType, sessionId }: P
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/course-checkout", {
+      const endpoint = multi ? "/api/einladung-checkout" : "/api/course-checkout";
+      const body = multi
+        ? { inviteToken: token }
+        : {
+            courseKey,
+            courseType,
+            sessionId: sessionId || undefined,
+            inviteToken: token,
+          };
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          courseKey,
-          courseType,
-          sessionId: sessionId || undefined,
-          inviteToken: token,
-        }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok || !data.url) {
@@ -38,15 +53,17 @@ export function EinladungCheckout({ token, courseKey, courseType, sessionId }: P
     }
   }
 
+  const disabled = loading || (!multi && (!courseKey || !courseType));
+
   return (
     <div className="space-y-3">
       <button
         type="button"
         onClick={handleClick}
-        disabled={loading || !courseKey || !courseType}
+        disabled={disabled}
         className="w-full bg-[#0066FF] text-white font-bold rounded-[10px] py-4 px-6 text-base hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition"
       >
-        {loading ? "Einen Moment …" : "Einladung einlösen"}
+        {loading ? "Einen Moment …" : label || "Einladung einlösen"}
       </button>
       {error && (
         <p className="text-sm text-red-600">{error}</p>

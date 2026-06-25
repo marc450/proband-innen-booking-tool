@@ -40,12 +40,23 @@ type AuszubildendePick = Pick<Auszubildende, "id" | "first_name" | "last_name" |
 
 type CourseType = "Onlinekurs" | "Praxiskurs" | "Kombikurs" | "Premium";
 
-interface Invite {
-  id: string;
-  token: string;
+interface InviteCourse {
   template_id: string;
   session_id: string | null;
   course_type: CourseType;
+  sort_order: number;
+  course_templates?: { title: string | null; course_label_de: string | null } | null;
+  course_sessions?: { label_de: string | null; date_iso: string | null } | null;
+}
+
+interface Invite {
+  id: string;
+  token: string;
+  // Null on multi-course invites, where the courses live in
+  // booking_invite_courses instead.
+  template_id: string | null;
+  session_id: string | null;
+  course_type: CourseType | null;
   stripe_promotion_code_id: string | null;
   recipient_email: string | null;
   recipient_name: string | null;
@@ -61,6 +72,17 @@ interface Invite {
   // Expanded joins from the API
   course_templates?: { title: string } | null;
   course_sessions?: { label_de: string | null; date_iso: string | null } | null;
+  // Multi-course invites: one entry per attached course.
+  booking_invite_courses?: InviteCourse[] | null;
+}
+
+// A single course row in the create form. A multi-course invite is just
+// two or more of these.
+interface CourseRow {
+  key: string;
+  templateId: string;
+  courseType: CourseType;
+  sessionId: string;
 }
 
 interface Props {
@@ -108,10 +130,17 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
   const [revokeTarget, setRevokeTarget] = useState<Invite | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Create form state
-  const [templateId, setTemplateId] = useState("");
-  const [courseType, setCourseType] = useState<CourseType>("Kombikurs");
-  const [sessionId, setSessionId] = useState("");
+  // Create form state. The invite can carry one or more courses; each row
+  // is a {template, variant, session} triple. rowSeq is only ever read in
+  // event handlers (addRow), never during render.
+  const rowSeq = useRef(0);
+  const makeRow = (key: string): CourseRow => ({
+    key,
+    templateId: "",
+    courseType: "Kombikurs",
+    sessionId: "",
+  });
+  const [courseRows, setCourseRows] = useState<CourseRow[]>([makeRow("row-0")]);
   const [assignedDoctorId, setAssignedDoctorId] = useState("");
   const [promoCodeId, setPromoCodeId] = useState(NO_PROMO);
   const [adminNote, setAdminNote] = useState("");
@@ -143,15 +172,21 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
   }, []);
 
   const resetForm = () => {
-    setTemplateId("");
-    setCourseType("Kombikurs");
-    setSessionId("");
+    setCourseRows([makeRow("row-0")]);
     setAssignedDoctorId("");
     setPromoCodeId(NO_PROMO);
     setAdminNote("");
     setExpiresAt("");
     setCreateError(null);
   };
+
+  // Per-row mutators.
+  const updateRow = (key: string, patch: Partial<CourseRow>) => {
+    setCourseRows((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  };
+  const addRow = () => setCourseRows((rows) => [...rows, makeRow(`row-${++rowSeq.current}`)]);
+  const removeRow = (key: string) =>
+    setCourseRows((rows) => (rows.length <= 1 ? rows : rows.filter((r) => r.key !== key)));
 
   // Sort doctors alphabetically for the dropdown, pre-formatted label.
   const doctorOptions = useMemo(() => {
@@ -168,20 +203,20 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
       });
   }, [auszubildende]);
 
-  // Sessions relevant for the picked template: only future dates, sorted
+  // Sessions relevant for a picked template: only future dates, sorted
   // ascending. Invites for past sessions make no sense.
-  const sessionsForTemplate = useMemo(() => {
+  const sessionsForTemplate = (templateId: string) => {
     const todayIso = new Date().toISOString().slice(0, 10);
     return sessions
       .filter((s) => s.template_id === templateId)
       .filter((s) => !s.date_iso || s.date_iso >= todayIso)
       .sort((a, b) => (a.date_iso || "").localeCompare(b.date_iso || ""));
-  }, [sessions, templateId]);
+  };
 
-  // Which variants the currently selected template offers (non-null price =
-  // available for purchase). Falls back to all four when no template is
-  // selected yet so the dropdown still shows something.
-  const availableVariants: CourseType[] = useMemo(() => {
+  // Which variants a template offers (non-null price = available for
+  // purchase). Falls back to all four when no template is selected yet so
+  // the dropdown still shows something.
+  const variantsForTemplate = (templateId: string): CourseType[] => {
     if (!templateId) return COURSE_TYPES;
     const t = templates.find((x) => x.id === templateId);
     if (!t) return COURSE_TYPES;
@@ -194,29 +229,31 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
     // or at least a Kombi variant.
     if (t.price_gross_premium_cents != null || t.price_gross_kombi_cents != null) list.push("Premium");
     return list.length > 0 ? list : COURSE_TYPES;
-  }, [templateId, templates]);
+  };
 
-  // Auto-switch the variant when the chosen template doesn't offer the
-  // currently selected one (e.g. picked a Kombikurs, then switched to an
-  // online-only course).
-  useEffect(() => {
-    if (!availableVariants.includes(courseType) && availableVariants.length > 0) {
-      setCourseType(availableVariants[0]);
-    }
-  }, [availableVariants, courseType]);
-
-  // Onlinekurs invites don't need a session id; everything else does.
-  const needsSession = courseType !== "Onlinekurs";
+  // When a row's template changes, reset its variant to the first one the
+  // new template offers and clear the (now-invalid) session.
+  const onRowTemplateChange = (key: string, templateId: string) => {
+    const variants = variantsForTemplate(templateId);
+    updateRow(key, {
+      templateId,
+      courseType: variants[0] ?? "Kombikurs",
+      sessionId: "",
+    });
+  };
 
   const handleCreate = async () => {
     setCreateError(null);
-    if (!templateId) {
-      setCreateError("Bitte einen Kurs auswählen.");
-      return;
-    }
-    if (needsSession && !sessionId) {
-      setCreateError("Bitte einen Kurstermin auswählen.");
-      return;
+
+    for (const row of courseRows) {
+      if (!row.templateId) {
+        setCreateError("Bitte für jede Zeile einen Kurs auswählen.");
+        return;
+      }
+      if (row.courseType !== "Onlinekurs" && !row.sessionId) {
+        setCreateError("Bitte für jeden Kurs einen Kurstermin auswählen.");
+        return;
+      }
     }
     const doctor = doctorOptions.find((d) => d.id === assignedDoctorId);
     if (!doctor) {
@@ -226,14 +263,18 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
     const recipientName = [doctor.firstName, doctor.lastName].filter(Boolean).join(" ").trim() || null;
     const recipientEmail = doctor.email || null;
 
+    const courses = courseRows.map((row) => ({
+      templateId: row.templateId,
+      courseType: row.courseType,
+      sessionId: row.courseType !== "Onlinekurs" ? row.sessionId : null,
+    }));
+
     setSaving(true);
     const res = await fetch("/api/admin/booking-invites", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        templateId,
-        sessionId: needsSession ? sessionId : null,
-        courseType,
+        courses,
         stripePromotionCodeId: promoCodeId && promoCodeId !== NO_PROMO ? promoCodeId : null,
         recipientEmail,
         recipientName,
@@ -383,73 +424,100 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
           </DialogHeader>
 
           <div className="space-y-5 py-2">
-            <div className="space-y-2">
-              <Label>Kurs *</Label>
-              <Select value={templateId} onValueChange={(v) => { setTemplateId(v ?? ""); setSessionId(""); }}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Kurs wählen...">
-                    {templateId
-                      ? (templates.find((t) => t.id === templateId)?.course_label_de
-                          || templates.find((t) => t.id === templateId)?.title
-                          || "Kurs wählen...")
-                      : "Kurs wählen..."}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {templates.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.course_label_de || t.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <div className="space-y-3">
+              <Label>Kurse *</Label>
+              {courseRows.map((row, idx) => {
+                const variants = variantsForTemplate(row.templateId);
+                const rowSessions = sessionsForTemplate(row.templateId);
+                const needsSession = row.courseType !== "Onlinekurs";
+                return (
+                  <div key={row.key} className="rounded-[10px] bg-muted/40 p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        Kurs {idx + 1}
+                      </span>
+                      {courseRows.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeRow(row.key)}
+                          className="h-7 px-2 text-destructive hover:text-destructive"
+                          title="Kurs entfernen"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
 
-            <div className="space-y-2">
-              <Label>Kursvariante *</Label>
-              <Select value={courseType} onValueChange={(v) => setCourseType(v as CourseType)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue>
-                    {variantLabel(courseType)}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {availableVariants.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {variantLabel(t)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                    <Select value={row.templateId} onValueChange={(v) => onRowTemplateChange(row.key, v ?? "")}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Kurs wählen...">
+                          {row.templateId
+                            ? (templates.find((t) => t.id === row.templateId)?.course_label_de
+                                || templates.find((t) => t.id === row.templateId)?.title
+                                || "Kurs wählen...")
+                            : "Kurs wählen..."}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templates.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.course_label_de || t.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
-            {needsSession && (
-              <div className="space-y-2">
-                <Label>Kurstermin *</Label>
-                <Select value={sessionId} onValueChange={(v) => setSessionId(v ?? "")}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={sessionsForTemplate.length === 0 ? "Kein Termin für diesen Kurs" : "Kurstermin wählen..."}>
-                      {sessionId
-                        ? (() => {
-                            const s = sessionsForTemplate.find((x) => x.id === sessionId);
-                            if (!s) return "Kurstermin wählen...";
-                            const label = s.label_de || s.date_iso || "";
-                            return s.booked_seats >= s.max_seats ? `${label} (ausgebucht)` : label;
-                          })()
-                        : (sessionsForTemplate.length === 0 ? "Kein Termin für diesen Kurs" : "Kurstermin wählen...")}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sessionsForTemplate.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.label_de || s.date_iso}
-                        {s.booked_seats >= s.max_seats ? " (ausgebucht)" : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+                    <Select value={row.courseType} onValueChange={(v) => updateRow(row.key, { courseType: v as CourseType, sessionId: "" })}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue>{variantLabel(row.courseType)}</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {variants.map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {variantLabel(t)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    {needsSession && (
+                      <Select value={row.sessionId} onValueChange={(v) => updateRow(row.key, { sessionId: v ?? "" })}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={rowSessions.length === 0 ? "Kein Termin für diesen Kurs" : "Kurstermin wählen..."}>
+                            {row.sessionId
+                              ? (() => {
+                                  const s = rowSessions.find((x) => x.id === row.sessionId);
+                                  if (!s) return "Kurstermin wählen...";
+                                  const label = s.label_de || s.date_iso || "";
+                                  return s.booked_seats >= s.max_seats ? `${label} (ausgebucht)` : label;
+                                })()
+                              : (rowSessions.length === 0 ? "Kein Termin für diesen Kurs" : "Kurstermin wählen...")}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {rowSessions.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.label_de || s.date_iso}
+                              {s.booked_seats >= s.max_seats ? " (ausgebucht)" : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                );
+              })}
+              <Button variant="outline" size="sm" onClick={addRow} className="w-full">
+                <Plus className="h-4 w-4 mr-1.5" />
+                Weiteren Kurs hinzufügen
+              </Button>
+              {courseRows.length > 1 && (
+                <p className="text-xs text-muted-foreground">
+                  Alle Kurse werden in einem gemeinsamen Checkout bezahlt.
+                </p>
+              )}
+            </div>
 
             <div className="space-y-2">
               <Label>Ärzt:in *</Label>
@@ -563,6 +631,9 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
               const expired =
                 !!invite.expires_at && new Date(invite.expires_at) < new Date();
               const canCopy = !invite.revoked && !used && !expired;
+              const multiCourses = [...(invite.booking_invite_courses || [])].sort(
+                (a, b) => a.sort_order - b.sort_order,
+              );
               return (
                 <TableRow key={invite.id}>
                   <TableCell>
@@ -574,22 +645,44 @@ export function BookingInvitesManager({ templates, sessions, auszubildende }: Pr
                     </div>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {invite.course_templates?.title || invite.template_id}
+                    {multiCourses.length > 0 ? (
+                      <div className="space-y-0.5">
+                        {multiCourses.map((c, i) => (
+                          <div key={i} className="text-xs">
+                            {(c.course_templates?.course_label_de || c.course_templates?.title || c.template_id)}
+                            <span className="text-muted-foreground">
+                              {" · "}{variantLabel(c.course_type)}
+                              {c.course_sessions?.label_de ? ` · ${c.course_sessions.label_de}` : ""}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      invite.course_templates?.title || invite.template_id
+                    )}
                   </TableCell>
                   <TableCell className="hidden xl:table-cell text-sm">
-                    {variantLabel(invite.course_type)}
-                    {invite.rebooking_fee_cents != null && (
-                      <div className="text-xs font-medium text-amber-600 whitespace-nowrap">
-                        Umbuchung {(invite.rebooking_fee_cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
-                      </div>
+                    {multiCourses.length > 0 ? (
+                      <Badge variant="outline">{multiCourses.length} Kurse</Badge>
+                    ) : (
+                      <>
+                        {invite.course_type ? variantLabel(invite.course_type) : "–"}
+                        {invite.rebooking_fee_cents != null && (
+                          <div className="text-xs font-medium text-amber-600 whitespace-nowrap">
+                            Umbuchung {(invite.rebooking_fee_cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
+                          </div>
+                        )}
+                      </>
                     )}
                   </TableCell>
                   <TableCell className="hidden xl:table-cell text-sm whitespace-nowrap">
-                    {invite.course_sessions?.label_de
-                      ? invite.course_sessions.label_de
-                      : invite.course_sessions?.date_iso
-                        ? format(parseDateOnly(invite.course_sessions.date_iso), "dd.MM.yyyy", { locale: de })
-                        : "–"}
+                    {multiCourses.length > 0
+                      ? "–"
+                      : invite.course_sessions?.label_de
+                        ? invite.course_sessions.label_de
+                        : invite.course_sessions?.date_iso
+                          ? format(parseDateOnly(invite.course_sessions.date_iso), "dd.MM.yyyy", { locale: de })
+                          : "–"}
                   </TableCell>
                   <TableCell>{statusBadge(invite)}</TableCell>
                   <TableCell className="hidden xl:table-cell text-xs text-muted-foreground max-w-[220px]">

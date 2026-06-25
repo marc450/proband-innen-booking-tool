@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildCourseLineItem, type CourseVariant } from "@/lib/course-pricing";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 
@@ -90,8 +91,6 @@ export async function POST(req: NextRequest) {
     }
 
     const isOnline = courseType === "Onlinekurs";
-    const isPraxis = courseType === "Praxiskurs";
-    const isPremium = courseType === "Premium";
 
     // For Praxiskurs/Kombikurs/Premium: validate session
     let sessionLabel = "";
@@ -134,10 +133,6 @@ export async function POST(req: NextRequest) {
       sessionDateISO = session.date_iso;
     }
 
-    // Select per-type fields
-    let productName: string;
-    let description: string;
-    let grossPriceCents: number;
     // Doctor-facing post-purchase URLs live on ephia.de. Old links that
     // still point at proband-innen.ephia.de keep working via a 308 in
     // middleware.ts, but new Stripe redirects skip the redirect hop.
@@ -145,73 +140,18 @@ export async function POST(req: NextRequest) {
       "https://ephia.de/courses/success?session_id={CHECKOUT_SESSION_ID}";
     const cancelUrl = "https://ephia.de";
 
-    const isDentist = courseKey === "grundkurs_botulinum_zahnmedizin";
-
-    if (isOnline) {
-      productName = isDentist
-        ? `${template.name_online || template.title} (Zahnmedizin)`
-        : template.name_online || template.title;
-      description = template.description_online || "";
-      grossPriceCents = template.price_gross_online_cents || 0;
-    } else if (isPraxis) {
-      productName = isDentist
-        ? `${template.name_praxis || template.title} (Zahnmedizin) – ${sessionLabel}`
-        : `${template.name_praxis || template.title} – ${sessionLabel}`;
-      description = template.description_praxis || "";
-      grossPriceCents = template.price_gross_praxis_cents || 0;
-    } else if (isPremium) {
-      const isDermalfiller = courseKey === "grundkurs_dermalfiller";
-      const isLippen = courseKey === "aufbaukurs_lippen";
-      const isTherapeutischeIndikationen =
-        courseKey === "aufbaukurs_therapeutische_indikationen_botulinum";
-      productName = isDentist
-        ? `Komplettpaket (Zahnmedizin) – ${sessionLabel}`
-        : isDermalfiller
-          ? `Komplettpaket Dermalfiller – ${sessionLabel}`
-          : isLippen
-            ? `Komplettpaket Lippen – ${sessionLabel}`
-            : isTherapeutischeIndikationen
-              ? `Komplettpaket Therapeutische Indikationen – ${sessionLabel}`
-              : `Komplettpaket – ${sessionLabel}`;
-      description = isDentist
-        ? "Online- & Praxiskurs Botulinum + Onlinekurs Medizinische Hautpflege"
-        : isDermalfiller
-          ? "Online- & Praxiskurs Dermalfiller + Onlinekurs Medizinische Hautpflege + Aufbaukurs Lippen Onlinekurs"
-          : isLippen
-            ? "Online- & Praxiskurs Lippen + Onlinekurs Dermalfiller + Onlinekurs Medizinische Hautpflege + Onlinekurs Botulinum Periorale Zone"
-            : isTherapeutischeIndikationen
-              ? "Online- & Praxiskurs Therapeutische Indikationen + Onlinekurs Grundkurs Botulinum + Onlinekurs Medizinische Hautpflege"
-              : "4 Onlinekurse + Praxiskurs Botulinum";
-      // Hardcoded fallbacks when price_gross_premium_cents isn't set in the DB.
-      // - Zahnmedizin: DB value required (falls through to 0 = 400 error).
-      // - Dermalfiller: 1290 + 250 + 490 = 2030 → -10% bundle = 1827.
-      // - Lippen: 1140 (Kombi) + 490 (Dermalfiller online) + 250 (Hautpflege)
-      //          + 340 (Periorale Zone) = 2220 → -10% bundle = 1998.
-      // - Therapeutische Indikationen: 1140 (Kombi) + 490 (Botulinum online)
-      //          + 250 (Hautpflege) = 1880 → -10% bundle = 1692.
-      // - Humanmedizin (Botulinum): 2220 default.
-      grossPriceCents = template.price_gross_premium_cents || (
-        isDentist ? 0 :
-        isDermalfiller ? 203000 :
-        isLippen ? 222000 :
-        isTherapeutischeIndikationen ? 188000 :
-        222000
-      );
-    } else {
-      // Kombikurs
-      productName = isDentist
-        ? `${template.name_kombi || template.title} (Zahnmedizin) – ${sessionLabel}`
-        : `${template.name_kombi || template.title} – ${sessionLabel}`;
-      description = template.description_kombi || "";
-      grossPriceCents = template.price_gross_kombi_cents || 0;
-    }
-
-    let unitAmount = grossPriceCents;
-
-    // Humanmedizin Premium: apply 10% discount (Zahnmedizin uses DB price directly)
-    if (isPremium && !isDentist) {
-      unitAmount = Math.round(unitAmount * 0.9);
-    }
+    // Product name, description and gross price all come from the shared
+    // pricing helper so the funnel, the invite landing page and the webhook
+    // agree on the amount. Premium already includes the 10% bundle discount.
+    const lineItem = buildCourseLineItem({
+      template,
+      courseKey,
+      courseType: courseType as CourseVariant,
+      sessionLabel,
+    });
+    let productName = lineItem.productName;
+    let description = lineItem.description;
+    let unitAmount = lineItem.grossPriceCents;
 
     // Umbuchung: when the invite carries a flat rebooking fee, that fee is the
     // entire charge, independent of variant. Per AGB Ziffer 6 the doctor keeps

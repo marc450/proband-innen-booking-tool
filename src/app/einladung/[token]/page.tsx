@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildCourseLineItem, type CourseVariant } from "@/lib/course-pricing";
 import { EinladungCheckout } from "./checkout-client";
 
 export const dynamic = "force-dynamic";
@@ -65,7 +66,7 @@ export default async function EinladungPage({
   const { data: invite } = await admin
     .from("booking_invites")
     .select(
-      "token, template_id, session_id, course_type, recipient_email, recipient_name, stripe_promotion_code_id, rebooking_fee_cents, expires_at, revoked, used_count, max_uses, course_templates(title, course_key, course_label_de, price_gross_online_cents, price_gross_praxis_cents, price_gross_kombi_cents, price_gross_premium_cents), course_sessions(label_de, date_iso)",
+      "token, template_id, session_id, course_type, recipient_email, recipient_name, stripe_promotion_code_id, rebooking_fee_cents, expires_at, revoked, used_count, max_uses, course_templates(title, course_key, course_label_de, price_gross_online_cents, price_gross_praxis_cents, price_gross_kombi_cents, price_gross_premium_cents), course_sessions(label_de, date_iso), booking_invite_courses(template_id, session_id, course_type, sort_order, course_templates(title, course_key, course_label_de, name_online, name_praxis, name_kombi, price_gross_online_cents, price_gross_praxis_cents, price_gross_kombi_cents, price_gross_premium_cents), course_sessions(label_de, date_iso))",
     )
     .eq("token", token)
     .maybeSingle();
@@ -120,6 +121,110 @@ export default async function EinladungPage({
         <p className="text-sm text-black/70">
           Diese Einladung wurde bereits genutzt. Bei Fragen schreib uns unter{" "}
           <a href="mailto:customerlove@ephia.de" className="text-[#0066FF] underline">customerlove@ephia.de</a>.
+        </p>
+      </Shell>
+    );
+  }
+
+  // Multi-course invite: render every attached course with a combined
+  // total. Redemption pays for all of them in one Stripe checkout via
+  // /api/einladung-checkout. Single-course invites fall through to the
+  // original render below.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const multiCourses = ((invite.booking_invite_courses as any[]) || [])
+    .slice()
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+  if (multiCourses.length > 0) {
+    const items = multiCourses.map((c) => {
+      const t = c.course_templates ?? {};
+      const s = c.course_sessions ?? null;
+      const sessionLabel = s?.label_de || s?.date_iso || "";
+      const { productName, grossPriceCents } = buildCourseLineItem({
+        template: t,
+        courseKey: t.course_key || "",
+        courseType: c.course_type as CourseVariant,
+        sessionLabel,
+      });
+      const courseLabel = t.course_label_de || t.title || productName || "EPHIA Kurs";
+      return {
+        courseLabel,
+        variant:
+          c.course_type === "Premium"
+            ? "Komplettpaket"
+            : c.course_type === "Kombikurs"
+              ? "Online- & Praxiskurs"
+              : c.course_type,
+        sessionLabel,
+        grossPriceCents,
+      };
+    });
+
+    const totalBaseCents = items.reduce((sum, it) => sum + it.grossPriceCents, 0);
+    const promo = await fetchPromoSnapshot(invite.stripe_promotion_code_id);
+
+    let totalFinalCents = totalBaseCents;
+    let discountLine: string | null = null;
+    if (promo) {
+      if (promo.percentOff != null) {
+        const off = Math.round((totalBaseCents * promo.percentOff) / 100);
+        totalFinalCents = Math.max(totalBaseCents - off, 0);
+        discountLine = `${promo.percentOff}% Rabatt (${formatEur(off)})`;
+      } else if (promo.amountOffCents != null) {
+        totalFinalCents = Math.max(totalBaseCents - promo.amountOffCents, 0);
+        discountLine = `${formatEur(promo.amountOffCents)} Rabatt`;
+      } else {
+        discountLine = "Rabatt wird beim Checkout angewendet";
+      }
+    }
+
+    const firstNameMulti = firstNameOf(invite.recipient_name);
+
+    return (
+      <Shell>
+        <h1 className="text-2xl md:text-3xl font-bold mb-2">
+          {firstNameMulti ? `Hi ${firstNameMulti}!` : "Deine Einladung"}
+        </h1>
+        <p className="text-sm text-black/70 mb-6">
+          Hiermit senden wir Dir Deine persönliche Buchungseinladung zu folgenden Kursen:
+        </p>
+
+        <div className="bg-[#FAEBE1] rounded-[10px] p-5 text-left mb-6 space-y-3 text-sm">
+          {items.map((it, i) => (
+            <div key={i} className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold">{it.courseLabel}</p>
+                <p className="text-black/60 text-xs">
+                  {it.variant}
+                  {it.sessionLabel ? ` · ${it.sessionLabel}` : ""}
+                </p>
+              </div>
+              <span className="whitespace-nowrap">{formatEur(it.grossPriceCents)}</span>
+            </div>
+          ))}
+
+          <div className="border-t border-black/10 pt-3 flex items-center justify-between">
+            <span className="font-semibold">Gesamt:</span>
+            {promo && totalFinalCents !== totalBaseCents ? (
+              <span>
+                <span className="line-through text-black/50 mr-1.5">{formatEur(totalBaseCents)}</span>
+                <span className="font-semibold">{formatEur(totalFinalCents)}</span>
+              </span>
+            ) : (
+              <span className="font-semibold">{formatEur(totalBaseCents)}</span>
+            )}
+          </div>
+          {discountLine && (
+            <p className="text-[#0066FF]">
+              <span className="font-semibold">Rabatt:</span> {discountLine}
+            </p>
+          )}
+        </div>
+
+        <EinladungCheckout token={invite.token} multi label="Alle Kurse buchen" />
+
+        <p className="text-xs text-black/50 mt-4">
+          Nach dem Klick wirst Du zur sicheren Stripe-Kasse weitergeleitet.
         </p>
       </Shell>
     );

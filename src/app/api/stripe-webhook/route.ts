@@ -15,6 +15,7 @@ import {
   CourseType,
 } from "@/lib/post-purchase";
 import { normalizeEmail } from "@/lib/email-normalize";
+import { buildCourseLineItem, type CourseVariant } from "@/lib/course-pricing";
 import { findAuszubildendeIdByAnyEmail, upsertAuszubildendeByEmail } from "@/lib/contact-emails";
 import { cancelScheduledReviewEmail } from "@/lib/cancel-scheduled-review-email";
 import Stripe from "stripe";
@@ -389,6 +390,300 @@ async function handleCourseRebookingPaid(requestId: string) {
   }
 }
 
+// Handle a multi-course invite checkout: one payment, several courses.
+// Re-reads the invite, creates one booking per attached course via the
+// atomic create_course_bookings_with_invite RPC (capacity bypassed, invite
+// marked used once), then links the doctor and runs the post-purchase flow
+// per course. Modeled on handleCurriculumCheckout.
+async function handleMultiInviteCheckout(session: Stripe.Checkout.Session) {
+  const metadata = session.metadata || {};
+  const inviteToken = metadata.inviteToken;
+  if (!inviteToken) return;
+
+  const supabase = createAdminClient();
+  const checkoutSessionId = session.id;
+
+  // Idempotency: skip if any booking for this checkout already exists.
+  const { data: existing } = await supabase
+    .from("course_bookings")
+    .select("id")
+    .eq("stripe_checkout_session_id", checkoutSessionId)
+    .limit(1);
+  if (existing && existing.length > 0) return;
+
+  // Load the invite and its attached courses (with template pricing fields
+  // and session labels).
+  const { data: invite } = await supabase
+    .from("booking_invites")
+    .select(
+      "id, booking_invite_courses(template_id, session_id, course_type, sort_order, course_templates(id, course_key, course_label_de, title, name_online, name_praxis, name_kombi, online_course_id, price_gross_online_cents, price_gross_praxis_cents, price_gross_kombi_cents, price_gross_premium_cents), course_sessions(label_de, date_iso))",
+    )
+    .eq("token", inviteToken)
+    .maybeSingle();
+
+  if (!invite) {
+    console.error(`Multi-invite checkout: invite not found for token ${inviteToken}`);
+    return;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const courseRows = ((invite.booking_invite_courses as any[]) || [])
+    .slice()
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  if (courseRows.length === 0) {
+    console.error(`Multi-invite checkout: invite ${invite.id} has no courses`);
+    return;
+  }
+
+  // Customer details (incl. billing address + optional EU VAT).
+  const cd = session.customer_details as {
+    email?: string;
+    name?: string;
+    phone?: string;
+    address?: {
+      line1?: string | null;
+      line2?: string | null;
+      postal_code?: string | null;
+      city?: string | null;
+      state?: string | null;
+      country?: string | null;
+    } | null;
+    tax_ids?: Array<{ type?: string | null; value?: string | null }> | null;
+  } | null;
+  const email = normalizeEmail(cd?.email || "");
+  const fullName = cd?.name || "";
+  const phone = cd?.phone || "";
+  const nameParts = fullName.split(" ");
+  const firstName = nameParts[0] || "";
+  const lastName = nameParts.slice(1).join(" ") || "";
+  const addressLine1 = cd?.address?.line1 || null;
+  const addressPostalCode = cd?.address?.postal_code || null;
+  const addressCity = cd?.address?.city || null;
+  const addressCountry = cd?.address?.country || null;
+  const euVatId =
+    cd?.tax_ids?.find((t) => t?.type === "eu_vat")?.value?.trim() || null;
+  const customerId =
+    typeof session.customer === "string" ? session.customer : session.customer?.id || null;
+  const amountTotal = session.amount_total || 0;
+
+  // Resolve each course's template + session label + gross price so we can
+  // split the amount paid proportionally for record-keeping.
+  const courses = courseRows.map((c) => {
+    const tmpl = c.course_templates || {};
+    const sess = c.course_sessions || null;
+    const sessionLabel = sess?.label_de || sess?.date_iso || "";
+    const courseKey = tmpl.course_key || "";
+    const { grossPriceCents } = buildCourseLineItem({
+      template: tmpl,
+      courseKey,
+      courseType: c.course_type as CourseVariant,
+      sessionLabel,
+    });
+    return {
+      templateId: c.template_id as string,
+      sessionId: (c.session_id as string | null) || null,
+      courseType: c.course_type as string,
+      courseKey,
+      courseLabel: tmpl.course_label_de || tmpl.title || courseKey,
+      sessionLabel,
+      grossPriceCents,
+    };
+  });
+
+  const sumGross = courses.reduce((s, c) => s + c.grossPriceCents, 0);
+  const amounts = courses.map((c) =>
+    sumGross > 0
+      ? Math.round((amountTotal * c.grossPriceCents) / sumGross)
+      : Math.round(amountTotal / courses.length),
+  );
+
+  // Create all bookings atomically via the invite-aware RPC.
+  const { data: bookingIds, error: rpcError } = await supabase.rpc(
+    "create_course_bookings_with_invite",
+    {
+      p_invite_token: inviteToken,
+      p_courses: courses.map((c, i) => ({
+        template_id: c.templateId,
+        session_id: c.sessionId,
+        course_type: c.courseType,
+        amount_paid: amounts[i],
+      })),
+      p_first_name: firstName,
+      p_last_name: lastName,
+      p_email: email,
+      p_phone: phone,
+      p_stripe_checkout_session_id: checkoutSessionId,
+      p_stripe_customer_id: customerId,
+    },
+  );
+
+  if (rpcError || !Array.isArray(bookingIds)) {
+    console.error("Multi-invite booking RPC error:", rpcError);
+    const SLACK_WEBHOOK_URL_COURSES = process.env.SLACK_WEBHOOK_URL_COURSES;
+    if (SLACK_WEBHOOK_URL_COURSES) {
+      try {
+        await fetch(SLACK_WEBHOOK_URL_COURSES, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: [
+              `🚨 *MEHRFACH-BUCHUNG FEHLGESCHLAGEN*`,
+              `*Name:* ${fullName}`,
+              `*E-Mail:* ${email}`,
+              `*Kurse:* ${courses.map((c) => c.courseLabel).join(", ")}`,
+              `*Stripe Session:* ${checkoutSessionId}`,
+              `*Fehler:* ${rpcError?.message || JSON.stringify(rpcError)}`,
+              `Bitte manuell prüfen!`,
+            ].join("\n"),
+          }),
+        });
+      } catch { /* best effort */ }
+    }
+    // Throw so Stripe retries the webhook.
+    throw new Error(`Multi-invite RPC failed: ${rpcError?.message || "no booking ids returned"}`);
+  }
+
+  // Per-course follow-up: audience tag + dentist session flag.
+  for (let i = 0; i < courses.length; i++) {
+    const bookingId = bookingIds[i] as string | undefined;
+    if (!bookingId) continue;
+    const audienceTag =
+      courses[i].courseKey === "grundkurs_botulinum_zahnmedizin"
+        ? "Zahnmediziner:in"
+        : "Humanmediziner:in";
+    await supabase
+      .from("course_bookings")
+      .update({ audience_tag: audienceTag })
+      .eq("id", bookingId);
+    if (courses[i].sessionId && audienceTag === "Zahnmediziner:in") {
+      await supabase
+        .from("course_sessions")
+        .update({ has_zahnmedizin: true })
+        .eq("id", courses[i].sessionId);
+    }
+  }
+
+  // Upsert the doctor and decide whether to run the full post-purchase flow.
+  let isReturningCustomer = false;
+  if (email) {
+    try {
+      const azubiRow: Record<string, unknown> = {
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone || null,
+      };
+      if (addressLine1) azubiRow.address_line1 = addressLine1;
+      if (addressPostalCode) azubiRow.address_postal_code = addressPostalCode;
+      if (addressCity) azubiRow.address_city = addressCity;
+      if (addressCountry) azubiRow.address_country = addressCountry;
+      if (euVatId) azubiRow.vat_id = euVatId;
+
+      const azubiId = await upsertAuszubildendeByEmail(email, azubiRow);
+      if (azubiId) {
+        for (const bookingId of bookingIds) {
+          if (bookingId) {
+            await supabase
+              .from("course_bookings")
+              .update({ auszubildende_id: azubiId })
+              .eq("id", bookingId);
+          }
+        }
+        const { data: azubi } = await supabase
+          .from("v_auszubildende")
+          .select("profile_complete")
+          .eq("id", azubiId)
+          .maybeSingle();
+        if (azubi?.profile_complete) isReturningCustomer = true;
+      }
+    } catch (err) {
+      console.error("Failed to upsert auszubildende for multi-invite:", err);
+    }
+  }
+
+  if (isReturningCustomer) {
+    // Returning doctor: run the full post-purchase flow for each course.
+    for (let i = 0; i < courses.length; i++) {
+      const bookingId = bookingIds[i] as string | undefined;
+      if (!bookingId) continue;
+      const c = courses[i];
+      const postPurchaseData: PostPurchaseData = {
+        bookingId,
+        email,
+        firstName,
+        lastName,
+        fullName,
+        phone,
+        courseType: c.courseType as CourseType,
+        courseKey: c.courseKey,
+        templateId: c.templateId,
+        sessionId: c.sessionId,
+        sessionLabel: c.sessionLabel,
+        amountTotal: amounts[i],
+        audienceTag:
+          c.courseKey === "grundkurs_botulinum_zahnmedizin"
+            ? "Zahnmediziner:in"
+            : "Humanmediziner:in",
+      };
+      await runPostPurchaseFlow(postPurchaseData);
+    }
+  } else {
+    // New doctor: profile form is shown on the success page. Send one Slack
+    // notice + one summary confirmation email covering all courses.
+    console.log(`New multi-invite customer ${email} — awaiting profile completion`);
+
+    const SLACK_WEBHOOK_URL_COURSES = process.env.SLACK_WEBHOOK_URL_COURSES;
+    if (SLACK_WEBHOOK_URL_COURSES) {
+      try {
+        const betrag = amountTotal
+          ? `€${(amountTotal / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })}`
+          : null;
+        await fetch(SLACK_WEBHOOK_URL_COURSES, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: [
+              `*Typ:* Kursbuchung (Einladung, mehrere Kurse)`,
+              `*Name:* ${fullName}`,
+              `*Kurse:* ${courses.map((c) => `${c.courseLabel}${c.sessionLabel ? ` (${c.sessionLabel})` : ""}`).join(", ")}`,
+              betrag ? `*Betrag:* ${betrag}` : null,
+              `⚠️ *Profil noch nicht vollständig*`,
+            ].filter(Boolean).join("\n"),
+          }),
+        });
+      } catch (slackErr) {
+        console.error("Failed to send Slack notification for multi-invite:", slackErr);
+      }
+    }
+
+    if (email) {
+      try {
+        const betragStr = amountTotal
+          ? `€${(amountTotal / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })}`
+          : "";
+        const html = buildEmailHtml({
+          firstName: firstName || "Kolleg:in",
+          intro: "vielen Dank für Deine Buchung! Wir haben Deine Zahlung erhalten.",
+          infoRows: [
+            ...courses.map((c) => ({
+              label: "Kurs",
+              value: `${c.courseLabel}${c.sessionLabel ? ` (${c.sessionLabel})` : ""}`,
+            })),
+            ...(betragStr ? [{ label: "Betrag", value: betragStr }] : []),
+          ],
+          note: "Bitte schließe Dein Profil ab, um Zugang zu Deinen Kursen zu erhalten. Falls Du die Seite geschlossen hast, erhältst Du in Kürze eine E-Mail mit einem Link.",
+        });
+        await sendEmailViaResend(email, "Buchungsbestätigung: Deine EPHIA Kurse", html);
+      } catch (emailErr) {
+        console.error("Failed to send confirmation email for multi-invite:", emailErr);
+      }
+    }
+  }
+
+  console.log(
+    `Multi-invite bookings created: ${bookingIds.filter(Boolean).length}/${courses.length} (invite ${invite.id})`,
+  );
+}
+
 // Handle checkout.session.completed: create booking + send confirmation
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const metadata = session.metadata || {};
@@ -407,6 +702,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Umbuchungsgebühr, so apply the stored move instead of creating a booking.
   if (metadata.rebookingRequestId) {
     return handleCourseRebookingPaid(metadata.rebookingRequestId);
+  }
+
+  // Route to the multi-course invite handler: one combined checkout that
+  // pays for every course attached to the invite.
+  if (metadata.inviteToken && metadata.inviteMulti === "1") {
+    return handleMultiInviteCheckout(session);
   }
 
   // Only process course bookings (identified by courseKey in metadata)
