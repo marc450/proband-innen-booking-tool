@@ -28,7 +28,7 @@ export default async function ChecklistsPage() {
     admin
       .from("course_sessions")
       .select(
-        "id, date_iso, label_de, instructor_name, template:course_templates!course_sessions_template_id_fkey(title)",
+        "id, date_iso, label_de, instructor_name, betreuer_name, template:course_templates!course_sessions_template_id_fkey(title)",
       )
       .order("date_iso", { ascending: false }),
     // Only checked rows matter for the progress badge; unchecked items
@@ -57,6 +57,7 @@ export default async function ChecklistsPage() {
       date_iso: string;
       label_de: string | null;
       instructor_name: string | null;
+      betreuer_name: string | null;
       template: { title: string } | null;
     }[]
   ).map((s) => ({
@@ -64,6 +65,7 @@ export default async function ChecklistsPage() {
     date_iso: s.date_iso,
     label_de: s.label_de,
     instructor_name: s.instructor_name,
+    betreuer_name: s.betreuer_name,
     template_title: s.template?.title ?? null,
     checked_count: checkedBySession.get(s.id) ?? 0,
   }));

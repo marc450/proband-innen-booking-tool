@@ -28,6 +28,7 @@ export interface ChecklistSession {
   date_iso: string;
   label_de: string | null;
   instructor_name: string | null;
+  betreuer_name: string | null;
   template_title: string | null;
   checked_count: number;
 }
@@ -74,6 +75,7 @@ export function ChecklistsOverview({
       const hay = [
         sessionTitle(s),
         s.instructor_name ?? "",
+        s.betreuer_name ?? "",
         s.date_iso ? format(new Date(s.date_iso), "dd.MM.yyyy") : "",
       ]
         .join(" ")
@@ -138,6 +140,7 @@ export function ChecklistsOverview({
               <TableHead>Kurs</TableHead>
               <TableHead>Datum</TableHead>
               <TableHead>Dozent:in</TableHead>
+              <TableHead>Kursbetreuung</TableHead>
               <TableHead>Fortschritt</TableHead>
             </TableRow>
           </TableHeader>
@@ -167,6 +170,9 @@ export function ChecklistsOverview({
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {s.instructor_name || "·"}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {s.betreuer_name || "·"}
                   </TableCell>
                   <TableCell>
                     {complete ? (
