@@ -72,10 +72,12 @@ export const GALDERMA_EXPORT_LIVE =
   process.env.GALDERMA_EXPORT_LIVE === "true";
 
 // Course types whose in-person participants are eligible for the consent.
-const ELIGIBLE_COURSE_TYPES: CourseType[] = ["Praxiskurs", "Kombikurs"];
+// Premium = Komplettpaket, which includes a Praxisanteil, so those
+// participants meet the Kursbetreuung in person just like Praxis-/Kombikurs.
+const ELIGIBLE_COURSE_TYPES: CourseType[] = ["Praxiskurs", "Kombikurs", "Premium"];
 
 // A booking is eligible only if it has an in-person session and is a
-// Praxis-/Kombikurs (Onlinekurs-only bookings never meet Galderma in person).
+// Praxis-/Kombi-/Premium-Kurs (Onlinekurs-only bookings never meet Galderma in person).
 export function isGaldermaEligible(booking: {
   course_type: CourseType | string | null;
   session_id: string | null;
