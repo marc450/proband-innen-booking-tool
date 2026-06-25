@@ -32,6 +32,10 @@ export const COURSE_CHECKLIST: ChecklistPhase[] = [
       { key: "vor.goodybags", label: "Goody Bags sind vorbereitet" },
       { key: "vor.caps", label: "Caps wurden am Tresen ausgelegt" },
       { key: "vor.tshirt", label: "Ein T-Shirt wurde beim Tresen aufgehängt" },
+      {
+        key: "vor.galdermaliste",
+        label: "Galderma Teilnehmer- und Produktliste bereitgelegt",
+      },
     ],
   },
   {
@@ -57,6 +61,16 @@ export const COURSE_CHECKLIST: ChecklistPhase[] = [
   {
     phase: "Nach Kursende",
     items: [
+      {
+        key: "nach.galdermaliste",
+        label:
+          "Galderma Teilnehmer- und Produktliste gescannt und an zuständige Person geschickt",
+      },
+      {
+        key: "nach.dokumentekopieren",
+        label:
+          "Dokumente sowie Behandlungsaufklärungen kopiert, falls der Bestand gering ist",
+      },
       { key: "nach.kompressen", label: "Kompressen und Handschuhe aufgefüllt" },
       { key: "nach.papier", label: "Papier- und Toilettenpapier gecheckt" },
       { key: "nach.liegenrollen", label: "Papierrollen für Liegen aufgefüllt" },
