@@ -107,7 +107,8 @@ const navGroups: NavGroup[] = [
     label: "Aufgaben",
     icon: CheckSquare,
     items: [
-      { href: "/dashboard/tasks", label: "Aufgaben" },
+      { href: "/dashboard/tasks", exact: true, label: "Aufgaben" },
+      { href: "/dashboard/tasks/checklists", label: "Kurs-Checklisten" },
     ],
   },
   {
