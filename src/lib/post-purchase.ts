@@ -211,7 +211,18 @@ export async function persistLwUserIdForBooking(bookingId: string, lwUserId: str
 }
 
 // ── Run the full post-purchase flow ──
-export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { skipSlack?: boolean }) {
+export async function runPostPurchaseFlow(
+  data: PostPurchaseData,
+  options?: {
+    skipSlack?: boolean;
+    // For multi-course checkouts (e.g. a multi-course invite) the flow runs
+    // once per course, but these two emails are doctor-level, not
+    // course-level. Skip them on all but one course so the doctor doesn't
+    // receive duplicate community invites / Proband:innen-Infos.
+    skipCommunityInvite?: boolean;
+    skipProbandInfo?: boolean;
+  },
+) {
   const supabase = createAdminClient();
 
   // Fetch template
@@ -275,10 +286,12 @@ export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { sk
     }
 
     // Community invite
-    try {
-      await sendEmailViaResend(data.email, "Willkommen in der EPHIA-Community!", buildCommunityInviteEmail(data.firstName));
-    } catch (inviteErr) {
-      console.error("Failed to send community invite email:", inviteErr);
+    if (!options?.skipCommunityInvite) {
+      try {
+        await sendEmailViaResend(data.email, "Willkommen in der EPHIA-Community!", buildCommunityInviteEmail(data.firstName));
+      } catch (inviteErr) {
+        console.error("Failed to send community invite email:", inviteErr);
+      }
     }
 
     // Proband:innen-Info — second transactional email for any booking
@@ -286,9 +299,10 @@ export async function runPostPurchaseFlow(data: PostPurchaseData, options?: { sk
     // Premium Komplettpaket which is built on a Kombikurs). Pure
     // Onlinekurs purchases skip this since there's no in-person session.
     if (
-      data.courseType === "Praxiskurs" ||
-      data.courseType === "Kombikurs" ||
-      data.courseType === "Premium"
+      !options?.skipProbandInfo &&
+      (data.courseType === "Praxiskurs" ||
+        data.courseType === "Kombikurs" ||
+        data.courseType === "Premium")
     ) {
       try {
         await sendEmailViaResend(

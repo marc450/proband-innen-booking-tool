@@ -601,7 +601,14 @@ async function handleMultiInviteCheckout(session: Stripe.Checkout.Session) {
   }
 
   if (isReturningCustomer) {
-    // Returning doctor: run the full post-purchase flow for each course.
+    // Returning doctor: run the full post-purchase flow for each course, but
+    // the community invite and Proband:innen-Info are doctor-level emails,
+    // so send them only once across the whole checkout. The per-course
+    // Buchungsbestätigungen still go out for every course.
+    const isPraxisLike = (t: string) =>
+      t === "Praxiskurs" || t === "Kombikurs" || t === "Premium";
+    let communitySent = false;
+    let probandSent = false;
     for (let i = 0; i < courses.length; i++) {
       const bookingId = bookingIds[i] as string | undefined;
       if (!bookingId) continue;
@@ -624,7 +631,14 @@ async function handleMultiInviteCheckout(session: Stripe.Checkout.Session) {
             ? "Zahnmediziner:in"
             : "Humanmediziner:in",
       };
-      await runPostPurchaseFlow(postPurchaseData);
+      await runPostPurchaseFlow(postPurchaseData, {
+        skipCommunityInvite: communitySent,
+        // The flow itself only sends the Proband:innen-Info for praxis-like
+        // courses, so this fires once on the first praxis-like course.
+        skipProbandInfo: probandSent,
+      });
+      communitySent = true;
+      if (isPraxisLike(c.courseType)) probandSent = true;
     }
   } else {
     // New doctor: profile form is shown on the success page. Send one Slack
