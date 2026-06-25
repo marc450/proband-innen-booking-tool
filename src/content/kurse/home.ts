@@ -85,12 +85,12 @@ export const homeContent: HomeContent = {
       },
       {
         kicker: "AUFBAUKURS",
-        title: "Skulptra & Skinbooster",
+        title: "Biostimulation & Skinbooster",
         audience: "Für fortgeschrittene Ärzt:innen",
         description:
           "Dieser Aufbaukurs richtet sich an approbierte Ärzt:innen, die ihre Kenntnisse in der ästhetischen Medizin erweitern und moderne Methoden der Biostimulation mit Poly-Milchsäure und Skinboostern kennenlernen möchten. Du lernst Grundlagen der Kollagenstimulation und Behandlungsmöglichkeiten für Gesicht und Dekolleté kennen.",
         courseKey: "aufbaukurs_skulptra",
-        imageAlt: "Aufbaukurs Skulptra & Skinbooster",
+        imageAlt: "Aufbaukurs Biostimulation & Skinbooster",
         ctaLabel: "Zu den Kursdetails",
         href: "/kurse/aufbaukurs-biostimulation-skinbooster",
       },

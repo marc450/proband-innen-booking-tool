@@ -26,8 +26,8 @@ const FUNNEL_PATHS = new Set([
 const FUNNEL_HOST = "proband-innen.ephia.de";
 
 // Treatment-area buckets used to group the "Alle Kurse" dropdown. Mirrors
-// the curricula split (Botulinum / Dermalfiller / Hautpflege); Skulptra &
-// Skinbooster lives under Hautpflege.
+// the curricula split (Botulinum / Dermalfiller / Hautpflege); Biostimulation
+// & Skinbooster lives under Hautpflege.
 type CourseGroup = "botulinum" | "dermalfiller" | "hautpflege";
 
 const COURSE_GROUP_LABELS: Record<CourseGroup, string> = {
@@ -97,7 +97,7 @@ const NAV_LINKS: NavLink[] = [
       { label: "Grundkurs", href: "/grundkurs-dermalfiller", group: "dermalfiller" },
       { label: "Aufbaukurs: Lippen", href: "/aufbaukurs-lippen", group: "dermalfiller" },
       { label: "Grundkurs Medizinische Hautpflege", href: "/grundkurs-medizinische-hautpflege", group: "hautpflege" },
-      { label: "Aufbaukurs Skulptra & Skinbooster", href: "/kurse/aufbaukurs-biostimulation-skinbooster", group: "hautpflege" },
+      { label: "Aufbaukurs Biostimulation & Skinbooster", href: "/kurse/aufbaukurs-biostimulation-skinbooster", group: "hautpflege" },
     ],
   },
   {
