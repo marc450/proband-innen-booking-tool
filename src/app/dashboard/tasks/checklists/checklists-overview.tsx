@@ -59,9 +59,12 @@ export function ChecklistsOverview({
     return d.getTime();
   }, []);
 
+  const dateValue = (s: ChecklistSession) =>
+    s.date_iso ? new Date(`${s.date_iso}T00:00:00`).getTime() : Infinity;
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return sessions.filter((s) => {
+    const list = sessions.filter((s) => {
       const complete = s.checked_count >= CHECKLIST_TOTAL;
       if (statusFilter === "open" && complete) return false;
       if (statusFilter === "done" && !complete) return false;
@@ -81,6 +84,16 @@ export function ChecklistsOverview({
         .join(" ")
         .toLowerCase();
       return hay.includes(q);
+    });
+    // Next courses on top: upcoming (incl. today) sorted soonest-first,
+    // then past courses most-recent-first below them.
+    return list.sort((a, b) => {
+      const ta = dateValue(a);
+      const tb = dateValue(b);
+      const aUpcoming = ta >= todayStart;
+      const bUpcoming = tb >= todayStart;
+      if (aUpcoming !== bUpcoming) return aUpcoming ? -1 : 1;
+      return aUpcoming ? ta - tb : tb - ta;
     });
   }, [sessions, search, statusFilter, hidePast, todayStart]);
 
