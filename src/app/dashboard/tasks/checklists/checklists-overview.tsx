@@ -46,6 +46,17 @@ export function ChecklistsOverview({
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("open");
+  // Past courses are hidden by default; the Kursbetreuung cares about
+  // upcoming and current courses. Toggle to bring the archive back.
+  const [hidePast, setHidePast] = useState(true);
+
+  // Local midnight today. A course on today's date still counts as
+  // current, so only dates strictly before today are "past".
+  const todayStart = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -53,6 +64,12 @@ export function ChecklistsOverview({
       const complete = s.checked_count >= CHECKLIST_TOTAL;
       if (statusFilter === "open" && complete) return false;
       if (statusFilter === "done" && !complete) return false;
+      if (
+        hidePast &&
+        s.date_iso &&
+        new Date(`${s.date_iso}T00:00:00`).getTime() < todayStart
+      )
+        return false;
       if (!q) return true;
       const hay = [
         sessionTitle(s),
@@ -63,7 +80,7 @@ export function ChecklistsOverview({
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [sessions, search, statusFilter]);
+  }, [sessions, search, statusFilter, hidePast, todayStart]);
 
   return (
     <div className="space-y-4">
@@ -75,25 +92,36 @@ export function ChecklistsOverview({
         onSearchChange={setSearch}
         searchPlaceholder="Suchen nach Kurs, Dozent:in, Datum..."
         filters={
-          <Select
-            value={statusFilter}
-            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-          >
-            <SelectTrigger className="h-9 w-[160px]">
-              <span>
-                {statusFilter === "open"
-                  ? "Nicht erledigt"
-                  : statusFilter === "done"
-                    ? "Erledigt"
-                    : "Alle Kurse"}
-              </span>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="open">Nicht erledigt</SelectItem>
-              <SelectItem value="done">Erledigt</SelectItem>
-              <SelectItem value="all">Alle Kurse</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-3">
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+            >
+              <SelectTrigger className="h-9 w-[160px]">
+                <span>
+                  {statusFilter === "open"
+                    ? "Nicht erledigt"
+                    : statusFilter === "done"
+                      ? "Erledigt"
+                      : "Alle Kurse"}
+                </span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="open">Nicht erledigt</SelectItem>
+                <SelectItem value="done">Erledigt</SelectItem>
+                <SelectItem value="all">Alle Kurse</SelectItem>
+              </SelectContent>
+            </Select>
+            <label className="flex items-center gap-2 text-sm cursor-pointer select-none whitespace-nowrap">
+              <input
+                type="checkbox"
+                checked={hidePast}
+                onChange={(e) => setHidePast(e.target.checked)}
+                className="h-4 w-4 rounded"
+              />
+              <span>Vergangene ausblenden</span>
+            </label>
+          </div>
         }
       />
 
