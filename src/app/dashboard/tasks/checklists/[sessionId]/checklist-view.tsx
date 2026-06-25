@@ -24,6 +24,7 @@ interface Props {
   courseTitle: string;
   dateIso: string;
   instructorName: string | null;
+  betreuerName: string | null;
   address: string | null;
   initialState: Record<string, ChecklistItemState>;
   currentUserName: string;
@@ -34,6 +35,7 @@ export function ChecklistView({
   courseTitle,
   dateIso,
   instructorName,
+  betreuerName,
   address,
   initialState,
   currentUserName,
@@ -122,6 +124,7 @@ export function ChecklistView({
                 ? format(new Date(dateIso), "EEEE, dd.MM.yyyy", { locale: de })
                 : ""}
               {instructorName ? ` · ${instructorName}` : ""}
+              {betreuerName ? ` · Kursbetreuung: ${betreuerName}` : ""}
               {address ? ` · ${address}` : ""}
             </p>
           </div>

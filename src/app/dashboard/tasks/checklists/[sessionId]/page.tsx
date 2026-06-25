@@ -41,7 +41,7 @@ export default async function ChecklistDetailPage({
   const { data: session } = await admin
     .from("course_sessions")
     .select(
-      "id, date_iso, label_de, instructor_name, address, template:course_templates!course_sessions_template_id_fkey(title)",
+      "id, date_iso, label_de, instructor_name, betreuer_name, address, template:course_templates!course_sessions_template_id_fkey(title)",
     )
     .eq("id", sessionId)
     .maybeSingle<{
@@ -49,6 +49,7 @@ export default async function ChecklistDetailPage({
       date_iso: string;
       label_de: string | null;
       instructor_name: string | null;
+      betreuer_name: string | null;
       address: string | null;
       template: { title: string } | null;
     }>();
@@ -95,6 +96,7 @@ export default async function ChecklistDetailPage({
       courseTitle={session.template?.title || session.label_de || "Kurstermin"}
       dateIso={session.date_iso}
       instructorName={session.instructor_name}
+      betreuerName={session.betreuer_name}
       address={session.address}
       initialState={state}
       currentUserName={currentUserName}
