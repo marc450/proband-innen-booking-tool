@@ -339,6 +339,46 @@ main > div > h1.text-2xl.font-bold:first-child {
   background-color: rgba(255, 255, 255, 0.05) !important;
   border-color: var(--border) !important;
 }
+/* Inbox email bodies render raw sender HTML via dangerouslySetInnerHTML.
+   Two ways a sender's markup blows out the card:
+   1. Hard-coded inline font-size / font-family on the body wrapper (GMX,
+      Outlook, Apple Mail, Yahoo) overrides our prose `text-sm`, rendering
+      the message oversized. Inline styles beat normal stylesheet rules, so
+      the only durable fix is an author rule marked !important.
+   2. Fixed pixel widths on tables / images / containers (the classic
+      width="600" newsletter layout, or a huge inline image) push the card
+      wider than the pane, clipping content on the right.
+   Both are neutralised below: one consistent font-size, and hard width
+   containment so anything too wide shrinks to fit, or, when it genuinely
+   can't (rigid multi-column tables), scrolls inside the body rather than
+   stretching the card. Scoped to .email-html-body so other prose surfaces
+   (kurse pages, LMS) are untouched. */
+.email-html-body {
+  line-height: 1.6;
+  max-width: 100%;
+  overflow-x: auto; /* wide rigid layouts scroll in-card instead of clipping */
+  overflow-wrap: break-word; /* break long unbroken strings (e.g. URLs) */
+}
+.email-html-body,
+.email-html-body * {
+  font-size: 0.875rem !important; /* 14px, matches prose-sm */
+  font-family: inherit !important;
+}
+/* Neutralise sender-hardcoded widths so content fits the card. */
+.email-html-body img,
+.email-html-body table,
+.email-html-body td,
+.email-html-body th,
+.email-html-body pre {
+  max-width: 100% !important;
+}
+.email-html-body img {
+  height: auto !important; /* keep aspect ratio once width is clamped */
+}
+.email-html-body table {
+  width: auto !important; /* drop fixed width="600" so the table can shrink */
+}
+
 /* Preserve badge/chip backgrounds inside email cards */
 .dark [class*="bg-emerald-"] *,
 .dark [class*="bg-amber-"] *,

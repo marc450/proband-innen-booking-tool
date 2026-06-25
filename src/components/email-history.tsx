@@ -731,7 +731,7 @@ export function EmailHistory({
                           </div>
                           <div className="px-4 py-3">
                             <div
-                              className="prose prose-sm max-w-none text-sm [&_img]:max-w-full [&_table]:text-sm [&_a]:text-[#0066FF] [&_a]:underline"
+                              className="email-html-body prose prose-sm max-w-none text-sm [&_img]:max-w-full [&_table]:text-sm [&_a]:text-[#0066FF] [&_a]:underline"
                               dangerouslySetInnerHTML={{
                                 __html:
                                   msg.body.html ||
