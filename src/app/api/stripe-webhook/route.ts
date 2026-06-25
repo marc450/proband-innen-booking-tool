@@ -254,7 +254,14 @@ async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
         }
 
         if (azubi.profile_complete) {
-          // Returning customer: run post-purchase flow for each course
+          // Returning customer: run post-purchase flow for each course. The
+          // community invite and Proband:innen-Info are doctor-level emails,
+          // so send them only once across the whole bundle. The per-course
+          // Buchungsbestätigungen still go out for every course.
+          const isPraxisLike = (t: string) =>
+            t === "Praxiskurs" || t === "Kombikurs" || t === "Premium";
+          let communitySent = false;
+          let probandSent = false;
           for (let i = 0; i < courseKeys.length; i++) {
             const courseKey = courseKeys[i];
             const sessionId = sessionsMap[courseKey] || null;
@@ -279,7 +286,14 @@ async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
               amountTotal: perCourseAmount,
               audienceTag,
             };
-            await runPostPurchaseFlow(postPurchaseData);
+            await runPostPurchaseFlow(postPurchaseData, {
+              skipCommunityInvite: communitySent,
+              // The flow only sends the Proband:innen-Info for praxis-like
+              // courses, so this fires once on the first praxis-like course.
+              skipProbandInfo: probandSent,
+            });
+            communitySent = true;
+            if (isPraxisLike(courseTypeForKey)) probandSent = true;
           }
         } else {
           console.log(`New curriculum customer ${email} — awaiting profile completion`);
