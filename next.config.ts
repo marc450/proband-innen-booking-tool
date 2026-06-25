@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    // Next only optimizes for qualities listed here; anything else logs a
+    // dev warning. We use 75 (default), 85 (course images) and 95 (logo).
+    qualities: [75, 85, 95],
     remotePatterns: [
       {
         protocol: "https",

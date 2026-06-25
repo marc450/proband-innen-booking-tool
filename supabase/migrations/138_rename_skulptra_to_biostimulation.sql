@@ -13,7 +13,6 @@ UPDATE public.course_templates
 SET
   title           = replace(title,           'Skulptra', 'Biostimulation'),
   course_label_de = replace(course_label_de, 'Skulptra', 'Biostimulation'),
-  display_title   = replace(display_title,   'Skulptra', 'Biostimulation'),
   name_online     = replace(name_online,     'Skulptra', 'Biostimulation'),
   name_praxis     = replace(name_praxis,     'Skulptra', 'Biostimulation'),
   name_kombi      = replace(name_kombi,      'Skulptra', 'Biostimulation')
