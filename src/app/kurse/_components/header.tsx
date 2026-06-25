@@ -25,6 +25,17 @@ const FUNNEL_PATHS = new Set([
 // hit /kurse/werde-proband-in directly (it falls outside this rule).
 const FUNNEL_HOST = "proband-innen.ephia.de";
 
+// Treatment-area buckets used to group the "Alle Kurse" dropdown. Mirrors
+// the curricula split (Botulinum / Dermalfiller / Hautpflege); Skulptra &
+// Skinbooster lives under Hautpflege.
+type CourseGroup = "botulinum" | "dermalfiller" | "hautpflege";
+
+const COURSE_GROUP_LABELS: Record<CourseGroup, string> = {
+  botulinum: "Botulinum",
+  dermalfiller: "Dermalfiller",
+  hautpflege: "Hautpflege",
+};
+
 type SubLink = {
   label: string;
   href: string;
@@ -34,6 +45,11 @@ type SubLink = {
   // Optional note shown beside the label, e.g. "Coming soon" for
   // curricula that are being prepared.
   note?: string;
+  // Treatment-area bucket. When set on a dropdown's sub-links, the
+  // desktop menu renders as a grouped mega-menu instead of a flat list.
+  group?: CourseGroup;
+  // Marks the apex course of a track (Masterclass) with a crown.
+  crown?: boolean;
 };
 
 type NavLink = {
@@ -64,24 +80,24 @@ const NAV_LINKS: NavLink[] = [
   },
   {
     // Alle Kurse: Eltern-Link führt auf die Vollübersicht, Dropdown
-    // listet alle einzelnen Kurse. Sub-Liste handgepflegt und ge-
-    // spiegelt die Tile-Reihenfolge auf /kurse/unsere-kurse (siehe
-    // src/content/kurse/home.ts) damit Header und Übersicht nicht
-    // auseinanderlaufen. Gruppenbuchungen ist absichtlich nicht
+    // listet alle einzelnen Kurse, gruppiert nach Behandlungsfeld
+    // (Botulinum / Dermalfiller / Hautpflege, wie die Curricula). Da die
+    // Gruppen-Header das Behandlungsfeld bereits nennen, sind die Labels
+    // entsprechend gekürzt. Gruppenbuchungen ist absichtlich nicht
     // gelistet — keine Kursseite, sondern Anfrageformular.
     label: "Alle Kurse",
     href: "/kurse/unsere-kurse",
     clickableParent: true,
     subLinks: [
-      { label: "Grundkurs Botulinum (Humanmedizin)", href: "/grundkurs-botulinum" },
-      { label: "Grundkurs Botulinum (Zahnmedizin)", href: "/kurse/grundkurs-botulinum-zahnmedizin" },
-      { label: "Grundkurs Dermalfiller", href: "/grundkurs-dermalfiller" },
-      { label: "Grundkurs Medizinische Hautpflege", href: "/grundkurs-medizinische-hautpflege" },
-      { label: "Aufbaukurs Skulptra & Skinbooster", href: "/kurse/aufbaukurs-biostimulation-skinbooster" },
-      { label: "Aufbaukurs Botulinum: Therapeutische Indikationen", href: "/aufbaukurs-therapeutische-indikationen-botulinum" },
-      { label: "Aufbaukurs Botulinum: Periorale Zone", href: "/aufbaukurs-botulinum-periorale-zone" },
-      { label: "Aufbaukurs Dermalfiller: Lippen", href: "/aufbaukurs-lippen" },
-      { label: "Masterclass Botulinum", href: "/kurse/masterclass-botulinum" },
+      { label: "Grundkurs (Humanmedizin)", href: "/grundkurs-botulinum", group: "botulinum" },
+      { label: "Grundkurs (Zahnmedizin)", href: "/kurse/grundkurs-botulinum-zahnmedizin", group: "botulinum" },
+      { label: "Aufbaukurs: Therapeutische Indikationen", href: "/aufbaukurs-therapeutische-indikationen-botulinum", group: "botulinum" },
+      { label: "Aufbaukurs: Periorale Zone", href: "/aufbaukurs-botulinum-periorale-zone", group: "botulinum" },
+      { label: "Masterclass", href: "/kurse/masterclass-botulinum", group: "botulinum", crown: true },
+      { label: "Grundkurs", href: "/grundkurs-dermalfiller", group: "dermalfiller" },
+      { label: "Aufbaukurs: Lippen", href: "/aufbaukurs-lippen", group: "dermalfiller" },
+      { label: "Grundkurs Medizinische Hautpflege", href: "/grundkurs-medizinische-hautpflege", group: "hautpflege" },
+      { label: "Aufbaukurs Skulptra & Skinbooster", href: "/kurse/aufbaukurs-biostimulation-skinbooster", group: "hautpflege" },
     ],
   },
   {
@@ -106,6 +122,84 @@ const NAV_LINKS: NavLink[] = [
 // and the rewritten one (what usePathname returns under some
 // preview hosts).
 const MEIN_KONTO_PATHS = new Set(["/mein-konto", "/kurse/mein-konto"]);
+
+// Single sub-link inside a desktop dropdown. Shared by the flat list and
+// the grouped mega-menu so hover/active styling stays identical.
+function DesktopSubLink({ sub }: { sub: SubLink }) {
+  if (sub.disabled) {
+    return (
+      <span
+        className="flex items-center justify-between gap-4 px-3 py-2 text-base font-normal text-black/40 cursor-not-allowed select-none whitespace-nowrap"
+        aria-disabled="true"
+      >
+        <span>{sub.label}</span>
+        {sub.note && (
+          <span className="text-[11px] font-medium uppercase tracking-wide text-[#0066FF]/80 bg-[#0066FF]/10 rounded-full px-2 py-0.5 whitespace-nowrap">
+            {sub.note}
+          </span>
+        )}
+      </span>
+    );
+  }
+  return (
+    <a
+      href={sub.href}
+      className="flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-base font-normal text-black hover:text-[#0066FF] hover:bg-[#FAEBE1]/60 transition-colors whitespace-nowrap"
+    >
+      <span>{sub.label}</span>
+      {sub.crown && <span aria-hidden="true">👑</span>}
+    </a>
+  );
+}
+
+// Dropdown body. When any sub-link carries a `group` it renders as a
+// two-column mega-menu with ruled treatment-area headers; otherwise a
+// simple flat list. The positioning + hover-reveal wrapper is identical
+// for both so the menus animate the same way.
+function DesktopDropdown({ subLinks }: { subLinks: SubLink[] }) {
+  const grouped = subLinks.some((s) => s.group);
+
+  if (!grouped) {
+    return (
+      <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+0.5rem)] w-max min-w-[240px] bg-white rounded-[10px] shadow-lg py-3 px-2 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200">
+        {subLinks.map((sub) => (
+          <DesktopSubLink key={sub.label} sub={sub} />
+        ))}
+      </div>
+    );
+  }
+
+  // Preserve first-seen group order, then split: the first (largest)
+  // group fills the left column, the remaining groups stack on the right.
+  const order: CourseGroup[] = [];
+  for (const s of subLinks) {
+    if (s.group && !order.includes(s.group)) order.push(s.group);
+  }
+  const [firstGroup, ...restGroups] = order;
+  const itemsOf = (g: CourseGroup) => subLinks.filter((s) => s.group === g);
+
+  const renderGroup = (g: CourseGroup) => (
+    <div key={g}>
+      <p className="mx-3 mb-2 pb-2 border-b border-[#D9AA8F] text-[13px] font-medium uppercase tracking-[0.1em] text-[#733D29]">
+        {COURSE_GROUP_LABELS[g]}
+      </p>
+      {itemsOf(g).map((sub) => (
+        <DesktopSubLink key={sub.label} sub={sub} />
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="absolute left-0 top-[calc(100%+0.5rem)] w-max min-w-[520px] bg-white rounded-[10px] shadow-lg p-5 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200">
+      <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+        <div>{firstGroup && renderGroup(firstGroup)}</div>
+        <div className="flex flex-col gap-6">
+          {restGroups.map((g) => renderGroup(g))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -276,32 +370,7 @@ export function Header() {
                   )}
                   {/* Invisible bridge to avoid hover gap */}
                   <div className="absolute left-0 right-0 top-full h-3" />
-                  <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+0.5rem)] w-max min-w-[240px] bg-white rounded-[10px] shadow-lg py-3 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200">
-                    {link.subLinks.map((sub) =>
-                      sub.disabled ? (
-                        <span
-                          key={sub.label}
-                          className="flex items-center justify-between gap-4 px-5 py-2.5 text-base font-normal text-black/40 cursor-not-allowed select-none whitespace-nowrap"
-                          aria-disabled="true"
-                        >
-                          <span>{sub.label}</span>
-                          {sub.note && (
-                            <span className="text-[11px] font-medium uppercase tracking-wide text-[#0066FF]/80 bg-[#0066FF]/10 rounded-full px-2 py-0.5 whitespace-nowrap">
-                              {sub.note}
-                            </span>
-                          )}
-                        </span>
-                      ) : (
-                        <a
-                          key={sub.label}
-                          href={sub.href}
-                          className="block px-5 py-2.5 text-base font-normal text-black hover:text-[#0066FF] hover:bg-[#FAEBE1]/60 transition-colors"
-                        >
-                          {sub.label}
-                        </a>
-                      ),
-                    )}
-                  </div>
+                  <DesktopDropdown subLinks={link.subLinks} />
                 </div>
               ) : (
                 <a
