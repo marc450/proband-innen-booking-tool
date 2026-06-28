@@ -32,11 +32,11 @@ const STUDY_ONLY_PATHS = ["/study"];
 // post-purchase URLs (Stripe success redirect at /courses/success and
 // the review-form landing at /bewertung/[token]) render on ephia.de
 // without getting caught by the /{slug} → /kurse/{slug} rewrite.
-const KURSE_PASSTHROUGH_RE = /^\/(api|_next|kurse|merch|team|courses|bewertung|favicon\.ico|robots\.txt|sitemap\.xml)(\/|$)/;
+const KURSE_PASSTHROUGH_RE = /^\/(api|_next|kurse|merch|team|courses|bewertung|favicon\.ico|robots\.txt|sitemap\.xml|llms\.txt|llms-full\.txt)(\/|$)/;
 
 // Paths that study.ephia.de should pass through untouched. Everything
 // else on that host is rewritten under the /study tree.
-const STUDY_PASSTHROUGH_RE = /^\/(api|_next|study|favicon\.ico|robots\.txt|sitemap\.xml)(\/|$)/;
+const STUDY_PASSTHROUGH_RE = /^\/(api|_next|study|favicon\.ico|robots\.txt|sitemap\.xml|llms\.txt|llms-full\.txt)(\/|$)/;
 
 // LearnWorlds → Next.js URL migration redirect map. Every entry is a
 // pathname that ranks (or recently ranked) on Google for the old LW
