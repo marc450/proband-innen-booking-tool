@@ -54,6 +54,13 @@ export const teamContent: TeamPageContent = {
         ],
         media: [
           {
+            url: "https://www.youtube.com/watch?v=FjAuaJcE8WI",
+            title:
+              "phoenix persönlich: Sophia Wilk-Vollmann zu Gast bei Jörg Thadeusz",
+            outlet: "phoenix",
+            format: "TV-Interview",
+          },
+          {
             url: "https://www.br.de/radio/bayern2/sendungen/eins-zu-eins-der-talk/sophia-wilk-vollmann-notfallaerztin-und-soldatin-das-was-zaehlt-bist-nicht-du-100.html",
             title:
               "Sophia Wilk-Vollmann, Notfallärztin und Soldatin: Das, was zählt, bist nicht du",
