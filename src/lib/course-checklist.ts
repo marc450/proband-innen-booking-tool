@@ -75,6 +75,7 @@ export const COURSE_CHECKLIST: ChecklistPhase[] = [
       { key: "nach.papier", label: "Papier- und Toilettenpapier gecheckt" },
       { key: "nach.liegenrollen", label: "Papierrollen für Liegen aufgefüllt" },
       { key: "nach.bestellblatt", label: "Bestellblatt ausgefüllt" },
+      { key: "nach.schrankbestand", label: "Schrankbestand kontrolliert/geupdated" },
       { key: "nach.kueche", label: "Küche: alles trocken und aufgeräumt" },
       { key: "nach.spuelmaschine", label: "Spülmaschine an" },
       { key: "nach.fenster", label: "Fenster geschlossen" },
