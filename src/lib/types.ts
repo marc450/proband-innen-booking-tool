@@ -447,3 +447,38 @@ export interface TaskAttachment {
   created_at: string;
   uploader: TaskProfileRef | null;
 }
+
+// ── Inventory (Schrankbestand per course location) ─────────────────────
+
+export interface InventoryLocation {
+  id: string;
+  name: string;
+  address: string | null;
+  created_at: string;
+}
+
+export interface InventoryItem {
+  id: string;
+  location_id: string;
+  product_family: string;
+  product_name: string;
+  quantity: number;
+  sort_order: number;
+  updated_at: string;
+  updated_by: string | null;
+  updater?: TaskProfileRef | null;
+}
+
+export interface InventoryChange {
+  id: string;
+  item_id: string;
+  location_id: string;
+  changed_by: string | null;
+  quantity_before: number;
+  quantity_after: number;
+  delta: number;
+  note: string | null;
+  created_at: string;
+  changer?: TaskProfileRef | null;
+  item?: { product_family: string; product_name: string } | null;
+}

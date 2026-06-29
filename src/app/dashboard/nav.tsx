@@ -31,6 +31,7 @@ import {
   Globe,
   CheckSquare,
   GraduationCap,
+  Package,
   Info,
   LucideIcon,
 } from "lucide-react";
@@ -109,6 +110,16 @@ const navGroups: NavGroup[] = [
     items: [
       { href: "/dashboard/tasks", exact: true, label: "Aufgaben" },
       { href: "/dashboard/tasks/checklists", label: "Kurs-Checklisten" },
+    ],
+  },
+  {
+    // Schrankbestand pro Kursstandort. Für alle Mitarbeiter:innen sichtbar
+    // und editierbar (kein adminOnly) — jede Änderung wird protokolliert.
+    key: "inventory",
+    label: "Inventar",
+    icon: Package,
+    items: [
+      { href: "/dashboard/inventar", label: "Inventar" },
     ],
   },
   {
