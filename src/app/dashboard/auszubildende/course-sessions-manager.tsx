@@ -98,6 +98,8 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   // swallowed silently and the input just snapped back to the old value,
   // which read as "the field refuses to change" (e.g. seat count stuck on 6).
   const [changeError, setChangeError] = useState<string | null>(null);
+  // Transient "Gespeichert" tick shown next to a VNR cell after a direct save.
+  const [vnrSavedId, setVnrSavedId] = useState<string | null>(null);
 
   // Pending change confirmation
   const [pendingChange, setPendingChange] = useState<{
@@ -287,6 +289,31 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
       }
     }
     setPendingChange(null);
+  };
+
+  // Save the VNR Praxis directly on blur, without the confirm dialog.
+  // A reference number is low-risk and the extra "Änderung bestätigen"
+  // step was a trap: dismissing it (Escape / click outside) ran onCancel,
+  // which reverted the input, so the typed number "would not save".
+  // Mirrors the inline notes save on the Kurs-Detail page.
+  const saveVnrPraxis = async (id: string, value: string) => {
+    setChangeError(null);
+    const next = value || null;
+    const { error } = await supabase
+      .from("course_sessions")
+      .update({ vnr_praxis: next })
+      .eq("id", id);
+    if (error) {
+      setChangeError(`VNR Praxis konnte nicht gespeichert werden: ${error.message}`);
+      setResetKey((k) => k + 1);
+    } else {
+      setSessions((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, vnr_praxis: next } : s))
+      );
+      // Brief "Gespeichert" tick so the save is visibly acknowledged.
+      setVnrSavedId(id);
+      window.setTimeout(() => setVnrSavedId((cur) => (cur === id ? null : cur)), 1800);
+    }
   };
 
   // Duplicate
@@ -812,26 +839,34 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                   })()}
                 </TableCell>
 
-                {/* VNR Praxis — inline editable, fehlt pill when empty */}
+                {/* VNR Praxis — inline editable, saves directly on blur
+                    (no confirm dialog), fehlt pill when empty */}
                 <TableCell>
-                  <input
-                    type="text"
-                    defaultValue={session.vnr_praxis || ""}
-                    key={`vnr-${session.id}-${session.vnr_praxis ?? ""}-${resetKey}`}
-                    onBlur={(e) => {
-                      const val = e.target.value.trim();
-                      const current = session.vnr_praxis ?? "";
-                      if (val !== current) {
-                        requestChange(session.id, "vnr_praxis", val || "");
-                      }
-                    }}
-                    placeholder={session.vnr_praxis ? "" : "Fehlt"}
-                    className={`w-full text-xs font-mono bg-transparent border-b border-transparent hover:border-gray-300 focus:border-primary focus:outline-none ${
-                      session.vnr_praxis
-                        ? "text-gray-700"
-                        : "placeholder:text-red-600 placeholder:font-semibold"
-                    }`}
-                  />
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      defaultValue={session.vnr_praxis || ""}
+                      key={`vnr-${session.id}-${session.vnr_praxis ?? ""}-${resetKey}`}
+                      onBlur={(e) => {
+                        const val = e.target.value.trim();
+                        const current = session.vnr_praxis ?? "";
+                        if (val !== current) {
+                          saveVnrPraxis(session.id, val);
+                        }
+                      }}
+                      placeholder={session.vnr_praxis ? "" : "Fehlt"}
+                      className={`w-full text-xs font-mono bg-transparent border-b border-transparent hover:border-gray-300 focus:border-primary focus:outline-none ${
+                        session.vnr_praxis
+                          ? "text-gray-700"
+                          : "placeholder:text-red-600 placeholder:font-semibold"
+                      }`}
+                    />
+                    {vnrSavedId === session.id && (
+                      <span className="text-[10px] font-medium text-emerald-600 whitespace-nowrap">
+                        Gespeichert
+                      </span>
+                    )}
+                  </div>
                 </TableCell>
 
                 {/* Actions */}
