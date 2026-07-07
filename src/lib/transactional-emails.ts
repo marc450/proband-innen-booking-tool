@@ -19,6 +19,7 @@ import {
   buildConsentConfirmationEmail,
   buildWithdrawalConfirmationEmail,
 } from "@/lib/partner-galderma-emails";
+import { buildNachbehandlungEmail } from "@/lib/nachbehandlung-email";
 
 /**
  * Catalog of every transactional email the booking tool sends, grouped by
@@ -212,6 +213,25 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
         `,
       }),
     }),
+  },
+
+  {
+    id: "nachbehandlung-confirmation",
+    funnel: "proband-private",
+    name: "Terminbestätigung Nachbehandlung",
+    recipient: "Proband:in",
+    trigger:
+      "Staff legt im Kurs-Detail eine Nachbehandlung an und weist eine:n Proband:in zu",
+    codeRef: "src/app/api/nachbehandlung/route.ts",
+    description:
+      "Bestätigt einen kostenlosen Nachbehandlungs-Folgetermin mit Datum, Uhrzeit, Ort und Vorbereitungshinweisen. Der Slot ist nicht öffentlich buchbar.",
+    renderSample: () =>
+      buildNachbehandlungEmail({
+        firstName: SAMPLE.firstName,
+        dateStr: SAMPLE.dateFormatted,
+        timeStr: SAMPLE.time,
+        location: SAMPLE.location,
+      }),
   },
 
   // ── Proband:innen — Updates & Reminder ─────────────────────────────

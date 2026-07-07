@@ -149,6 +149,10 @@ export interface Slot {
   // Masseterproband:innen. Always <= capacity.
   masseter_eligible: boolean;
   masseter_capacity: number;
+  // 'regular' | 'nachbehandlung' (migration 140). Nachbehandlungs-Slots are
+  // staff-created free follow-up appointments and are excluded from the
+  // available_slots view, so they never surface in the public booking funnel.
+  slot_type: string;
   created_at: string;
 }
 

@@ -41,7 +41,7 @@ export default async function KursDetailPage({
     const { data: slotData } = await admin
       .from("slots")
       .select(
-        "id, start_time, end_time, capacity, blocked, blocked_note, masseter_eligible, masseter_capacity",
+        "id, start_time, end_time, capacity, blocked, blocked_note, masseter_eligible, masseter_capacity, slot_type",
       )
       .eq("course_id", satellite.id)
       .order("start_time", { ascending: true });

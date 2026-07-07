@@ -27,8 +27,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { ArrowLeft, Ban, Calendar, Check, Clock, Copy, GraduationCap, Loader2, LockOpen, Mail, MapPin, Plus, Trash2, User } from "lucide-react";
+import { NachbehandlungModal } from "@/components/nachbehandlung-modal";
+import { ArrowLeft, Ban, Calendar, Check, Clock, Copy, GraduationCap, Loader2, LockOpen, Mail, MapPin, Plus, Stethoscope, Trash2, User } from "lucide-react";
 import { buildProfileCompletionUrl } from "@/lib/profile-link";
+import { buildBerlinTimestamp } from "@/lib/utils";
 import { INDICATIONS } from "@/lib/indications";
 import { PartnerConsentButton, type ConsentState } from "@/components/partner-consent-button";
 import { isGaldermaEligible } from "@/lib/partner-galderma";
@@ -49,6 +51,10 @@ export interface DetailSlot {
   // from general probands for Masseterproband:innen.
   masseter_eligible: boolean;
   masseter_capacity: number;
+  // 'regular' | 'nachbehandlung'. Nachbehandlungs-Slots sind
+  // Staff-erzeugte, kostenlose Folgetermine (nicht öffentlich buchbar,
+  // aus available_slots ausgeschlossen).
+  slot_type: string;
 }
 
 export interface DetailBooking {
@@ -131,17 +137,6 @@ const BOOKING_STATUS_OPTIONS: Array<{ value: DetailBooking["status"]; label: str
   { value: "cancelled", label: "Storniert" },
 ];
 
-function buildBerlinTimestamp(dateIso: string, hhmm: string): string {
-  const fmt = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Berlin",
-    timeZoneName: "longOffset",
-  });
-  const parts = fmt.formatToParts(new Date(`${dateIso}T12:00:00Z`));
-  const raw = parts.find((p) => p.type === "timeZoneName")?.value ?? "GMT+01:00";
-  const offset = raw.replace("GMT", "") || "+01:00";
-  return `${dateIso}T${hhmm}:00${offset}`;
-}
-
 function formatBerlinTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("de-DE", {
     timeZone: "Europe/Berlin",
@@ -185,6 +180,9 @@ export function KursDetailClient({
   // Grundkurs Botulinum (masseter_capacity = capacity).
   const [slotMasseterEligibleInput, setSlotMasseterEligibleInput] = useState(false);
   const [deleteSlotId, setDeleteSlotId] = useState<string | null>(null);
+  // Nachbehandlung: kostenloser Folgetermin für eine:n bestehende:n
+  // Proband:in. Eigenes Modal, das serverseitig Slot + Buchung + E-Mail anlegt.
+  const [nachbehandlungOpen, setNachbehandlungOpen] = useState(false);
 
   const openAddSlot = () => {
     setEditingSlot(null);
@@ -279,6 +277,7 @@ export function KursDetailClient({
               blocked_note: blockedNote,
               masseter_eligible: masseterEligible,
               masseter_capacity: masseterCapacity,
+              slot_type: "regular",
             },
           ].sort((a, b) => a.start_time.localeCompare(b.start_time)),
         );
@@ -910,7 +909,10 @@ export function KursDetailClient({
       <section className="rounded-[10px] bg-card ring-1 ring-black/5 overflow-hidden">
         <div className="px-6 pt-6 pb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">
-            Buchungen Proband:innen ({bookings.length}/{slots.filter((s) => !s.blocked).reduce((sum, sl) => sum + sl.capacity, 0)})
+            Buchungen Proband:innen ({bookings.filter((b) => {
+              const sl = slots.find((s) => s.id === b.slot_id);
+              return sl?.slot_type !== "nachbehandlung";
+            }).length}/{slots.filter((s) => !s.blocked && s.slot_type !== "nachbehandlung").reduce((sum, sl) => sum + sl.capacity, 0)})
           </h2>
           <div className="flex items-center gap-2">
             <CreateCampaignButton
@@ -923,10 +925,16 @@ export function KursDetailClient({
                 .map((id) => `p-${id}`)}
             />
             {satelliteId && (
-              <Button size="sm" onClick={openAddSlot}>
-                <Plus className="h-4 w-4 mr-1" />
-                Slot hinzufügen
-              </Button>
+              <>
+                <Button size="sm" variant="outline" onClick={() => setNachbehandlungOpen(true)}>
+                  <Stethoscope className="h-4 w-4 mr-1" />
+                  Nachbehandlung hinzufügen
+                </Button>
+                <Button size="sm" onClick={openAddSlot}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Slot hinzufügen
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -1090,16 +1098,26 @@ export function KursDetailClient({
                     className="h-14 data-[attended=true]:bg-[color:var(--soldout-bg)] data-[attended=true]:hover:bg-[color:var(--soldout-bg-hover)]"
                   >
                     <TableCell className="font-medium truncate" title={fullName}>{/* Name */}
-                      {booking.patient_id ? (
-                        <Link
-                          href={`/dashboard/patients/${booking.patient_id}`}
-                          className="text-[#0066FF] hover:underline"
-                        >
-                          {fullName}
-                        </Link>
-                      ) : (
-                        fullName
-                      )}
+                      <span className="inline-flex items-center gap-1.5">
+                        {booking.patient_id ? (
+                          <Link
+                            href={`/dashboard/patients/${booking.patient_id}`}
+                            className="text-[#0066FF] hover:underline"
+                          >
+                            {fullName}
+                          </Link>
+                        ) : (
+                          fullName
+                        )}
+                        {slot.slot_type === "nachbehandlung" && (
+                          <Badge
+                            variant="outline"
+                            className="text-[#0066FF] border-[#0066FF]/30 bg-[#0066FF]/5 font-normal shrink-0"
+                          >
+                            Nachbehandlung
+                          </Badge>
+                        )}
+                      </span>
                     </TableCell>
                     <TableCell className="text-sm truncate" title={booking.email}>
                       {booking.email}
@@ -1295,6 +1313,17 @@ export function KursDetailClient({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Nachbehandlung anlegen */}
+      {satelliteId && (
+        <NachbehandlungModal
+          open={nachbehandlungOpen}
+          onOpenChange={setNachbehandlungOpen}
+          sessionId={session.id}
+          dateIso={session.dateIso}
+          onCreated={refresh}
+        />
+      )}
 
       {/* Slot delete confirm */}
       <ConfirmDialog

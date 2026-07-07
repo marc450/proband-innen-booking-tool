@@ -21,6 +21,27 @@ export function berlinTodayIso(): string {
   )
 }
 
+/**
+ * Build a full ISO timestamp with the correct Europe/Berlin offset from a
+ * plain date (YYYY-MM-DD) and a wall-clock time (HH:mm).
+ *
+ * Slots are stored as offset-carrying ISO strings derived from Berlin local
+ * time. Naively concatenating `${dateIso}T${hhmm}:00` would be interpreted as
+ * UTC and shift the stored time by 1-2h. This resolves the actual Berlin
+ * offset for that date (handles CET/CEST) and appends it. Shared by the slot
+ * dialog and the Nachbehandlung modal in Kurs-Detail.
+ */
+export function buildBerlinTimestamp(dateIso: string, hhmm: string): string {
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Berlin",
+    timeZoneName: "longOffset",
+  })
+  const parts = fmt.formatToParts(new Date(`${dateIso}T12:00:00Z`))
+  const raw = parts.find((p) => p.type === "timeZoneName")?.value ?? "GMT+01:00"
+  const offset = raw.replace("GMT", "") || "+01:00"
+  return `${dateIso}T${hhmm}:00${offset}`
+}
+
 // Title strings that mean "no title". Imported data has shown several
 // variants over time:
 //   - "Kein Titel"           — the canonical TITLE_OPTIONS entry
