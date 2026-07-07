@@ -52,7 +52,6 @@ export function buildNachbehandlungEmail({
       { label: "Datum", value: dateStr },
       { label: "Uhrzeit", value: timeStr ? `${timeStr} Uhr` : "" },
       { label: "Ort", value: location },
-      { label: "Kosten", value: "kostenlos" },
     ],
     extraContent,
   });
