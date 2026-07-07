@@ -36,7 +36,7 @@ export default async function UmbuchungBezahlenPage({
   const { data: request } = await admin
     .from("course_rebooking_requests")
     .select(
-      "id, status, fee_cents, booking_id, course_bookings(first_name, last_name, email, stripe_customer_id, course_templates(course_label_de, title))",
+      "id, status, fee_cents, surcharge_cents, booking_id, to_template:course_templates!to_template_id(course_label_de, title), course_bookings(first_name, last_name, email, stripe_customer_id, course_templates(course_label_de, title))",
     )
     .eq("id", requestId)
     .single();
@@ -84,10 +84,18 @@ export default async function UmbuchungBezahlenPage({
     );
   }
 
-  const courseName =
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const toTemplate = (request as any).to_template as
+    | { course_label_de?: string; title?: string }
+    | null;
+  const currentCourseName =
     booking.course_templates?.course_label_de ||
     booking.course_templates?.title ||
     "EPHIA Kurs";
+  // For a cross-course move the fee + Aufpreis reference the TARGET course.
+  const courseName =
+    toTemplate?.course_label_de || toTemplate?.title || currentCourseName;
+  const surchargeCents: number = (request as { surcharge_cents?: number }).surcharge_cents || 0;
 
   // Create a fresh Stripe Checkout session. The previous session id (if any) is
   // overwritten in the DB so the webhook always resolves the latest one.
@@ -102,14 +110,34 @@ export default async function UmbuchungBezahlenPage({
       "automatic_tax[enabled]": "true",
       "tax_id_collection[enabled]": "true",
       "invoice_creation[enabled]": "true",
-      "line_items[0][quantity]": "1",
-      "line_items[0][price_data][currency]": "eur",
-      "line_items[0][price_data][unit_amount]": String(request.fee_cents),
-      "line_items[0][price_data][product_data][name]": `Umbuchungsgebühr: ${courseName}`,
-      "line_items[0][price_data][product_data][description]":
-        "Einmalige Umbuchungsgebühr für die Verlegung auf einen neuen Termin (AGB Ziffer 6).",
       "metadata[rebookingRequestId]": request.id,
     };
+
+    // Line items: the Umbuchungsgebühr (may be 0 € for a cross-course move more
+    // than 14 days out) and, for a cross-course upgrade, the Kursaufpreis. At
+    // least one of the two is always positive (the API only creates a request
+    // that reaches this page when fee + surcharge > 0).
+    let li = 0;
+    if (request.fee_cents > 0) {
+      params[`line_items[${li}][quantity]`] = "1";
+      params[`line_items[${li}][price_data][currency]`] = "eur";
+      params[`line_items[${li}][price_data][unit_amount]`] = String(request.fee_cents);
+      params[`line_items[${li}][price_data][product_data][name]`] =
+        `Umbuchungsgebühr: ${courseName}`;
+      params[`line_items[${li}][price_data][product_data][description]`] =
+        "Einmalige Umbuchungsgebühr für die Verlegung auf einen neuen Termin (AGB Ziffer 6).";
+      li++;
+    }
+    if (surchargeCents > 0) {
+      params[`line_items[${li}][quantity]`] = "1";
+      params[`line_items[${li}][price_data][currency]`] = "eur";
+      params[`line_items[${li}][price_data][unit_amount]`] = String(surchargeCents);
+      params[`line_items[${li}][price_data][product_data][name]`] =
+        `Kursaufpreis: ${courseName}`;
+      params[`line_items[${li}][price_data][product_data][description]`] =
+        "Preisdifferenz zum höherwertigen Kurs bei der Umbuchung.";
+      li++;
+    }
     if (booking.stripe_customer_id) {
       params.customer = booking.stripe_customer_id;
     } else {

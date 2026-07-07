@@ -356,6 +356,15 @@ async function handleCurriculumCheckout(session: Stripe.Checkout.Session) {
 async function handleCourseRebookingPaid(requestId: string) {
   const supabase = createAdminClient();
 
+  // Read whether this is a cross-course move before applying, so the
+  // confirmation email can say "Umbuchung" rather than only "Terminänderung".
+  const { data: reqRow } = await supabase
+    .from("course_rebooking_requests")
+    .select("to_template_id")
+    .eq("id", requestId)
+    .single();
+  const isCrossCourse = !!reqRow?.to_template_id;
+
   const { data: bookingId, error: rpcError } = await supabase.rpc(
     "apply_course_rebooking",
     { p_request_id: requestId },
@@ -399,7 +408,10 @@ async function handleCourseRebookingPaid(requestId: string) {
     instructor: sess?.instructor_name || "",
   });
   try {
-    await sendEmail(booking.email, `Terminänderung: ${courseName}`, html);
+    const subject = isCrossCourse
+      ? `Umbuchung bestätigt: ${courseName}`
+      : `Terminänderung: ${courseName}`;
+    await sendEmail(booking.email, subject, html);
   } catch (err) {
     console.error("Rebooking confirmation email failed (non-fatal):", err);
   }

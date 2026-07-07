@@ -86,6 +86,25 @@ interface SessionOption {
   is_live: boolean;
 }
 
+interface TemplateOption {
+  id: string;
+  course_label_de: string | null;
+  title: string | null;
+  price_gross_online_cents: number | null;
+  price_gross_praxis_cents: number | null;
+  price_gross_kombi_cents: number | null;
+}
+
+// Gross price of a course template for a given variant, in cents. Mirrors the
+// non-Premium branches of buildCourseLineItem (server recomputes authoritatively;
+// this is display-only). Premium is not offered as a rebooking target.
+function priceForType(tmpl: TemplateOption | undefined, courseType: string): number {
+  if (!tmpl) return 0;
+  if (courseType === "Onlinekurs") return tmpl.price_gross_online_cents || 0;
+  if (courseType === "Kombikurs") return tmpl.price_gross_kombi_cents || 0;
+  return tmpl.price_gross_praxis_cents || 0;
+}
+
 interface Props {
   initialBookings: BookingRow[];
   isAdmin?: boolean;
@@ -162,6 +181,14 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
   const [availableSessions, setAvailableSessions] = useState<SessionOption[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string>("");
   const [changingSession, setChangingSession] = useState(false);
+  // Cross-course Umbuchung: the course (template) the booking currently sits in
+  // vs. the one the admin selects. When they differ, the move switches course
+  // and an Aufpreis (price difference) is added on top of the Umbuchungsgebühr.
+  const [templates, setTemplates] = useState<TemplateOption[]>([]);
+  const [baselineTemplateId, setBaselineTemplateId] = useState<string>("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [selectedCourseType, setSelectedCourseType] = useState<string>("Praxiskurs");
+  const [loadingSessions, setLoadingSessions] = useState(false);
   // Umbuchungsgebühr for the move: "none" = free (immediate move), otherwise a
   // flat fee in cents ("12500"/"25000") or "custom". A fee gates the move
   // behind payment via /api/admin/course-rebooking.
@@ -219,6 +246,19 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [statusDropdownId]);
+
+  // Course templates for the cross-course Umbuchung selector. Loaded once; small
+  // table, so we fetch all (the booking's own course must be present as default).
+  useEffect(() => {
+    supabase
+      .from("course_templates")
+      .select(
+        "id, course_label_de, title, price_gross_online_cents, price_gross_praxis_cents, price_gross_kombi_cents",
+      )
+      .order("course_label_de", { ascending: true })
+      .then(({ data }) => setTemplates((data as TemplateOption[]) || []));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filtered = bookings.filter((b) => {
     // Bundle filter
@@ -350,10 +390,30 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
     }
   };
 
+  // Load available future sessions for a template. Excludes the booking's
+  // current session (only relevant when staying in the same course). Includes
+  // not-yet-live sessions: staff rebook people onto dates not published to the
+  // public funnel yet.
+  const loadSessionsForTemplate = async (templateId: string, excludeSessionId: string | null) => {
+    setLoadingSessions(true);
+    let query = supabase
+      .from("course_sessions")
+      .select("id, date_iso, label_de, start_time, duration_minutes, address, instructor_name, booked_seats, max_seats, template_id, is_live")
+      .eq("template_id", templateId)
+      .gte("date_iso", new Date().toISOString().slice(0, 10))
+      .order("date_iso", { ascending: true });
+    if (excludeSessionId) query = query.neq("id", excludeSessionId);
+    const { data: sessions } = await query;
+    const available = (sessions || []).filter((s: SessionOption) => s.booked_seats < s.max_seats);
+    setAvailableSessions(available);
+    setSelectedSessionId(available[0]?.id || "");
+    setLoadingSessions(false);
+  };
+
   const openSessionChange = async (booking: BookingRow) => {
     if (!booking.session_id) return;
 
-    // Filter by the CURRENT SESSION's template, not booking.template_id.
+    // Baseline = the CURRENT SESSION's template, not booking.template_id.
     // Inheriting courses (e.g. Grundkurs Zahnmedizin) seat their bookings in a
     // parent template's sessions, so the booking's own template hosts zero
     // sessions and would yield "keine verfügbaren Termine".
@@ -364,25 +424,38 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
       .single();
     const templateId = curSession?.template_id || booking.template_id || "";
 
-    // Include sessions that aren't live yet: staff need to rebook people into
-    // future dates that haven't been published to the public funnel.
-    const { data: sessions } = await supabase
-      .from("course_sessions")
-      .select("id, date_iso, label_de, start_time, duration_minutes, address, instructor_name, booked_seats, max_seats, template_id, is_live")
-      .eq("template_id", templateId)
-      .neq("id", booking.session_id)
-      .gte("date_iso", new Date().toISOString().slice(0, 10))
-      .order("date_iso", { ascending: true });
+    setBaselineTemplateId(templateId);
+    setSelectedTemplateId(templateId);
+    // Default the target variant to the booking's own type, but never Onlinekurs
+    // (rebooking always targets a dated session).
+    setSelectedCourseType(booking.course_type === "Kombikurs" ? "Kombikurs" : "Praxiskurs");
+    await loadSessionsForTemplate(templateId, booking.session_id);
 
-    const available = (sessions || []).filter((s: SessionOption) => s.booked_seats < s.max_seats);
-    setAvailableSessions(available);
-    setSelectedSessionId(available[0]?.id || "");
     // Pre-select the AGB-staffed fee based on proximity to the current start.
     setRebookingFee(
       defaultRebookingFee(booking.course_sessions?.date_iso, booking.course_sessions?.start_time),
     );
     setRebookingCustomEur("");
     setChangeBooking(booking);
+  };
+
+  // Admin picks a different course: reload that course's sessions. Staying in
+  // the baseline course excludes the current session (a real move); switching
+  // courses lists all of the target's sessions.
+  const onTemplateChange = async (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    const isCross = templateId !== baselineTemplateId;
+    await loadSessionsForTemplate(templateId, isCross ? null : changeBooking?.session_id || null);
+  };
+
+  // Client-side Aufpreis estimate (server recomputes authoritatively): the
+  // target course price for the chosen variant minus what was already paid,
+  // never negative (downgrades are not refunded).
+  const surchargeCentsEstimate = (): number => {
+    if (!changeBooking || selectedTemplateId === baselineTemplateId) return 0;
+    const tmpl = templates.find((t) => t.id === selectedTemplateId);
+    const targetPrice = priceForType(tmpl, selectedCourseType);
+    return Math.max(0, targetPrice - (changeBooking.amount_paid || 0));
   };
 
   // Resolve the selected Umbuchungsgebühr to cents. 0 = free move.
@@ -409,10 +482,19 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
       });
       return;
     }
-    if (feeCents === 0) {
+
+    const isCross = selectedTemplateId !== baselineTemplateId;
+    const surcharge = surchargeCentsEstimate();
+    const total = feeCents + surcharge;
+
+    // Same course, nothing to charge: immediate client-side move (unchanged).
+    // Cross-course moves always go through the server (even when free) so the
+    // template/type switch and seat rebalance stay atomic.
+    if (!isCross && total === 0) {
       await applyFreeMove();
       return;
     }
+
     setChangingSession(true);
     try {
       const res = await fetch("/api/admin/course-rebooking", {
@@ -422,6 +504,7 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
           bookingId: changeBooking.id,
           toSessionId: selectedSessionId,
           feeCents,
+          ...(isCross ? { toTemplateId: selectedTemplateId, toCourseType: selectedCourseType } : {}),
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -433,11 +516,22 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
         return;
       }
       setChangeBooking(null);
-      setRebookingNotice({
-        title: "Zahlungslink gesendet",
-        description:
-          "Die Ärzt:in hat einen Zahlungslink für die Umbuchungsgebühr per E-Mail erhalten. Die Umbuchung auf den neuen Termin wird nach Zahlungseingang automatisch durchgeführt.",
-      });
+      if (data.applied) {
+        // Free move applied immediately server-side. Refresh to pull the moved
+        // booking (new course/session) from the server.
+        router.refresh();
+        setRebookingNotice({
+          title: "Umbuchung durchgeführt",
+          description:
+            "Die Buchung wurde umgebucht und die Ärzt:in per E-Mail informiert.",
+        });
+      } else {
+        setRebookingNotice({
+          title: "Zahlungslink gesendet",
+          description:
+            "Die Ärzt:in hat einen Zahlungslink per E-Mail erhalten. Die Umbuchung wird nach Zahlungseingang automatisch durchgeführt.",
+        });
+      }
     } catch {
       setRebookingNotice({
         title: "Fehler",
@@ -557,6 +651,15 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
   };
 
   const sortProps = { currentKey: sortKey, direction: sortDir, onSort: handleSort as (key: string) => void };
+
+  // Derived display values for the Umbuchung dialog (guarded: harmless when the
+  // dialog is closed).
+  const isCrossCourse = !!selectedTemplateId && selectedTemplateId !== baselineTemplateId;
+  const previewFeeCents = resolveRebookingFeeCents(); // null when custom input invalid
+  const previewSurchargeCents = surchargeCentsEstimate();
+  const previewTotalCents = (previewFeeCents || 0) + previewSurchargeCents;
+  const fmtEur = (cents: number) =>
+    `€${(cents / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })}`;
 
   return (
     <div className="space-y-6">
@@ -995,12 +1098,49 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <p className="text-sm text-muted-foreground">
-              Aktueller Termin: <strong>{changeBooking?.course_sessions?.label_de || "–"}</strong>
+              Aktueller Kurs: <strong>{changeBooking?.course_templates?.course_label_de || changeBooking?.course_templates?.title || "–"}</strong>
+              {" · "}Termin: <strong>{changeBooking?.course_sessions?.label_de || "–"}</strong>
               {changeBooking?.course_sessions?.start_time && ` um ${changeBooking.course_sessions.start_time} Uhr`}
             </p>
 
-            {availableSessions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Keine weiteren verfügbaren Termine für diesen Kurs.</p>
+            <div>
+              <Label>Kurs</Label>
+              <select
+                value={selectedTemplateId}
+                onChange={(e) => onTemplateChange(e.target.value)}
+                className="w-full mt-1 border rounded px-3 py-2 text-sm"
+              >
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.course_label_de || t.title}
+                  </option>
+                ))}
+              </select>
+              {isCrossCourse && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Kurswechsel. Bei einem höherwertigen Kurs fällt ein Aufpreis auf die Umbuchungsgebühr an.
+                </p>
+              )}
+            </div>
+
+            {isCrossCourse && (
+              <div>
+                <Label>Kurstyp im Zielkurs</Label>
+                <select
+                  value={selectedCourseType}
+                  onChange={(e) => setSelectedCourseType(e.target.value)}
+                  className="w-full mt-1 border rounded px-3 py-2 text-sm"
+                >
+                  <option value="Praxiskurs">Praxiskurs</option>
+                  <option value="Kombikurs">Kombikurs</option>
+                </select>
+              </div>
+            )}
+
+            {loadingSessions ? (
+              <p className="text-sm text-muted-foreground">Termine werden geladen...</p>
+            ) : availableSessions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Keine verfügbaren Termine für diesen Kurs.</p>
             ) : (
               <>
                 <div>
@@ -1045,8 +1185,26 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                       className="w-full mt-2 border rounded px-3 py-2 text-sm"
                     />
                   )}
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {rebookingFee === "none"
+                </div>
+
+                {/* Cost breakdown: Umbuchungsgebühr + Aufpreis = Gesamt. */}
+                <div className="rounded bg-muted/50 p-3 text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span>Umbuchungsgebühr</span>
+                    <span>{previewFeeCents === null ? "–" : fmtEur(previewFeeCents)}</span>
+                  </div>
+                  {isCrossCourse && (
+                    <div className="flex justify-between">
+                      <span>Kursaufpreis</span>
+                      <span>{fmtEur(previewSurchargeCents)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-semibold">
+                    <span>Gesamt</span>
+                    <span>{previewFeeCents === null ? "–" : fmtEur(previewTotalCents)}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground pt-1">
+                    {previewTotalCents === 0
                       ? "Die Umbuchung wird sofort durchgeführt und die Ärzt:in per E-Mail informiert."
                       : "Die Ärzt:in erhält einen Zahlungslink. Die Umbuchung wird erst nach Zahlungseingang durchgeführt."}
                   </p>
@@ -1054,13 +1212,13 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
 
                 <Button
                   onClick={confirmSessionChange}
-                  disabled={changingSession || !selectedSessionId}
+                  disabled={changingSession || !selectedSessionId || previewFeeCents === null}
                   className="w-full"
                 >
                   {changingSession
                     ? "Wird verarbeitet..."
-                    : rebookingFee === "none"
-                      ? "Termin ändern & E-Mail senden"
+                    : previewTotalCents === 0
+                      ? "Umbuchen & E-Mail senden"
                       : "Umbuchen & Zahlungslink senden"}
                 </Button>
               </>
