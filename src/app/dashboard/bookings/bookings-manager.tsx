@@ -384,6 +384,7 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
         email: b.email,
         firstName: b.first_name || b.name?.split(" ")[0] || "",
         courseTitle:
+          (b.booking_type === "nachbehandlung" ? "Nachbehandlung" : null) ||
           (b.indication ? indicationLabel(b.indication) : null) ||
           b.slots?.courses?.treatment_title ||
           b.slots?.courses?.title ||

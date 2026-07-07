@@ -378,7 +378,13 @@ export function KursDetailClient({
       return {
         email: cancelPending.email,
         firstName: cancelPending.first_name || "",
-        courseTitle: session.templateTitle,
+        // Nachbehandlungs-Buchungen sitzen im selben Satelliten-Kurs, tragen
+        // aber keinen eigenen Kurstitel. In der Storno-Mail soll dann
+        // "Nachbehandlung" statt des Kursnamens stehen.
+        courseTitle:
+          cancelPending.booking_type === "nachbehandlung"
+            ? "Nachbehandlung"
+            : session.templateTitle,
         date,
         time,
         location: session.address || "",
