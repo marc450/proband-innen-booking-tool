@@ -458,8 +458,7 @@ export async function POST(req: NextRequest) {
       <strong>Bitte stelle sicher, dass Du 10 Minuten vor Start Deiner Behandlung in der Praxis eintriffst.</strong>
     </p>
 
-    <p style="margin:20px 0 4px; font-weight:bold;">Hautpflege & Make-up</p>
-    <p style="margin:0 0 8px;">
+    <p style="margin:20px 0 8px;">
       Bitte bereite Dich gut auf Deinen Termin bei uns vor, damit Deine Behandlung reibungslos und effektiv verläuft. Gib der behandelnden Ärztin/dem behandelnden Arzt Bescheid, falls das Deine erste ästhetische Behandlung sein wird.
     </p>
 

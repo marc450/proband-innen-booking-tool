@@ -12,8 +12,7 @@ export const PATIENT_PREPARATION_BLOCK = `
     <strong>Bitte stelle sicher, dass Du 10 Minuten vor Start Deiner Behandlung in der Praxis eintriffst.</strong>
   </p>
 
-  <p style="margin:20px 0 4px; font-weight:bold;">Hautpflege & Make-up</p>
-  <p style="margin:0 0 8px;">
+  <p style="margin:20px 0 8px;">
     Bitte bereite Dich gut auf Deinen Termin vor, damit Deine Behandlung reibungslos und effektiv verläuft. Gib der Ärztin/dem Arzt vor Deiner Behandlung Bescheid, falls das Deine erste ästhetische Behandlung sein wird.
   </p>
 
