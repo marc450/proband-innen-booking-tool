@@ -4,13 +4,14 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { ArrowLeft, CheckCircle2, GraduationCap } from "lucide-react";
+import { ArrowLeft, CheckCircle2, GraduationCap, KeyRound } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { AlertDialog } from "@/components/confirm-dialog";
 import {
   COURSE_CHECKLIST,
   CHECKLIST_TOTAL,
+  COURSE_REFERENCE_INFO,
 } from "@/lib/course-checklist";
 
 export interface ChecklistItemState {
@@ -155,6 +156,29 @@ export function ChecklistView({
           </div>
         )}
       </div>
+
+      {/* Reference info (access codes, etc.) */}
+      {COURSE_REFERENCE_INFO.length > 0 && (
+        <Card className="p-5">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold">
+            <KeyRound className="h-4 w-4 text-[#0066FF]" />
+            Zugangsdaten
+          </h2>
+          <div className="space-y-2">
+            {COURSE_REFERENCE_INFO.map((info) => (
+              <div
+                key={info.label}
+                className="flex items-center justify-between gap-3 text-sm"
+              >
+                <span className="text-muted-foreground">{info.label}</span>
+                <span className="font-mono text-base font-semibold tracking-wide">
+                  {info.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Phases */}
       <div className="space-y-4">

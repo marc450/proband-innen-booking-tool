@@ -16,6 +16,18 @@ export interface ChecklistItem {
   label: string;
 }
 
+// Practice-wide reference info shown to the Kursbetreuung at the top of every
+// checklist. Not checkable and not tied to per-session state, just handy
+// constants (access codes, etc.). Edit values here.
+export interface ReferenceInfoItem {
+  label: string;
+  value: string;
+}
+
+export const COURSE_REFERENCE_INFO: ReferenceInfoItem[] = [
+  { label: "iPad-Zugangscode der Praxis", value: "180889" },
+];
+
 export interface ChecklistPhase {
   phase: string;
   items: ChecklistItem[];
