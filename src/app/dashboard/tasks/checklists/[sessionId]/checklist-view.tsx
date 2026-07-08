@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { ArrowLeft, CheckCircle2, GraduationCap, KeyRound } from "lucide-react";
+import { ArrowLeft, CheckCircle2, KeyRound } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { AlertDialog } from "@/components/confirm-dialog";
@@ -117,7 +117,6 @@ export function ChecklistView({
       {/* Header */}
       <div className="space-y-3">
         <div className="flex items-start gap-2">
-          <GraduationCap className="h-6 w-6 text-[#0066FF] shrink-0 mt-0.5" />
           <div>
             <h1 className="text-2xl font-bold leading-tight">{courseTitle}</h1>
             <p className="text-sm text-muted-foreground">
