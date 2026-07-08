@@ -14,12 +14,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
 import { TableHeaderBar } from "@/components/table/table-header-bar";
 import { CHECKLIST_TOTAL } from "@/lib/course-checklist";
 
@@ -33,8 +27,6 @@ export interface ChecklistSession {
   checked_count: number;
 }
 
-type StatusFilter = "open" | "done" | "all";
-
 function sessionTitle(s: ChecklistSession): string {
   return s.template_title || s.label_de || "Kurstermin";
 }
@@ -46,7 +38,6 @@ export function ChecklistsOverview({
 }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("open");
   // Past courses are hidden by default; the Kursbetreuung cares about
   // upcoming and current courses. Toggle to bring the archive back.
   const [hidePast, setHidePast] = useState(true);
@@ -65,9 +56,6 @@ export function ChecklistsOverview({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const list = sessions.filter((s) => {
-      const complete = s.checked_count >= CHECKLIST_TOTAL;
-      if (statusFilter === "open" && complete) return false;
-      if (statusFilter === "done" && !complete) return false;
       if (
         hidePast &&
         s.date_iso &&
@@ -95,7 +83,7 @@ export function ChecklistsOverview({
       if (aUpcoming !== bUpcoming) return aUpcoming ? -1 : 1;
       return aUpcoming ? ta - tb : tb - ta;
     });
-  }, [sessions, search, statusFilter, hidePast, todayStart]);
+  }, [sessions, search, hidePast, todayStart]);
 
   return (
     <div className="space-y-4">
@@ -107,36 +95,15 @@ export function ChecklistsOverview({
         onSearchChange={setSearch}
         searchPlaceholder="Suchen nach Kurs, Dozent:in, Datum..."
         filters={
-          <div className="flex items-center gap-3">
-            <Select
-              value={statusFilter}
-              onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-            >
-              <SelectTrigger className="h-9 w-[160px]">
-                <span>
-                  {statusFilter === "open"
-                    ? "Nicht erledigt"
-                    : statusFilter === "done"
-                      ? "Erledigt"
-                      : "Alle Kurse"}
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="open">Nicht erledigt</SelectItem>
-                <SelectItem value="done">Erledigt</SelectItem>
-                <SelectItem value="all">Alle Kurse</SelectItem>
-              </SelectContent>
-            </Select>
-            <label className="flex items-center gap-2 text-sm cursor-pointer select-none whitespace-nowrap">
-              <input
-                type="checkbox"
-                checked={hidePast}
-                onChange={(e) => setHidePast(e.target.checked)}
-                className="h-4 w-4 rounded"
-              />
-              <span>Vergangene ausblenden</span>
-            </label>
-          </div>
+          <label className="flex items-center gap-2 text-sm cursor-pointer select-none whitespace-nowrap">
+            <input
+              type="checkbox"
+              checked={hidePast}
+              onChange={(e) => setHidePast(e.target.checked)}
+              className="h-4 w-4 rounded"
+            />
+            <span>Vergangene ausblenden</span>
+          </label>
         }
       />
 
