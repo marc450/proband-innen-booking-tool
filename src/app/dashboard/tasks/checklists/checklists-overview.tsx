@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { CheckCircle2, GraduationCap } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 
 import {
   Table,
@@ -136,10 +136,7 @@ export function ChecklistsOverview({
                   }
                 >
                   <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      <GraduationCap className="h-4 w-4 text-[#0066FF] shrink-0" />
-                      {sessionTitle(s)}
-                    </div>
+                    {sessionTitle(s)}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm">
                     {s.date_iso
