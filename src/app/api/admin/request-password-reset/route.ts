@@ -18,8 +18,9 @@ import { buildEmailHtml } from "@/lib/email-template";
 // without a Supabase auth-server round-trip.
 //
 // Token TTL is whatever Supabase Auth → Email is configured to
-// (default 1 hour). The email text states 1 hour; if you change the
-// TTL in Supabase, update the copy here.
+// (set to 3 hours / 10800s in the Supabase dashboard). The email text
+// states 3 hours; if you change the TTL in Supabase, update the copy
+// here.
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const REDIRECT_TO = "https://admin.ephia.de/reset-password";
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
   const html = buildEmailHtml({
     firstName: profile.first_name ?? "",
     intro:
-      "Du hast einen Link zum Zurücksetzen Deines Passworts angefordert. Klicke auf den Button unten, um ein neues Passwort zu setzen. Der Link ist 1 Stunde gültig. Wenn Du das nicht warst, kannst Du diese E-Mail einfach ignorieren.",
+      "Du hast einen Link zum Zurücksetzen Deines Passworts angefordert. Klicke auf den Button unten, um ein neues Passwort zu setzen. Der Link ist 3 Stunden gültig. Wenn Du das nicht warst, kannst Du diese E-Mail einfach ignorieren.",
     buttons: [{ label: "Neues Passwort setzen", url: resetLink }],
   });
 

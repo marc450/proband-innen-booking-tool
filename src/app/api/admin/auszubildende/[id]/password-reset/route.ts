@@ -20,8 +20,9 @@ import { buildEmailHtml } from "@/lib/email-template";
 // just right.
 //
 // Token TTL is whatever Supabase Auth → Email is configured to
-// (default 1 hour). The email text states 1 hour; if you change the
-// TTL in Supabase, update the copy below.
+// (set to 3 hours / 10800s in the Supabase dashboard). The email text
+// states 3 hours; if you change the TTL in Supabase, update the copy
+// below.
 //
 // 400 when the contact has no Supabase login yet (user_id IS NULL):
 // the customer hasn't been through /start to set a password, so there
@@ -140,7 +141,7 @@ export async function POST(
   const html = buildEmailHtml({
     firstName: contact.first_name ?? "",
     intro:
-      "Du hast einen Link zum Zurücksetzen Deines Passworts angefordert. Klicke auf den Button unten, um ein neues Passwort zu setzen. Der Link ist 1 Stunde gültig. Wenn Du das nicht warst, kannst Du diese E-Mail einfach ignorieren.",
+      "Du hast einen Link zum Zurücksetzen Deines Passworts angefordert. Klicke auf den Button unten, um ein neues Passwort zu setzen. Der Link ist 3 Stunden gültig. Wenn Du das nicht warst, kannst Du diese E-Mail einfach ignorieren.",
     buttons: [{ label: "Neues Passwort setzen", url: resetLink }],
   });
 
