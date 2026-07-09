@@ -1,14 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildEmailHtml } from "@/lib/email-template";
 
 // Admin-triggered password recovery for an auszubildende.
 //
-// Sends the same Supabase-branded recovery email that the customer
-// would get via /start "Passwort vergessen?" — we use the public
-// supabase.auth.resetPasswordForEmail() rather than admin.generateLink
-// so the email body is exactly what the customer expects (template
-// configured in Supabase, not a raw URL we'd have to email ourselves).
+// EPHIA-native flow (mirrors src/app/api/admin/request-password-reset
+// for staff): we mint the recovery token ourselves via
+// admin.auth.admin.generateLink({ type: "recovery" }) — which does NOT
+// trigger Supabase's built-in email — and send our own Resend-branded
+// message. The link points DIRECTLY at
+// https://ephia.de/reset-password?token_hash=...&type=recovery so the
+// client-side verifyOtp flow in
+// src/app/kurse/reset-password/reset-password-form.tsx consumes the
+// hash. This is cross-browser/device safe (no PKCE verifier needed in
+// the customer's storage) and the link shape is fully under our
+// control, unlike the previous resetPasswordForEmail() approach which
+// depended on the Supabase dashboard email template being configured
+// just right.
+//
+// Token TTL is whatever Supabase Auth → Email is configured to
+// (default 1 hour). The email text states 1 hour; if you change the
+// TTL in Supabase, update the copy below.
 //
 // 400 when the contact has no Supabase login yet (user_id IS NULL):
 // the customer hasn't been through /start to set a password, so there
@@ -17,6 +30,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 //
 // Logs every call to admin_actions, including the actor, the
 // target, and a metadata blob with the resolved email + outcome.
+
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+
+// ephia.de is the canonical customer-facing host; the middleware
+// rewrites /reset-password to /kurse/reset-password internally.
+const REDIRECT_TO = "https://ephia.de/reset-password";
 
 async function assertAdmin() {
   const supabase = await createClient();
@@ -68,6 +87,13 @@ export async function POST(
     );
   }
 
+  if (!RESEND_API_KEY) {
+    return NextResponse.json(
+      { error: "E-Mail-Versand ist nicht konfiguriert (RESEND_API_KEY fehlt)." },
+      { status: 500 },
+    );
+  }
+
   // Resolve the auth user's actual email — it should match
   // contact.email but the customer might have rotated it. Always send
   // to whatever Supabase considers the login address.
@@ -81,13 +107,59 @@ export async function POST(
   }
   const loginEmail = authUserRes.user.email;
 
-  // ephia.de is the canonical customer-facing host; the middleware
-  // rewrites /reset-password to /kurse/reset-password internally.
-  const redirectTo = "https://ephia.de/reset-password";
-
-  const { error: resetErr } = await admin.auth.resetPasswordForEmail(loginEmail, {
-    redirectTo,
+  // Mint the recovery token without triggering Supabase's built-in
+  // email. We build the link ourselves so its shape is exactly what the
+  // /kurse/reset-password form expects.
+  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+    type: "recovery",
+    email: loginEmail,
+    options: { redirectTo: REDIRECT_TO },
   });
+
+  const hashedToken = linkData?.properties?.hashed_token;
+  if (linkErr || !hashedToken) {
+    await admin.from("admin_actions").insert({
+      actor_id: caller.id,
+      action_type: "password_reset_email",
+      target_table: "auszubildende",
+      target_id: contact.id,
+      metadata: {
+        login_email: loginEmail,
+        ok: false,
+        error: linkErr?.message ?? "generateLink returned no token",
+      },
+    });
+    return NextResponse.json(
+      { error: linkErr?.message ?? "Recovery-Link konnte nicht erstellt werden." },
+      { status: 500 },
+    );
+  }
+
+  const resetLink = `${REDIRECT_TO}?token_hash=${encodeURIComponent(hashedToken)}&type=recovery`;
+
+  const html = buildEmailHtml({
+    firstName: contact.first_name ?? "",
+    intro:
+      "Du hast einen Link zum Zurücksetzen Deines Passworts angefordert. Klicke auf den Button unten, um ein neues Passwort zu setzen. Der Link ist 1 Stunde gültig. Wenn Du das nicht warst, kannst Du diese E-Mail einfach ignorieren.",
+    buttons: [{ label: "Neues Passwort setzen", url: resetLink }],
+  });
+
+  const sendRes = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "EPHIA <customerlove@ephia.de>",
+      to: [loginEmail],
+      subject: "Passwort zurücksetzen",
+      html,
+    }),
+  });
+
+  const sendOk = sendRes.ok;
+  const sendError = sendOk ? null : await sendRes.text().catch(() => "unknown");
 
   // Log no matter what — successful sends and failures both belong
   // in the audit so we can reconstruct what happened during a
@@ -99,13 +171,16 @@ export async function POST(
     target_id: contact.id,
     metadata: {
       login_email: loginEmail,
-      ok: !resetErr,
-      error: resetErr?.message ?? null,
+      ok: sendOk,
+      error: sendError,
     },
   });
 
-  if (resetErr) {
-    return NextResponse.json({ error: resetErr.message }, { status: 500 });
+  if (!sendOk) {
+    return NextResponse.json(
+      { error: "Reset-E-Mail konnte nicht versendet werden." },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ ok: true, email: loginEmail });

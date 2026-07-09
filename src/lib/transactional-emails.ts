@@ -655,6 +655,31 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
     renderSample: () =>
       buildWithdrawalConfirmationEmail({ firstName: SAMPLE.firstName }),
   },
+  {
+    id: "auszubildende-password-reset",
+    funnel: "arzt-kursupdates",
+    name: "Passwort zurücksetzen (Ärzt:in)",
+    recipient: "Ärzt:in",
+    trigger:
+      "Staff klickt 'Passwort-Reset senden' im Auszubildende-Detail (Konto-Karte). Nur möglich, sobald die Person ein Login-Konto hat.",
+    codeRef: "src/app/api/admin/auszubildende/[id]/password-reset/route.ts",
+    description:
+      "Recovery-Link für das Kund:innen-Login. Token-Hash-Flow zu ephia.de/reset-password, gültig 1 Stunde. EPHIA-nativer Resend-Versand (kein Supabase-Standard-Template), cross-device-sicher.",
+    renderSample: () => ({
+      subject: "Passwort zurücksetzen",
+      html: buildEmailHtml({
+        firstName: SAMPLE.firstName,
+        intro:
+          "Du hast einen Link zum Zurücksetzen Deines Passworts angefordert. Klicke auf den Button unten, um ein neues Passwort zu setzen. Der Link ist 1 Stunde gültig. Wenn Du das nicht warst, kannst Du diese E-Mail einfach ignorieren.",
+        buttons: [
+          {
+            label: "Neues Passwort setzen",
+            url: "https://ephia.de/reset-password?token_hash=SAMPLE&type=recovery",
+          },
+        ],
+      }),
+    }),
+  },
 
   // ── Kontakt & Anfragen ─────────────────────────────────────────────
   {
