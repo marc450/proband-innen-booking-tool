@@ -74,14 +74,16 @@ export async function updateSession(request: NextRequest) {
   if (user) {
     const existingRole = request.cookies.get("x-user-role")?.value;
     const existingKursbetreuung = request.cookies.get("x-is-kursbetreuung")?.value;
-    if (!existingRole || existingKursbetreuung === undefined) {
+    const existingAutor = request.cookies.get("x-is-autor")?.value;
+    if (!existingRole || existingKursbetreuung === undefined || existingAutor === undefined) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role, is_kursbetreuung")
+        .select("role, is_kursbetreuung, is_autor")
         .eq("id", user.id)
         .single();
       role = profile?.role ?? "nutzer";
       const isKursbetreuung = profile?.is_kursbetreuung === true;
+      const isAutor = profile?.is_autor === true;
       supabaseResponse.cookies.set("x-user-role", role, {
         path: "/",
         httpOnly: true,
@@ -96,12 +98,20 @@ export async function updateSession(request: NextRequest) {
         sameSite: "lax",
         maxAge: 3600,
       });
+      supabaseResponse.cookies.set("x-is-autor", isAutor ? "1" : "0", {
+        path: "/",
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        maxAge: 3600,
+      });
     } else {
       role = existingRole;
     }
   } else {
     supabaseResponse.cookies.delete("x-user-role");
     supabaseResponse.cookies.delete("x-is-kursbetreuung");
+    supabaseResponse.cookies.delete("x-is-autor");
   }
 
   // Hard lock on admin.ephia.de: a valid Supabase session is necessary

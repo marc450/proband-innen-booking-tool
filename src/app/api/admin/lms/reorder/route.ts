@@ -4,11 +4,11 @@
 // Body: { kind: "courses" | "chapters" | "lessons", ids: string[] }
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { assertLmsAdmin } from "@/lib/lms/admin-auth";
+import { assertLmsAccess } from "@/lib/lms/admin-auth";
 import { LMS_TABLES, badRequest, dbError, unauthorized, type LmsTableKey } from "@/lib/lms/admin-api";
 
 export async function POST(req: NextRequest) {
-  if (!(await assertLmsAdmin())) return unauthorized();
+  if (!(await assertLmsAccess())) return unauthorized();
 
   const body = await req.json();
   const kind = body.kind as LmsTableKey;

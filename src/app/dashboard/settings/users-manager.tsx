@@ -66,6 +66,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
   const [role, setRole] = useState<"admin" | "nutzer">("nutzer");
   const [isDozent, setIsDozent] = useState(false);
   const [isKursbetreuung, setIsKursbetreuung] = useState(false);
+  const [isAutor, setIsAutor] = useState(false);
   const [dozentEmployer, setDozentEmployer] = useState("");
   const [dozentSpecialization, setDozentSpecialization] = useState("");
   const [slackUserId, setSlackUserId] = useState("");
@@ -84,6 +85,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
   const [editRole, setEditRole] = useState<"admin" | "nutzer">("nutzer");
   const [editIsDozent, setEditIsDozent] = useState(false);
   const [editIsKursbetreuung, setEditIsKursbetreuung] = useState(false);
+  const [editIsAutor, setEditIsAutor] = useState(false);
   const [editDozentEmployer, setEditDozentEmployer] = useState("");
   const [editDozentSpecialization, setEditDozentSpecialization] = useState("");
   const [editSlackUserId, setEditSlackUserId] = useState("");
@@ -125,7 +127,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
 
   const resetForm = () => {
     setTitle(""); setFirstName(""); setLastName(""); setEmail(""); setPassword("");
-    setRole("nutzer"); setIsDozent(false); setIsKursbetreuung(false);
+    setRole("nutzer"); setIsDozent(false); setIsKursbetreuung(false); setIsAutor(false);
     setDozentEmployer(""); setDozentSpecialization("");
     setSlackUserId("");
     setCreateError(null); setCreatedCredentials(null); setCopied(false);
@@ -147,7 +149,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     const res = await fetch("/api/admin/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: title || null, first_name: firstName, last_name: lastName, email, password, role, is_dozent: isDozent, is_kursbetreuung: isKursbetreuung, slack_user_id: slackUserId || null, dozent_employer: isDozent ? dozentEmployer : null, dozent_specialization: isDozent ? dozentSpecialization : null, promote }),
+      body: JSON.stringify({ title: title || null, first_name: firstName, last_name: lastName, email, password, role, is_dozent: isDozent, is_kursbetreuung: isKursbetreuung, is_autor: isAutor, slack_user_id: slackUserId || null, dozent_employer: isDozent ? dozentEmployer : null, dozent_specialization: isDozent ? dozentSpecialization : null, promote }),
     });
     const data = await res.json();
     setSaving(false);
@@ -185,6 +187,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     setEditRole(u.role);
     setEditIsDozent(u.is_dozent);
     setEditIsKursbetreuung(u.is_kursbetreuung);
+    setEditIsAutor(u.is_autor);
     setEditDozentEmployer(u.dozent_employer || "");
     setEditDozentSpecialization(u.dozent_specialization || "");
     setEditSlackUserId(u.slack_user_id || "");
@@ -202,7 +205,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
     const res = await fetch(`/api/admin/users/${editTarget.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: editTitle || null, first_name: editFirstName, last_name: editLastName, role: editRole, is_dozent: editIsDozent, is_kursbetreuung: editIsKursbetreuung, slack_user_id: editSlackUserId || null, dozent_employer: editIsDozent ? editDozentEmployer : null, dozent_specialization: editIsDozent ? editDozentSpecialization : null }),
+      body: JSON.stringify({ title: editTitle || null, first_name: editFirstName, last_name: editLastName, role: editRole, is_dozent: editIsDozent, is_kursbetreuung: editIsKursbetreuung, is_autor: editIsAutor, slack_user_id: editSlackUserId || null, dozent_employer: editIsDozent ? editDozentEmployer : null, dozent_specialization: editIsDozent ? editDozentSpecialization : null }),
     });
     const data = await res.json();
     setEditSaving(false);
@@ -223,6 +226,7 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
               role: editRole,
               is_dozent: editIsDozent,
               is_kursbetreuung: editIsKursbetreuung,
+              is_autor: editIsAutor,
               slack_user_id: editSlackUserId.trim() || null,
               dozent_employer: editIsDozent ? (editDozentEmployer.trim() || null) : null,
               dozent_specialization: editIsDozent ? (editDozentSpecialization.trim() || null) : null,
@@ -393,6 +397,15 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
               />
               <span className="text-sm">Als Kursbetreuung verfügbar</span>
             </label>
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editIsAutor}
+                onChange={(e) => setEditIsAutor(e.target.checked)}
+                className="h-4 w-4 rounded"
+              />
+              <span className="text-sm">Als Autor:in im Lernzentrum</span>
+            </label>
             <div className="space-y-1.5">
               <Label>Slack Member ID</Label>
               <Input
@@ -547,6 +560,15 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                   />
                   <span className="text-sm">Als Kursbetreuung verfügbar</span>
                 </label>
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isAutor}
+                    onChange={(e) => setIsAutor(e.target.checked)}
+                    className="h-4 w-4 rounded"
+                  />
+                  <span className="text-sm">Als Autor:in im Lernzentrum</span>
+                </label>
                 <div className="space-y-1.5">
                   <Label>Slack Member ID</Label>
                   <Input
@@ -618,6 +640,9 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
                         )}
                         {u.is_kursbetreuung && (
                           <Badge variant="outline">Kursbetreuung</Badge>
+                        )}
+                        {u.is_autor && (
+                          <Badge variant="outline">Autor:in</Badge>
                         )}
                       </div>
                     </TableCell>

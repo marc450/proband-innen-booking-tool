@@ -2,12 +2,12 @@
 // an empty draft doc. Admin-only.
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { assertLmsAdmin } from "@/lib/lms/admin-auth";
+import { assertLmsAccess } from "@/lib/lms/admin-auth";
 import { LMS_TABLES, badRequest, dbError, nextOrderIndex, unauthorized } from "@/lib/lms/admin-api";
 import { slugify } from "@/lib/lms/schema";
 
 export async function POST(req: NextRequest) {
-  if (!(await assertLmsAdmin())) return unauthorized();
+  if (!(await assertLmsAccess())) return unauthorized();
 
   const body = await req.json();
   const chapter_id = typeof body.chapter_id === "string" ? body.chapter_id : "";

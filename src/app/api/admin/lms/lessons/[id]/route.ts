@@ -6,7 +6,7 @@
 // silently drops unknown nodes).
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { assertLmsAdmin } from "@/lib/lms/admin-auth";
+import { assertLmsAccess } from "@/lib/lms/admin-auth";
 import { LMS_TABLES, badRequest, dbError, unauthorized } from "@/lib/lms/admin-api";
 import { slugify, validateTipTapDoc, parseAndValidateDoc } from "@/lib/lms/schema";
 
@@ -14,7 +14,7 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!(await assertLmsAdmin())) return unauthorized();
+  if (!(await assertLmsAccess())) return unauthorized();
   const { id } = await params;
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -31,7 +31,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!(await assertLmsAdmin())) return unauthorized();
+  if (!(await assertLmsAccess())) return unauthorized();
   const { id } = await params;
   const body = await req.json();
 
@@ -96,7 +96,7 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!(await assertLmsAdmin())) return unauthorized();
+  if (!(await assertLmsAccess())) return unauthorized();
   const { id } = await params;
   const admin = createAdminClient();
   const { error } = await admin.from(LMS_TABLES.lessons).delete().eq("id", id);

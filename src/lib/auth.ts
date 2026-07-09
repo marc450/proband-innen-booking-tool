@@ -35,3 +35,18 @@ export async function canAccessInbox(): Promise<boolean> {
   if (await isAdmin()) return true;
   return await isKursbetreuung();
 }
+
+// Reads the cached `is_autor` profile flag set by updateSession() in
+// src/lib/supabase/middleware.ts. Independent of the role, a "nutzer"
+// can ALSO be an Autor:in (grants Lernzentrum access).
+export async function isAutor(): Promise<boolean> {
+  const store = await cookies();
+  return store.get("x-is-autor")?.value === "1";
+}
+
+// Visibility gate for the Lernzentrum (LMS). Admins and Autor:innen are
+// allowed; everyone else is redirected away.
+export async function canAccessLms(): Promise<boolean> {
+  if (await isAdmin()) return true;
+  return await isAutor();
+}

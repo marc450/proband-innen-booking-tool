@@ -15,6 +15,7 @@ export interface AdminUser {
   role: "admin" | "nutzer";
   is_dozent: boolean;
   is_kursbetreuung: boolean;
+  is_autor: boolean;
   slack_user_id: string | null;
   dozent_employer: string | null;
   dozent_specialization: string | null;
@@ -43,7 +44,7 @@ export default async function SettingsPage() {
   // created via the LW SSO bridge get role='student' and must be excluded.
   const { data: profiles } = await adminClient
     .from("profiles")
-    .select("id, title, first_name, last_name, role, is_dozent, is_kursbetreuung, slack_user_id, dozent_employer, dozent_specialization")
+    .select("id, title, first_name, last_name, role, is_dozent, is_kursbetreuung, is_autor, slack_user_id, dozent_employer, dozent_specialization")
     .in("role", ["admin", "nutzer"]);
 
   // Fetch each staff auth row by id. listUsers() is paginated (50/page
@@ -72,6 +73,7 @@ export default async function SettingsPage() {
         role: p.role as "admin" | "nutzer",
         is_dozent: p.is_dozent ?? false,
         is_kursbetreuung: p.is_kursbetreuung ?? false,
+        is_autor: p.is_autor ?? false,
         slack_user_id: p.slack_user_id ?? null,
         dozent_employer: p.dozent_employer ?? null,
         dozent_specialization: p.dozent_specialization ?? null,

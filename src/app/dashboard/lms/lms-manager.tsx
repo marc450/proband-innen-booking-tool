@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import type { LmsCourseTree } from "@/lib/lms/types";
+import type { LmsCourseTree, LmsCourseKind } from "@/lib/lms/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,6 +67,7 @@ export function LmsManager({ initialCatalog }: { initialCatalog: LmsCourseTree[]
         title: string;
         slug: string;
         lessonType: "text" | "video";
+        courseKind?: LmsCourseKind; // only relevant when kind === "courses"
       }
   >(null);
 
@@ -107,9 +108,10 @@ export function LmsManager({ initialCatalog }: { initialCatalog: LmsCourseTree[]
   const submitDialog = () =>
     run(async () => {
       if (!dialog) return;
-      const { mode, kind, parentId, id, title, slug, lessonType } = dialog;
+      const { mode, kind, parentId, id, title, slug, lessonType, courseKind } = dialog;
       if (mode === "create") {
         const payload: Record<string, unknown> = { title, slug: slug || undefined };
+        if (kind === "courses") payload.course_kind = courseKind ?? "course";
         if (kind === "chapters") payload.course_id = parentId;
         if (kind === "lessons") {
           payload.chapter_id = parentId;
@@ -166,14 +168,39 @@ export function LmsManager({ initialCatalog }: { initialCatalog: LmsCourseTree[]
             Unabhängig von LearnWorlds.
           </p>
         </div>
-        <Button
-          onClick={() =>
-            setDialog({ mode: "create", kind: "courses", title: "", slug: "", lessonType: "text" })
-          }
-          disabled={busy}
-        >
-          <Plus className="h-4 w-4 mr-1" /> Neuer Kurs
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() =>
+              setDialog({
+                mode: "create",
+                kind: "courses",
+                title: "",
+                slug: "",
+                lessonType: "text",
+                courseKind: "cme_fallstudie",
+              })
+            }
+            disabled={busy}
+          >
+            <Plus className="h-4 w-4 mr-1" /> Neue CME-Fallstudie
+          </Button>
+          <Button
+            onClick={() =>
+              setDialog({
+                mode: "create",
+                kind: "courses",
+                title: "",
+                slug: "",
+                lessonType: "text",
+                courseKind: "course",
+              })
+            }
+            disabled={busy}
+          >
+            <Plus className="h-4 w-4 mr-1" /> Neuer Kurs
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -208,9 +235,15 @@ export function LmsManager({ initialCatalog }: { initialCatalog: LmsCourseTree[]
                     <span className="flex items-center gap-2">
                       <span className="font-semibold truncate">{course.title}</span>
                       <PublishBadge published={course.is_published} />
-                      <Badge variant="outline" className="text-[10px]">
-                        {course.access_type === "free" ? "frei" : "enrolled"}
-                      </Badge>
+                      {course.course_kind === "cme_fallstudie" ? (
+                        <Badge className="text-[10px] bg-[#0066FF] text-white hover:bg-[#0066FF]">
+                          CME-Fallstudie
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px]">
+                          {course.access_type === "free" ? "frei" : "enrolled"}
+                        </Badge>
+                      )}
                     </span>
                     <span className="block text-xs text-muted-foreground">/{course.slug}</span>
                   </span>
@@ -227,6 +260,7 @@ export function LmsManager({ initialCatalog }: { initialCatalog: LmsCourseTree[]
                       title: course.title,
                       slug: course.slug,
                       lessonType: "text",
+                      courseKind: course.course_kind,
                     })
                   }
                   onUp={() => move("courses", courseIds, ci, -1)}
@@ -377,7 +411,7 @@ export function LmsManager({ initialCatalog }: { initialCatalog: LmsCourseTree[]
           <DialogHeader>
             <DialogTitle>
               {dialog?.mode === "create" ? "Neu anlegen" : "Bearbeiten"}
-              {dialog ? ` · ${kindLabel(dialog.kind)}` : ""}
+              {dialog ? ` · ${kindLabel(dialog.kind, dialog.courseKind)}` : ""}
             </DialogTitle>
           </DialogHeader>
           {dialog && (
@@ -460,8 +494,9 @@ export function LmsManager({ initialCatalog }: { initialCatalog: LmsCourseTree[]
   );
 }
 
-function kindLabel(kind: Kind) {
-  return kind === "courses" ? "Kurs" : kind === "chapters" ? "Kapitel" : "Lektion";
+function kindLabel(kind: Kind, courseKind?: LmsCourseKind) {
+  if (kind === "courses") return courseKind === "cme_fallstudie" ? "CME-Fallstudie" : "Kurs";
+  return kind === "chapters" ? "Kapitel" : "Lektion";
 }
 
 function PublishBadge({ published }: { published: boolean }) {

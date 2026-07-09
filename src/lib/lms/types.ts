@@ -5,6 +5,12 @@
 // renderer.tsx is a tiny pattern-match over the JSON, so the public
 // reader has zero editor JS in its bundle.
 
+// Designation for an LMS course. Both kinds share the exact same
+// chapters/lessons structure and editor; they differ only in where they
+// get published. 'cme_fallstudie' courses are always free and are
+// destined for their own public page (ephia.de/cme-fallbeispiele).
+export type LmsCourseKind = "course" | "cme_fallstudie";
+
 export type LmsCourse = {
   id: string;
   slug: string;
@@ -13,6 +19,7 @@ export type LmsCourse = {
   description: string | null;
   cover_image_url: string | null;
   access_type: "free" | "enrolled";
+  course_kind: LmsCourseKind;
   is_published: boolean;
   audience_tag: string | null;
   order_index: number;

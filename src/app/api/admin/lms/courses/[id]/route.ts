@@ -2,7 +2,7 @@
 // chapters + lessons via ON DELETE CASCADE). Admin-only.
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { assertLmsAdmin } from "@/lib/lms/admin-auth";
+import { assertLmsAccess } from "@/lib/lms/admin-auth";
 import { LMS_TABLES, badRequest, dbError, unauthorized } from "@/lib/lms/admin-api";
 import { slugify } from "@/lib/lms/schema";
 
@@ -10,7 +10,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!(await assertLmsAdmin())) return unauthorized();
+  if (!(await assertLmsAccess())) return unauthorized();
   const { id } = await params;
   const body = await req.json();
 
@@ -29,6 +29,11 @@ export async function PATCH(
   if ("cover_image_url" in body) patch.cover_image_url = body.cover_image_url?.toString().trim() || null;
   if ("audience_tag" in body) patch.audience_tag = body.audience_tag?.toString().trim() || null;
   if (body.access_type === "free" || body.access_type === "enrolled") patch.access_type = body.access_type;
+  if (body.course_kind === "course" || body.course_kind === "cme_fallstudie") {
+    patch.course_kind = body.course_kind;
+    // A CME-Fallstudie is always free; keep the two fields consistent.
+    if (body.course_kind === "cme_fallstudie") patch.access_type = "free";
+  }
   if (typeof body.is_published === "boolean") patch.is_published = body.is_published;
 
   if (Object.keys(patch).length === 0) return badRequest("Keine Änderungen übermittelt.");
@@ -48,7 +53,7 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!(await assertLmsAdmin())) return unauthorized();
+  if (!(await assertLmsAccess())) return unauthorized();
   const { id } = await params;
   const admin = createAdminClient();
   const { error } = await admin.from(LMS_TABLES.courses).delete().eq("id", id);

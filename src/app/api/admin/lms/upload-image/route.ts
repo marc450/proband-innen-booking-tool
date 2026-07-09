@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { assertLmsAdmin } from "@/lib/lms/admin-auth";
+import { assertLmsAccess } from "@/lib/lms/admin-auth";
 
 const BUCKET = "lms-images";
 const MAX_BYTES = 15 * 1024 * 1024; // 15 MB
@@ -20,7 +20,7 @@ const EXT_BY_MIME: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
-  if (!(await assertLmsAdmin())) {
+  if (!(await assertLmsAccess())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

@@ -1,7 +1,7 @@
 // Lesson editor: metadata + validated JSON body (Phase A). The block
 // editor replaces the raw JSON textarea in Phase B. Admin-only.
 import { redirect, notFound } from "next/navigation";
-import { assertLmsAdmin } from "@/lib/lms/admin-auth";
+import { assertLmsAccess } from "@/lib/lms/admin-auth";
 import { getAdminLesson, getAdminLessonContext } from "@/lib/lms/admin-queries";
 import { LessonEditor } from "./lesson-editor";
 
@@ -12,7 +12,7 @@ export default async function LessonEditorPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  if (!(await assertLmsAdmin())) redirect("/dashboard");
+  if (!(await assertLmsAccess())) redirect("/dashboard");
   const { id } = await params;
   const lesson = await getAdminLesson(id);
   if (!lesson) notFound();

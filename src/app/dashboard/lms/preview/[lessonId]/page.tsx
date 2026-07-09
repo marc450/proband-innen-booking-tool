@@ -2,7 +2,7 @@
 // (LessonBody / CfStreamPlayer), bypassing the published filter so
 // drafts can be reviewed exactly as learners will see them. Admin-only.
 import { redirect, notFound } from "next/navigation";
-import { assertLmsAdmin } from "@/lib/lms/admin-auth";
+import { assertLmsAccess } from "@/lib/lms/admin-auth";
 import { getAdminLesson } from "@/lib/lms/admin-queries";
 import { LessonBody } from "@/lib/lms/renderer";
 import { CfStreamPlayer } from "@/components/lms/cf-stream-player";
@@ -21,7 +21,7 @@ export default async function LessonPreviewPage({
 }: {
   params: Promise<{ lessonId: string }>;
 }) {
-  if (!(await assertLmsAdmin())) redirect("/dashboard");
+  if (!(await assertLmsAccess())) redirect("/dashboard");
   const { lessonId } = await params;
   const lesson = await getAdminLesson(lessonId);
   if (!lesson) notFound();

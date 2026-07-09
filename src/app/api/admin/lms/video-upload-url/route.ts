@@ -14,10 +14,10 @@
 //
 // Admin-only. No LearnWorlds involvement.
 import { NextRequest, NextResponse } from "next/server";
-import { assertLmsAdmin } from "@/lib/lms/admin-auth";
+import { assertLmsAccess } from "@/lib/lms/admin-auth";
 
 export async function POST(req: NextRequest) {
-  if (!(await assertLmsAdmin())) {
+  if (!(await assertLmsAccess())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

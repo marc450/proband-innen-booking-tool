@@ -49,6 +49,12 @@ type NavItem = {
    * shared customerlove inbox).
    */
   kursbetreuungAllowed?: boolean;
+  /**
+   * When true, allow users with `is_autor = true` to see this item even
+   * if it's `adminOnly`. Used to grant Autor:innen access to the
+   * Lernzentrum without giving them the rest of the admin surface.
+   */
+  autorAllowed?: boolean;
   /** Restrict this item to a specific list of user emails (lowercase). */
   emailAllowlist?: string[];
 };
@@ -59,6 +65,11 @@ type NavGroup = {
   icon: LucideIcon;
   items: NavItem[];
   adminOnly?: boolean;
+  /**
+   * When true, users with `is_autor = true` may see this otherwise
+   * admin-only group (paired with `autorAllowed` on its items).
+   */
+  autorAllowed?: boolean;
   /** Restrict the whole group to a specific list of user emails (lowercase). */
   emailAllowlist?: string[];
 };
@@ -158,9 +169,12 @@ const navGroups: NavGroup[] = [
     key: "lms",
     label: "Lernzentrum",
     icon: GraduationCap,
+    // Admin-only, but Autor:innen (is_autor) get this group too so they
+    // can author courses and CME-Fallstudien without the rest of admin.
     adminOnly: true,
+    autorAllowed: true,
     items: [
-      { href: "/dashboard/lms", label: "Kurse (LMS)" },
+      { href: "/dashboard/lms", label: "Kurse (LMS)", adminOnly: true, autorAllowed: true },
     ],
   },
   {
@@ -209,11 +223,13 @@ export function DashboardNav({
   userEmail,
   role,
   isKursbetreuung = false,
+  isAutor = false,
   theme = "light",
 }: {
   userEmail: string;
   role: "admin" | "nutzer";
   isKursbetreuung?: boolean;
+  isAutor?: boolean;
   theme?: "light" | "dark";
 }) {
   const [currentTheme, setCurrentTheme] = useState<"light" | "dark">(theme);
@@ -274,12 +290,13 @@ export function DashboardNav({
     if (!item.adminOnly) return true;
     if (role === "admin") return true;
     if (item.kursbetreuungAllowed && isKursbetreuung) return true;
+    if (item.autorAllowed && isAutor) return true;
     return false;
   };
 
   const visibleGroups = navGroups.filter((g) => {
     if (!emailAllowed(g.emailAllowlist)) return false;
-    if (g.adminOnly && role !== "admin") return false;
+    if (g.adminOnly && role !== "admin" && !(g.autorAllowed && isAutor)) return false;
     // Hide groups that have no items the current user can actually
     // see — avoids dead group icons when every child is admin-only.
     return g.items.some(isItemVisible);
