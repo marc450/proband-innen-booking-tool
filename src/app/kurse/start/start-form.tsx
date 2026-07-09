@@ -237,17 +237,22 @@ function PasswordStep({
     navigatePostLogin(router, "push");
   };
 
-  // Sends the Supabase recovery email and transitions to the
-  // "reset_requested" confirmation step. We don't surface errors here:
-  // even if the address has no auth user yet, we want to keep the UX
-  // identical so we don't leak account existence.
+  // Sends the EPHIA-branded recovery email via our own endpoint and
+  // transitions to the "reset_requested" confirmation step. The endpoint
+  // returns 200 unconditionally, so we never surface errors here and
+  // never leak whether the address has an account.
   const handleForgot = async () => {
     if (resetting) return;
     setResetting(true);
     try {
-      await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      await fetch("/api/auth/request-customer-password-reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
       });
+    } catch {
+      // Swallow — the confirmation UX is intentionally identical whether
+      // or not the send succeeded.
     } finally {
       onForgot();
     }
