@@ -28,7 +28,7 @@ export const aufbaukursBiostimulationSkinbooster: CourseLandingContent = {
       "Erweitere Dein Behandlungsspektrum um zwei moderne Regenerationsverfahren für Haut, Volumen und Hauttextur.",
     stats: [
       { icon: "Clock", label: "Format", value: "Praxiskurs" },
-      { icon: "Award", label: "Akkreditiert", value: "CME beantragt + Zertifikat" },
+      { icon: "Award", label: "Akkreditiert", value: "12 CME-Punkte + Zertifikat" },
       { icon: "GraduationCap", label: "Level", value: "Aufbaukurs" },
     ],
     description:

@@ -53,14 +53,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // VNR fields are only required for templates that actually stamp them.
-  // The Zahnmedizin variant has no CME and therefore no VNR layout, so
-  // empty strings are accepted.
+  // VNR fields are only required for templates that actually stamp them,
+  // and only the specific slots a template carries. The Zahnmedizin
+  // variant has no CME and therefore no VNR layout (empty strings are
+  // accepted); the praxis-only Aufbaukurs Biostimulation & Skinbooster
+  // requires only VNR Praxis.
   if (certificateRequiresVnr(template)) {
-    if (!vnrTheorie) {
+    if (template.layout.vnrTheorie && !vnrTheorie) {
       return NextResponse.json({ error: "VNR Theorie fehlt" }, { status: 400 });
     }
-    if (!vnrPraxis) {
+    if (template.layout.vnrPraxis && !vnrPraxis) {
       return NextResponse.json({ error: "VNR Praxis fehlt" }, { status: 400 });
     }
   }

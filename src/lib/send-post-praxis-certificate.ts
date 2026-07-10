@@ -217,10 +217,20 @@ export async function sendPostPraxisCertificates(
         // retried on every later cron run and the cert ships
         // automatically once the LÄK-assigned VNRs are filled into
         // course_templates.vnr_theorie + course_sessions.vnr_praxis.
-        if (certificateRequiresVnr(cert) && (!vnrTheorie || !vnrPraxis)) {
+        // Per-slot hold: require only the VNRs this cert actually stamps.
+        // Botulinum/Dermalfiller carry both (theorie + praxis); the
+        // praxis-only Aufbaukurs Biostimulation & Skinbooster carries only
+        // a praxis VNR, so it must NOT be held for a missing theorie VNR it
+        // never renders.
+        const needsTheorie = !!cert.layout.vnrTheorie;
+        const needsPraxis = !!cert.layout.vnrPraxis;
+        if (
+          certificateRequiresVnr(cert) &&
+          ((needsTheorie && !vnrTheorie) || (needsPraxis && !vnrPraxis))
+        ) {
           result.skippedNoVnr += 1;
           console.warn(
-            `post-praxis cert: holding booking ${booking.id} on session ${session.id} — VNR missing for ${cert.slug} (theorie=${!!vnrTheorie}, praxis=${!!vnrPraxis})`,
+            `post-praxis cert: holding booking ${booking.id} on session ${session.id} — VNR missing for ${cert.slug} (needsTheorie=${needsTheorie}/${!!vnrTheorie}, needsPraxis=${needsPraxis}/${!!vnrPraxis})`,
           );
           continue;
         }

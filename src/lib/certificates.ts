@@ -32,6 +32,30 @@ export interface VnrStampPosition {
   label?: string;
 }
 
+/** Static CME accreditation line drawn by the generator for certs whose
+ *  master PDF ships with an EMPTY footer (no baked "… zertifiziert mit N
+ *  CME-Punkten …" block). Praxis-only single-VNR certs use this — the
+ *  Aufbaukurs Biostimulation & Skinbooster master carries only the
+ *  signature block, so the generator stamps the CME line + VNR itself
+ *  instead of relying on baked footer text. Both lines are letter-spaced
+ *  and drawn in the footer rose, centred on x, mirroring the baked
+ *  footers of the other certs. */
+export interface CmeLinePosition {
+  /** First line, e.g. "Der Kurs ist zertifiziert mit 12 CME-Punkten durch die". */
+  line1: string;
+  /** Optional second line, e.g. "Landesärztekammer Berlin". */
+  line2?: string;
+  /** Visual centre X. Same convention as the name + VNR stamps. */
+  x: number;
+  /** Baseline Y of line1. PDF origin is bottom-left; line2 sits `gap`
+   *  points below. */
+  y: number;
+  /** Font size in points. Defaults to 8pt — matches the footer copy. */
+  size?: number;
+  /** Baseline drop from line1 to line2. Defaults to 12pt. */
+  gap?: number;
+}
+
 /** Dynamic date stamp for the "Berlin, <Monat> <Jahr>" line in the footer.
  *  The baked-in date line was redacted out of the master PDFs, so the
  *  generator simply stamps the per-session date into the empty gap
@@ -91,6 +115,9 @@ export interface CertificateTemplate {
     minSize: number;
     vnrTheorie?: VnrStampPosition;
     vnrPraxis?: VnrStampPosition;
+    /** Optional static CME accreditation line. Set only for certs whose
+     *  master has NO baked CME footer (praxis-only single-VNR certs). */
+    cmeLine?: CmeLinePosition;
     /** Optional: when set, the generator stamps "Berlin, <Monat> <Jahr>"
      *  from the session's date_iso into the footer gap. Templates whose
      *  master carries no date line (e.g. the Zahnmedizin variant) omit
@@ -165,11 +192,22 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
     // Aufbaukurs Biostimulation & Skinbooster (Skulptra). Same visual
     // layout as the Botulinum certs (left-column name above dotted
     // line, photo on the right) — A4 landscape 842 × 595 pt — so the
-    // calibration is shared. CME ist aktuell beantragt, aber noch
-    // nicht akkreditiert; deshalb keine VNR-Stempel auf dem Master-
-    // PDF und kein VNR-Layout hier. Sobald die LÄK-Akkreditierung
-    // landet, vnrTheorie/vnrPraxis-Slots ergänzen + neuen Master mit
-    // gebackenen Labels einspielen.
+    // calibration is shared.
+    //
+    // Von der Landesärztekammer Berlin mit 12 CME-Punkten akkreditiert
+    // (Anerkennungsbescheid vom 10.07.2026, Kategorie C). Es gibt keinen
+    // Onlineteil, also EINE Veranstaltungsnummer pro Termin → nur VNR
+    // Praxis. Der Master trägt keinen gebackenen CME/VNR-Footer (leerer
+    // Fußbereich unter der Signatur), daher stampft der Generator die
+    // CME-Zeile (cmeLine) statisch und die VNR selbst-beschriftet
+    // ("VNR <Nummer>") in den freien Fußbereich. Koordinaten visuell
+    // gegen den Master kalibriert.
+    //
+    // Da ein vnrPraxis-Slot gesetzt ist, gibt certificateRequiresVnr true
+    // zurück und der Post-Praxis-Cron hält jede Buchung zurück
+    // (cert_sent_at bleibt null), bis course_sessions.vnr_praxis in der DB
+    // gefüllt ist. Die zurückgehaltenen Certs gehen dann beim nächsten
+    // Cron-Lauf automatisch raus, ohne Code-Änderung.
     slug: "aufbaukurs-skulptra",
     label: "Aufbaukurs Biostimulation & Skinbooster",
     courseKeys: ["aufbaukurs_skulptra"],
@@ -180,11 +218,21 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
       maxWidth: 290,
       targetSize: 28,
       minSize: 10,
-      // The baked "Berlin, April 2026" line (the only footer line, no
-      // VNR section because CME ist noch nicht akkreditiert) was
-      // redacted out of the master. We stamp the per-session date back
-      // at its original baseline, letter-spaced like the rest.
-      dateStamp: { x: 173, y: 75, size: 8 },
+      // Static CME line stamped into the empty footer, letter-spaced rose.
+      // Two lines like the Botulinum footer, broken after "durch die".
+      cmeLine: {
+        line1: "Der Kurs ist zertifiziert mit 12 CME-Punkten durch die",
+        line2: "Landesärztekammer Berlin",
+        x: 173,
+        y: 78,
+        size: 8,
+        gap: 12,
+      },
+      // Single self-labeled VNR ("VNR <number>") drawn below the CME line;
+      // the value comes from course_sessions.vnr_praxis per session.
+      vnrPraxis: { x: 173, y: 44, size: 8, label: "VNR" },
+      // Per-session date stamped above the CME line, letter-spaced.
+      dateStamp: { x: 173, y: 96, size: 8 },
     },
   },
   {
@@ -572,7 +620,13 @@ export async function generateCertificatePdf(opts: {
   const praxisLayout = template.layout.vnrPraxis;
   if (praxisLayout && vnrPraxis?.trim()) {
     const pSize = praxisLayout.size ?? 7;
-    const pSpaced = spaceDigits(vnrPraxis);
+    // Mirrors the theorie branch: when the master has no baked "VNR …:"
+    // label, the cert supplies its own via praxisLayout.label and we
+    // render "<label> <number>" as one letter-spaced line. Otherwise
+    // stamp the bare number after the baked label (legacy behaviour).
+    const pSpaced = spaceDigits(
+      praxisLayout.label ? `${praxisLayout.label} ${vnrPraxis}` : vnrPraxis,
+    );
     const pWidth = regFont.widthOfTextAtSize(pSpaced, pSize);
     page.drawText(pSpaced, {
       x: praxisLayout.x - pWidth / 2,
@@ -581,6 +635,30 @@ export async function generateCertificatePdf(opts: {
       font: regFont,
       color: rose,
     });
+  }
+
+  // Static CME accreditation line. Only certs whose master has NO baked
+  // CME footer register a cmeLine slot (praxis-only single-VNR certs).
+  // Both lines are letter-spaced rose and centred on x, matching the
+  // baked footers of the other certs.
+  const cmeLayout = template.layout.cmeLine;
+  if (cmeLayout) {
+    const cSize = cmeLayout.size ?? 8;
+    const drawCmeLine = (text: string, y: number) => {
+      const spaced = spaceDigits(text);
+      const w = regFont.widthOfTextAtSize(spaced, cSize);
+      page.drawText(spaced, {
+        x: cmeLayout.x - w / 2,
+        y,
+        size: cSize,
+        font: regFont,
+        color: rose,
+      });
+    };
+    drawCmeLine(cmeLayout.line1, cmeLayout.y);
+    if (cmeLayout.line2) {
+      drawCmeLine(cmeLayout.line2, cmeLayout.y - (cmeLayout.gap ?? 12));
+    }
   }
 
   // Dynamic "Berlin, <Monat> <Jahr>" line. Two gates have to pass:
@@ -613,9 +691,11 @@ export async function generateCertificatePdf(opts: {
   return await pdf.save();
 }
 
-/** True when this cert template stamps VNRs on the rendered PDF. UI
- *  callers (the test form) use this to decide whether to require VNR
- *  inputs at submit time. */
+/** True when this cert template stamps AT LEAST ONE VNR on the rendered
+ *  PDF (theorie, praxis, or both). Callers that need to know WHICH VNRs
+ *  are required check `layout.vnrTheorie` / `layout.vnrPraxis` per slot —
+ *  a praxis-only course (Aufbaukurs Biostimulation & Skinbooster) carries
+ *  only a praxis VNR and would never satisfy an AND-of-both check. */
 export function certificateRequiresVnr(template: CertificateTemplate): boolean {
-  return !!(template.layout.vnrTheorie && template.layout.vnrPraxis);
+  return !!(template.layout.vnrTheorie || template.layout.vnrPraxis);
 }
