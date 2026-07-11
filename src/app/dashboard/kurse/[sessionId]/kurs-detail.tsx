@@ -34,6 +34,7 @@ import { buildBerlinTimestamp } from "@/lib/utils";
 import { INDICATIONS } from "@/lib/indications";
 import { PartnerConsentButton, type ConsentState } from "@/components/partner-consent-button";
 import { isGaldermaEligible } from "@/lib/partner-galderma";
+import { CourseSopButton } from "@/components/course-sop-button";
 
 function indicationLabel(key: string): string {
   return INDICATIONS.find((i) => i.key === key)?.label ?? key;
@@ -115,6 +116,8 @@ interface SessionData {
   betreuerName: string | null;
   maxSeats: number;
   bookedSeats: number;
+  // course_templates.course_key. Gates the Ablauf & SOP button.
+  courseKey: string | null;
 }
 
 interface Props {
@@ -639,7 +642,10 @@ export function KursDetailClient({
       </Link>
 
       <div>
-        <h1 className="text-2xl font-bold">{session.templateTitle}</h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-2xl font-bold">{session.templateTitle}</h1>
+          <CourseSopButton courseKey={session.courseKey} className="shrink-0" />
+        </div>
         <div className="text-sm text-muted-foreground mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5">
           <span className="inline-flex items-center gap-1.5">
             <Calendar className="h-4 w-4" />
@@ -1140,11 +1146,11 @@ export function KursDetailClient({
                       {booking.referring_doctor ?? <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     {showIndication && (
-                      <TableCell className="whitespace-nowrap">{/* Indikation */}
+                      <TableCell>{/* Indikation */}
                         {booking.indication ? (
                           <Badge
                             variant="outline"
-                            className="bg-[#0066FF]/10 text-[#0066FF] border-transparent"
+                            className="bg-[#0066FF]/10 text-[#0066FF] border-transparent h-auto max-w-full whitespace-normal rounded-[10px] py-1 leading-snug"
                           >
                             {indicationLabel(booking.indication)}
                           </Badge>
