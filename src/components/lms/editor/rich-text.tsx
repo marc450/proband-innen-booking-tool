@@ -115,7 +115,23 @@ export function RichTextField({
     if (!editor) return;
     const url = linkUrl.trim();
     if (url) {
-      editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+      const { empty } = editor.state.selection;
+      if (empty && !editor.isActive("link")) {
+        // Nothing selected: without visible text a link mark has nothing to
+        // attach to, so insert the URL itself as the linked text.
+        editor
+          .chain()
+          .focus()
+          .insertContent({
+            type: "text",
+            text: url,
+            marks: [{ type: "link", attrs: { href: url } }],
+          })
+          .run();
+      } else {
+        // Text selected (or caret inside an existing link): wrap/retarget it.
+        editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+      }
     } else {
       editor.chain().focus().extendMarkRange("link").unsetLink().run();
     }
