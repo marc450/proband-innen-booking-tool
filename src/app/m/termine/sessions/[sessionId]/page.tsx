@@ -243,6 +243,7 @@ export default async function MobileSessionDetailPage({ params }: PageProps) {
       sessionId={session.id}
       templateTitle={session.course_templates?.title || "Kurs"}
       courseLabelDe={session.course_templates?.course_label_de || null}
+      courseKey={session.course_templates?.course_key || null}
       dateIso={session.date_iso}
       labelDe={session.label_de}
       instructorName={session.instructor_name}

@@ -21,7 +21,7 @@ export default async function KursDetailPage({
   const { data: session } = await admin
     .from("course_sessions")
     .select(
-      "id, date_iso, start_time, duration_minutes, address, instructor_name, betreuer_name, max_seats, booked_seats, course_templates:template_id(id, title, course_label_de)",
+      "id, date_iso, start_time, duration_minutes, address, instructor_name, betreuer_name, max_seats, booked_seats, course_templates:template_id(id, title, course_label_de, course_key)",
     )
     .eq("id", sessionId)
     .maybeSingle();
@@ -305,6 +305,10 @@ export default async function KursDetailPage({
         betreuerName: (session.betreuer_name as string | null) ?? null,
         maxSeats: (session.max_seats as number | null) ?? 0,
         bookedSeats: (session.booked_seats as number | null) ?? 0,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        courseKey: ((session.course_templates as any)?.course_key ?? null) as
+          | string
+          | null,
       }}
       satelliteId={(satellite?.id as string | null) ?? null}
       slots={slots}

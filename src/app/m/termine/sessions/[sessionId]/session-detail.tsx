@@ -20,6 +20,7 @@ import {
 import { formatPersonName } from "@/lib/utils";
 import { PartnerConsentButton, type ConsentState } from "@/components/partner-consent-button";
 import { isGaldermaEligible } from "@/lib/partner-galderma";
+import { CourseSopButton } from "@/components/course-sop-button";
 
 export interface Participant {
   bookingId: string;
@@ -65,6 +66,8 @@ interface Props {
   sessionId: string;
   templateTitle: string;
   courseLabelDe: string | null;
+  /** course_templates.course_key. Gates the Ablauf & SOP button. */
+  courseKey: string | null;
   dateIso: string;
   labelDe: string | null;
   instructorName: string | null;
@@ -123,6 +126,7 @@ function topEntries<T extends string>(map: Map<T, number>, limit = 3): Array<[T,
 export function SessionDetail({
   templateTitle,
   courseLabelDe,
+  courseKey,
   dateIso,
   labelDe,
   instructorName,
@@ -238,6 +242,7 @@ export function SessionDetail({
             {bookedSeats}/{maxSeats}
           </span>
         </div>
+        <CourseSopButton courseKey={courseKey} size="sm" className="mt-3 w-full" />
       </div>
 
       {/* Summary cards */}
