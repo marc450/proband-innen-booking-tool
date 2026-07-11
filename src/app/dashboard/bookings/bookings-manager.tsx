@@ -298,12 +298,11 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
           return dir * aI.localeCompare(bI, "de");
         }
         case "zuweiser": {
-          // referring_doctor is always filled on private bookings and
-          // optionally on standard ones; rows without it sort below filled
-          // ones in asc, above in desc, so staff can find unassigned rows
-          // next to each other.
-          const rA = (a.referring_doctor || "").toLowerCase();
-          const rB = (b.referring_doctor || "").toLowerCase();
+          // Zuweiser:in only shows for private bookings (see the cell
+          // render), so standard rows sort as empty regardless of any
+          // self-entered referring_doctor value.
+          const rA = (a.booking_type === "private" ? a.referring_doctor || "" : "").toLowerCase();
+          const rB = (b.booking_type === "private" ? b.referring_doctor || "" : "").toLowerCase();
           return dir * rA.localeCompare(rB, "de");
         }
         case "indikation": {
@@ -958,9 +957,17 @@ export function BookingsManager({ initialBookings, courses, isAdmin = true }: Pr
                   </TableCell>
                   <TableCell
                     className="text-sm whitespace-nowrap"
-                    title={booking.referring_doctor ?? undefined}
+                    title={
+                      booking.booking_type === "private"
+                        ? booking.referring_doctor ?? undefined
+                        : undefined
+                    }
                   >
-                    {booking.referring_doctor ? (
+                    {/* Zuweiser:in is a private-funnel concept. The standard
+                        form has an optional "behandelnde Ärzt:in" input that
+                        patients frequently misuse (own name, instructor name),
+                        so we only surface referring_doctor for private bookings. */}
+                    {booking.booking_type === "private" && booking.referring_doctor ? (
                       booking.referring_doctor
                     ) : (
                       <span className="text-muted-foreground">—</span>

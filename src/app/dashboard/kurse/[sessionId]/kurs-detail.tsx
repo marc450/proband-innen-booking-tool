@@ -1141,9 +1141,20 @@ export function KursDetailClient({
                     </TableCell>
                     <TableCell
                       className="text-sm truncate"
-                      title={booking.referring_doctor ?? undefined}
+                      title={
+                        booking.booking_type === "private"
+                          ? booking.referring_doctor ?? undefined
+                          : undefined
+                      }
                     >{/* Überweiser:in */}
-                      {booking.referring_doctor ?? <span className="text-muted-foreground">—</span>}
+                      {/* Private-funnel only: the standard form's optional
+                          "behandelnde Ärzt:in" field is self-entered and noisy,
+                          so we don't surface it as a Zuweiser:in here. */}
+                      {booking.booking_type === "private" && booking.referring_doctor ? (
+                        booking.referring_doctor
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     {showIndication && (
                       <TableCell>{/* Indikation */}

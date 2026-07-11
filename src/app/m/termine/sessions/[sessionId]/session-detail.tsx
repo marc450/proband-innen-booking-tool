@@ -426,7 +426,7 @@ function ProbandRow({ p }: { p: Proband }) {
               Indikation: {indicationLabel(p.indication)}
             </p>
           )}
-          {p.referringDoctor && (
+          {p.bookingType === "private" && p.referringDoctor && (
             <p className="mt-1 text-xs text-gray-500 truncate">
               Empfehlung: {p.referringDoctor}
             </p>
