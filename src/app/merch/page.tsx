@@ -103,12 +103,13 @@ export default async function MerchIndexPage() {
                       fill
                       quality={85}
                       sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                      // object-cover (default center positioning): the
-                      // 4:3 frame is fully filled, content is cropped
-                      // equally from top + bottom of the source. The
-                      // detail-page gallery uses object-contain so the
-                      // full image is still reachable from there.
-                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                      // object-contain: products mix landscape merch photos
+                      // with near-square/portrait book covers. object-cover
+                      // would crop the top+bottom of a portrait source (e.g.
+                      // cutting the face off the Kampfzonen cover), so we fit
+                      // the whole image inside the 4:3 frame and let the soft
+                      // bg fill any letterboxing. Matches the detail gallery.
+                      className="object-contain transition-transform duration-500 group-hover:scale-[1.03]"
                     />
                   </div>
                 ) : (
