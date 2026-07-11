@@ -18,6 +18,7 @@ import {
   FileText,
 } from "lucide-react";
 import { formatPersonName } from "@/lib/utils";
+import { INDICATIONS } from "@/lib/indications";
 import { PartnerConsentButton, type ConsentState } from "@/components/partner-consent-button";
 import { isGaldermaEligible } from "@/lib/partner-galderma";
 import { CourseSopButton } from "@/components/course-sop-button";
@@ -60,6 +61,8 @@ export interface Proband {
   /** "standard" | "private" | null */
   bookingType: string | null;
   referringDoctor: string | null;
+  /** Therapeutic indication key (e.g. "masseter"), plaintext. */
+  indication: string | null;
 }
 
 interface Props {
@@ -388,6 +391,10 @@ const PROBAND_STATUS_COLOR: Record<string, string> = {
   cancelled: "bg-gray-100 text-gray-500",
 };
 
+function indicationLabel(key: string): string {
+  return INDICATIONS.find((i) => i.key === key)?.label ?? key;
+}
+
 function ProbandRow({ p }: { p: Proband }) {
   const name =
     formatPersonName({
@@ -414,6 +421,11 @@ function ProbandRow({ p }: { p: Proband }) {
               {PROBAND_STATUS_LABEL[p.status] || p.status}
             </span>
           </div>
+          {p.indication && (
+            <p className="mt-1 text-xs text-gray-500">
+              Indikation: {indicationLabel(p.indication)}
+            </p>
+          )}
           {p.referringDoctor && (
             <p className="mt-1 text-xs text-gray-500 truncate">
               Empfehlung: {p.referringDoctor}

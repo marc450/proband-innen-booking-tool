@@ -152,7 +152,7 @@ export default async function MobileSessionDetailPage({ params }: PageProps) {
       const { data: bookingRows } = await admin
         .from("bookings")
         .select(
-          "id, slot_id, status, booking_type, referring_doctor, encrypted_data, encrypted_key, encryption_iv, patient_id",
+          "id, slot_id, status, booking_type, referring_doctor, indication, encrypted_data, encrypted_key, encryption_iv, patient_id",
         )
         .in("slot_id", slotIds)
         .neq("status", "cancelled");
@@ -195,6 +195,7 @@ export default async function MobileSessionDetailPage({ params }: PageProps) {
           status: row.status,
           bookingType: row.booking_type ?? null,
           referringDoctor: row.referring_doctor ?? null,
+          indication: (row.indication as string | null) ?? null,
         };
       });
 
