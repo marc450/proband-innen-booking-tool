@@ -64,7 +64,7 @@ export function CourseSopButton({ courseKey, size = "default", className }: Prop
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent size="wide" className="max-h-[85vh]">
+        <DialogContent size="wide" className="max-h-[85vh] bg-white">
           <DialogHeader>
             <DialogTitle>{sop.title}</DialogTitle>
             <p className="text-xs text-muted-foreground">
