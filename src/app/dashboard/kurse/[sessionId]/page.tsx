@@ -203,19 +203,20 @@ export default async function KursDetailPage({
   const { data: consentRows } = allBookingIds.length
     ? await admin
         .from("partner_data_consents")
-        .select("course_booking_id, consented_at, revoked_at")
+        .select("course_booking_id, consented_at, revoked_at, exported_at")
         .eq("partner", "galderma")
         .in("course_booking_id", allBookingIds)
-    : { data: [] as Array<{ course_booking_id: string; consented_at: string | null; revoked_at: string | null }> };
+    : { data: [] as Array<{ course_booking_id: string; consented_at: string | null; revoked_at: string | null; exported_at: string | null }> };
   const consentByBookingId = new Map<
     string,
-    { consentedAt: string | null; revokedAt: string | null }
+    { consentedAt: string | null; revokedAt: string | null; exportedAt: string | null }
   >(
     (consentRows ?? []).map((r) => [
       r.course_booking_id as string,
       {
         consentedAt: (r.consented_at as string | null) ?? null,
         revokedAt: (r.revoked_at as string | null) ?? null,
+        exportedAt: (r.exported_at as string | null) ?? null,
       },
     ]),
   );

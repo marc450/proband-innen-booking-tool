@@ -18,12 +18,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Check, Loader2, PenLine, RotateCcw } from "lucide-react";
+import { Check, CheckCheck, Clock, Loader2, PenLine, RotateCcw } from "lucide-react";
 import { CONSENT_TEXT, GALDERMA_ENTITY } from "@/lib/partner-galderma";
 
 export interface ConsentState {
   consentedAt: string | null;
   revokedAt: string | null;
+  // Stamped once the nightly cron has emailed this participant's data to
+  // Galderma. Null while consent is captured but the export has not run
+  // yet (normal in the hours between the course and the next morning).
+  exportedAt?: string | null;
 }
 
 interface Props {
@@ -203,14 +207,34 @@ export function PartnerConsentButton({
   };
 
   if (isActive) {
+    const exportedAt = consent?.exportedAt ?? null;
     return (
-      <span
-        className="inline-flex items-center gap-1.5 text-sm text-emerald-700"
-        title={`Eingewilligt am ${consent?.consentedAt ? formatDate(consent.consentedAt) : ""}`}
-      >
-        <Check className="h-4 w-4" />
-        Eingewilligt
-        {consent?.consentedAt ? ` am ${formatDate(consent.consentedAt)}` : ""}
+      <span className="inline-flex flex-col gap-0.5">
+        <span
+          className="inline-flex items-center gap-1.5 text-sm text-emerald-700"
+          title={`Eingewilligt am ${consent?.consentedAt ? formatDate(consent.consentedAt) : ""}`}
+        >
+          <Check className="h-4 w-4" />
+          Eingewilligt
+          {consent?.consentedAt ? ` am ${formatDate(consent.consentedAt)}` : ""}
+        </span>
+        {exportedAt ? (
+          <span
+            className="inline-flex items-center gap-1 text-xs text-emerald-700/80"
+            title={`${fullName}: Daten am ${formatDate(exportedAt)} an Galderma gesendet`}
+          >
+            <CheckCheck className="h-3.5 w-3.5" />
+            An Galderma gesendet am {formatDate(exportedAt)}
+          </span>
+        ) : (
+          <span
+            className="inline-flex items-center gap-1 text-xs text-amber-600"
+            title={`${fullName}: Einwilligung erfasst, Versand an Galderma folgt beim nächsten Export`}
+          >
+            <Clock className="h-3.5 w-3.5" />
+            Versand ausstehend
+          </span>
+        )}
       </span>
     );
   }
