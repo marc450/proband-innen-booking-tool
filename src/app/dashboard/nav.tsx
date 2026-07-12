@@ -70,6 +70,12 @@ type NavGroup = {
    * admin-only group (paired with `autorAllowed` on its items).
    */
   autorAllowed?: boolean;
+  /**
+   * When true, users with `is_kursbetreuung = true` may see this
+   * otherwise admin-only group (paired with `kursbetreuungAllowed` on
+   * its items, e.g. the merch orders overview they ship from).
+   */
+  kursbetreuungAllowed?: boolean;
   /** Restrict the whole group to a specific list of user emails (lowercase). */
   emailAllowlist?: string[];
 };
@@ -182,9 +188,15 @@ const navGroups: NavGroup[] = [
     label: "Merch",
     icon: ShoppingBag,
     adminOnly: true,
+    kursbetreuungAllowed: true,
     items: [
-      { href: "/dashboard/merch/produkte", label: "Produkte" },
-      { href: "/dashboard/merch/bestellungen", label: "Bestellungen" },
+      { href: "/dashboard/merch/produkte", label: "Produkte", adminOnly: true },
+      {
+        href: "/dashboard/merch/bestellungen",
+        label: "Bestellungen",
+        adminOnly: true,
+        kursbetreuungAllowed: true,
+      },
     ],
   },
   {
@@ -296,7 +308,13 @@ export function DashboardNav({
 
   const visibleGroups = navGroups.filter((g) => {
     if (!emailAllowed(g.emailAllowlist)) return false;
-    if (g.adminOnly && role !== "admin" && !(g.autorAllowed && isAutor)) return false;
+    if (
+      g.adminOnly &&
+      role !== "admin" &&
+      !(g.autorAllowed && isAutor) &&
+      !(g.kursbetreuungAllowed && isKursbetreuung)
+    )
+      return false;
     // Hide groups that have no items the current user can actually
     // see — avoids dead group icons when every child is admin-only.
     return g.items.some(isItemVisible);

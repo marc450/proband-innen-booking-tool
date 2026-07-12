@@ -36,6 +36,14 @@ export async function canAccessInbox(): Promise<boolean> {
   return await isKursbetreuung();
 }
 
+// Visibility gate for the merch orders overview. Admins and
+// kursbetreuung users are allowed (kursbetreuung ships the orders);
+// everyone else is redirected away.
+export async function canAccessMerchOrders(): Promise<boolean> {
+  if (await isAdmin()) return true;
+  return await isKursbetreuung();
+}
+
 // Reads the cached `is_autor` profile flag set by updateSession() in
 // src/lib/supabase/middleware.ts. Independent of the role, a "nutzer"
 // can ALSO be an Autor:in (grants Lernzentrum access).

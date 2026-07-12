@@ -1,10 +1,15 @@
+import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { canAccessMerchOrders } from "@/lib/auth";
 import type { MerchOrder } from "@/lib/types";
 import { OrdersManager, type CompProductOption } from "./orders-manager";
 
 export const dynamic = "force-dynamic";
 
 export default async function MerchBestellungenPage() {
+  // Admins + Kursbetreuung (they ship the orders) may view this page.
+  if (!(await canAccessMerchOrders())) redirect("/dashboard");
+
   const admin = createAdminClient();
   const [{ data: orders }, { data: products }] = await Promise.all([
     admin
