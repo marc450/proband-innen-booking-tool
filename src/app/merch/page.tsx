@@ -86,7 +86,14 @@ export default async function MerchIndexPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {tiles.map((t) => (
+            {tiles.map((t) => {
+              // The book cover is portrait, so object-cover would crop the
+              // face off the top+bottom in the 4:3 frame. Fit it whole with
+              // object-contain. Everything else keeps the filled cover crop.
+              const isBook =
+                t.productSlug.toLowerCase().includes("kampfzonen") ||
+                t.productTitle.toLowerCase().includes("kampfzonen");
+              return (
               <Link
                 key={t.key}
                 // Pass the color through so the detail page can render a
@@ -103,13 +110,10 @@ export default async function MerchIndexPage() {
                       fill
                       quality={85}
                       sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                      // object-contain: products mix landscape merch photos
-                      // with near-square/portrait book covers. object-cover
-                      // would crop the top+bottom of a portrait source (e.g.
-                      // cutting the face off the Kampfzonen cover), so we fit
-                      // the whole image inside the 4:3 frame and let the soft
-                      // bg fill any letterboxing. Matches the detail gallery.
-                      className="object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+                      // Merch photos fill the 4:3 frame (object-cover, cropped
+                      // equally top+bottom). The portrait book cover instead
+                      // fits whole (object-contain) so the face is not cropped.
+                      className={`${isBook ? "object-contain" : "object-cover"} transition-transform duration-500 group-hover:scale-[1.03]`}
                     />
                   </div>
                 ) : (
@@ -138,7 +142,8 @@ export default async function MerchIndexPage() {
                   </div>
                 </div>
               </Link>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
