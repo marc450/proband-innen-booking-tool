@@ -366,6 +366,69 @@ export const teamContent: TeamPageContent = {
         },
       },
       {
+        id: "aylin-pfeiffer",
+        name: "Aylin Pfeiffer",
+        role: "Dozentin",
+        imagePath:
+          "https://hqjgugcehqfeempxvwkd.supabase.co/storage/v1/object/public/marketing-assets/team/aylin.jpg",
+        imageAlt: "Porträt von Aylin Pfeiffer",
+        medicalSpecialty: "Plastische, Ästhetische und Handchirurgie",
+        shortBio:
+          "Assistenzärztin im fortgeschrittenen Weiterbildungsjahr für Plastische, Ästhetische und Handchirurgie. Aylin bringt ihre chirurgische Expertise in unsere Kurse ein, mit Schwerpunkt auf minimal invasiven Verfahren.",
+        curriculum: {
+          tagline:
+            "Assistenzärztin für Plastische, Ästhetische und Handchirurgie, spezialisiert auf minimal invasive Verfahren.",
+          sections: [
+            {
+              heading: "Ästhetische Medizin",
+              items: [
+                {
+                  label: "Ausbildung unter anderem bei:",
+                  items: [
+                    "HyStudio",
+                    "Kalialab",
+                    "Produktschulungen im In- und Ausland (Galderma, Juvederm, Ibsaderma, Merz)",
+                    "Fortbildungen der plastisch chirurgischen Fachgesellschaft DGPRÄC",
+                  ],
+                },
+                {
+                  label:
+                    "Ausbildung im Rahmen der fachärztlichen Weiterbildung bei:",
+                  items: [
+                    "Dr. med. Flavia Radke",
+                    "Dr. med. Mathias Bargello",
+                    "Dr. med. Lutz Kleinschmidt",
+                  ],
+                },
+              ],
+            },
+            {
+              heading: "Klinische Medizin",
+              items: [
+                "Assistenzärztin im fortgeschrittenen Weiterbildungsjahr für die Facharztweiterbildung Plastische, Ästhetische und Handchirurgie",
+              ],
+            },
+            {
+              heading: "Klinische Tätigkeit",
+              items: [
+                "Uniklinik Münster, Allgemein-, Viszeral- und Transplantationschirurgie",
+                "Uniklinik Heidelberg, Allgemein-, Viszeral- und Transplantationschirurgie",
+                "Gemeinschaftspraxis Prof. Engel und Prof. Reichenberger, Plastische Chirurgie, Heidelberg",
+                "Martin Luther Krankenhaus, Klinik für Rekonstruktive, Ästhetische Chirurgie und Handchirurgie, Berlin",
+                "Weiterbildung im Zentrum für Transgenderchirurgie, Elisabethkrankenhaus Mitte, im Rahmen der plastisch chirurgischen Weiterbildung",
+              ],
+            },
+            {
+              heading: "Fachgesellschaftsmitgliedschaften",
+              items: [
+                "DGPRÄC (Deutsche Gesellschaft der Plastischen, Rekonstruktiven und Ästhetischen Chirurgen)",
+                "Ärztekammer Berlin",
+              ],
+            },
+          ],
+        },
+      },
+      {
         id: "jana-steyer",
         name: "Jana Steyer",
         role: "Kurskoordinatorin",
