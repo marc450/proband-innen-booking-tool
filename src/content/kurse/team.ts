@@ -375,6 +375,9 @@ export const teamContent: TeamPageContent = {
         medicalSpecialty: "Plastische, Ästhetische und Handchirurgie",
         shortBio:
           "Assistenzärztin im fortgeschrittenen Weiterbildungsjahr für Plastische, Ästhetische und Handchirurgie. Aylin bringt ihre chirurgische Expertise in unsere Kurse ein, mit Schwerpunkt auf minimal invasiven Verfahren.",
+        sameAs: [
+          "https://www.johannesstift-diakonie.de/medizinische-versorgung/martin-luther-krankenhaus/behandlung/plastische-rekonstruktive-aesthetische-chirurgie-handchirurgie/team",
+        ],
         curriculum: {
           tagline:
             "Assistenzärztin für Plastische, Ästhetische und Handchirurgie, spezialisiert auf minimal invasive Verfahren.",
