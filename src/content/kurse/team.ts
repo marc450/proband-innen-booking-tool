@@ -54,6 +54,12 @@ export const teamContent: TeamPageContent = {
         ],
         media: [
           {
+            url: "https://www.n-tv.de/panorama/Aerztin-verbindet-Bund-und-Botox-id30972536.html",
+            title: "Ärztin verbindet Bund und Botox",
+            outlet: "n-tv",
+            format: "Artikel",
+          },
+          {
             url: "https://www.youtube.com/watch?v=FjAuaJcE8WI",
             title:
               "phoenix persönlich: Sophia Wilk-Vollmann zu Gast bei Jörg Thadeusz",
