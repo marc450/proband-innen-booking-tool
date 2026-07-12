@@ -1,12 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, MapPin, X } from "lucide-react";
-import {
-  COMMUNITY_PICKUP_EVENT,
-  isPickupOpen,
-  isProductPickupEligible,
-} from "@/lib/merch-pickup";
+import { Loader2, X } from "lucide-react";
+import { COURSE_PICKUP, isProductPickupEligible } from "@/lib/merch-pickup";
 
 interface Props {
   variantId: string;
@@ -61,27 +57,13 @@ export function MerchCheckoutLauncher({
 
   const soldOut = stock <= 0;
 
-  // Whether the modal should ask "Versand oder Abholung?". During the
-  // community event window we offer free pickup to every guest on every
-  // product, so this shows whenever the pickup window is still open. We
-  // re-check on a 30s interval so the option correctly disappears if a
-  // session sits idle past the midnight cutoff (relevant for buyers who
-  // left the modal open near the end of the event).
-  const productAllowsPickup = isProductPickupEligible(productSlug);
-  const [pickupWindowOpen, setPickupWindowOpen] = useState(() =>
-    isPickupOpen(),
-  );
-  useEffect(() => {
-    if (!productAllowsPickup) return;
-    const tick = () => setPickupWindowOpen(isPickupOpen());
-    const id = window.setInterval(tick, 30_000);
-    return () => window.clearInterval(id);
-  }, [productAllowsPickup]);
-  const showDeliveryQuestion = productAllowsPickup && pickupWindowOpen;
+  // Whether the modal should ask "Versand oder Abholung im Kurs?". Course
+  // pickup is offered on every product, so this shows for any real product.
+  const showDeliveryQuestion = isProductPickupEligible(productSlug);
 
-  // Default the delivery choice to "shipping" once the event window has
-  // closed (or for any product that doesn't allow pickup). While the
-  // window is open every buyer actively chooses Versand vs Abholung.
+  // Default the delivery choice to "shipping" for products that don't offer
+  // pickup; otherwise leave it unset so the buyer actively picks Versand vs
+  // Abholung im Kurs.
   useEffect(() => {
     if (!showDeliveryQuestion) {
       setDelivery("shipping");
@@ -216,7 +198,7 @@ export function MerchCheckoutLauncher({
               <br />
               <span className="text-xs text-black/50">
                 {delivery === "pickup"
-                  ? "Abholung beim Community Event · kein Versand"
+                  ? "Abholung im Kurs · kein Versand"
                   : "Versand 2,90 €"}
               </span>
             </p>
@@ -257,7 +239,7 @@ export function MerchCheckoutLauncher({
               {showDeliveryQuestion && (
                 <div className="space-y-4">
                   <label className="text-sm font-medium block">
-                    Versand oder Abholung beim Community Event?
+                    Versand oder Abholung im Kurs?
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
@@ -280,25 +262,9 @@ export function MerchCheckoutLauncher({
                           : "border-input bg-white hover:bg-gray-50"
                       }`}
                     >
-                      Abholung
+                      {COURSE_PICKUP.label}
                     </button>
                   </div>
-                  {delivery === "pickup" && (
-                    <div className="rounded-[10px] bg-[#FAEBE1] px-3 py-3 text-xs text-[#733D29] space-y-1.5">
-                      <p className="font-semibold">EPHIA Community Event</p>
-                      <p>{COMMUNITY_PICKUP_EVENT.dateLabel}, {COMMUNITY_PICKUP_EVENT.timeLabel}</p>
-                      <p className="flex items-start gap-1.5">
-                        <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                        <span>{COMMUNITY_PICKUP_EVENT.location}</span>
-                      </p>
-                    </div>
-                  )}
-                  {delivery === "shipping" && (
-                    <p className="text-xs text-black/55">
-                      Hinweis: Versand erfolgt erst nach dem Community Event am{" "}
-                      {COMMUNITY_PICKUP_EVENT.dateLabel}.
-                    </p>
-                  )}
                 </div>
               )}
 

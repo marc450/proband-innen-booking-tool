@@ -1,55 +1,36 @@
-// Community-event pickup option for merch. During the event window the
-// buyer can opt to pick up their merch at the EPHIA Community Event in
-// Berlin instead of paying for shipping. The option (and the countdown
-// banner) auto-disappears at the cutoff — after that, only Versand
-// exists and the store reverts to its normal design.
+// Pickup option for merch. Instead of paying for shipping, the buyer can
+// choose "Abholung im Kurs": they pick their order up at their next EPHIA
+// course on location. Choosing pickup waives the shipping fee entirely
+// (the checkout skips Stripe's shipping_options + shipping_address_collection
+// and the order records shipping_gross_cents = 0 with pickup_at_event = true).
 //
-// The client modal (checkout-launcher), the countdown banner
-// (event-countdown) and the server route (api/merch-checkout) all import
-// these constants so the eligibility + cutoff logic stays consistent
-// between UI and server-side validation.
+// This replaces the earlier time-limited "Abholung beim Community Event".
+// Unlike that event window, course pickup is always available and not tied
+// to a date, so there is no cutoff and no countdown.
+//
+// The client modal (checkout-launcher) and the server route
+// (api/merch-checkout) both import these so the copy + eligibility logic
+// stay consistent between UI and server-side validation.
 
-export const COMMUNITY_PICKUP_EVENT = {
-  /** Human-readable date label for the modal copy. */
-  dateLabel: "Montag, 22. Juni 2026",
-  /** Human-readable time label for the event itself. */
-  timeLabel: "19:30 Uhr",
-  /** Address shown in the modal when pickup is selected. */
-  location: "Galerie Robert Grunenberg, Kantstraße 147, Berlin",
-  /**
-   * Moment the pickup option disappears. We keep free event pickup open
-   * for the whole event day and cut it off at midnight (Europe/Berlin).
-   * Once the countdown hits zero the banner and the pickup option vanish
-   * and the merch store reverts to shipping-only. CEST (Central European
-   * Summer Time) is UTC+2 in late June, so midnight on 22 June is
-   * 2026-06-23T00:00:00+02:00.
-   */
-  cutoffIso: "2026-06-23T00:00:00+02:00",
+export const COURSE_PICKUP = {
+  /** Label for the pickup choice button. */
+  label: "Abholung im Kurs",
 } as const;
 
-/** Returns true when the pickup option / event banner should still show. */
-export function isPickupOpen(now: Date = new Date()): boolean {
-  return now.getTime() < new Date(COMMUNITY_PICKUP_EVENT.cutoffIso).getTime();
-}
-
 /**
- * Milliseconds remaining until the pickup cutoff. Clamped at 0 so callers
- * can render a 00:00:00 timer without going negative. Drives the
- * countdown banner.
+ * Whether the pickup option is currently offered. Course pickup is always
+ * available, so this is unconditionally true. Kept as a function (rather
+ * than inlining `true`) so the checkout route and modal keep a single
+ * shared entry point for the eligibility gate, ready to re-gate later if
+ * pickup ever needs to be paused.
  */
-export function msUntilPickupCutoff(now: Date = new Date()): number {
-  return Math.max(
-    0,
-    new Date(COMMUNITY_PICKUP_EVENT.cutoffIso).getTime() - now.getTime(),
-  );
+export function isPickupOpen(): boolean {
+  return true;
 }
 
 /**
- * Whether a product supports community-event pickup. For the event we
- * opened this up to ALL merch (originally it was the SONJA X EPHIA shirt
- * only) so any guest can buy anything at the table without paying
- * shipping. Eligibility only matters while isPickupOpen() is true; after
- * the midnight cutoff the pickup option disappears regardless of slug.
+ * Whether a product supports course pickup. Offered on every merch product,
+ * so this is true for any real slug.
  */
 export function isProductPickupEligible(
   slug: string | null | undefined,

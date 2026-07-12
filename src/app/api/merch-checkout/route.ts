@@ -80,13 +80,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Re-validate the community-event pickup choice server-side so a
-    // tampered client can't claim pickup on a non-eligible product
-    // (e.g. the cap) or sneak it past the cutoff once the event has
-    // already started. If the request asks for pickup but the
-    // server-side checks fail, we fall back to regular shipping
-    // rather than rejecting outright — the buyer's intent ("I want
-    // this product") still resolves to a successful checkout.
+    // Re-validate the "Abholung im Kurs" pickup choice server-side so a
+    // tampered client can't claim pickup on a non-eligible product. If the
+    // request asks for pickup but the server-side checks fail, we fall back
+    // to regular shipping rather than rejecting outright — the buyer's
+    // intent ("I want this product") still resolves to a successful
+    // checkout. (The metadata/column stay named *AtEvent for historical
+    // reasons; the flag now means "pickup instead of shipping".)
     const pickupAtEvent =
       pickupAtEventRequested &&
       isProductPickupEligible(product.slug) &&
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
       locale: "de",
       billing_address_collection: "required",
       // Phone deliberately NOT collected for merch: the order is fulfilled
-      // via shipping address (or pickup at a Community Event) and we don't
+      // via shipping address (or pickup at a course) and we don't
       // call buyers about merch. Kursbuchung flows still collect phone via
       // their own checkout path.
       "phone_number_collection[enabled]": "false",

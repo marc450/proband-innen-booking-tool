@@ -35,8 +35,8 @@ export function PurchasePanel({
   variants: Variant[];
   productTitle: string;
   /** Slug of the parent product. Forwarded to the launcher so it can
-   *  decide whether to offer the community-event pickup option (only
-   *  the SONJA X EPHIA t-shirt, see lib/merch-pickup.ts). */
+   *  decide whether to offer the "Abholung im Kurs" pickup option
+   *  (see lib/merch-pickup.ts). */
   productSlug: string;
 }) {
   // Strip virtual "one-size" from the picker. It's not a real size the

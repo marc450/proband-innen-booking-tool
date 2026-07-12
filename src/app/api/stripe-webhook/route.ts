@@ -1225,7 +1225,7 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
         email ? `*E-Mail:* ${email}` : null,
         `*Ärzt:in:* ${isDoctor ? "Ja" : "Nein"}`,
         pickupAtEvent
-          ? `*Lieferart:* Abholung beim Community Event`
+          ? `*Lieferart:* Abholung im Kurs`
           : address
             ? `*Lieferart:* Versand · ${address}`
             : `*Lieferart:* Versand`,
@@ -1266,7 +1266,7 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
       const html = buildEmailHtml({
         firstName: firstName || "Du",
         intro: pickupAtEvent
-          ? "vielen Dank für Deine Bestellung! Du hast Abholung beim nächsten EPHIA Community Event gewählt, Du musst also nichts weiter tun, wir bringen Deine Bestellung mit."
+          ? "vielen Dank für Deine Bestellung! Du hast Abholung im Kurs gewählt, Du musst also nichts weiter tun, wir bringen Deine Bestellung zu Deinem nächsten EPHIA Kurs mit."
           : "vielen Dank für Deine Bestellung! Wir haben sie erhalten und schicken sie in den nächsten 3 bis 7 Werktagen auf den Weg zu Dir.",
         infoRows: [
           {
@@ -1275,7 +1275,7 @@ async function handleMerchCheckout(session: Stripe.Checkout.Session) {
           },
           { label: "Artikel", value: fmt(itemGrossCents) },
           pickupAtEvent
-            ? { label: "Lieferart", value: "Abholung beim Community Event" }
+            ? { label: "Lieferart", value: "Abholung im Kurs" }
             : { label: "Versand", value: fmt(shippingGrossCents) },
           ...(discountCents > 0
             ? [{ label: "Rabatt", value: `−${fmt(discountCents)}` }]
