@@ -374,13 +374,13 @@ export const teamContent: TeamPageContent = {
         imageAlt: "Porträt von Aylin Pfeiffer",
         medicalSpecialty: "Plastische, Ästhetische und Handchirurgie",
         shortBio:
-          "Assistenzärztin im fortgeschrittenen Weiterbildungsjahr für Plastische, Ästhetische und Handchirurgie. Aylin bringt ihre chirurgische Expertise in unsere Kurse ein, mit Schwerpunkt auf minimal invasiven Verfahren.",
+          "Ärztin in Weiterbildung im fortgeschrittenen Weiterbildungsjahr für Plastische, Ästhetische und Handchirurgie. Aylin bringt ihre chirurgische Expertise in unsere Kurse ein, mit Schwerpunkt auf minimal invasiven Verfahren.",
         sameAs: [
           "https://www.johannesstift-diakonie.de/medizinische-versorgung/martin-luther-krankenhaus/behandlung/plastische-rekonstruktive-aesthetische-chirurgie-handchirurgie/team",
         ],
         curriculum: {
           tagline:
-            "Assistenzärztin für Plastische, Ästhetische und Handchirurgie, spezialisiert auf minimal invasive Verfahren.",
+            "Ärztin in Weiterbildung für Plastische, Ästhetische und Handchirurgie, spezialisiert auf minimal invasive Verfahren.",
           sections: [
             {
               heading: "Ästhetische Medizin",
@@ -408,7 +408,7 @@ export const teamContent: TeamPageContent = {
             {
               heading: "Klinische Medizin",
               items: [
-                "Assistenzärztin im fortgeschrittenen Weiterbildungsjahr für die Facharztweiterbildung Plastische, Ästhetische und Handchirurgie",
+                "Ärztin in Weiterbildung im fortgeschrittenen Weiterbildungsjahr für die Facharztweiterbildung Plastische, Ästhetische und Handchirurgie",
               ],
             },
             {
