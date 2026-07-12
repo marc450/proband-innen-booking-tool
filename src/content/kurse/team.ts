@@ -536,3 +536,41 @@ export function getPersonBySlug(slug: string): Person | null {
 export function personHasProfile(person: Person): boolean {
   return getProfilePeople().some((p) => p.id === person.id);
 }
+
+/**
+ * Normalize a person name for fuzzy matching: lowercase, unify the
+ * non-breaking hyphen, drop common academic title tokens (Dr., med.,
+ * Prof., …) and collapse whitespace/punctuation. Lets a free-text
+ * `course_sessions.instructor_name` ("Dr. Sarah Stannek", "Aylin
+ * Pfeiffer") line up with the canonical `Person.name`.
+ */
+function normalizeName(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/‑/g, "-")
+    .replace(/\b(dr|med|prof|univ|dipl)\b\.?/g, "")
+    .replace(/[.,]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Resolve a free-text instructor name to their public profile URL
+ * (`https://ephia.de/team/<id>`), or null if no Dozent:in / Review-Board
+ * profile matches. Used by the booking confirmation email so the
+ * instructor's name deep-links to their own vita instead of the generic
+ * team page. Requires a full first+last match (fuzzy on title only), so a
+ * bare first name never resolves.
+ */
+export function getProfileUrlByName(
+  name: string | null | undefined,
+): string | null {
+  if (!name) return null;
+  const target = normalizeName(name);
+  if (!target) return null;
+  const person = getProfilePeople().find((p) => {
+    const pn = normalizeName(p.name);
+    return pn === target || target.endsWith(pn) || pn.endsWith(target);
+  });
+  return person ? `https://ephia.de/team/${person.id}` : null;
+}

@@ -1,3 +1,5 @@
+import { getProfileUrlByName } from "@/content/kurse/team";
+
 const LOGO_URL =
   "https://lwfiles.mycourse.app/6638baeec5c56514e03ec360-public/f64a1ea1eb5346a171fe9ea36e8615ca.png";
 
@@ -76,7 +78,7 @@ function praxiskursInfoBox({
       <div style="margin-top:10px; padding-top:8px; border-top:1px solid #F0D0B8;">
         <p style="margin:0;">
           <span style="font-weight:bold;">Dein:e Dozent:in:</span>
-          <a href="https://ephia.de/team" style="color:#0066FF; text-decoration:none;">${instructor}</a>
+          <a href="${getProfileUrlByName(instructor) ?? "https://ephia.de/team"}" style="color:#0066FF; text-decoration:none;">${instructor}</a>
         </p>
       </div>
     </div>`;
