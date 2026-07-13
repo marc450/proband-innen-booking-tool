@@ -9,6 +9,10 @@ import { RichTextField, type RtNode } from "./rich-text";
 import { ImageDropzone } from "./image-dropzone";
 import { VideoDropzone } from "./video-dropzone";
 import {
+  DEFAULT_SUCCESS_TITLE, DEFAULT_SUCCESS_BODY,
+  DEFAULT_FAIL_TITLE, DEFAULT_FAIL_BODY,
+} from "@/components/lms/quiz-block";
+import {
   Plus, Trash2, ArrowUp, ArrowDown, Type, Heading as HeadingIcon,
   MessageSquare, List, ListOrdered, Image as ImageIcon, Images, Video,
   MousePointerClick, Smile, LayoutGrid, HelpCircle, ChevronDown, Library,
@@ -642,7 +646,17 @@ function QuizEditor({ attrs, setAttrs }: { attrs: Record<string, unknown>; setAt
       <div className="flex gap-2 pt-1">
         <TextInput label="Gutschein-Label (optional)" value={String(attrs.voucherLabel ?? "")} onChange={(v) => setAttrs({ voucherLabel: v || undefined })} placeholder="z. B. 50 € Gutschein" />
       </div>
-      <p className="text-[11px] text-muted-foreground">Der Radio-Button markiert die richtige Antwort. Pro Frage genau eine richtige Antwort.</p>
+      <div className="rounded-md border p-2.5 space-y-2 bg-gray-50/50">
+        <span className="text-[11px] font-medium text-muted-foreground">Ergebnis: alle Fragen richtig</span>
+        <TextInput label="Titel" value={String(attrs.successTitle ?? "")} onChange={(v) => setAttrs({ successTitle: v || undefined })} placeholder={DEFAULT_SUCCESS_TITLE} />
+        <TextArea label="Text" value={String(attrs.successBody ?? "")} onChange={(v) => setAttrs({ successBody: v || undefined })} placeholder={DEFAULT_SUCCESS_BODY} />
+      </div>
+      <div className="rounded-md border p-2.5 space-y-2 bg-gray-50/50">
+        <span className="text-[11px] font-medium text-muted-foreground">Ergebnis: nicht alle richtig</span>
+        <TextInput label="Titel" value={String(attrs.failTitle ?? "")} onChange={(v) => setAttrs({ failTitle: v || undefined })} placeholder={DEFAULT_FAIL_TITLE} />
+        <TextArea label="Text" value={String(attrs.failBody ?? "")} onChange={(v) => setAttrs({ failBody: v || undefined })} placeholder={DEFAULT_FAIL_BODY} />
+      </div>
+      <p className="text-[11px] text-muted-foreground">Der Radio-Button markiert die richtige Antwort. Pro Frage genau eine richtige Antwort. Leere Ergebnis-Felder verwenden den Standardtext.</p>
     </div>
   );
 }
@@ -674,6 +688,16 @@ function TextInput({ label, value, onChange, placeholder }: { label: string; val
       {label && <span className="block text-[11px] text-muted-foreground mb-1">{label}</span>}
       <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
         className="w-full h-8 text-sm px-2 rounded-md border border-input bg-white" />
+    </label>
+  );
+}
+
+function TextArea({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <label className="flex-1 block">
+      {label && <span className="block text-[11px] text-muted-foreground mb-1">{label}</span>}
+      <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={3}
+        className="w-full text-sm px-2 py-1.5 rounded-md border border-input bg-white leading-snug resize-y" />
     </label>
   );
 }

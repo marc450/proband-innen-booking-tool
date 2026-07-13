@@ -16,14 +16,37 @@ import { ArrowRight, Check } from "lucide-react";
 import type { QuizQuestion } from "@/lib/lms/types";
 import "./quiz-animations.css";
 
+// Default result copy. Kept as the funnel end-cap for the free Botox
+// tutorial; every field is overridable per quiz block from the editor
+// so the same component can end on any course. Empty editor fields fall
+// back to these.
+export const DEFAULT_SUCCESS_TITLE = "Geschafft!";
+export const DEFAULT_SUCCESS_BODY =
+  "Wenn Du Dein Wissen jetzt in die Praxis bringen willst: im EPHIA Online-Grundkurs Botulinum lernst Du Anatomie, Indikationen, Technik und Komplikationsmanagement systematisch und mit echten Fallbeispielen.";
+export const DEFAULT_FAIL_TITLE =
+  "Knapp daneben. Botulinum verzeiht keine Annahmen.";
+export const DEFAULT_FAIL_BODY =
+  "Im EPHIA Online-Grundkurs Botulinum lernst Du Anatomie, Indikationen und Technik so präzise, dass beim nächsten Versuch hier nichts mehr daneben geht. Versprochen.";
+
 type Props = {
   questions: QuizQuestion[];
   grundkursUrl?: string;
+  successTitle?: string;
+  successBody?: string;
+  failTitle?: string;
+  failBody?: string;
 };
 
 type Stage = "intro" | "question" | "result";
 
-export function QuizBlock({ questions, grundkursUrl }: Props) {
+export function QuizBlock({
+  questions,
+  grundkursUrl,
+  successTitle = DEFAULT_SUCCESS_TITLE,
+  successBody = DEFAULT_SUCCESS_BODY,
+  failTitle = DEFAULT_FAIL_TITLE,
+  failBody = DEFAULT_FAIL_BODY,
+}: Props) {
   const [stage, setStage] = useState<Stage>("intro");
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>(
@@ -138,14 +161,13 @@ export function QuizBlock({ questions, grundkursUrl }: Props) {
               <div className="text-7xl animate-bounce">🏆</div>
             </div>
             <h2 className="mt-8 text-4xl font-extrabold text-black">
-              Geschafft!
+              {successTitle}
             </h2>
             <p className="mt-3 text-[1.05rem] leading-[1.65] text-black/80 max-w-md mx-auto">
-              Alle {questions.length} Fragen richtig. Wenn Du Dein Wissen
-              jetzt in die Praxis bringen willst: im EPHIA Online-Grundkurs
-              Botulinum lernst Du Anatomie, Indikationen, Technik und
-              Komplikationsmanagement systematisch und mit echten
-              Fallbeispielen.
+              Alle {questions.length} Fragen richtig.
+            </p>
+            <p className="mt-2 text-[1.05rem] leading-[1.65] text-black/80 max-w-md mx-auto whitespace-pre-line">
+              {successBody}
             </p>
             {grundkursUrl ? (
               <div className="mt-8 flex justify-center">
@@ -171,13 +193,11 @@ export function QuizBlock({ questions, grundkursUrl }: Props) {
                 / {questions.length}
               </span>
             </div>
-            <h2 className="mt-4 text-2xl font-bold text-black leading-snug">
-              Knapp daneben. Botulinum verzeiht keine Annahmen.
+            <h2 className="mt-4 text-2xl font-bold text-black leading-snug whitespace-pre-line">
+              {failTitle}
             </h2>
-            <p className="mt-3 text-[1.05rem] leading-[1.65] text-black/85 max-w-xl">
-              Im EPHIA Online-Grundkurs Botulinum lernst Du Anatomie,
-              Indikationen und Technik so präzise, dass beim nächsten
-              Versuch hier nichts mehr daneben geht. Versprochen.
+            <p className="mt-3 text-[1.05rem] leading-[1.65] text-black/85 max-w-xl whitespace-pre-line">
+              {failBody}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               {grundkursUrl ? (

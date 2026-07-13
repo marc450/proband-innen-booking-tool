@@ -171,6 +171,12 @@ export type TipTapNode =
         // or "5% Gutschein"). Used in intro + result copy.
         voucherLabel?: string;
         grundkursUrl?: string;
+        // Editable result-screen copy. Omitted → QuizBlock falls back
+        // to its default (Grundkurs Botulinum) copy.
+        successTitle?: string;
+        successBody?: string;
+        failTitle?: string;
+        failBody?: string;
       };
     }
   | {
