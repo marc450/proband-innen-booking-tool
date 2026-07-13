@@ -343,6 +343,34 @@ export function CourseCard({
           })}
         </ul>
       </div>
+
+      {/* Nächste Praxistermine — server-rendered plain-text mirror of the
+          date dropdown above. The dropdown only injects its options into
+          the DOM on click, so crawlers that don't interact (Googlebot,
+          AI-overview / LLM crawlers) never see the dates there. This list
+          renders them as crawlable text at load time, kept in sync with
+          the dropdown via the same `dates` prop. Placed below the
+          features so it never disturbs the cross-card row alignment. */}
+      {bookingType === "dropdown" && dates.length > 0 && (
+        <div className="border-t border-gray-200 pt-8 px-7 pb-10">
+          <h3 className="font-bold text-black mb-5">Nächste Praxistermine:</h3>
+          <ul className="space-y-3">
+            {dates.map((date) => (
+              <li
+                key={date.id}
+                className="flex items-center justify-between gap-3 text-base"
+              >
+                <span className={date.available ? "text-black" : "text-gray-400"}>
+                  {date.label}
+                </span>
+                {date.availabilityTag && (
+                  <span className={getBadgeClasses(date)}>{date.availabilityTag}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
