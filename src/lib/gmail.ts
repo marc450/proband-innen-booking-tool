@@ -608,6 +608,16 @@ export async function modifyLabels(messageId: string, addLabels: string[] = [], 
   });
 }
 
+// Apply/remove labels across every message in a thread in one call. Used to
+// move a blocked sender's thread to Spam (add "SPAM", remove "INBOX"). "SPAM"
+// and "INBOX" are Gmail system-label ids and can be used directly.
+export async function modifyThreadLabels(threadId: string, addLabels: string[] = [], removeLabels: string[] = []) {
+  return gmailFetch(`threads/${threadId}/modify`, {
+    method: "POST",
+    body: JSON.stringify({ addLabelIds: addLabels, removeLabelIds: removeLabels }),
+  });
+}
+
 // ── Helpers ──
 
 export function getHeader(message: GmailMessage, name: string): string {

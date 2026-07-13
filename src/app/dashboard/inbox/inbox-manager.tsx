@@ -11,6 +11,7 @@ import { ContactSidebar } from "./contact-sidebar";
 import { ComposePane } from "./compose-pane";
 import { checkSendPayloadSize } from "./send-limits";
 import { AlertDialog, ConfirmDialog } from "@/components/confirm-dialog";
+import { BlockedSendersModal } from "./blocked-senders-modal";
 
 // Three-pane HubSpot-style inbox. The parent owns all state: thread list,
 // active filter/search, selected thread, and compose modal. Each pane is
@@ -376,6 +377,49 @@ export function InboxManager({
     }
   }, [pendingDeleteId, deleting, threads, selectedThread, drafts]);
 
+  // Block a sender. Shows a ConfirmDialog first; on confirm, POSTs the
+  // address to /api/inbox/block-sender (persists the block + sweeps existing
+  // inbox threads to Spam), then optimistically drops every thread from that
+  // sender out of the list. Future mail is spammed by the inbound processor.
+  const [pendingBlockEmail, setPendingBlockEmail] = useState<string | null>(null);
+  const [blocking, setBlocking] = useState(false);
+  const [blockError, setBlockError] = useState<string | null>(null);
+  const [blockedModalOpen, setBlockedModalOpen] = useState(false);
+
+  const confirmBlock = useCallback(async () => {
+    if (!pendingBlockEmail || blocking) return;
+    const email = pendingBlockEmail.toLowerCase();
+    setBlocking(true);
+    const previous = threads;
+    // Drop this sender's threads from the list right away.
+    setThreads((prev) => prev.filter((t) => (t.contactEmail || "").toLowerCase() !== email));
+    if (selectedThread) {
+      const sel = previous.find((t) => t.id === selectedThread);
+      if ((sel?.contactEmail || "").toLowerCase() === email) {
+        setSelectedThread(null);
+        setThreadMessages([]);
+      }
+    }
+    try {
+      const res = await fetch("/api/inbox/block-sender", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setThreads(previous);
+        setBlockError(data.error || "Absender konnte nicht blockiert werden.");
+      }
+    } catch {
+      setThreads(previous);
+      setBlockError("Verbindungsfehler beim Blockieren.");
+    } finally {
+      setBlocking(false);
+      setPendingBlockEmail(null);
+    }
+  }, [pendingBlockEmail, blocking, threads, selectedThread]);
+
   // Contact email for sidebar: while composing, follow the recipient input
   // (once it parses as an email). Otherwise derive from the selected thread.
   // Resolve the contact a thread is "about". Contact-form submissions
@@ -617,6 +661,7 @@ export function InboxManager({
             onSelectThread={openThread}
             onCompose={openComposeFresh}
             onRefresh={handleRefresh}
+            onOpenBlocked={() => setBlockedModalOpen(true)}
             nextPageToken={nextPageToken}
             onLoadMore={handleLoadMore}
             assignments={assignments}
@@ -689,6 +734,7 @@ export function InboxManager({
                 else drafts.deleteReplyDraft(threadId);
               }}
               onDelete={selectedThread ? () => setPendingDeleteId(selectedThread) : undefined}
+              onBlock={(email) => setPendingBlockEmail(email)}
               autoAnswered={(() => {
                 const t = threads.find((x) => x.id === selectedThread);
                 return !!t && !t.lastMessageInbound && !!t.hasInboundMessage;
@@ -721,6 +767,28 @@ export function InboxManager({
         title="Fehler beim Löschen"
         description={deleteError ?? ""}
         onClose={() => setDeleteError(null)}
+      />
+
+      <ConfirmDialog
+        open={!!pendingBlockEmail}
+        title="Absender blockieren?"
+        description={`Künftige Mails von ${pendingBlockEmail ?? ""} landen automatisch im Spam, ohne Slack-Benachrichtigung und ohne automatische Antwort. Bestehende Threads dieser Adresse werden ebenfalls in den Spam verschoben.`}
+        confirmLabel={blocking ? "Wird blockiert..." : "Blockieren"}
+        variant="destructive"
+        onConfirm={confirmBlock}
+        onCancel={() => setPendingBlockEmail(null)}
+      />
+
+      <AlertDialog
+        open={!!blockError}
+        title="Fehler beim Blockieren"
+        description={blockError ?? ""}
+        onClose={() => setBlockError(null)}
+      />
+
+      <BlockedSendersModal
+        open={blockedModalOpen}
+        onClose={() => setBlockedModalOpen(false)}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Loader2, MailOpen, PenSquare, RefreshCw, X, Paperclip, Check } from "lucide-react";
+import { Search, Loader2, MailOpen, PenSquare, RefreshCw, X, Paperclip, Check, Ban } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 // Left pane of the HubSpot-style inbox. Owns the search input and filter
@@ -56,6 +56,8 @@ interface Props {
   onSelectThread: (id: string) => void;
   onCompose: () => void;
   onRefresh: () => void;
+  /** Opens the "Blockierte Absender" management modal. */
+  onOpenBlocked?: () => void;
   nextPageToken?: string;
   onLoadMore: () => void;
   // When true, show a synthetic "Neue E-Mail" item at the top of the list
@@ -105,6 +107,7 @@ export function ThreadListPane({
   onSelectThread,
   onCompose,
   onRefresh,
+  onOpenBlocked,
   nextPageToken,
   onLoadMore,
   composing,
@@ -137,6 +140,15 @@ export function ThreadListPane({
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-lg font-bold">Inbox</h1>
           <div className="flex items-center gap-1">
+            {onOpenBlocked && (
+              <button
+                onClick={onOpenBlocked}
+                className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600"
+                title="Blockierte Absender"
+              >
+                <Ban className="h-4 w-4" />
+              </button>
+            )}
             <button
               onClick={onRefresh}
               disabled={loading}

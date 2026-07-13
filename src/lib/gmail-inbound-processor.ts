@@ -6,12 +6,14 @@ import {
   extractName,
   isInbound,
   modifyLabels,
+  modifyThreadLabels,
 } from "@/lib/gmail";
 import { decodeHtmlEntities } from "@/lib/gmail-text";
 import {
   sanitiseFirstName,
   sendInboxAutoReply,
 } from "@/lib/inbox-auto-reply";
+import { isSenderBlocked } from "@/lib/blocked-senders";
 
 /**
  * One-message processor used by both the Pub/Sub push webhook and the
@@ -44,6 +46,7 @@ export interface ProcessOutcome {
     | "auto-replied"
     | "skipped-outbound"
     | "skipped-already-notified"
+    | "skipped-blocked"
     | "error";
   autoReply?:
     | { status: "sent" }
@@ -108,6 +111,24 @@ export async function processInboundMessage(
     .slice(0, 280);
   const fromName = extractName(fromHeader);
   const fromEmail = extractEmailAddress(fromHeader);
+
+  // Blocklist gate. A blocked sender's mail is moved to Gmail Spam and gets
+  // no Slack card and no auto-reply. We add the slack-notified label too so a
+  // re-delivery of the same push is a no-op, and remove INBOX/UNREAD so it
+  // leaves the inbox view. Labelling failures are swallowed: worst case the
+  // message is retried and re-spammed, which is harmless.
+  if (await isSenderBlocked(fromEmail)) {
+    try {
+      await modifyThreadLabels(
+        full.threadId,
+        ["SPAM", deps.notifiedLabelId],
+        ["INBOX", "UNREAD"],
+      );
+    } catch {
+      /* swallow — see comment above */
+    }
+    return { messageId, status: "skipped-blocked", reason: `blocked: ${fromEmail}` };
+  }
 
   try {
     await deps.postSlack(

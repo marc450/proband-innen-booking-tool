@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Send, X, Reply, Paperclip, FileText, Image, File, UserCircle, ChevronDown, Upload, Trash2, Check, CheckCircle2 } from "lucide-react";
+import { Loader2, Send, X, Reply, Paperclip, FileText, Image, File, UserCircle, ChevronDown, Upload, Trash2, Ban, Check, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "./rich-text-editor";
@@ -67,6 +67,10 @@ interface Props {
   // from one thread into another on rapid thread switches.
   onReplyDraftChange?: (threadId: string, draft: ReplyDraft | null) => void;
   onDelete?: () => void;
+  /** Blockiert den externen Absender dieses Threads: künftige Mails landen
+   * automatisch in Spam (kein Slack, keine Auto-Antwort) und die bestehenden
+   * Inbox-Threads werden mitverschoben. onBlock erhält die Absenderadresse. */
+  onBlock?: (email: string) => void;
   /** True wenn der Thread bereits durch eine echte E-Mail-Antwort
    * (FROM = customerlove, vorher inbound) als beantwortet gilt.
    * In dem Fall blendet das UI den manuellen Markier-Button aus,
@@ -106,6 +110,7 @@ export function ConversationPane({
   replyDraft,
   onReplyDraftChange,
   onDelete,
+  onBlock,
   autoAnswered = false,
   manuallyAnsweredBy = null,
   onMarkAnswered,
@@ -446,6 +451,17 @@ export function ConversationPane({
               </button>
             )
           ))}
+
+          {onBlock && defaultReplyTo && !defaultReplyTo.toLowerCase().endsWith("@ephia.de") && (
+            <button
+              onClick={() => onBlock(defaultReplyTo)}
+              className="inline-flex items-center justify-center h-7 w-7 rounded-full text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+              title={`Absender ${defaultReplyTo} als Spam blockieren`}
+              aria-label="Absender blockieren"
+            >
+              <Ban className="h-4 w-4" />
+            </button>
+          )}
 
           {onDelete && (
             <button
