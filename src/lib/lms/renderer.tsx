@@ -259,7 +259,6 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
         <QuizBlock
           questions={node.attrs.questions}
           grundkursUrl={node.attrs.grundkursUrl}
-          timePerQuestionSeconds={node.attrs.timePerQuestionSeconds}
         />
       );
 

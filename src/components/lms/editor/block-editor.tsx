@@ -48,7 +48,7 @@ function makeBlock(type: string): Block {
     case "ctaButton": return { type: "ctaButton", attrs: { label: "Jetzt buchen", href: "" } };
     case "motivationBlock": return { type: "motivationBlock", attrs: { message: "" } };
     case "summaryBand": return { type: "summaryBand", attrs: { variant: "signal" }, content: [{ type: "summaryCard", content: [{ type: "paragraph", content: [] }] }] };
-    case "quiz": return { type: "quiz", attrs: { questions: [newQuestion()], timePerQuestionSeconds: 20 } };
+    case "quiz": return { type: "quiz", attrs: { questions: [newQuestion()] } };
     case "bibliography": return { type: "bibliography", attrs: { title: "Literaturverzeichnis" }, content: [listItem()] };
     case "table": return { type: "table", attrs: { withHeader: true }, content: [tableRow(2), tableRow(2)] };
     default: return { type: "paragraph", content: [] };
@@ -640,7 +640,6 @@ function QuizEditor({ attrs, setAttrs }: { attrs: Record<string, unknown>; setAt
         <Plus className="h-3 w-3" /> Frage hinzufügen
       </button>
       <div className="flex gap-2 pt-1">
-        <TextInput label="Sekunden pro Frage" value={String(attrs.timePerQuestionSeconds ?? "")} onChange={(v) => setAttrs({ timePerQuestionSeconds: v === "" ? undefined : Number(v) })} placeholder="20" />
         <TextInput label="Gutschein-Label (optional)" value={String(attrs.voucherLabel ?? "")} onChange={(v) => setAttrs({ voucherLabel: v || undefined })} placeholder="z. B. 50 € Gutschein" />
       </div>
       <p className="text-[11px] text-muted-foreground">Der Radio-Button markiert die richtige Antwort. Pro Frage genau eine richtige Antwort.</p>

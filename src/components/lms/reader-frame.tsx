@@ -438,9 +438,6 @@ export function ReaderFrame({
                   <QuizBlock
                     questions={quizNode.attrs.questions as QuizQuestion[]}
                     grundkursUrl={quizNode.attrs.grundkursUrl}
-                    timePerQuestionSeconds={
-                      quizNode.attrs.timePerQuestionSeconds
-                    }
                   />
                 </div>
               </div>

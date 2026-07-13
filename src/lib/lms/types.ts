@@ -161,8 +161,8 @@ export type TipTapNode =
     }
   | {
       // Interactive multi-question quiz. The reader is a client
-      // component (QuizBlock) that handles state, timer and the
-      // coupon reveal. Each option carries its own `correct` flag.
+      // component (QuizBlock) that handles state and the coupon
+      // reveal. Each option carries its own `correct` flag.
       type: "quiz";
       attrs: {
         questions: QuizQuestion[];
@@ -171,7 +171,6 @@ export type TipTapNode =
         // or "5% Gutschein"). Used in intro + result copy.
         voucherLabel?: string;
         grundkursUrl?: string;
-        timePerQuestionSeconds?: number;
       };
     }
   | {

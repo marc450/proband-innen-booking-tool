@@ -1,61 +1,34 @@
-// Interactive multi-question quiz with countdown per question.
+// Interactive multi-question quiz.
 //
-// Stages: intro → question (×N) → result. After "Test starten" the
-// timer ticks down once per second and auto-advances when it hits 0.
-// Selecting an option locks it in; the next question slides in
-// immediately (no static feedback pause; correct answer is never
-// revealed). Result stage celebrates a perfect score and gently
-// roasts anything below — both routes invite the user into the
-// Grundkurs Botulinum.
+// Stages: intro → question (×N) → result. Selecting an option locks it
+// in; the next question slides in immediately (no static feedback
+// pause; correct answer is never revealed). Result stage celebrates a
+// perfect score and gently roasts anything below — both routes invite
+// the user into the Grundkurs Botulinum.
 //
-// Anti-cheat is light — short timer, hidden correct answers, no
-// review. Users can retake the quiz freely; we'd rather they leave
-// satisfied than feel locked out.
+// Anti-cheat is light — hidden correct answers, no review. Users can
+// retake the quiz freely; we'd rather they leave satisfied than feel
+// locked out.
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock, ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import type { QuizQuestion } from "@/lib/lms/types";
 import "./quiz-animations.css";
 
 type Props = {
   questions: QuizQuestion[];
   grundkursUrl?: string;
-  timePerQuestionSeconds?: number;
 };
 
 type Stage = "intro" | "question" | "result";
 
-export function QuizBlock({
-  questions,
-  grundkursUrl,
-  timePerQuestionSeconds = 20,
-}: Props) {
+export function QuizBlock({ questions, grundkursUrl }: Props) {
   const [stage, setStage] = useState<Stage>("intro");
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>(
     () => questions.map(() => null),
   );
-  const [timeLeft, setTimeLeft] = useState(timePerQuestionSeconds);
-
-  // Per-question timer. Stops as soon as an answer is locked
-  // (answers[currentIdx] !== null). On timeout without an answer we
-  // lock the question as -1 ("no answer") so the auto-advance effect
-  // below picks it up like a normal selection.
-  useEffect(() => {
-    if (stage !== "question") return;
-    if (answers[currentIdx] !== null) return;
-    if (timeLeft <= 0) {
-      setAnswers((prev) => {
-        const next = [...prev];
-        next[currentIdx] = -1;
-        return next;
-      });
-      return;
-    }
-    const t = setTimeout(() => setTimeLeft((n) => n - 1), 1000);
-    return () => clearTimeout(t);
-  }, [stage, currentIdx, timeLeft, answers]);
 
   // Auto-advance: as soon as a question is locked, wait long enough for
   // the pop + checkmark animation on the picked option to play out, then
@@ -69,17 +42,15 @@ export function QuizBlock({
         setStage("result");
       } else {
         setCurrentIdx((i) => i + 1);
-        setTimeLeft(timePerQuestionSeconds);
       }
     }, 380);
     return () => clearTimeout(t);
-  }, [stage, currentIdx, answers, questions.length, timePerQuestionSeconds]);
+  }, [stage, currentIdx, answers, questions.length]);
 
   function start() {
     setStage("question");
     setCurrentIdx(0);
     setAnswers(questions.map(() => null));
-    setTimeLeft(timePerQuestionSeconds);
   }
 
   function selectOption(optionIdx: number) {
@@ -101,8 +72,7 @@ export function QuizBlock({
     return (
       <section className="my-2">
         <p className="text-[1.05rem] leading-[1.65] text-black/85 max-w-xl">
-          {questions.length} Fragen zum gerade Gelernten. Du hast{" "}
-          {timePerQuestionSeconds} Sekunden pro Frage.
+          {questions.length} Fragen zum gerade Gelernten.
         </p>
         <button
           type="button"
@@ -247,21 +217,17 @@ export function QuizBlock({
       key={currentIdx}
       className="my-10 animate-in slide-in-from-right-12 fade-in duration-300"
     >
-      {/* Progress + timer */}
+      {/* Progress */}
       <div className="flex items-center justify-between text-sm text-black/60 mb-2">
         <span>
           Frage {currentIdx + 1} von {questions.length}
         </span>
-        <span className="inline-flex items-center gap-1.5">
-          <Clock className="w-4 h-4" strokeWidth={2.25} />
-          {timeLeft}s
-        </span>
       </div>
       <div className="h-1.5 bg-black/10 rounded-full overflow-hidden">
         <div
-          className="h-full bg-[#0066FF] transition-[width] duration-1000 ease-linear"
+          className="h-full bg-[#0066FF] transition-[width] duration-300 ease-out"
           style={{
-            width: `${(timeLeft / timePerQuestionSeconds) * 100}%`,
+            width: `${((currentIdx + 1) / questions.length) * 100}%`,
           }}
         />
       </div>
