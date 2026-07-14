@@ -13,6 +13,10 @@ interface CourseDate {
   availabilityLevel?: "low" | "medium" | "ok" | "none";
 }
 
+// How many Praxistermine are visible before the rest collapses into the
+// native <details> element. Keep in sync with course-card.tsx.
+const VISIBLE_DATE_COUNT = 3;
+
 export interface IncludedCourse {
   name: string;
   shortName?: string;
@@ -612,12 +616,15 @@ export function PremiumCard({
           the DOM on click, so crawlers that don't interact (Googlebot,
           AI-overview / LLM crawlers) never see the dates there. This list
           renders them as crawlable text at load time, kept in sync with
-          the dropdown via the same `dates` prop. */}
+          the dropdown via the same `dates` prop. Only the first few dates
+          are visible; the rest sit in a native <details> element so they
+          stay in the initial HTML (fully indexed under mobile-first
+          indexing, no cloaking) without the card growing a nine-row list. */}
       {dates.length > 0 && (
         <div className="border-t border-gray-200 pt-8 px-7 pb-10">
           <h3 className="font-bold text-black mb-5">Nächste Praxistermine:</h3>
           <ul className="space-y-3">
-            {dates.map((date) => (
+            {dates.slice(0, VISIBLE_DATE_COUNT).map((date) => (
               <li
                 key={date.id}
                 className="flex items-center justify-between gap-3 text-base"
@@ -631,6 +638,37 @@ export function PremiumCard({
               </li>
             ))}
           </ul>
+          {dates.length > VISIBLE_DATE_COUNT && (
+            <details className="group mt-3">
+              <summary className="list-none [&::-webkit-details-marker]:hidden flex items-center gap-1 text-sm font-semibold text-[#0066FF] cursor-pointer hover:underline underline-offset-4">
+                <span className="group-open:hidden">
+                  Alle {dates.length} Termine anzeigen
+                </span>
+                <span className="hidden group-open:inline">
+                  Weniger Termine anzeigen
+                </span>
+                <ChevronDown
+                  className="w-4 h-4 transition-transform group-open:rotate-180"
+                  aria-hidden="true"
+                />
+              </summary>
+              <ul className="space-y-3 mt-3">
+                {dates.slice(VISIBLE_DATE_COUNT).map((date) => (
+                  <li
+                    key={date.id}
+                    className="flex items-center justify-between gap-3 text-base"
+                  >
+                    <span className={date.available ? "text-black" : "text-gray-400"}>
+                      {date.label}
+                    </span>
+                    {date.availabilityTag && (
+                      <span className={getBadgeClasses(date)}>{date.availabilityTag}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </div>
       )}
 
