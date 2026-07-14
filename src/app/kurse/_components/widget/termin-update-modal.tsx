@@ -40,10 +40,16 @@ export function TerminUpdateModal({ onClose }: Props) {
     setError("");
 
     try {
-      const res = await fetch("/api/hubspot-signup", {
+      const res = await fetch("/api/termin-interest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, firstName, lastName, email }),
+        body: JSON.stringify({
+          title,
+          firstName,
+          lastName,
+          email,
+          sourceUrl: typeof window !== "undefined" ? window.location.pathname : undefined,
+        }),
       });
       if (!res.ok) {
         const data = await res.json();

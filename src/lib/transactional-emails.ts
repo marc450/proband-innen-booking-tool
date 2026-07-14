@@ -706,6 +706,32 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
     }),
   },
 
+  {
+    id: "customer-password-setup-link",
+    funnel: "arzt-kursupdates",
+    name: "Passwort einrichten (Ärzt:in, Onboarding-Link)",
+    recipient: "Ärzt:in",
+    trigger:
+      "Erst-Käufer:in ohne Login-Konto. Der Link steckt in der Buchungsbestätigung; zusätzlich per 'Link zum Einrichten senden' auf ephia.de/start. Beweist E-Mail-Besitz, bevor ein Passwort gesetzt werden kann.",
+    codeRef: "src/lib/password-setup.ts",
+    description:
+      "Set-Password-Token-Link (ephia.de/passwort-einrichten?token=...). Ersetzt den unsicheren Inline-set-password-Schritt. EPHIA-nativer Resend-Versand; der Token liegt auf auszubildende, ist single-use und 30 Tage gültig.",
+    renderSample: () => ({
+      subject: "Richte Dein EPHIA-Passwort ein",
+      html: buildEmailHtml({
+        firstName: SAMPLE.firstName,
+        intro:
+          "Du hast einen Link zum Einrichten Deines Passworts angefordert. Klicke auf den Button unten, um Dein Passwort festzulegen und auf Deine Kurse zuzugreifen. Der Link ist 30 Tage gültig. Wenn Du das nicht warst, kannst Du diese E-Mail einfach ignorieren.",
+        buttons: [
+          {
+            label: "Passwort festlegen",
+            url: "https://ephia.de/passwort-einrichten?token=SAMPLE",
+          },
+        ],
+      }),
+    }),
+  },
+
   // ── Kontakt & Anfragen ─────────────────────────────────────────────
   {
     id: "group-inquiry",

@@ -9,13 +9,13 @@ import {
 } from "@/lib/course-email-templates";
 import { buildEmailHtml } from "@/lib/email-template";
 import { archiveSentMessage } from "@/lib/gmail";
+import { resolvePasswordSetupUrl } from "@/lib/password-setup";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const SLACK_WEBHOOK_URL_COURSES = process.env.SLACK_WEBHOOK_URL_COURSES;
 const LEARNWORLDS_API_URL = process.env.LEARNWORLDS_API_URL;
 const LEARNWORLDS_CLIENT_ID = process.env.LEARNWORLDS_CLIENT_ID;
 const LEARNWORLDS_ACCESS_TOKEN = process.env.LEARNWORLDS_ACCESS_TOKEN;
-const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN;
 
 export type CourseType = "Onlinekurs" | "Praxiskurs" | "Kombikurs" | "Premium";
 
@@ -33,10 +33,6 @@ export interface PostPurchaseData {
   sessionLabel: string;
   amountTotal: number;
   audienceTag: string;
-  // Profile fields for HubSpot
-  profileTitle?: string;
-  profileGender?: string;
-  profileSpecialty?: string;
 }
 
 // ── Shared email sender ──
@@ -234,6 +230,20 @@ export async function runPostPurchaseFlow(
 
   const courseLabelDe = template?.course_label_de || template?.title || "Kurs";
 
+  // Per-recipient set-password link for the confirmation email. Doctors
+  // without an account yet get a single-use token link that proves inbox
+  // ownership before letting them set a password; doctors who already
+  // have one get the plain /start login URL.
+  const { data: bookingForAusz } = await supabase
+    .from("course_bookings")
+    .select("auszubildende_id")
+    .eq("id", data.bookingId)
+    .maybeSingle();
+  const passwordSetupUrl = await resolvePasswordSetupUrl(
+    supabase,
+    bookingForAusz?.auszubildende_id ?? null,
+  );
+
   // 1. Send confirmation email
   if (data.email) {
     try {
@@ -243,7 +253,7 @@ export async function runPostPurchaseFlow(
       if (data.courseType === "Onlinekurs") {
         const courseName = template?.name_online || courseLabelDe;
         emailSubject = `Buchungsbestätigung: ${courseName}`;
-        emailHtml = buildOnlinekursEmail(data.firstName, courseName);
+        emailHtml = buildOnlinekursEmail(data.firstName, courseName, passwordSetupUrl);
       } else if (data.courseType === "Praxiskurs") {
         const courseName = template?.name_praxis || courseLabelDe;
         emailSubject = `Buchungsbestätigung: ${courseName}`;
@@ -260,7 +270,7 @@ export async function runPostPurchaseFlow(
             };
           }
         }
-        emailHtml = buildPraxiskursEmail(data.firstName, courseName, praxisInfo, { hasOnlineCourse: !!template?.online_course_id });
+        emailHtml = buildPraxiskursEmail(data.firstName, courseName, praxisInfo, { hasOnlineCourse: !!template?.online_course_id, passwordSetupUrl });
       } else {
         const courseName = data.courseType === "Premium" ? "Komplettpaket" : (template?.name_kombi || courseLabelDe);
         emailSubject = `Buchungsbestätigung: ${courseName}`;
@@ -277,7 +287,7 @@ export async function runPostPurchaseFlow(
             };
           }
         }
-        emailHtml = buildKombikursEmail(data.firstName, courseName, praxisInfo, { hasOnlineCourse: !!template?.online_course_id });
+        emailHtml = buildKombikursEmail(data.firstName, courseName, praxisInfo, { hasOnlineCourse: !!template?.online_course_id, passwordSetupUrl });
       }
 
       await sendEmailViaResend(data.email, emailSubject, emailHtml);
@@ -424,49 +434,7 @@ export async function runPostPurchaseFlow(
     }
   }
 
-  // 4. HubSpot contact
-  if (HUBSPOT_ACCESS_TOKEN && data.email) {
-    try {
-      const searchRes = await fetch("https://api.hubapi.com/crm/v3/objects/contacts/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${HUBSPOT_ACCESS_TOKEN}` },
-        body: JSON.stringify({
-          filterGroups: [{ filters: [{ propertyName: "email", operator: "EQ", value: data.email }] }],
-        }),
-      });
-      const searchData = await searchRes.json();
-
-      const properties: Record<string, string> = {
-        email: data.email,
-        firstname: data.firstName,
-        lastname: data.lastName,
-        contact_type: "Doctor - Customer",
-      };
-      if (data.phone) properties.phone = data.phone;
-      if (data.profileSpecialty) properties.fachrichtung = data.profileSpecialty;
-
-      if (searchData.total === 0) {
-        await fetch("https://api.hubapi.com/crm/v3/objects/contacts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${HUBSPOT_ACCESS_TOKEN}` },
-          body: JSON.stringify({ properties }),
-        });
-      } else {
-        const contactId = searchData.results[0]?.id;
-        if (contactId) {
-          await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${contactId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${HUBSPOT_ACCESS_TOKEN}` },
-            body: JSON.stringify({ properties }),
-          });
-        }
-      }
-    } catch (hsErr) {
-      console.error("HubSpot error:", hsErr);
-    }
-  }
-
-  // 5. Mark booking as profile_complete. Propagate to every booking
+  // 4. Mark booking as profile_complete. Propagate to every booking
   // belonging to the same contact so siblings (e.g. earlier Aufbau
   // online bookings) don't keep showing the "Profil unvollständig"
   // badge in the dashboard once the profile is filled in.

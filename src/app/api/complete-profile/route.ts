@@ -89,9 +89,9 @@ export async function POST(req: NextRequest) {
     // Legacy import: doctors carried over from the pre-migration ops
     // system already received the booking confirmation, the community
     // invite and the Proband:innen-Info email; they are already enrolled
-    // in LearnWorlds and exist in HubSpot. Completing the profile here
-    // is purely a data capture step, so skip the entire post-purchase
-    // flow and the Slack ping.
+    // in LearnWorlds. Completing the profile here is purely a data
+    // capture step, so skip the entire post-purchase flow and the Slack
+    // ping.
     if (booking.legacy_import) {
       await supabase
         .from("course_bookings")
@@ -120,7 +120,6 @@ export async function POST(req: NextRequest) {
       sessionLabel: metadata?.sessionLabel || "",
       amountTotal: booking.amount_paid || 0,
       audienceTag: booking.audience_tag || "Humanmediziner:in",
-      profileSpecialty: specialty,
     };
 
     await runPostPurchaseFlow(postPurchaseData, { skipSlack: true });

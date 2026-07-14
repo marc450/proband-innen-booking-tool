@@ -20,23 +20,29 @@ const RECHNUNG_SECTION = `
     </p>`;
 
 // Body of the "set your password" call-to-action, shared between the
-// Onlinekurs, Praxiskurs, and Kombikurs confirmation emails so the
-// copy stays in lockstep. The customer is brand new in Supabase Auth
-// at this point (no auth user yet); /start runs the lazy-migration
-// flow that asks for an email + password and creates the account on
-// submit.
-const LOGIN_SETUP_BODY = `
+// Onlinekurs, Praxiskurs, and Kombikurs confirmation emails so the copy
+// stays in lockstep.
+//
+// `setupUrl` is a per-recipient link: for a doctor without an account yet
+// it is a single-use token link (ephia.de/passwort-einrichten?token=...)
+// that proves inbox ownership before letting them set a password; for a
+// doctor who already has an account it is just the ephia.de/start login.
+// Callers resolve it via resolvePasswordSetupUrl() in @/lib/password-setup.
+// The fallback default keeps the plain login link if no URL is supplied.
+function loginSetupBody(setupUrl: string): string {
+  return `
     <p style="margin:0 0 16px;">
       Mit Deiner Kursbuchung haben wir Deinen EPHIA-Zugang für Dich vorbereitet. Lege jetzt Dein Passwort fest, dann findest Du Deinen Kurs jederzeit in Deinem persönlichen Dashboard.
     </p>
     <p style="margin:0 0 20px;">
-      <a href="https://ephia.de/start" style="display:inline-block;background-color:#0066FF;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:bold;">
+      <a href="${setupUrl}" style="display:inline-block;background-color:#0066FF;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:bold;">
         Jetzt Passwort festlegen
       </a>
     </p>
     <p style="margin:0 0 20px;">
       Hast Du bereits ein EPHIA-Konto, melde Dich einfach mit Deinen bestehenden Zugangsdaten an. Dein neuer Kurs erscheint automatisch in Deinem Dashboard.
     </p>`;
+}
 
 const MONTHS_DE_FULL = [
   "Januar", "Februar", "März", "April", "Mai", "Juni",
@@ -117,7 +123,7 @@ interface PraxisInfo {
   instructor: string;
 }
 
-export function buildOnlinekursEmail(firstName: string, courseName: string): string {
+export function buildOnlinekursEmail(firstName: string, courseName: string, passwordSetupUrl: string = "https://ephia.de/start"): string {
   return `<div style="background-color:#fff; padding:0; font-family:Arial, sans-serif;">
   <div style="background-color:#fff; max-width:600px; margin:0 auto; padding:8px; text-align:left; line-height:1.5;">
     <p style="margin-top:0; margin-bottom:20px;">
@@ -127,7 +133,7 @@ export function buildOnlinekursEmail(firstName: string, courseName: string): str
     </p>
 
     <h3 style="margin:16px 0 10px;font-size:16px;font-weight:bold;">So startest Du mit dem Kurs</h3>
-    ${LOGIN_SETUP_BODY}
+    ${loginSetupBody(passwordSetupUrl)}
 
     <h3 style="margin:16px 0 10px;font-size:16px;font-weight:bold;">Tipps für Deine Lernreise</h3>
     <p style="margin:0 0 20px;">
@@ -156,7 +162,7 @@ export function buildOnlinekursEmail(firstName: string, courseName: string): str
 </div>`;
 }
 
-export function buildPraxiskursEmail(firstName: string, courseName: string, praxis: PraxisInfo, opts?: { hasOnlineCourse?: boolean }): string {
+export function buildPraxiskursEmail(firstName: string, courseName: string, praxis: PraxisInfo, opts?: { hasOnlineCourse?: boolean; passwordSetupUrl?: string }): string {
   return `<div style="background-color:#fff; padding:0; font-family:Arial, sans-serif;">
   <div style="background-color:#fff; max-width:600px; margin:0 auto; padding:8px; text-align:left; line-height:1.5;">
     <p style="margin-top:0; margin-bottom:20px;">
@@ -179,7 +185,7 @@ export function buildPraxiskursEmail(firstName: string, courseName: string, prax
     ${opts?.hasOnlineCourse !== false ? VORAUSSETZUNG_SECTION : ""}
 
     <h3 style="margin:16px 0 10px;font-size:16px;font-weight:bold;">Dein EPHIA-Zugang</h3>
-    ${LOGIN_SETUP_BODY}
+    ${loginSetupBody(opts?.passwordSetupUrl ?? "https://ephia.de/start")}
 
     ${PROBANDINNEN_SECTION}
     ${RECHNUNG_SECTION}
@@ -201,7 +207,7 @@ export function buildPraxiskursEmail(firstName: string, courseName: string, prax
 </div>`;
 }
 
-export function buildKombikursEmail(firstName: string, courseName: string, praxis: PraxisInfo, opts?: { hasOnlineCourse?: boolean }): string {
+export function buildKombikursEmail(firstName: string, courseName: string, praxis: PraxisInfo, opts?: { hasOnlineCourse?: boolean; passwordSetupUrl?: string }): string {
   return `<div style="background-color:#fff; padding:0; font-family:Arial, sans-serif;">
   <div style="background-color:#fff; max-width:600px; margin:0 auto; padding:8px; text-align:left; line-height:1.5;">
     <p style="margin-top:0; margin-bottom:20px;">
@@ -211,7 +217,7 @@ export function buildKombikursEmail(firstName: string, courseName: string, praxi
     </p>
 
     ${opts?.hasOnlineCourse !== false ? `<h2 style="margin:16px 0 10px;font-size:20px;font-weight:bold;">Dein Onlinekurs</h2>
-    ${LOGIN_SETUP_BODY}` : ""}
+    ${loginSetupBody(opts?.passwordSetupUrl ?? "https://ephia.de/start")}` : ""}
 
     <h2 style="margin:16px 0 10px;font-size:20px;font-weight:bold;">Dein Praxiskurs</h2>
     <p style="margin:0 0 20px;">Hier siehst Du alle wichtigen Daten zu Deinem Praxiskurs auf einen Blick:</p>

@@ -239,9 +239,10 @@ export interface Auszubildende {
   address_postal_code: string | null;
   address_city: string | null;
   address_country: string | null;
-  // Set by /api/auth/set-password when the customer creates a Supabase
-  // login. NULL means no login account exists yet — admin password
-  // tooling can show "noch nicht aktiviert" and disable actions.
+  // Set by /api/auth/set-password-with-token when the customer sets their
+  // password via the emailed token link. NULL means no login account
+  // exists yet — admin password tooling can show "noch nicht aktiviert"
+  // and disable actions.
   user_id: string | null;
   // Populated by the LW user import (migration 051). Used by
   // /mein-konto for the LW progress fetch and (later) by the admin

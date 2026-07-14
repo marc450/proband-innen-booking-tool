@@ -40,8 +40,6 @@ type Step =
   | { kind: "reset_requested"; email: string }
   | { kind: "not_a_customer"; email: string };
 
-const MIN_PASSWORD_LENGTH = 8;
-
 // Where to send the user after a successful sign-in. Honors a `?next=`
 // query param so the LW SSO bridge (/api/auth/lw-sso) can bounce a
 // logged-out user through here and back to itself. Same-origin paths
@@ -337,6 +335,10 @@ function ResetRequestedStep({
 
 /* ──────────────── Step 2b: known customer, no password yet ──────────────── */
 
+// The doctor has a booking but no login yet. We never let them set a
+// password inline (that let anyone who knew the email claim the account).
+// Instead the secure set-password link is in their course confirmation
+// email; here we explain that and offer to resend a fresh link.
 function SetPasswordStep({
   email,
   firstName,
@@ -346,107 +348,72 @@ function SetPasswordStep({
   firstName: string | null;
   onBack: () => void;
 }) {
-  const router = useRouter();
-  const supabase = createClient();
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
 
-  const passwordsMatch = password === confirm;
-  const passwordLongEnough = password.length >= MIN_PASSWORD_LENGTH;
-  const canSubmit = passwordLongEnough && passwordsMatch;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+  const handleSend = async () => {
+    if (sending) return;
+    setSending(true);
     try {
-      const setRes = await fetch("/api/auth/set-password", {
+      await fetch("/api/auth/send-password-setup-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email }),
       });
-      const setData = await setRes.json();
-      if (!setRes.ok) {
-        setError(setData.error || "Passwort konnte nicht gesetzt werden.");
-        return;
-      }
-      // Now sign in with the freshly-set password to establish the
-      // browser session.
-      const { error: signErr } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (signErr) {
-        setError(signErr.message);
-        return;
-      }
-      navigatePostLogin(router, "push");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Netzwerkfehler.");
+    } catch {
+      // The confirmation UX is intentionally identical whether or not the
+      // send succeeded, so we never leak whether the address has an account.
     } finally {
-      setLoading(false);
+      setSent(true);
+      setSending(false);
     }
   };
 
+  if (sent) {
+    return (
+      <div className="space-y-5">
+        <EmailContext email={email} onBack={onBack} />
+        <div className="rounded-md bg-[#FAEBE1] border border-[#F0D0B8] px-3 py-3 space-y-2">
+          <p className="text-sm font-semibold text-black">E-Mail unterwegs.</p>
+          <p className="text-sm text-black/85 leading-relaxed">
+            Falls ein Konto mit dieser E-Mail existiert, haben wir Dir gerade
+            einen Link zum Einrichten Deines Passworts geschickt. Schau auch in
+            Deinem Spam-Ordner nach. Der Link ist 30 Tage gültig.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onBack}
+          className="w-full text-sm text-[#0066FF] hover:underline font-medium"
+        >
+          Zurück zur Anmeldung
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <div className="space-y-5">
       <EmailContext email={email} onBack={onBack} />
       <div className="rounded-md bg-[#FAEBE1] border border-[#F0D0B8] px-3 py-3 space-y-2">
         <p className="text-sm font-semibold text-black">
           Hallo {firstName ? <span>{firstName}</span> : "Du"}, willkommen zurück.
         </p>
         <p className="text-sm text-black/85 leading-relaxed">
-          Wir haben unser Login-System neu aufgesetzt. Bitte setze einmalig
-          ein neues Passwort. Beim nächsten Mal brauchst Du nur diese E-Mail
-          und Dein neues Passwort, um auf Deine Kurse zuzugreifen.
+          Mit Deiner Buchungsbestätigung haben wir Dir einen Link geschickt, mit
+          dem Du einmalig Dein Passwort einrichtest. Nicht erhalten? Wir senden
+          ihn Dir gerne erneut.
         </p>
       </div>
-      <div className="space-y-1.5">
-        <label htmlFor="password" className="block text-sm font-semibold text-black">
-          Neues Passwort
-        </label>
-        <input
-          id="password"
-          type="password"
-          autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          autoFocus
-          minLength={MIN_PASSWORD_LENGTH}
-          className="w-full border-2 border-[#0066FF] rounded-[10px] px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#0066FF]/30 transition-shadow"
-        />
-        <p className="text-xs text-black/60">Mindestens {MIN_PASSWORD_LENGTH} Zeichen.</p>
-      </div>
-      <div className="space-y-1.5">
-        <label htmlFor="confirm" className="block text-sm font-semibold text-black">
-          Passwort wiederholen
-        </label>
-        <input
-          id="confirm"
-          type="password"
-          autoComplete="new-password"
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          required
-          minLength={MIN_PASSWORD_LENGTH}
-          className="w-full border-2 border-[#0066FF] rounded-[10px] px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#0066FF]/30 transition-shadow"
-        />
-      </div>
-      {confirm.length > 0 && !passwordsMatch && (
-        <p className="text-sm text-red-600">Die Passwörter stimmen nicht überein.</p>
-      )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
       <button
-        type="submit"
-        disabled={loading || !canSubmit}
+        type="button"
+        onClick={handleSend}
+        disabled={sending}
         className="w-full bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-base rounded-[10px] py-3.5 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
       >
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Passwort setzen und anmelden"}
+        {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Link zum Einrichten senden"}
       </button>
-    </form>
+    </div>
   );
 }
 
