@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireVerifiedAdmin } from "@/lib/auth-verify";
 
 // One-shot end-to-end probe of the bewertung submission flow. Creates a
 // synthetic test booking, mints a review_submit_token, calls the same
@@ -23,12 +23,9 @@ interface Step {
 }
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Verified admin gate — this inserts/deletes throwaway course_bookings.
+  if (!(await requireVerifiedAdmin())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   const admin = createAdminClient();

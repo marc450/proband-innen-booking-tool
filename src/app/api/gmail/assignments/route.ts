@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendSlackDm } from "@/lib/slack-dm";
+import { requireVerifiedStaff } from "@/lib/auth-verify";
 
 export async function GET() {
+  if (!(await requireVerifiedStaff())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -96,11 +100,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "threadId required" }, { status: 400 });
   }
 
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  // Verified staff gate — replaces the old "any logged-in user" check so
+  // a public student session can no longer reassign staff inbox threads.
+  const access = await requireVerifiedStaff();
+  if (!access) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
+  const user = { id: access.userId };
 
   if (!assignedTo) {
     // Unassign

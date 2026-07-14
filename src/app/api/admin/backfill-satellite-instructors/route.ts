@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveInstructorIdFromName } from "@/lib/resolve-instructor-id";
+import { requireVerifiedAdmin } from "@/lib/auth-verify";
 
 // Backfill instructor_id on existing Proband:innen satellite courses.
 // Reason: until the resolve-instructor-id helper landed, the satellite
@@ -17,12 +17,8 @@ import { resolveInstructorIdFromName } from "@/lib/resolve-instructor-id";
 //
 // Idempotent and safe to call repeatedly. Staff-only.
 export async function POST() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await requireVerifiedAdmin())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   const admin = createAdminClient();

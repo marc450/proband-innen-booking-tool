@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail } from "@/lib/gmail";
+import { requireVerifiedStaff } from "@/lib/auth-verify";
 
 /**
  * Clean up a comma/semicolon-separated recipient list coming from the
@@ -18,6 +19,11 @@ function cleanRecipientList(raw: string | undefined | null): string | undefined 
 }
 
 export async function POST(request: NextRequest) {
+  // Verified staff gate. Without this the route is an open relay: anyone
+  // could send mail from customerlove@ephia.de. Mirrors gmail/threads.
+  if (!(await requireVerifiedStaff())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
   try {
     const { to, subject, htmlBody, inReplyTo, references, threadId, cc, bcc, attachments, sentBy } = await request.json();
 

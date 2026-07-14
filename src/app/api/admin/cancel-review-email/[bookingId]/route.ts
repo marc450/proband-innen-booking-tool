@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { cancelScheduledReviewEmail } from "@/lib/cancel-scheduled-review-email";
+import { requireVerifiedAdmin } from "@/lib/auth-verify";
 
 // Staff-only endpoint. Called from dashboard status dropdowns that flip a
 // course_booking to "cancelled" / "refunded" via direct DB update (i.e.
@@ -16,12 +16,8 @@ export async function POST(
 ) {
   const { bookingId } = await params;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await requireVerifiedAdmin())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   const admin = createAdminClient();

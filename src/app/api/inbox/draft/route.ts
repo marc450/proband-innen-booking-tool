@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireVerifiedInbox } from "@/lib/auth-verify";
 
 // Inbox draft endpoint. Exists solely so the client can flush pending drafts
 // during `pagehide` / tab close with `fetch(..., { keepalive: true })` —
@@ -34,16 +34,18 @@ interface ReplyBody {
 
 type SaveBody = ComposeBody | ReplyBody;
 
+// Verified inbox gate (admin OR kursbetreuung). Returns the verified
+// user id, or null when the caller is not inbox staff. Replaces the old
+// "any authenticated user" check so a public student session is rejected.
 async function currentUserId() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user?.id ?? null;
+  const access = await requireVerifiedInbox();
+  return access?.userId ?? null;
 }
 
 export async function POST(req: NextRequest) {
   const userId = await currentUserId();
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   let payload: SaveBody;
@@ -116,7 +118,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const userId = await currentUserId();
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   const kind = req.nextUrl.searchParams.get("kind");

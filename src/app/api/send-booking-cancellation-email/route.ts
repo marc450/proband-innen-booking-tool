@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { buildEmailHtml } from "@/lib/email-template";
 import { archiveSentMessage } from "@/lib/gmail";
 import { getCanonicalPatientFirstName } from "@/lib/patient-name";
+import { requireVerifiedStaff } from "@/lib/auth-verify";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 
@@ -12,6 +13,10 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY!;
  * whose row actually failed to delete.
  */
 export async function POST(req: NextRequest) {
+  // Verified staff gate — this sends branded EPHIA mail to any address.
+  if (!(await requireVerifiedStaff())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
   const { email, firstName, courseTitle, date, time, location } = await req.json();
 
   if (!email) {

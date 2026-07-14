@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireVerifiedInbox } from "@/lib/auth-verify";
 
 // Manuelles "Als beantwortet markieren" für die Admin-Inbox. Gmail
 // hat keinen "handled"-Status, also persistieren wir den hier.
@@ -10,26 +11,28 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // E-Mail-Fallback falls profile leer.
 
 async function resolveCurrentUser() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  // Verified inbox gate (admin OR kursbetreuung) — a valid session alone
+  // is not enough, so a public student account cannot mark threads.
+  const access = await requireVerifiedInbox();
+  if (!access) return null;
 
+  const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select("first_name, last_name, title")
-    .eq("id", user.id)
+    .eq("id", access.userId)
     .maybeSingle();
 
   const parts = [profile?.title, profile?.first_name, profile?.last_name].filter(Boolean);
-  const displayName = parts.length ? parts.join(" ") : (user.email || "Unbekannt");
+  const displayName = parts.length ? parts.join(" ") : "Unbekannt";
 
-  return { id: user.id, displayName };
+  return { id: access.userId, displayName };
 }
 
 export async function POST(req: NextRequest) {
   const me = await resolveCurrentUser();
   if (!me) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   let threadId: string;
@@ -71,7 +74,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const me = await resolveCurrentUser();
   if (!me) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   const threadId = (req.nextUrl.searchParams.get("threadId") || "").trim();

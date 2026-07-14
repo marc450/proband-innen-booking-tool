@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { modifyLabels } from "@/lib/gmail";
+import { requireVerifiedStaff } from "@/lib/auth-verify";
 
 export async function POST(request: NextRequest) {
+  // Verified staff gate — label changes mutate the shared mailbox.
+  if (!(await requireVerifiedStaff())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
   try {
     const { messageId, addLabels, removeLabels } = await request.json();
 

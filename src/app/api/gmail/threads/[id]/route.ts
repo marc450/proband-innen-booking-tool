@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { trashThread } from "@/lib/gmail";
+import { requireVerifiedStaff } from "@/lib/auth-verify";
 
 /**
  * DELETE /api/gmail/threads/[id]
@@ -10,6 +11,10 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Verified staff gate — prevents anonymous trashing of inbox threads.
+  if (!(await requireVerifiedStaff())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
   const { id } = await params;
   try {
     await trashThread(id);

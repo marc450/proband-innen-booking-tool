@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { buildEmailHtml } from "@/lib/email-template";
 import { archiveSentMessage } from "@/lib/gmail";
 import { cancelScheduledReviewEmail } from "@/lib/cancel-scheduled-review-email";
+import { requireVerifiedStaff } from "@/lib/auth-verify";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
@@ -93,6 +94,10 @@ async function sendCancellationEmail(args: {
 }
 
 export async function POST(req: NextRequest) {
+  // Verified staff gate — this cancels bookings and issues Stripe refunds.
+  if (!(await requireVerifiedStaff())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
   try {
     const { bookingId } = await req.json();
 

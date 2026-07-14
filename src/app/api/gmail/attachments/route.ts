@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { downloadAttachment } from "@/lib/gmail";
+import { requireVerifiedStaff } from "@/lib/auth-verify";
 
 export async function GET(request: NextRequest) {
+  // Verified staff gate — attachments are confidential inbox files.
+  if (!(await requireVerifiedStaff())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
   const messageId = request.nextUrl.searchParams.get("messageId");
   const attachmentId = request.nextUrl.searchParams.get("attachmentId");
   const filename = request.nextUrl.searchParams.get("filename") || "attachment";
