@@ -501,7 +501,7 @@ export function PremiumCard({
                         setSelectedDate(date.id);
                         setDropdownOpen(false);
                       }}
-                      className={`w-full flex items-center justify-between px-4 py-2 text-sm text-left transition-colors ${
+                      className={`w-full flex items-center justify-start lg:justify-between gap-2 px-4 py-2 text-sm text-left transition-colors ${
                         !date.available
                           ? "text-gray-400 cursor-not-allowed"
                           : selectedDate === date.id
@@ -509,7 +509,7 @@ export function PremiumCard({
                             : "font-semibold text-black hover:bg-gray-50 cursor-pointer"
                       }`}
                     >
-                      <span className="mr-3">{date.label}</span>
+                      <span>{date.label}</span>
                       {date.availabilityTag && (
                         <span className={getBadgeClasses(date)}>{date.availabilityTag}</span>
                       )}
