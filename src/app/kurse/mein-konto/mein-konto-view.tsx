@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Clock, User, MapPin, Info, Users } from "lucide-react";
 import { parseDateOnly } from "@/lib/date";
 import { TITLE_OPTIONS } from "@/lib/utils";
+import { ONLINE_COURSE_MIN_PCT } from "@/lib/online-course";
 
 // Customer-facing dashboard view.
 //
@@ -589,7 +590,7 @@ function UpcomingCard({
           <div className="flex items-start gap-2.5">
             <Info className="w-4 h-4 mt-0.5 text-[#0066FF] flex-shrink-0" aria-hidden="true" />
             <p>
-              Schließe den dazugehörigen Onlinekurs vor Deinem Praxistermin ab.
+              Schließe vor Deinem Praxistermin mindestens {ONLINE_COURSE_MIN_PCT} % des dazugehörigen Onlinekurses ab. Das ist Voraussetzung für Deine Teilnahme.
             </p>
           </div>
           <div className="flex items-start gap-2.5">

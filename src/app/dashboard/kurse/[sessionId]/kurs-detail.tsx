@@ -35,6 +35,7 @@ import { INDICATIONS } from "@/lib/indications";
 import { PartnerConsentButton, type ConsentState } from "@/components/partner-consent-button";
 import { isGaldermaEligible } from "@/lib/partner-galderma";
 import { CourseSopButton } from "@/components/course-sop-button";
+import { ONLINE_COURSE_MIN_PCT } from "@/lib/online-course";
 
 function indicationLabel(key: string): string {
   return INDICATIONS.find((i) => i.key === key)?.label ?? key;
@@ -153,11 +154,6 @@ function formatBerlinTime(iso: string): string {
   });
 }
 
-// Onlinekurs is considered effectively completed at this percentage.
-// The reminder email one week before the Praxiskurs targets the same
-// mark. Keep the two in sync if this ever changes.
-const ONLINE_COURSE_COMPLETE_PCT = 90;
-
 // Onlinekurs completion badge for the participant table. Lets the
 // Kursbetreuung see at a glance whether someone actually worked through
 // the online course. Green once the completion mark is reached, amber
@@ -189,7 +185,7 @@ function OnlineProgressBadge({
     );
   }
   const pct = Math.round(progress.pct ?? 0);
-  if (pct >= ONLINE_COURSE_COMPLETE_PCT) {
+  if (pct >= ONLINE_COURSE_MIN_PCT) {
     return (
       <Badge
         variant="outline"
