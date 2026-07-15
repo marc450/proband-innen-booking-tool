@@ -672,8 +672,6 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
     renderSample: () =>
       buildPraxisOnlineReminderEmail({
         firstName: SAMPLE.firstName,
-        courseName: SAMPLE.courseTitle,
-        courseDay: SAMPLE.dateFormatted,
         timing: "in einer Woche",
         progressLabel: `${ONLINE_COURSE_MIN_PCT - 30} %`,
         ctaUrl: "https://proband-innen.ephia.de/api/auth/lw-sso?redirectUrl=SAMPLE",

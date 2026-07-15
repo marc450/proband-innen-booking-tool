@@ -79,27 +79,32 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
  */
 export function buildPraxisOnlineReminderEmail(opts: {
   firstName: string;
-  courseName: string;
-  courseDay: string;
   /** "morgen" | "in einer Woche" | "in N Tagen" — how the course day is
    *  phrased in the intro. */
   timing: string;
   progressLabel: string;
   ctaUrl: string;
 }): { subject: string; html: string } {
-  const { firstName, courseName, courseDay, timing, progressLabel, ctaUrl } = opts;
+  const { firstName, timing, progressLabel, ctaUrl } = opts;
+  // The shared template always renders `buttons` above the info box, but
+  // we want the current progress to sit above the CTA. So the button goes
+  // into extraContent (rendered after the info box) instead, replicating
+  // the brand button markup from email-template.ts renderButton().
+  const ctaHtml = `<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;">
+        <tr><td style="padding:8px 0;">
+          <a href="${ctaUrl}" target="_blank" style="display:inline-block;background-color:#0066FF;color:#ffffff;font-weight:bold;font-size:16px;padding:12px 24px;border-radius:10px;text-decoration:none;margin:0 8px 8px 0;">Onlinekurs fortsetzen</a>
+        </td></tr>
+      </table>`;
   return {
     subject: "Dein Onlinekurs vor dem Praxiskurs",
     html: buildEmailHtml({
       firstName,
       intro: `${timing} ist Dein Praxiskurs. Zur Teilnahme musst Du vorher mindestens ${ONLINE_COURSE_MIN_PCT} % des Onlinekurses abgeschlossen haben. Diese Voraussetzung sichert die Sicherheit der Patient:innen und die Qualität der Ausbildung.`,
       infoRows: [
-        { label: "Kurs", value: courseName },
-        { label: "Termin", value: courseDay },
         { label: "Dein aktueller Fortschritt", value: progressLabel },
       ],
       note: `Bitte arbeite die noch fehlenden Einheiten rechtzeitig vor dem Kurstag durch. Ohne die erforderlichen ${ONLINE_COURSE_MIN_PCT} % können wir Dich aus Gründen der Patient:innensicherheit nicht am Praxiskurs teilnehmen lassen.`,
-      buttons: [{ label: "Onlinekurs fortsetzen", url: ctaUrl }],
+      extraContent: ctaHtml,
       closing:
         "Bei Fragen sind wir gerne für Dich da.<br><br>Liebe Grüße,<br>Dein EPHIA-Team",
     }),
@@ -199,8 +204,6 @@ export async function sendPraxisOnlineReminders(
       continue;
     }
 
-    const courseName = template.course_label_de || template.title || "Deinem Kurs";
-    const courseDay = formatDate(session.date_iso);
     const daysUntil = calendarDaysUntilBerlin(session.date_iso, todayIso);
     const slug = template.lw_slug_online?.trim() || onlineCourseId;
     const ctaUrl = `${appUrl}/api/auth/lw-sso?redirectUrl=${encodeURIComponent(
@@ -246,8 +249,6 @@ export async function sendPraxisOnlineReminders(
 
         const { subject, html } = buildPraxisOnlineReminderEmail({
           firstName,
-          courseName,
-          courseDay,
           timing,
           progressLabel,
           ctaUrl,
@@ -321,14 +322,4 @@ function calendarDaysUntilBerlin(targetIso: string, todayIso: string): number {
   const targetUTC = Date.UTC(tY, tM - 1, tD);
   const nowUTC = Date.UTC(nY, nM - 1, nD);
   return Math.round((targetUTC - nowUTC) / (1000 * 60 * 60 * 24));
-}
-
-function formatDate(dateIso: string): string {
-  const [y, m, d] = dateIso.split("-").map(Number);
-  if (!y || !m || !d) return dateIso;
-  const MONTHS = [
-    "Januar", "Februar", "März", "April", "Mai", "Juni",
-    "Juli", "August", "September", "Oktober", "November", "Dezember",
-  ];
-  return `${String(d).padStart(2, "0")}. ${MONTHS[m - 1]} ${y}`;
 }
