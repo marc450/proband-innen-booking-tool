@@ -4,6 +4,7 @@ import { decryptPatient } from "@/lib/encryption";
 import { buildEmailHtml } from "@/lib/email-template";
 import { sendProfileReminderEmail } from "@/lib/post-purchase";
 import { sendPostPraxisCertificates } from "@/lib/send-post-praxis-certificate";
+import { sendPraxisOnlineReminders } from "@/lib/send-praxis-online-reminder";
 import { scheduleCourseReviewEmails } from "@/lib/send-course-review-request";
 import { sendPostTreatmentProbandReviews } from "@/lib/send-proband-review-request";
 import { sweepStaleReviewEmails } from "@/lib/cancel-scheduled-review-email";
@@ -43,6 +44,7 @@ export async function GET(req: NextRequest) {
     staleReviewEmailsCancelled: 0,
     galdermaExported: 0,
     galdermaContactIntros: 0,
+    praxisOnlineReminders: 0,
     errors: 0,
   };
 
@@ -72,6 +74,20 @@ export async function GET(req: NextRequest) {
       results.errors += contactIntros.errors;
     } catch (contactErr) {
       console.error("Galderma contact-intro pass failed:", contactErr);
+      results.errors += 1;
+    }
+
+    // ── Onlinekurs-Prerequisite reminder (up to 7 days before praxis) ──
+    // Reminds Praxis/Kombi/Premium participants whose LearnWorlds online
+    // progress is still below the required 90% mark that they must finish
+    // the online course to attend. Shows their current completion; sent
+    // once per booking, locked via course_bookings.praxis_reminder_sent_at.
+    try {
+      const praxisReminder = await sendPraxisOnlineReminders(supabase);
+      results.praxisOnlineReminders = praxisReminder.sent;
+      results.errors += praxisReminder.errors;
+    } catch (praxisErr) {
+      console.error("Praxis online-reminder pass failed:", praxisErr);
       results.errors += 1;
     }
 
