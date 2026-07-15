@@ -164,7 +164,15 @@ export function MeinKontoView({ firstName, profile, upcoming, online, done }: Pr
           <Section title="Deine Onlinekurse" count={online.length}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
               {online.map((b) => (
-                <OnlineCard key={b.id} booking={b} />
+                <OnlineCard
+                  key={b.id}
+                  booking={b}
+                  // Only nudge about the praxis prerequisite when the
+                  // customer actually has an upcoming Praxis/Kombi date.
+                  // A standalone Onlinekurs purchase has no praxis day, so
+                  // the "vor dem Praxiskurs" copy would be wrong there.
+                  showPraxisPrereq={upcoming.length > 0}
+                />
               ))}
             </div>
           </Section>
@@ -617,31 +625,85 @@ function UpcomingCard({
 
 /* ──────────────── Online course tile ──────────────── */
 
-function ProgressBar({ pct }: { pct: number }) {
+// `requirement` = this online course is the prerequisite for an upcoming
+// Praxiskurs. In that mode the bar is red until the required mark is
+// reached and green afterwards, and the 90% threshold is always marked so
+// the customer sees the target. Standalone Onlinekurs bookings (no praxis)
+// keep the neutral blue bar with no threshold, since 90% has no meaning
+// there.
+function ProgressBar({ pct, requirement }: { pct: number; requirement: boolean }) {
   const clamped = Math.max(0, Math.min(100, pct));
-  const label =
-    clamped === 0
+  const met = clamped >= ONLINE_COURSE_MIN_PCT;
+
+  if (!requirement) {
+    const label =
+      clamped === 0
+        ? "Noch nicht gestartet"
+        : clamped >= 100
+          ? "Abgeschlossen"
+          : `${Math.round(clamped)}% abgeschlossen`;
+    return (
+      <div className="space-y-1">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-black/60 font-medium">{label}</span>
+          <span className="text-black/40 tabular-nums">{Math.round(clamped)}%</span>
+        </div>
+        <div className="w-full h-1.5 rounded-full bg-black/[0.06] overflow-hidden">
+          <div
+            className="h-full rounded-full bg-[#0066FF] transition-[width] duration-500"
+            style={{ width: `${clamped}%` }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const label = met
+    ? "Voraussetzung erfüllt"
+    : clamped === 0
       ? "Noch nicht gestartet"
-      : clamped >= 100
-        ? "Abgeschlossen"
-        : `${Math.round(clamped)}% abgeschlossen`;
+      : `${Math.round(clamped)}% abgeschlossen`;
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
-        <span className="text-black/60 font-medium">{label}</span>
+        <span className={met ? "text-emerald-700 font-medium" : "text-red-600 font-medium"}>
+          {label}
+        </span>
         <span className="text-black/40 tabular-nums">{Math.round(clamped)}%</span>
       </div>
-      <div className="w-full h-1.5 rounded-full bg-black/[0.06] overflow-hidden">
+      <div className="relative">
+        <div className="w-full h-1.5 rounded-full bg-black/[0.06] overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-[width] duration-500 ${
+              met ? "bg-emerald-500" : "bg-red-500"
+            }`}
+            style={{ width: `${clamped}%` }}
+          />
+        </div>
+        {/* Threshold marker at the required percentage, always visible. */}
         <div
-          className="h-full rounded-full bg-[#0066FF] transition-[width] duration-500"
-          style={{ width: `${clamped}%` }}
+          className="absolute top-1/2 -translate-y-1/2 h-[9px] w-[2px] rounded-full bg-black/50"
+          style={{ left: `${ONLINE_COURSE_MIN_PCT}%` }}
+          title={`Erforderlich: ${ONLINE_COURSE_MIN_PCT} %`}
+          aria-hidden="true"
         />
+      </div>
+      <div className="flex justify-end">
+        <span className="text-[10px] text-black/40 tabular-nums">
+          Erforderlich: {ONLINE_COURSE_MIN_PCT} %
+        </span>
       </div>
     </div>
   );
 }
 
-function OnlineCard({ booking }: { booking: EnrichedBooking }) {
+function OnlineCard({
+  booking,
+  showPraxisPrereq,
+}: {
+  booking: EnrichedBooking;
+  showPraxisPrereq: boolean;
+}) {
   return (
     <article className="bg-white rounded-[10px] overflow-hidden flex flex-col group shadow-sm">
       {booking.imageUrl ? (
@@ -681,7 +743,7 @@ function OnlineCard({ booking }: { booking: EnrichedBooking }) {
             rather than nothing. We hide the bar entirely only when
             progressPct is null/undefined (no data available). */}
         {typeof booking.progressPct === "number" && (
-          <ProgressBar pct={booking.progressPct} />
+          <ProgressBar pct={booking.progressPct} requirement={showPraxisPrereq} />
         )}
 
         {booking.lwHref ? (
