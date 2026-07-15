@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { sanitizeEmailHtml } from "@/lib/sanitize-email-html";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Send, ChevronDown, UserCircle, FileText, Image as ImageIcon, File as FileIcon } from "lucide-react";
 import { useSignature } from "@/hooks/use-signature";
@@ -445,9 +446,10 @@ export function ConversationMobile({ threadId, teamMembers = [] }: Props) {
                       !isExpanded ? "max-h-40 overflow-hidden" : ""
                     }`}
                     dangerouslySetInnerHTML={{
-                      __html:
+                      __html: sanitizeEmailHtml(
                         msg.body.html ||
-                        msg.body.text.replace(/\n/g, "<br>"),
+                          msg.body.text.replace(/\n/g, "<br>"),
+                      ),
                     }}
                   />
                   {!isExpanded && (

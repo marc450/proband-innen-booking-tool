@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { sanitizeEmailHtml } from "@/lib/sanitize-email-html";
 import { Loader2, Send, X, Reply, Paperclip, FileText, Image, File, UserCircle, ChevronDown, Upload, Trash2, Ban, Check, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -642,8 +643,9 @@ export function ConversationPane({
                   <div
                     className="email-html-body prose prose-sm max-w-none text-sm [&_img]:max-w-full [&_table]:text-sm [&_a]:text-[#0066FF] [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 [&_li]:mb-1"
                     dangerouslySetInnerHTML={{
-                      __html:
+                      __html: sanitizeEmailHtml(
                         msg.body.html || msg.body.text.replace(/\n/g, "<br>"),
+                      ),
                     }}
                   />
                 </div>

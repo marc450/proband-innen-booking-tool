@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { sanitizeEmailHtml } from "@/lib/sanitize-email-html";
 import Link from "next/link";
 import {
   Mail,
@@ -733,9 +734,10 @@ export function EmailHistory({
                             <div
                               className="email-html-body prose prose-sm max-w-none text-sm [&_img]:max-w-full [&_table]:text-sm [&_a]:text-[#0066FF] [&_a]:underline"
                               dangerouslySetInnerHTML={{
-                                __html:
+                                __html: sanitizeEmailHtml(
                                   msg.body.html ||
-                                  msg.body.text.replace(/\n/g, "<br>"),
+                                    msg.body.text.replace(/\n/g, "<br>"),
+                                ),
                               }}
                             />
                           </div>
