@@ -119,10 +119,18 @@ export function UsersManager({ initialUsers, currentUserId }: Props) {
   }, [users, sortKey, sortDir]);
 
   const generatePassword = () => {
+    // Cryptographically secure: Math.random() is predictable and unfit
+    // for a real staff login credential. Rejection sampling avoids the
+    // modulo bias a plain `% chars.length` would introduce.
     const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#";
-    let pw = "";
-    for (let i = 0; i < 12; i++) pw += chars[Math.floor(Math.random() * chars.length)];
-    setPassword(pw);
+    const limit = 256 - (256 % chars.length);
+    const pw: string[] = [];
+    const buf = new Uint8Array(1);
+    while (pw.length < 16) {
+      crypto.getRandomValues(buf);
+      if (buf[0] < limit) pw.push(chars[buf[0] % chars.length]);
+    }
+    setPassword(pw.join(""));
   };
 
   const resetForm = () => {

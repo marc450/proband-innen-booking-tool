@@ -20,12 +20,13 @@ const CRON_SECRET = process.env.CRON_SECRET;
 // Sends 72h and 24h reminder emails for upcoming Proband:innen bookings.
 // Protected by CRON_SECRET header to prevent unauthorized access.
 export async function GET(req: NextRequest) {
-  // Auth check: require secret header (skip if CRON_SECRET not set, for dev)
-  if (CRON_SECRET) {
-    const authHeader = req.headers.get("authorization");
-    if (authHeader !== `Bearer ${CRON_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  // Fail CLOSED: require the CRON_SECRET bearer. If the secret is unset we
+  // reject rather than skip the check, so a missing/typo'd env var can't
+  // turn this into a public endpoint. This route triggers mass reminder
+  // emails and the Galderma PII export, so an open door here is serious.
+  const authHeader = req.headers.get("authorization");
+  if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const supabase = createAdminClient();
