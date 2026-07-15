@@ -2,14 +2,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildEmailHtml } from "@/lib/email-template";
 import { buildProgressMap, listUserProgress } from "@/lib/learnworlds";
 import { archiveSentMessage } from "@/lib/gmail";
+import { ONLINE_COURSE_MIN_PCT } from "@/lib/online-course";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 
-// Online-course completion mark a participant must reach to attend the
-// practical day. Keep this in sync with ONLINE_COURSE_COMPLETE_PCT in
-// src/app/dashboard/kurse/[sessionId]/kurs-detail.tsx (the dashboard
-// badge turns green at the same value).
-export const ONLINE_COURSE_MIN_PCT = 90;
+// Re-export so existing importers (e.g. transactional-emails.ts) keep
+// their import path. The value lives in @/lib/online-course.
+export { ONLINE_COURSE_MIN_PCT };
 
 // Course types with a practical day and therefore an online prerequisite.
 // Onlinekurs has no praxis day, so it never gets this reminder. Mirrors

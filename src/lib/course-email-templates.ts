@@ -1,4 +1,5 @@
 import { getProfileUrlByName } from "@/content/kurse/team";
+import { ONLINE_COURSE_MIN_PCT } from "@/lib/online-course";
 
 const LOGO_URL =
   "https://lwfiles.mycourse.app/6638baeec5c56514e03ec360-public/f64a1ea1eb5346a171fe9ea36e8615ca.png";
@@ -112,7 +113,7 @@ const PROBANDINNEN_SECTION = `
 const VORAUSSETZUNG_SECTION = `
     <h3 style="margin:16px 0 10px;font-size:16px;font-weight:bold;">Voraussetzung zur Kursteilnahme: Starkes theoretisches Wissen</h3>
     <p style="margin:0 0 20px;">
-      Damit wir im Praxisteil direkt tief in die Behandlung einsteigen können, ist die Teilnahme nur möglich, wenn Du den zugehörigen Onlinekurs vollständig abgeschlossen hast. So stellen wir sicher, dass alle Teilnehmer:innen auf einem vergleichbaren Wissensstand sind und die praktische Ausbildung auf fachlich höchstem Niveau stattfinden kann.
+      Damit wir im Praxisteil direkt tief in die Behandlung einsteigen können, ist die Teilnahme nur möglich, wenn Du vor dem Praxiskurs mindestens ${ONLINE_COURSE_MIN_PCT} % des zugehörigen Onlinekurses abgeschlossen hast. So stellen wir sicher, dass alle Teilnehmer:innen auf einem vergleichbaren Wissensstand sind und die praktische Ausbildung auf fachlich höchstem Niveau stattfinden kann. Diese Voraussetzung sichert die Sicherheit der Patient:innen und die Qualität der Ausbildung.
     </p>`;
 
 interface PraxisInfo {
