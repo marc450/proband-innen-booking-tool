@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptBookingWithDetails } from "@/lib/encryption";
+import { listUserProgress, buildProgressMap } from "@/lib/learnworlds";
 import { KursDetailClient, type DetailBooking, type DetailSlot } from "./kurs-detail";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export default async function KursDetailPage({
   const { data: session } = await admin
     .from("course_sessions")
     .select(
-      "id, date_iso, start_time, duration_minutes, address, instructor_name, betreuer_name, max_seats, booked_seats, course_templates:template_id(id, title, course_label_de, course_key)",
+      "id, date_iso, start_time, duration_minutes, address, instructor_name, betreuer_name, max_seats, booked_seats, course_templates:template_id(id, title, course_label_de, course_key, online_course_id)",
     )
     .eq("id", sessionId)
     .maybeSingle();
@@ -126,7 +127,7 @@ export default async function KursDetailPage({
       ? admin
           .from("v_auszubildende")
           .select(
-            "id, specialty, first_name, last_name, phone, address_line1, address_postal_code, address_city, address_country",
+            "id, specialty, first_name, last_name, phone, address_line1, address_postal_code, address_city, address_country, lw_user_id",
           )
           .in("id", auszubildendeIds)
       : Promise.resolve({
@@ -140,6 +141,7 @@ export default async function KursDetailPage({
             address_postal_code: string | null;
             address_city: string | null;
             address_country: string | null;
+            lw_user_id: string | null;
           }>,
         }),
     auszubildendeIds.length
@@ -220,6 +222,74 @@ export default async function KursDetailPage({
       },
     ]),
   );
+
+  // ── Onlinekurs-Fortschritt ──────────────────────────────────────────
+  // For a quick completion check by the Kursbetreuung: resolve each
+  // participant's LearnWorlds progress on THIS session's online course.
+  // The session's template carries a single online_course_id, so we look
+  // up that one course's progress_rate per distinct LW user. One LW API
+  // call per participant with an LW account; capped to a few in flight so
+  // a large session doesn't fan out dozens of requests at once. LW failure
+  // or a missing account degrades to "no data" rather than failing the page.
+  const onlineCourseId =
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ((session.course_templates as any)?.online_course_id as string | null) ?? null;
+
+  const lwUserIdByAuszubildendeId = new Map<string, string | null>(
+    (contactRows ?? []).map((c) => [c.id as string, (c.lw_user_id as string | null) ?? null]),
+  );
+
+  // Per contact on this session: { hasAccount, pct }. Absent from the map
+  // means "no online course on this template" — nothing to check.
+  const onlineProgressByAuszubildendeId = new Map<
+    string,
+    { hasAccount: boolean; pct: number | null }
+  >();
+
+  if (onlineCourseId) {
+    // Distinct LW users among this session's participants.
+    const lwUserIds = Array.from(
+      new Set(
+        auszubildendeIds
+          .map((id) => lwUserIdByAuszubildendeId.get(id) ?? null)
+          .filter((x): x is string => !!x),
+      ),
+    );
+
+    // Fetch progress with a small concurrency cap.
+    const pctByLwUserId = new Map<string, number | null>();
+    const CONCURRENCY = 4;
+    for (let i = 0; i < lwUserIds.length; i += CONCURRENCY) {
+      const batch = lwUserIds.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        batch.map(async (lwUserId) => {
+          try {
+            const progress = await listUserProgress(lwUserId);
+            const map = buildProgressMap(progress);
+            return [lwUserId, map.get(onlineCourseId) ?? null] as const;
+          } catch (err) {
+            console.error("LW listUserProgress failed for", lwUserId, err);
+            return [lwUserId, null] as const;
+          }
+        }),
+      );
+      for (const [lwUserId, pct] of results) pctByLwUserId.set(lwUserId, pct);
+    }
+
+    for (const azid of auszubildendeIds) {
+      const lwUserId = lwUserIdByAuszubildendeId.get(azid) ?? null;
+      if (!lwUserId) {
+        onlineProgressByAuszubildendeId.set(azid, { hasAccount: false, pct: null });
+        continue;
+      }
+      // Not in the progress list → enrolled/known user but course never
+      // opened. Treat as 0% (nicht begonnen) so it reads as "not done".
+      onlineProgressByAuszubildendeId.set(azid, {
+        hasAccount: true,
+        pct: pctByLwUserId.get(lwUserId) ?? 0,
+      });
+    }
+  }
 
   const courseDateHuman = new Date(`${session.date_iso as string}T12:00:00`).toLocaleDateString(
     "de-DE",
@@ -341,6 +411,9 @@ export default async function KursDetailPage({
               ? priorTitlesByAuszubildendeId.get(b.auszubildende_id as string) ?? []
               : [],
           profileComplete: (b.profile_complete as boolean | null) ?? false,
+          onlineProgress: azid
+            ? onlineProgressByAuszubildendeId.get(azid) ?? null
+            : null,
           notes: (b.notes as string | null) ?? null,
           consent: consentByBookingId.get(b.id as string) ?? null,
           prefillPhone: azid ? prefillByAuszubildendeId.get(azid)?.phone ?? null : null,

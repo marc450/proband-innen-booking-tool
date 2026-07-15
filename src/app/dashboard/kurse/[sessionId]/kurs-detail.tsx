@@ -91,6 +91,11 @@ interface AerztBooking {
   specialty: string | null;
   priorCourses: string[];
   profileComplete: boolean;
+  /** LearnWorlds online-course progress for this session's template.
+   *  null  → template has no online course, nothing to check.
+   *  { hasAccount: false } → participant has no linked LW account.
+   *  { hasAccount: true, pct } → completion percent (0..100). */
+  onlineProgress: { hasAccount: boolean; pct: number | null } | null;
   notes: string | null;
   // Galderma partner-consent state + prefill for the tablet form.
   consent: ConsentState | null;
@@ -146,6 +151,70 @@ function formatBerlinTime(iso: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+// Onlinekurs completion badge for the participant table. Lets the
+// Kursbetreuung see at a glance whether someone actually worked through
+// the online course. Green at 100% (abgeschlossen), amber while in
+// progress, grey for not started / no account / not applicable.
+function OnlineProgressBadge({
+  progress,
+}: {
+  progress: AerztBooking["onlineProgress"];
+}) {
+  if (!progress) {
+    return (
+      <span
+        className="text-sm text-muted-foreground"
+        title="Für diesen Kurs gibt es keinen Onlinekurs zum Nachverfolgen."
+      >
+        —
+      </span>
+    );
+  }
+  if (!progress.hasAccount) {
+    return (
+      <Badge
+        variant="outline"
+        className="text-muted-foreground border-muted-foreground/30 bg-muted/40"
+        title="Kein verknüpftes LearnWorlds-Konto. Fortschritt kann nicht abgefragt werden."
+      >
+        kein Konto
+      </Badge>
+    );
+  }
+  const pct = Math.round(progress.pct ?? 0);
+  if (pct >= 100) {
+    return (
+      <Badge
+        variant="outline"
+        className="text-emerald-700 border-emerald-300 bg-emerald-50"
+        title="Onlinekurs vollständig abgeschlossen."
+      >
+        Abgeschlossen
+      </Badge>
+    );
+  }
+  if (pct <= 0) {
+    return (
+      <Badge
+        variant="outline"
+        className="text-muted-foreground border-muted-foreground/30 bg-muted/40"
+        title="Onlinekurs noch nicht begonnen."
+      >
+        0 %
+      </Badge>
+    );
+  }
+  return (
+    <Badge
+      variant="outline"
+      className="text-amber-700 border-amber-300 bg-amber-50"
+      title={`${pct}% des Onlinekurses durchgearbeitet.`}
+    >
+      {pct} %
+    </Badge>
+  );
 }
 
 export function KursDetailClient({
@@ -716,6 +785,7 @@ export function KursDetailClient({
               <col style={{ width: "220px" }} />{/* Bereits besuchte Kurse */}
               <col style={{ width: "200px" }} />{/* Spezialisierung */}
               <col style={{ width: "240px" }} />{/* Profil */}
+              <col style={{ width: "150px" }} />{/* Onlinekurs */}
               <col style={{ width: "240px" }} />{/* Notizen */}
               {showGalderma && <col style={{ width: "210px" }} />}{/* Galderma */}
               <col style={{ width: "180px" }} />{/* Status */}
@@ -727,6 +797,7 @@ export function KursDetailClient({
                 <TableHead>Bereits besuchte Kurse</TableHead>
                 <TableHead>Spezialisierung</TableHead>
                 <TableHead>Profil</TableHead>
+                <TableHead>Onlinekurs</TableHead>
                 <TableHead>Notizen</TableHead>
                 {showGalderma && <TableHead>Galderma</TableHead>}
                 <TableHead>
@@ -794,6 +865,9 @@ export function KursDetailClient({
                         <SendProfileReminderButton bookingId={b.id} disabled={!b.email} />
                       </div>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <OnlineProgressBadge progress={b.onlineProgress} />
                   </TableCell>
                   <TableCell>
                     <button
