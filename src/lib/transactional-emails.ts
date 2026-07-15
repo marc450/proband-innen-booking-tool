@@ -20,6 +20,10 @@ import {
   buildWithdrawalConfirmationEmail,
 } from "@/lib/partner-galderma-emails";
 import { buildNachbehandlungEmail } from "@/lib/nachbehandlung-email";
+import {
+  buildPraxisOnlineReminderEmail,
+  ONLINE_COURSE_MIN_PCT,
+} from "@/lib/send-praxis-online-reminder";
 
 /**
  * Catalog of every transactional email the booking tool sends, grouped by
@@ -654,6 +658,26 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
       "Bestätigt der Teilnehmer:in den Widerruf ihrer Einwilligung zur Datenweitergabe an Galderma.",
     renderSample: () =>
       buildWithdrawalConfirmationEmail({ firstName: SAMPLE.firstName }),
+  },
+  {
+    id: "praxis-online-reminder",
+    funnel: "arzt-kursupdates",
+    name: "Onlinekurs-Erinnerung vor dem Praxiskurs",
+    recipient: "Ärzt:in",
+    trigger:
+      "Cronjob, bis zu 7 Tage vor dem Praxistag, genau einmal pro Buchung, nur wenn der Onlinekurs-Fortschritt noch unter der erforderlichen Marke liegt (Praxis/Kombi/Premium).",
+    codeRef: "src/lib/send-praxis-online-reminder.ts",
+    description:
+      "Weist Teilnehmer:innen darauf hin, dass sie vor dem Praxiskurs mindestens die erforderliche Marke des Onlinekurses abschließen müssen, und zeigt ihren aktuellen Fortschritt. Voraussetzung für Patient:innensicherheit und Ausbildungsqualität.",
+    renderSample: () =>
+      buildPraxisOnlineReminderEmail({
+        firstName: SAMPLE.firstName,
+        courseName: SAMPLE.courseTitle,
+        courseDay: SAMPLE.dateFormatted,
+        timing: "in einer Woche",
+        progressLabel: `${ONLINE_COURSE_MIN_PCT - 30} %`,
+        ctaUrl: "https://proband-innen.ephia.de/api/auth/lw-sso?redirectUrl=SAMPLE",
+      }),
   },
   {
     id: "auszubildende-password-reset",
