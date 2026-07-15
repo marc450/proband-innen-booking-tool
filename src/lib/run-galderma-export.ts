@@ -150,7 +150,7 @@ export async function runGaldermaExport(
     });
 
     const filename = galdermaExportFilename(meta.dateIso, meta.title);
-    const xlsxBase64 = buildGaldermaXlsx(exportRows);
+    const xlsxBase64 = await buildGaldermaXlsx(exportRows);
 
     const emailResult = await sendGaldermaExportEmail({
       courseTitle: meta.title,

@@ -1,16 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { read, utils } from "xlsx";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -28,39 +20,12 @@ import {
 } from "@/components/ui/select";
 
 import { Badge } from "@/components/ui/badge";
-import { Upload, ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import { NewContactModal } from "@/components/new-contact-modal";
 import { TableHeaderBar } from "@/components/table/table-header-bar";
 import { SortableHead } from "@/components/table/sortable-head";
 import { useTableSort } from "@/hooks/use-table-sort";
 import type { Auszubildende } from "@/lib/types";
-import { formatPersonName } from "@/lib/utils";
-
-// Shape matches the server-side ImportRow in /api/import-auszubildende.
-// All fields except email are optional; empty strings are allowed and
-// get coerced to null server-side.
-interface ImportRow {
-  first_name: string | null;
-  last_name: string | null;
-  title: string | null;
-  email: string;
-  phone: string | null;
-  company_name: string | null;
-  address_line1: string | null;
-  address_postal_code: string | null;
-  address_city: string | null;
-  address_country: string | null;
-  efn: string | null;
-  specialty: string | null;
-  created_at: string | null;
-}
-
-type ImportResult = {
-  inserted: number;
-  skipped: number;
-  invalid?: number;
-  error?: string;
-};
 
 type SortKey = "last_name" | "first_name" | "email" | "status" | "created_at";
 
@@ -132,10 +97,6 @@ export function AuszubildendeManager({
     const group = duplicateGroups.get(`${fn}|${ln}`);
     return group && group.length > 1 ? group : null;
   };
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importRows, setImportRows] = useState<ImportRow[] | null>(null);
-  const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [newContactOpen, setNewContactOpen] = useState(false);
   const [prefillEmail, setPrefillEmail] = useState<string | null>(null);
   const [prefillFirstName, setPrefillFirstName] = useState<string | null>(null);
@@ -151,10 +112,14 @@ export function AuszubildendeManager({
   useEffect(() => {
     const newEmail = searchParams?.get("newEmail");
     if (!newEmail) return;
+    // Consuming one-shot URL params on mount legitimately requires
+    // seeding state here; the compiler rule's flag is a false positive.
+    /* eslint-disable react-hooks/set-state-in-effect */
     setPrefillEmail(newEmail);
     setPrefillFirstName(searchParams.get("newFirstName"));
     setPrefillLastName(searchParams.get("newLastName"));
     setNewContactOpen(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
     const next = new URLSearchParams(searchParams.toString());
     next.delete("newEmail");
     next.delete("newFirstName");
@@ -167,136 +132,6 @@ export function AuszubildendeManager({
 
   const pageTitle = scope === "other" ? "Sonstige Kontakte" : "Ärzt:innen";
   const countLabel = scope === "other" ? "Kontakte" : "Ärzt:innen";
-
-  // Parses the file with the xlsx lib, which handles CSV as well. For
-  // .csv files we read as text first and pass type:"string" — reading
-  // CSV from a Uint8Array silently produces zero rows on some encodings
-  // (BOM, UTF-8 umlauts) so we avoid that path entirely. XLSX files
-  // still go through the binary path. Any exception surfaces in the
-  // dialog instead of vanishing into the console.
-  const parseCsvText = (text: string): ImportRow[] => {
-    // Strip UTF-8 BOM if present.
-    if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
-    const wb = read(text, { type: "string" });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const json: Record<string, string>[] = utils.sheet_to_json(ws, {
-      defval: "",
-    });
-    return mapRows(json);
-  };
-
-  const parseXlsxBytes = (bytes: Uint8Array): ImportRow[] => {
-    const wb = read(bytes, { type: "array" });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const json: Record<string, string>[] = utils.sheet_to_json(ws, {
-      defval: "",
-    });
-    return mapRows(json);
-  };
-
-  const mapRows = (json: Record<string, string>[]): ImportRow[] => {
-    const str = (v: string | undefined) => {
-      const s = (v ?? "").toString().trim();
-      return s.length ? s : null;
-    };
-    return json
-      .map((row) => ({
-        first_name: str(row["first_name"]),
-        last_name: str(row["last_name"]),
-        title: str(row["title"]),
-        email: (row["email"] ?? "").toString().trim().toLowerCase(),
-        phone: str(row["phone"]),
-        company_name: str(row["company_name"]),
-        address_line1: str(row["address_line1"]),
-        address_postal_code: str(row["address_postal_code"]),
-        address_city: str(row["address_city"]),
-        address_country: str(row["address_country"]),
-        efn: str(row["efn"]),
-        specialty: str(row["specialty"]),
-        created_at: str(row["created_at"]),
-      }))
-      .filter((r) => r.email.length > 0);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const isCsv =
-      file.name.toLowerCase().endsWith(".csv") ||
-      file.type === "text/csv" ||
-      file.type === "application/csv";
-
-    const reader = new FileReader();
-
-    reader.onerror = () => {
-      setImportResult({
-        inserted: 0,
-        skipped: 0,
-        error: `Datei konnte nicht gelesen werden: ${reader.error?.message ?? "unbekannter Fehler"}`,
-      });
-      setImportRows([]);
-    };
-
-    reader.onload = (ev) => {
-      try {
-        let parsed: ImportRow[];
-        if (isCsv) {
-          const text = (ev.target?.result as string) ?? "";
-          parsed = parseCsvText(text);
-        } else {
-          const bytes = new Uint8Array(ev.target?.result as ArrayBuffer);
-          parsed = parseXlsxBytes(bytes);
-        }
-        if (parsed.length === 0) {
-          setImportResult({
-            inserted: 0,
-            skipped: 0,
-            error:
-              "Keine Zeilen mit E-Mail gefunden. Prüfe die Spaltennamen (erwartet: first_name, last_name, email, ...).",
-          });
-          setImportRows([]);
-          return;
-        }
-        setImportRows(parsed);
-        setImportResult(null);
-      } catch (err) {
-        setImportResult({
-          inserted: 0,
-          skipped: 0,
-          error: `Datei konnte nicht verarbeitet werden: ${
-            err instanceof Error ? err.message : String(err)
-          }`,
-        });
-        setImportRows([]);
-      }
-    };
-
-    if (isCsv) {
-      reader.readAsText(file, "utf-8");
-    } else {
-      reader.readAsArrayBuffer(file);
-    }
-    // Reset so the same file can be picked again after closing the dialog.
-    e.target.value = "";
-  };
-
-  const handleConfirmImport = async () => {
-    if (!importRows) return;
-    setImporting(true);
-    try {
-      const res = await fetch("/api/import-auszubildende", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(importRows),
-      });
-      const result: ImportResult = await res.json();
-      setImportResult(result);
-      if (result.inserted > 0) router.refresh();
-    } finally {
-      setImporting(false);
-    }
-  };
 
   const filtered = initialAuszubildende
     .filter((a) => {
@@ -386,34 +221,13 @@ export function AuszubildendeManager({
           </>
         }
         actions={
-          <>
-            <Button
-              onClick={() => setNewContactOpen(true)}
-              className="h-9 px-3.5 py-0 text-sm"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Neuer Kontakt
-            </Button>
-            {scope === "auszubildende" && (
-              <>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv,.xlsx,.xls"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-                <Button
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="h-9 px-3.5 py-0 text-sm font-medium bg-white border-input/60"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Import CSV
-                </Button>
-              </>
-            )}
-          </>
+          <Button
+            onClick={() => setNewContactOpen(true)}
+            className="h-9 px-3.5 py-0 text-sm"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Neuer Kontakt
+          </Button>
         }
       />
 
@@ -432,123 +246,6 @@ export function AuszubildendeManager({
         defaultFirstName={prefillFirstName}
         defaultLastName={prefillLastName}
       />
-
-      {/* Import preview / result dialog. Skips any email that already
-          exists in the auszubildende table — no overwrites, no merge. */}
-      <Dialog
-        open={!!importRows}
-        onOpenChange={(open) => {
-          if (!open) {
-            setImportRows(null);
-            setImportResult(null);
-          }
-        }}
-      >
-        <DialogContent size="wide">
-          <DialogHeader>
-            <DialogTitle>Ärzt:innen importieren</DialogTitle>
-          </DialogHeader>
-
-          {importResult ? (
-            <div className="py-4 space-y-2 text-sm">
-              {importResult.error ? (
-                <p className="text-destructive font-medium">
-                  Fehler: {importResult.error}
-                </p>
-              ) : (
-                <>
-                  <p className="text-emerald-700 font-semibold text-base">
-                    {importResult.inserted} Ärzt:innen erfolgreich importiert.
-                  </p>
-                  {importResult.skipped > 0 && (
-                    <p className="text-muted-foreground">
-                      {importResult.skipped} bereits vorhanden (übersprungen).
-                    </p>
-                  )}
-                  {importResult.invalid ? (
-                    <p className="text-muted-foreground">
-                      {importResult.invalid} ungültig (keine E-Mail).
-                    </p>
-                  ) : null}
-                </>
-              )}
-            </div>
-          ) : (
-            importRows && (
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <p className="text-base font-semibold">
-                    {importRows.length} Einträge in der Datei gefunden
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    E-Mail-Adressen, die bereits existieren (auch als Alias auf
-                    einem anderen Profil), werden automatisch übersprungen.
-                  </p>
-                </div>
-                <div className="rounded-[10px] border border-gray-200 overflow-hidden">
-                  <Table>
-                    <TableHeader className="bg-gray-50">
-                      <TableRow>
-                        <TableHead className="font-semibold">Name</TableHead>
-                        <TableHead className="font-semibold">E-Mail</TableHead>
-                        <TableHead className="font-semibold">Telefon</TableHead>
-                        <TableHead className="font-semibold">Ort</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {importRows.slice(0, 5).map((r, i) => (
-                        <TableRow key={i}>
-                          <TableCell className="font-medium">
-                            {formatPersonName({ title: r.title, firstName: r.first_name, lastName: r.last_name }) || "–"}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">{r.email}</TableCell>
-                          <TableCell className="text-muted-foreground">{r.phone || "–"}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {[r.address_postal_code, r.address_city]
-                              .filter(Boolean)
-                              .join(" ") || "–"}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  {importRows.length > 5 && (
-                    <div className="px-4 py-2 text-xs text-muted-foreground bg-gray-50 border-t border-gray-200">
-                      + {importRows.length - 5} weitere Einträge (nicht angezeigt)
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          )}
-
-          <DialogFooter>
-            {importResult ? (
-              <Button
-                onClick={() => {
-                  setImportRows(null);
-                  setImportResult(null);
-                }}
-              >
-                Schließen
-              </Button>
-            ) : (
-              <>
-                <Button
-                  variant="secondary"
-                  onClick={() => setImportRows(null)}
-                  disabled={importing}
-                >
-                  Abbrechen
-                </Button>
-                <Button onClick={handleConfirmImport} disabled={importing}>
-                  {importing ? "Wird importiert..." : `${importRows?.length ?? 0} Ärzt:innen importieren`}
-                </Button>
-              </>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Table>
         <TableHeader>

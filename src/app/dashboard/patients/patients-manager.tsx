@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { read, utils } from "xlsx";
 import { createClient } from "@/lib/supabase/client";
 import { Patient, PatientStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -27,16 +26,8 @@ import { SortableHead } from "@/components/table/sortable-head";
 import { useTableSort } from "@/hooks/use-table-sort";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { ChevronRight, AlertTriangle, Ban, Upload, Trash2, Plus } from "lucide-react";
+import { ChevronRight, AlertTriangle, Ban, Trash2, Plus } from "lucide-react";
 import { NewContactModal } from "@/components/new-contact-modal";
-
-interface ImportRow {
-  first_name: string | null;
-  last_name: string | null;
-  email: string;
-  phone: string | null;
-  patient_status: PatientStatus;
-}
 
 interface Props {
   initialPatients: Patient[];
@@ -71,13 +62,6 @@ export function PatientsManager({ initialPatients }: Props) {
   const [patients, setPatients] = useState(initialPatients);
   const [searchQuery, setSearchQuery] = useState("");
   const { sortKey, sortDir, handleSort } = useTableSort<SortKey>("created_at", "desc");
-  const [importRows, setImportRows] = useState<ImportRow[] | null>(null);
-  const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState<{
-    inserted: number;
-    skipped: number;
-    insertedEmails?: string[];
-  } | null>(null);
   const [deletePatient, setDeletePatient] = useState<Patient | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null);
@@ -91,7 +75,6 @@ export function PatientsManager({ initialPatients }: Props) {
   const [prefillEmail, setPrefillEmail] = useState<string | null>(null);
   const [prefillFirstName, setPrefillFirstName] = useState<string | null>(null);
   const [prefillLastName, setPrefillLastName] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -153,58 +136,6 @@ export function PatientsManager({ initialPatients }: Props) {
     }
   };
 
-  function parseStatusValue(raw: string | null | undefined): PatientStatus {
-    const val = (raw || "").toLowerCase().trim();
-    if (val === "blacklist") return "blacklist";
-    if (val === "warning") return "warning";
-    if (val === "inactive") return "inactive";
-    return "active";
-  }
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const data = new Uint8Array(ev.target?.result as ArrayBuffer);
-      const wb = read(data, { type: "array" });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const json: Record<string, string>[] = utils.sheet_to_json(ws, { defval: "" });
-
-      const rows: ImportRow[] = json
-        .map((row) => ({
-          first_name: row["First Name"]?.trim() || null,
-          last_name: row["Last Name"]?.trim() || null,
-          email: row["Email"]?.trim() || "",
-          phone: row["Phone Number"]?.trim() || null,
-          patient_status: parseStatusValue(row["Status"]),
-        }))
-        .filter((r) => r.email.length > 0);
-
-      setImportRows(rows);
-      setImportResult(null);
-    };
-    reader.readAsArrayBuffer(file);
-    e.target.value = "";
-  }
-
-  async function handleConfirmImport() {
-    if (!importRows) return;
-    setImporting(true);
-    try {
-      const res = await fetch("/api/import-patients", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(importRows),
-      });
-      const result = await res.json();
-      setImportResult(result);
-      if (result.inserted > 0) router.refresh();
-    } finally {
-      setImporting(false);
-    }
-  }
-
   const filteredPatients = patients
     .filter((p) => {
       if (!searchQuery) return true;
@@ -243,8 +174,6 @@ export function PatientsManager({ initialPatients }: Props) {
 
   return (
     <div className="space-y-6">
-      <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
-
       <TableHeaderBar
         title="Proband:innen"
         count={filteredPatients.length}
@@ -253,23 +182,13 @@ export function PatientsManager({ initialPatients }: Props) {
         onSearchChange={setSearchQuery}
         searchPlaceholder="Name, E-Mail, Telefon oder Ort..."
         actions={
-          <>
-            <Button
-              onClick={() => setNewContactOpen(true)}
-              className="h-9 px-3.5 py-0 text-sm"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Neuer Kontakt
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              className="h-9 px-3.5 py-0 text-sm font-medium bg-white border-input/60"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Import Excel
-            </Button>
-          </>
+          <Button
+            onClick={() => setNewContactOpen(true)}
+            className="h-9 px-3.5 py-0 text-sm"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Neuer Kontakt
+          </Button>
         }
       />
 
@@ -288,103 +207,6 @@ export function PatientsManager({ initialPatients }: Props) {
         defaultFirstName={prefillFirstName}
         defaultLastName={prefillLastName}
       />
-
-      {/* Import preview modal */}
-      <Dialog open={!!importRows} onOpenChange={(open) => { if (!open) { setImportRows(null); setImportResult(null); } }}>
-        <DialogContent size="wide">
-          <DialogHeader>
-            <DialogTitle>Proband:innen importieren</DialogTitle>
-          </DialogHeader>
-          {importResult ? (
-            <div className="py-4 space-y-3 text-sm">
-              <p className="text-emerald-700 font-semibold text-base">
-                {importResult.inserted} Proband:innen erfolgreich importiert.
-              </p>
-              {importResult.skipped > 0 && (
-                <p className="text-muted-foreground">
-                  {importResult.skipped} bereits vorhanden (übersprungen).
-                </p>
-              )}
-              {importResult.insertedEmails && importResult.insertedEmails.length > 0 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    // CSV: header row + one email per line. Wrap each address
-                    // in quotes so addresses with rare punctuation (e.g. a +
-                    // alias) survive Excel's auto-formatter without splitting.
-                    const csv = ["email", ...importResult.insertedEmails!.map((e) => `"${e.replace(/"/g, '""')}"`)].join("\n");
-                    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-                    const url = URL.createObjectURL(blob);
-                    const today = new Date().toISOString().slice(0, 10);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = `EPHIA-neue-probandinnen-${today}.csv`;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    setTimeout(() => URL.revokeObjectURL(url), 60_000);
-                  }}
-                >
-                  Neue E-Mail-Adressen als CSV herunterladen
-                </Button>
-              )}
-            </div>
-          ) : importRows && (
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <p className="text-base font-semibold">
-                  {importRows.length} Einträge in der Datei gefunden
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  E-Mail-Adressen, die bereits existieren (auch als Alias auf
-                  einem anderen Profil), werden automatisch übersprungen.
-                </p>
-              </div>
-              <div className="rounded-[10px] border border-gray-200 overflow-hidden">
-                <Table>
-                  <TableHeader className="bg-gray-50">
-                    <TableRow>
-                      <TableHead className="font-semibold">Name</TableHead>
-                      <TableHead className="font-semibold">E-Mail</TableHead>
-                      <TableHead className="font-semibold">Telefon</TableHead>
-                      <TableHead className="font-semibold">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {importRows.slice(0, 5).map((r, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="font-medium">
-                          {[r.first_name, r.last_name].filter(Boolean).join(" ") || "—"}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{r.email}</TableCell>
-                        <TableCell className="text-muted-foreground">{r.phone || "—"}</TableCell>
-                        <TableCell>{statusLabels[r.patient_status]}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {importRows.length > 5 && (
-                  <div className="px-4 py-2 text-xs text-muted-foreground bg-gray-50 border-t border-gray-200">
-                    + {importRows.length - 5} weitere Einträge (nicht angezeigt)
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => { setImportRows(null); setImportResult(null); }}>
-              {importResult ? "Schließen" : "Abbrechen"}
-            </Button>
-            {!importResult && (
-              <Button onClick={handleConfirmImport} disabled={importing}>
-                {importing ? "Importiere..." : `${importRows?.length} Proband:innen importieren`}
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete confirmation dialog */}
       <Dialog open={!!deletePatient} onOpenChange={(open) => { if (!open) setDeletePatient(null); }}>

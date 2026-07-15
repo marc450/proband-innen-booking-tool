@@ -2,7 +2,7 @@
 // participant, columns matching the agreed data scope (name, email,
 // phone, postal address + the attended course).
 
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 export interface GaldermaExportRow {
   vorname: string;
@@ -14,22 +14,27 @@ export interface GaldermaExportRow {
   kurs_datum: string;
 }
 
+const GALDERMA_COLUMNS: Array<{ header: string; key: keyof GaldermaExportRow }> = [
+  { header: "vorname", key: "vorname" },
+  { header: "nachname", key: "nachname" },
+  { header: "email", key: "email" },
+  { header: "telefon", key: "telefon" },
+  { header: "anschrift", key: "anschrift" },
+  { header: "kurs_titel", key: "kurs_titel" },
+  { header: "kurs_datum", key: "kurs_datum" },
+];
+
 // Returns the .xlsx as a base64 string, ready as a Resend attachment.
-export function buildGaldermaXlsx(rows: GaldermaExportRow[]): string {
-  const ws = XLSX.utils.json_to_sheet(rows, {
-    header: [
-      "vorname",
-      "nachname",
-      "email",
-      "telefon",
-      "anschrift",
-      "kurs_titel",
-      "kurs_datum",
-    ],
-  });
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Teilnehmer");
-  return XLSX.write(wb, { type: "base64", bookType: "xlsx" }) as string;
+// Uses exceljs (maintained, write-only) instead of the vulnerable xlsx
+// package. The output shape is unchanged: one "Teilnehmer" sheet with a
+// header row followed by one row per participant.
+export async function buildGaldermaXlsx(rows: GaldermaExportRow[]): Promise<string> {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Teilnehmer");
+  ws.columns = GALDERMA_COLUMNS;
+  for (const row of rows) ws.addRow(row);
+  const buffer = await wb.xlsx.writeBuffer();
+  return Buffer.from(buffer).toString("base64");
 }
 
 // Filename like ephia-galderma-export-2026-06-20-grundkurs-botulinum.xlsx
