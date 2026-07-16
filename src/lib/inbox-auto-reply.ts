@@ -1,4 +1,4 @@
-import crypto from "node:crypto";
+import { hashEmail } from "@/lib/encryption";
 import { buildEmailHtml } from "@/lib/email-template";
 import { sendEmail } from "@/lib/gmail";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -209,15 +209,15 @@ export async function sendInboxAutoReply(
  *  fresh.
  */
 export function contactFormThreadKey(email: string): string {
-  const normalized = email.trim().toLowerCase();
   const day = new Date().toLocaleDateString("sv-SE", {
     timeZone: "Europe/Berlin",
   }); // sv-SE → yyyy-mm-dd
-  const hash = crypto
-    .createHash("sha256")
-    .update(normalized)
-    .digest("hex")
-    .slice(0, 16);
+  // Keyed HMAC, not a plain SHA-256: this key is persisted, and an unkeyed
+  // digest of an email is confirmable by anyone holding a database dump
+  // ("did this person contact EPHIA on that day?"). hashEmail applies the
+  // same normalisation (lowercase + trim) this used to do inline.
+  // No migration needed — the key is day-scoped, so it self-expires.
+  const hash = hashEmail(email).slice(0, 16);
   return `contact-form:${hash}:${day}`;
 }
 

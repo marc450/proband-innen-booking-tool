@@ -2,12 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 import { findPatientIdByAnyEmail } from "@/lib/contact-emails";
-import {
-  hashEmail,
-  hashPhone,
-  emailHashCandidates,
-  phoneHashCandidates,
-} from "@/lib/encryption";
+import { hashEmail, hashPhone } from "@/lib/encryption";
 import { archiveSentMessage } from "@/lib/gmail";
 import { formatBerlinLongDateWithWeekday, parseDateOnly } from "@/lib/date";
 import { isCourseDateBookableByProbands } from "@/lib/proband-visibility";
@@ -221,14 +216,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Blacklist check by phone hash. Matches both hash forms during the HMAC
-    // transition: a blacklisted person must be caught whether or not their row
-    // has been backfilled yet. See docs/hmac-hash-migration-runbook.md.
+    // Blacklist check by phone hash.
     if (phone) {
       const { data: byPhone } = await supabase
         .from("patients")
         .select("patient_status")
-        .in("phone_hash", phoneHashCandidates(phone))
+        .eq("phone_hash", hashPhone(phone))
         .eq("patient_status", "blacklist")
         .maybeSingle();
 
@@ -237,7 +230,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Same-course duplicate check by email hash (both forms, as above).
+    // Same-course duplicate check by email hash.
     if (email) {
       const { data: slotRow } = await supabase
         .from("slots")
@@ -256,7 +249,7 @@ export async function POST(req: NextRequest) {
         const { data: existingCourseBooking } = await supabase
           .from("bookings")
           .select("id")
-          .in("email_hash", emailHashCandidates(email))
+          .eq("email_hash", hashEmail(email))
           .in("slot_id", slotIds)
           .in("status", ["booked", "attended"])
           .maybeSingle();

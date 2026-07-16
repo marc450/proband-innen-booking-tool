@@ -268,4 +268,15 @@ Deploy with: `supabase functions deploy <name>`
 - Public functions (no auth needed): `--no-verify-jwt`
 - Staff-only functions (e.g. `charge-no-show`): omit `--no-verify-jwt`
 
-The `/api/confirm-booking` Next.js route and `supabase/functions/confirm-booking` Edge Function are parallel implementations. The Next.js route is the active one used by the frontend.
+**`charge-no-show` is the only Edge Function.** Everything else in the booking
+flow is a Next.js route handler under `src/app/api/`.
+
+There used to be Deno mirrors of `confirm-booking`, `create-checkout-session`
+and `create-setup-intent` in this repo. They were never deployed (only
+`charge-no-show` has ever been ACTIVE) and were deleted, because they had
+become actively dangerous to resurrect: they carried their own private
+SHA-256 hashing, so after the HMAC migration they would write the wrong
+`email_hash` format and their lookups would miss every migrated row —
+bypassing the blacklist and spawning duplicate patients. Do not re-add an
+Edge Function that touches `email_hash`/`phone_hash`; hashing must come from
+`src/lib/encryption.ts` alone.

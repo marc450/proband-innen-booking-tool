@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireVerifiedStaff } from "@/lib/auth-verify";
-import { encryptPatientFields, emailHashCandidates } from "@/lib/encryption";
+import { encryptPatientFields, hashEmail } from "@/lib/encryption";
 import { findAuszubildendeIdByAnyEmail } from "@/lib/contact-emails";
 import { normalizeTitle } from "@/lib/utils";
 import type { PatientStatus } from "@/lib/types";
@@ -57,14 +57,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Ungültiger Status." }, { status: 400 });
     }
 
-    // Dual-read during the SHA-256 → HMAC hash transition: existing rows
-    // may still carry the legacy hash until the backfill runs, so the
-    // duplicate check has to match both forms.
-    // See docs/hmac-hash-migration-runbook.md (Step 5 removes this).
-    const emailHashes = emailHashCandidates(email);
+    const emailHash = hashEmail(email);
     const [{ data: legacy }, { data: aliases }] = await Promise.all([
-      supabase.from("patients").select("id").in("email_hash", emailHashes).maybeSingle(),
-      supabase.from("patient_email_hashes").select("patient_id").in("email_hash", emailHashes).maybeSingle(),
+      supabase.from("patients").select("id").eq("email_hash", emailHash).maybeSingle(),
+      supabase.from("patient_email_hashes").select("patient_id").eq("email_hash", emailHash).maybeSingle(),
     ]);
     if (legacy || aliases) {
       return NextResponse.json(

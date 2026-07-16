@@ -3,7 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireVerifiedInbox } from "@/lib/auth-verify";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { emailHashCandidates, decryptPatient } from "@/lib/encryption";
+import { hashEmail, decryptPatient } from "@/lib/encryption";
 import {
   listThreads,
   getThread,
@@ -119,21 +119,17 @@ async function classifyRecipient(
   if (legacyAuszubildende) return "auszubildende";
 
   // Patient lookup via the plaintext email_hash table — no decrypt.
-  // Dual-read during the SHA-256 → HMAC hash transition: rows not yet
-  // backfilled still carry the legacy hash, so match both forms. Getting
-  // this wrong would silently unblock AI drafting for a Proband:in.
-  // See docs/hmac-hash-migration-runbook.md (Step 5 removes this).
-  const hashes = emailHashCandidates(email);
+  const hash = hashEmail(email);
   const { data: hashRow } = await admin
     .from("patient_email_hashes")
     .select("patient_id")
-    .in("email_hash", hashes)
+    .eq("email_hash", hash)
     .maybeSingle();
   if (hashRow) return "patient";
   const { data: legacyPatient } = await admin
     .from("patients")
     .select("id")
-    .in("email_hash", hashes)
+    .eq("email_hash", hash)
     .limit(1)
     .maybeSingle();
   if (legacyPatient) return "patient";
@@ -181,22 +177,19 @@ async function lookupContact(email: string): Promise<ContactInfo | null> {
     }
   }
 
-  // Dual-read during the SHA-256 → HMAC hash transition: rows not yet
-  // backfilled still carry the legacy hash, so match both forms.
-  // See docs/hmac-hash-migration-runbook.md (Step 5 removes this).
-  const hashes = emailHashCandidates(email);
+  const hash = hashEmail(email);
   let patientId: string | null = null;
   const { data: hashRow } = await admin
     .from("patient_email_hashes")
     .select("patient_id")
-    .in("email_hash", hashes)
+    .eq("email_hash", hash)
     .maybeSingle();
   if (hashRow) patientId = hashRow.patient_id;
   if (!patientId) {
     const { data: legacy } = await admin
       .from("patients")
       .select("id")
-      .in("email_hash", hashes)
+      .eq("email_hash", hash)
       .limit(1)
       .maybeSingle();
     if (legacy) patientId = legacy.id;

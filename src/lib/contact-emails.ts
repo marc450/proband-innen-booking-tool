@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { emailHashCandidates } from "@/lib/encryption";
+import { hashEmail } from "@/lib/encryption";
 
 // Server-side helpers for the multi-email manager. Live in /lib so the
 // API routes can import them without crossing the route.ts boundary
@@ -20,24 +20,19 @@ export async function findPatientIdByAnyEmail(
   email: string,
 ): Promise<string | null> {
   const admin = createAdminClient();
-  // Match the HMAC form AND the old unsalted SHA-256 form, so a patient is
-  // found whether or not the HMAC backfill has rewritten their row yet. Any
-  // given row carries exactly one of the two, so this still resolves to a
-  // single match. Drop the legacy candidate in the Step 5 cleanup — see
-  // docs/hmac-hash-migration-runbook.md.
-  const hashes = emailHashCandidates(email);
+  const hash = hashEmail(email);
 
   const { data: alias } = await admin
     .from("patient_email_hashes")
     .select("patient_id")
-    .in("email_hash", hashes)
+    .eq("email_hash", hash)
     .maybeSingle();
   if (alias) return alias.patient_id as string;
 
   const { data: legacy } = await admin
     .from("patients")
     .select("id")
-    .in("email_hash", hashes)
+    .eq("email_hash", hash)
     .maybeSingle();
   return (legacy?.id as string | undefined) ?? null;
 }

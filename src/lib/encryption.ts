@@ -146,39 +146,15 @@ export function hashPhone(phone: string): string {
     .digest("hex");
 }
 
-// ── Transition-only helpers ────────────────────────────────────────────
-// The old unsalted scheme. Every row still carries these until the backfill
-// rewrites it, so lookups must accept both forms in the meantime. Delete
-// these (and the *Candidates helpers) in the Step 5 cleanup once the
-// backfill is verified complete.
-
-/** @deprecated Transition only — remove after the HMAC backfill. */
-export function legacyHashEmail(email: string): string {
-  return crypto
-    .createHash("sha256")
-    .update(normalizeEmailForHash(email))
-    .digest("hex");
-}
-
-/** @deprecated Transition only — remove after the HMAC backfill. */
-export function legacyHashPhone(phone: string): string {
-  return crypto
-    .createHash("sha256")
-    .update(normalizePhoneForHash(phone))
-    .digest("hex");
-}
-
-/** Both hash forms for an email lookup (new first). Use with
- *  `.in("email_hash", emailHashCandidates(email))` so a row matches whether or
- *  not it has been backfilled yet. */
-export function emailHashCandidates(email: string): string[] {
-  return [hashEmail(email), legacyHashEmail(email)];
-}
-
-/** Both hash forms for a phone lookup (new first). */
-export function phoneHashCandidates(phone: string): string[] {
-  return [hashPhone(phone), legacyHashPhone(phone)];
-}
+// The migration to HMAC is complete: every email_hash / phone_hash row was
+// backfilled and verified (545 patients, 274 bookings, 519 patient_email_hashes,
+// 0 failures), so the transition-only legacyHash*/`*Candidates` helpers and the
+// dual-read lookups they fed are gone. Hashing is HMAC-only from here.
+//
+// Do NOT reintroduce a plain SHA-256 hash of an email or phone: those inputs
+// are low-entropy, so an unkeyed digest is reversible for phone numbers and
+// confirmable for emails by anyone holding a database dump, which is exactly
+// the E2EE gap this closed.
 
 // --- Patient helpers ---
 

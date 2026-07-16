@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { encryptPatientFields, encryptBookingFields, emailHashCandidates, phoneHashCandidates } from "@/lib/encryption";
+import { encryptPatientFields, encryptBookingFields, hashEmail, hashPhone } from "@/lib/encryption";
 import { findPatientIdByAnyEmail } from "@/lib/contact-emails";
 import { buildEmailHtml, PATIENT_PREPARATION_BLOCK } from "@/lib/email-template";
 import { archiveSentMessage } from "@/lib/gmail";
@@ -68,8 +68,7 @@ export async function POST(req: NextRequest) {
       supabase
         .from("patients")
         .select("id")
-        // Both hash forms — see the HMAC migration runbook.
-        .in("phone_hash", phoneHashCandidates(phone))
+        .eq("phone_hash", hashPhone(phone))
         .eq("patient_status", "blacklist")
         .maybeSingle(),
     ]);
@@ -99,7 +98,7 @@ export async function POST(req: NextRequest) {
       const { data: existingBookings } = await supabase
         .from("bookings")
         .select("id")
-        .in("email_hash", emailHashCandidates(email))
+        .eq("email_hash", hashEmail(email))
         .in("slot_id", courseSlotIds)
         .in("status", ["booked", "attended"]);
 

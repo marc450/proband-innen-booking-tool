@@ -1,10 +1,30 @@
 # Runbook: unsalted email/phone hashes → keyed HMAC
 
-Status: **planned, not started.** This is the sequence for closing the last
-E2EE gap: `email_hash` / `phone_hash` are currently unsalted `SHA-256`, which
-is reversible for phone numbers and confirmable for emails **if the database
-leaks**. The encrypted PII blobs themselves are not affected; only these
-derived hash columns are the weak point.
+Status: **COMPLETE (2026-07-17).** Kept as the record of what was done and why.
+`email_hash` / `phone_hash` were unsalted `SHA-256`, reversible for phone
+numbers and confirmable for emails **if the database leaked**. They are now
+keyed HMAC-SHA256. The encrypted PII blobs were never affected; only these
+derived hash columns were the weak point.
+
+Executed result (all steps done, nothing outstanding):
+
+| store | rows migrated | failed |
+|---|---|---|
+| `patients` (email) | 545 / 545 | 0 |
+| `patients` (phone) | 431 / 431 | 0 |
+| `bookings` (email) | 274 / 274 | 0 |
+| `patient_email_hashes` | 519 / 519 | 0 |
+
+Verified independently of the script by diffing each row's live hash against
+its stashed pre-migration value. Step 5 done: the dual-read and the
+`legacyHash*` / `*Candidates` helpers are removed (lookups are HMAC-only), and
+`hash_backfill_backup` was dropped — it held the old reversible hashes, so
+keeping it would have partly re-created the vulnerability.
+
+`HASH_PEPPER` is live on Railway and in `.env.local`. **It must never change**:
+doing so invalidates every stored hash and requires re-running the backfill
+(`POST /api/migrate-hash-hmac`, which is idempotent and still in the repo for
+exactly that case).
 
 E2EE-adjacent change: notify Marc before and after each step. Every step is
 individually low-risk if executed in this order. The danger is only in
