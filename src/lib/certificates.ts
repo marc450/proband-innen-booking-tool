@@ -283,6 +283,13 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
     // footerCity bleibt "Berlin" (der Default): die Datumszeile spiegelt
     // die Kammer des Praxistermins, genau wie beim Grundkurs Botulinum.
     //
+    // Von Marc am 2026-07-16 im Zertifikatgenerator geprüft und für den
+    // Automatikversand freigegeben, daher kein generatorOnly mehr. Es
+    // greift jetzt der übliche VNR-Hold: der Post-Praxis-Cron hält jede
+    // Buchung zurück (cert_sent_at bleibt null), bis
+    // course_templates.vnr_theorie und course_sessions.vnr_praxis gefüllt
+    // sind, und schickt sie danach automatisch raus.
+    //
     // Der gelieferte Master hatte alle vier Fußzeilen ohne Lücken am
     // Seitenende gestapelt — kein Platz für die VNR-Nummern, keine Lücke
     // für das Datum. Der Master unter public/certificates/ wurde deshalb
@@ -291,17 +298,9 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
     // Tc 1.434), analog zum Aufbaukurs-Lippen-Master. Dadurch ist die
     // Fußzeilen-Geometrie identisch mit dem Grundkurs Botulinum und die
     // Stamp-Koordinaten sind exakt dieselben.
-    //
-    // generatorOnly: true — Marc will das Zertifikat erst im
-    // Zertifikatgenerator ansehen, bevor der Post-Praxis-Cron es
-    // automatisch verschickt. Flag entfernen, sobald er freigibt; dann
-    // greift der übliche VNR-Hold (cert_sent_at bleibt null, bis
-    // course_templates.vnr_theorie und course_sessions.vnr_praxis
-    // gefüllt sind) und die Certs gehen ohne Code-Änderung raus.
     slug: "masterclass-botulinum",
     label: "Masterclass Botulinum",
     courseKeys: ["masterclass_botulinum"],
-    generatorOnly: true,
     layout: {
       page: 1,
       centerX: 173,
