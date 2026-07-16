@@ -192,7 +192,7 @@ function OnlineProgressBadge({
         className="text-emerald-700 border-emerald-300 bg-emerald-50"
         title={`Onlinekurs abgeschlossen (${pct}% durchgearbeitet).`}
       >
-        Abgeschlossen
+        {pct} %
       </Badge>
     );
   }
