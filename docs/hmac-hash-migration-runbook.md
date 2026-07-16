@@ -31,7 +31,7 @@ longer be precomputed or brute-forced.
 | Store | Hash columns | Encrypted source for re-hash |
 |---|---|---|
 | `patients` | `email_hash`, `phone_hash` | `encrypted_data` / `encrypted_key` / `encryption_iv` |
-| `bookings` | `email_hash`, `phone_hash` | `encrypted_data` / `encrypted_key` / `encryption_iv` |
+| `bookings` | `email_hash` **only** (no `phone_hash` column — it exists only on `patients`, migration 007) | `encrypted_data` / `encrypted_key` / `encryption_iv` |
 | `patient_email_hashes` | `email_hash` | `encrypted_email` / `encrypted_key` / `encryption_iv` |
 
 ## Fiddly bits (do not miss)
@@ -102,8 +102,10 @@ insert into public.hash_backfill_backup (source_table, row_id, email_hash, phone
 select 'patients', id, email_hash, phone_hash from public.patients
 on conflict (source_table, row_id) do nothing;
 
+-- NOTE: bookings has NO phone_hash column (phone_hash only exists on
+-- patients, added in migration 007). Stash null for it.
 insert into public.hash_backfill_backup (source_table, row_id, email_hash, phone_hash)
-select 'bookings', id, email_hash, phone_hash from public.bookings
+select 'bookings', id, email_hash, null from public.bookings
 on conflict (source_table, row_id) do nothing;
 
 insert into public.hash_backfill_backup (source_table, row_id, email_hash, phone_hash)

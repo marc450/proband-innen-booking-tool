@@ -144,7 +144,9 @@ async function backfillPatients(admin: Admin): Promise<StoreResult> {
   return res;
 }
 
-// bookings: email_hash + phone_hash, source is the booking's encrypted blob.
+// bookings: email_hash ONLY. phone_hash exists on `patients` (migration 007)
+// but was never added to `bookings` — encryptBookingFields returns just
+// email_hash. Do not touch phone_hash here; the column does not exist.
 async function backfillBookings(admin: Admin): Promise<StoreResult> {
   const res = emptyResult();
 
@@ -164,39 +166,29 @@ async function backfillBookings(admin: Admin): Promise<StoreResult> {
     for (const row of data) {
       res.scanned += 1;
       let email: string | null = null;
-      let phone: string | null = null;
       try {
         const b = decryptBooking(row);
         email = b.email ?? null;
-        phone = b.phone ?? null;
       } catch (err) {
         console.error(`migrate-hash-hmac: booking ${row.id} decrypt failed:`, err);
         res.failed += 1;
         continue;
       }
 
-      const update: Record<string, string> = {};
-      if (email) {
-        const want = hashEmail(email);
-        if (row.email_hash !== want) update.email_hash = want;
-      }
-      if (phone) {
-        const want = hashPhone(phone);
-        if (row.phone_hash !== want) update.phone_hash = want;
-      }
-
-      if (!email && !phone) {
+      if (!email) {
         res.skippedNoValue += 1;
         continue;
       }
-      if (Object.keys(update).length === 0) {
+
+      const want = hashEmail(email);
+      if (row.email_hash === want) {
         res.alreadyDone += 1;
         continue;
       }
 
       const { error: updErr } = await admin
         .from("bookings")
-        .update(update)
+        .update({ email_hash: want })
         .eq("id", row.id);
       if (updErr) {
         console.error(`migrate-hash-hmac: booking ${row.id} update failed:`, updErr);
