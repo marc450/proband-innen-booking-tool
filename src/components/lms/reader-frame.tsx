@@ -438,6 +438,7 @@ export function ReaderFrame({
                   <QuizBlock
                     questions={quizNode.attrs.questions as QuizQuestion[]}
                     grundkursUrl={quizNode.attrs.grundkursUrl}
+                    ctaLabel={quizNode.attrs.ctaLabel}
                     successTitle={quizNode.attrs.successTitle}
                     successBody={quizNode.attrs.successBody}
                     failTitle={quizNode.attrs.failTitle}

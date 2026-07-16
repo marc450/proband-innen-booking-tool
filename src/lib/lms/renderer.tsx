@@ -259,6 +259,7 @@ function RenderNode({ node }: { node: TipTapNode }): ReactNode {
         <QuizBlock
           questions={node.attrs.questions}
           grundkursUrl={node.attrs.grundkursUrl}
+          ctaLabel={node.attrs.ctaLabel}
           successTitle={node.attrs.successTitle}
           successBody={node.attrs.successBody}
           failTitle={node.attrs.failTitle}

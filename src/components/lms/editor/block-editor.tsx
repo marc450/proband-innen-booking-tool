@@ -10,7 +10,7 @@ import { ImageDropzone } from "./image-dropzone";
 import { VideoDropzone } from "./video-dropzone";
 import {
   DEFAULT_SUCCESS_TITLE, DEFAULT_SUCCESS_BODY,
-  DEFAULT_FAIL_TITLE, DEFAULT_FAIL_BODY,
+  DEFAULT_FAIL_TITLE, DEFAULT_FAIL_BODY, DEFAULT_CTA_LABEL,
 } from "@/components/lms/quiz-block";
 import {
   Plus, Trash2, ArrowUp, ArrowDown, Type, Heading as HeadingIcon,
@@ -655,6 +655,14 @@ function QuizEditor({ attrs, setAttrs }: { attrs: Record<string, unknown>; setAt
         <span className="text-[11px] font-medium text-muted-foreground">Ergebnis: nicht alle richtig</span>
         <TextInput label="Titel" value={String(attrs.failTitle ?? "")} onChange={(v) => setAttrs({ failTitle: v || undefined })} placeholder={DEFAULT_FAIL_TITLE} />
         <TextArea label="Text" value={String(attrs.failBody ?? "")} onChange={(v) => setAttrs({ failBody: v || undefined })} placeholder={DEFAULT_FAIL_BODY} />
+      </div>
+      <div className="rounded-md border p-2.5 space-y-2 bg-gray-50/50">
+        <span className="text-[11px] font-medium text-muted-foreground">Button auf dem Ergebnis-Screen (optional)</span>
+        <div className="flex gap-2">
+          <TextInput label="Kurs-Link" value={String(attrs.grundkursUrl ?? "")} onChange={(v) => setAttrs({ grundkursUrl: v || undefined })} placeholder="https://ephia.de/..." />
+          <TextInput label="Button-Text" value={String(attrs.ctaLabel ?? "")} onChange={(v) => setAttrs({ ctaLabel: v || undefined })} placeholder={DEFAULT_CTA_LABEL} />
+        </div>
+        <span className="block text-[11px] text-muted-foreground">Der Button erscheint nur, wenn ein Kurs-Link gesetzt ist.</span>
       </div>
       <p className="text-[11px] text-muted-foreground">Der Radio-Button markiert die richtige Antwort. Pro Frage genau eine richtige Antwort. Leere Ergebnis-Felder verwenden den Standardtext.</p>
     </div>

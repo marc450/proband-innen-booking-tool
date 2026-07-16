@@ -16,21 +16,21 @@ import { ArrowRight, Check } from "lucide-react";
 import type { QuizQuestion } from "@/lib/lms/types";
 import "./quiz-animations.css";
 
-// Default result copy. Kept as the funnel end-cap for the free Botox
-// tutorial; every field is overridable per quiz block from the editor
-// so the same component can end on any course. Empty editor fields fall
-// back to these.
+// Default result copy. Course-neutral on purpose: the same component
+// ends many different courses, so per-quiz copy is set from the editor
+// and these are just the fallback when a field is left empty.
 export const DEFAULT_SUCCESS_TITLE = "Geschafft!";
 export const DEFAULT_SUCCESS_BODY =
-  "Wenn Du Dein Wissen jetzt in die Praxis bringen willst: im EPHIA Online-Grundkurs Botulinum lernst Du Anatomie, Indikationen, Technik und Komplikationsmanagement systematisch und mit echten Fallbeispielen.";
-export const DEFAULT_FAIL_TITLE =
-  "Knapp daneben. Botulinum verzeiht keine Annahmen.";
+  "Du hast das Gelernte sicher angewendet. Wenn Du Dein Wissen jetzt vertiefen willst, ist der nächste Kurs der logische Schritt.";
+export const DEFAULT_FAIL_TITLE = "Knapp daneben.";
 export const DEFAULT_FAIL_BODY =
-  "Im EPHIA Online-Grundkurs Botulinum lernst Du Anatomie, Indikationen und Technik so präzise, dass beim nächsten Versuch hier nichts mehr daneben geht. Versprochen.";
+  "Geh die Inhalte in Ruhe noch einmal durch. Beim nächsten Versuch sitzt es.";
+export const DEFAULT_CTA_LABEL = "Zum Kurs";
 
 type Props = {
   questions: QuizQuestion[];
   grundkursUrl?: string;
+  ctaLabel?: string;
   successTitle?: string;
   successBody?: string;
   failTitle?: string;
@@ -42,6 +42,7 @@ type Stage = "intro" | "question" | "result";
 export function QuizBlock({
   questions,
   grundkursUrl,
+  ctaLabel = DEFAULT_CTA_LABEL,
   successTitle = DEFAULT_SUCCESS_TITLE,
   successBody = DEFAULT_SUCCESS_BODY,
   failTitle = DEFAULT_FAIL_TITLE,
@@ -177,7 +178,7 @@ export function QuizBlock({
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-base px-6 py-3 rounded-[10px] transition-colors"
                 >
-                  <span>Zum Grundkurs Botulinum</span>
+                  <span>{ctaLabel}</span>
                   <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
                 </a>
               </div>
@@ -207,7 +208,7 @@ export function QuizBlock({
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-base px-6 py-3 rounded-[10px] transition-colors"
                 >
-                  <span>Zum Grundkurs Botulinum</span>
+                  <span>{ctaLabel}</span>
                   <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
                 </a>
               ) : null}

@@ -170,9 +170,12 @@ export type TipTapNode =
         // Human-readable label for the reward (e.g. "50 € Gutschein"
         // or "5% Gutschein"). Used in intro + result copy.
         voucherLabel?: string;
+        // Result-screen CTA. The button only renders when grundkursUrl
+        // is set; ctaLabel is its text (defaults to a neutral label).
         grundkursUrl?: string;
+        ctaLabel?: string;
         // Editable result-screen copy. Omitted → QuizBlock falls back
-        // to its default (Grundkurs Botulinum) copy.
+        // to its course-neutral default copy.
         successTitle?: string;
         successBody?: string;
         failTitle?: string;
