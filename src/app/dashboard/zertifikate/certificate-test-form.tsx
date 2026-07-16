@@ -88,8 +88,7 @@ export function CertificateTestForm({ courseTypes }: Props) {
   const vnrTheorie = session?.vnrTheorie || "";
   const vnrPraxis = session?.vnrPraxis || "";
   // Each VNR the cert stamps must have a value; VNRs it doesn't stamp are
-  // irrelevant. A cert with no VNRs at all (e.g. Zahnmedizin) is always
-  // complete.
+  // irrelevant. A cert with no VNRs at all is always complete.
   const missingTheorie = hasTheorie && !vnrTheorie.trim();
   const missingPraxis = hasPraxis && !vnrPraxis.trim();
   const carriesCme = hasTheorie || hasPraxis;

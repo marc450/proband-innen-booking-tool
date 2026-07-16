@@ -104,8 +104,8 @@ export interface CertificateTemplate {
   isDentist?: boolean;
   /** Name-line calibration. Coordinates are in PDF user units with
    *  origin at the bottom-left of the page. VNR fields are optional —
-   *  certs that don't carry CME points (e.g. the Zahnmedizin variant)
-   *  omit them and only stamp the participant name. */
+   *  a cert that stamps no VNR at all omits both and renders just the
+   *  participant name. */
   layout: {
     page: number; // 1-indexed
     centerX: number;
@@ -119,9 +119,9 @@ export interface CertificateTemplate {
      *  master has NO baked CME footer (praxis-only single-VNR certs). */
     cmeLine?: CmeLinePosition;
     /** Optional: when set, the generator stamps "Berlin, <Monat> <Jahr>"
-     *  from the session's date_iso into the footer gap. Templates whose
-     *  master carries no date line (e.g. the Zahnmedizin variant) omit
-     *  this and the generator silently skips the stamp. */
+     *  from the session's date_iso into the footer gap. Templates with no
+     *  room for a date line (the standalone online certs) omit this and
+     *  the generator silently skips the stamp. */
     dateStamp?: DateStampPosition;
   };
 }
@@ -164,28 +164,59 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
     },
   },
   {
-    // Zahnmedizin variant of the Grundkurs Botulinum cert. Carries no
-    // CME points (CME accreditation is for Humanmediziner:innen only),
-    // so the VNR stamps are omitted and the cert renders just the
-    // participant name. Used for Zahnärzt:innen sitting in the shared
-    // Botulinum Praxiskurs — selected via the audience_tag /
-    // specialty override in send-post-praxis-certificate, never via
-    // course_key alone, because legacy imports booked them under the
-    // regular grundkurs_botulinum template.
+    // Zahnmedizin variant of the Grundkurs Botulinum cert. Used for
+    // Zahnärzt:innen sitting in the shared Botulinum Praxiskurs —
+    // selected via the audience_tag / specialty override in
+    // send-post-praxis-certificate, never via course_key alone, because
+    // legacy imports booked them under the regular grundkurs_botulinum
+    // template (and the zahnmedizin template carries no sessions of its
+    // own at all — every Kurstermin hangs off grundkurs_botulinum, with
+    // course_sessions.has_zahnmedizin marking the mixed ones).
+    //
+    // Der Vorgänger-Master trug nur die vage Zeile "Der Kurs ist durch die
+    // Landesärztekammer Berlin zertifiziert": keine Punktzahl, keine VNRs.
+    // Der neue Master (Juli 2026) ist ein vollwertiges CME-Zertifikat:
+    // 22 CME-Punkte durch die Landesärztekammern Berlin UND Brandenburg,
+    // dazu die Labels "VNR Online Theoriekurs:" / "VNR Praxiskurs:".
+    //
+    // Weil dadurch vnrTheorie + vnrPraxis-Slots gesetzt sind, gibt
+    // certificateRequiresVnr jetzt true zurück: der Post-Praxis-Cron hält
+    // jede Zahnmedizin-Buchung zurück (cert_sent_at bleibt null), bis
+    // course_sessions.vnr_praxis am geteilten Termin gefüllt ist. Vorher
+    // ging das Zertifikat sofort raus, weil es gar keine VNR trug. Die
+    // VNR Theorie kommt aus course_templates.vnr_theorie des SESSION-
+    // Templates (also grundkurs_botulinum); beide Vorlagen tragen
+    // dieselbe Nummer, der Wert stimmt also auf beiden Wegen.
+    //
+    // Der gelieferte Master stapelte fünf Fußzeilen lückenlos am
+    // Seitenende. Der Master unter public/certificates/ wurde deshalb neu
+    // gebacken (weiß überdeckt, CME-Copy von 3 auf die 2-zeilige
+    // Masterclass-Formulierung umgebrochen, damit die Datumszeile Platz
+    // hat, und 1:1 auf den Grundkurs-Botulinum-Rhythmus gesetzt). Dadurch
+    // sind die Stamp-Koordinaten exakt dieselben wie beim Grundkurs
+    // Botulinum.
+    //
+    // generatorOnly: true — Marc prüft das neue Zertifikat erst im
+    // Zertifikatgenerator, bevor der Cron es automatisch verschickt.
+    // Flag entfernen, sobald er freigibt.
     slug: "grundkurs-botulinum-zahnmedizin",
     label: "Grundkurs Botulinum für Zahnärzt:innen",
     courseKeys: ["grundkurs_botulinum_zahnmedizin"],
     isDentist: true,
+    generatorOnly: true,
     layout: {
-      // Same coordinates as the regular Grundkurs Botulinum cert —
-      // both PDFs share the layout for the name; only the body copy
-      // and VNR section differ.
+      // Same coordinates as the regular Grundkurs Botulinum cert — both
+      // PDFs share the name layout, and the re-baked footer now shares
+      // the stamp rhythm too.
       page: 1,
       centerX: 173,
       baselineY: 388,
       maxWidth: 290,
       targetSize: 28,
       minSize: 10,
+      vnrTheorie: { x: 173, y: 57, size: 8 },
+      vnrPraxis: { x: 173, y: 33, size: 8 },
+      dateStamp: { x: 173, y: 81, size: 8 },
     },
   },
   {
@@ -640,8 +671,8 @@ export async function generateCertificatePdf(opts: {
   // VNRs: rose, regular weight, letter-spaced, centred on the same x
   // as the name above. `vnrTheorie.x` / `vnrPraxis.x` are treated as
   // the visual CENTER, mirroring how the name is placed. Either VNR
-  // is optional — certs without CME (e.g. the Zahnmedizin variant)
-  // simply omit the field and we skip the stamp here. The drawText
+  // is optional — a cert that doesn't stamp one simply omits the slot
+  // and we skip the stamp here. The drawText
   // call is gated on both the layout slot existing AND the caller
   // providing a non-empty value, so legacy callers that always pass
   // strings keep working.
@@ -710,8 +741,8 @@ export async function generateCertificatePdf(opts: {
   }
 
   // Dynamic "Berlin, <Monat> <Jahr>" line. Two gates have to pass:
-  //  1. The template registers a dateStamp slot (the Zahnmedizin cert
-  //     does not, because its master PDF carries no date line).
+  //  1. The template registers a dateStamp slot (the standalone online
+  //     certs do not — they have no per-session date).
   //  2. The caller supplied a session date_iso we can parse.
   // The baked date line was redacted out of the master PDFs, so we just
   // stamp the date into the now-empty gap — letter-spaced and at the

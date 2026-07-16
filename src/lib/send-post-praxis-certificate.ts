@@ -207,12 +207,11 @@ export async function sendPostPraxisCertificates(
           continue;
         }
 
-        // VNRs only matter for certs that actually stamp them. The
-        // Zahnmedizin cert carries no CME and therefore no VNRs, so
-        // skipping the check lets legacy dentist bookings receive a
-        // cert even if vnr_theorie / vnr_praxis are empty.
+        // VNRs only matter for certs that actually stamp them; a cert
+        // with no VNR slot is sent even when vnr_theorie / vnr_praxis
+        // are empty.
         //
-        // For a CME cert (Botulinum, Dermalfiller) this is a HOLD, not a
+        // For a CME cert this is a HOLD, not a
         // permanent skip: cert_sent_at stays null, so the booking is
         // retried on every later cron run and the cert ships
         // automatically once the LÄK-assigned VNRs are filled into
@@ -310,11 +309,11 @@ async function sendCertificateEmail(opts: {
     sessionDateIso,
   } = opts;
 
-  // generateCertificatePdf gates VNR drawing on both the layout slot
-  // and a non-empty value, so the dentist cert silently ignores the
-  // empty strings we pass in here. Same gating applies to the date
-  // stamp: certs without a dateStamp layout (Zahnmedizin) ignore the
-  // session date and leave the master PDF untouched.
+  // generateCertificatePdf gates VNR drawing on both the layout slot and
+  // a non-empty value, so a cert without a given slot silently ignores
+  // the empty string we pass in here. Same gating applies to the date
+  // stamp: certs without a dateStamp layout (the standalone online ones)
+  // ignore the session date and leave the master PDF untouched.
   const pdfBytes = await generateCertificatePdf({
     template: cert,
     fullName,
