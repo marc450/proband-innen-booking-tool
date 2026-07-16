@@ -58,11 +58,29 @@ longer be precomputed or brute-forced.
 
 ## Step 0 — Safety net (do this first)
 
-**0a. Take a database snapshot inside Supabase.** Point-in-time recovery if the
-plan supports it, otherwise a manual backup/snapshot. **Do NOT export decrypted
-patient data to any local file** — that would create an unencrypted copy of the
-exact PII the E2EE protects, a bigger exposure than the bug being fixed. The
-snapshot stays encrypted-at-rest inside the secured infrastructure.
+**0a. Confirm the backup fallback (no action needed beyond a glance).** We are on
+Supabase **Pro**, which takes **automatic daily backups with 7-day retention** —
+a recent backup always exists without doing anything. Before running the
+backfill, just note the latest backup timestamp under
+*Settings → Database → Backups* so the fallback point is known.
+
+Two caveats, neither of which blocks this migration:
+
+- Pro's daily backups are **daily snapshots, not point-in-time**. Restoring one
+  rolls the whole DB back to that snapshot, losing anything since (bookings,
+  emails, …). Restoring to the exact moment before the migration needs
+  **Point-in-Time Recovery (PITR)**, a separate paid add-on not enabled by
+  default on Pro. For this job PITR is optional overkill: step 0b below is the
+  precise revert, and a full DB restore should never be necessary because the
+  backfill only rewrites recomputable columns.
+- **Do NOT export decrypted patient data to any local file** as a "backup" —
+  that would create an unencrypted copy of the exact PII the E2EE protects, a
+  bigger and longer-lived exposure than the bug being fixed. Backups stay
+  encrypted-at-rest inside Supabase.
+
+Safety-net hierarchy for this migration, in the order you'd actually reach for
+them: **0b side table** (targeted, instant, loses nothing) → automatic daily
+backup (broad fallback) → PITR (only if enabled; not required).
 
 **0b. Stash the current hashes in a side table** (contains no PII, only the old
 hashes; RLS-locked; dropped at the end). Lets us revert the hash columns
@@ -147,5 +165,8 @@ plaintext are hashed from that plaintext.
   `SHA-256`; removing the dual-read code returns to prior behavior. No data
   change occurred.
 - **During/after Step 3:** restore the hash columns from
-  `hash_backfill_backup` (a per-store `UPDATE ... FROM`), or restore the whole
-  DB from the Step 0a snapshot. The encrypted PII was never modified either way.
+  `hash_backfill_backup` (a per-store `UPDATE ... FROM`). This is the intended
+  path: targeted, instant, and it loses no other data. Falling back to the
+  automatic daily backup (0a) would roll the whole DB back to that snapshot and
+  lose everything since, so it is a last resort, not the plan. The encrypted PII
+  is never modified by the backfill either way, so nothing permanent is at risk.
