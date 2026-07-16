@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { encryptPatientFields, encryptBookingFields, hashEmail, hashPhone } from "@/lib/encryption";
+import { encryptPatientFields, encryptBookingFields, emailHashCandidates, phoneHashCandidates } from "@/lib/encryption";
 import { findPatientIdByAnyEmail } from "@/lib/contact-emails";
 import { buildEmailHtml, PATIENT_PREPARATION_BLOCK } from "@/lib/email-template";
 import { archiveSentMessage } from "@/lib/gmail";
@@ -17,8 +17,6 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createAdminClient();
-    const emailHash = hashEmail(email);
-    const phoneHash = hashPhone(phone);
 
     // Get slot + course info
     const { data: slot } = await supabase
@@ -70,7 +68,8 @@ export async function POST(req: NextRequest) {
       supabase
         .from("patients")
         .select("id")
-        .eq("phone_hash", phoneHash)
+        // Both hash forms — see the HMAC migration runbook.
+        .in("phone_hash", phoneHashCandidates(phone))
         .eq("patient_status", "blacklist")
         .maybeSingle(),
     ]);
@@ -100,7 +99,7 @@ export async function POST(req: NextRequest) {
       const { data: existingBookings } = await supabase
         .from("bookings")
         .select("id")
-        .eq("email_hash", emailHash)
+        .in("email_hash", emailHashCandidates(email))
         .in("slot_id", courseSlotIds)
         .in("status", ["booked", "attended"]);
 

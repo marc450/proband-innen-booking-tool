@@ -4,6 +4,7 @@ import { requireVerifiedInbox } from "@/lib/auth-verify";
 import {
   encryptFields,
   hashEmail,
+  emailHashCandidates,
 } from "@/lib/encryption";
 import { setAuszubildendePrimary, setPatientPrimary } from "@/lib/contact-emails";
 
@@ -130,11 +131,15 @@ export async function POST(req: NextRequest) {
     // Hash + per-row encryption + insert. Implemented here so PR 3 only
     // needs to wire the UI, but the GET listing still requires per-row
     // decryption that PR 3 will add.
+    // New rows are written with the HMAC hash, but the collision check has
+    // to dual-read: an existing alias may still hold the legacy SHA-256
+    // hash until the backfill runs.
+    // See docs/hmac-hash-migration-runbook.md (Step 5 removes the dual-read).
     const emailHash = hashEmail(email);
     const { data: existing } = await admin
       .from("patient_email_hashes")
       .select("patient_id")
-      .eq("email_hash", emailHash)
+      .in("email_hash", emailHashCandidates(email))
       .maybeSingle();
     if (existing) {
       const ownedHere = existing.patient_id === id;

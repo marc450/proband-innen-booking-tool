@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { hashEmail, decryptPatient } from "@/lib/encryption";
+import { emailHashCandidates, decryptPatient } from "@/lib/encryption";
 
 /**
  * Resolve the canonical Patient:in first name for a recipient email.
@@ -23,7 +23,10 @@ export async function getCanonicalPatientFirstName(
   if (!normalized) return null;
 
   const admin = createAdminClient();
-  const emailHash = hashEmail(normalized);
+  // Dual-read during the SHA-256 → HMAC hash transition: rows not yet
+  // backfilled still carry the legacy hash, so match both forms.
+  // See docs/hmac-hash-migration-runbook.md (Step 5 removes this).
+  const emailHashes = emailHashCandidates(normalized);
 
   // patient_email_hashes is the multi-email lookup table; fall back to the
   // legacy patients.email_hash column for rows not yet backfilled.
@@ -31,7 +34,7 @@ export async function getCanonicalPatientFirstName(
   const { data: hashRow } = await admin
     .from("patient_email_hashes")
     .select("patient_id")
-    .eq("email_hash", emailHash)
+    .in("email_hash", emailHashes)
     .maybeSingle();
   if (hashRow) patientId = hashRow.patient_id as string;
 
@@ -39,7 +42,7 @@ export async function getCanonicalPatientFirstName(
     const { data: legacy } = await admin
       .from("patients")
       .select("id")
-      .eq("email_hash", emailHash)
+      .in("email_hash", emailHashes)
       .limit(1)
       .maybeSingle();
     if (legacy) patientId = legacy.id as string;

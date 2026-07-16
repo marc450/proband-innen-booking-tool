@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { hashEmail, hashPhone } from "@/lib/encryption";
+import { emailHashCandidates, phoneHashCandidates } from "@/lib/encryption";
 import { findPatientIdByAnyEmail } from "@/lib/contact-emails";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -56,11 +56,12 @@ export async function POST(req: NextRequest) {
     if (phone) {
       const normalized = phone.replace(/\D/g, "");
       if (normalized.length >= 7) {
-        const phoneH = hashPhone(phone);
+        // Both hash forms: a blacklisted patient must be caught whether or
+        // not their row has been HMAC-backfilled yet.
         const { data: byPhone } = await supabase
           .from("patients")
           .select("patient_status")
-          .eq("phone_hash", phoneH)
+          .in("phone_hash", phoneHashCandidates(phone))
           .eq("patient_status", "blacklist")
           .maybeSingle();
 
@@ -72,7 +73,6 @@ export async function POST(req: NextRequest) {
 
     // Check if already booked in the same course by email hash
     if (email && courseId) {
-      const emailH = hashEmail(email);
       const { data: courseSlots } = await supabase
         .from("slots")
         .select("id")
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
         const { data: existing } = await supabase
           .from("bookings")
           .select("id")
-          .eq("email_hash", emailH)
+          .in("email_hash", emailHashCandidates(email))
           .in("slot_id", slotIds)
           .in("status", ["booked", "attended"])
           .maybeSingle();

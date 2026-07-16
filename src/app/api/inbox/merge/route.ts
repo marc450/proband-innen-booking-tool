@@ -7,6 +7,7 @@ import {
   encryptPatientFields,
   encryptFields,
   hashEmail,
+  emailHashCandidates,
 } from "@/lib/encryption";
 import type { PatientStatus } from "@/lib/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -290,12 +291,18 @@ async function mergePatient(
   // resolves a conversation to a patient via this table, so without an alias
   // row B's email history wouldn't follow into A.
   if (b.email) {
+    // The alias row we insert below is written with the new HMAC hash, but
+    // both checks against existing data have to dual-read: A's stored
+    // email_hash and any existing alias row may still be the legacy
+    // SHA-256 form until the backfill runs.
+    // See docs/hmac-hash-migration-runbook.md (Step 5 removes the dual-read).
+    const bHashCandidates = emailHashCandidates(b.email);
     const bHash = hashEmail(b.email);
-    if (bHash !== aRaw.email_hash) {
+    if (!bHashCandidates.includes(aRaw.email_hash)) {
       const { data: existsRow } = await admin
         .from("patient_email_hashes")
         .select("id")
-        .eq("email_hash", bHash)
+        .in("email_hash", bHashCandidates)
         .maybeSingle();
       if (!existsRow) {
         const enc = encryptFields({ email: b.email });

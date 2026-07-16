@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireVerifiedInbox } from "@/lib/auth-verify";
 import { normalizeTitle } from "@/lib/utils";
 import {
-  hashEmail,
+  emailHashCandidates,
   decryptPatient,
   decryptFields,
   encryptFields,
@@ -127,7 +127,10 @@ async function lookupAuszubildende(email: string): Promise<ContactDTO | null> {
 
 async function lookupPatient(email: string): Promise<ContactDTO | null> {
   const admin = createAdminClient();
-  const emailHash = hashEmail(email);
+  // Dual-read during the SHA-256 → HMAC hash transition: rows not yet
+  // backfilled still carry the legacy hash, so lookups match both forms.
+  // See docs/hmac-hash-migration-runbook.md (Step 5 removes this).
+  const emailHashes = emailHashCandidates(email);
 
   // Multi-email lookup: hit patient_email_hashes first, fall back to the
   // legacy patients.email_hash column. Same backfill story as
@@ -137,7 +140,7 @@ async function lookupPatient(email: string): Promise<ContactDTO | null> {
   const { data: hashRow } = await admin
     .from("patient_email_hashes")
     .select("patient_id")
-    .eq("email_hash", emailHash)
+    .in("email_hash", emailHashes)
     .maybeSingle();
   if (hashRow) patientId = hashRow.patient_id;
 
@@ -145,7 +148,7 @@ async function lookupPatient(email: string): Promise<ContactDTO | null> {
     const { data: legacy } = await admin
       .from("patients")
       .select("id")
-      .eq("email_hash", emailHash)
+      .in("email_hash", emailHashes)
       .limit(1)
       .maybeSingle();
     if (legacy) patientId = legacy.id;
@@ -286,11 +289,13 @@ async function fetchNoShows(email: string, patientId: string | null) {
   if (!patientId) {
     // Try by email_hash in case the patient row exists but wasn't linked
     const admin = createAdminClient();
-    const hash = hashEmail(email);
+    // Dual-read during the SHA-256 → HMAC hash transition: bookings not yet
+    // backfilled still carry the legacy hash, so match both forms.
+    // See docs/hmac-hash-migration-runbook.md (Step 5 removes this).
     const { data } = await admin
       .from("bookings")
       .select("id, created_at, status, slot_id")
-      .eq("email_hash", hash)
+      .in("email_hash", emailHashCandidates(email))
       .eq("status", "no_show");
     return data || [];
   }

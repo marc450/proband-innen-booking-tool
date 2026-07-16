@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { hashEmail, decryptPatient } from "@/lib/encryption";
+import { emailHashCandidates, decryptPatient } from "@/lib/encryption";
 import { formatPersonName } from "@/lib/utils";
 
 /**
@@ -79,9 +79,14 @@ export async function resolveContactNamesByEmail(
   // ── Pass 2: patients (E2EE) for emails still unresolved ───────────
   const stillMissing = normalised.filter((e) => !result.has(e));
   if (stillMissing.length > 0) {
+    // Dual-read during the SHA-256 → HMAC hash transition: a patient row
+    // that hasn't been backfilled yet still carries the legacy hash, so we
+    // map BOTH forms of every address back to the same email and query with
+    // all candidates. Whichever form the row happens to hold resolves.
+    // See docs/hmac-hash-migration-runbook.md (Step 5 removes this).
     const emailByHash = new Map<string, string>();
     for (const e of stillMissing) {
-      emailByHash.set(hashEmail(e), e);
+      for (const h of emailHashCandidates(e)) emailByHash.set(h, e);
     }
     const hashes = Array.from(emailByHash.keys());
 

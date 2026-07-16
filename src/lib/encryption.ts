@@ -99,16 +99,85 @@ export function decryptFields<T = Record<string, unknown>>(
 
 // --- Hashing ---
 
+// email_hash / phone_hash are deterministic so dedup and blacklist lookups can
+// find a person without decrypting anything. They used to be plain SHA-256,
+// which is reversible for low-entropy inputs: every German mobile number can be
+// hashed in minutes, and a suspected email can be confirmed instantly. That
+// defeated the E2EE for those two fields if the database ever leaked.
+//
+// They are now HMAC-SHA256 keyed with a server-only pepper: still deterministic
+// (lookups behave identically), but not precomputable or brute-forceable
+// without the key. HASH_PEPPER must be set before this code runs, and must
+// never change once data is hashed with it (changing it means re-running the
+// backfill). See docs/hmac-hash-migration-runbook.md.
+
+function pepper(): string {
+  const p = process.env.HASH_PEPPER;
+  if (!p) {
+    // Fail fast and loudly. Falling back to the old unsalted hash here would
+    // silently write hashes that no lookup can find, corrupting dedup and
+    // letting blacklisted people through.
+    throw new Error("HASH_PEPPER is not set — refusing to hash.");
+  }
+  return p;
+}
+
+// Normalisation stays byte-identical to the legacy scheme so the backfill
+// recomputes the same logical value from decrypted plaintext.
+function normalizeEmailForHash(email: string): string {
+  return email.toLowerCase().trim();
+}
+
+function normalizePhoneForHash(phone: string): string {
+  return phone.replace(/\D/g, "");
+}
+
 export function hashEmail(email: string): string {
   return crypto
-    .createHash("sha256")
-    .update(email.toLowerCase().trim())
+    .createHmac("sha256", pepper())
+    .update(normalizeEmailForHash(email))
     .digest("hex");
 }
 
 export function hashPhone(phone: string): string {
-  const normalized = phone.replace(/\D/g, "");
-  return crypto.createHash("sha256").update(normalized).digest("hex");
+  return crypto
+    .createHmac("sha256", pepper())
+    .update(normalizePhoneForHash(phone))
+    .digest("hex");
+}
+
+// ── Transition-only helpers ────────────────────────────────────────────
+// The old unsalted scheme. Every row still carries these until the backfill
+// rewrites it, so lookups must accept both forms in the meantime. Delete
+// these (and the *Candidates helpers) in the Step 5 cleanup once the
+// backfill is verified complete.
+
+/** @deprecated Transition only — remove after the HMAC backfill. */
+export function legacyHashEmail(email: string): string {
+  return crypto
+    .createHash("sha256")
+    .update(normalizeEmailForHash(email))
+    .digest("hex");
+}
+
+/** @deprecated Transition only — remove after the HMAC backfill. */
+export function legacyHashPhone(phone: string): string {
+  return crypto
+    .createHash("sha256")
+    .update(normalizePhoneForHash(phone))
+    .digest("hex");
+}
+
+/** Both hash forms for an email lookup (new first). Use with
+ *  `.in("email_hash", emailHashCandidates(email))` so a row matches whether or
+ *  not it has been backfilled yet. */
+export function emailHashCandidates(email: string): string[] {
+  return [hashEmail(email), legacyHashEmail(email)];
+}
+
+/** Both hash forms for a phone lookup (new first). */
+export function phoneHashCandidates(phone: string): string[] {
+  return [hashPhone(phone), legacyHashPhone(phone)];
 }
 
 // --- Patient helpers ---

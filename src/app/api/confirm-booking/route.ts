@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 import { findPatientIdByAnyEmail } from "@/lib/contact-emails";
+import {
+  hashEmail,
+  hashPhone,
+  emailHashCandidates,
+  phoneHashCandidates,
+} from "@/lib/encryption";
 import { archiveSentMessage } from "@/lib/gmail";
 import { formatBerlinLongDateWithWeekday, parseDateOnly } from "@/lib/date";
 import { isCourseDateBookableByProbands } from "@/lib/proband-visibility";
@@ -49,17 +55,10 @@ function encryptFields(fields: Record<string, unknown>): {
   };
 }
 
-function hashSha256(input: string): string {
-  return crypto.createHash("sha256").update(input).digest("hex");
-}
-
-function hashEmail(email: string): string {
-  return hashSha256(email.toLowerCase().trim());
-}
-
-function hashPhone(phone: string): string {
-  return hashSha256(phone.replace(/\D/g, ""));
-}
+// Hashing lives in @/lib/encryption (imported above). This route used to
+// carry a private SHA-256 copy; the hashes are now keyed HMACs and MUST come
+// from a single implementation, otherwise bookings written here would be
+// unfindable by every dedup/blacklist lookup elsewhere.
 
 // --- Stripe helpers ---
 
@@ -222,12 +221,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Blacklist check by phone hash
-    if (phoneHash) {
+    // Blacklist check by phone hash. Matches both hash forms during the HMAC
+    // transition: a blacklisted person must be caught whether or not their row
+    // has been backfilled yet. See docs/hmac-hash-migration-runbook.md.
+    if (phone) {
       const { data: byPhone } = await supabase
         .from("patients")
         .select("patient_status")
-        .eq("phone_hash", phoneHash)
+        .in("phone_hash", phoneHashCandidates(phone))
         .eq("patient_status", "blacklist")
         .maybeSingle();
 
@@ -236,8 +237,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Same-course duplicate check by email hash
-    if (emailHash) {
+    // Same-course duplicate check by email hash (both forms, as above).
+    if (email) {
       const { data: slotRow } = await supabase
         .from("slots")
         .select("course_id")
@@ -255,7 +256,7 @@ export async function POST(req: NextRequest) {
         const { data: existingCourseBooking } = await supabase
           .from("bookings")
           .select("id")
-          .eq("email_hash", emailHash)
+          .in("email_hash", emailHashCandidates(email))
           .in("slot_id", slotIds)
           .in("status", ["booked", "attended"])
           .maybeSingle();
