@@ -70,7 +70,15 @@ export async function updateSession(request: NextRequest) {
   // can't lock a user into the wrong view forever. The kursbetreuung
   // flag is set on the same cadence (so layouts that read it stay in
   // sync) but only `role` is needed below for the admin-host gate.
-  let role: string = "nutzer";
+  //
+  // Fail CLOSED on an unresolvable role: "" rather than "nutzer".
+  // "nutzer" is a STAFF role, so defaulting to it meant a genuinely
+  // authenticated session whose id has NO profiles row (an auth.users
+  // row that never got a profile, a customer/student edge case) passed
+  // the admin-host staff gate below and reached the dashboard. Mirrors
+  // the same fail-closed fix already applied to getVerifiedAccess() in
+  // @/lib/auth-verify for the API layer.
+  let role: string = "";
 
   if (userId) {
     const existingRole = request.cookies.get("x-user-role")?.value;
@@ -82,30 +90,47 @@ export async function updateSession(request: NextRequest) {
         .select("role, is_kursbetreuung, is_autor")
         .eq("id", userId)
         .single();
-      role = profile?.role ?? "nutzer";
+      role =
+        typeof profile?.role === "string" && profile.role.length > 0
+          ? profile.role
+          : "";
       const isKursbetreuung = profile?.is_kursbetreuung === true;
       const isAutor = profile?.is_autor === true;
-      supabaseResponse.cookies.set("x-user-role", role, {
-        path: "/",
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-        maxAge: 3600,
-      });
-      supabaseResponse.cookies.set("x-is-kursbetreuung", isKursbetreuung ? "1" : "0", {
-        path: "/",
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-        maxAge: 3600,
-      });
-      supabaseResponse.cookies.set("x-is-autor", isAutor ? "1" : "0", {
-        path: "/",
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-        maxAge: 3600,
-      });
+
+      if (role) {
+        supabaseResponse.cookies.set("x-user-role", role, {
+          path: "/",
+          httpOnly: true,
+          secure: true,
+          sameSite: "lax",
+          maxAge: 3600,
+        });
+        supabaseResponse.cookies.set("x-is-kursbetreuung", isKursbetreuung ? "1" : "0", {
+          path: "/",
+          httpOnly: true,
+          secure: true,
+          sameSite: "lax",
+          maxAge: 3600,
+        });
+        supabaseResponse.cookies.set("x-is-autor", isAutor ? "1" : "0", {
+          path: "/",
+          httpOnly: true,
+          secure: true,
+          sameSite: "lax",
+          maxAge: 3600,
+        });
+      } else {
+        // Profileless session: cache nothing and clear whatever is
+        // there. An empty role cookie would be indistinguishable from
+        // "missing" to the readers in @/lib/auth, and caching any value
+        // risks handing this session a role it hasn't earned. Dropping
+        // the cookies costs one profiles lookup per request for these
+        // sessions and guarantees they are re-resolved (and bounced)
+        // every single time, not just on the first request.
+        supabaseResponse.cookies.delete("x-user-role");
+        supabaseResponse.cookies.delete("x-is-kursbetreuung");
+        supabaseResponse.cookies.delete("x-is-autor");
+      }
     } else {
       role = existingRole;
     }
@@ -121,7 +146,10 @@ export async function updateSession(request: NextRequest) {
   // admin.ephia.de/dashboard with their normal session cookie and reach
   // staff-only screens. This gate redirects any non-staff role away
   // before the dashboard layout even renders, complementing the per-
-  // route assertAdmin() checks on individual API endpoints.
+  // route assertAdmin() checks on individual API endpoints. An
+  // unresolvable role ("" — no profiles row) is non-staff too, so a
+  // signed-but-profileless session lands here rather than falling
+  // through to the dashboard.
   //
   // Bouncing to ephia.de root rather than /login here, because the
   // user is already authenticated — sending them to /login again would
