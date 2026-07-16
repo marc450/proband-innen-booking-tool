@@ -18,9 +18,7 @@ import { masterclassBotulinum } from "./masterclass-botulinum";
  * inherited verbatim. ~30-40 % unique copy comes from hero,
  * lernziele intro, LearningPath, FAQ and testimonials.
  *
- * NOTE: Performance landing page, "Botox" wording is permitted per
- * CI. CME for the Praxiskurs component is currently "beantragt"; the
- * page is honest about this (no number is claimed).
+ * NOTE: Performance landing page, "Botox" wording is permitted per CI.
  */
 export const botoxKursFuerFortgeschrittene: CourseLandingContent = {
   slug: "botox-kurs-fuer-fortgeschrittene",
@@ -44,7 +42,7 @@ export const botoxKursFuerFortgeschrittene: CourseLandingContent = {
       "Full Face Analyse, fortgeschrittene Injektionstechniken und souveränes Komplikationsmanagement, für approbierte Ärzt:innen mit Botulinum-Erfahrung.",
     stats: [
       { icon: "Clock", label: "Format", value: "Online + Praxistag" },
-      { icon: "Award", label: "Akkreditiert", value: "CME beantragt + Zertifikat" },
+      { icon: "Award", label: "Akkreditiert", value: "22 CME-Punkte + Zertifikat" },
       { icon: "GraduationCap", label: "Level", value: "Fortgeschrittene" },
     ],
     description:
@@ -175,7 +173,7 @@ export const botoxKursFuerFortgeschrittene: CourseLandingContent = {
         question:
           "Bekomme ich CME-Punkte für den Botox-Kurs für Fortgeschrittene?",
         answer:
-          "Die CME-Akkreditierung für die Praxiskomponente ist aktuell bei der Ärztekammer Berlin beantragt. Der Onlinekurs (inhaltsgleich mit dem Aufbaukurs Botulinum Periorale Zone) ist mit 10 CME-Punkten eigenständig akkreditiert. Sobald die Praxis-CME bewilligt ist, reichen wir sie nach. Das EPHIA-Zertifikat über die erfolgreiche Teilnahme erhältst Du in jedem Fall.",
+          "Ja, der Kurs ist mit insgesamt 22 CME-Punkten akkreditiert. Der Onlinekurs (inhaltsgleich mit dem Aufbaukurs Botulinum Periorale Zone) bringt 10 CME-Punkte über die Landesärztekammer Brandenburg, der Praxiskurs 12 CME-Punkte über die Landesärztekammer Berlin. Das EPHIA-Zertifikat über die erfolgreiche Teilnahme erhältst Du in jedem Fall.",
       },
       {
         question:

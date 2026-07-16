@@ -609,9 +609,12 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
       // die restlichen 12 (Landesärztekammer Berlin). Deshalb trägt die
       // Zertifikat-Fußzeile den Plural "Landesärztekammern Berlin und
       // Brandenburg".
+      //
+      // Praxis (12) und Kombi (22) kommen aus course_templates.cme_praxis
+      // / .cme_kombi und brauchen keinen Override. Nur cme_online ist auf
+      // der Masterclass-Vorlage NULL, weil der Onlineteil ein eigener
+      // Kurs ist, daher der Override auf die 10 der Periorale Zone.
       cmeOnlineOverride: "10",
-      cmePraxisOverride: "12",
-      cmeKombiOverride: "22",
       // All three packages include access to the Ärzt:innen-Community.
       ensureCommunityFeature: true,
       praxisPrereqConfirm: {

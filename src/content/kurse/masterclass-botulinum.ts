@@ -31,7 +31,7 @@ export const masterclassBotulinum: CourseLandingContent = {
       "Feinschliff auf Expert:innen-Niveau: Full Face Analyse, fortgeschrittene Techniken und souveränes Komplikationsmanagement.",
     stats: [
       { icon: "Clock", label: "Format", value: "Online- und als Praxiskurs" },
-      { icon: "Award", label: "Akkreditiert", value: "CME beantragt + Zertifikat" },
+      { icon: "Award", label: "Akkreditiert", value: "22 CME-Punkte + Zertifikat" },
       { icon: "GraduationCap", label: "Level", value: "Masterclass" },
     ],
     description:

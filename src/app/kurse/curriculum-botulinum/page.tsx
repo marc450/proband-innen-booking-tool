@@ -167,7 +167,7 @@ const FAQS = [
   {
     question: "Erhalte ich CME-Punkte?",
     answer:
-      "Ja, jeder akkreditierte Kurs im Curriculum bringt CME-Punkte. Die genaue Anzahl siehst Du auf der jeweiligen Kurskarte. Aktuell sind Grundkurs Botulinum, Medizinische Hautpflege und Therapeutische Indikationen akkreditiert; die CME-Punkte für die Masterclass sind beantragt.",
+      "Ja, jeder Kurs im Curriculum ist akkreditiert und bringt CME-Punkte. Die genaue Anzahl siehst Du auf der jeweiligen Kurskarte.",
   },
   {
     question: "Was, wenn ich einen Praxistermin verpassen muss?",
