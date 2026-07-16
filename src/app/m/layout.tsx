@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { getVerifiedClaims } from "@/lib/supabase/claims";
 import { redirect } from "next/navigation";
 import { BottomTabBar } from "./bottom-tab-bar";
 import { SuppressPasswordManagers } from "@/app/dashboard/suppress-password-managers";
@@ -15,11 +16,10 @@ export default async function MobileLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  // See the dashboard layout: verified claims, no round trip, no warning.
+  const claims = await getVerifiedClaims(supabase);
 
-  if (!session?.user) {
+  if (!claims) {
     redirect("/login");
   }
 

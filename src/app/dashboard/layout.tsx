@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { getVerifiedClaims } from "@/lib/supabase/claims";
 import { redirect } from "next/navigation";
 import { DashboardNav } from "./nav";
 import { DashboardBodyTheme } from "./body-theme";
@@ -18,13 +19,12 @@ export default async function DashboardLayout({
 }) {
   const supabase = await createClient();
 
-  // getSession() reads the JWT from the cookie locally — no network call.
-  // The middleware already validated the user with getUser(), so this is safe.
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  // Verified claims rather than getSession(): the signature is checked
+  // locally against the cached JWKS, so this costs no round trip and doesn't
+  // emit auth-js's "may not be authentic" warning on every navigation.
+  const claims = await getVerifiedClaims(supabase);
 
-  if (!session?.user) {
+  if (!claims) {
     redirect("/login");
   }
 
@@ -45,7 +45,7 @@ export default async function DashboardLayout({
       <SuppressPasswordManagers />
       <InactivityLogout />
       <DashboardNav
-        userEmail={session.user.email || ""}
+        userEmail={(claims.email as string | undefined) || ""}
         role={role}
         isKursbetreuung={isKursbetreuung}
         isAutor={isAutor}

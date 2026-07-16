@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { getVerifiedClaims } from "./claims";
 
 // Roles that are allowed to reach the staff dashboard on admin.ephia.de.
 // Everything else (including the future 'student' role used by public
@@ -32,13 +33,13 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // getSession() reads the JWT from the cookie locally — no network call.
-  // Safe for route protection: the JWT is cryptographically signed and has an expiry.
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  const user = session?.user ?? null;
+  // Verifies the JWT's ES256 signature against the project's public key,
+  // using a process-cached JWKS — local, no round trip. getSession() only
+  // decoded the cookie without checking the signature, which is both why
+  // auth-js logged an "may not be authentic" warning on every request and
+  // why a forged token would have passed this gate.
+  const claims = await getVerifiedClaims(supabase);
+  const userId = (claims?.sub as string | undefined) ?? null;
 
   // Protect dashboard routes. Require full-segment matches so unrelated
   // trees that happen to share a prefix with "/m" (e.g. /merch) don't
@@ -57,7 +58,7 @@ export async function updateSession(request: NextRequest) {
   // down, otherwise users with aal1 sessions would loop on the very
   // page that's supposed to upgrade them.
   const isMfaTransition = path === "/verify-2fa" || path === "/setup-2fa";
-  if ((isProtected || isMfaTransition) && !user) {
+  if ((isProtected || isMfaTransition) && !userId) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
@@ -71,7 +72,7 @@ export async function updateSession(request: NextRequest) {
   // sync) but only `role` is needed below for the admin-host gate.
   let role: string = "nutzer";
 
-  if (user) {
+  if (userId) {
     const existingRole = request.cookies.get("x-user-role")?.value;
     const existingKursbetreuung = request.cookies.get("x-is-kursbetreuung")?.value;
     const existingAutor = request.cookies.get("x-is-autor")?.value;
@@ -79,7 +80,7 @@ export async function updateSession(request: NextRequest) {
       const { data: profile } = await supabase
         .from("profiles")
         .select("role, is_kursbetreuung, is_autor")
-        .eq("id", user.id)
+        .eq("id", userId)
         .single();
       role = profile?.role ?? "nutzer";
       const isKursbetreuung = profile?.is_kursbetreuung === true;
@@ -125,7 +126,7 @@ export async function updateSession(request: NextRequest) {
   // Bouncing to ephia.de root rather than /login here, because the
   // user is already authenticated — sending them to /login again would
   // either show a logged-in user the login form (confusing) or loop.
-  if (user && isAdminHost && (isProtected || isMfaTransition) && !STAFF_ROLES.has(role)) {
+  if (userId && isAdminHost && (isProtected || isMfaTransition) && !STAFF_ROLES.has(role)) {
     return NextResponse.redirect("https://ephia.de/");
   }
 
@@ -146,33 +147,47 @@ export async function updateSession(request: NextRequest) {
   // proband-innen.ephia.de uses Supabase auth too but doesn't gate by
   // MFA — students self-manage their accounts and 2FA isn't in scope
   // for the public funnel yet.
-  if (user && isAdminHost && (isProtected || isMfaTransition)) {
-    const { data: aal } =
-      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    const currentLevel = aal?.currentLevel ?? "aal1";
-    const nextLevel = aal?.nextLevel ?? "aal1";
+  if (userId && isAdminHost && (isProtected || isMfaTransition)) {
+    // currentLevel comes straight off the verified `aal` claim. The old
+    // code asked mfa.getAuthenticatorAssuranceLevel() for it, but that
+    // helper reads session.user.factors internally — the same unverified
+    // proxy that logs the warning. Reading the claim avoids that, and for
+    // a stepped-up session it's all we need.
+    const currentLevel = (claims?.aal as string | undefined) ?? "aal1";
 
-    if (currentLevel === "aal1" && nextLevel === "aal2") {
-      // Has a verified factor, session not stepped up yet.
-      if (path !== "/verify-2fa") {
+    if (currentLevel === "aal2") {
+      if (isMfaTransition) {
+        // Already stepped up → don't render the transition pages.
         const url = request.nextUrl.clone();
-        url.pathname = "/verify-2fa";
+        url.pathname = "/dashboard";
         return NextResponse.redirect(url);
       }
-    } else if (currentLevel === "aal1" && nextLevel === "aal1") {
-      // Staff without any verified factor → must enroll. Reaches here
-      // only after the staff-role check above, so role is admin or
-      // nutzer.
-      if (path !== "/setup-2fa") {
-        const url = request.nextUrl.clone();
-        url.pathname = "/setup-2fa";
-        return NextResponse.redirect(url);
+    } else {
+      // Not stepped up. Which page they belong on depends on whether they
+      // already have a verified factor, and that isn't in the token — so
+      // this is the one branch that still needs the factor lookup. It only
+      // runs for sessions mid-2FA-flow, not for normal dashboard traffic.
+      const { data: aal } =
+        await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      const nextLevel = aal?.nextLevel ?? "aal1";
+
+      if (nextLevel === "aal2") {
+        // Has a verified factor, session not stepped up yet.
+        if (path !== "/verify-2fa") {
+          const url = request.nextUrl.clone();
+          url.pathname = "/verify-2fa";
+          return NextResponse.redirect(url);
+        }
+      } else {
+        // Staff without any verified factor → must enroll. Reaches here
+        // only after the staff-role check above, so role is admin or
+        // nutzer.
+        if (path !== "/setup-2fa") {
+          const url = request.nextUrl.clone();
+          url.pathname = "/setup-2fa";
+          return NextResponse.redirect(url);
+        }
       }
-    } else if (currentLevel === "aal2" && isMfaTransition) {
-      // Already stepped up → don't render the transition pages.
-      const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
     }
   }
 
