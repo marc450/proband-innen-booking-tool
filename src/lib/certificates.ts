@@ -236,6 +236,54 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
     },
   },
   {
+    // Masterclass Botulinum. Same visual layout as the other certs
+    // (left-column name above the dotted line, photo on the right) —
+    // A4 landscape 842 × 595 pt.
+    //
+    // Mit 22 CME-Punkten akkreditiert, und zwar durch ZWEI Kammern:
+    // der Theorieteil ist der Onlinekurs "Botulinum Periorale Zone"
+    // (10 CME, Landesärztekammer Brandenburg), der Praxisteil bringt
+    // die restlichen 12 (Landesärztekammer Berlin). Daher die Plural-
+    // Fußzeile "Landesärztekammern Berlin und Brandenburg". Weil der
+    // Theorieteil ein eigener Kurs ist, muss course_templates.vnr_theorie
+    // der Masterclass die VNR der Periorale Zone tragen, nicht eine
+    // eigene.
+    //
+    // footerCity bleibt "Berlin" (der Default): die Datumszeile spiegelt
+    // die Kammer des Praxistermins, genau wie beim Grundkurs Botulinum.
+    //
+    // Der gelieferte Master hatte alle vier Fußzeilen ohne Lücken am
+    // Seitenende gestapelt — kein Platz für die VNR-Nummern, keine Lücke
+    // für das Datum. Der Master unter public/certificates/ wurde deshalb
+    // neu gebacken (weiß überdeckt + 1:1 auf den Grundkurs-Botulinum-
+    // Rhythmus neu gesetzt, gleiche 8pt Roboto, gleiches Rosé, gleiches
+    // Tc 1.434), analog zum Aufbaukurs-Lippen-Master. Dadurch ist die
+    // Fußzeilen-Geometrie identisch mit dem Grundkurs Botulinum und die
+    // Stamp-Koordinaten sind exakt dieselben.
+    //
+    // generatorOnly: true — Marc will das Zertifikat erst im
+    // Zertifikatgenerator ansehen, bevor der Post-Praxis-Cron es
+    // automatisch verschickt. Flag entfernen, sobald er freigibt; dann
+    // greift der übliche VNR-Hold (cert_sent_at bleibt null, bis
+    // course_templates.vnr_theorie und course_sessions.vnr_praxis
+    // gefüllt sind) und die Certs gehen ohne Code-Änderung raus.
+    slug: "masterclass-botulinum",
+    label: "Masterclass Botulinum",
+    courseKeys: ["masterclass_botulinum"],
+    generatorOnly: true,
+    layout: {
+      page: 1,
+      centerX: 173,
+      baselineY: 388,
+      maxWidth: 290,
+      targetSize: 28,
+      minSize: 10,
+      vnrTheorie: { x: 173, y: 57, size: 8 },
+      vnrPraxis: { x: 173, y: 33, size: 8 },
+      dateStamp: { x: 173, y: 81, size: 8 },
+    },
+  },
+  {
     // Grundkurs Dermalfiller. Identical layout and footer to the
     // Grundkurs Botulinum cert (left-column name above the dotted line,
     // photo on the right) — A4 landscape 842 × 595 pt. The master PDF

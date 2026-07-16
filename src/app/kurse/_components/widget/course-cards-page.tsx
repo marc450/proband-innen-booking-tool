@@ -603,16 +603,15 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
       ),
       praxisDesc:
         "Onlinekurs bereits absolviert? Dann buche direkt den Praxiskurs.",
-      // Only the Onlinekurs (Periorale Zone) carries an approved CME
-      // count. The Praxiskurs and Kombikurs CME accreditation is still
-      // pending — show the amber "CME beantragt" pill instead of a
-      // number AND swap any "Akkreditiert mit N CME-Punkten" feature
-      // bullet for "CME-Punkte beantragt" on those cards.
-      praxisCmePending: true,
-      kombiCmePending: true,
-      // Onlinekurs IS the Aufbaukurs Periorale Zone Onlinekurs, which
-      // is accredited with 10 CME points.
+      // Akkreditiert mit insgesamt 22 CME-Punkten durch ZWEI Kammern:
+      // Der Onlinekurs IST der Aufbaukurs Periorale Zone Onlinekurs
+      // (10 CME, Landesärztekammer Brandenburg), der Praxisteil bringt
+      // die restlichen 12 (Landesärztekammer Berlin). Deshalb trägt die
+      // Zertifikat-Fußzeile den Plural "Landesärztekammern Berlin und
+      // Brandenburg".
       cmeOnlineOverride: "10",
+      cmePraxisOverride: "12",
+      cmeKombiOverride: "22",
       // All three packages include access to the Ärzt:innen-Community.
       ensureCommunityFeature: true,
       praxisPrereqConfirm: {

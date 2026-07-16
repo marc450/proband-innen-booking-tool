@@ -302,28 +302,25 @@ export default async function CurriculumBotulinumPage() {
       const meta = STEP_META[c.courseKey];
       const tmpl = templateMap.get(c.courseKey);
       const isOnline = c.courseType === "Onlinekurs";
-      // Per-course CME on the curriculum step. The Masterclass overrides
-      // its CME to call out that the Onlinekurs (Periorale Zone) carries
-      // 10 CME while the Praxis accreditation is still pending. Other
-      // steps fall back to a hardcoded value when the DB column is NULL
-      // so the path always renders all four CME pills consistently.
+      // Per-course CME on the curriculum step. Steps fall back to a
+      // hardcoded value when the DB column is NULL so the path always
+      // renders all four CME pills consistently.
+      const FALLBACK_CME: Record<string, string> = {
+        grundkurs_botulinum: "22 CME",
+        grundkurs_medizinische_hautpflege: "7 CME",
+        aufbaukurs_therapeutische_indikationen_botulinum: "21 CME",
+        // Onlinekurs (Periorale Zone, 10 CME durch die LÄK Brandenburg)
+        // plus Praxisteil (12 CME durch die LÄK Berlin).
+        masterclass_botulinum: "22 CME",
+      };
       let cme: string | null = null;
-      if (c.courseKey === "masterclass_botulinum") {
-        cme = "10 CME · Praxis beantragt";
+      const dbCme = isOnline ? tmpl?.cme_online : tmpl?.cme_kombi;
+      if (dbCme) {
+        // DB stores either a bare number ("21") or a value already
+        // containing "CME" — normalise both to "<n> CME".
+        cme = /CME/i.test(dbCme) ? dbCme : `${dbCme} CME`;
       } else {
-        const FALLBACK_CME: Record<string, string> = {
-          grundkurs_botulinum: "22 CME",
-          grundkurs_medizinische_hautpflege: "7 CME",
-          aufbaukurs_therapeutische_indikationen_botulinum: "21 CME",
-        };
-        const dbCme = isOnline ? tmpl?.cme_online : tmpl?.cme_kombi;
-        if (dbCme) {
-          // DB stores either a bare number ("21") or a value already
-          // containing "CME" — normalise both to "<n> CME".
-          cme = /CME/i.test(dbCme) ? dbCme : `${dbCme} CME`;
-        } else {
-          cme = FALLBACK_CME[c.courseKey] ?? null;
-        }
+        cme = FALLBACK_CME[c.courseKey] ?? null;
       }
       // Pull the canonical Lernziele from the course's own content file
       // so the curriculum overview and the per-course page stay in sync.
@@ -349,10 +346,6 @@ export default async function CurriculumBotulinumPage() {
   // Sum the leading number from each step's CME pill to get the total
   // CME a doctor accumulates by completing the entire curriculum
   // (always booking the Online + Praxis combination where available).
-  // Only the *first* number is parsed, so values like
-  // "10 CME · Praxis beantragt" contribute the approved 10 — the
-  // pending praxis-CME of the Masterclass is acknowledged separately
-  // via the cmeNote on the destination card.
   const cmeTotal = steps.reduce((sum, s) => {
     const match = s.cme?.match(/(\d+)/);
     return sum + (match ? parseInt(match[1], 10) : 0);
@@ -396,8 +389,6 @@ export default async function CurriculumBotulinumPage() {
             </>
           ),
           cmeTotal: cmeTotalLabel,
-          cmeNote:
-            "Praxis-CME der Masterclass sind beantragt und werden nach Genehmigung ergänzt.",
         }}
       />
 
