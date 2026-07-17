@@ -93,6 +93,22 @@ export default async function SettingsPage() {
     .select("*")
     .order("date_iso", { ascending: true });
 
+  // Proband:innen satellite status per session. The satellite is the
+  // `courses` row the Patient:innen funnel reads against; its status
+  // (published/draft) is what takes the Proband:innen course on- or
+  // offline, independent of the session's own is_live flag.
+  const sessionIds = ((courseSessionsData ?? []) as CourseSession[]).map((s) => s.id);
+  const { data: satelliteData } = sessionIds.length
+    ? await adminClient
+        .from("courses")
+        .select("session_id, status")
+        .in("session_id", sessionIds)
+    : { data: [] as Array<{ session_id: string; status: string | null }> };
+  const probandStatuses: Record<string, string> = {};
+  for (const row of satelliteData ?? []) {
+    if (row.session_id) probandStatuses[row.session_id] = row.status ?? "draft";
+  }
+
   // Count of Zahnmediziner:innen bookings per session (excluding cancelled).
   const { data: zahnBookings } = await adminClient
     .from("course_bookings")
@@ -134,6 +150,7 @@ export default async function SettingsPage() {
       betreuerUsers={betreuerUsersData ?? []}
       initialAuszubildende={(auszubildendeData ?? []) as Pick<Auszubildende, "id" | "first_name" | "last_name" | "email" | "phone" | "title">[]}
       zahnmedizinerCounts={zahnmedizinerCounts}
+      probandStatuses={probandStatuses}
     />
   );
 }

@@ -9,9 +9,10 @@ interface Props {
   dozentUsers: DozentUser[];
   betreuerUsers: DozentUser[];
   zahnmedizinerCounts: Record<string, number>;
+  probandStatuses: Record<string, string>;
 }
 
-export function CourseSessionsSettings({ initialSessions, templates, dozentUsers, betreuerUsers, zahnmedizinerCounts }: Props) {
+export function CourseSessionsSettings({ initialSessions, templates, dozentUsers, betreuerUsers, zahnmedizinerCounts, probandStatuses }: Props) {
   return (
     <CourseSessionsManager
       initialTemplates={templates}
@@ -19,6 +20,7 @@ export function CourseSessionsSettings({ initialSessions, templates, dozentUsers
       dozentUsers={dozentUsers}
       betreuerUsers={betreuerUsers}
       zahnmedizinerCounts={zahnmedizinerCounts}
+      probandStatuses={probandStatuses}
     />
   );
 }

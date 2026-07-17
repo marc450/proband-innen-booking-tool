@@ -32,9 +32,14 @@ interface Props {
   dozentUsers: DozentUser[];
   betreuerUsers?: DozentUser[];
   zahnmedizinerCounts?: Record<string, number>;
+  /**
+   * courses.status ("published" / "draft") of the Proband:innen satellite,
+   * keyed by session id. A session with no satellite is absent from the map.
+   */
+  probandStatuses?: Record<string, string>;
 }
 
-type SortKey = "status" | "date" | "time" | "course" | "instructor" | "betreuer" | "seats" | "duration";
+type SortKey = "status" | "probandStatus" | "date" | "time" | "course" | "instructor" | "betreuer" | "seats" | "duration";
 type SortDir = "asc" | "desc";
 
 const MONTHS_DE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
@@ -60,9 +65,12 @@ const SESSION_INHERIT_KEYS = new Set<string>([
   "grundkurs_botulinum_zahnmedizin",
 ]);
 
-export function CourseSessionsManager({ initialTemplates, initialSessions, dozentUsers, betreuerUsers = [], zahnmedizinerCounts = {} }: Props) {
+export function CourseSessionsManager({ initialTemplates, initialSessions, dozentUsers, betreuerUsers = [], zahnmedizinerCounts = {}, probandStatuses = {} }: Props) {
   const supabase = createClient();
   const [sessions, setSessions] = useState(initialSessions);
+  // Satellite status is edited in this table but lives on `courses`, not
+  // `course_sessions`, so it gets its own local copy.
+  const [probandStatus, setProbandStatus] = useState<Record<string, string>>(probandStatuses);
   const [templates] = useState(initialTemplates);
   // Templates that can host their own sessions (all except the ones that
   // inherit from another template).
@@ -87,6 +95,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   const [filterBetreuer, setFilterBetreuer] = useState("");
   const [filterTemplate, setFilterTemplate] = useState("");
   const [filterStatus, setFilterStatus] = useState("live");
+  const [filterProband, setFilterProband] = useState("");
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterTime, setFilterTime] = useState("");
   const [filterCme, setFilterCme] = useState("");
@@ -113,6 +122,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
 
   const fieldLabels: Record<string, string> = {
     is_live: "Status",
+    proband_status: "Proband:innen",
     date_iso: "Datum",
     start_time: "Startzeit",
     duration_minutes: "Dauer",
@@ -181,6 +191,12 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
       if (filterTemplate && s.template_id !== filterTemplate) return false;
       if (filterStatus === "live" && !s.is_live) return false;
       if (filterStatus === "offline" && s.is_live) return false;
+      if (filterProband) {
+        const ps = probandStatus[s.id];
+        if (filterProband === "live" && ps !== "published") return false;
+        if (filterProband === "offline" && ps !== "draft") return false;
+        if (filterProband === "none" && ps !== undefined) return false;
+      }
       if (filterDateFrom && s.date_iso < filterDateFrom) return false;
       if (filterTime && s.start_time !== filterTime) return false;
       if (filterCme && (s.cme_status || "Nicht beantragt") !== filterCme) return false;
@@ -194,6 +210,12 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
       switch (sortKey) {
         case "status":
           return (Number(b.is_live) - Number(a.is_live)) * dir;
+        case "probandStatus":
+          return (
+            (Number(probandStatus[b.id] === "published") -
+              Number(probandStatus[a.id] === "published")) *
+            dir
+          );
         case "date":
           return a.date_iso.localeCompare(b.date_iso) * dir;
         case "time":
@@ -213,7 +235,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
       }
     });
     return sorted;
-  }, [sessions, sortKey, sortDir, filterInstructor, filterBetreuer, filterTemplate, filterStatus, filterDateFrom, filterTime, filterCme, filterZahnmedizin, zahnmedizinerCounts]);
+  }, [sessions, sortKey, sortDir, filterInstructor, filterBetreuer, filterTemplate, filterStatus, filterProband, filterDateFrom, filterTime, filterCme, filterZahnmedizin, zahnmedizinerCounts, probandStatus]);
 
   const SortableHead = ({ label, sortKeyName, className }: { label: string; sortKeyName: SortKey; className?: string }) => (
     <TableHead className={className}>
@@ -230,6 +252,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   // Format display value for the confirmation dialog
   const formatDisplayValue = useCallback((field: string, value: string | number | boolean): string => {
     if (field === "is_live") return value ? "Live" : "Offline";
+    if (field === "proband_status") return value === "published" ? "Live" : "Offline";
     if (field === "template_id") {
       const t = templates.find((t) => t.id === value);
       return t?.course_label_de || t?.title || String(value);
@@ -256,6 +279,22 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
     if (!pendingChange) return;
     const { id, field, value, isDateChange } = pendingChange;
     setChangeError(null);
+
+    if (field === "proband_status") {
+      // Lives on the satellite `courses` row, matched via session_id.
+      const next = String(value);
+      const { error } = await supabase
+        .from("courses")
+        .update({ status: next })
+        .eq("session_id", id);
+      if (error) {
+        setChangeError(`Proband:innen Status konnte nicht gespeichert werden: ${error.message}`);
+      } else {
+        setProbandStatus((prev) => ({ ...prev, [id]: next }));
+      }
+      setPendingChange(null);
+      return;
+    }
 
     if (isDateChange) {
       const dateIso = String(value);
@@ -455,6 +494,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
         <TableHeader>
           <TableRow>
             <SortableHead label="Status" sortKeyName="status" className="w-[100px]" />
+            <SortableHead label="Proband:innen" sortKeyName="probandStatus" className="w-[110px]" />
             <SortableHead label="Datum" sortKeyName="date" />
             <SortableHead label="Startzeit" sortKeyName="time" className="w-[90px]" />
             <SortableHead label="Dauer (Min)" sortKeyName="duration" className="w-[90px]" />
@@ -479,6 +519,19 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 <option value="">Alle</option>
                 <option value="live">Live</option>
                 <option value="offline">Offline</option>
+              </select>
+            </TableHead>
+            {/* Proband:innen filter */}
+            <TableHead className="py-1.5">
+              <select
+                value={filterProband}
+                onChange={(e) => setFilterProband(e.target.value)}
+                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+              >
+                <option value="">Alle</option>
+                <option value="live">Live</option>
+                <option value="offline">Offline</option>
+                <option value="none">Kein Satellit</option>
               </select>
             </TableHead>
             {/* Ab Datum filter */}
@@ -579,13 +632,14 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
             <TableHead className="py-1.5" />
             {/* Reset button */}
             <TableHead className="py-1.5">
-              {(filterInstructor || filterBetreuer || filterTemplate || filterStatus || filterDateFrom || filterTime || filterCme || filterZahnmedizin) && (
+              {(filterInstructor || filterBetreuer || filterTemplate || filterStatus || filterProband || filterDateFrom || filterTime || filterCme || filterZahnmedizin) && (
                 <button
                   onClick={() => {
                     setFilterInstructor("");
                     setFilterBetreuer("");
                     setFilterTemplate("");
                     setFilterStatus("");
+                    setFilterProband("");
                     setFilterDateFrom("");
                     setFilterTime("");
                     setFilterCme("");
@@ -602,7 +656,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
         <TableBody>
           {sortedSessions.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={13} className="text-center text-muted-foreground py-8">
                 Noch keine Kurstermine erstellt.
               </TableCell>
             </TableRow>
@@ -628,6 +682,36 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                     <option value="live">Live</option>
                     <option value="offline">Offline</option>
                   </select>
+                </TableCell>
+
+                {/* Proband:innen satellite status */}
+                <TableCell>
+                  {(() => {
+                    const ps = probandStatus[session.id];
+                    if (ps === undefined) {
+                      return (
+                        <span
+                          className="text-xs text-muted-foreground"
+                          title="Kein Proband:innen Satellit für diesen Termin"
+                        >
+                          –
+                        </span>
+                      );
+                    }
+                    const live = ps === "published";
+                    return (
+                      <select
+                        value={live ? "published" : "draft"}
+                        onChange={(e) => requestChange(session.id, "proband_status", e.target.value)}
+                        className={`text-xs font-medium rounded-full px-2.5 py-1 border-0 cursor-pointer ${
+                          live ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        <option value="published">Live</option>
+                        <option value="draft">Offline</option>
+                      </select>
+                    );
+                  })()}
                 </TableCell>
 
                 {/* Date */}

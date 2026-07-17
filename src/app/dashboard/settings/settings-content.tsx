@@ -21,6 +21,7 @@ interface Props {
   betreuerUsers: DozentUser[];
   initialAuszubildende: AuszubildendePick[];
   zahnmedizinerCounts: Record<string, number>;
+  probandStatuses: Record<string, string>;
 }
 
 const TAB_TITLES: Record<string, string> = {
@@ -41,6 +42,7 @@ export function SettingsContent({
   betreuerUsers,
   initialAuszubildende,
   zahnmedizinerCounts,
+  probandStatuses,
 }: Props) {
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab") || "kurstermine";
@@ -73,6 +75,7 @@ export function SettingsContent({
             dozentUsers={dozentUsers}
             betreuerUsers={betreuerUsers}
             zahnmedizinerCounts={zahnmedizinerCounts}
+            probandStatuses={probandStatuses}
           />
         );
     }
