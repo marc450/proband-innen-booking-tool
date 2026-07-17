@@ -3,10 +3,12 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildProgressMap, listUserProgress } from "@/lib/learnworlds";
+import { berlinTodayIso } from "@/lib/utils";
 import {
   MeinKontoView,
   type EnrichedBooking,
   type CourseType,
+  type PraxisOffer,
 } from "./mein-konto-view";
 
 // Customer-facing dashboard. Server component pulls the auszubildende
@@ -92,12 +94,16 @@ function deriveCourseType(productName: string): CourseType {
 }
 
 interface TemplateRow {
+  id: string;
   course_key: string | null;
+  status: string | null;
   title: string | null;
   image_url: string | null;
   name_online: string | null;
   name_praxis: string | null;
   name_kombi: string | null;
+  // Drives the "Praxiskurs dazubuchen" offer under an Online card.
+  price_gross_praxis_cents: number | null;
   lw_slug_online: string | null;
   lw_slug_praxis: string | null;
   lw_slug_kombi: string | null;
@@ -261,6 +267,7 @@ function makeEnriched(args: {
     const slug = slugOverride ?? pickLwSlug(tpl, type);
     return {
       id: `${id}${suffix}`,
+      templateId: tpl?.id ?? null,
       productName,
       displayTitle: pickDisplayTitle(tpl, type, productName),
       courseType: type,
@@ -333,6 +340,7 @@ export default async function MeinKontoPage() {
   let upcoming: EnrichedBooking[] = [];
   let online: EnrichedBooking[] = [];
   let done: EnrichedBooking[] = [];
+  const praxisOffers: PraxisOffer[] = [];
 
   if (contact) {
     // Gather every email this customer is known by. course_bookings
@@ -377,13 +385,13 @@ export default async function MeinKontoPage() {
       admin
         .from("course_templates")
         .select(
-          "id, course_key, title, image_url, name_online, name_praxis, name_kombi, lw_slug_online, lw_slug_praxis, lw_slug_kombi, lw_slug_hybrid, online_course_id",
+          "id, course_key, status, title, image_url, name_online, name_praxis, name_kombi, price_gross_praxis_cents, lw_slug_online, lw_slug_praxis, lw_slug_kombi, lw_slug_hybrid, online_course_id",
         ),
     ]);
 
     const tplIndex = buildTemplateIndex((templates ?? []) as TemplateRow[]);
     const tplById = new Map<string, TemplateRow>();
-    for (const t of (templates ?? []) as Array<TemplateRow & { id: string }>) {
+    for (const t of (templates ?? []) as TemplateRow[]) {
       tplById.set(t.id, t);
     }
 
@@ -532,6 +540,7 @@ export default async function MeinKontoPage() {
           const tpl = match.tpl;
           online.push({
             id: `lw:${lwSlug}`,
+            templateId: tpl.id,
             productName: tpl.name_online || tpl.title || lwSlug,
             displayTitle: pickDisplayTitle(tpl, "Onlinekurs", lwSlug),
             courseType: "Onlinekurs",
@@ -564,6 +573,97 @@ export default async function MeinKontoPage() {
         console.error("[mein-konto] LW progress fetch failed:", err);
       }
     }
+
+    // ── 4) Praxiskurs-Angebot unter den Onlinekursen ──
+    // Some customers buy the Onlinekurs first and only later ask for the
+    // matching Praxiskurs. We offer it to them right where they'd notice:
+    // attached to the Online card they already own.
+    //
+    // Kombi/Premium buyers are excluded for free — makeEnriched already
+    // splits those bookings into an Online AND a Praxis card, so their
+    // template lands in ownsPraxis below.
+    //
+    // We deliberately ignore COURSE_OVERRIDES.hidePraxis from the public
+    // landing widget: hiding the standalone Praxiskurs there is a bundling
+    // decision aimed at NEW customers, who should buy the Kombikurs. For
+    // someone who already owns the Onlinekurs, the standalone Praxiskurs
+    // is the only product that makes sense.
+    const ownsPraxis = new Set<string>();
+    for (const c of [...upcoming, ...online, ...done]) {
+      if (!c.templateId) continue;
+      if (
+        c.courseType === "Praxiskurs" ||
+        c.courseType === "Kombikurs" ||
+        c.courseType === "Hybrid"
+      ) {
+        ownsPraxis.add(c.templateId);
+      }
+    }
+
+    const offerTplIds: string[] = [];
+    for (const c of online) {
+      const id = c.templateId;
+      if (!id || ownsPraxis.has(id) || offerTplIds.includes(id)) continue;
+      const tpl = tplById.get(id);
+      // status: /api/course-checkout only resolves live templates, so
+      // offering anything else would dead-end at a 404.
+      if (!tpl || !tpl.course_key || tpl.status !== "live") continue;
+      if (!tpl.price_gross_praxis_cents || tpl.price_gross_praxis_cents <= 0) continue;
+      offerTplIds.push(id);
+    }
+
+    if (offerTplIds.length > 0) {
+      // Mirrors the sharing map in /api/course-sessions: Zahnmedizin has no
+      // sessions of its own and books onto the Humanmedizin dates.
+      const SESSION_SHARING: Record<string, string> = {
+        grundkurs_botulinum_zahnmedizin: "grundkurs_botulinum",
+      };
+      const tplIdByKey = new Map<string, string>();
+      for (const t of tplById.values()) {
+        if (t.course_key) tplIdByKey.set(t.course_key, t.id);
+      }
+      const sessionTplIdFor = new Map<string, string>();
+      for (const id of offerTplIds) {
+        const key = tplById.get(id)!.course_key!;
+        const sharedId = SESSION_SHARING[key] ? tplIdByKey.get(SESSION_SHARING[key]) : undefined;
+        sessionTplIdFor.set(id, sharedId ?? id);
+      }
+
+      // Same filter as /api/course-sessions so the offer never lists a date
+      // the public funnel would refuse to sell.
+      const { data: sessionRows } = await admin
+        .from("course_sessions")
+        .select("id, template_id, date_iso, start_time, label_de, max_seats, booked_seats")
+        .in("template_id", [...new Set(sessionTplIdFor.values())])
+        .eq("is_live", true)
+        .gt("date_iso", berlinTodayIso())
+        .order("date_iso", { ascending: true });
+
+      const bookableByTplId = new Map<string, Array<{ id: string; label: string }>>();
+      for (const s of sessionRows ?? []) {
+        // Sold-out dates are dropped rather than shown disabled: this card
+        // is an offer, and an offer listing nothing bookable is noise.
+        if ((s.booked_seats ?? 0) >= (s.max_seats ?? 0)) continue;
+        const label = s.start_time
+          ? `${s.label_de || s.date_iso} · ${s.start_time.slice(0, 5)} Uhr`
+          : s.label_de || s.date_iso;
+        const list = bookableByTplId.get(s.template_id) ?? [];
+        list.push({ id: s.id, label });
+        bookableByTplId.set(s.template_id, list);
+      }
+
+      for (const id of offerTplIds) {
+        const tpl = tplById.get(id)!;
+        const sessions = bookableByTplId.get(sessionTplIdFor.get(id)!) ?? [];
+        if (sessions.length === 0) continue;
+        praxisOffers.push({
+          templateId: id,
+          courseKey: tpl.course_key!,
+          priceCents: tpl.price_gross_praxis_cents!,
+          sessions,
+        });
+      }
+    }
   }
 
   return (
@@ -588,6 +688,7 @@ export default async function MeinKontoPage() {
       upcoming={upcoming}
       online={online}
       done={done}
+      praxisOffers={praxisOffers}
     />
   );
 }

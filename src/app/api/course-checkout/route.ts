@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { buildCourseLineItem, type CourseVariant } from "@/lib/course-pricing";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
@@ -233,6 +234,38 @@ export async function POST(req: NextRequest) {
       }
       if (invite.recipient_email) {
         params.customer_email = invite.recipient_email;
+      }
+    }
+
+    // Logged-in buyer (e.g. the Praxiskurs offer on /mein-konto): pre-fill
+    // the Stripe email from their session. course_bookings is matched to a
+    // person by email alone — no auszubildende_id FK — so a doctor who
+    // types a different address at Stripe files the booking under a second
+    // identity and never sees it in their account.
+    //
+    // The address comes from the auth session, never from the request body:
+    // a client-supplied email here would let anyone bill a booking onto
+    // someone else's account. Anonymous visitors just fall through and
+    // Stripe asks for the email as before.
+    if (!params.customer_email) {
+      try {
+        const authed = await createClient();
+        const {
+          data: { user },
+        } = await authed.auth.getUser();
+        if (user) {
+          const { data: contact } = await supabase
+            .from("v_auszubildende")
+            .select("email")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          const email = contact?.email ?? user.email;
+          if (email) params.customer_email = email;
+        }
+      } catch (err) {
+        // Never fail a checkout over a prefill. Worst case the buyer types
+        // their email at Stripe, exactly as before.
+        console.error("[course-checkout] email prefill skipped:", err);
       }
     }
 

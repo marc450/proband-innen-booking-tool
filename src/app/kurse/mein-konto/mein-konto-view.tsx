@@ -34,6 +34,10 @@ export type CourseType =
 
 export interface EnrichedBooking {
   id: string;
+  // course_templates.id this card resolved to. Null when neither the LW
+  // slug, the course_key nor the HubSpot name matched a template — those
+  // cards render fine but can't carry a Praxiskurs offer.
+  templateId: string | null;
   productName: string;
   displayTitle: string;
   courseType: CourseType;
@@ -75,12 +79,25 @@ export interface AccountProfile {
   addressCountry: string;
 }
 
+// A bookable Praxiskurs for a template whose Onlinekurs the customer
+// already owns. Built server-side in page.tsx; only templates with a live
+// status, a configured praxis price and at least one date with free seats
+// make it here.
+export interface PraxisOffer {
+  templateId: string;
+  // course_templates.course_key — the id /api/course-checkout expects.
+  courseKey: string;
+  priceCents: number;
+  sessions: Array<{ id: string; label: string }>;
+}
+
 interface Props {
   firstName: string | null;
   profile: AccountProfile | null;
   upcoming: EnrichedBooking[];
   online: EnrichedBooking[];
   done: EnrichedBooking[];
+  praxisOffers: PraxisOffer[];
 }
 
 const CORAL = "#BF785E";
@@ -116,9 +133,31 @@ function formatLongDate(iso: string | null): string | null {
   });
 }
 
-export function MeinKontoView({ firstName, profile, upcoming, online, done }: Props) {
+export function MeinKontoView({
+  firstName,
+  profile,
+  upcoming,
+  online,
+  done,
+  praxisOffers,
+}: Props) {
   const [probandOpen, setProbandOpen] = useState(false);
   const empty = upcoming.length === 0 && online.length === 0 && done.length === 0;
+
+  // Pin each offer to a single Online card. A template can legitimately
+  // have two Online cards (e.g. a booking-derived one plus an LW
+  // enrollment that slipped past the slug match), and the offer must not
+  // render twice.
+  const offerByCardId = new Map<string, PraxisOffer>();
+  const offerByTemplateId = new Map(praxisOffers.map((o) => [o.templateId, o]));
+  const claimed = new Set<string>();
+  for (const b of online) {
+    if (!b.templateId || claimed.has(b.templateId)) continue;
+    const offer = offerByTemplateId.get(b.templateId);
+    if (!offer) continue;
+    claimed.add(b.templateId);
+    offerByCardId.set(b.id, offer);
+  }
 
   return (
     // Match the kurse header's container: max-w-7xl with px-5 md:px-8
@@ -162,18 +201,27 @@ export function MeinKontoView({ firstName, profile, upcoming, online, done }: Pr
 
         {online.length > 0 && (
           <Section title="Deine Onlinekurse" count={online.length}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-              {online.map((b) => (
-                <OnlineCard
-                  key={b.id}
-                  booking={b}
-                  // Only nudge about the praxis prerequisite when the
-                  // customer actually has an upcoming Praxis/Kombi date.
-                  // A standalone Onlinekurs purchase has no praxis day, so
-                  // the "vor dem Praxiskurs" copy would be wrong there.
-                  showPraxisPrereq={upcoming.length > 0}
-                />
-              ))}
+            {/* items-start: cells size to their content. Stretching them
+                would blow the card of a course WITHOUT an offer up to the
+                height of a neighbour that has one, leaving a white void
+                between its title and its CTA. */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 items-start">
+              {online.map((b) => {
+                const offer = offerByCardId.get(b.id);
+                return (
+                  <div key={b.id} className="flex flex-col gap-4">
+                    <OnlineCard
+                      booking={b}
+                      // Only nudge about the praxis prerequisite when the
+                      // customer actually has an upcoming Praxis/Kombi date.
+                      // A standalone Onlinekurs purchase has no praxis day, so
+                      // the "vor dem Praxiskurs" copy would be wrong there.
+                      showPraxisPrereq={upcoming.length > 0}
+                    />
+                    {offer && <PraxisOfferCard offer={offer} />}
+                  </div>
+                );
+              })}
             </div>
           </Section>
         )}
@@ -775,6 +823,108 @@ function OnlineCard({
         )}
       </div>
     </article>
+  );
+}
+
+/* ──────────────── Praxiskurs offer (under an Online card) ──────────────── */
+
+function formatEuro(cents: number): string {
+  const whole = cents % 100 === 0;
+  return new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: whole ? 0 : 2,
+    maximumFractionDigits: whole ? 0 : 2,
+  }).format(cents / 100);
+}
+
+// Shown only under an Onlinekurs the customer owns without the matching
+// Praxiskurs. Books through the same /api/course-checkout the public
+// funnel uses, so the price is derived server-side from the template and
+// can't be talked down from here.
+function PraxisOfferCard({ offer }: { offer: PraxisOffer }) {
+  const [sessionId, setSessionId] = useState(offer.sessions[0]?.id ?? "");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const book = async () => {
+    if (!sessionId || loading) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/course-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseKey: offer.courseKey,
+          courseType: "Praxiskurs",
+          sessionId,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.url) {
+        setError(data?.error ?? "Buchung gerade nicht möglich. Bitte versuch es erneut.");
+        setLoading(false);
+        return;
+      }
+      // Stay in the loading state through the redirect so a slow Stripe
+      // hop can't be double-clicked into two checkout sessions.
+      window.location.href = data.url;
+    } catch {
+      setError("Buchung gerade nicht möglich. Bitte versuch es erneut.");
+      setLoading(false);
+    }
+  };
+
+  return (
+    // White surface, not Rose: the page background IS Rose, so a Rose card
+    // would have no surface of its own and the offer would read as loose
+    // text floating under the course card.
+    <div className="bg-white rounded-[10px] shadow-sm p-5 space-y-3">
+      <div>
+        <h4 className="text-sm font-bold text-[#733D29]">Praxiskurs dazubuchen</h4>
+        <p className="text-xs text-black/70 leading-relaxed mt-1.5">
+          Den Onlinekurs hast Du. Im Praxiskurs behandelst Du unter Aufsicht und übst, Indikation und Dosierung am Menschen zu entscheiden.
+        </p>
+      </div>
+
+      <div>
+        <label
+          htmlFor={`praxis-termin-${offer.templateId}`}
+          className="block text-xs font-semibold text-[#733D29] mb-1.5"
+        >
+          Termin
+        </label>
+        <select
+          id={`praxis-termin-${offer.templateId}`}
+          value={sessionId}
+          onChange={(e) => setSessionId(e.target.value)}
+          className="w-full bg-[#E0E5E9] rounded-[10px] px-4 py-3 text-sm text-black/85 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/30 appearance-none cursor-pointer"
+        >
+          {offer.sessions.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <p className="text-sm font-bold text-black">
+        {formatEuro(offer.priceCents)}{" "}
+        <span className="text-xs font-medium text-black/50">inkl. MwSt.</span>
+      </p>
+
+      <button
+        type="button"
+        onClick={book}
+        disabled={loading || !sessionId}
+        className="block w-full text-sm md:text-base font-bold text-white bg-[#0066FF] hover:bg-[#0055DD] rounded-[10px] px-5 py-3 transition-colors disabled:opacity-60"
+      >
+        {loading ? "Weiter zur Zahlung …" : "Praxiskurs buchen"}
+      </button>
+
+      {error && <p className="text-xs font-medium text-red-600">{error}</p>}
+    </div>
   );
 }
 
