@@ -12,6 +12,7 @@ import { runGaldermaExport } from "@/lib/run-galderma-export";
 import { runGaldermaContactIntros } from "@/lib/run-galderma-contact-intros";
 import { runRebookingExpiry } from "@/lib/run-rebooking-expiry";
 import { runRebookingReminders } from "@/lib/run-rebooking-reminders";
+import { runPaymentReconciliation } from "@/lib/run-payment-reconciliation";
 import { archiveSentMessage } from "@/lib/gmail";
 import { INDICATIONS } from "@/lib/indications";
 
@@ -47,6 +48,7 @@ export async function GET(req: NextRequest) {
     staleReviewEmailsCancelled: 0,
     galdermaExported: 0,
     galdermaContactIntros: 0,
+    paymentProblems: 0,
     rebookingReminders: 0,
     rebookingHoldsExpired: 0,
     praxisOnlineReminders: 0,
@@ -65,6 +67,20 @@ export async function GET(req: NextRequest) {
       results.errors += galderma.errors;
     } catch (galdermaErr) {
       console.error("Galderma export pass failed:", galdermaErr);
+      results.errors += 1;
+    }
+
+    // ── Zahlungsabgleich (Stripe vs. DB) ──
+    // Catches the paths that take money and then silently do nothing: a paid
+    // session with no booking, a half-created curriculum bundle, an
+    // Umbuchungsgebühr that never got applied. These customers paid and are
+    // waiting; they mostly don't complain, they just give up.
+    try {
+      const reconciliation = await runPaymentReconciliation(supabase);
+      results.paymentProblems = reconciliation.newAlerts;
+      results.errors += reconciliation.errors;
+    } catch (reconcileErr) {
+      console.error("Payment reconciliation pass failed:", reconcileErr);
       results.errors += 1;
     }
 
