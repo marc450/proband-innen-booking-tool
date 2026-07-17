@@ -1,5 +1,6 @@
 import { getProfileUrlByName } from "@/content/kurse/team";
 import { ONLINE_COURSE_MIN_PCT } from "@/lib/online-course";
+import { buildEmailHtml } from "@/lib/email-template";
 
 const LOGO_URL =
   "https://lwfiles.mycourse.app/6638baeec5c56514e03ec360-public/f64a1ea1eb5346a171fe9ea36e8615ca.png";
@@ -370,6 +371,78 @@ export function buildSessionChangeEmail(firstName: string, courseName: string, p
     ${FOOTER}
   </div>
 </div>`;
+}
+
+/** Everything both Umbuchungs-Zahlungsmails need. The fee and the Aufpreis are
+ *  separate line items on the invoice, so they stay separate in the copy too. */
+export interface RebookingPaymentEmailArgs {
+  firstName: string;
+  /** Course she is booked on today. */
+  currentCourseName: string;
+  /** Course she is moving to. Same as currentCourseName for a date-only move. */
+  targetCourseName: string;
+  isCrossCourse: boolean;
+  feeCents: number;
+  surchargeCents: number;
+  paymentUrl: string;
+  /** Preformatted Berlin date+time the seat hold runs out, e.g. "24. Juli 2026, 14:30". */
+  deadline: string;
+}
+
+function eur(cents: number): string {
+  return (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+}
+
+/** Shared by the request mail and its reminder: what she is moving to and why
+ *  money is due. Kept in one place so the two mails can never drift apart. */
+function rebookingIntro(a: RebookingPaymentEmailArgs, lead: string): string {
+  if (a.isCrossCourse) {
+    const cost =
+      a.feeCents > 0
+        ? `Dafür fällt eine Umbuchungsgebühr von <strong>${eur(a.feeCents)}</strong> (AGB Ziffer 6)` +
+          (a.surchargeCents > 0
+            ? ` sowie ein Kursaufpreis von <strong>${eur(a.surchargeCents)}</strong>`
+            : "") +
+          `, insgesamt <strong>${eur(a.feeCents + a.surchargeCents)}</strong>, an. `
+        : `Dafür fällt ein Kursaufpreis von <strong>${eur(a.surchargeCents)}</strong> an. `;
+    return (
+      `${lead} von Deinem Kurs <strong>${a.currentCourseName}</strong> auf ` +
+      `<strong>${a.targetCourseName}</strong> umbuchen. ${cost}` +
+      "Sobald Deine Zahlung eingegangen ist, buchen wir Dich automatisch um."
+    );
+  }
+  return (
+    `${lead} Deinen Platz im Kurs <strong>${a.targetCourseName}</strong> auf einen neuen Termin verlegen. ` +
+    `Dafür fällt eine einmalige Umbuchungsgebühr von <strong>${eur(a.feeCents)}</strong> an (AGB Ziffer 6). ` +
+    "Sobald Deine Zahlung eingegangen ist, buchen wir Dich automatisch auf den neuen Termin um."
+  );
+}
+
+/** Sent when staff start a gated Umbuchung (/api/admin/course-rebooking). */
+export function buildRebookingPaymentEmail(a: RebookingPaymentEmailArgs): string {
+  return buildEmailHtml({
+    firstName: a.firstName,
+    intro: rebookingIntro(a, "Du möchtest"),
+    buttons: [{ label: "Jetzt bezahlen", url: a.paymentUrl }],
+    note:
+      `Wir halten Deinen Platz im neuen Termin bis zum ${a.deadline} Uhr für Dich frei. ` +
+      "Verbindlich gebucht wird er erst nach Zahlungseingang. Geht bis dahin keine Zahlung ein, " +
+      "bleibt es bei Deinem ursprünglichen Termin.",
+  });
+}
+
+/** Sent by the daily sweep when the fee is still open 48h later and the seat
+ *  hold has not lapsed yet. Once per request (stamped via reminder_sent_at). */
+export function buildRebookingReminderEmail(a: RebookingPaymentEmailArgs): string {
+  return buildEmailHtml({
+    firstName: a.firstName,
+    intro: rebookingIntro(a, "vor ein paar Tagen wolltest Du"),
+    buttons: [{ label: "Jetzt bezahlen", url: a.paymentUrl }],
+    note:
+      `Dein Platz im neuen Termin ist noch bis zum ${a.deadline} Uhr für Dich reserviert. ` +
+      "Danach geben wir ihn wieder frei und es bleibt bei Deinem ursprünglichen Termin. " +
+      "Falls Du doch nicht umbuchen möchtest oder Fragen hast, antworte einfach auf diese E-Mail.",
+  });
 }
 
 export function buildInvoiceEmail(firstName: string): string {

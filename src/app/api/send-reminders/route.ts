@@ -11,6 +11,7 @@ import { sweepStaleReviewEmails } from "@/lib/cancel-scheduled-review-email";
 import { runGaldermaExport } from "@/lib/run-galderma-export";
 import { runGaldermaContactIntros } from "@/lib/run-galderma-contact-intros";
 import { runRebookingExpiry } from "@/lib/run-rebooking-expiry";
+import { runRebookingReminders } from "@/lib/run-rebooking-reminders";
 import { archiveSentMessage } from "@/lib/gmail";
 import { INDICATIONS } from "@/lib/indications";
 
@@ -46,6 +47,7 @@ export async function GET(req: NextRequest) {
     staleReviewEmailsCancelled: 0,
     galdermaExported: 0,
     galdermaContactIntros: 0,
+    rebookingReminders: 0,
     rebookingHoldsExpired: 0,
     praxisOnlineReminders: 0,
     errors: 0,
@@ -63,6 +65,18 @@ export async function GET(req: NextRequest) {
       results.errors += galderma.errors;
     } catch (galdermaErr) {
       console.error("Galderma export pass failed:", galdermaErr);
+      results.errors += 1;
+    }
+
+    // ── Zahlungserinnerung für offene Umbuchungen (nach 48h) ──
+    // Runs BEFORE the reaper below so a hold that lapses today still gets its
+    // reminder attempt first; the pass skips anything already expired anyway.
+    try {
+      const reminders = await runRebookingReminders(supabase);
+      results.rebookingReminders = reminders.sent;
+      results.errors += reminders.errors;
+    } catch (reminderErr) {
+      console.error("Rebooking reminder pass failed:", reminderErr);
       results.errors += 1;
     }
 

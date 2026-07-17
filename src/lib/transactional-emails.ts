@@ -10,6 +10,8 @@ import {
   buildPraxiskursEmail,
   buildProbandinnenInfoEmail,
   buildSessionChangeEmail,
+  buildRebookingPaymentEmail,
+  buildRebookingReminderEmail,
 } from "@/lib/course-email-templates";
 import {
   AUTO_REPLY_SUBJECT_LINE,
@@ -568,6 +570,54 @@ export const TRANSACTIONAL_EMAILS: TransactionalEmail[] = [
         startTime: SAMPLE.startTime,
         endTime: SAMPLE.endTime,
         instructor: SAMPLE.instructor,
+      }),
+    }),
+  },
+  {
+    id: "course-rebooking-payment",
+    funnel: "arzt-kursupdates",
+    name: "Umbuchung: Zahlungslink",
+    recipient: "Ärzt:in",
+    trigger:
+      "Admin startet eine Umbuchung, für die eine Umbuchungsgebühr und/oder ein Kursaufpreis fällig wird",
+    codeRef: "src/app/api/admin/course-rebooking/route.ts",
+    description:
+      "Zahlungslink für die Umbuchungsgebühr (AGB Ziffer 6) und ggf. den Kursaufpreis. Der Platz im neuen Termin ist bis zum genannten Datum reserviert, die Umbuchung wird erst nach Zahlungseingang verbindlich.",
+    renderSample: () => ({
+      subject: `Umbuchung: ${SAMPLE.courseTitle}`,
+      html: buildRebookingPaymentEmail({
+        firstName: SAMPLE.firstName,
+        currentCourseName: SAMPLE.courseTitle,
+        targetCourseName: SAMPLE.courseTitle,
+        isCrossCourse: false,
+        feeCents: 25000,
+        surchargeCents: 0,
+        paymentUrl: "https://proband-innen.ephia.de/umbuchung/bezahlen/beispiel",
+        deadline: "24. Juli 2026, 14:30",
+      }),
+    }),
+  },
+  {
+    id: "course-rebooking-reminder",
+    funnel: "arzt-kursupdates",
+    name: "Umbuchung: Zahlungserinnerung (nach 48h)",
+    recipient: "Ärzt:in",
+    trigger:
+      "Täglicher Durchlauf: Umbuchungsgebühr seit 48h offen, Reservierung noch nicht abgelaufen. Genau einmal pro Umbuchung.",
+    codeRef: "src/lib/run-rebooking-reminders.ts",
+    description:
+      "Erinnerung an die offene Umbuchungsgebühr, mit dem Datum, bis zu dem der Platz im neuen Termin reserviert bleibt.",
+    renderSample: () => ({
+      subject: `Erinnerung: Umbuchungsgebühr für ${SAMPLE.courseTitle}`,
+      html: buildRebookingReminderEmail({
+        firstName: SAMPLE.firstName,
+        currentCourseName: SAMPLE.courseTitle,
+        targetCourseName: SAMPLE.courseTitle,
+        isCrossCourse: false,
+        feeCents: 25000,
+        surchargeCents: 0,
+        paymentUrl: "https://proband-innen.ephia.de/umbuchung/bezahlen/beispiel",
+        deadline: "24. Juli 2026, 14:30",
       }),
     }),
   },

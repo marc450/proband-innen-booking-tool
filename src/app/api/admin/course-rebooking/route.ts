@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildEmailHtml } from "@/lib/email-template";
-import { buildSessionChangeEmail, formatDateDe } from "@/lib/course-email-templates";
+import {
+  buildSessionChangeEmail,
+  buildRebookingPaymentEmail,
+  formatDateDe,
+} from "@/lib/course-email-templates";
+import { formatHoldDeadline } from "@/lib/run-rebooking-reminders";
 import { buildCourseLineItem, type CourseVariant } from "@/lib/course-pricing";
 import { archiveSentMessage } from "@/lib/gmail";
 
@@ -330,45 +334,16 @@ export async function POST(req: NextRequest) {
   // Email the payment page link to the doctor (best effort).
   if (RESEND_API_KEY) {
     try {
-      const feeEur = (fee / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
-      const surchargeEur = (surcharge / 100).toLocaleString("de-DE", {
-        style: "currency",
-        currency: "EUR",
-      });
-      const totalEur = (total / 100).toLocaleString("de-DE", {
-        style: "currency",
-        currency: "EUR",
-      });
-
-      const intro = isCrossCourse
-        ? `Du möchtest von Deinem Kurs <strong>${currentCourseName}</strong> auf <strong>${courseName}</strong> umbuchen. ` +
-          (fee > 0
-            ? `Dafür fällt eine Umbuchungsgebühr von <strong>${feeEur}</strong> (AGB Ziffer 6)` +
-              (surcharge > 0 ? ` sowie ein Kursaufpreis von <strong>${surchargeEur}</strong>` : "") +
-              `, insgesamt <strong>${totalEur}</strong>, an. `
-            : `Dafür fällt ein Kursaufpreis von <strong>${surchargeEur}</strong> an. `) +
-          `Sobald Deine Zahlung eingegangen ist, buchen wir Dich automatisch um.`
-        : `Du möchtest Deinen Platz im Kurs <strong>${courseName}</strong> auf einen neuen Termin verlegen. ` +
-          `Dafür fällt eine einmalige Umbuchungsgebühr von <strong>${feeEur}</strong> an (AGB Ziffer 6). ` +
-          `Sobald Deine Zahlung eingegangen ist, buchen wir Dich automatisch auf den neuen Termin um.`;
-
-      const deadline = expiresAt.toLocaleString("de-DE", {
-        timeZone: "Europe/Berlin",
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-
-      const html = buildEmailHtml({
+      // Same builder the 48h reminder uses, so the two mails can't drift apart.
+      const html = buildRebookingPaymentEmail({
         firstName: booking.first_name || "Frau Kollegin, Herr Kollege",
-        intro,
-        buttons: [{ label: "Jetzt bezahlen", url: paymentPageUrl }],
-        note:
-          `Wir halten Deinen Platz im neuen Termin bis zum ${deadline} Uhr für Dich frei. ` +
-          "Verbindlich gebucht wird er erst nach Zahlungseingang. Geht bis dahin keine Zahlung ein, " +
-          "bleibt es bei Deinem ursprünglichen Termin.",
+        currentCourseName,
+        targetCourseName: courseName,
+        isCrossCourse,
+        feeCents: fee,
+        surchargeCents: surcharge,
+        paymentUrl: paymentPageUrl,
+        deadline: formatHoldDeadline(expiresAt.toISOString()),
       });
       const subject = `Umbuchung: ${courseName}`;
       await fetch("https://api.resend.com/emails", {
