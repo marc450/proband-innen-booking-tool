@@ -10,6 +10,14 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 const SITE_URL = "https://proband-innen.ephia.de";
 const MARKETING_URL = "https://ephia.de";
 
+/** Has the seat hold for this request run out? Module scope on purpose: the
+ *  page is a server component and re-reads the clock on every request, which
+ *  the react-hooks purity rule flags inside a component body. */
+function isLapsed(expiresAt: string | null): boolean {
+  if (!expiresAt) return false;
+  return new Date(expiresAt).getTime() < Date.now();
+}
+
 async function stripePost(endpoint: string, body: Record<string, string>) {
   const res = await fetch(`https://api.stripe.com/v1${endpoint}`, {
     method: "POST",
@@ -36,12 +44,18 @@ export default async function UmbuchungBezahlenPage({
   const { data: request } = await admin
     .from("course_rebooking_requests")
     .select(
-      "id, status, fee_cents, surcharge_cents, booking_id, to_template:course_templates!to_template_id(course_label_de, title), course_bookings(first_name, last_name, email, stripe_customer_id, course_templates(course_label_de, title))",
+      "id, status, fee_cents, surcharge_cents, expires_at, booking_id, to_template:course_templates!to_template_id(course_label_de, title), course_bookings(first_name, last_name, email, stripe_customer_id, course_templates(course_label_de, title))",
     )
     .eq("id", requestId)
     .single();
 
-  if (!request || request.status !== "pending") {
+  // The seat hold has a deadline (migration 154). Check it here as well as in
+  // the reaper: that only sweeps once a day, so a link goes stale well before
+  // the row does, and we must not take a fee for a seat we owe back. This check
+  // is what actually enforces the deadline for the doctor.
+  const holdLapsed = isLapsed((request?.expires_at as string | null) ?? null);
+
+  if (!request || request.status !== "pending" || holdLapsed) {
     // Already paid or cancelled — show a simple message page.
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-5">
@@ -55,7 +69,9 @@ export default async function UmbuchungBezahlenPage({
           <p className="text-black/60 text-sm">
             {request?.status === "applied"
               ? "Deine Umbuchungsgebühr wurde bereits bezahlt und der neue Termin ist bestätigt."
-              : "Dieser Zahlungslink ist nicht mehr aktiv. Bitte wende Dich an unser Team unter customerlove@ephia.de."}
+              : holdLapsed
+                ? "Der Platz im neuen Termin war bis zu einem festen Datum für Dich reserviert, diese Frist ist abgelaufen. Es bleibt bei Deinem ursprünglichen Termin. Wenn Du weiterhin umbuchen möchtest, melde Dich gerne unter customerlove@ephia.de."
+                : "Dieser Zahlungslink ist nicht mehr aktiv. Bitte wende Dich an unser Team unter customerlove@ephia.de."}
           </p>
         </div>
       </div>

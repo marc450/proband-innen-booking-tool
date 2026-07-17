@@ -116,6 +116,101 @@ export default async function KursDetailPage({
     .neq("status", "cancelled")
     .order("created_at", { ascending: false });
 
+  // Pending Umbuchungen touching this session (migration 154). A pending
+  // request already moved the seats: an OUTGOING one means the doctor is still
+  // on this list but no longer counts against this session's capacity, an
+  // INCOMING one means one of this session's seats is reserved for a doctor who
+  // has not paid her Umbuchungsgebühr yet and therefore isn't on the list.
+  const { data: holdRows } = await admin
+    .from("course_rebooking_holds")
+    .select(
+      "id, booking_id, from_session_id, to_session_id, expires_at, first_name, last_name",
+    )
+    .or(`from_session_id.eq.${sessionId},to_session_id.eq.${sessionId}`);
+
+  const holds = holdRows ?? [];
+
+  // Resolve the other end of each move to a human date for the badges.
+  const otherSessionIds = Array.from(
+    new Set(
+      holds
+        .map((h) => (h.from_session_id === sessionId ? h.to_session_id : h.from_session_id))
+        .filter((x): x is string => !!x),
+    ),
+  );
+  const { data: otherSessions } = otherSessionIds.length
+    ? await admin
+        .from("course_sessions")
+        .select("id, date_iso, course_templates(course_label_de, title)")
+        .in("id", otherSessionIds)
+    : { data: [] };
+
+  const formatShortDe = (iso: string | null) =>
+    iso
+      ? new Date(`${iso}T12:00:00`).toLocaleDateString("de-DE", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : "—";
+
+  const sessionLabelById = new Map(
+    (otherSessions ?? []).map((s) => [
+      s.id as string,
+      {
+        date: formatShortDe(s.date_iso as string | null),
+        course:
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ((s.course_templates as any)?.course_label_de ||
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (s.course_templates as any)?.title ||
+            null) as string | null,
+      },
+    ]),
+  );
+
+  const formatDeadline = (iso: string | null) =>
+    iso
+      ? new Date(iso).toLocaleString("de-DE", {
+          timeZone: "Europe/Berlin",
+          day: "numeric",
+          month: "long",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : null;
+
+  // Outgoing: keyed by booking, so the row can show a badge and lock its status.
+  const outgoingHoldByBookingId = new Map(
+    holds
+      .filter((h) => h.from_session_id === sessionId)
+      .map((h) => [
+        h.booking_id as string,
+        {
+          requestId: h.id as string,
+          toDate: sessionLabelById.get(h.to_session_id as string)?.date ?? "—",
+          toCourse: sessionLabelById.get(h.to_session_id as string)?.course ?? null,
+          deadline: formatDeadline(h.expires_at as string | null),
+        },
+      ]),
+  );
+
+  // Incoming: no booking row exists on this session yet, so these render as a
+  // separate "reserviert" note above the participant list.
+  const incomingHolds = holds
+    .filter((h) => h.to_session_id === sessionId)
+    .map((h) => ({
+      requestId: h.id as string,
+      name: [h.first_name, h.last_name].filter(Boolean).join(" ") || "Unbekannt",
+      fromDate: h.from_session_id
+        ? sessionLabelById.get(h.from_session_id as string)?.date ?? "—"
+        : "—",
+      fromCourse: h.from_session_id
+        ? sessionLabelById.get(h.from_session_id as string)?.course ?? null
+        : null,
+      deadline: formatDeadline(h.expires_at as string | null),
+    }));
+
   // For each auszubildende_id on this session, look up their specialty
   // and count how many other (non-cancelled) course bookings they have.
   const auszubildendeIds = Array.from(
@@ -418,9 +513,11 @@ export default async function KursDetailPage({
           consent: consentByBookingId.get(b.id as string) ?? null,
           prefillPhone: azid ? prefillByAuszubildendeId.get(azid)?.phone ?? null : null,
           prefillAddress: azid ? prefillByAuszubildendeId.get(azid)?.address ?? null : null,
+          pendingRebooking: outgoingHoldByBookingId.get(b.id as string) ?? null,
           });
         })
       }
+      incomingHolds={incomingHolds}
       courseDate={courseDateHuman}
     />
   );

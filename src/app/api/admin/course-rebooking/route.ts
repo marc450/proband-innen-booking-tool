@@ -18,9 +18,15 @@ import { archiveSentMessage } from "@/lib/gmail";
  * The move is NOT applied here when money is due. We persist a pending
  * course_rebooking_request and the doctor pays the Umbuchungsgebühr + Aufpreis
  * via the emailed link; only then does the Stripe webhook call
- * apply_course_rebooking to move the booking (incl. template/type) and rebalance
- * seats. When the total is 0 € (same price, more than 14 days out) the move is
- * applied immediately here and a confirmation email is sent.
+ * apply_course_rebooking to move the booking (incl. template/type). When the
+ * total is 0 € (same price, more than 14 days out) the move is applied
+ * immediately here and a confirmation email is sent.
+ *
+ * The pending request IS the seat reservation (migration 154): creating it
+ * frees the original seat for resale right away and holds the target seat, so
+ * an unpaid Umbuchung no longer blocks a sellable seat. The hold has a
+ * deadline; the payment page refuses a lapsed link, and the daily sweep
+ * (/api/send-reminders) hands the held seat back.
  *
  * Same-course FREE moves do NOT go through this route — the client updates the
  * booking directly, as before.
@@ -30,6 +36,42 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const BOOKING_SITE_URL = "https://proband-innen.ephia.de";
 
 const VALID_COURSE_TYPES: CourseVariant[] = ["Onlinekurs", "Praxiskurs", "Kombikurs"];
+
+// How long a pending Umbuchung may hold its seats.
+const HOLD_DAYS = 7;
+// ... but never past this many days before the ORIGINAL course date.
+const HOLD_STOP_DAYS_BEFORE_COURSE = 2;
+// ... and always at least this long, so a doctor who rebooks right before her
+// course still gets a usable window instead of an already-expired link.
+const HOLD_MIN_HOURS = 24;
+
+/**
+ * Deadline for a seat hold: 7 days, capped at 2 days before the original course
+ * date, floored at 24h. Once the deadline passes the reaper releases the target
+ * seat and puts her back on the original date.
+ *
+ * The cap only applies while the original course is still AHEAD of her. Its
+ * whole point is to not hold a seat past the date she would fall back to; when
+ * that course has already happened (staff rebooking a no-show onto a later
+ * date, the common case) there is nothing to fall back to and no reason to
+ * rush her, so she gets the full 7 days.
+ */
+function holdExpiresAt(fromDateIso: string | null): Date {
+  const now = Date.now();
+  let expires = now + HOLD_DAYS * 24 * 60 * 60 * 1000;
+
+  if (fromDateIso) {
+    // Course days start at midnight Berlin; the exact hour doesn't matter at a
+    // 2-day cap, so date-only arithmetic is close enough.
+    const courseStart = new Date(`${fromDateIso}T00:00:00+02:00`).getTime();
+    if (!Number.isNaN(courseStart) && courseStart > now) {
+      const cap = courseStart - HOLD_STOP_DAYS_BEFORE_COURSE * 24 * 60 * 60 * 1000;
+      expires = Math.min(expires, cap);
+    }
+  }
+
+  return new Date(Math.max(expires, now + HOLD_MIN_HOURS * 60 * 60 * 1000));
+}
 
 // Verified admin check: hits the auth server (getUser) and the DB role, not a
 // forgeable cookie. This route can move money, so it must not trust headers.
@@ -176,30 +218,47 @@ export async function POST(req: NextRequest) {
 
   const total = fee + surcharge;
 
-  // Persist the pending request first so its id can ride along in the Stripe
-  // metadata; the webhook resolves the move from it after payment.
-  const { data: request, error: rErr } = await admin
-    .from("course_rebooking_requests")
-    .insert({
-      booking_id: booking.id,
-      from_session_id: booking.session_id,
-      to_session_id: toSessionId,
-      fee_cents: fee,
-      surcharge_cents: surcharge,
-      to_template_id: targetTemplateId,
-      to_course_type: targetCourseType,
-      status: "pending",
-      created_by: user.id,
-    })
-    .select("id")
+  // The hold deadline is measured against the ORIGINAL course date.
+  const { data: fromSession } = await admin
+    .from("course_sessions")
+    .select("date_iso")
+    .eq("id", booking.session_id)
     .single();
 
-  if (rErr || !request) {
+  const expiresAt = holdExpiresAt(fromSession?.date_iso ?? null);
+
+  // Persist the pending request first so its id can ride along in the Stripe
+  // metadata; the webhook resolves the move from it after payment. The RPC also
+  // takes the seats (old one freed, target one held) in the same transaction,
+  // so a request can never exist without its hold.
+  const { data: requestId, error: rErr } = await admin.rpc("create_course_rebooking_request", {
+    p_booking_id: booking.id,
+    p_to_session_id: toSessionId,
+    p_fee_cents: fee,
+    p_surcharge_cents: surcharge,
+    p_to_template_id: targetTemplateId,
+    p_to_course_type: targetCourseType,
+    p_created_by: user.id,
+    p_expires_at: expiresAt.toISOString(),
+  });
+
+  if (rErr || !requestId) {
+    if (rErr?.message?.includes("REBOOKING_ALREADY_PENDING")) {
+      return NextResponse.json(
+        {
+          error:
+            "Für diese Buchung läuft bereits eine Umbuchung, die noch nicht bezahlt ist. Bitte ziehe sie zuerst zurück.",
+        },
+        { status: 409 },
+      );
+    }
     return NextResponse.json(
       { error: rErr?.message || "Umbuchung konnte nicht angelegt werden." },
       { status: 500 },
     );
   }
+
+  const request = { id: requestId as string };
 
   const currentCourseName =
     (booking.course_templates as { course_label_de?: string; title?: string } | null)
@@ -293,11 +352,23 @@ export async function POST(req: NextRequest) {
           `Dafür fällt eine einmalige Umbuchungsgebühr von <strong>${feeEur}</strong> an (AGB Ziffer 6). ` +
           `Sobald Deine Zahlung eingegangen ist, buchen wir Dich automatisch auf den neuen Termin um.`;
 
+      const deadline = expiresAt.toLocaleString("de-DE", {
+        timeZone: "Europe/Berlin",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
       const html = buildEmailHtml({
         firstName: booking.first_name || "Frau Kollegin, Herr Kollege",
         intro,
         buttons: [{ label: "Jetzt bezahlen", url: paymentPageUrl }],
-        note: "Der neue Termin wird erst nach Zahlungseingang verbindlich gebucht.",
+        note:
+          `Wir halten Deinen Platz im neuen Termin bis zum ${deadline} Uhr für Dich frei. ` +
+          "Verbindlich gebucht wird er erst nach Zahlungseingang. Geht bis dahin keine Zahlung ein, " +
+          "bleibt es bei Deinem ursprünglichen Termin.",
       });
       const subject = `Umbuchung: ${courseName}`;
       await fetch("https://api.resend.com/emails", {

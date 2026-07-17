@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Download, ArrowRightLeft, Trash2, Loader2, LinkIcon, Check } from "lucide-react";
+import { Search, Download, ArrowRightLeft, Trash2, Loader2, LinkIcon, Check, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -54,6 +54,18 @@ interface BookingRow {
   // Prefer this for display — `first_name`/`last_name` on the booking itself
   // are denormalized snapshots from checkout and do not track profile renames.
   auszubildende: { title: string | null; first_name: string | null; last_name: string | null } | null;
+}
+
+/** A pending Umbuchung that already holds seats: the booking's original seat is
+ *  back on sale and a seat in `to_session_id` is reserved until `expires_at`.
+ *  The move itself only happens once the Umbuchungsgebühr is paid. */
+interface RebookingHold {
+  id: string;
+  booking_id: string;
+  to_session_id: string;
+  fee_cents: number;
+  surcharge_cents: number | null;
+  expires_at: string | null;
 }
 
 // Resolve the display name for a booking: prefer the current auszubildende
@@ -107,6 +119,7 @@ function priceForType(tmpl: TemplateOption | undefined, courseType: string): num
 
 interface Props {
   initialBookings: BookingRow[];
+  initialHolds: RebookingHold[];
   isAdmin?: boolean;
 }
 
@@ -164,10 +177,20 @@ function defaultRebookingFee(dateIso?: string | null, startTime?: string | null)
   return "25000";
 }
 
-export function CourseBookingsManager({ initialBookings, isAdmin = false }: Props) {
+export function CourseBookingsManager({
+  initialBookings,
+  initialHolds,
+  isAdmin = false,
+}: Props) {
   const router = useRouter();
   const supabase = createClient();
   const [bookings, setBookings] = useState(initialBookings);
+  const [holds, setHolds] = useState(initialHolds);
+  const holdByBookingId = new Map(holds.map((h) => [h.booking_id, h]));
+  // Withdraw-an-Umbuchung state. Staff need this to undo a move the doctor
+  // never paid for, without waiting for the hold to lapse on its own.
+  const [withdrawHold, setWithdrawHold] = useState<BookingRow | null>(null);
+  const [withdrawing, setWithdrawing] = useState(false);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -308,6 +331,19 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
     const booking = bookings.find((b) => b.id === id);
     if (!booking) return;
 
+    // A pending Umbuchung already moved this booking's seat off its session,
+    // so the seat math below would decrement a seat she no longer occupies.
+    // The row locks the dropdown too; this is the belt-and-braces guard.
+    if (holdByBookingId.has(id)) {
+      setRebookingNotice({
+        title: "Status gesperrt",
+        description:
+          "Für diese Buchung läuft eine Umbuchung, deren Gebühr noch nicht bezahlt ist. Ziehe die Umbuchung zurück oder warte den Zahlungseingang ab.",
+      });
+      setStatusDropdownId(null);
+      return;
+    }
+
     // Intercept cancellation — show confirmation modal instead of direct update
     if (newStatus === "cancelled" && booking.status !== "cancelled" && booking.status !== "refunded") {
       setCancelBooking(booking);
@@ -410,8 +446,51 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
     setLoadingSessions(false);
   };
 
+  // Withdraw an Umbuchung the doctor never paid for. Releases the held seat in
+  // the target session and restores her seat on the original date, which may
+  // push that session over capacity if the freed seat was resold meanwhile.
+  const confirmWithdraw = async () => {
+    if (!withdrawHold) return;
+    const hold = holdByBookingId.get(withdrawHold.id);
+    if (!hold) return;
+
+    setWithdrawing(true);
+    const { error } = await supabase.rpc("cancel_course_rebooking", {
+      p_request_id: hold.id,
+    });
+    setWithdrawing(false);
+    setWithdrawHold(null);
+
+    if (error) {
+      setRebookingNotice({
+        title: "Umbuchung nicht zurückgezogen",
+        description: error.message || "Bitte versuche es erneut.",
+      });
+      return;
+    }
+
+    setHolds((prev) => prev.filter((h) => h.id !== hold.id));
+    router.refresh();
+    setRebookingNotice({
+      title: "Umbuchung zurückgezogen",
+      description:
+        "Der reservierte Platz ist wieder frei. Die Ärzt:in bleibt auf ihrem ursprünglichen Termin gebucht.",
+    });
+  };
+
   const openSessionChange = async (booking: BookingRow) => {
     if (!booking.session_id) return;
+
+    // One open Umbuchung per booking. A second one would take a second hold for
+    // a seat she has already given up (the RPC rejects it server-side anyway).
+    if (holdByBookingId.has(booking.id)) {
+      setRebookingNotice({
+        title: "Umbuchung läuft bereits",
+        description:
+          "Für diese Buchung wurde bereits eine Umbuchung gestartet, die Gebühr ist aber noch nicht bezahlt. Ziehe sie zuerst zurück, um einen anderen Termin zu wählen.",
+      });
+      return;
+    }
 
     // Baseline = the CURRENT SESSION's template, not booking.template_id.
     // Inheriting courses (e.g. Grundkurs Zahnmedizin) seat their bookings in a
@@ -526,10 +605,13 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
             "Die Buchung wurde umgebucht und die Ärzt:in per E-Mail informiert.",
         });
       } else {
+        // Pull the new hold so the row shows "Umbuchung offen" right away.
+        router.refresh();
         setRebookingNotice({
           title: "Zahlungslink gesendet",
           description:
-            "Die Ärzt:in hat einen Zahlungslink per E-Mail erhalten. Die Umbuchung wird nach Zahlungseingang automatisch durchgeführt.",
+            "Die Ärzt:in hat einen Zahlungslink per E-Mail erhalten. Die Umbuchung wird nach Zahlungseingang automatisch durchgeführt. " +
+            "Ihr alter Platz ist ab sofort wieder buchbar, der Platz im neuen Termin ist befristet für sie reserviert.",
         });
       }
     } catch {
@@ -924,15 +1006,54 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                     <div className="relative" onClick={(e) => e.stopPropagation()}>
                       <Badge
                         variant={statusBadgeVariant[booking.status]}
-                        className={isAdmin && booking.status !== "refunded" ? "cursor-pointer" : ""}
+                        className={
+                          isAdmin && booking.status !== "refunded" && !holdByBookingId.has(booking.id)
+                            ? "cursor-pointer"
+                            : ""
+                        }
                         onClick={() => {
-                          if (isAdmin && booking.status !== "refunded") {
+                          if (
+                            isAdmin &&
+                            booking.status !== "refunded" &&
+                            !holdByBookingId.has(booking.id)
+                          ) {
                             setStatusDropdownId(statusDropdownId === booking.id ? null : booking.id);
                           }
                         }}
                       >
                         {statusLabels[booking.status]}
                       </Badge>
+                      {/* Open Umbuchung: she is still booked here on paper, but
+                          her seat is already resellable and a seat in the target
+                          session is held for her until the fee is paid. */}
+                      {holdByBookingId.has(booking.id) && (
+                        <Badge
+                          variant="outline"
+                          className="ml-1.5 text-amber-700 border-amber-300 bg-amber-50"
+                          title={(() => {
+                            const h = holdByBookingId.get(booking.id)!;
+                            const due = ((h.fee_cents + (h.surcharge_cents ?? 0)) / 100).toLocaleString(
+                              "de-DE",
+                              { style: "currency", currency: "EUR" },
+                            );
+                            const until = h.expires_at
+                              ? new Date(h.expires_at).toLocaleString("de-DE", {
+                                  timeZone: "Europe/Berlin",
+                                  day: "numeric",
+                                  month: "long",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : null;
+                            return (
+                              `Umbuchung gestartet, ${due} noch nicht bezahlt. Der alte Platz ist wieder buchbar, ` +
+                              `der neue Platz ist reserviert${until ? ` bis ${until} Uhr` : ""}.`
+                            );
+                          })()}
+                        >
+                          Umbuchung offen
+                        </Badge>
+                      )}
                       {isAdmin && booking.status !== "refunded" && statusDropdownId === booking.id && (
                         <div
                           ref={statusDropdownRef}
@@ -984,14 +1105,24 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
                   )}
                   {isAdmin && (
                     <TableCell>
-                      {booking.session_id && (booking.status === "booked" || booking.status === "completed") && (
+                      {holdByBookingId.has(booking.id) ? (
                         <button
-                          onClick={(e) => { e.stopPropagation(); openSessionChange(booking); }}
+                          onClick={(e) => { e.stopPropagation(); setWithdrawHold(booking); }}
                           className="text-muted-foreground hover:text-foreground transition-colors"
-                          title="Termin ändern"
+                          title="Offene Umbuchung zurückziehen"
                         >
-                          <ArrowRightLeft className="h-4 w-4" />
+                          <Undo2 className="h-4 w-4" />
                         </button>
+                      ) : (
+                        booking.session_id && (booking.status === "booked" || booking.status === "completed") && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openSessionChange(booking); }}
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                            title="Termin ändern"
+                          >
+                            <ArrowRightLeft className="h-4 w-4" />
+                          </button>
+                        )
                       )}
                     </TableCell>
                   )}
@@ -1232,6 +1363,20 @@ export function CourseBookingsManager({ initialBookings, isAdmin = false }: Prop
         title="Stornierung gespeichert, E-Mail nicht versendet"
         description={emailWarning || ""}
         onClose={() => setEmailWarning(null)}
+      />
+
+      <ConfirmDialog
+        open={!!withdrawHold}
+        title="Umbuchung zurückziehen"
+        description={
+          withdrawHold
+            ? `Die offene Umbuchung von ${displayNameOf(withdrawHold)} wird zurückgezogen. Der reservierte Platz im neuen Termin wird wieder freigegeben, und sie bleibt auf ihrem ursprünglichen Termin gebucht. Ihr Zahlungslink verliert damit seine Gültigkeit.`
+            : ""
+        }
+        confirmLabel={withdrawing ? "Wird zurückgezogen ..." : "Zurückziehen"}
+        variant="destructive"
+        onConfirm={confirmWithdraw}
+        onCancel={() => setWithdrawHold(null)}
       />
 
       <AlertDialog

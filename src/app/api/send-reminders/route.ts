@@ -10,6 +10,7 @@ import { sendPostTreatmentProbandReviews } from "@/lib/send-proband-review-reque
 import { sweepStaleReviewEmails } from "@/lib/cancel-scheduled-review-email";
 import { runGaldermaExport } from "@/lib/run-galderma-export";
 import { runGaldermaContactIntros } from "@/lib/run-galderma-contact-intros";
+import { runRebookingExpiry } from "@/lib/run-rebooking-expiry";
 import { archiveSentMessage } from "@/lib/gmail";
 import { INDICATIONS } from "@/lib/indications";
 
@@ -45,6 +46,7 @@ export async function GET(req: NextRequest) {
     staleReviewEmailsCancelled: 0,
     galdermaExported: 0,
     galdermaContactIntros: 0,
+    rebookingHoldsExpired: 0,
     praxisOnlineReminders: 0,
     errors: 0,
   };
@@ -61,6 +63,20 @@ export async function GET(req: NextRequest) {
       results.errors += galderma.errors;
     } catch (galdermaErr) {
       console.error("Galderma export pass failed:", galdermaErr);
+      results.errors += 1;
+    }
+
+    // ── Umbuchungen ohne Zahlungseingang freigeben ──
+    // A pending Umbuchung holds two seats: the doctor's original seat is
+    // already resellable and a seat in the target session is reserved for her.
+    // Once the deadline passes unpaid, hand the target seat back and restore
+    // her on her original date, where she stays booked until she pays.
+    try {
+      const rebookings = await runRebookingExpiry(supabase);
+      results.rebookingHoldsExpired = rebookings.expired;
+      results.errors += rebookings.errors;
+    } catch (rebookingErr) {
+      console.error("Rebooking expiry pass failed:", rebookingErr);
       results.errors += 1;
     }
 

@@ -102,6 +102,25 @@ interface AerztBooking {
   consent: ConsentState | null;
   prefillPhone: string | null;
   prefillAddress: string | null;
+  /** Set while an Umbuchung off this session is waiting for its fee. She is
+   *  still officially booked here, but her seat is already back on sale and a
+   *  seat in the target session is held for her. Locks the status dropdown. */
+  pendingRebooking: {
+    requestId: string;
+    toDate: string;
+    toCourse: string | null;
+    deadline: string | null;
+  } | null;
+}
+
+/** An Umbuchung INTO this session that hasn't been paid yet: the seat is taken
+ *  but the doctor won't appear in the participant list until she pays. */
+interface IncomingHold {
+  requestId: string;
+  name: string;
+  fromDate: string;
+  fromCourse: string | null;
+  deadline: string | null;
 }
 
 const AERZT_STATUS_OPTIONS: Array<{ value: string; label: string }> = [
@@ -132,6 +151,7 @@ interface Props {
   slots: DetailSlot[];
   bookings: DetailBooking[];
   aerztBookings: AerztBooking[];
+  incomingHolds: IncomingHold[];
   // Count of Zahnmediziner:innen booked on this session. Drives the
   // masseter reservation summary + shortfall warning.
   dentistCount: number;
@@ -224,6 +244,7 @@ export function KursDetailClient({
   slots: initialSlots,
   bookings: initialBookings,
   aerztBookings,
+  incomingHolds,
   dentistCount,
   courseDate,
 }: Props) {
@@ -765,6 +786,28 @@ export function KursDetailClient({
               .map((id) => `a-${id}`)}
           />
         </div>
+        {/* Seats held for Umbuchungen that haven't been paid yet. They count
+            towards {aerztBookedSeats} above but have no row in the table, so
+            without this note the numbers look wrong. */}
+        {incomingHolds.length > 0 && (
+          <div className="mx-6 mb-3 rounded-[10px] bg-amber-50 px-4 py-3">
+            <p className="text-sm font-medium text-amber-900">
+              {incomingHolds.length === 1
+                ? "1 Platz ist für eine Umbuchung reserviert"
+                : `${incomingHolds.length} Plätze sind für Umbuchungen reserviert`}
+            </p>
+            <ul className="mt-1 space-y-1">
+              {incomingHolds.map((h) => (
+                <li key={h.requestId} className="text-sm text-amber-900/80">
+                  {h.name} bucht von {h.fromDate}
+                  {h.fromCourse ? ` (${h.fromCourse})` : ""} um. Die Umbuchungsgebühr ist noch
+                  offen, deshalb steht sie noch nicht in der Liste.
+                  {h.deadline ? ` Reserviert bis ${h.deadline} Uhr.` : ""}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {aerztBookingsState.length === 0 ? (
           <p className="px-6 pb-6 text-sm text-muted-foreground">
             Noch keine Buchungen für diese Session.
@@ -904,20 +947,43 @@ export function KursDetailClient({
                   )}
                   <TableCell className="w-[180px]">
                     <div className="flex justify-end">
-                      <select
-                        value={b.status ?? "booked"}
-                        onChange={(e) => updateAerztStatus(b.id, e.target.value)}
-                        className="h-9 border border-input rounded-lg px-2 text-sm bg-transparent w-[140px]"
-                      >
-                        {AERZT_STATUS_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                        {b.status && !AERZT_STATUS_OPTIONS.some((o) => o.value === b.status) && (
-                          <option value={b.status}>{b.status}</option>
-                        )}
-                      </select>
+                      {b.pendingRebooking ? (
+                        // Locked on purpose. Her seat here is already back on
+                        // sale and a seat in the target session is held, so a
+                        // status change would double-count the seat math. It
+                        // also isn't the Kursbetreuung's call to make while the
+                        // Umbuchung is still open.
+                        <Badge
+                          variant="outline"
+                          className="text-amber-700 border-amber-300 bg-amber-50 whitespace-normal text-right"
+                          title={
+                            `Umbuchung auf ${b.pendingRebooking.toDate}` +
+                            (b.pendingRebooking.toCourse ? ` (${b.pendingRebooking.toCourse})` : "") +
+                            " ist beantragt, die Umbuchungsgebühr ist aber noch nicht bezahlt. " +
+                            "Bis dahin bleibt sie auf diesem Termin gebucht. Bitte den Status nicht ändern." +
+                            (b.pendingRebooking.deadline
+                              ? ` Die Reservierung läuft am ${b.pendingRebooking.deadline} Uhr ab.`
+                              : "")
+                          }
+                        >
+                          Umbuchung offen
+                        </Badge>
+                      ) : (
+                        <select
+                          value={b.status ?? "booked"}
+                          onChange={(e) => updateAerztStatus(b.id, e.target.value)}
+                          className="h-9 border border-input rounded-lg px-2 text-sm bg-transparent w-[140px]"
+                        >
+                          {AERZT_STATUS_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                          {b.status && !AERZT_STATUS_OPTIONS.some((o) => o.value === b.status) && (
+                            <option value={b.status}>{b.status}</option>
+                          )}
+                        </select>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

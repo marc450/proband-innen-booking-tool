@@ -18,5 +18,18 @@ export default async function CourseBookingsPage() {
     )
     .order("created_at", { ascending: false });
 
-  return <CourseBookingsManager initialBookings={bookings ?? []} isAdmin={isAdmin} />;
+  // Umbuchungen whose Umbuchungsgebühr is still outstanding. These hold seats
+  // (migration 154), so the list marks them and blocks status changes until the
+  // move is either paid or withdrawn.
+  const { data: holds } = await supabase
+    .from("course_rebooking_holds")
+    .select("id, booking_id, to_session_id, fee_cents, surcharge_cents, expires_at");
+
+  return (
+    <CourseBookingsManager
+      initialBookings={bookings ?? []}
+      initialHolds={holds ?? []}
+      isAdmin={isAdmin}
+    />
+  );
 }
