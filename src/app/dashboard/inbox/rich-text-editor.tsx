@@ -83,6 +83,70 @@ function exec(command: string, value?: string) {
   document.execCommand(command, false, value);
 }
 
+// One indent level, in px. Matches what the browser's own indent used.
+const INDENT_STEP_PX = 40;
+
+// Chrome and Safari implement execCommand("indent") by wrapping the line in
+// a <blockquote>. That is a *quote*, not an indent: the composer, the email
+// HTML inliner (lib/email-template.ts) and the thread view all style
+// blockquotes as quoted text — grey, italic, left rule — so hitting the
+// indent button silently restyled the text instead of just moving it right.
+// We shift margin-left on the line's own block element instead, which
+// survives the send path untouched and renders as a plain indent in Gmail.
+// Inside lists we keep execCommand, where its list-nesting is the right
+// behaviour.
+function isInsideList(node: Node | null, root: HTMLElement): boolean {
+  let el: Element | null =
+    node instanceof Element ? node : (node?.parentElement ?? null);
+  while (el && el !== root) {
+    if (el.tagName === "LI" || el.tagName === "UL" || el.tagName === "OL") {
+      return true;
+    }
+    el = el.parentElement;
+  }
+  return false;
+}
+
+function applyIndent(root: HTMLElement, direction: 1 | -1) {
+  root.focus();
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  let range = sel.getRangeAt(0);
+  if (!root.contains(range.commonAncestorContainer)) return;
+
+  if (isInsideList(range.commonAncestorContainer, root)) {
+    exec(direction === 1 ? "indent" : "outdent");
+    return;
+  }
+
+  // Freshly typed lines live as bare text nodes and <br>s directly under the
+  // root, with no element to carry a margin. formatBlock wraps the caret's
+  // line in a <div> for us; existing blocks are left alone.
+  const hasBareLine = Array.from(root.childNodes).some(
+    (n) =>
+      n.nodeType !== Node.ELEMENT_NODE &&
+      (n.textContent ?? "").trim() !== "" &&
+      range.intersectsNode(n),
+  );
+  if (hasBareLine) {
+    exec("formatBlock", "div");
+    const after = window.getSelection();
+    if (!after || after.rangeCount === 0) return;
+    range = after.getRangeAt(0);
+  }
+
+  const blocks = Array.from(root.children).filter(
+    (el) => el.tagName !== "BR" && range.intersectsNode(el),
+  ) as HTMLElement[];
+
+  for (const el of blocks) {
+    const current = parseFloat(el.style.marginLeft) || 0;
+    const next = Math.max(0, current + direction * INDENT_STEP_PX);
+    el.style.marginLeft = next ? `${next}px` : "";
+    if (!el.getAttribute("style")) el.removeAttribute("style");
+  }
+}
+
 // Strip inline styles from pasted HTML but keep structural formatting.
 // Returns the cleaned HTML plus a flag indicating whether any inline
 // base64 image was dropped, so the caller can warn the user.
@@ -303,6 +367,20 @@ export function RichTextEditor({
     ref.current?.focus();
   };
 
+  // applyIndent mutates the DOM directly, which does not fire onInput —
+  // push the new HTML up ourselves.
+  const handleIndent = () => {
+    if (!ref.current) return;
+    applyIndent(ref.current, 1);
+    handleInput();
+  };
+
+  const handleOutdent = () => {
+    if (!ref.current) return;
+    applyIndent(ref.current, -1);
+    handleInput();
+  };
+
   const handleRemoveFormatting = () => {
     exec("removeFormat");
     // Also remove font size tags
@@ -470,10 +548,10 @@ export function RichTextEditor({
           <ListOrdered className="h-3.5 w-3.5" />
         </ToolbarButton>
         <div className="w-px h-4 bg-gray-200 mx-1" />
-        <ToolbarButton onClick={() => exec("outdent")} title="Einzug verkleinern">
+        <ToolbarButton onClick={handleOutdent} title="Einzug verkleinern">
           <Outdent className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => exec("indent")} title="Einzug vergrößern">
+        <ToolbarButton onClick={handleIndent} title="Einzug vergrößern">
           <Indent className="h-3.5 w-3.5" />
         </ToolbarButton>
         <div className="w-px h-4 bg-gray-200 mx-1" />
