@@ -9,7 +9,7 @@ import { SuppressPasswordManagers } from "./suppress-password-managers";
 import { InactivityLogout } from "@/components/auth/inactivity-logout";
 
 export const metadata: Metadata = {
-  title: "EPHIA Admin",
+  title: "Admin | EPHIA",
 };
 
 export default async function DashboardLayout({

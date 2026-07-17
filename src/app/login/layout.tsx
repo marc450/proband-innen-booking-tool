@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 // the public funnel's title, not the staff tool's. /dashboard already
 // titles itself "EPHIA Admin" — this makes the way in match.
 export const metadata: Metadata = {
-  title: "EPHIA Admin",
+  title: "Admin | EPHIA",
   robots: { index: false, follow: false },
 };
 
