@@ -200,12 +200,11 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplate[] = [
     // der Post-Praxis-Cron verschickt das Zertifikat automatisch, sobald
     // course_sessions.vnr_praxis am geteilten Termin gefüllt ist.
     //
-    // ACHTUNG: 15 Zahnärzt:innen haben vor der Freigabe bereits den alten,
-    // CME-freien Master bekommen (cert_sent_at gesetzt, also überspringt
-    // der Cron sie dauerhaft). Sie haben damit KEINE Dokumentation ihrer
-    // 22 CME-Punkte. Ein Nachversand hieße, cert_sent_at für diese
-    // Buchungen zu leeren; das ist bewusst NICHT passiert, sondern liegt
-    // als Entscheidung bei Marc.
+    // 15 Zahnärzt:innen haben vor der Freigabe noch den alten, CME-freien
+    // Master bekommen und behalten ihn: Marc hat am 2026-07-16 gegen einen
+    // Nachversand entschieden. Ihr cert_sent_at bleibt gesetzt, der Cron
+    // überspringt sie also dauerhaft. Nicht "aufräumen" — das Feld leeren
+    // würde ihnen ungefragt ein zweites Zertifikat schicken.
     slug: "grundkurs-botulinum-zahnmedizin",
     label: "Grundkurs Botulinum für Zahnärzt:innen",
     courseKeys: ["grundkurs_botulinum_zahnmedizin"],
