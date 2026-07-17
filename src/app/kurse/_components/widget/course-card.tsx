@@ -1,16 +1,10 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Check, Loader2, Award, ChevronDown, AlertTriangle } from "lucide-react";
 import { TerminUpdateModal } from "./termin-update-modal";
-
-interface CourseDate {
-  id: string;
-  label: string;
-  available: boolean;
-  availabilityTag?: string | null;
-  availabilityLevel?: "low" | "medium" | "ok" | "none";
-}
+import { CourseDateDropdown, getBadgeClasses } from "./course-date-dropdown";
+import type { CourseDate } from "@/lib/course-dates";
 
 // How many Praxistermine are visible before the rest collapses into the
 // native <details> element. Keep in sync with premium-card.tsx.
@@ -78,10 +72,8 @@ export function CourseCard({
   warning,
 }: CourseCardProps) {
   const [selectedDate, setSelectedDate] = useState("");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showTerminModal, setShowTerminModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Keep selected date in sync when sessions are refreshed (polling) and the
   // previously selected one is no longer available. Only reset if user had
@@ -95,35 +87,6 @@ export function CourseCard({
       setSelectedDate("");
     }
   }, [dates, selectedDate, bookingType]);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const selectedDateObj = dates.find((d) => d.id === selectedDate);
-
-  const getBadgeClasses = (date: CourseDate) => {
-    let cls = "px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap";
-    if (!date.available) {
-      cls += " bg-slate-100 text-slate-500";
-    } else if (date.availabilityLevel === "low") {
-      cls += " bg-[#FAEBE1] text-[#B5475F]";
-    } else if (date.availabilityLevel === "medium") {
-      cls += " bg-amber-100 text-amber-700";
-    } else if (date.availabilityLevel === "ok") {
-      cls += " bg-emerald-100 text-emerald-700";
-    } else {
-      cls += " bg-slate-100 text-slate-600";
-    }
-    return cls;
-  };
 
   const handleBook = () => {
     if (bookingType === "dropdown") {
@@ -234,50 +197,12 @@ export function CourseCard({
           ) : (
             <div className="space-y-4">
               {/* Custom dropdown with colored availability badges */}
-              <div ref={dropdownRef} className="relative">
-                <button
-                  type="button"
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="w-full bg-white border-2 border-[#0066FF] text-[#0066FF] font-semibold text-sm py-3 px-4 rounded-md cursor-pointer flex items-center justify-between gap-2"
-                >
-                  <span className={`flex items-center gap-2 whitespace-nowrap ${selectedDateObj ? "" : "opacity-70"}`}>
-                    {selectedDateObj ? selectedDateObj.label : "Praxiskurs-Termin wählen"}
-                    {selectedDateObj?.availabilityTag && (
-                      <span className={getBadgeClasses(selectedDateObj)}>{selectedDateObj.availabilityTag}</span>
-                    )}
-                  </span>
-                  <ChevronDown className={`w-5 h-5 flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} aria-hidden="true" />
-                </button>
-
-                {dropdownOpen && (
-                  <div className="absolute z-50 w-full min-w-[340px] right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[280px] overflow-y-auto">
-                    {dates.map((date) => {
-                      return (
-                        <button
-                          key={date.id}
-                          type="button"
-                          disabled={!date.available}
-                          onClick={() => {
-                            setSelectedDate(date.id);
-                            setDropdownOpen(false);
-                          }}
-                          className={`w-full flex items-center justify-start lg:justify-between gap-2 px-4 py-2 text-sm text-left transition-colors ${
-                            !date.available
-                              ? "text-gray-400 cursor-not-allowed"
-                              : selectedDate === date.id
-                                ? "bg-blue-50 font-semibold text-black cursor-pointer"
-                                : "font-semibold text-black hover:bg-gray-50 cursor-pointer"
-                          }`}
-                        >
-                          <span>{date.label}</span>
-                          {date.availabilityTag && (
-                            <span className={getBadgeClasses(date)}>{date.availabilityTag}</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+              <div>
+                <CourseDateDropdown
+                  dates={dates}
+                  selectedId={selectedDate}
+                  onSelect={setSelectedDate}
+                />
                 {errorMessage && (
                   <p
                     role="alert"

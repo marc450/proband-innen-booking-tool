@@ -10,6 +10,7 @@ import type { IncludedCourse } from "./premium-card";
 import type { CourseTemplate, CourseSession, CourseType } from "@/lib/types";
 import { getCurriculumForCourseKey } from "@/lib/curricula";
 import { getGa4Ids } from "@/lib/ga-client";
+import { toCourseDate } from "@/lib/course-dates";
 
 // Shared base for the Medizinische Hautpflege Onlinekurs so the modal
 // looks identical on every package (Zahnmedizin, Dermalfiller, etc.).
@@ -287,40 +288,6 @@ const defaultKombikursFeatures = [
   { text: "Vollständiger Praxiskurs inkludiert" },
 ];
 
-function formatSessionLabel(session: CourseSession): string {
-  let label = session.label_de || session.date_iso;
-
-  if (session.start_time) {
-    label = `${label} · ${session.start_time} Uhr`;
-  }
-
-  return label;
-}
-
-function getAvailability(session: CourseSession) {
-  const remaining = session.max_seats - session.booked_seats;
-  const available = remaining > 0;
-
-  let availabilityTag: string | null = null;
-  let availabilityLevel: "low" | "medium" | "ok" | "none" = "none";
-
-  if (!available) {
-    availabilityTag = "ausgebucht";
-    availabilityLevel = "none";
-  } else if (remaining === 1) {
-    availabilityTag = "1 Platz frei";
-    availabilityLevel = "low";
-  } else if (remaining === 2) {
-    availabilityTag = "2 Plätze frei";
-    availabilityLevel = "medium";
-  } else {
-    availabilityTag = "2+ Plätze frei";
-    availabilityLevel = "ok";
-  }
-
-  return { available, availabilityTag, availabilityLevel };
-}
-
 export function CourseCardsPage({ template, sessions: initialSessions }: Props) {
   const [sessions, setSessions] = useState(initialSessions);
   const [loadingCheckout, setLoadingCheckout] = useState<string | null>(null);
@@ -363,16 +330,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
-  const dynamicDates = sessions.map((session) => {
-    const { available, availabilityTag, availabilityLevel } = getAvailability(session);
-    return {
-      id: session.id,
-      label: formatSessionLabel(session),
-      available,
-      availabilityTag,
-      availabilityLevel,
-    };
-  });
+  const dynamicDates = sessions.map(toCourseDate);
 
   const redirectTo = (url: string) => {
     try {

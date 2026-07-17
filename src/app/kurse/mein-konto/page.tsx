@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildProgressMap, listUserProgress } from "@/lib/learnworlds";
 import { berlinTodayIso } from "@/lib/utils";
+import { toCourseDate, type CourseDate } from "@/lib/course-dates";
 import {
   MeinKontoView,
   type EnrichedBooking,
@@ -639,28 +640,27 @@ export default async function MeinKontoPage() {
         .gt("date_iso", berlinTodayIso())
         .order("date_iso", { ascending: true });
 
-      const bookableByTplId = new Map<string, Array<{ id: string; label: string }>>();
+      // Labels + availability badges come from the same helper the public
+      // booking widget uses, so both dropdowns show identical dates.
+      const datesByTplId = new Map<string, CourseDate[]>();
       for (const s of sessionRows ?? []) {
-        // Sold-out dates are dropped rather than shown disabled: this card
-        // is an offer, and an offer listing nothing bookable is noise.
-        if ((s.booked_seats ?? 0) >= (s.max_seats ?? 0)) continue;
-        const label = s.start_time
-          ? `${s.label_de || s.date_iso} · ${s.start_time.slice(0, 5)} Uhr`
-          : s.label_de || s.date_iso;
-        const list = bookableByTplId.get(s.template_id) ?? [];
-        list.push({ id: s.id, label });
-        bookableByTplId.set(s.template_id, list);
+        const list = datesByTplId.get(s.template_id) ?? [];
+        list.push(toCourseDate(s));
+        datesByTplId.set(s.template_id, list);
       }
 
       for (const id of offerTplIds) {
         const tpl = tplById.get(id)!;
-        const sessions = bookableByTplId.get(sessionTplIdFor.get(id)!) ?? [];
-        if (sessions.length === 0) continue;
+        const dates = datesByTplId.get(sessionTplIdFor.get(id)!) ?? [];
+        // Sold-out dates stay in the list (greyed out with an "ausgebucht"
+        // badge, exactly like the public widget), but an offer where
+        // nothing at all is bookable is just noise — drop the whole card.
+        if (!dates.some((d) => d.available)) continue;
         praxisOffers.push({
           templateId: id,
           courseKey: tpl.course_key!,
           priceCents: tpl.price_gross_praxis_cents!,
-          sessions,
+          dates,
         });
       }
     }

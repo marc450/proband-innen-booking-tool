@@ -6,6 +6,8 @@ import { Clock, User, MapPin, Info, Users } from "lucide-react";
 import { parseDateOnly } from "@/lib/date";
 import { TITLE_OPTIONS } from "@/lib/utils";
 import { ONLINE_COURSE_MIN_PCT } from "@/lib/online-course";
+import { CourseDateDropdown } from "../_components/widget/course-date-dropdown";
+import type { CourseDate } from "@/lib/course-dates";
 
 // Customer-facing dashboard view.
 //
@@ -88,7 +90,7 @@ export interface PraxisOffer {
   // course_templates.course_key — the id /api/course-checkout expects.
   courseKey: string;
   priceCents: number;
-  sessions: Array<{ id: string; label: string }>;
+  dates: CourseDate[];
 }
 
 interface Props {
@@ -843,7 +845,9 @@ function formatEuro(cents: number): string {
 // funnel uses, so the price is derived server-side from the template and
 // can't be talked down from here.
 function PraxisOfferCard({ offer }: { offer: PraxisOffer }) {
-  const [sessionId, setSessionId] = useState(offer.sessions[0]?.id ?? "");
+  // No preselection, same as the public widget: picking the date is a
+  // deliberate act, not something we decide for the doctor.
+  const [sessionId, setSessionId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -888,26 +892,16 @@ function PraxisOfferCard({ offer }: { offer: PraxisOffer }) {
         </p>
       </div>
 
-      <div>
-        <label
-          htmlFor={`praxis-termin-${offer.templateId}`}
-          className="block text-xs font-semibold text-[#733D29] mb-1.5"
-        >
-          Termin
-        </label>
-        <select
-          id={`praxis-termin-${offer.templateId}`}
-          value={sessionId}
-          onChange={(e) => setSessionId(e.target.value)}
-          className="w-full bg-[#E0E5E9] rounded-[10px] px-4 py-3 text-sm text-black/85 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/30 appearance-none cursor-pointer"
-        >
-          {offer.sessions.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* Same picker as the public booking widget: availability badges
+          per date, sold-out dates greyed out. */}
+      <CourseDateDropdown
+        dates={offer.dates}
+        selectedId={sessionId}
+        onSelect={setSessionId}
+        // The offer card is a grid column wide, not a marketing card, so
+        // the widget's 340px panel minimum would overflow it.
+        panelMinWidthClass="min-w-0"
+      />
 
       <p className="text-sm font-bold text-black">
         {formatEuro(offer.priceCents)}{" "}
