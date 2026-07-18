@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Patient, PatientStatus } from "@/lib/types";
@@ -77,6 +77,39 @@ export function PatientsManager({ initialPatients }: Props) {
   const [prefillLastName, setPrefillLastName] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
+
+  // Group probands that share the same (lowercased) first+last name.
+  // Same mechanism as the Ärzt:innen list: one human booking with several
+  // mistyped or different addresses (icloud.con / ucloud.com / icloud.com)
+  // creates a fresh profile each time, because dedup keys on the email
+  // hash and a typo hashes differently. A "möglicher Duplikat (N)"-Pill on
+  // the row gives staff a fast cue to merge before the next reminder
+  // bounces. Empty-name rows are skipped so nameless imports don't all
+  // collapse into one giant false-positive group.
+  const duplicateGroups = useMemo(() => {
+    const map = new Map<string, Patient[]>();
+    for (const p of patients) {
+      const fn = (p.first_name ?? "").trim().toLowerCase();
+      const ln = (p.last_name ?? "").trim().toLowerCase();
+      if (!fn || !ln) continue;
+      const key = `${fn}|${ln}`;
+      const arr = map.get(key);
+      if (arr) arr.push(p);
+      else map.set(key, [p]);
+    }
+    for (const [key, members] of map) {
+      if (members.length < 2) map.delete(key);
+    }
+    return map;
+  }, [patients]);
+
+  const findDuplicateGroup = (patient: Patient): Patient[] | null => {
+    const fn = (patient.first_name ?? "").trim().toLowerCase();
+    const ln = (patient.last_name ?? "").trim().toLowerCase();
+    if (!fn || !ln) return null;
+    const group = duplicateGroups.get(`${fn}|${ln}`);
+    return group && group.length > 1 ? group : null;
+  };
 
   // Deep-link from the inbox sidebar: /…?newEmail=foo@bar.de auto-opens
   // the NewContactModal pre-filled, matching the auszubildende page.
@@ -258,7 +291,28 @@ export function PatientsManager({ initialPatients }: Props) {
                     <TableCell>
                       {patient.last_name || "–"}
                     </TableCell>
-                    <TableCell>{patient.email}</TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center gap-1.5">
+                        {patient.email}
+                        {(() => {
+                          const dupes = findDuplicateGroup(patient);
+                          if (!dupes) return null;
+                          const others = dupes
+                            .filter((d) => d.id !== patient.id)
+                            .map((d) => d.email)
+                            .join(", ");
+                          return (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] bg-amber-50 text-amber-700 border-amber-200"
+                              title={`Gleicher Name wie: ${others}`}
+                            >
+                              möglicher Duplikat ({dupes.length})
+                            </Badge>
+                          );
+                        })()}
+                      </span>
+                    </TableCell>
                     <TableCell>{patient.phone || ""}</TableCell>
                     <TableCell>
                       {patient.address_city

@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ChevronDown, ChevronRight, CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatBerlinLongDate, formatBerlinTime } from "@/lib/date";
+import { isLikelyValidEmail, suggestEmailCorrection } from "@/lib/email-validation";
 
 interface Props {
   slot: AvailableSlot;
@@ -103,7 +104,11 @@ export function PrivatBookingForm({ slot, indication }: Props) {
   const isBotulinum = slot.course_title?.toLowerCase().includes("botulinum") ?? false;
   const [confirmedBotulinum, setConfirmedBotulinum] = useState(false);
 
-  const canProceedFromDetails = firstName.trim() !== "" && lastName.trim() !== "" && email.trim() !== "" && phone.trim() !== "" && referringDoctor.trim() !== "" && (!isBotulinum || confirmedBotulinum);
+  // Block "Weiter" on a structurally broken address; the typo suggestion
+  // below is a soft nudge and never gates the step.
+  const emailFormatValid = isLikelyValidEmail(email);
+  const emailSuggestion = suggestEmailCorrection(email);
+  const canProceedFromDetails = firstName.trim() !== "" && lastName.trim() !== "" && emailFormatValid && phone.trim() !== "" && referringDoctor.trim() !== "" && (!isBotulinum || confirmedBotulinum);
 
   return (
     <div className="space-y-4">
@@ -182,6 +187,23 @@ export function PrivatBookingForm({ slot, indication }: Props) {
                   className="h-11 text-base"
                   required
                 />
+                {email.trim() !== "" && !emailFormatValid ? (
+                  <p className="text-xs text-red-600">
+                    Bitte gib eine gültige E-Mail-Adresse ein.
+                  </p>
+                ) : emailSuggestion ? (
+                  <p className="text-xs text-amber-700">
+                    Meintest Du{" "}
+                    <button
+                      type="button"
+                      onClick={() => setEmail(emailSuggestion)}
+                      className="font-semibold underline underline-offset-2"
+                    >
+                      {emailSuggestion}
+                    </button>
+                    ?
+                  </p>
+                ) : null}
               </div>
 
               <div className="space-y-1.5">

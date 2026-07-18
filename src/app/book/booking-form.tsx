@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronDown, ChevronRight, CheckCircle2 } from "lucide-react";
 import { formatBerlinLongDate, formatBerlinTime } from "@/lib/date";
+import { isLikelyValidEmail, suggestEmailCorrection } from "@/lib/email-validation";
 
 interface BookingFormProps {
   slot: AvailableSlot;
@@ -108,7 +109,11 @@ export function BookingForm({ slot, guidePriceCents, indication }: BookingFormPr
   const isBotulinum = slot.course_title?.toLowerCase().includes("botulinum") ?? false;
   const [confirmedBotulinum, setConfirmedBotulinum] = useState(false);
 
-  const canProceedFromDetails = email.trim() !== "" && phone.trim() !== "" && (!isBotulinum || confirmedBotulinum);
+  // Block "Weiter" on a structurally broken address; the typo suggestion
+  // below is a soft nudge and never gates the step.
+  const emailFormatValid = isLikelyValidEmail(email);
+  const emailSuggestion = suggestEmailCorrection(email);
+  const canProceedFromDetails = emailFormatValid && phone.trim() !== "" && (!isBotulinum || confirmedBotulinum);
   const canProceedFromAgb = agreedToTerms;
   const canProceedFromPrivacy = agreedToPrivacy && agreedToEmailComm;
 
@@ -157,9 +162,27 @@ export function BookingForm({ slot, guidePriceCents, indication }: BookingFormPr
                   className="h-11 text-base"
                   required
                 />
-                <p className="text-xs text-muted-foreground">
-                  Damit können wir Deine Buchung zuordnen.
-                </p>
+                {email.trim() !== "" && !emailFormatValid ? (
+                  <p className="text-xs text-red-600">
+                    Bitte gib eine gültige E-Mail-Adresse ein.
+                  </p>
+                ) : emailSuggestion ? (
+                  <p className="text-xs text-amber-700">
+                    Meintest Du{" "}
+                    <button
+                      type="button"
+                      onClick={() => setEmail(emailSuggestion)}
+                      className="font-semibold underline underline-offset-2"
+                    >
+                      {emailSuggestion}
+                    </button>
+                    ?
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Damit können wir Deine Buchung zuordnen.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1.5">
