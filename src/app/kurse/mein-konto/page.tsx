@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { buildProgressMap, listUserProgress } from "@/lib/learnworlds";
 import { berlinTodayIso } from "@/lib/utils";
 import { toCourseDate, type CourseDate } from "@/lib/course-dates";
+import { PRAXISKURS_OFFER_PRICE_CENTS } from "@/lib/course-pricing";
 import {
   MeinKontoView,
   type EnrichedBooking,
@@ -659,7 +660,11 @@ export default async function MeinKontoPage() {
         praxisOffers.push({
           templateId: id,
           courseKey: tpl.course_key!,
-          priceCents: tpl.price_gross_praxis_cents!,
+          // Flat add-on price, NOT the template's praxis price. The DB
+          // field above is only used as an eligibility signal (does this
+          // course have a standalone Praxiskurs at all); the amount both
+          // shown and charged is PRAXISKURS_OFFER_PRICE_CENTS.
+          priceCents: PRAXISKURS_OFFER_PRICE_CENTS,
           dates,
         });
       }

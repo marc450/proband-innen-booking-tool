@@ -6,6 +6,15 @@
 
 export type CourseVariant = "Onlinekurs" | "Praxiskurs" | "Kombikurs" | "Premium";
 
+// Flat price for a standalone Praxiskurs bought as an add-on from the
+// customer's /mein-konto ("Praxiskurs dazubuchen"). Deliberately NOT the
+// per-template price_gross_praxis_cents: a doctor who already owns the
+// Onlinekurs pays one fixed Praxiskurs price regardless of which course it
+// is. Scoped to that offer only — the public funnel, einladung and admin
+// keep reading the template field. Charge and display both use this
+// constant so they can never diverge.
+export const PRAXISKURS_OFFER_PRICE_CENTS = 104000;
+
 export type CourseTemplateForPricing = {
   title?: string | null;
   name_online?: string | null;

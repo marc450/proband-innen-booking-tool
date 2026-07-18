@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { buildCourseLineItem, type CourseVariant } from "@/lib/course-pricing";
+import {
+  buildCourseLineItem,
+  PRAXISKURS_OFFER_PRICE_CENTS,
+  type CourseVariant,
+} from "@/lib/course-pricing";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
 
@@ -23,7 +27,7 @@ async function stripePost(endpoint: string, body: Record<string, string>) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { courseKey, courseType, sessionId, inviteToken, gaClientId, gaSessionId } =
+    const { courseKey, courseType, sessionId, inviteToken, praxisOffer, gaClientId, gaSessionId } =
       await req.json();
 
     if (!courseKey || !courseType) {
@@ -164,6 +168,19 @@ export async function POST(req: NextRequest) {
       unitAmount = invite!.rebooking_fee_cents as number;
       productName = `Umbuchung: ${productName}`;
       description = "Einmalige Umbuchungsgebühr für die Verlegung auf einen neuen Termin (AGB Ziffer 6).";
+    }
+
+    // "Praxiskurs dazubuchen" from /mein-konto: a doctor who already owns
+    // the Onlinekurs pays a single flat Praxiskurs price, not the
+    // per-template price_gross_praxis_cents. The amount is the server-side
+    // constant, never a client-supplied number, so it can't be tampered
+    // with; the flag only selects the pricing rule. Product name +
+    // description still come from the template above so the invoice reads
+    // correctly. Ignored for anything that isn't a plain Praxiskurs (an
+    // invite/rebooking keeps its own price).
+    const isPraxisOffer = praxisOffer === true && courseType === "Praxiskurs" && !invite;
+    if (isPraxisOffer) {
+      unitAmount = PRAXISKURS_OFFER_PRICE_CENTS;
     }
 
     if (unitAmount <= 0) {

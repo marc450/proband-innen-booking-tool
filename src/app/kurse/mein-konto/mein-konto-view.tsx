@@ -863,6 +863,8 @@ function PraxisOfferCard({ offer }: { offer: PraxisOffer }) {
           courseKey: offer.courseKey,
           courseType: "Praxiskurs",
           sessionId,
+          // Charge the flat add-on price, not the template praxis price.
+          praxisOffer: true,
         }),
       });
       const data = await res.json().catch(() => ({}));
