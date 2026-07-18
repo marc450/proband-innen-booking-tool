@@ -48,9 +48,16 @@ interface Props {
   source: Source;
   primaryId: string;
   primaryLabel: string;
+  /** First/last name of the primary contact. When given, the modal
+   *  pre-loads same-name contacts as suspected duplicates on open, so
+   *  staff don't have to search for the obvious case. */
+  primaryFirstName?: string | null;
+  primaryLastName?: string | null;
   /** Called after a successful merge so the page can navigate or refresh. */
   onMerged?: (result: MergeResult) => void;
 }
+
+const normName = (v: string | null | undefined) => (v ?? "").trim().toLowerCase();
 
 export function MergeContactModal({
   open,
@@ -58,6 +65,8 @@ export function MergeContactModal({
   source,
   primaryId,
   primaryLabel,
+  primaryFirstName,
+  primaryLastName,
   onMerged,
 }: Props) {
   const [query, setQuery] = useState("");
@@ -66,6 +75,9 @@ export function MergeContactModal({
   const [target, setTarget] = useState<SearchResult | null>(null);
   const [merging, setMerging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Suspected duplicates (same first+last name) loaded on open.
+  const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Reset on open/close so reopening starts fresh.
@@ -75,8 +87,51 @@ export function MergeContactModal({
       setResults([]);
       setTarget(null);
       setError(null);
+      setSuggestions([]);
     }
   }, [open]);
+
+  // On open, pre-load same-name contacts as suspected duplicates. Mirrors
+  // the "möglicher Duplikat"-Pill in the list views: match on exact
+  // first+last name. We query the contact-search endpoint by last name
+  // (the more distinctive half) and then filter to an exact name match
+  // client-side, so a shared surname alone doesn't flood the list.
+  useEffect(() => {
+    if (!open) return;
+    const fn = normName(primaryFirstName);
+    const ln = normName(primaryLastName);
+    if (!fn || !ln) return;
+    // Need a query term of length >= 2 for the endpoint; prefer last name.
+    const term = ln.length >= 2 ? ln : fn.length >= 2 ? fn : "";
+    if (!term) return;
+
+    let cancelled = false;
+    setLoadingSuggestions(true);
+    (async () => {
+      try {
+        const allStatuses = source === "patient" ? "&includeAllStatuses=1" : "";
+        const res = await fetch(
+          `/api/admin/contact-search?q=${encodeURIComponent(term)}&limit=25${allStatuses}`,
+        );
+        if (!res.ok) return;
+        const data = (await res.json()) as SearchResult[];
+        if (cancelled) return;
+        const dupes = data.filter(
+          (r) =>
+            r.source === source &&
+            r.id !== primaryId &&
+            normName(r.firstName) === fn &&
+            normName(r.lastName) === ln,
+        );
+        setSuggestions(dupes);
+      } finally {
+        if (!cancelled) setLoadingSuggestions(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, primaryFirstName, primaryLastName, source, primaryId]);
 
   // Debounced search hits the existing admin contact-search endpoint and
   // filters to the same source as the primary contact.
@@ -199,8 +254,26 @@ export function MergeContactModal({
               </p>
             )}
 
+            {/* Suspected duplicates (same name), shown until the user types
+                their own search. Saves the obvious lookup entirely. */}
+            {query.trim().length < 2 && (
+              <>
+                {loadingSuggestions && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Mögliche
+                    Duplikate werden gesucht...
+                  </div>
+                )}
+                {!loadingSuggestions && suggestions.length > 0 && (
+                  <p className="text-xs font-medium text-amber-700">
+                    Mögliche Duplikate (gleicher Name)
+                  </p>
+                )}
+              </>
+            )}
+
             <div className="max-h-72 overflow-y-auto space-y-1">
-              {results.map((r) => (
+              {(query.trim().length >= 2 ? results : suggestions).map((r) => (
                 <button
                   key={r.id}
                   onClick={() => setTarget(r)}

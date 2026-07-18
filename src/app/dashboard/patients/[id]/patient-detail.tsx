@@ -709,6 +709,8 @@ export function PatientDetail({ patient: initialPatient, bookings: initialBookin
           source="patient"
           primaryId={patient.id}
           primaryLabel={personName || patient.email || "Dieser Kontakt"}
+          primaryFirstName={patient.first_name}
+          primaryLastName={patient.last_name}
           onMerged={() => {
             // The merged-away profile is gone and its bookings/emails now
             // sit on this one — reload the server component to reflect it.

@@ -946,6 +946,8 @@ export function AuszubildendeDetail({ azubi: initialAzubi, emailAliases = [], bo
           azubi.email ||
           "Dieser Kontakt"
         }
+        primaryFirstName={azubi.first_name}
+        primaryLastName={azubi.last_name}
         onMerged={() => {
           // Reload from the server so the merged data + new
           // bookings/emails appear under this profile.
