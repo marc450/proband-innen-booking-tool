@@ -694,8 +694,7 @@ function ProgressBar({ pct, requirement }: { pct: number; requirement: boolean }
       <div className="space-y-1">
         <div className="flex items-center justify-between text-xs">
           <span className="text-black/60 font-medium">{label}</span>
-          <span className="text-black/40 tabular-nums">{Math.round(clamped)}%</span>
-        </div>
+          </div>
         <div className="w-full h-1.5 rounded-full bg-black/[0.06] overflow-hidden">
           <div
             className="h-full rounded-full bg-[#0066FF] transition-[width] duration-500"
@@ -717,7 +716,6 @@ function ProgressBar({ pct, requirement }: { pct: number; requirement: boolean }
         <span className={met ? "text-emerald-700 font-medium" : "text-red-600 font-medium"}>
           {label}
         </span>
-        <span className="text-black/40 tabular-nums">{Math.round(clamped)}%</span>
       </div>
       <div className="relative">
         <div className="w-full h-1.5 rounded-full bg-black/[0.06] overflow-hidden">
