@@ -782,7 +782,12 @@ function OnlineCard({
       )}
 
       <div className="flex flex-col flex-1 p-6 gap-3">
-        <h3 className="text-lg md:text-xl font-bold tracking-wide leading-tight text-black text-balance">
+        {/* Reserve two lines of height so a one-line title occupies the same
+            vertical space as a two-line one. Keeps the progress bar, CTA,
+            divider and Praxis offer band aligned across every card in the
+            row regardless of title length. `lh` = one line-height, so it
+            tracks the text-lg → md:text-xl size bump automatically. */}
+        <h3 className="text-lg md:text-xl font-bold tracking-wide leading-tight text-black text-balance min-h-[2lh]">
           {booking.displayTitle}
         </h3>
 
