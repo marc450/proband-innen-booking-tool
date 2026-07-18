@@ -206,24 +206,22 @@ export function MeinKontoView({
             {/* items-start: cells size to their content. Stretching them
                 would blow the card of a course WITHOUT an offer up to the
                 height of a neighbour that has one, leaving a white void
-                between its title and its CTA. */}
+                between its title and its CTA. The Praxiskurs offer is now
+                an attached footer band inside the card (see OnlineCard), so
+                each column is a single cohesive card, not two stacked boxes. */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 items-start">
-              {online.map((b) => {
-                const offer = offerByCardId.get(b.id);
-                return (
-                  <div key={b.id} className="flex flex-col gap-4">
-                    <OnlineCard
-                      booking={b}
-                      // Only nudge about the praxis prerequisite when the
-                      // customer actually has an upcoming Praxis/Kombi date.
-                      // A standalone Onlinekurs purchase has no praxis day, so
-                      // the "vor dem Praxiskurs" copy would be wrong there.
-                      showPraxisPrereq={upcoming.length > 0}
-                    />
-                    {offer && <PraxisOfferCard offer={offer} />}
-                  </div>
-                );
-              })}
+              {online.map((b) => (
+                <OnlineCard
+                  key={b.id}
+                  booking={b}
+                  // Only nudge about the praxis prerequisite when the
+                  // customer actually has an upcoming Praxis/Kombi date.
+                  // A standalone Onlinekurs purchase has no praxis day, so
+                  // the "vor dem Praxiskurs" copy would be wrong there.
+                  showPraxisPrereq={upcoming.length > 0}
+                  offer={offerByCardId.get(b.id)}
+                />
+              ))}
             </div>
           </Section>
         )}
@@ -675,12 +673,12 @@ function UpcomingCard({
 
 /* ──────────────── Online course tile ──────────────── */
 
-// `requirement` = this online course is the prerequisite for an upcoming
-// Praxiskurs. In that mode the bar is red until the required mark is
-// reached and green afterwards, and the 90% threshold is always marked so
-// the customer sees the target. Standalone Onlinekurs bookings (no praxis)
-// keep the neutral blue bar with no threshold, since 90% has no meaning
-// there.
+// `requirement` = this online course is the prerequisite for a Praxiskurs,
+// whether already booked or still offered on the card. In that mode the bar
+// is red until the required mark is reached and green afterwards, and the
+// 90% threshold is always marked so the customer sees the target. Standalone
+// Onlinekurs bookings (no praxis relationship at all) keep the neutral blue
+// bar with no threshold, since 90% has no meaning there.
 function ProgressBar({ pct, requirement }: { pct: number; requirement: boolean }) {
   const clamped = Math.max(0, Math.min(100, pct));
   const met = clamped >= ONLINE_COURSE_MIN_PCT;
@@ -750,9 +748,15 @@ function ProgressBar({ pct, requirement }: { pct: number; requirement: boolean }
 function OnlineCard({
   booking,
   showPraxisPrereq,
+  offer,
 }: {
   booking: EnrichedBooking;
   showPraxisPrereq: boolean;
+  // When present, the matching Praxiskurs offer is rendered as an attached
+  // footer band at the bottom of this card (same white surface, tinted
+  // Rose band), so the upsell reads as part of the card rather than a
+  // detached box floating beneath it.
+  offer?: PraxisOffer;
 }) {
   return (
     <article className="bg-white rounded-[10px] overflow-hidden flex flex-col group shadow-sm">
@@ -792,8 +796,17 @@ function OnlineCard({
             customers see "you haven't started yet" as an empty bar
             rather than nothing. We hide the bar entirely only when
             progressPct is null/undefined (no data available). */}
+        {/* The 90% threshold treatment (red until met, green after, target
+            marker) is meaningful for any online course that has a matching
+            Praxiskurs, whether that Praxis date is already booked
+            (showPraxisPrereq) or still being offered on this card (offer). A
+            standalone Onlinekurs with no praxis relationship keeps the
+            neutral blue bar, since 90% has no meaning there. */}
         {typeof booking.progressPct === "number" && (
-          <ProgressBar pct={booking.progressPct} requirement={showPraxisPrereq} />
+          <ProgressBar
+            pct={booking.progressPct}
+            requirement={showPraxisPrereq || Boolean(offer)}
+          />
         )}
 
         {booking.lwHref ? (
@@ -824,6 +837,11 @@ function OnlineCard({
           </span>
         )}
       </div>
+
+      {/* Attached Praxiskurs offer. Rose band clipped to the card's rounded
+          corners by the article's overflow-hidden, so it reads as the
+          card's footer, not a separate box. */}
+      {offer && <PraxisOfferCard offer={offer} />}
     </article>
   );
 }
@@ -883,10 +901,11 @@ function PraxisOfferCard({ offer }: { offer: PraxisOffer }) {
   };
 
   return (
-    // White surface, not Rose: the page background IS Rose, so a Rose card
-    // would have no surface of its own and the offer would read as loose
-    // text floating under the course card.
-    <div className="bg-white rounded-[10px] shadow-sm p-5 space-y-3">
+    // Rose footer band attached inside the white OnlineCard. The card owns
+    // the surface + shadow now, so this band just needs its own tint to
+    // separate the upsell from the course content above it. Brown 1 heading
+    // on Rose is the brand-approved pairing.
+    <div className="bg-[#FAEBE1] px-6 py-5 space-y-3">
       <div>
         <h4 className="text-sm font-bold text-[#733D29]">Praxiskurs dazubuchen</h4>
         <p className="text-xs text-black/70 leading-relaxed mt-1.5">
