@@ -78,11 +78,20 @@ export function StartForm() {
 
   // If the user is already logged in when they hit /start (e.g. they
   // refreshed after a successful login), skip straight to /mein-konto.
+  //
+  // We use getUser() rather than getSession() on purpose: getSession()
+  // only reads the token out of browser storage without validating it,
+  // so a stale/expired token still looks like a live session and would
+  // bounce us to /mein-konto. There the server-side getUser() rejects
+  // the same token and redirects back to /start, producing an infinite
+  // flicker loop. getUser() validates against Supabase, so a token the
+  // server would reject is rejected here too and the user simply stays
+  // on the login form.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled && data.session) navigatePostLogin(router, "replace");
+      const { data } = await supabase.auth.getUser();
+      if (!cancelled && data.user) navigatePostLogin(router, "replace");
     })();
     return () => {
       cancelled = true;
