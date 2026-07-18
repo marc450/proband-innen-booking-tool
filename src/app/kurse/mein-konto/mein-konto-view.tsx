@@ -901,11 +901,11 @@ function PraxisOfferCard({ offer }: { offer: PraxisOffer }) {
   };
 
   return (
-    // Rose footer band attached inside the white OnlineCard. The card owns
-    // the surface + shadow now, so this band just needs its own tint to
-    // separate the upsell from the course content above it. Brown 1 heading
-    // on Rose is the brand-approved pairing.
-    <div className="bg-[#FAEBE1] px-6 py-5 space-y-3">
+    // White footer band attached inside the white OnlineCard, so the whole
+    // column reads as one white surface. A hairline divider (the funnel's
+    // accepted borderless exception) plus the Brown 1 heading separate the
+    // upsell from the course content above it without a second surface tint.
+    <div className="border-t border-black/10 px-6 py-5 space-y-3">
       <div>
         <h4 className="text-sm font-bold text-[#733D29]">Praxiskurs dazubuchen</h4>
         <p className="text-xs text-black/70 leading-relaxed mt-1.5">
