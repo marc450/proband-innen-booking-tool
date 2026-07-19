@@ -48,9 +48,9 @@ export default async function OffeneTerminePage() {
     proposalIds.length
       ? admin
           .from("course_date_applications")
-          .select("proposal_id, profile_id")
+          .select("proposal_id, profile_id, note")
           .in("proposal_id", proposalIds)
-      : Promise.resolve({ data: [] as Array<{ proposal_id: string; profile_id: string }> }),
+      : Promise.resolve({ data: [] as Array<{ proposal_id: string; profile_id: string; note: string | null }> }),
   ]);
 
   const templateNameById = new Map(
@@ -62,10 +62,15 @@ export default async function OffeneTerminePage() {
 
   const countByProposal = new Map<string, number>();
   const mineByProposal = new Set<string>();
+  const myNoteByProposal = new Map<string, string>();
   for (const a of applications ?? []) {
     const pid = a.proposal_id as string;
     countByProposal.set(pid, (countByProposal.get(pid) ?? 0) + 1);
-    if ((a.profile_id as string) === userId) mineByProposal.add(pid);
+    if ((a.profile_id as string) === userId) {
+      mineByProposal.add(pid);
+      const note = (a.note as string | null) ?? null;
+      if (note) myNoteByProposal.set(pid, note);
+    }
   }
 
   const rows: OpenProposal[] = proposalList.map((p) => ({
@@ -78,6 +83,7 @@ export default async function OffeneTerminePage() {
     notes: (p.notes as string | null) ?? null,
     applicantCount: countByProposal.get(p.id as string) ?? 0,
     applied: mineByProposal.has(p.id as string),
+    myNote: myNoteByProposal.get(p.id as string) ?? null,
   }));
 
   return (

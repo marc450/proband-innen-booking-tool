@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Users, MapPin, Clock, Check } from "lucide-react";
 import { parseDateOnly } from "@/lib/date";
 
@@ -16,6 +17,8 @@ export interface OpenProposal {
   notes: string | null;
   applicantCount: number;
   applied: boolean;
+  /** The note the current Dozent:in left on their own application, if any. */
+  myNote: string | null;
 }
 
 const MONTHS_DE = [
@@ -37,8 +40,20 @@ export function OffeneTermineView({
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Per-card note drafts, seeded from whatever note the Dozent:in already
+  // left. Kept across router.refresh() since the component isn't remounted.
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      initialProposals.map((p) => [p.id, p.myNote ?? ""]),
+    ),
+  );
 
-  const toggle = async (p: OpenProposal) => {
+  const setNote = (id: string, value: string) =>
+    setNoteDrafts((prev) => ({ ...prev, [id]: value }));
+
+  // action "apply" also carries the note (add or edit); "withdraw" removes
+  // the whole application. The API upserts, so re-applying just updates it.
+  const submit = async (p: OpenProposal, action: "apply" | "withdraw") => {
     setBusyId(p.id);
     setError(null);
     try {
@@ -47,7 +62,8 @@ export function OffeneTermineView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           proposalId: p.id,
-          action: p.applied ? "withdraw" : "apply",
+          action,
+          note: action === "apply" ? noteDrafts[p.id]?.trim() || null : null,
         }),
       });
       const json = await res.json().catch(() => null);
@@ -123,22 +139,49 @@ export function OffeneTermineView({
               </p>
             )}
 
-            <div className="mt-auto pt-1">
+            <div className="mt-auto pt-1 space-y-2">
+              <Textarea
+                value={noteDrafts[p.id] ?? ""}
+                onChange={(e) => setNote(p.id, e.target.value)}
+                placeholder="Notiz an das EPHIA-Team (optional), z.B. bevorzugte Uhrzeit oder Hinweise"
+                rows={2}
+                className="text-sm"
+              />
               {p.applied ? (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  disabled={busyId === p.id}
-                  onClick={() => toggle(p)}
-                >
-                  <Check className="h-4 w-4 mr-1.5 text-emerald-600" />
-                  {busyId === p.id ? "..." : "Übernommen — zurückziehen"}
-                </Button>
+                (() => {
+                  const noteChanged =
+                    (noteDrafts[p.id]?.trim() || "") !== (p.myNote ?? "");
+                  return (
+                    <div className="flex gap-2">
+                      {noteChanged ? (
+                        <Button
+                          className="flex-1"
+                          disabled={busyId === p.id}
+                          onClick={() => submit(p, "apply")}
+                        >
+                          {busyId === p.id ? "..." : "Notiz speichern"}
+                        </Button>
+                      ) : (
+                        <div className="flex-1 flex items-center gap-1.5 text-sm font-medium text-emerald-700">
+                          <Check className="h-4 w-4" />
+                          Übernommen
+                        </div>
+                      )}
+                      <Button
+                        variant="outline"
+                        disabled={busyId === p.id}
+                        onClick={() => submit(p, "withdraw")}
+                      >
+                        {busyId === p.id ? "..." : "Zurückziehen"}
+                      </Button>
+                    </div>
+                  );
+                })()
               ) : (
                 <Button
                   className="w-full"
                   disabled={busyId === p.id}
-                  onClick={() => toggle(p)}
+                  onClick={() => submit(p, "apply")}
                 >
                   {busyId === p.id ? "..." : "Ich übernehme"}
                 </Button>
