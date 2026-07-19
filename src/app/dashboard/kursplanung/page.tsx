@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchBerlinHolidays } from "@/lib/holidays";
 import { KursplanungManager, type ProposalRow, type TemplateOption } from "./kursplanung-manager";
+import { YearCalendar, type CalendarProposal } from "./year-calendar";
 
 export const dynamic = "force-dynamic";
 
@@ -13,14 +15,33 @@ function dozentName(p: {
   return [p.title, p.first_name, p.last_name].filter(Boolean).join(" ") || "Unbekannt";
 }
 
-export default async function KursplanungPage() {
+export default async function KursplanungPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ year?: string }>;
+}) {
   const cookieStore = await cookies();
   const role = cookieStore.get("x-user-role")?.value;
   if (role !== "admin") {
     redirect("/login");
   }
 
+  // Berlin "today" for the year-overview highlight + default year.
+  const todayIso = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Europe/Berlin",
+  });
+  const currentYear = parseInt(todayIso.slice(0, 4), 10);
+  const { year: yearParam } = await searchParams;
+  const parsedYear = yearParam ? parseInt(yearParam, 10) : currentYear;
+  // Guard against garbage/out-of-range ?year= values.
+  const year =
+    Number.isFinite(parsedYear) && parsedYear >= 2000 && parsedYear <= 2100
+      ? parsedYear
+      : currentYear;
+
   const admin = createAdminClient();
+
+  const holidays = await fetchBerlinHolidays(year);
 
   const [{ data: templates }, { data: proposals }, { data: sessionTemplateRows }] =
     await Promise.all([
@@ -122,6 +143,14 @@ export default async function KursplanungPage() {
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
     .map(({ id, label }) => ({ id, label }));
 
+  // Plot every proposal (not just this year's) on the calendar; the
+  // component filters to the displayed year itself.
+  const calendarProposals: CalendarProposal[] = rows.map((r) => ({
+    date: r.proposedDate,
+    status: r.status,
+    courseLabel: r.templateName,
+  }));
+
   return (
     <div className="space-y-6">
       <div>
@@ -130,6 +159,14 @@ export default async function KursplanungPage() {
           Lege offene Praxiskurs-Termine an, auf die sich Dozent:innen bewerben können. Wähle anschließend eine:n Dozent:in aus und bestätige. Der Kurs wird als Termin angelegt und ist zunächst offline.
         </p>
       </div>
+      <YearCalendar
+        year={year}
+        currentYear={currentYear}
+        todayIso={todayIso}
+        publicHolidays={holidays.publicHolidays}
+        schoolHolidays={holidays.schoolHolidays}
+        proposals={calendarProposals}
+      />
       <KursplanungManager initialProposals={rows} templates={templateOptions} />
     </div>
   );
