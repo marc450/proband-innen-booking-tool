@@ -13,6 +13,7 @@ import { runGaldermaContactIntros } from "@/lib/run-galderma-contact-intros";
 import { runRebookingExpiry } from "@/lib/run-rebooking-expiry";
 import { runRebookingReminders } from "@/lib/run-rebooking-reminders";
 import { runPaymentReconciliation } from "@/lib/run-payment-reconciliation";
+import { runDozentSlotNotifications } from "@/lib/run-dozent-slot-notifications";
 import { archiveSentMessage } from "@/lib/gmail";
 import { INDICATIONS } from "@/lib/indications";
 
@@ -52,6 +53,8 @@ export async function GET(req: NextRequest) {
     rebookingReminders: 0,
     rebookingHoldsExpired: 0,
     praxisOnlineReminders: 0,
+    dozentSlotsAnnounced: 0,
+    dozentSlotDmsSent: 0,
     errors: 0,
   };
 
@@ -121,6 +124,21 @@ export async function GET(req: NextRequest) {
       results.errors += contactIntros.errors;
     } catch (contactErr) {
       console.error("Galderma contact-intro pass failed:", contactErr);
+      results.errors += 1;
+    }
+
+    // ── Dozent:innen: neue offene Kurstermine ankündigen ──
+    // DMs every Dozent:in a digest of newly opened Kursplanung slots they
+    // can apply to, with a link to "Offene Termine". Idempotent via
+    // course_date_proposals.dozent_notified_at (one announce per slot).
+    // No-ops without SLACK_BOT_TOKEN.
+    try {
+      const dozentSlots = await runDozentSlotNotifications(supabase);
+      results.dozentSlotsAnnounced = dozentSlots.slots;
+      results.dozentSlotDmsSent = dozentSlots.notified;
+      results.errors += dozentSlots.errors;
+    } catch (dozentErr) {
+      console.error("Dozent slot-notification pass failed:", dozentErr);
       results.errors += 1;
     }
 

@@ -84,9 +84,6 @@ export default async function OffeneTerminePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Offene Termine</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Das sind die aktuell vorgeschlagenen Praxiskurs-Termine. Übernimm die Termine, die Du unterrichten möchtest. Mehrfachbewerbungen sind möglich. Das EPHIA-Team wählt anschließend aus und bestätigt Dich.
-        </p>
       </div>
       <OffeneTermineView initialProposals={rows} />
     </div>

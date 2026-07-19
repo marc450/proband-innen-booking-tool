@@ -136,6 +136,17 @@ export async function POST(req: NextRequest) {
   //    rolling back a valid session.
   const satellite = await createSatelliteForSession(session.id as string);
 
+  // createSatelliteForSession defaults the satellite to status='published'
+  // (correct for the manual/backfill paths). For a confirmed proposal we
+  // want the Proband:innen course OFFLINE too, matching the offline session,
+  // until an admin flips both live by hand. So force it to 'draft' here.
+  if (satellite.ok && satellite.courseId) {
+    await admin
+      .from("courses")
+      .update({ status: "draft" })
+      .eq("id", satellite.courseId);
+  }
+
   // 3) Flip proposal + applications to their terminal states.
   await admin
     .from("course_date_proposals")
