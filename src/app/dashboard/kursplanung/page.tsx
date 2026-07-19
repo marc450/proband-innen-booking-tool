@@ -22,18 +22,29 @@ export default async function KursplanungPage() {
 
   const admin = createAdminClient();
 
-  const [{ data: templates }, { data: proposals }] = await Promise.all([
-    admin
-      .from("course_templates")
-      .select("id, title, course_label_de, course_key")
-      .order("title", { ascending: true }),
-    admin
-      .from("course_date_proposals")
-      .select(
-        "id, status, template_id, proposed_date, start_time, duration_minutes, max_seats, address, notes, assigned_profile_id, created_session_id",
-      )
-      .order("proposed_date", { ascending: true }),
-  ]);
+  const [{ data: templates }, { data: proposals }, { data: sessionTemplateRows }] =
+    await Promise.all([
+      admin
+        .from("course_templates")
+        .select("id, title, course_label_de, course_key")
+        .order("title", { ascending: true }),
+      admin
+        .from("course_date_proposals")
+        .select(
+          "id, status, template_id, proposed_date, start_time, duration_minutes, max_seats, address, notes, assigned_profile_id, created_session_id",
+        )
+        .order("proposed_date", { ascending: true }),
+      // How often each course actually runs, used to sort the create-dialog
+      // dropdown so the most frequently scheduled courses sit at the top.
+      admin.from("course_sessions").select("template_id"),
+    ]);
+
+  const sessionCountByTemplate = new Map<string, number>();
+  for (const row of sessionTemplateRows ?? []) {
+    const tid = row.template_id as string | null;
+    if (!tid) continue;
+    sessionCountByTemplate.set(tid, (sessionCountByTemplate.get(tid) ?? 0) + 1);
+  }
 
   const proposalList = proposals ?? [];
   const proposalIds = proposalList.map((p) => p.id as string);
@@ -100,10 +111,16 @@ export default async function KursplanungPage() {
     applications: appsByProposal.get(p.id as string) ?? [],
   }));
 
-  const templateOptions: TemplateOption[] = (templates ?? []).map((t) => ({
-    id: t.id as string,
-    label: (t.course_label_de as string | null) || (t.title as string) || "—",
-  }));
+  const templateOptions: TemplateOption[] = (templates ?? [])
+    .map((t) => ({
+      id: t.id as string,
+      label: (t.course_label_de as string | null) || (t.title as string) || "—",
+      count: sessionCountByTemplate.get(t.id as string) ?? 0,
+    }))
+    // Most frequently scheduled courses first; alphabetical as a tiebreak
+    // (and so courses that have never run yet stay in a stable order).
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+    .map(({ id, label }) => ({ id, label }));
 
   return (
     <div className="space-y-6">
