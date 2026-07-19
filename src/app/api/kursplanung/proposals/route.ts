@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       duration_minutes: Number.isFinite(body.durationMinutes)
         ? body.durationMinutes
         : 360,
-      max_seats: Number.isFinite(body.maxSeats) ? body.maxSeats : 5,
+      max_seats: Number.isFinite(body.maxSeats) ? body.maxSeats : 7,
       address: body.address?.trim() || null,
       notes: body.notes?.trim() || null,
       created_by: access.userId,

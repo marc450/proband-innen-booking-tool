@@ -80,7 +80,7 @@ export function KursplanungManager({
   const [fDate, setFDate] = useState("");
   const [fStart, setFStart] = useState("10:00");
   const [fDuration, setFDuration] = useState("360");
-  const [fSeats, setFSeats] = useState("5");
+  const [fSeats, setFSeats] = useState("7");
   const [fAddress, setFAddress] = useState(DEFAULT_ADDRESS);
   const [fNotes, setFNotes] = useState("");
 
@@ -98,7 +98,7 @@ export function KursplanungManager({
     setFDate("");
     setFStart("10:00");
     setFDuration("360");
-    setFSeats("5");
+    setFSeats("7");
     setFAddress(DEFAULT_ADDRESS);
     setFNotes("");
   };
