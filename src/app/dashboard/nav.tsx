@@ -55,6 +55,12 @@ type NavItem = {
    * Lernzentrum without giving them the rest of the admin surface.
    */
   autorAllowed?: boolean;
+  /**
+   * When true, allow users with `is_dozent = true` to see this item even
+   * if it's `adminOnly`. Used to grant Dozent:innen access to the "offene
+   * Termine" apply surface without the rest of the admin surface.
+   */
+  dozentAllowed?: boolean;
   /** Restrict this item to a specific list of user emails (lowercase). */
   emailAllowlist?: string[];
 };
@@ -76,6 +82,11 @@ type NavGroup = {
    * its items, e.g. the merch orders overview they ship from).
    */
   kursbetreuungAllowed?: boolean;
+  /**
+   * When true, users with `is_dozent = true` may see this otherwise
+   * admin-only group (paired with `dozentAllowed` on its items).
+   */
+  dozentAllowed?: boolean;
   /** Restrict the whole group to a specific list of user emails (lowercase). */
   emailAllowlist?: string[];
 };
@@ -116,8 +127,17 @@ const navGroups: NavGroup[] = [
     key: "termine",
     label: "Termine",
     icon: CalendarDays,
+    // Group itself is visible to all staff (Kurse). The apply surface
+    // below is gated per-item to Dozent:innen (+ admins).
+    dozentAllowed: true,
     items: [
       { href: "/dashboard/kurse", label: "Kurse" },
+      {
+        href: "/dashboard/kursplanung/uebernehmen",
+        label: "Offene Termine",
+        adminOnly: true,
+        dozentAllowed: true,
+      },
     ],
   },
   {
@@ -215,6 +235,7 @@ const navGroups: NavGroup[] = [
     icon: ShieldCheck,
     adminOnly: true,
     items: [
+      { href: "/dashboard/kursplanung", exact: true, label: "Kursplanung" },
       { href: "/dashboard/settings?tab=kurstermine", label: "Kurstermine" },
       { href: "/dashboard/settings?tab=kursangebot", label: "Kurse" },
       { href: "/dashboard/settings?tab=rabattcodes", label: "Rabattcodes" },
@@ -236,12 +257,14 @@ export function DashboardNav({
   role,
   isKursbetreuung = false,
   isAutor = false,
+  isDozent = false,
   theme = "light",
 }: {
   userEmail: string;
   role: "admin" | "nutzer";
   isKursbetreuung?: boolean;
   isAutor?: boolean;
+  isDozent?: boolean;
   theme?: "light" | "dark";
 }) {
   const [currentTheme, setCurrentTheme] = useState<"light" | "dark">(theme);
@@ -303,6 +326,7 @@ export function DashboardNav({
     if (role === "admin") return true;
     if (item.kursbetreuungAllowed && isKursbetreuung) return true;
     if (item.autorAllowed && isAutor) return true;
+    if (item.dozentAllowed && isDozent) return true;
     return false;
   };
 
@@ -312,7 +336,8 @@ export function DashboardNav({
       g.adminOnly &&
       role !== "admin" &&
       !(g.autorAllowed && isAutor) &&
-      !(g.kursbetreuungAllowed && isKursbetreuung)
+      !(g.kursbetreuungAllowed && isKursbetreuung) &&
+      !(g.dozentAllowed && isDozent)
     )
       return false;
     // Hide groups that have no items the current user can actually

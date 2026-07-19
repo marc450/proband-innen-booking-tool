@@ -84,10 +84,16 @@ export async function updateSession(request: NextRequest) {
     const existingRole = request.cookies.get("x-user-role")?.value;
     const existingKursbetreuung = request.cookies.get("x-is-kursbetreuung")?.value;
     const existingAutor = request.cookies.get("x-is-autor")?.value;
-    if (!existingRole || existingKursbetreuung === undefined || existingAutor === undefined) {
+    const existingDozent = request.cookies.get("x-is-dozent")?.value;
+    if (
+      !existingRole ||
+      existingKursbetreuung === undefined ||
+      existingAutor === undefined ||
+      existingDozent === undefined
+    ) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role, is_kursbetreuung, is_autor")
+        .select("role, is_kursbetreuung, is_autor, is_dozent")
         .eq("id", userId)
         .single();
       role =
@@ -96,6 +102,7 @@ export async function updateSession(request: NextRequest) {
           : "";
       const isKursbetreuung = profile?.is_kursbetreuung === true;
       const isAutor = profile?.is_autor === true;
+      const isDozent = profile?.is_dozent === true;
 
       if (role) {
         supabaseResponse.cookies.set("x-user-role", role, {
@@ -119,6 +126,13 @@ export async function updateSession(request: NextRequest) {
           sameSite: "lax",
           maxAge: 3600,
         });
+        supabaseResponse.cookies.set("x-is-dozent", isDozent ? "1" : "0", {
+          path: "/",
+          httpOnly: true,
+          secure: true,
+          sameSite: "lax",
+          maxAge: 3600,
+        });
       } else {
         // Profileless session: cache nothing and clear whatever is
         // there. An empty role cookie would be indistinguishable from
@@ -130,6 +144,7 @@ export async function updateSession(request: NextRequest) {
         supabaseResponse.cookies.delete("x-user-role");
         supabaseResponse.cookies.delete("x-is-kursbetreuung");
         supabaseResponse.cookies.delete("x-is-autor");
+        supabaseResponse.cookies.delete("x-is-dozent");
       }
     } else {
       role = existingRole;
@@ -138,6 +153,7 @@ export async function updateSession(request: NextRequest) {
     supabaseResponse.cookies.delete("x-user-role");
     supabaseResponse.cookies.delete("x-is-kursbetreuung");
     supabaseResponse.cookies.delete("x-is-autor");
+    supabaseResponse.cookies.delete("x-is-dozent");
   }
 
   // Hard lock on admin.ephia.de: a valid Supabase session is necessary

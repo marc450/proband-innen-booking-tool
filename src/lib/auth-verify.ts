@@ -25,6 +25,7 @@ export interface VerifiedAccess {
    *  accounts (student), which share the same auth.users table. */
   role: string;
   isKursbetreuung: boolean;
+  isDozent: boolean;
 }
 
 /** Resolve the caller's role + kursbetreuung flag from the validated
@@ -44,7 +45,7 @@ export async function getVerifiedAccess(): Promise<VerifiedAccess | null> {
   const admin = createAdminClient();
   const { data: profile } = await admin
     .from("profiles")
-    .select("role, is_kursbetreuung")
+    .select("role, is_kursbetreuung, is_dozent")
     .eq("id", user.id)
     .single();
 
@@ -63,6 +64,7 @@ export async function getVerifiedAccess(): Promise<VerifiedAccess | null> {
         ? profile.role
         : "",
     isKursbetreuung: profile?.is_kursbetreuung === true,
+    isDozent: profile?.is_dozent === true,
   };
 }
 
@@ -88,4 +90,16 @@ export async function requireVerifiedInbox(): Promise<VerifiedAccess | null> {
   const access = await getVerifiedAccess();
   if (!access) return null;
   return access.role === "admin" || access.isKursbetreuung ? access : null;
+}
+
+/** Verified Dozent:in gate (admin OR is_dozent staff). Gates the
+ *  "open dates" apply surface so only instructors (and admins) can raise
+ *  their hand for a proposed course date. Still requires a staff role —
+ *  is_dozent is an orthogonal flag layered on admin/nutzer. */
+export async function requireVerifiedDozent(): Promise<VerifiedAccess | null> {
+  const access = await getVerifiedAccess();
+  if (!access) return null;
+  const isStaff = access.role === "admin" || access.role === "nutzer";
+  if (!isStaff) return null;
+  return access.role === "admin" || access.isDozent ? access : null;
 }

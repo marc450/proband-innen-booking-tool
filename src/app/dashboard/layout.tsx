@@ -33,6 +33,7 @@ export default async function DashboardLayout({
   const role = (cookieStore.get("x-user-role")?.value ?? "nutzer") as "admin" | "nutzer";
   const isKursbetreuung = cookieStore.get("x-is-kursbetreuung")?.value === "1";
   const isAutor = cookieStore.get("x-is-autor")?.value === "1";
+  const isDozent = cookieStore.get("x-is-dozent")?.value === "1";
   const theme = (cookieStore.get("x-theme")?.value ?? "light") as "light" | "dark";
 
   return (
@@ -49,6 +50,7 @@ export default async function DashboardLayout({
         role={role}
         isKursbetreuung={isKursbetreuung}
         isAutor={isAutor}
+        isDozent={isDozent}
         theme={theme}
       />
       <main className="ml-14 px-8 py-6">{children}</main>
