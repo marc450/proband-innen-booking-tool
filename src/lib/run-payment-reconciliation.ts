@@ -22,6 +22,18 @@
 // (unique on the session id), so a session is alerted once and never again. A
 // later run that finds the records present stamps resolved_at instead, which is
 // the common case when a Stripe retry eventually succeeds.
+//
+// Two failure kinds, kept strictly apart because they mean different things:
+//   * A PROBLEM is a paid session that is genuinely missing its records. Real,
+//     actionable, someone paid and is waiting.
+//   * A PLUMBING error is the reconciler itself tripping (table missing, DB
+//     write failing, Slack unreachable, a count query throwing mid-check). It
+//     does NOT mean a payment is lost; it means this run couldn't fully do its
+//     job. Reporting it as "eine Buchung fehlt" cries wolf (see the missing-157
+//     incident, where an un-run migration read as a payment alarm every day).
+// A per-session count throw is treated as neither on its own: it is recorded,
+// and only escalated once it fails on two consecutive runs (migration 158),
+// because in isolation it is almost always a transient hiccup.
 
 import Stripe from "stripe";
 import type { createAdminClient } from "@/lib/supabase/admin";
@@ -65,7 +77,16 @@ export interface PaymentReconciliationResult {
   problems: number;
   newAlerts: number;
   resolved: number;
+  /** Plumbing failures in the reconciler itself (table missing, DB write, Slack,
+   *  config). NOT missing payments. This is what the daily sweep counts, so a
+   *  broken reconciler surfaces as a sweep error, but a transient unverifiable
+   *  session does not. */
   errors: number;
+  /** Paid sessions that threw while being checked THIS run (couldn't verify). */
+  unverified: number;
+  /** Subset of `unverified` that has now failed on two consecutive runs and was
+   *  therefore escalated to Slack. First strikes stay silent. */
+  unverifiedRepeated: number;
   /** Only populated on a dry run, for eyeballing what a real run would report. */
   details?: Array<Omit<Problem, "sessionId"> & { sessionId: string }>;
 }
@@ -248,6 +269,50 @@ function fmtAmount(cents: number | null, currency: string | null): string {
   });
 }
 
+// Consecutive runs before an unverifiable session is escalated to Slack.
+const UNVERIFIED_STRIKE_LIMIT = 2;
+
+/**
+ * Record a strike for each session that couldn't be checked this run and return
+ * the ids that have now failed UNVERIFIED_STRIKE_LIMIT runs in a row. Throws on
+ * a DB failure so the caller counts it as a plumbing error, not a payment one.
+ */
+async function bumpUnverified(admin: Admin, sessionIds: string[]): Promise<string[]> {
+  if (sessionIds.length === 0) return [];
+  const { data, error } = await admin.rpc("bump_payment_unverified", {
+    p_session_ids: sessionIds,
+  });
+  if (error) throw error;
+  return ((data ?? []) as Array<{ session_id: string; strike_count: number }>)
+    .filter((r) => r.strike_count >= UNVERIFIED_STRIKE_LIMIT)
+    .map((r) => r.session_id);
+}
+
+/**
+ * Drop the two-strikes rows for sessions that were checked this run (whether
+ * clean or a real problem), so `strikes` only ever counts a CONSECUTIVE streak.
+ * Also prunes rows for sessions that have aged out of the scan window and will
+ * never be looked at again. Best-effort: a failure here is logged, not fatal.
+ */
+async function clearRecoveredUnverified(
+  admin: Admin,
+  checkedSessionIds: string[],
+  staleBeforeIso: string,
+): Promise<void> {
+  if (checkedSessionIds.length > 0) {
+    const { error } = await admin
+      .from("payment_reconciliation_unverified")
+      .delete()
+      .in("stripe_checkout_session_id", checkedSessionIds);
+    if (error) console.error("reconcile-payments: could not clear recovered unverified:", error);
+  }
+  const { error: pruneErr } = await admin
+    .from("payment_reconciliation_unverified")
+    .delete()
+    .lt("last_seen_at", staleBeforeIso);
+  if (pruneErr) console.error("reconcile-payments: could not prune stale unverified:", pruneErr);
+}
+
 export async function runPaymentReconciliation(
   admin: Admin,
   opts: PaymentReconciliationOptions = {},
@@ -258,10 +323,18 @@ export async function runPaymentReconciliation(
     newAlerts: 0,
     resolved: 0,
     errors: 0,
+    unverified: 0,
+    unverifiedRepeated: 0,
   };
 
   if (!STRIPE_SECRET_KEY) {
+    // Config plumbing, not a payment: the reconciler can't run at all. Say that.
     console.error("reconcile-payments: STRIPE_SECRET_KEY missing, cannot reconcile");
+    await pingSlack(
+      "⚠️ *Zahlungsabgleich nicht möglich*\n" +
+        "STRIPE_SECRET_KEY fehlt, es wurde nichts geprüft. Das ist ein Konfigurationsproblem, " +
+        "keine fehlende Buchung. Bis das behoben ist, würden fehlende Buchungen nicht auffallen.",
+    );
     return { ...result, errors: 1 };
   }
 
@@ -273,6 +346,11 @@ export async function runPaymentReconciliation(
 
   const problems: Problem[] = [];
   const healthySessionIds: string[] = [];
+  // Sessions that threw while being checked this run. Not counted as plumbing
+  // errors and not reported yet: they only escalate on a second consecutive
+  // strike (see below), because in isolation a throw is almost always a
+  // transient DB hiccup that the next run clears.
+  const unverifiedSessionIds: string[] = [];
 
   try {
     for await (const s of stripe.checkout.sessions.list({
@@ -294,7 +372,7 @@ export async function runPaymentReconciliation(
         else healthySessionIds.push(s.id);
       } catch (err) {
         console.error(`reconcile-payments: could not classify ${s.id}:`, err);
-        result.errors += 1;
+        unverifiedSessionIds.push(s.id);
       }
     }
   } catch (err) {
@@ -310,11 +388,12 @@ export async function runPaymentReconciliation(
   }
 
   result.problems = problems.length;
+  result.unverified = unverifiedSessionIds.length;
 
   if (opts.dryRun) {
     console.log(
       `reconcile-payments (dry run): ${result.checked} paid session(s) checked, ` +
-        `${result.problems} problem(s) would be reported`,
+        `${result.problems} problem(s), ${result.unverified} unverifiable — would write nothing`,
     );
     return { ...result, details: problems };
   }
@@ -370,18 +449,57 @@ export async function runPaymentReconciliation(
 
   result.newAlerts = fresh.length;
 
+  // Two-strikes bookkeeping. Sessions checked cleanly OR flagged as a real
+  // problem this run are "checked", so their strike streak resets; the ones
+  // that threw get a strike and only escalate at the limit. Wrapped because the
+  // state table is itself plumbing: if it fails, that's an infra error, not a
+  // reason to lose the whole run.
+  let repeatedUnverified: string[] = [];
+  try {
+    const checkedThisRun = [...healthySessionIds, ...problems.map((p) => p.sessionId)];
+    // Prune rows older than one full lookback window past their last sighting:
+    // such a session has aged out of the scan and will never be rechecked.
+    const staleBefore = new Date(now - (lookbackHours + 24) * 3600_000).toISOString();
+    await clearRecoveredUnverified(admin, checkedThisRun, staleBefore);
+    repeatedUnverified = await bumpUnverified(admin, unverifiedSessionIds);
+    result.unverifiedRepeated = repeatedUnverified.length;
+  } catch (err) {
+    console.error("reconcile-payments: two-strikes bookkeeping failed:", err);
+    result.errors += 1;
+  }
+
   console.log(
     `reconcile-payments: ${result.checked} paid session(s) checked, ` +
-      `${result.problems} problem(s), ${result.newAlerts} new, ${result.resolved} resolved`,
+      `${result.problems} problem(s), ${result.newAlerts} new, ${result.resolved} resolved, ` +
+      `${result.unverified} unverifiable (${result.unverifiedRepeated} repeated), ` +
+      `${result.errors} plumbing error(s)`,
   );
 
-  // A run that couldn't check some sessions is not a clean run. Say so, or the
-  // silence reads as "all good".
+  // Plumbing failure: the reconciler itself tripped. This is explicitly NOT a
+  // "payment is missing" alarm. It says detection was degraded this run, so a
+  // missing booking COULD have slipped through unseen, and points at the log.
   if (result.errors > 0) {
     const ok = await pingSlack(
-      `⚠️ *Zahlungsabgleich unvollständig*\n` +
-        `${result.errors} Session(s) konnten nicht geprüft werden. ` +
-        "Fehlende Buchungen könnten darunter sein. Details im Railway-Log.",
+      `⚠️ *Zahlungsabgleich gestört*\n` +
+        "Die Prüfung selbst ist auf einen Fehler gestoßen (Datenbank oder Slack), " +
+        "nicht eine fehlende Buchung. Dieser Lauf konnte womöglich nicht alles prüfen. " +
+        "Bitte im Railway-Log nachsehen.",
+    );
+    if (!ok) result.errors += 1;
+  }
+
+  // A session that couldn't be checked on two consecutive runs. Now worth a
+  // look: it might be a transient issue that won't clear, or a real missing
+  // booking the count query keeps failing on. First strikes stayed silent.
+  if (repeatedUnverified.length > 0) {
+    const links = repeatedUnverified
+      .map((id) => `   <https://dashboard.stripe.com/payments/${id}|In Stripe öffnen> · \`${id}\``)
+      .join("\n");
+    const ok = await pingSlack(
+      `⚠️ *Zahlungsabgleich: ${repeatedUnverified.length} bezahlte Session(s) wiederholt nicht prüfbar*\n` +
+        "Diese Session(s) konnten mehrfach hintereinander nicht geprüft werden. " +
+        "Bitte in Stripe und im Railway-Log kontrollieren, ob die Buchung vorhanden ist.\n" +
+        links,
     );
     if (!ok) result.errors += 1;
   }
