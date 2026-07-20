@@ -164,7 +164,7 @@ export function OffeneTermineView({
                       ) : (
                         <div className="flex-1 flex items-center gap-1.5 text-sm font-medium text-emerald-700">
                           <Check className="h-4 w-4" />
-                          Übernommen
+                          Beworben
                         </div>
                       )}
                       <Button
@@ -183,7 +183,7 @@ export function OffeneTermineView({
                   disabled={busyId === p.id}
                   onClick={() => submit(p, "apply")}
                 >
-                  {busyId === p.id ? "..." : "Ich übernehme"}
+                  {busyId === p.id ? "..." : "Auf diesen Termin bewerben"}
                 </Button>
               )}
             </div>
