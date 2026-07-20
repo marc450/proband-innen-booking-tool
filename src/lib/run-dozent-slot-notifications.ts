@@ -147,7 +147,7 @@ export async function runDozentSlotNotifications(
       "",
       ...slotLines,
       "",
-      "Übernimm die Termine, die Du unterrichten möchtest:",
+      "Bewirb Dich auf die Termine, die Du unterrichten möchtest:",
       APPLY_URL,
     ].join("\n");
 
