@@ -360,7 +360,7 @@ async function handleCourseRebookingPaid(requestId: string) {
   // confirmation email can say "Umbuchung" rather than only "Terminänderung".
   const { data: reqRow } = await supabase
     .from("course_rebooking_requests")
-    .select("to_template_id")
+    .select("to_template_id, fee_cents, surcharge_cents")
     .eq("id", requestId)
     .single();
   const isCrossCourse = !!reqRow?.to_template_id;
@@ -378,14 +378,54 @@ async function handleCourseRebookingPaid(requestId: string) {
   const { data: booking } = await supabase
     .from("course_bookings")
     .select(
-      "first_name, email, course_templates(course_label_de, title), course_sessions(date_iso, label_de, start_time, duration_minutes, address, instructor_name)",
+      "first_name, last_name, email, course_templates(course_label_de, title), course_sessions(date_iso, label_de, start_time, duration_minutes, address, instructor_name)",
     )
     .eq("id", bookingId)
     .single();
 
+  const tmpl = booking?.course_templates as { course_label_de?: string; title?: string } | null;
+  const courseName = tmpl?.course_label_de || tmpl?.title || "EPHIA Kurs";
+
+  // Revenue channel: the Umbuchungsgebühr (+ optional Kursaufpreis) is real
+  // income, so surface it alongside merch. Fires independent of the email step
+  // below, mirroring handleMerchCheckout's inline post (no shared helper).
+  const feeCents = reqRow?.fee_cents || 0;
+  const surchargeCents = reqRow?.surcharge_cents || 0;
+  const totalCents = feeCents + surchargeCents;
+  const SLACK_WEBHOOK_URL_REVENUE = process.env.SLACK_WEBHOOK_URL_REVENUE;
+  if (SLACK_WEBHOOK_URL_REVENUE && totalCents > 0) {
+    try {
+      const eur = (cents: number) =>
+        `€${(cents / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })}`;
+      const fullName = [booking?.first_name, booking?.last_name]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      const lines = [
+        `*Typ:* ${isCrossCourse ? "Umbuchung (Kurswechsel)" : "Umbuchung (Termin)"}`,
+        `*Kurs:* ${courseName}`,
+        fullName ? `*Name:* ${fullName}` : null,
+        booking?.email ? `*E-Mail:* ${booking.email}` : null,
+        feeCents > 0 ? `*Umbuchungsgebühr:* ${eur(feeCents)}` : null,
+        surchargeCents > 0 ? `*Kursaufpreis:* ${eur(surchargeCents)}` : null,
+        `*Betrag:* ${eur(totalCents)}`,
+      ].filter(Boolean);
+      await fetch(SLACK_WEBHOOK_URL_REVENUE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: lines.join("\n"),
+          username: "EPHIA Umbuchung",
+          icon_emoji: ":arrows_counterclockwise:",
+        }),
+      });
+    } catch (err) {
+      console.error("Slack revenue notification failed:", err);
+    }
+  }
+
   if (!booking?.email || !RESEND_API_KEY) return;
 
-  const tmpl = booking.course_templates as { course_label_de?: string; title?: string } | null;
   const sess = booking.course_sessions as {
     date_iso?: string;
     start_time?: string;
@@ -393,7 +433,6 @@ async function handleCourseRebookingPaid(requestId: string) {
     address?: string;
     instructor_name?: string;
   } | null;
-  const courseName = tmpl?.course_label_de || tmpl?.title || "EPHIA Kurs";
 
   const startTime = sess?.start_time || "10:00";
   const [h, m] = startTime.split(":").map(Number);
