@@ -240,7 +240,13 @@ export async function createSatelliteForSession(
       course_date: session.date_iso,
       location: session.address || null,
       instructor_id: instructorId,
-      status: "published",
+      // A brand-new Termin starts OFFLINE on both sides: the session is
+      // created with is_live = false for Ärzt:innen, and the Proband:innen
+      // satellite starts as 'draft' to match. Publishing to patients is
+      // always a deliberate admin action, never a side effect of creating
+      // the date. (Previously this was 'published', so a new offline Termin
+      // was silently bookable by Proband:innen.)
+      status: "draft",
     })
     .select("id")
     .single();

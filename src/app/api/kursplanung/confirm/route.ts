@@ -134,18 +134,10 @@ export async function POST(req: NextRequest) {
   //    is non-fatal: the session exists and an admin can create the
   //    satellite from the detail page, so we surface a warning rather than
   //    rolling back a valid session.
+  // The satellite is created as 'draft', so the confirmed Termin starts
+  // offline on both sides (Ärzt:innen via is_live=false, Proband:innen via
+  // status='draft') until an admin publishes it.
   const satellite = await createSatelliteForSession(session.id as string);
-
-  // createSatelliteForSession defaults the satellite to status='published'
-  // (correct for the manual/backfill paths). For a confirmed proposal we
-  // want the Proband:innen course OFFLINE too, matching the offline session,
-  // until an admin flips both live by hand. So force it to 'draft' here.
-  if (satellite.ok && satellite.courseId) {
-    await admin
-      .from("courses")
-      .update({ status: "draft" })
-      .eq("id", satellite.courseId);
-  }
 
   // 3) Flip proposal + applications to their terminal states.
   await admin

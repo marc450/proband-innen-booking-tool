@@ -80,6 +80,17 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
   );
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  // What a delete would destroy, loaded before the confirm dialog so the
+  // admin sees the real blast radius (Proband:innen-Buchungen included)
+  // instead of a generic "kann nicht rückgängig gemacht werden".
+  const [deleteImpact, setDeleteImpact] = useState<{
+    aerzteBookings: number;
+    probandBookings: number;
+    probandSlots: number;
+    hasSatellite: boolean;
+  } | null>(null);
+  const [deleteChecking, setDeleteChecking] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   // Per-session "duplicate is in flight" guard. Prevents the spam-click
@@ -236,6 +247,16 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
     });
     return sorted;
   }, [sessions, sortKey, sortDir, filterInstructor, filterBetreuer, filterTemplate, filterStatus, filterProband, filterDateFrom, filterTime, filterCme, filterZahnmedizin, zahnmedizinerCounts, probandStatus]);
+
+  // Filter inputs share one base style. When a filter is active (non-default
+  // value) it switches to a blue tint so it's obvious a filter is narrowing
+  // the list, e.g. the default "Live" status filter that hides Offline sessions.
+  const filterClass = (active: boolean) =>
+    `w-full rounded px-1.5 py-1 text-xs border-0 cursor-pointer ${
+      active
+        ? "bg-[#0066FF]/10 text-[#0066FF] font-medium"
+        : "bg-gray-100 text-foreground font-normal"
+    }`;
 
   const SortableHead = ({ label, sortKeyName, className }: { label: string; sortKeyName: SortKey; className?: string }) => (
     <TableHead className={className}>
@@ -408,15 +429,79 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
     }
   };
 
-  // Delete
+  // Delete. Runs through /api/admin/course-sessions/delete (service role)
+  // rather than the browser client: the old client-side delete was blocked
+  // by the course_bookings FK for booked Termine and swallowed the error,
+  // so the row vanished from this table while surviving in the database.
+  const requestDelete = async (id: string) => {
+    setDeleteId(id);
+    setDeleteImpact(null);
+    setChangeError(null);
+    setDeleteChecking(true);
+    try {
+      const res = await fetch("/api/admin/course-sessions/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: id, mode: "preview" }),
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.impact) setDeleteImpact(json.impact);
+    } finally {
+      setDeleteChecking(false);
+    }
+  };
+
   const confirmDelete = async () => {
     if (!deleteId) return;
-    const { error } = await supabase.from("course_sessions").delete().eq("id", deleteId);
-    if (!error) {
+    setDeleting(true);
+    setChangeError(null);
+    try {
+      const res = await fetch("/api/admin/course-sessions/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: deleteId, mode: "delete" }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setChangeError(json?.error || `Termin konnte nicht gelöscht werden (HTTP ${res.status}).`);
+        return;
+      }
+      if (json?.warning) setChangeError(json.warning);
       setSessions((prev) => prev.filter((s) => s.id !== deleteId));
+      setDeleteId(null);
+      setDeleteImpact(null);
+    } finally {
+      setDeleting(false);
     }
-    setDeleteId(null);
   };
+
+  // Confirm-dialog copy that spells out exactly what will be destroyed.
+  const deleteDescription = (() => {
+    if (deleteChecking) return "Wird geprüft, was mit diesem Termin gelöscht wird...";
+    if (!deleteImpact) {
+      return "Möchtest Du diesen Kurstermin wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.";
+    }
+    const parts: string[] = [];
+    if (deleteImpact.aerzteBookings > 0) {
+      parts.push(
+        `${deleteImpact.aerzteBookings} Ärzt:innen-Buchung${deleteImpact.aerzteBookings === 1 ? "" : "en"}`,
+      );
+    }
+    if (deleteImpact.probandBookings > 0) {
+      parts.push(
+        `${deleteImpact.probandBookings} Proband:innen-Buchung${deleteImpact.probandBookings === 1 ? "" : "en"}`,
+      );
+    }
+    if (deleteImpact.probandSlots > 0) {
+      parts.push(
+        `${deleteImpact.probandSlots} Proband:innen-Slot${deleteImpact.probandSlots === 1 ? "" : "s"}`,
+      );
+    }
+    if (parts.length === 0) {
+      return "Dieser Termin hat keine Buchungen. Er wird überall gelöscht, inklusive Proband:innen-Kurs. Diese Aktion kann nicht rückgängig gemacht werden.";
+    }
+    return `Achtung: Dabei werden unwiderruflich mitgelöscht: ${parts.join(", ")}. Der Termin verschwindet überall, auch aus der Proband:innen-Buchung. Diese Aktion kann nicht rückgängig gemacht werden.`;
+  })();
 
   // Create
   const handleCreate = async () => {
@@ -514,7 +599,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+                className={filterClass(filterStatus !== "")}
               >
                 <option value="">Alle</option>
                 <option value="live">Live</option>
@@ -526,7 +611,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
               <select
                 value={filterProband}
                 onChange={(e) => setFilterProband(e.target.value)}
-                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+                className={filterClass(filterProband !== "")}
               >
                 <option value="">Alle</option>
                 <option value="live">Live</option>
@@ -540,7 +625,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                 type="date"
                 value={filterDateFrom}
                 onChange={(e) => setFilterDateFrom(e.target.value)}
-                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 font-normal text-foreground"
+                className={filterClass(filterDateFrom !== "")}
                 title="Ab Datum"
               />
             </TableHead>
@@ -549,7 +634,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
               <select
                 value={filterTime}
                 onChange={(e) => setFilterTime(e.target.value)}
-                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 font-normal text-foreground"
+                className={filterClass(filterTime !== "")}
               >
                 <option value="">Alle</option>
                 {[...new Set(sessions.map((s) => s.start_time).filter((t): t is string => !!t))].sort().map((t) => (
@@ -564,7 +649,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
               <select
                 value={filterTemplate}
                 onChange={(e) => setFilterTemplate(e.target.value)}
-                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+                className={filterClass(filterTemplate !== "")}
               >
                 <option value="">Alle</option>
                 {templates
@@ -579,7 +664,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
               <select
                 value={filterInstructor}
                 onChange={(e) => setFilterInstructor(e.target.value)}
-                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+                className={filterClass(filterInstructor !== "")}
               >
                 <option value="">Alle</option>
                 {Array.from(new Set(sessions.map((s) => s.instructor_name).filter(Boolean))).sort().map((name) => (
@@ -592,7 +677,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
               <select
                 value={filterBetreuer}
                 onChange={(e) => setFilterBetreuer(e.target.value)}
-                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+                className={filterClass(filterBetreuer !== "")}
               >
                 <option value="">Alle</option>
                 {Array.from(new Set(sessions.map((s) => s.betreuer_name).filter(Boolean))).sort().map((name) => (
@@ -607,7 +692,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
               <select
                 value={filterCme}
                 onChange={(e) => setFilterCme(e.target.value)}
-                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+                className={filterClass(filterCme !== "")}
               >
                 <option value="">Alle</option>
                 <option value="Nicht beantragt">Nicht beantragt</option>
@@ -621,7 +706,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
               <select
                 value={filterZahnmedizin}
                 onChange={(e) => setFilterZahnmedizin(e.target.value)}
-                className="w-full rounded px-1.5 py-1 text-xs bg-gray-100 border-0 cursor-pointer font-normal text-foreground"
+                className={filterClass(filterZahnmedizin !== "")}
               >
                 <option value="">Alle</option>
                 <option value="with">Mit Zahnmediziner:innen</option>
@@ -965,7 +1050,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
                       <Copy className={`h-4 w-4 ${duplicatingId === session.id ? "animate-pulse" : ""}`} />
                     </button>
                     <button
-                      onClick={() => setDeleteId(session.id)}
+                      onClick={() => requestDelete(session.id)}
                       className="p-1.5 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors"
                       title="Löschen"
                     >
@@ -983,11 +1068,14 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
       <ConfirmDialog
         open={!!deleteId}
         title="Termin löschen"
-        description="Möchtest Du diesen Kurstermin wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
-        confirmLabel="Löschen"
+        description={deleteDescription}
+        confirmLabel={deleting ? "Wird gelöscht..." : "Endgültig löschen"}
         variant="destructive"
         onConfirm={confirmDelete}
-        onCancel={() => setDeleteId(null)}
+        onCancel={() => {
+          setDeleteId(null);
+          setDeleteImpact(null);
+        }}
       />
 
       {/* Change confirmation */}
