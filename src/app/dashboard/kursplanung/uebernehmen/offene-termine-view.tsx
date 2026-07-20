@@ -143,7 +143,7 @@ export function OffeneTermineView({
               <Textarea
                 value={noteDrafts[p.id] ?? ""}
                 onChange={(e) => setNote(p.id, e.target.value)}
-                placeholder="Notiz an das EPHIA-Team (optional), z.B. bevorzugte Uhrzeit oder Hinweise"
+                placeholder="Notiz an das EPHIA-Team (optional)"
                 rows={2}
                 className="text-sm"
               />
