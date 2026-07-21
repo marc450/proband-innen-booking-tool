@@ -14,9 +14,10 @@ import { trackEvent } from "@/lib/ga-client";
  * outbound links and keep one permanently in view.
  *
  * Every CTA here carries a `data-cta` marker and fires a `bio_cta_click`
- * GA4 event with a `location` param, so their clicks can be told apart
- * from the pre-existing bottom button (which stays untagged as the
- * baseline).
+ * GA4 event with a `location` param, so clicks can be attributed to the
+ * specific placement that earned them. These are now the only course
+ * links on the page — the old untagged block at the very bottom was
+ * removed once these were live.
  */
 
 /** Marker values — also used as the GA4 `location` event param. */
@@ -32,7 +33,8 @@ export type BioCtaLocation =
  */
 export const TOP_CTA_ANCHOR_ID = "bio-bridge-anchor";
 
-/** Shared button styling, lifted verbatim from the existing bottom CTA. */
+/** Shared button styling, carried over from the removed bottom CTA so the
+ *  profile pages keep the same button look as the rest of /kurse. */
 const BUTTON_CLASSES =
   "inline-flex items-center justify-center rounded-[10px] bg-[#FAEBE1] text-[#0066FF] font-bold text-base md:text-lg px-7 py-4 hover:bg-white transition-colors";
 
@@ -111,23 +113,14 @@ export function StickyCourseBar({
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    // The top CTA is rendered unconditionally by every profile page, so
+    // the anchor is always present; the guard is pure defensiveness.
     const anchor = document.getElementById(TOP_CTA_ANCHOR_ID);
-    // No top CTA on the page (shouldn't happen, but don't strand the bar
-    // in a permanently hidden state if it ever does).
-    if (!anchor) {
-      setVisible(true);
-      return;
-    }
+    if (!anchor) return;
 
-    // Seed the state from a direct measurement rather than waiting for the
-    // observer's first callback, so the bar is in the right state on the
-    // very first paint after hydration.
-    const measure = () => {
-      const { top, bottom } = anchor.getBoundingClientRect();
-      setVisible(bottom <= 0 || top >= window.innerHeight);
-    };
-    measure();
-
+    // observe() always delivers an initial callback with the element's
+    // current intersection state, so this sets the correct value on the
+    // first paint after hydration without seeding it separately.
     const observer = new IntersectionObserver(
       ([entry]) => setVisible(!entry.isIntersecting),
       { threshold: 0 },

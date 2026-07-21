@@ -182,9 +182,6 @@ export default async function PersonProfilePage({
   const schemaSameAs = [...sameAs, ...media.map((m) => m.url)];
   const isDozent = /Dozent/.test(person.role);
   const given = firstName(person.name);
-  const ctaHeading = isDozent
-    ? `Lerne bei ${given} und unserem Team`
-    : "Entdecke unsere Kurse";
 
   // Lead-in for the two inline course bridges. Review-Board members don't
   // teach, so they get a wording that stays factually correct.
@@ -412,7 +409,7 @@ export default async function PersonProfilePage({
             target="_blank" + rel="noopener noreferrer"), so an accidental
             click no longer costs us the tab. */}
         {sameAs.length > 0 && (
-          <section className="bg-[#FAEBE1] pb-10 md:pb-14">
+          <section className="bg-[#FAEBE1] pb-16 md:pb-24">
             <div className="max-w-4xl mx-auto px-5 md:px-8">
               <p className="text-xs font-semibold uppercase tracking-[0.15em] text-black/50 mb-2">
                 Im Netz
@@ -440,24 +437,8 @@ export default async function PersonProfilePage({
           </section>
         )}
 
-        <section className="bg-[#FAEBE1] pb-20 md:pb-28">
-          <div className="max-w-4xl mx-auto px-5 md:px-8">
-            <div className="bg-[#0066FF] rounded-[10px] p-8 md:p-12 text-center">
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">
-                {ctaHeading}
-              </h2>
-              <Link
-                href={COURSES_HREF}
-                className="inline-flex items-center justify-center rounded-[10px] bg-[#FAEBE1] text-[#0066FF] font-bold text-base md:text-lg px-7 py-4 hover:bg-white transition-colors"
-              >
-                Alle Kurse ansehen
-              </Link>
-            </div>
-          </div>
-        </section>
-
         {/* Reserves the height of the fixed sticky bar so it can never
-            cover the footer or the bottom CTA. */}
+            cover the footer or the last content section. */}
         <div aria-hidden="true" className="h-16 md:h-[68px]" />
       </main>
 
