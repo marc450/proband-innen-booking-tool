@@ -15,11 +15,16 @@ import type {
 import { Header } from "@/app/kurse/_components/header";
 import { Footer } from "@/app/kurse/_components/footer";
 import { TYPO } from "@/app/kurse/_components/typography";
+import { BioCourseCta, StickyCourseBar } from "./course-cta";
 
 // Only the known profile slugs render; anything else 404s.
 export const dynamicParams = false;
 
 const SITE_URL = "https://ephia.de";
+
+// Single source of truth for every course link on this page — the bottom
+// CTA, the two inline bridges and the sticky bar all point here.
+const COURSES_HREF = "/unsere-kurse";
 
 // Default expertise topics for the Person `knowsAbout` schema field.
 // Overridable per person via `person.knowsAbout`.
@@ -176,9 +181,19 @@ export default async function PersonProfilePage({
   // the two render in separate visible sections.
   const schemaSameAs = [...sameAs, ...media.map((m) => m.url)];
   const isDozent = /Dozent/.test(person.role);
+  const given = firstName(person.name);
   const ctaHeading = isDozent
-    ? `Lerne bei ${firstName(person.name)} und unserem Team`
+    ? `Lerne bei ${given} und unserem Team`
     : "Entdecke unsere Kurse";
+
+  // Lead-in for the two inline course bridges. Review-Board members don't
+  // teach, so they get a wording that stays factually correct.
+  const bridgeIntro = isDozent
+    ? `${given} unterrichtet bei EPHIA. Entdecke unsere Kurse für Ärzt:innen und Zahnärzt:innen.`
+    : `${given} ist Teil von EPHIA. Entdecke unsere Kurse für Ärzt:innen und Zahnärzt:innen.`;
+  const stickyLabel = isDozent
+    ? `${given} unterrichtet bei EPHIA`
+    : "Kurse für Ärzt:innen und Zahnärzt:innen";
 
   // Name parts for richer Person markup (honorific + given/family name).
   const { honorificPrefix, givenName, familyName } = splitName(person.name);
@@ -322,32 +337,15 @@ export default async function PersonProfilePage({
                   </p>
                 ))}
 
-                {sameAs.length > 0 && (
-                  <div className="mt-6">
-                    <p className="text-xs font-semibold uppercase tracking-[0.15em] text-black/50 mb-3">
-                      Im Netz
-                    </p>
-                    <ul className="flex flex-wrap gap-2.5">
-                      {sameAs.map((url) => (
-                        <li key={url}>
-                          <a
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 rounded-[10px] bg-white px-3.5 py-2 text-sm font-semibold text-black/80 hover:text-[#0066FF] transition-colors"
-                          >
-                            <span>{linkLabel(url)}</span>
-                            <ExternalLink
-                              className="w-3.5 h-3.5 text-black/40"
-                              strokeWidth={2.25}
-                              aria-hidden="true"
-                            />
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                {/* Course bridge sits directly under the intro and above
+                    everything that could send the visitor off-site. */}
+                <BioCourseCta
+                  href={COURSES_HREF}
+                  intro={bridgeIntro}
+                  location="bio-bridge-top"
+                  personSlug={person.id}
+                  className="mt-8"
+                />
               </div>
             </div>
           </div>
@@ -366,6 +364,16 @@ export default async function PersonProfilePage({
                   ))}
                 </ul>
               </div>
+
+              {/* Second bridge: catches everyone who scrolled the media
+                  list instead of clicking the top CTA. */}
+              <BioCourseCta
+                href={COURSES_HREF}
+                intro={bridgeIntro}
+                location="bio-bridge-mid"
+                personSlug={person.id}
+                className="mt-6"
+              />
             </div>
           </section>
         )}
@@ -396,6 +404,42 @@ export default async function PersonProfilePage({
           </section>
         )}
 
+        {/* "Im Netz" is deliberately demoted to the very end of the
+            content and rendered as plain inline text links rather than
+            pill buttons: these are outbound links, and up in the hero
+            they were ending the session before the visitor ever saw a
+            course. The links themselves are unchanged (still
+            target="_blank" + rel="noopener noreferrer"), so an accidental
+            click no longer costs us the tab. */}
+        {sameAs.length > 0 && (
+          <section className="bg-[#FAEBE1] pb-10 md:pb-14">
+            <div className="max-w-4xl mx-auto px-5 md:px-8">
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-black/50 mb-2">
+                Im Netz
+              </p>
+              <ul className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                {sameAs.map((url) => (
+                  <li key={url}>
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-sm text-black/60 underline underline-offset-4 decoration-black/25 hover:text-[#0066FF] hover:decoration-[#0066FF] transition-colors"
+                    >
+                      <span>{linkLabel(url)}</span>
+                      <ExternalLink
+                        className="w-3 h-3 text-black/35"
+                        strokeWidth={2.25}
+                        aria-hidden="true"
+                      />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        )}
+
         <section className="bg-[#FAEBE1] pb-20 md:pb-28">
           <div className="max-w-4xl mx-auto px-5 md:px-8">
             <div className="bg-[#0066FF] rounded-[10px] p-8 md:p-12 text-center">
@@ -403,7 +447,7 @@ export default async function PersonProfilePage({
                 {ctaHeading}
               </h2>
               <Link
-                href="/unsere-kurse"
+                href={COURSES_HREF}
                 className="inline-flex items-center justify-center rounded-[10px] bg-[#FAEBE1] text-[#0066FF] font-bold text-base md:text-lg px-7 py-4 hover:bg-white transition-colors"
               >
                 Alle Kurse ansehen
@@ -411,9 +455,19 @@ export default async function PersonProfilePage({
             </div>
           </div>
         </section>
+
+        {/* Reserves the height of the fixed sticky bar so it can never
+            cover the footer or the bottom CTA. */}
+        <div aria-hidden="true" className="h-16 md:h-[68px]" />
       </main>
 
       <Footer />
+
+      <StickyCourseBar
+        href={COURSES_HREF}
+        label={stickyLabel}
+        personSlug={person.id}
+      />
     </div>
   );
 }

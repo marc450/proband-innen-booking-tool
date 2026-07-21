@@ -51,3 +51,25 @@ export async function getGa4Ids(
   ]);
   return { clientId, sessionId };
 }
+
+/**
+ * Fire a GA4 custom event from the browser.
+ *
+ * Silent no-op when gtag isn't on the page — which is the normal state
+ * until the visitor accepts cookies (see components/google-analytics.tsx).
+ * Never throws, so it's safe to call inline from an onClick without
+ * risking the navigation that follows it.
+ */
+export function trackEvent(
+  name: string,
+  params: Record<string, string | number | boolean> = {},
+): void {
+  if (typeof window === "undefined") return;
+  const gtag = (window as unknown as { gtag?: Gtag }).gtag;
+  if (typeof gtag !== "function") return;
+  try {
+    gtag("event", name, params);
+  } catch {
+    // Analytics must never break a user interaction.
+  }
+}
