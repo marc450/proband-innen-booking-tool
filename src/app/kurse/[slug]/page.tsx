@@ -48,7 +48,10 @@ export async function generateMetadata({
       description: content.meta.description,
       type: "website",
       siteName: "EPHIA",
+      url: `https://ephia.de/${content.slug}`,
       locale: "de_DE",
+      // The page serves the whole DACH market (see `languages` below).
+      alternateLocale: ["de_AT", "de_CH"],
       ...(content.meta.ogImage ? { images: [content.meta.ogImage] } : {}),
     },
     twitter: {
@@ -196,6 +199,52 @@ export default async function KursPage({
   const onlineWorkload = content.schema?.onlineWorkload ?? "PT10H";
   const praxisWorkloadFallback = content.schema?.praxisWorkload ?? "PT6H";
 
+  // start_time comes back as "10:00" or "10:00:00" depending on the column
+  // cast; pad it to a full ISO 8601 local time either way.
+  const normalizeTime = (t: string): string =>
+    t.split(":").length === 2 ? `${t}:00` : t;
+
+  // startDate + duration, as a local ISO timestamp. All arithmetic runs in
+  // UTC so the result never shifts with the server's timezone — these are
+  // wall-clock Berlin times and must render exactly as stored.
+  const localEndDate = (
+    dateIso: string,
+    startTime: string,
+    minutes: number,
+  ): string => {
+    const [h, m] = normalizeTime(startTime).split(":").map(Number);
+    const d = new Date(`${dateIso}T00:00:00Z`);
+    d.setUTCMinutes(d.getUTCMinutes() + h * 60 + m + minutes);
+    return d.toISOString().slice(0, 19);
+  };
+
+  // Venue addresses are stored per session as one free-text line, e.g.
+  // "HYSTUDIO, Rosa-Luxemburg-Straße 20, 10178 Berlin, Deutschland".
+  // A structured PostalAddress also feeds local/map surfaces, so split it
+  // when it matches that shape and fall back to the bare name when it
+  // doesn't — never guess at a malformed address.
+  const parsePlace = (address: string) => {
+    const parts = address.split(",").map((p) => p.trim()).filter(Boolean);
+    if (parts.length >= 3) {
+      const plzCity = parts[parts.length - 2].match(/^(\d{4,5})\s+(.+)$/);
+      const country = parts[parts.length - 1];
+      if (plzCity) {
+        return {
+          "@type": "Place",
+          name: parts[0],
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: parts.slice(1, parts.length - 2).join(", "),
+            postalCode: plzCity[1],
+            addressLocality: plzCity[2],
+            addressCountry: /deutschland|germany/i.test(country) ? "DE" : country,
+          },
+        };
+      }
+    }
+    return { "@type": "Place", name: address };
+  };
+
   const hasCourseInstance = [
     // An evergreen online instance (uses the Onlinekurs price if set)
     ...(template.price_gross_online_cents
@@ -225,16 +274,19 @@ export default async function KursPage({
         ? isoDuration(s.duration_minutes)
         : praxisWorkloadFallback,
       // Combine the date with the session start time so Google gets a
-      // precise startDate rather than a bare day. start_time comes back
-      // as "10:00" or "10:00:00" depending on the column cast, so pad it
-      // to a full ISO 8601 local time either way.
+      // precise startDate rather than a bare day, and derive endDate from
+      // the same duration that feeds courseWorkload.
       startDate: s.start_time
-        ? `${s.date_iso}T${s.start_time.split(":").length === 2 ? `${s.start_time}:00` : s.start_time}`
+        ? `${s.date_iso}T${normalizeTime(s.start_time)}`
         : s.date_iso,
+      ...(s.start_time && s.duration_minutes
+        ? { endDate: localEndDate(s.date_iso, s.start_time, s.duration_minutes) }
+        : {}),
+      ...(s.max_seats ? { maximumAttendeeCapacity: s.max_seats } : {}),
       ...(s.instructor_name
         ? { instructor: { "@type": "Person", name: s.instructor_name } }
         : {}),
-      ...(s.address ? { location: { "@type": "Place", name: s.address } } : {}),
+      ...(s.address ? { location: parsePlace(s.address) } : {}),
       inLanguage: "de",
       ...(template.price_gross_praxis_cents || template.price_gross_kombi_cents
         ? {
@@ -312,6 +364,13 @@ export default async function KursPage({
     ? `${siteUrl}${content.meta.ogImage}`
     : (template.image_url ?? undefined);
 
+  // CME points for THIS course = the Kombi figure (Online + Praxis).
+  // Deliberately not the Komplettpaket number quoted in the copy: that
+  // one only holds when three further Onlinekurse are bought alongside,
+  // so claiming it here would overstate what the Course entity awards.
+  const numberOfCredits =
+    content.schema?.numberOfCredits ?? (cmeKombiNum ? Number(cmeKombiNum) : undefined);
+
   // AggregateRating + review[] — only when this slug opts into the
   // Reviews section AND we have ≥1 published review. Google rejects
   // schema where the ratings/reviews aren't visibly on the page, so
@@ -376,6 +435,7 @@ export default async function KursPage({
     ...(content.schema?.educationalLevel
       ? { educationalLevel: content.schema.educationalLevel }
       : {}),
+    ...(numberOfCredits ? { numberOfCredits } : {}),
     ...(hasCourseInstance.length > 0 ? { hasCourseInstance } : {}),
     ...(aggregateRating ? { aggregateRating } : {}),
     ...(reviewSchema ? { review: reviewSchema } : {}),

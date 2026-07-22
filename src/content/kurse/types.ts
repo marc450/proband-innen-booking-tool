@@ -176,16 +176,23 @@ export interface CourseFaqContent {
   heading: string;
   items: CourseFaqItem[];
   /**
-   * Optional source note rendered below the accordion. Used to cite the
-   * accrediting body (Ärztekammer) with a real outbound link, which the
-   * FAQ answers themselves cannot carry: they are plain text and feed
+   * Optional source notes rendered below the accordion. Used to cite the
+   * accrediting bodies (Ärztekammer, BÄK) with real outbound links, which
+   * the FAQ answers themselves cannot carry: they are plain text and feed
    * the FAQPage JSON-LD verbatim, and a collapsed answer hides the link
    * from both users and crawlers.
+   *
+   * Each item renders as "{text} {link}." in one shared paragraph.
+   * Verify every href resolves 200 without a redirect before adding it —
+   * aerztekammer-berlin.de for instance 301s to an unrelated page; the
+   * live Kammer domain is aekb.de.
    */
   footnote?: {
-    text: string;
-    linkLabel: string;
-    linkHref: string;
+    items: Array<{
+      text: string;
+      linkLabel: string;
+      linkHref: string;
+    }>;
   };
 }
 
@@ -414,4 +421,12 @@ export interface CourseSchemaContent {
   teaches?: string[];
   /** schema.org educationalLevel, e.g. "Beginner" */
   educationalLevel?: string;
+  /**
+   * CME points awarded by THIS course. Defaults to the template's
+   * `cme_kombi` (Online + Praxis), which is the honest per-course
+   * maximum. Do not raise it to a bundle figure that only applies when
+   * other courses are purchased alongside it, even where the marketing
+   * copy quotes that larger number.
+   */
+  numberOfCredits?: number;
 }

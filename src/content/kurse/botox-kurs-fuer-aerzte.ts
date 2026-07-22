@@ -281,9 +281,19 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
     // Fortbildung the Kammer-Akkreditierung is the strongest
     // verifiable E-E-A-T signal we have.
     footnote: {
-      text: "Alle CME-Punkte dieses Kurses sind akkreditiert bei der",
-      linkLabel: "Ärztekammer Berlin",
-      linkHref: "https://www.aerztekammer-berlin.de/",
+      items: [
+        {
+          text: "Alle CME-Punkte dieses Kurses sind akkreditiert bei der",
+          linkLabel: "Ärztekammer Berlin",
+          linkHref: "https://www.aekb.de/aerzt-innen/fortbildung",
+        },
+        {
+          text: "Grundlage der Punktevergabe ist die Fortbildungsordnung der",
+          linkLabel: "Bundesärztekammer",
+          linkHref:
+            "https://www.bundesaerztekammer.de/themen/aerzte/aus-fort-und-weiterbildung/aerztliche-fortbildung",
+        },
+      ],
     },
   },
 
