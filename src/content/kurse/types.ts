@@ -124,6 +124,14 @@ export interface CourseLernplattformFeature {
   mediaPath: string;
   /** Optional poster for video media */
   mediaPoster?: string;
+  /**
+   * Intrinsic pixel dimensions of an image `mediaPath`. Rendered as
+   * width/height attributes on the <img> so the browser can reserve the
+   * right box in the lightbox (the inline thumbnail already sits in an
+   * aspect-ratio container). Omit for video media.
+   */
+  mediaWidth?: number;
+  mediaHeight?: number;
 }
 
 export interface CourseLernplattformContent {
@@ -167,6 +175,18 @@ export interface CourseFaqItem {
 export interface CourseFaqContent {
   heading: string;
   items: CourseFaqItem[];
+  /**
+   * Optional source note rendered below the accordion. Used to cite the
+   * accrediting body (Ärztekammer) with a real outbound link, which the
+   * FAQ answers themselves cannot carry: they are plain text and feed
+   * the FAQPage JSON-LD verbatim, and a collapsed answer hides the link
+   * from both users and crawlers.
+   */
+  footnote?: {
+    text: string;
+    linkLabel: string;
+    linkHref: string;
+  };
 }
 
 export interface CourseMeta {
@@ -365,4 +385,33 @@ export interface CourseLandingContent {
    * (CI rule: "Botox" stays inside the SEO surface).
    */
   relatedCourses?: string[];
+  /**
+   * Optional overrides + additions for the Course JSON-LD. Everything
+   * here is optional: the page derives sensible defaults (teaches from
+   * the Lernziele, workloads from `course_sessions.duration_minutes`),
+   * so a landing only sets what it needs to correct.
+   */
+  schema?: CourseSchemaContent;
+}
+
+export interface CourseSchemaContent {
+  /**
+   * ISO-8601 duration of the Onlinekurs instance (default "PT10H").
+   * Google needs courseMode + courseWorkload on every CourseInstance,
+   * otherwise the instance is dropped from the Course rich result.
+   */
+  onlineWorkload?: string;
+  /**
+   * ISO-8601 fallback for the onsite Praxistag instances, used only
+   * when a session row has no `duration_minutes` (default "PT6H").
+   */
+  praxisWorkload?: string;
+  /** e.g. "EPHIA-Zertifikat und Teilnahmebescheinigung der Ärztekammer Berlin" */
+  educationalCredentialAwarded?: string;
+  /** e.g. ["Approbation als Ärzt:in"] */
+  coursePrerequisites?: string[];
+  /** Overrides the default (Lernziele labels) for `teaches`. */
+  teaches?: string[];
+  /** schema.org educationalLevel, e.g. "Beginner" */
+  educationalLevel?: string;
 }

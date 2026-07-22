@@ -10,11 +10,14 @@ const roboto = Roboto({
   weight: ["300", "400", "500", "700"],
 });
 
+// Pinch-zoom stays enabled: maximumScale/userScalable were only ever
+// here to stop iOS from zooming on input focus, and that is now handled
+// properly by the 16px control floor in globals.css. Blocking zoom is a
+// Lighthouse accessibility failure and hurts anyone reading clinical
+// detail on a phone.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
 };
 

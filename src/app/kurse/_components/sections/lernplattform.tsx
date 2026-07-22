@@ -23,6 +23,8 @@ export function Lernplattform({
                 mediaPath={feature.mediaPath}
                 mediaPoster={feature.mediaPoster}
                 title={feature.title}
+                mediaWidth={feature.mediaWidth}
+                mediaHeight={feature.mediaHeight}
               />
             );
 

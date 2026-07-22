@@ -76,7 +76,7 @@ export default function CmeFallbeispieleHubPage() {
               {published.map((c) => (
                 <Link
                   key={c.slug}
-                  href={`/kurse/cme-fallbeispiele/${c.slug}`}
+                  href={`/cme-fallbeispiele/${c.slug}`}
                   className="group block rounded-[10px] bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
                 >
                   <span className="inline-block rounded-full bg-[#0066FF]/10 px-3 py-1 text-xs font-bold text-[#0066FF]">

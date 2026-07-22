@@ -235,28 +235,28 @@ const STEP_META: Record<
     formats: ["Onlinekurs", "Praxiskurs"],
     benefit:
       "Dein sicherer Einstieg: Anatomie des Alterns, Mittelgesicht und die ersten Behandlungen unter Aufsicht.",
-    href: "/kurse/grundkurs-dermalfiller",
+    href: "/grundkurs-dermalfiller",
     fallbackTitle: "Grundkurs Dermalfiller",
   },
   grundkurs_medizinische_hautpflege: {
     formats: ["Onlinekurs"],
     benefit:
       "Hautphysiologie, Akne, Rosazea und der Aufbau einer evidenzbasierten Pflegeroutine. Die Basis für jede ästhetische Behandlung.",
-    href: "/kurse/grundkurs-medizinische-hautpflege",
+    href: "/grundkurs-medizinische-hautpflege",
     fallbackTitle: "Medizinische Hautpflege",
   },
   aufbaukurs_lippen: {
     formats: ["Onlinekurs", "Praxiskurs"],
     benefit:
       "Vertiefe Anatomie, Indikationen, Produktwahl und Technik der perioralen Zone, mit klarem Fokus auf Komplikationsmanagement.",
-    href: "/kurse/aufbaukurs-lippen",
+    href: "/aufbaukurs-lippen",
     fallbackTitle: "Aufbaukurs Dermalfiller: Lippen",
   },
   aufbaukurs_skulptra: {
     formats: ["Praxiskurs"],
     benefit:
       "Biostimulation mit Poly-L-Milchsäure und Skinbooster-Techniken für Hautqualität, Spannkraft und Volumen.",
-    href: "/kurse/aufbaukurs-biostimulation-skinbooster",
+    href: "/aufbaukurs-biostimulation-skinbooster",
     fallbackTitle: "Aufbaukurs Biostimulation & Skinbooster",
   },
 };

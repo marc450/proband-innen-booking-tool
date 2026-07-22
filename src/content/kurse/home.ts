@@ -63,7 +63,7 @@ export const homeContent: HomeContent = {
         courseKey: "grundkurs_botulinum_zahnmedizin",
         imageAlt: "Grundkurs Botulinum für Zahnmediziner:innen",
         ctaLabel: "Zu den Kursdetails",
-        href: "/kurse/grundkurs-botulinum-zahnmedizin",
+        href: "/grundkurs-botulinum-zahnmedizin",
         // Praxiskurs ist von der Zahnärztekammer mit 9 Fortbildungspunkten
         // zertifiziert (Onlineteil beantragt). Statisch gesetzt, weil
         // course_templates.cme_* für diesen Kurs noch leer ist; sobald ein
@@ -92,7 +92,7 @@ export const homeContent: HomeContent = {
         courseKey: "aufbaukurs_skulptra",
         imageAlt: "Aufbaukurs Biostimulation & Skinbooster",
         ctaLabel: "Zu den Kursdetails",
-        href: "/kurse/aufbaukurs-biostimulation-skinbooster",
+        href: "/aufbaukurs-biostimulation-skinbooster",
       },
       {
         kicker: "GRUNDKURS",
@@ -147,7 +147,7 @@ export const homeContent: HomeContent = {
         courseKey: "masterclass_botulinum",
         imageAlt: "Masterclass Botulinum für erfahrene Ärzt:innen",
         ctaLabel: "Zu den Kursdetails",
-        href: "/kurse/masterclass-botulinum",
+        href: "/masterclass-botulinum",
       },
       {
         kicker: "GRUPPENBUCHUNGEN",

@@ -388,6 +388,8 @@ export const grundkursBotulinum: CourseLandingContent = {
           "Im Reiter „Austausch\" kannst Du Fragen stellen und Dich mit der Community und Dozierenden austauschen.",
         ],
         mediaPath: "/kurse/grundkurs_botulinum/plattform/navigation.png",
+        mediaWidth: 1905,
+        mediaHeight: 1070,
       },
       {
         title: "Realitätsnahe Behandlungen",
@@ -411,6 +413,8 @@ export const grundkursBotulinum: CourseLandingContent = {
           "Für ein nachhaltiges Lernen, weit über das Kursende hinaus.",
         ],
         mediaPath: "/kurse/grundkurs_botulinum/plattform/inhalte.png",
+        mediaWidth: 1905,
+        mediaHeight: 1068,
       },
       {
         title: "Klare Lernziele & Tests",
@@ -422,6 +426,8 @@ export const grundkursBotulinum: CourseLandingContent = {
           "So lernst Du nicht einfach nur mit, sondern gezielt für Deine Patient:innen.",
         ],
         mediaPath: "/kurse/grundkurs_botulinum/plattform/tests.png",
+        mediaWidth: 1900,
+        mediaHeight: 1070,
       },
     ],
   },

@@ -31,8 +31,11 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
 
   meta: {
     title: "Botox-Kurs für Ärzte & Ärztinnen | bis zu 49 CME-Punkte | EPHIA",
+    // 152 chars. Both conversion hooks (CME-Punkte, Einstiegspreis)
+    // sit inside the ~155-char SERP window; the old 187-char version
+    // truncated them away.
     description:
-      "Praxisnaher Botox-Kurs für approbierte Ärzte: Hands-on Training an echten Proband:innen in Berlin-Mitte, max. 7 Teilnehmer, Ärztekammer-akkreditiert (bis zu 49 CME). Drei Pakete ab 490 €.",
+      "Botox-Kurs für Ärzt:innen: bis zu 49 CME, ab 490 €. Hands-on an echten Proband:innen in Berlin-Mitte, max. 7 Teilnehmer:innen, Ärztekammer-akkreditiert.",
     ogImage: "/kurse/grundkurs_botulinum/og-image.jpg",
   },
 
@@ -273,6 +276,29 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
       },
       ...grundkursBotulinum.faq.items,
     ],
+    // Cites the accrediting body with a real outbound link. The page
+    // otherwise links only to our own subdomain, and for medizinische
+    // Fortbildung the Kammer-Akkreditierung is the strongest
+    // verifiable E-E-A-T signal we have.
+    footnote: {
+      text: "Alle CME-Punkte dieses Kurses sind akkreditiert bei der",
+      linkLabel: "Ärztekammer Berlin",
+      linkHref: "https://www.aerztekammer-berlin.de/",
+    },
+  },
+
+  // Course JSON-LD additions. Everything here is visible on the page:
+  // die Approbationspflicht steht im Hero und im FAQ, die Zertifikate
+  // im FAQ "Welches Zertifikat erhalte ich".
+  schema: {
+    onlineWorkload: "PT10H",
+    praxisWorkload: "PT6H",
+    educationalLevel: "Beginner",
+    coursePrerequisites: [
+      "Approbation als Ärzt:in (Humanmedizin)",
+    ],
+    educationalCredentialAwarded:
+      "EPHIA-Zertifikat und Teilnahmebescheinigung der Ärztekammer Berlin mit bis zu 49 CME-Punkten",
   },
 
   breadcrumbLabel: "Botox-Kurs für Ärzt:innen",

@@ -983,7 +983,7 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
           return (
             <div className="mt-12 md:mt-16 max-w-2xl mx-auto">
               <Link
-                href={`/kurse/curriculum-${curriculum.slug}`}
+                href={`/curriculum-${curriculum.slug}`}
                 className="block w-full bg-white/10 backdrop-blur-sm rounded-[10px] p-6 text-left hover:bg-white/15 transition-colors group"
               >
                 <div className="flex items-center justify-between gap-4">

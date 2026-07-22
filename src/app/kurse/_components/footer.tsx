@@ -1,10 +1,10 @@
 import Image from "next/image";
 
 const FOOTER_LINKS = [
-  { label: "Impressum", href: "/kurse/impressum" },
-  { label: "AGB", href: "/kurse/agb" },
-  { label: "AGB für Proband:innen", href: "/kurse/proband-agb" },
-  { label: "Datenschutz", href: "/kurse/datenschutz" },
+  { label: "Impressum", href: "/impressum" },
+  { label: "AGB", href: "/agb" },
+  { label: "AGB für Proband:innen", href: "/proband-agb" },
+  { label: "Datenschutz", href: "/datenschutz" },
 ];
 
 export function Footer() {
@@ -16,10 +16,11 @@ export function Footer() {
         <Image
           src="/logos/ephia-logo-centered.png"
           alt="EPHIA"
-          width={1225}
-          height={537}
-          quality={95}
-          sizes="160px"
+          // Sized for the render box (h-12 => ~110px wide), see the
+          // header logo comment: `sizes` leaves a w=3840 src fallback.
+          width={219}
+          height={96}
+          quality={75}
           className="h-12 w-auto"
         />
 

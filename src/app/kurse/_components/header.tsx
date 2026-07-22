@@ -71,10 +71,10 @@ const NAV_LINKS: NavLink[] = [
     // Lernpfade = curated multi-course tracks. Parent link points at
     // the active track so the parent itself is never a dead "#".
     label: "Lernpfade",
-    href: "/kurse/curriculum-botulinum",
+    href: "/curriculum-botulinum",
     subLinks: [
-      { label: "Curriculum Botulinum", href: "/kurse/curriculum-botulinum" },
-      { label: "Curriculum Dermalfiller", href: "/kurse/curriculum-dermalfiller" },
+      { label: "Curriculum Botulinum", href: "/curriculum-botulinum" },
+      { label: "Curriculum Dermalfiller", href: "/curriculum-dermalfiller" },
       { label: "Curriculum Hautpflege", href: "#", disabled: true, note: "Coming soon" },
     ],
   },
@@ -86,33 +86,33 @@ const NAV_LINKS: NavLink[] = [
     // entsprechend gekürzt. Gruppenbuchungen ist absichtlich nicht
     // gelistet — keine Kursseite, sondern Anfrageformular.
     label: "Alle Kurse",
-    href: "/kurse/unsere-kurse",
+    href: "/unsere-kurse",
     clickableParent: true,
     subLinks: [
       { label: "Grundkurs (Humanmedizin)", href: "/grundkurs-botulinum", group: "botulinum" },
-      { label: "Grundkurs (Zahnmedizin)", href: "/kurse/grundkurs-botulinum-zahnmedizin", group: "botulinum" },
+      { label: "Grundkurs (Zahnmedizin)", href: "/grundkurs-botulinum-zahnmedizin", group: "botulinum" },
       { label: "Aufbaukurs: Therapeutische Indikationen", href: "/aufbaukurs-therapeutische-indikationen-botulinum", group: "botulinum" },
       { label: "Aufbaukurs: Periorale Zone", href: "/aufbaukurs-botulinum-periorale-zone", group: "botulinum" },
-      { label: "Masterclass", href: "/kurse/masterclass-botulinum", group: "botulinum", crown: true },
+      { label: "Masterclass", href: "/masterclass-botulinum", group: "botulinum", crown: true },
       { label: "Grundkurs", href: "/grundkurs-dermalfiller", group: "dermalfiller" },
       { label: "Aufbaukurs: Lippen", href: "/aufbaukurs-lippen", group: "dermalfiller" },
       { label: "Grundkurs Medizinische Hautpflege", href: "/grundkurs-medizinische-hautpflege", group: "hautpflege" },
-      { label: "Aufbaukurs Biostimulation & Skinbooster", href: "/kurse/aufbaukurs-biostimulation-skinbooster", group: "hautpflege" },
+      { label: "Aufbaukurs Biostimulation & Skinbooster", href: "/aufbaukurs-biostimulation-skinbooster", group: "hautpflege" },
     ],
   },
   {
     label: "Über EPHIA",
     href: "/vision",
     subLinks: [
-      { label: "Unsere Vision", href: "/kurse/vision" },
+      { label: "Unsere Vision", href: "/vision" },
       { label: "Unser Team", href: "/team" },
-      { label: "Unsere Community", href: "/kurse/community" },
-      { label: "Unsere Didaktik", href: "/kurse/didaktik" },
+      { label: "Unsere Community", href: "/community" },
+      { label: "Unsere Didaktik", href: "/didaktik" },
     ],
   },
   { label: "Werde Proband:in", href: "https://proband-innen.ephia.de/" },
   { label: "Merch ✨", href: "/merch" },
-  { label: "FAQ & Kontakt", href: "/kurse/faq-kontakt" },
+  { label: "FAQ & Kontakt", href: "/faq-kontakt" },
   { label: "Karriere", href: "/karriere" },
 ];
 
@@ -297,11 +297,16 @@ export function Header() {
               <Image
                 src="/logos/ephia-logo.png"
                 alt="EPHIA"
-                width={2394}
-                height={589}
+                // Sized for the actual render box (h-8/h-9 => ~146px wide), not
+                // the 2394px intrinsic. With `sizes` Next emits a full-width
+                // srcset whose src fallback is the w=3840 variant — an absurd
+                // request to leave on the LCP path for a header logo. Fixed
+                // dims give a 1x/2x srcset instead. w-auto keeps the layout
+                // width; these numbers only drive aspect ratio and srcset.
+                width={293}
+                height={72}
                 priority
-                quality={95}
-                sizes="220px"
+                quality={75}
                 className="h-8 md:h-9 w-auto"
               />
             </Link>
@@ -327,11 +332,16 @@ export function Header() {
             <Image
               src="/logos/ephia-logo.png"
               alt="EPHIA"
-              width={2394}
-              height={589}
+              // Sized for the actual render box (h-8/h-9 => ~146px wide), not
+              // the 2394px intrinsic. With `sizes` Next emits a full-width
+              // srcset whose src fallback is the w=3840 variant — an absurd
+              // request to leave on the LCP path for a header logo. Fixed
+              // dims give a 1x/2x srcset instead. w-auto keeps the layout
+              // width; these numbers only drive aspect ratio and srcset.
+              width={293}
+              height={72}
               priority
-              quality={95}
-              sizes="220px"
+              quality={75}
               className="h-8 md:h-9 w-auto"
             />
           </Link>

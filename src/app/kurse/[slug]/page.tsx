@@ -59,6 +59,18 @@ export async function generateMetadata({
     },
     alternates: {
       canonical: `https://ephia.de/${content.slug}`,
+      // One German page serves the whole DACH market (the FAQ addresses
+      // AT/CH participants explicitly). There is no per-region variant,
+      // so every region tag points at the same URL and x-default catches
+      // everyone else. This stops Google from treating de-AT/de-CH
+      // searchers as out of scope for a de_DE-only page.
+      languages: {
+        de: `https://ephia.de/${content.slug}`,
+        "de-DE": `https://ephia.de/${content.slug}`,
+        "de-AT": `https://ephia.de/${content.slug}`,
+        "de-CH": `https://ephia.de/${content.slug}`,
+        "x-default": `https://ephia.de/${content.slug}`,
+      },
     },
   };
 }
@@ -170,6 +182,20 @@ export default async function KursPage({
   const priceCurrency = "EUR";
   const liveSessions = (sessions ?? []).filter((s) => s.is_live);
 
+  // Google requires courseMode PLUS courseWorkload (or courseSchedule) on
+  // every CourseInstance. An instance missing it is silently dropped from
+  // the Course rich result, so the Praxis dates that actually convert
+  // would never show. `course_sessions.duration_minutes` is the real,
+  // staff-maintained length (360 for the 6h Praxistag); the content
+  // fallback only kicks in for rows where it was never filled.
+  const isoDuration = (minutes: number): string => {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `PT${h > 0 ? `${h}H` : ""}${m > 0 ? `${m}M` : ""}` || "PT0M";
+  };
+  const onlineWorkload = content.schema?.onlineWorkload ?? "PT10H";
+  const praxisWorkloadFallback = content.schema?.praxisWorkload ?? "PT6H";
+
   const hasCourseInstance = [
     // An evergreen online instance (uses the Onlinekurs price if set)
     ...(template.price_gross_online_cents
@@ -177,7 +203,7 @@ export default async function KursPage({
           {
             "@type": "CourseInstance",
             courseMode: "Online",
-            courseWorkload: "PT10H",
+            courseWorkload: onlineWorkload,
             inLanguage: "de",
             offers: {
               "@type": "Offer",
@@ -195,7 +221,19 @@ export default async function KursPage({
     ...(content.hideBookingWidget ? [] : liveSessions).map((s) => ({
       "@type": "CourseInstance",
       courseMode: "Onsite",
-      startDate: s.date_iso,
+      courseWorkload: s.duration_minutes
+        ? isoDuration(s.duration_minutes)
+        : praxisWorkloadFallback,
+      // Combine the date with the session start time so Google gets a
+      // precise startDate rather than a bare day. start_time comes back
+      // as "10:00" or "10:00:00" depending on the column cast, so pad it
+      // to a full ISO 8601 local time either way.
+      startDate: s.start_time
+        ? `${s.date_iso}T${s.start_time.split(":").length === 2 ? `${s.start_time}:00` : s.start_time}`
+        : s.date_iso,
+      ...(s.instructor_name
+        ? { instructor: { "@type": "Person", name: s.instructor_name } }
+        : {}),
       ...(s.address ? { location: { "@type": "Place", name: s.address } } : {}),
       inLanguage: "de",
       ...(template.price_gross_praxis_cents || template.price_gross_kombi_cents
@@ -216,6 +254,63 @@ export default async function KursPage({
         : {}),
     })),
   ];
+
+  // Course-level enrichment. `instructor` is the strongest missing
+  // signal — the copy is full of credentialed Dozent:innen that
+  // structured data couldn't see. Names come from the same session rows
+  // the booking widget renders, deduped and capped so the block stays
+  // readable.
+  const instructorNames = Array.from(
+    new Set(
+      (content.hideBookingWidget ? [] : liveSessions)
+        .map((s) => s.instructor_name)
+        .filter((n): n is string => !!n),
+    ),
+  );
+  const instructorSchema = instructorNames.map((name) => {
+    // instructor_name carries the honorific inline ("Dr. Sarah Stannek").
+    const match = name.match(/^((?:Prof\.|Dr\.|PD)(?:\s(?:Prof\.|Dr\.|med\.))*)\s+(.+)$/);
+    return {
+      "@type": "Person",
+      name,
+      ...(match ? { honorificPrefix: match[1], givenName: match[2].split(" ")[0] } : {}),
+    };
+  });
+
+  // The three bookable packages as Course-level offers, so the price
+  // range is visible even where CourseInstance offers are not surfaced.
+  const packageOffers = (
+    [
+      ["online", template.price_gross_online_cents],
+      ["praxis", template.price_gross_praxis_cents],
+      ["kombi", template.price_gross_kombi_cents],
+    ] as const
+  )
+    .filter(([, cents]) => !!cents)
+    .map(([variant, cents]) => ({
+      "@type": "Offer",
+      name:
+        (variant === "online"
+          ? template.name_online
+          : variant === "praxis"
+            ? template.name_praxis
+            : template.name_kombi) ?? undefined,
+      price: String((cents as number) / 100),
+      priceCurrency,
+      availability: "https://schema.org/InStock",
+      category: variant === "online" ? "Online" : "Onsite",
+      url: courseUrl,
+    }));
+
+  // `teaches` defaults to the Lernziele actually rendered on the page —
+  // never invent claims structured data can't back up visually.
+  const teaches =
+    content.schema?.teaches ?? content.lernziele.items.map((i) => i.label);
+
+  // Absolute URL for the Course image. ogImage is a /public path.
+  const courseImage = content.meta.ogImage
+    ? `${siteUrl}${content.meta.ogImage}`
+    : (template.image_url ?? undefined);
 
   // AggregateRating + review[] — only when this slug opts into the
   // Reviews section AND we have ≥1 published review. Google rejects
@@ -261,11 +356,26 @@ export default async function KursPage({
     name: content.meta.title,
     description: content.meta.description,
     url: courseUrl,
+    inLanguage: "de",
+    isAccessibleForFree: false,
     provider: {
       "@type": "Organization",
       name: "EPHIA",
       url: "https://ephia.de",
     },
+    ...(courseImage ? { image: courseImage } : {}),
+    ...(packageOffers.length > 0 ? { offers: packageOffers } : {}),
+    ...(instructorSchema.length > 0 ? { instructor: instructorSchema } : {}),
+    ...(teaches.length > 0 ? { teaches } : {}),
+    ...(content.schema?.coursePrerequisites?.length
+      ? { coursePrerequisites: content.schema.coursePrerequisites }
+      : {}),
+    ...(content.schema?.educationalCredentialAwarded
+      ? { educationalCredentialAwarded: content.schema.educationalCredentialAwarded }
+      : {}),
+    ...(content.schema?.educationalLevel
+      ? { educationalLevel: content.schema.educationalLevel }
+      : {}),
     ...(hasCourseInstance.length > 0 ? { hasCourseInstance } : {}),
     ...(aggregateRating ? { aggregateRating } : {}),
     ...(reviewSchema ? { review: reviewSchema } : {}),

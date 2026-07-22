@@ -137,6 +137,29 @@
   }
 }
 
+/* iOS zooms the viewport whenever a focused form control renders below
+   16px. The old fix was user-scalable=no in the root viewport, which
+   also killed pinch-zoom for everyone: a Lighthouse a11y fail and a real
+   problem for Ärzt:innen reading clinical detail on a phone. Enforcing a
+   16px floor on phone-width controls removes the reason for the focus
+   zoom, so pinch-zoom can stay enabled.
+
+   Deliberately UNLAYERED. Tailwind's `utilities` layer outranks `base`
+   no matter the specificity, and plenty of inputs carry an explicit
+   `text-sm` (e.g. src/app/login/page.tsx) which would otherwise win and
+   re-introduce the zoom. Unlayered declarations beat every layered one,
+   which is the right semantic here: this is a hard floor, not a default.
+
+   Scoped to <768px: from `md` up the shadcn controls intentionally drop
+   to text-sm and desktop browsers never focus-zoom. */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
 /* Sticky dashboard page titles: first h1 inside dashboard main sticks to top */
 main > div > h1.text-2xl.font-bold:first-child {
   position: sticky;

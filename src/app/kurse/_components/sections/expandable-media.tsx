@@ -7,6 +7,9 @@ interface ExpandableMediaProps {
   mediaPath: string;
   mediaPoster?: string;
   title: string;
+  /** Intrinsic pixel size of an image `mediaPath` (see CourseLernplattformFeature). */
+  mediaWidth?: number;
+  mediaHeight?: number;
 }
 
 function isVideoPath(path: string): boolean {
@@ -17,6 +20,8 @@ export function ExpandableMedia({
   mediaPath,
   mediaPoster,
   title,
+  mediaWidth,
+  mediaHeight,
 }: ExpandableMediaProps) {
   const [open, setOpen] = useState(false);
   const video = isVideoPath(mediaPath);
@@ -64,6 +69,10 @@ export function ExpandableMedia({
           <img
             src={mediaPath}
             alt={title}
+            width={mediaWidth}
+            height={mediaHeight}
+            loading="lazy"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
         )}
@@ -115,6 +124,9 @@ export function ExpandableMedia({
               <img
                 src={mediaPath}
                 alt={title}
+                width={mediaWidth}
+                height={mediaHeight}
+                decoding="async"
                 className="max-w-[95vw] max-h-[90vh] object-contain rounded-[10px]"
               />
             )}

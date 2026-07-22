@@ -234,28 +234,28 @@ const STEP_META: Record<
     formats: ["Onlinekurs", "Praxiskurs"],
     benefit:
       "Dein sicherer Einstieg: Anatomie, Indikationen, Beratung und die ersten Behandlungen unter Aufsicht.",
-    href: "/kurse/grundkurs-botulinum",
+    href: "/grundkurs-botulinum",
     fallbackTitle: "Botulinum",
   },
   grundkurs_medizinische_hautpflege: {
     formats: ["Onlinekurs"],
     benefit:
       "Hautphysiologie, Akne, Rosazea und der Aufbau einer evidenzbasierten Pflegeroutine. Die Basis für jede ästhetische Behandlung.",
-    href: "/kurse/grundkurs-medizinische-hautpflege",
+    href: "/grundkurs-medizinische-hautpflege",
     fallbackTitle: "Medizinische Hautpflege",
   },
   aufbaukurs_therapeutische_indikationen_botulinum: {
     formats: ["Onlinekurs", "Praxiskurs"],
     benefit:
       "Bruxismus, chronische Migräne, Hyperhidrose und mehr. Du öffnest Dir neue Behandlungsfelder mit therapeutischem Fokus.",
-    href: "/kurse/aufbaukurs-therapeutische-indikationen-botulinum",
+    href: "/aufbaukurs-therapeutische-indikationen-botulinum",
     fallbackTitle: "Therapeutische Indikationen Botulinum",
   },
   masterclass_botulinum: {
     formats: ["Onlinekurs", "Praxiskurs"],
     benefit:
       "Full Face Analyse, fortgeschrittene Injektionstechniken und souveränes Komplikationsmanagement auf Expert:innen-Niveau.",
-    href: "/kurse/masterclass-botulinum",
+    href: "/masterclass-botulinum",
     fallbackTitle: "Masterclass Botulinum",
   },
 };

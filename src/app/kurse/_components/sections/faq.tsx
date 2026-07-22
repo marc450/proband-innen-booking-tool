@@ -47,6 +47,21 @@ export function Faq({ content }: { content: CourseFaqContent }) {
             );
           })}
         </ul>
+
+        {content.footnote && (
+          <p className="mt-8 text-center text-sm text-black/60 leading-relaxed">
+            {content.footnote.text}{" "}
+            <a
+              href={content.footnote.linkHref}
+              target="_blank"
+              rel="noopener"
+              className="font-medium text-[#0066FF] underline underline-offset-2 hover:no-underline"
+            >
+              {content.footnote.linkLabel}
+            </a>
+            .
+          </p>
+        )}
       </div>
     </section>
   );
