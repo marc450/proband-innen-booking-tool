@@ -16,6 +16,14 @@ export interface ReviewItem {
   displayName: string;
   bodyText: string | null;
   courseLabel: string | null;
+  /**
+   * Only true when the review is anchored to a real customer record
+   * (a course_booking, or the doctor it was requested from). The
+   * hand-imported Testimonials have neither, so they must not carry the
+   * "Verifiziert" badge: the badge makes an explicit authenticity claim
+   * and the UWG review rules make an unearned one a liability.
+   */
+  verified: boolean;
 }
 
 interface ReviewsCarouselProps {
@@ -96,13 +104,15 @@ export function ReviewsCarousel({ items }: ReviewsCarouselProps) {
             >
               <div className="flex items-center justify-between gap-2 mb-4">
                 <StarRow rating={item.rating} />
-                <div
-                  className="flex items-center gap-1 text-[11px] text-[#0066FF] font-medium"
-                  title="Verifiziert: Bewertung stammt aus einer echten Kursbuchung."
-                >
-                  <BadgeCheck className="h-3.5 w-3.5" />
-                  <span>Verifiziert</span>
-                </div>
+                {item.verified && (
+                  <div
+                    className="flex items-center gap-1 text-[11px] text-[#0066FF] font-medium"
+                    title="Verifiziert: Diese Bewertung ist einer Teilnehmer:in in unserem System zugeordnet."
+                  >
+                    <BadgeCheck className="h-3.5 w-3.5" />
+                    <span>Verifiziert</span>
+                  </div>
+                )}
               </div>
 
               {preview && (

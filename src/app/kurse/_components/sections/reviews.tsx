@@ -12,6 +12,21 @@ export interface PublicReview {
   submittedAt: string;
   isPinned: boolean;
   courseLabel: string | null;
+  /**
+   * True for the hand-curated Testimonials that were bulk-imported into
+   * this table. They are genuine quotes but were never submitted through
+   * the tokenised review flow, and they all carry the import moment as
+   * `submittedAt` rather than a real date. Displayed on the page, but
+   * excluded from the Review/aggregateRating JSON-LD, see [slug]/page.tsx.
+   */
+  isImported: boolean;
+  /**
+   * Anchored to a real customer record: either the course_booking the
+   * review was submitted against, or the doctor the request was sent to.
+   * Drives the "Verifiziert" badge, so it must never be true for a row
+   * we cannot trace back to a person in our own system.
+   */
+  verified: boolean;
 }
 
 // On desktop the carousel shows 3 cards, so a pinned review sitting at
@@ -114,6 +129,18 @@ export function Reviews({
           </div>
         )}
 
+        {/* Herkunftshinweis. Seit der UWG-Novelle muss angegeben werden,
+            ob und wie sichergestellt wird, dass Bewertungen von echten
+            Kund:innen stammen. Steht bewusst ueber dem Karussell, damit
+            der Hinweis vor den Bewertungen gelesen wird. */}
+        <p className="max-w-2xl mx-auto text-center text-sm text-black/55 leading-relaxed mb-10">
+          Bewertungen können nur Ärzt:innen abgeben, die bei uns einen Kurs
+          besucht haben. Den Bewertungslink verschicken wir persönlich, eine
+          anonyme Abgabe ist nicht möglich. Als „Verifiziert&ldquo; markierte
+          Bewertungen sind eindeutig einer Teilnehmer:in in unserem System
+          zugeordnet.
+        </p>
+
         {autoRotate ? (
           <ReviewsMarquee items={toItems(reviews)} />
         ) : (
@@ -141,5 +168,6 @@ function toItems(reviews: PublicReview[]) {
     displayName: formatDisplayName(r),
     bodyText: r.bodyText,
     courseLabel: r.courseLabel,
+    verified: r.verified,
   }));
 }

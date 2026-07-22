@@ -20,6 +20,9 @@ type ReviewRow = {
   body_text: string | null;
   submitted_at: string;
   is_pinned: boolean | null;
+  is_imported: boolean | null;
+  booking_id: string | null;
+  auszubildende_id: string | null;
   display_title: string | null;
   display_last_initial: string | null;
   course_bookings:
@@ -52,7 +55,8 @@ export async function fetchPublicReviews(
   const { data: reviewRows } = await supabase
     .from("course_reviews")
     .select(
-      `id, rating, first_name, body_text, submitted_at, is_pinned,
+      `id, rating, first_name, body_text, submitted_at, is_pinned, is_imported,
+       booking_id, auszubildende_id,
        display_title, display_last_initial,
        course_bookings:booking_id (
          auszubildende:auszubildende_id ( title, last_name )
@@ -107,6 +111,10 @@ export async function fetchPublicReviews(
       bodyText: r.body_text,
       submittedAt: r.submitted_at,
       isPinned: r.is_pinned ?? false,
+      isImported: r.is_imported ?? false,
+      // Traceable to a booking, or to the doctor the review request was
+      // sent to. The bulk-imported Testimonials have neither.
+      verified: !!(r.booking_id || r.auszubildende_id),
       courseLabel: tpl?.course_label_de || tpl?.title || null,
     };
   });

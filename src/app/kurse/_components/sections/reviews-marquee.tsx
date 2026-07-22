@@ -53,13 +53,15 @@ function CompactReviewCard({
     <figure className="bg-[#FAEBE1] rounded-[10px] p-5 md:p-6 shrink-0 w-[280px] sm:w-[320px] md:w-[360px] h-[200px] flex flex-col">
       <div className="flex items-center justify-between gap-2 mb-3">
         <StarRow rating={item.rating} />
-        <div
-          className="flex items-center gap-1 text-[11px] text-[#0066FF] font-medium"
-          title="Verifiziert: Bewertung stammt aus einer echten Kursbuchung."
-        >
-          <BadgeCheck className="h-3.5 w-3.5" />
-          <span>Verifiziert</span>
-        </div>
+        {item.verified && (
+          <div
+            className="flex items-center gap-1 text-[11px] text-[#0066FF] font-medium"
+            title="Verifiziert: Diese Bewertung ist einer Teilnehmer:in in unserem System zugeordnet."
+          >
+            <BadgeCheck className="h-3.5 w-3.5" />
+            <span>Verifiziert</span>
+          </div>
+        )}
       </div>
 
       {item.bodyText && (
