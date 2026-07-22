@@ -175,25 +175,6 @@ export interface CourseFaqItem {
 export interface CourseFaqContent {
   heading: string;
   items: CourseFaqItem[];
-  /**
-   * Optional source notes rendered below the accordion. Used to cite the
-   * accrediting bodies (Ärztekammer, BÄK) with real outbound links, which
-   * the FAQ answers themselves cannot carry: they are plain text and feed
-   * the FAQPage JSON-LD verbatim, and a collapsed answer hides the link
-   * from both users and crawlers.
-   *
-   * Each item renders as "{text} {link}." in one shared paragraph.
-   * Verify every href resolves 200 without a redirect before adding it —
-   * aerztekammer-berlin.de for instance 301s to an unrelated page; the
-   * live Kammer domain is aekb.de.
-   */
-  footnote?: {
-    items: Array<{
-      text: string;
-      linkLabel: string;
-      linkHref: string;
-    }>;
-  };
 }
 
 export interface CourseMeta {

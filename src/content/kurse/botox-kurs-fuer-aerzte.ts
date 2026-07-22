@@ -276,25 +276,6 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
       },
       ...grundkursBotulinum.faq.items,
     ],
-    // Cites the accrediting body with a real outbound link. The page
-    // otherwise links only to our own subdomain, and for medizinische
-    // Fortbildung the Kammer-Akkreditierung is the strongest
-    // verifiable E-E-A-T signal we have.
-    footnote: {
-      items: [
-        {
-          text: "Alle CME-Punkte dieses Kurses sind akkreditiert bei der",
-          linkLabel: "Ärztekammer Berlin",
-          linkHref: "https://www.aekb.de/aerzt-innen/fortbildung",
-        },
-        {
-          text: "Grundlage der Punktevergabe ist die Fortbildungsordnung der",
-          linkLabel: "Bundesärztekammer",
-          linkHref:
-            "https://www.bundesaerztekammer.de/themen/aerzte/aus-fort-und-weiterbildung/aerztliche-fortbildung",
-        },
-      ],
-    },
   },
 
   // Course JSON-LD additions. Everything here is visible on the page:
@@ -307,8 +288,10 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
     coursePrerequisites: [
       "Approbation als Ärzt:in (Humanmedizin)",
     ],
+    // Zwei Kammern: der Onlineteil läuft in der Regel über die LÄK
+    // Brandenburg, der Praxistag über die LÄK Berlin.
     educationalCredentialAwarded:
-      "EPHIA-Zertifikat und Teilnahmebescheinigung der Ärztekammer Berlin mit bis zu 49 CME-Punkten",
+      "EPHIA-Zertifikat und Teilnahmebescheinigung der Ärztekammer Berlin oder Ärztekammer Brandenburg mit bis zu 49 CME-Punkten",
   },
 
   breadcrumbLabel: "Botox-Kurs für Ärzt:innen",

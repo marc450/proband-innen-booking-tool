@@ -998,6 +998,44 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
             </div>
           );
         })()}
+
+        {/* Akkreditierungs-Fußnote. Sitzt bewusst unter den Karten: Die
+            CME-Punkte sind das Kaufargument, der Beleg dafür gehört an
+            den Ort der Kaufentscheidung und nicht ans Seitenende.
+            Zwei Kammern, weil der Onlineteil in der Regel über die
+            LÄK Brandenburg läuft und der Praxistag über die LÄK Berlin.
+            Auf Signalblau sind Links weiß, blaue Links wären unsichtbar. */}
+        <p className="mt-12 text-center text-sm text-white/70 leading-relaxed max-w-2xl mx-auto">
+          Die CME-Punkte dieses Kurses sind von der{" "}
+          <a
+            href="https://www.aekb.de/aerzt-innen/fortbildung"
+            target="_blank"
+            rel="noopener"
+            className="font-medium text-white underline underline-offset-2 hover:no-underline"
+          >
+            Ärztekammer Berlin
+          </a>{" "}
+          oder der{" "}
+          <a
+            href="https://www.laekb.de/aerztin-und-arzt/fortbildung"
+            target="_blank"
+            rel="noopener"
+            className="font-medium text-white underline underline-offset-2 hover:no-underline"
+          >
+            Ärztekammer Brandenburg
+          </a>{" "}
+          akkreditiert. Grundlage der Punktevergabe ist die
+          Fortbildungsordnung der{" "}
+          <a
+            href="https://www.bundesaerztekammer.de/themen/aerzte/aus-fort-und-weiterbildung/aerztliche-fortbildung"
+            target="_blank"
+            rel="noopener"
+            className="font-medium text-white underline underline-offset-2 hover:no-underline"
+          >
+            Bundesärztekammer
+          </a>
+          .
+        </p>
       </div>
 
       {/* Prerequisite-confirmation dialog. Mounted once at the section

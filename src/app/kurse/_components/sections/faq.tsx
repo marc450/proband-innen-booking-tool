@@ -48,24 +48,6 @@ export function Faq({ content }: { content: CourseFaqContent }) {
           })}
         </ul>
 
-        {content.footnote && content.footnote.items.length > 0 && (
-          <p className="mt-8 text-center text-sm text-black/60 leading-relaxed">
-            {content.footnote.items.map((item) => (
-              <span key={item.linkHref}>
-                {item.text}{" "}
-                <a
-                  href={item.linkHref}
-                  target="_blank"
-                  rel="noopener"
-                  className="font-medium text-[#0066FF] underline underline-offset-2 hover:no-underline"
-                >
-                  {item.linkLabel}
-                </a>
-                .{" "}
-              </span>
-            ))}
-          </p>
-        )}
       </div>
     </section>
   );
