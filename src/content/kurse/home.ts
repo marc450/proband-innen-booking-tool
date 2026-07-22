@@ -12,7 +12,7 @@ export const homeContent: HomeContent = {
     title: "EPHIA | Akademie für ästhetische Medizin",
     description:
       "Deine Lernplattform für inklusive ästhetische Medizin. LÄK-zertifizierte Lehrgänge, On- & Offlinekurse und eine aktive Ärzt:innen-Community.",
-    ogImage: "/kurse/home/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {

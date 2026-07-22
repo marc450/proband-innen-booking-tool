@@ -30,7 +30,7 @@ export const botoxOnlinekurs: CourseLandingContent = {
     title: "Botox-Onlinekurs für Ärzt:innen, CME-akkreditiert | EPHIA",
     description:
       "Botox-Onlinekurs für approbierte Ärzt:innen und Zahnärzt:innen: Anatomie, Indikationen, Behandlungsvideos, CME-Test. Höchstakkreditierter Botulinum-Onlinekurs im DACH-Raum, flexibel und ortsunabhängig.",
-    ogImage: "/kurse/grundkurs_botulinum/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {

@@ -24,7 +24,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
     title: "Grundkurs Botulinum für Zahnmediziner:innen | EPHIA",
     description:
       "Grundkurs Botulinum für approbierte Zahnärzt:innen: Behandle den Masseter, insbesondere bei Bruxismus, mit Einblick in weitere Anwendungsgebiete wie Glabella, Stirn und Migräne. Praxisnah an echten Proband:innen.",
-    ogImage: "/kurse/grundkurs_botulinum_zahnmedizin/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {

@@ -19,7 +19,7 @@ export const aufbaukursBiostimulationSkinbooster: CourseLandingContent = {
     title: "Aufbaukurs Biostimulation & Skinbooster | EPHIA",
     description:
       "Aufbaukurs für approbierte Ärzt:innen: Biostimulation mit Poly-L-Milchsäure und Skinbooster-Techniken. Praxisnah, evidenzbasiert und CME-akkreditiert.",
-    ogImage: "/kurse/aufbaukurs_skulptra/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {

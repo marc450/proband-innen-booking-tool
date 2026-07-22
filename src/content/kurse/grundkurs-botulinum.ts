@@ -15,7 +15,7 @@ export const grundkursBotulinum: CourseLandingContent = {
     title: "Grundkurs Botulinum | EPHIA",
     description:
       "Grundkurs Botulinum für approbierte Ärzt:innen: Behandle Stirn, Glabella, Lachfalten und mehr unter Aufsicht an echten Proband:innen. 22 CME-Punkte, praxisnah und diskriminierungssensibel.",
-    ogImage: "/kurse/grundkurs_botulinum/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {
@@ -387,9 +387,9 @@ export const grundkursBotulinum: CourseLandingContent = {
           "Inhalte können jederzeit pausiert und wieder aufgenommen werden.",
           "Im Reiter „Austausch\" kannst Du Fragen stellen und Dich mit der Community und Dozierenden austauschen.",
         ],
-        mediaPath: "/kurse/grundkurs_botulinum/plattform/navigation.png",
-        mediaWidth: 1905,
-        mediaHeight: 1070,
+        mediaPath: "/kurse/grundkurs_botulinum/plattform/navigation.webp",
+        mediaWidth: 1400,
+        mediaHeight: 786,
       },
       {
         title: "Realitätsnahe Behandlungen",
@@ -412,9 +412,9 @@ export const grundkursBotulinum: CourseLandingContent = {
           "Auch nach dem Kurs sind unsere Dozierenden in der Community für Fragen erreichbar.",
           "Für ein nachhaltiges Lernen, weit über das Kursende hinaus.",
         ],
-        mediaPath: "/kurse/grundkurs_botulinum/plattform/inhalte.png",
-        mediaWidth: 1905,
-        mediaHeight: 1068,
+        mediaPath: "/kurse/grundkurs_botulinum/plattform/inhalte.webp",
+        mediaWidth: 1400,
+        mediaHeight: 785,
       },
       {
         title: "Klare Lernziele & Tests",
@@ -425,9 +425,9 @@ export const grundkursBotulinum: CourseLandingContent = {
           "Alle Inhalte wurden so ausgewählt, dass sie direkt für Deine praktische Arbeit relevant sind.",
           "So lernst Du nicht einfach nur mit, sondern gezielt für Deine Patient:innen.",
         ],
-        mediaPath: "/kurse/grundkurs_botulinum/plattform/tests.png",
-        mediaWidth: 1900,
-        mediaHeight: 1070,
+        mediaPath: "/kurse/grundkurs_botulinum/plattform/tests.webp",
+        mediaWidth: 1400,
+        mediaHeight: 788,
       },
     ],
   },

@@ -28,7 +28,7 @@ export const fillerKurs: CourseLandingContent = {
     title: "Filler-Kurs für Ärzt:innen | Seminar, Schulung & Praxiskurs | EPHIA",
     description:
       "Filler-Kurs für approbierte Ärzt:innen: Online-Seminar, Praxis-Schulung oder Hybrid-Kurs zur sicheren Anwendung von Dermalfillern. CME-akkreditiert, mit Behandlungsvideos und Praxistag an echten Proband:innen.",
-    ogImage: "/kurse/grundkurs_dermalfiller/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {

@@ -15,7 +15,7 @@ export const grundkursDermalfiller: CourseLandingContent = {
     title: "Grundkurs Dermalfiller | EPHIA",
     description:
       "Grundkurs Dermalfiller für approbierte Ärzt:innen: Lerne die Anatomie des Alterns, Behandlungsmöglichkeiten für das Mittelgesicht und erste Schritte in die Gesichtskonturierung. 18 CME-Punkte, praxisnah und diskriminierungssensibel.",
-    ogImage: "/kurse/grundkurs_dermalfiller/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {

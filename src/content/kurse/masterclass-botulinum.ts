@@ -22,7 +22,7 @@ export const masterclassBotulinum: CourseLandingContent = {
     title: "Masterclass Botulinum | EPHIA",
     description:
       "Masterclass Botulinum für erfahrene Ärzt:innen: Full Face Analyse, fortgeschrittene Injektionstechniken und Komplikationsmanagement auf Expert:innen-Niveau. Praxiskurs in Berlin-Mitte mit Online-Vorbereitung.",
-    ogImage: "/kurse/masterclass_botulinum/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {

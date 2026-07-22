@@ -22,7 +22,7 @@ export const aufbaukursLippen: CourseLandingContent = {
     title: "Aufbaukurs Dermalfiller: Lippen | EPHIA",
     description:
       "Aufbaukurs Dermalfiller: Lippen für approbierte Ärzt:innen. Vertiefe Deine Behandlungssicherheit in der perioralen Zone. Anatomie, Indikationen, Technik und Komplikationsmanagement, mit praxisnahen Behandlungsvideos. Akkreditiert mit 24 CME-Punkten (11 Online + 13 Praxis) durch die LÄK Berlin.",
-    ogImage: "/kurse/aufbaukurs_lippen/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {

@@ -17,7 +17,7 @@ export const aufbaukursTherapeutischeIndikationenBotulinum: CourseLandingContent
     title: "Aufbaukurs Botulinum Therapeutische Indikationen | EPHIA",
     description:
       "Aufbaukurs Botulinum für approbierte Ärzt:innen mit Fokus auf therapeutische Indikationen: Bruxismus, Masseterhypertrophie, Migräne, Hyperhidrose. Praxisnah, evidenzbasiert und mit 21 CME-Punkten akkreditiert.",
-    ogImage: "/kurse/aufbaukurs_therapeutische_indikationen_botulinum/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {

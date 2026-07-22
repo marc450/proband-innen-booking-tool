@@ -36,7 +36,7 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
     // truncated them away.
     description:
       "Botox-Kurs für Ärzt:innen: bis zu 49 CME, ab 490 €. Hands-on an echten Proband:innen in Berlin-Mitte, max. 7 Teilnehmer:innen, Ärztekammer-akkreditiert.",
-    ogImage: "/kurse/grundkurs_botulinum/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {
@@ -290,8 +290,16 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
     ],
     // Zwei Kammern: der Onlineteil läuft in der Regel über die LÄK
     // Brandenburg, der Praxistag über die LÄK Berlin.
+    //
+    // 22 CME, NICHT die 49 aus Title und Meta-Description. Die 49
+    // gelten nur fuer das Komplettpaket, das drei weitere Onlinekurse
+    // (Periorale Zone, Therapeutische Indikationen, Medizinische
+    // Hautpflege) mitbuendelt. Dieser Course-Knoten beschreibt aber nur
+    // den Grundkurs, deshalb muss er zu numberOfCredits (ebenfalls 22)
+    // passen. Vorher stand hier "bis zu 49", was demselben Objekt
+    // widersprach.
     educationalCredentialAwarded:
-      "EPHIA-Zertifikat und Teilnahmebescheinigung der Ärztekammer Berlin oder Ärztekammer Brandenburg mit bis zu 49 CME-Punkten",
+      "EPHIA-Zertifikat und Teilnahmebescheinigung der Ärztekammer Berlin oder Ärztekammer Brandenburg mit 22 CME-Punkten",
   },
 
   breadcrumbLabel: "Botox-Kurs für Ärzt:innen",

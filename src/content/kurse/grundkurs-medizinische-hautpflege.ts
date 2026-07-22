@@ -22,7 +22,7 @@ export const grundkursMedizinischeHautpflege: CourseLandingContent = {
     title: "Grundkurs Medizinische Hautpflege | EPHIA",
     description:
       "Grundkurs Medizinische Hautpflege für approbierte Ärzt:innen: Grundlagen der Dermatologie, Hautphysiologie, Skin of Color, Behandlung von Akne, Rosazea und perioraler Dermatitis, Aufbau einer nachhaltigen Pflegeroutine, CME-zertifiziert.",
-    ogImage: "/kurse/grundkurs_medizinische_hautpflege/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {

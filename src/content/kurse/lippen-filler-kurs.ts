@@ -29,7 +29,7 @@ export const lippenFillerKurs: CourseLandingContent = {
       "Lippen-Filler-Kurs für Ärzt:innen | Schulung, Seminar & Praxiskurs | EPHIA",
     description:
       "Lippen-Filler-Kurs für approbierte Ärzt:innen mit Grunderfahrung in Dermalfillern: Online-Seminar, Praxis-Schulung und Hybrid-Kurs für sichere Lippenbehandlungen. Anatomie, Indikationen, Technik und Komplikationsmanagement, mit dichten Behandlungsvideos.",
-    ogImage: "/kurse/aufbaukurs_lippen/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {

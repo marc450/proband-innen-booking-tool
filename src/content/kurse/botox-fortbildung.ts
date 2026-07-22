@@ -29,7 +29,7 @@ export const botoxFortbildung: CourseLandingContent = {
     title: "Botox-Fortbildung, Seminar & Schulung für Ärzt:innen | EPHIA",
     description:
       "Botox-Fortbildung für approbierte Ärzt:innen: Online-Seminar, Praxis-Schulung oder Hybrid-Kurs. CME-akkreditiert, mit Behandlungsvideos und Praxistag an echten Proband:innen.",
-    ogImage: "/kurse/grundkurs_botulinum/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {

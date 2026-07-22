@@ -31,7 +31,7 @@ export const botoxKursFuerAnfaenger: CourseLandingContent = {
     title: "Botox-Kurs für Anfänger:innen, Online, Präsenz & Hybrid | EPHIA",
     description:
       "Botox-Kurs für approbierte Ärzt:innen ohne Vorerfahrung in ästhetischer Medizin. Strukturierter Einstieg mit Online-Modul, Praxistag an echten Proband:innen und Community-Support. 22 CME-Punkte und EPHIA-Zertifikat.",
-    ogImage: "/kurse/grundkurs_botulinum/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {

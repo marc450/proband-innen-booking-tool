@@ -33,7 +33,7 @@ export const botoxKursFuerZahnaerzte: CourseLandingContent = {
     title: "Botox-Kurs für Zahnärzt:innen, Bruxismus & Migräne | EPHIA",
     description:
       "Botox-Kurs für approbierte Zahnärzt:innen: Masseter, insbesondere bei Bruxismus, mit Einblick in weitere Anwendungsgebiete wie Glabella, Stirn und Migräne. Online-Modul plus Praxistag an echten Proband:innen, kleine Gruppen, EPHIA-Zertifikat.",
-    ogImage: "/kurse/grundkurs_botulinum_zahnmedizin/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {

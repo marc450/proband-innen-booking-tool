@@ -27,7 +27,7 @@ export const botoxKursBerlin: CourseLandingContent = {
     title: "Botox-Kurs in Berlin für Ärzt:innen | EPHIA",
     description:
       "Botox-Kurs in Berlin für approbierte Ärzt:innen: Praxistraining im HY STUDIO Berlin-Mitte, Behandlung echter Proband:innen, 22 CME-Punkte. Online- + Präsenztermine in Berlin verfügbar.",
-    ogImage: "/kurse/grundkurs_botulinum/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {

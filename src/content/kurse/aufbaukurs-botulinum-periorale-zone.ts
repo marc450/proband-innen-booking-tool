@@ -18,7 +18,7 @@ export const aufbaukursBotulinumPerioraleZone: CourseLandingContent = {
     title: "Aufbaukurs Botulinum Periorale Zone | EPHIA",
     description:
       "Aufbaukurs Botulinum für approbierte Ärzt:innen mit Fokus auf die periorale Zone: Lip Flip, Gummy Smile, Erdbeerkinn, Mundwinkel und Platysma. Praxisnah, evidenzbasiert und CME-akkreditiert.",
-    ogImage: "/kurse/aufbaukurs_botulinum_periorale_zone/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {

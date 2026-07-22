@@ -31,7 +31,7 @@ export const botoxKursFuerFortgeschrittene: CourseLandingContent = {
     title: "Botox-Kurs für Fortgeschrittene, Masterclass Botulinum | EPHIA",
     description:
       "Botox-Kurs für Fortgeschrittene: Full Face Analyse, fortgeschrittene Injektionstechniken und Komplikationsmanagement auf Expert:innen-Niveau. Für approbierte Ärzt:innen mit regelmäßiger Botulinum-Praxis.",
-    ogImage: "/kurse/masterclass_botulinum/og-image.jpg",
+    ogImage: "/og/ephia-kurs.jpg",
   },
 
   hero: {
