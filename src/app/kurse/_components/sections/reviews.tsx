@@ -92,18 +92,31 @@ export function Reviews({
 }: ReviewsProps) {
   if (reviews.length === 0) return null;
 
-  const avg =
-    reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+  // Average AND count describe the verified subset only, which is the
+  // exact same set the AggregateRating in [slug]/page.tsx is built from.
+  // Google wants the marked-up rating to be the one visibly displayed,
+  // so these must never drift apart: if the visible number counted the
+  // hand-imported Testimonials too, the page would claim a bigger n than
+  // the schema. Unverified rows still render as cards, they just don't
+  // count toward the score.
+  const rated = reviews.filter((r) => r.verified);
+  // Defensive: never divide by zero if a page somehow has only
+  // unverified rows. Falling back to the full set keeps the section
+  // rendering; the count line is suppressed below in that case.
+  const scored = rated.length > 0 ? rated : reviews;
+
+  const avg = scored.reduce((sum, r) => sum + r.rating, 0) / scored.length;
   const avgDisplay = avg.toFixed(1).replace(".", ",");
   // Whole averages read cleaner without a trailing ",0" in prose
   // ("5/5" not "5,0/5"); fractional ones keep one decimal with a comma.
   const avgProse = Number.isInteger(avg)
     ? String(avg)
     : avg.toFixed(1).replace(".", ",");
-  // Schema spec accepts a single review with rating, but a public-page
-  // AggregateRating still needs the rating to be visibly displayed.
-  // Both happen here so the JSON-LD in the page.tsx mirrors what users
-  // see.
+  const ratedCount = rated.length;
+  const ratedLabel =
+    ratedCount === 1
+      ? "1 verifizierte Bewertung"
+      : `${ratedCount} verifizierte Bewertungen`;
 
   return (
     <section className="bg-white py-16 md:py-24">
@@ -115,9 +128,16 @@ export function Reviews({
         )}
 
         {summary === "proud" ? (
-          <p className="max-w-2xl mx-auto text-center text-xl md:text-2xl font-bold text-black/80 mb-10">
-            Von Ärzt:innen mit {avgProse}/5 Sternen bewertet
-          </p>
+          <div className="mb-10">
+            <p className="max-w-2xl mx-auto text-center text-xl md:text-2xl font-bold text-black/80">
+              Von Ärzt:innen mit {avgProse}/5 Sternen bewertet
+            </p>
+            {ratedCount > 0 && (
+              <p className="mt-2 text-center text-sm font-medium text-black/55">
+                {ratedLabel}
+              </p>
+            )}
+          </div>
         ) : (
           <div className="flex flex-col items-center gap-2 mb-10">
             <div className="flex items-baseline gap-3">
@@ -126,6 +146,9 @@ export function Reviews({
               </span>
               <StarRow rating={Math.round(avg)} size="lg" />
             </div>
+            {ratedCount > 0 && (
+              <p className="text-sm font-medium text-black/55">{ratedLabel}</p>
+            )}
           </div>
         )}
 

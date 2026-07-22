@@ -371,15 +371,19 @@ export default async function KursPage({
   const numberOfCredits =
     content.schema?.numberOfCredits ?? (cmeKombiNum ? Number(cmeKombiNum) : undefined);
 
-  // Only reviews the doctor actually submitted through the tokenised
-  // link feed the structured data. The `is_imported` rows are the old
-  // hand-curated Testimonials: genuine quotes, but never submitted via
-  // the review flow, and all three share one identical `submitted_at`
-  // (the bulk-import moment) which would become a fabricated
-  // `datePublished`. They stay visible on the page as testimonials;
-  // they just must not be marked up as dated Review entities or counted
-  // into aggregateRating.
-  const schemaReviews = publicReviews.filter((r) => !r.isImported);
+  // Only reviews traceable to a real customer feed the structured data.
+  // That excludes the hand-curated Testimonials, which are genuine
+  // quotes but were never submitted through the review flow and all
+  // share one identical `submitted_at` (the bulk-import moment) that
+  // would become a fabricated `datePublished`. They stay visible on the
+  // page; they just must not be marked up as dated Review entities.
+  //
+  // MUST stay the same predicate the <Reviews> section uses for the
+  // visible average and count (`r.verified`). Google expects the
+  // marked-up AggregateRating to be the one shown on the page, so if
+  // these two filters ever diverge the visible n and the schema n
+  // silently disagree.
+  const schemaReviews = publicReviews.filter((r) => r.verified);
 
   // AggregateRating + review[] — only when this slug opts into the
   // Reviews section AND we have ≥1 eligible review. Google rejects
