@@ -86,13 +86,24 @@ export function CourseCard({
   const [showTerminModal, setShowTerminModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Expand state for the Praxistermine list. Controlled by the parent when
-  // `onToggleDates` is passed (so all cards unfold in sync), otherwise the
-  // card manages its own state.
+  // Expand state for the Praxistermine list. On desktop (lg+, where the
+  // cards sit side by side) the parent controls it via `onToggleDates` so
+  // every card unfolds in sync. On mobile the cards stack vertically, so
+  // each card keeps its own independent toggle (original behaviour) and we
+  // fall back to internal state. `isDesktop` starts false so the initial
+  // (collapsed) render matches server output regardless of viewport.
   const [internalDatesExpanded, setInternalDatesExpanded] = useState(false);
-  const isDatesControlled = onToggleDates !== undefined;
-  const showAllDates = isDatesControlled ? !!datesExpanded : internalDatesExpanded;
-  const toggleDates = isDatesControlled
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  const useSharedDates = isDesktop && onToggleDates !== undefined;
+  const showAllDates = useSharedDates ? !!datesExpanded : internalDatesExpanded;
+  const toggleDates = useSharedDates
     ? onToggleDates
     : () => setInternalDatesExpanded((v) => !v);
 
