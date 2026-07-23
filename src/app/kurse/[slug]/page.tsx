@@ -11,19 +11,13 @@ import { Gruppenbuchungen } from "../_components/sections/gruppenbuchungen";
 import { Inhalt } from "../_components/sections/inhalt";
 import { Lernplattform } from "../_components/sections/lernplattform";
 import { CtaBanner } from "../_components/sections/cta-banner";
-import { Testimonials } from "../_components/sections/testimonials";
 import { Faq } from "../_components/sections/faq";
 import { LocationInfo } from "../_components/sections/location-info";
 import { LearningPath } from "../_components/sections/learning-path";
 import { ProseSection } from "../_components/sections/prose-section";
 import { RelatedCourses } from "../_components/sections/related-courses";
-import { Reviews, type PublicReview } from "../_components/sections/reviews";
+import { Reviews } from "../_components/sections/reviews";
 import { CourseCardsPage } from "../_components/widget/course-cards-page";
-
-// Slug-gate: only this landing surfaces the Reviews section + the
-// AggregateRating/Review JSON-LD. Marc wants to test SERP rich-results
-// on a single high-traffic page before rolling out broadly.
-const REVIEWS_ENABLED_SLUGS = new Set<string>(["botox-kurs-fuer-aerzte"]);
 
 export const dynamic = "force-dynamic";
 
@@ -128,15 +122,14 @@ export default async function KursPage({
     .gt("date_iso", berlinTodayIso())
     .order("date_iso", { ascending: true });
 
-  // Public reviews — only fetched on slugs that opt in (see
-  // REVIEWS_ENABLED_SLUGS above). Surfaces ALL published reviews (not
-  // just the ones tied to the current template), so the carousel reads
-  // cross-course feedback as one signal. Same loader feeds the home
-  // page review carousel.
-  let publicReviews: PublicReview[] = [];
-  if (REVIEWS_ENABLED_SLUGS.has(content.slug)) {
-    publicReviews = await fetchPublicReviews(supabase);
-  }
+  // Public reviews for THIS course: its own template-tagged reviews plus
+  // the shared pool of course-agnostic "general" reviews (template_id
+  // IS NULL), which read as cross-course trust and appear on every
+  // landing. `template.id` is the course's OWN template (not the
+  // session-sharing one), so e.g. Zahnmedizin keeps its own reviews.
+  // The same loader (no templateId) feeds the home page with the full
+  // cross-course set.
+  const publicReviews = await fetchPublicReviews(supabase, template.id);
 
   // Template-token substitution. Lets content files reference live
   // template values (e.g. `{cme_online}` in the hero subheadline) so a
@@ -595,15 +588,6 @@ export default async function KursPage({
             : undefined
         }
       />
-      {/* On Reviews-enabled slugs, the long-form hand-curated
-          <Testimonials> would duplicate names that now live in
-          <Reviews> (e.g. Laura B., Nadja G., Lawik R. imported as
-          is_imported rows). Suppress it on those slugs only — other
-          course landings still surface the long-form quotes until we
-          migrate them too. */}
-      {!REVIEWS_ENABLED_SLUGS.has(content.slug) && (
-        <Testimonials content={content.testimonials} />
-      )}
       <Faq content={faqContent} />
       {content.relatedCourses && content.relatedCourses.length > 0 && (
         <RelatedCourses slugs={content.relatedCourses} />

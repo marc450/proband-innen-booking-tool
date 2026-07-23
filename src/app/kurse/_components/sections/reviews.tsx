@@ -1,6 +1,7 @@
 import { Star } from "lucide-react";
 import { ReviewsCarousel } from "./reviews-carousel";
 import { ReviewsMarquee } from "./reviews-marquee";
+import { VerifiedInfo } from "./verified-info";
 
 export interface PublicReview {
   id: string;
@@ -133,9 +134,10 @@ export function Reviews({
               Von Ärzt:innen mit {avgProse}/5 Sternen bewertet
             </p>
             {ratedCount > 0 && (
-              <p className="mt-2 text-center text-sm font-medium text-black/55">
-                {ratedLabel}
-              </p>
+              <div className="mt-2 flex items-center justify-center gap-1.5">
+                <p className="text-sm font-medium text-black/55">{ratedLabel}</p>
+                <VerifiedInfo />
+              </div>
             )}
           </div>
         ) : (
@@ -147,22 +149,13 @@ export function Reviews({
               <StarRow rating={Math.round(avg)} size="lg" />
             </div>
             {ratedCount > 0 && (
-              <p className="text-sm font-medium text-black/55">{ratedLabel}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium text-black/55">{ratedLabel}</p>
+                <VerifiedInfo />
+              </div>
             )}
           </div>
         )}
-
-        {/* Herkunftshinweis. Seit der UWG-Novelle muss angegeben werden,
-            ob und wie sichergestellt wird, dass Bewertungen von echten
-            Kund:innen stammen. Steht bewusst ueber dem Karussell, damit
-            der Hinweis vor den Bewertungen gelesen wird. */}
-        <p className="max-w-2xl mx-auto text-center text-sm text-black/55 leading-relaxed mb-10">
-          Bewertungen können nur Ärzt:innen abgeben, die bei uns einen Kurs
-          besucht haben. Den Bewertungslink verschicken wir persönlich, eine
-          anonyme Abgabe ist nicht möglich. Als „Verifiziert&ldquo; markierte
-          Bewertungen sind eindeutig einer Teilnehmer:in in unserem System
-          zugeordnet.
-        </p>
 
         {autoRotate ? (
           <ReviewsMarquee items={toItems(reviews)} />

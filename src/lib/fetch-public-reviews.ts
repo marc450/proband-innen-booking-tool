@@ -51,8 +51,13 @@ type ReviewRow = {
 
 export async function fetchPublicReviews(
   supabase: SupabaseClient,
+  // When set, a course landing surfaces THIS course's own reviews plus
+  // the shared pool of course-agnostic "general" reviews
+  // (template_id IS NULL) that reads as cross-course trust and appears
+  // on every landing. Omit it (home page) to get every published review.
+  templateId?: string,
 ): Promise<PublicReview[]> {
-  const { data: reviewRows } = await supabase
+  let query = supabase
     .from("course_reviews")
     .select(
       `id, rating, first_name, body_text, submitted_at, is_pinned, is_imported,
@@ -64,7 +69,13 @@ export async function fetchPublicReviews(
        auszubildende:auszubildende_id ( title, last_name ),
        course_templates:template_id ( course_label_de, title )`,
     )
-    .eq("is_published", true)
+    .eq("is_published", true);
+
+  if (templateId) {
+    query = query.or(`template_id.eq.${templateId},template_id.is.null`);
+  }
+
+  const { data: reviewRows } = await query
     .order("is_pinned", { ascending: false })
     .order("submitted_at", { ascending: false });
 
