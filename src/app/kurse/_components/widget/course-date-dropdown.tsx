@@ -43,7 +43,9 @@ export function CourseDateDropdown({
   selectedId,
   onSelect,
   placeholder = "Praxiskurs-Termin wählen",
-  panelMinWidthClass = "min-w-[340px]",
+  // On mobile the panel matches the button width (w-full); the 340px
+  // minimum only kicks in from sm up, where marketing cards are wider.
+  panelMinWidthClass = "sm:min-w-[340px]",
 }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -99,7 +101,7 @@ export function CourseDateDropdown({
                 onSelect(date.id);
                 setOpen(false);
               }}
-              className={`w-full flex items-center justify-start lg:justify-between gap-2 px-4 py-2 text-sm text-left transition-colors ${
+              className={`w-full flex items-center justify-between gap-2 px-4 py-2 text-sm text-left transition-colors ${
                 !date.available
                   ? "text-gray-400 cursor-not-allowed"
                   : selectedId === date.id
