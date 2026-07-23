@@ -118,6 +118,14 @@ export function Reviews({
     ratedCount === 1
       ? "1 verifizierte Bewertung"
       : `${ratedCount} verifizierte Bewertungen`;
+  // Small review counts read as weak social proof, so the numeric line
+  // stays hidden until a course clears this bar. The average stars and
+  // the individual review cards still render below; only the "N
+  // verifizierte Bewertungen" number is gated. It reappears
+  // automatically once ≥20 verified reviews are live (dynamic render).
+  // The UWG Herkunftshinweis (VerifiedInfo icon) is kept regardless.
+  const MIN_COUNT_DISPLAY = 20;
+  const showRatedCount = ratedCount >= MIN_COUNT_DISPLAY;
 
   return (
     <section className="bg-white py-16 md:py-24">
@@ -133,12 +141,12 @@ export function Reviews({
             <p className="max-w-2xl mx-auto text-center text-xl md:text-2xl font-bold text-black/80">
               Von Ärzt:innen mit {avgProse}/5 Sternen bewertet
             </p>
-            {ratedCount > 0 && (
-              <div className="mt-2 flex items-center justify-center gap-1.5">
+            <div className="mt-2 flex items-center justify-center gap-1.5">
+              {showRatedCount && (
                 <p className="text-sm font-medium text-black/55">{ratedLabel}</p>
-                <VerifiedInfo />
-              </div>
-            )}
+              )}
+              <VerifiedInfo />
+            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2 mb-10">
@@ -148,12 +156,12 @@ export function Reviews({
               </span>
               <StarRow rating={Math.round(avg)} size="lg" />
             </div>
-            {ratedCount > 0 && (
-              <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5">
+              {showRatedCount && (
                 <p className="text-sm font-medium text-black/55">{ratedLabel}</p>
-                <VerifiedInfo />
-              </div>
-            )}
+              )}
+              <VerifiedInfo />
+            </div>
           </div>
         )}
 
