@@ -30,12 +30,12 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
   courseKey: "grundkurs_botulinum",
 
   meta: {
-    title: "Botox-Kurs für Ärzte & Ärztinnen | bis zu 49 CME-Punkte | EPHIA",
+    title: "Botox-Kurs & Fortbildung für Ärzt:innen | bis zu 49 CME | EPHIA",
     // 152 chars. Both conversion hooks (CME-Punkte, Einstiegspreis)
     // sit inside the ~155-char SERP window; the old 187-char version
     // truncated them away.
     description:
-      "Botox-Kurs für Ärzt:innen: bis zu 49 CME, ab 490 €. Hands-on an echten Proband:innen in Berlin-Mitte, max. 7 Teilnehmer:innen, Ärztekammer-akkreditiert.",
+      "Botox-Fortbildung für Ärzt:innen: bis zu 49 CME, ab 490 €. Hands-on an echten Proband:innen in Berlin, max. 7 Teilnehmer:innen, Ärztekammer-akkreditiert.",
     ogImage: "/og/ephia-kurs.jpg",
   },
 
@@ -245,6 +245,12 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
         question: "Welches Zertifikat erhalte ich nach dem Kurs?",
         answer:
           "Nach Abschluss des Online- & Praxiskurses oder des Komplettpakets erhältst Du eine Teilnahmebescheinigung der Ärztekammer Berlin mit den entsprechenden CME-Punkten sowie das EPHIA-Zertifikat. Beide Dokumente kannst Du als Nachweis Deiner strukturierten Fortbildung verwenden, beispielsweise gegenüber Aufsichtsbehörden, Berufshaftpflichtversicherern oder zur transparenten Aufklärung Deiner Patient:innen. Den reinen Botulinum-Onlinekurs schließt Du mit einem EPHIA-Zertifikat ab. Beide Zertifikate sind keine staatlich anerkannte Zusatzbezeichnung, eine solche gibt es in Deutschland für die ästhetische Botulinum-Behandlung aktuell nicht.",
+      },
+      {
+        question:
+          "Gilt der Botox-Kurs als anerkannte ärztliche Fortbildung oder Weiterbildung?",
+        answer:
+          "Ja. Unser Botox-Kurs ist eine strukturierte ärztliche Fortbildung, die von der Ärztekammer Berlin mit CME-Punkten akkreditiert ist. Als Botulinum-Schulung und praktische Weiterbildung vermittelt sie Anatomie, Indikationsstellung, Injektionstechnik und Komplikationsmanagement. Wichtig zur Einordnung: In Deutschland gibt es für die ästhetische Botulinum-Behandlung keine staatlich geschützte Zusatzbezeichnung. Unsere Botox-Ausbildung ersetzt daher keine Facharzt-Weiterbildung, sondern ergänzt Deine Approbation um eine praxisnahe, nachweisbare Qualifikation.",
       },
       {
         question: "Was kommt nach dem Botox-Kurs als nächster Schritt?",

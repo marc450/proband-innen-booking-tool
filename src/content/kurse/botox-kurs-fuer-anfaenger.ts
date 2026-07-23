@@ -28,9 +28,9 @@ export const botoxKursFuerAnfaenger: CourseLandingContent = {
   courseKey: "grundkurs_botulinum",
 
   meta: {
-    title: "Botox-Kurs für Anfänger:innen, Online, Präsenz & Hybrid | EPHIA",
+    title: "Botox spritzen lernen: Kurs für Anfänger:innen | Online | EPHIA",
     description:
-      "Botox-Kurs für approbierte Ärzt:innen ohne Vorerfahrung in ästhetischer Medizin. Strukturierter Einstieg mit Online-Modul, Praxistag an echten Proband:innen und Community-Support. 22 CME-Punkte und EPHIA-Zertifikat.",
+      "Botox spritzen lernen für Ärzt:innen ohne Vorerfahrung: strukturierter Online-Kurs plus Praxistag an echten Proband:innen. 22 CME-Punkte und EPHIA-Zertifikat.",
     ogImage: "/og/ephia-kurs.jpg",
   },
 
