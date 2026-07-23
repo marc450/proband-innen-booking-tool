@@ -27,7 +27,7 @@ export const fillerKurs: CourseLandingContent = {
   meta: {
     title: "Filler-Kurs für Ärzt:innen | Seminar, Schulung & Praxiskurs | EPHIA",
     description:
-      "Filler-Kurs für approbierte Ärzt:innen: Online-Seminar, Praxis-Schulung oder Hybrid-Kurs zur sicheren Anwendung von Dermalfillern. CME-akkreditiert, mit Behandlungsvideos und Praxistag an echten Proband:innen.",
+      "Filler-Kurs für Ärzt:innen: 18 CME, ab 490 €. Online-Seminar, Praxis-Schulung oder Hybrid-Kurs zur sicheren Anwendung von Dermalfillern, mit Praxistag.",
     ogImage: "/og/ephia-kurs.jpg",
   },
 

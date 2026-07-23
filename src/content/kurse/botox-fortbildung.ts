@@ -28,7 +28,7 @@ export const botoxFortbildung: CourseLandingContent = {
   meta: {
     title: "Botox-Fortbildung, Seminar & Schulung für Ärzt:innen | EPHIA",
     description:
-      "Botox-Fortbildung für approbierte Ärzt:innen: Online-Seminar, Praxis-Schulung oder Hybrid-Kurs. CME-akkreditiert, mit Behandlungsvideos und Praxistag an echten Proband:innen.",
+      "Botox-Fortbildung für Ärzt:innen: 22 CME, ab 490 €. Online-Seminar, Praxis-Schulung oder Hybrid-Kurs mit Praxistag an echten Proband:innen.",
     ogImage: "/og/ephia-kurs.jpg",
   },
 

@@ -14,7 +14,7 @@ export const grundkursBotulinum: CourseLandingContent = {
   meta: {
     title: "Grundkurs Botulinum | EPHIA",
     description:
-      "Grundkurs Botulinum für approbierte Ärzt:innen: Behandle Stirn, Glabella, Lachfalten und mehr unter Aufsicht an echten Proband:innen. 22 CME-Punkte, praxisnah und diskriminierungssensibel.",
+      "Grundkurs Botulinum für Ärzt:innen: 22 CME, ab 490 €. Stirn, Glabella, Lachfalten und mehr, geübt an echten Proband:innen in kleinen Gruppen.",
     ogImage: "/og/ephia-kurs.jpg",
   },
 

@@ -30,7 +30,7 @@ export const botoxKursFuerFortgeschrittene: CourseLandingContent = {
   meta: {
     title: "Botox-Kurs für Fortgeschrittene, Masterclass Botulinum | EPHIA",
     description:
-      "Botox-Kurs für Fortgeschrittene: Full Face Analyse, fortgeschrittene Injektionstechniken und Komplikationsmanagement auf Expert:innen-Niveau. Für approbierte Ärzt:innen mit regelmäßiger Botulinum-Praxis.",
+      "Botox-Kurs für Fortgeschrittene: 22 CME, ab 340 €. Full-Face-Analyse, fortgeschrittene Injektionstechniken und Komplikationsmanagement für Botulinum-Profis.",
     ogImage: "/og/ephia-kurs.jpg",
   },
 

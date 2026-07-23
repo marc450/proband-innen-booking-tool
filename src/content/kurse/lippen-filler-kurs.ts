@@ -28,7 +28,7 @@ export const lippenFillerKurs: CourseLandingContent = {
     title:
       "Lippen-Filler-Kurs für Ärzt:innen | Schulung, Seminar & Praxiskurs | EPHIA",
     description:
-      "Lippen-Filler-Kurs für approbierte Ärzt:innen mit Grunderfahrung in Dermalfillern: Online-Seminar, Praxis-Schulung und Hybrid-Kurs für sichere Lippenbehandlungen. Anatomie, Indikationen, Technik und Komplikationsmanagement, mit dichten Behandlungsvideos.",
+      "Lippen-Filler-Kurs für Ärzt:innen mit Filler-Grunderfahrung: 24 CME, ab 340 €. Anatomie, Technik und Komplikationsmanagement für sichere Lippen.",
     ogImage: "/og/ephia-kurs.jpg",
   },
 

@@ -23,7 +23,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
   meta: {
     title: "Grundkurs Botulinum für Zahnmediziner:innen | EPHIA",
     description:
-      "Grundkurs Botulinum für approbierte Zahnärzt:innen: Behandle den Masseter, insbesondere bei Bruxismus, mit Einblick in weitere Anwendungsgebiete wie Glabella, Stirn und Migräne. Praxisnah an echten Proband:innen.",
+      "Grundkurs Botulinum für Zahnärzt:innen: ab 490 €. Masseter und Bruxismus, dazu Glabella, Stirn und Migräne, geübt an Proband:innen, mit EPHIA-Zertifikat.",
     ogImage: "/og/ephia-kurs.jpg",
   },
 

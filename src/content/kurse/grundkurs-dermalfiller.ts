@@ -14,7 +14,7 @@ export const grundkursDermalfiller: CourseLandingContent = {
   meta: {
     title: "Grundkurs Dermalfiller | EPHIA",
     description:
-      "Grundkurs Dermalfiller für approbierte Ärzt:innen: Lerne die Anatomie des Alterns, Behandlungsmöglichkeiten für das Mittelgesicht und erste Schritte in die Gesichtskonturierung. 18 CME-Punkte, praxisnah und diskriminierungssensibel.",
+      "Grundkurs Dermalfiller für Ärzt:innen: 18 CME, ab 490 €. Anatomie des Alterns, Mittelgesicht und Gesichtskonturierung, geübt an echten Proband:innen.",
     ogImage: "/og/ephia-kurs.jpg",
   },
 

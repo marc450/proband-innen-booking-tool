@@ -21,7 +21,7 @@ export const masterclassBotulinum: CourseLandingContent = {
   meta: {
     title: "Masterclass Botulinum | EPHIA",
     description:
-      "Masterclass Botulinum für erfahrene Ärzt:innen: Full Face Analyse, fortgeschrittene Injektionstechniken und Komplikationsmanagement auf Expert:innen-Niveau. Praxiskurs in Berlin-Mitte mit Online-Vorbereitung.",
+      "Masterclass Botulinum für erfahrene Ärzt:innen: 22 CME, ab 340 €. Full-Face-Analyse, fortgeschrittene Techniken und Komplikationsmanagement in Berlin.",
     ogImage: "/og/ephia-kurs.jpg",
   },
 

@@ -29,7 +29,7 @@ export const botoxOnlinekurs: CourseLandingContent = {
   meta: {
     title: "Botox-Onlinekurs für Ärzt:innen, CME-akkreditiert | EPHIA",
     description:
-      "Botox-Onlinekurs für approbierte Ärzt:innen und Zahnärzt:innen: Anatomie, Indikationen, Behandlungsvideos, CME-Test. Höchstakkreditierter Botulinum-Onlinekurs im DACH-Raum, flexibel und ortsunabhängig.",
+      "Botox-Onlinekurs für Ärzt:innen und Zahnärzt:innen: 10 CME, ab 490 €. Anatomie, Indikationen, Behandlungsvideos und CME-Test, flexibel und ortsunabhängig.",
     ogImage: "/og/ephia-kurs.jpg",
   },
 
