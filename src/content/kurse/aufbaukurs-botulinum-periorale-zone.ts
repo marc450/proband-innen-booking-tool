@@ -15,7 +15,7 @@ export const aufbaukursBotulinumPerioraleZone: CourseLandingContent = {
   hideBookingWidget: true,
 
   meta: {
-    title: "Aufbaukurs Botulinum Periorale Zone | EPHIA",
+    title: "Aufbaukurs Botulinum periorale Zone für Ärzt:innen | EPHIA",
     description:
       "Aufbaukurs Botulinum für Ärzt:innen: 10 CME, ab 340 €. Die periorale Zone sicher behandeln, Lip Flip, Gummy Smile, Erdbeerkinn und Platysma.",
     ogImage: "/og/ephia-kurs.jpg",

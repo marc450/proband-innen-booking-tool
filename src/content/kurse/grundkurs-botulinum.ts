@@ -12,7 +12,7 @@ export const grundkursBotulinum: CourseLandingContent = {
   courseKey: "grundkurs_botulinum",
 
   meta: {
-    title: "Grundkurs Botulinum | EPHIA",
+    title: "Grundkurs Botulinum für Ärzt:innen | 22 CME-Punkte | EPHIA",
     description:
       "Grundkurs Botulinum für Ärzt:innen: 22 CME, ab 490 €. Stirn, Glabella, Lachfalten und mehr, geübt an echten Proband:innen in kleinen Gruppen.",
     ogImage: "/og/ephia-kurs.jpg",

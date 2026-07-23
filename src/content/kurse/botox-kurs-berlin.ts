@@ -24,7 +24,7 @@ export const botoxKursBerlin: CourseLandingContent = {
   courseKey: "grundkurs_botulinum",
 
   meta: {
-    title: "Botox-Kurs in Berlin für Ärzt:innen | EPHIA",
+    title: "Botox-Kurs in Berlin für Ärzt:innen | 22 CME | EPHIA",
     description:
       "Botox-Kurs in Berlin für Ärzt:innen: 22 CME, ab 490 €. Praxistraining in Berlin-Mitte, Behandlung echter Proband:innen, Termine online und vor Ort.",
     ogImage: "/og/ephia-kurs.jpg",

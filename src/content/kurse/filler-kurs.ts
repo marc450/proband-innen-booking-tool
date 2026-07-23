@@ -25,7 +25,7 @@ export const fillerKurs: CourseLandingContent = {
   courseKey: "grundkurs_dermalfiller",
 
   meta: {
-    title: "Filler-Kurs für Ärzt:innen | Seminar, Schulung & Praxiskurs | EPHIA",
+    title: "Filler-Kurs für Ärzt:innen | Seminar & Schulung | EPHIA",
     description:
       "Filler-Kurs für Ärzt:innen: 18 CME, ab 490 €. Online-Seminar, Praxis-Schulung oder Hybrid-Kurs zur sicheren Anwendung von Dermalfillern, mit Praxistag.",
     ogImage: "/og/ephia-kurs.jpg",

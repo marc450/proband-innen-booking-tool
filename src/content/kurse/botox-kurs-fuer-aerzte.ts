@@ -30,7 +30,7 @@ export const botoxKursFuerAerzte: CourseLandingContent = {
   courseKey: "grundkurs_botulinum",
 
   meta: {
-    title: "Botox-Kurs & Fortbildung für Ärzt:innen | bis zu 49 CME | EPHIA",
+    title: "Botox-Kurs & Fortbildung für Ärzt:innen | 49 CME | EPHIA",
     // 152 chars. Both conversion hooks (CME-Punkte, Einstiegspreis)
     // sit inside the ~155-char SERP window; the old 187-char version
     // truncated them away.

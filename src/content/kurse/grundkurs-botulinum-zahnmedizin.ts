@@ -28,8 +28,7 @@ export const grundkursBotulinumZahnmedizin: CourseLandingContent = {
   },
 
   hero: {
-    heading: "GRUNDKURS BOTULINUM",
-    kicker: "FÜR ZAHNMEDIZINER:INNEN",
+    heading: "GRUNDKURS BOTULINUM\nFÜR ZAHNMEDIZINER:INNEN",
     socialProof: "Über 300 zertifizierte Ärzt:innen",
     subheadline:
       "Dein sicherer Einstieg in die Botulinum-Anwendung für Zahnärzt:innen: praxisnah, fundiert und mit echten Proband:innen.",

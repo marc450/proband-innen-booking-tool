@@ -12,7 +12,7 @@ export const grundkursDermalfiller: CourseLandingContent = {
   courseKey: "grundkurs_dermalfiller",
 
   meta: {
-    title: "Grundkurs Dermalfiller | EPHIA",
+    title: "Grundkurs Dermalfiller für Ärzt:innen | 18 CME | EPHIA",
     description:
       "Grundkurs Dermalfiller für Ärzt:innen: 18 CME, ab 490 €. Anatomie des Alterns, Mittelgesicht und Gesichtskonturierung, geübt an echten Proband:innen.",
     ogImage: "/og/ephia-kurs.jpg",

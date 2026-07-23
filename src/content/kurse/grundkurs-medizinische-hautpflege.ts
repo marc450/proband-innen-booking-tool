@@ -19,7 +19,7 @@ export const grundkursMedizinischeHautpflege: CourseLandingContent = {
   hideBookingWidget: true,
 
   meta: {
-    title: "Grundkurs Medizinische Hautpflege | EPHIA",
+    title: "Grundkurs Medizinische Hautpflege für Ärzt:innen | EPHIA",
     description:
       "Grundkurs Medizinische Hautpflege für Ärzt:innen: 7 CME, ab 250 €. Hautphysiologie, Skin of Color, Akne, Rosazea und periorale Dermatitis, praxisnah.",
     ogImage: "/og/ephia-kurs.jpg",

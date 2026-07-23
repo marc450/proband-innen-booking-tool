@@ -16,7 +16,7 @@ export const aufbaukursBiostimulationSkinbooster: CourseLandingContent = {
   courseKey: "aufbaukurs_skulptra",
 
   meta: {
-    title: "Aufbaukurs Biostimulation & Skinbooster | EPHIA",
+    title: "Aufbaukurs Biostimulation & Skinbooster | CME | EPHIA",
     description:
       "Aufbaukurs für approbierte Ärzt:innen: Biostimulation mit Poly-L-Milchsäure und Skinbooster-Techniken. Praxisnah, evidenzbasiert und CME-akkreditiert.",
     ogImage: "/og/ephia-kurs.jpg",

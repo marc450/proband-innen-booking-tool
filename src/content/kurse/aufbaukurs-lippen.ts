@@ -19,7 +19,7 @@ export const aufbaukursLippen: CourseLandingContent = {
   courseKey: "aufbaukurs_lippen",
 
   meta: {
-    title: "Aufbaukurs Dermalfiller: Lippen | EPHIA",
+    title: "Aufbaukurs Dermalfiller Lippen für Ärzt:innen | EPHIA",
     description:
       "Aufbaukurs Dermalfiller Lippen für Ärzt:innen: 24 CME, ab 340 €. Anatomie, Technik und Komplikationsmanagement der perioralen Zone, mit Praxistag.",
     ogImage: "/og/ephia-kurs.jpg",

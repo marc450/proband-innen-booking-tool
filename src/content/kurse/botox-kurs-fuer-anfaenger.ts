@@ -28,7 +28,7 @@ export const botoxKursFuerAnfaenger: CourseLandingContent = {
   courseKey: "grundkurs_botulinum",
 
   meta: {
-    title: "Botox spritzen lernen: Kurs für Anfänger:innen | Online | EPHIA",
+    title: "Botox spritzen lernen für Anfänger:innen | Online | EPHIA",
     description:
       "Botox-Kurs für Ärzt:innen ohne Vorerfahrung: 22 CME, ab 490 €. Strukturierter Einstieg mit Online-Modul und Praxistag an echten Proband:innen.",
     ogImage: "/og/ephia-kurs.jpg",

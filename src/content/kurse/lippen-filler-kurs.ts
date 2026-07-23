@@ -25,8 +25,7 @@ export const lippenFillerKurs: CourseLandingContent = {
   courseKey: "aufbaukurs_lippen",
 
   meta: {
-    title:
-      "Lippen-Filler-Kurs für Ärzt:innen | Schulung, Seminar & Praxiskurs | EPHIA",
+    title: "Lippen-Filler-Kurs für Ärzt:innen | Schulung | EPHIA",
     description:
       "Lippen-Filler-Kurs für Ärzt:innen mit Filler-Grunderfahrung: 24 CME, ab 340 €. Anatomie, Technik und Komplikationsmanagement für sichere Lippen.",
     ogImage: "/og/ephia-kurs.jpg",
