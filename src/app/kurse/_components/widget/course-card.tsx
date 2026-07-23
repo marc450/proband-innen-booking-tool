@@ -49,6 +49,15 @@ interface CourseCardProps {
    * a hard requirement.
    */
   warning?: string;
+  /**
+   * Controlled expand state for the "Nächste Praxistermine" list. When
+   * `onToggleDates` is provided the card is controlled by the parent so
+   * every sibling card unfolds together (all dropdown cards on a landing
+   * page share the same `dates`). When omitted the card falls back to its
+   * own internal state.
+   */
+  datesExpanded?: boolean;
+  onToggleDates?: () => void;
 }
 
 export function CourseCard({
@@ -70,10 +79,22 @@ export function CourseCard({
   inclusionHeading,
   titleClassName,
   warning,
+  datesExpanded,
+  onToggleDates,
 }: CourseCardProps) {
   const [selectedDate, setSelectedDate] = useState("");
   const [showTerminModal, setShowTerminModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Expand state for the Praxistermine list. Controlled by the parent when
+  // `onToggleDates` is passed (so all cards unfold in sync), otherwise the
+  // card manages its own state.
+  const [internalDatesExpanded, setInternalDatesExpanded] = useState(false);
+  const isDatesControlled = onToggleDates !== undefined;
+  const showAllDates = isDatesControlled ? !!datesExpanded : internalDatesExpanded;
+  const toggleDates = isDatesControlled
+    ? onToggleDates
+    : () => setInternalDatesExpanded((v) => !v);
 
   // Keep selected date in sync when sessions are refreshed (polling) and the
   // previously selected one is no longer available. Only reset if user had
@@ -303,20 +324,33 @@ export function CourseCard({
             ))}
           </ul>
           {dates.length > VISIBLE_DATE_COUNT && (
-            <details className="group mt-3">
-              <summary className="list-none [&::-webkit-details-marker]:hidden flex items-center gap-1 text-sm font-semibold text-[#0066FF] cursor-pointer hover:underline underline-offset-4">
-                <span className="group-open:hidden">
-                  Alle {dates.length} Termine anzeigen
-                </span>
-                <span className="hidden group-open:inline">
-                  Weniger Termine anzeigen
+            <div className="mt-3">
+              {/* Controlled toggle instead of a native <details> so all
+                  dropdown cards on the page unfold together. The extra
+                  dates stay rendered in the DOM (hidden via CSS when
+                  collapsed) so crawlers still index them, matching the
+                  old <details> behaviour. */}
+              <button
+                type="button"
+                onClick={toggleDates}
+                aria-expanded={showAllDates}
+                aria-controls={`${title}-praxistermine-rest`}
+                className="flex items-center gap-1 text-sm font-semibold text-[#0066FF] cursor-pointer hover:underline underline-offset-4"
+              >
+                <span>
+                  {showAllDates
+                    ? "Weniger Termine anzeigen"
+                    : `Alle ${dates.length} Termine anzeigen`}
                 </span>
                 <ChevronDown
-                  className="w-4 h-4 transition-transform group-open:rotate-180"
+                  className={`w-4 h-4 transition-transform ${showAllDates ? "rotate-180" : ""}`}
                   aria-hidden="true"
                 />
-              </summary>
-              <ul className="space-y-3 mt-3">
+              </button>
+              <ul
+                id={`${title}-praxistermine-rest`}
+                className={`space-y-3 mt-3 ${showAllDates ? "" : "hidden"}`}
+              >
                 {dates.slice(VISIBLE_DATE_COUNT).map((date) => (
                   <li
                     key={date.id}
@@ -331,7 +365,7 @@ export function CourseCard({
                   </li>
                 ))}
               </ul>
-            </details>
+            </div>
           )}
         </div>
       )}

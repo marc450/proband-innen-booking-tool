@@ -82,6 +82,14 @@ interface PremiumCardProps {
    * card so the feature lists line up visually.
    */
   listSpacingClass?: string;
+  /**
+   * Controlled expand state for the "Nächste Praxistermine" list. When
+   * `onToggleDates` is provided the parent controls it so this card
+   * unfolds in sync with the sibling CourseCards (they all share the
+   * same `dates`). When omitted the card falls back to internal state.
+   */
+  datesExpanded?: boolean;
+  onToggleDates?: () => void;
 }
 
 const DEFAULT_INCLUDED_COURSES: IncludedCourse[] = [
@@ -374,6 +382,8 @@ export function PremiumCard({
   inclusionHeading = "Im Komplettpaket inkludiert:",
   extraFeatures,
   listSpacingClass = "space-y-4",
+  datesExpanded,
+  onToggleDates,
 }: PremiumCardProps) {
   const [selectedDate, setSelectedDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -381,6 +391,16 @@ export function PremiumCard({
   const [showTerminModal, setShowTerminModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Expand state for the Praxistermine list. Controlled by the parent when
+  // `onToggleDates` is passed (so all cards unfold in sync), otherwise the
+  // card manages its own state.
+  const [internalDatesExpanded, setInternalDatesExpanded] = useState(false);
+  const isDatesControlled = onToggleDates !== undefined;
+  const showAllDates = isDatesControlled ? !!datesExpanded : internalDatesExpanded;
+  const toggleDates = isDatesControlled
+    ? onToggleDates
+    : () => setInternalDatesExpanded((v) => !v);
 
   // Keep selected date in sync with polled session data — clear if no longer available.
   // Also clear any "Bitte wähle zuerst einen Termin" hint once the user picks one.
@@ -639,20 +659,33 @@ export function PremiumCard({
             ))}
           </ul>
           {dates.length > VISIBLE_DATE_COUNT && (
-            <details className="group mt-3">
-              <summary className="list-none [&::-webkit-details-marker]:hidden flex items-center gap-1 text-sm font-semibold text-[#0066FF] cursor-pointer hover:underline underline-offset-4">
-                <span className="group-open:hidden">
-                  Alle {dates.length} Termine anzeigen
-                </span>
-                <span className="hidden group-open:inline">
-                  Weniger Termine anzeigen
+            <div className="mt-3">
+              {/* Controlled toggle instead of a native <details> so all
+                  cards on the page unfold together. The extra dates stay
+                  rendered in the DOM (hidden via CSS when collapsed) so
+                  crawlers still index them, matching the old <details>
+                  behaviour. */}
+              <button
+                type="button"
+                onClick={toggleDates}
+                aria-expanded={showAllDates}
+                aria-controls={`${title}-praxistermine-rest`}
+                className="flex items-center gap-1 text-sm font-semibold text-[#0066FF] cursor-pointer hover:underline underline-offset-4"
+              >
+                <span>
+                  {showAllDates
+                    ? "Weniger Termine anzeigen"
+                    : `Alle ${dates.length} Termine anzeigen`}
                 </span>
                 <ChevronDown
-                  className="w-4 h-4 transition-transform group-open:rotate-180"
+                  className={`w-4 h-4 transition-transform ${showAllDates ? "rotate-180" : ""}`}
                   aria-hidden="true"
                 />
-              </summary>
-              <ul className="space-y-3 mt-3">
+              </button>
+              <ul
+                id={`${title}-praxistermine-rest`}
+                className={`space-y-3 mt-3 ${showAllDates ? "" : "hidden"}`}
+              >
                 {dates.slice(VISIBLE_DATE_COUNT).map((date) => (
                   <li
                     key={date.id}
@@ -667,7 +700,7 @@ export function PremiumCard({
                   </li>
                 ))}
               </ul>
-            </details>
+            </div>
           )}
         </div>
       )}

@@ -300,6 +300,11 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
   // dialog. Holds the sessionId so we can resume the checkout when the user
   // confirms. Null when no confirmation flow is in progress.
   const [pendingPraxisBooking, setPendingPraxisBooking] = useState<string | null>(null);
+  // Shared expand state for the "Nächste Praxistermine" list. All dropdown
+  // cards on the page render the same `dynamicDates`, so unfolding one card
+  // unfolds them all.
+  const [datesExpanded, setDatesExpanded] = useState(false);
+  const toggleDates = () => setDatesExpanded((v) => !v);
 
   // Poll for session updates every 60 seconds
   useEffect(() => {
@@ -772,6 +777,8 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                     features={premiumKombiFeatures}
                     bookingType="dropdown"
                     dates={dynamicDates}
+                    datesExpanded={datesExpanded}
+                    onToggleDates={toggleDates}
                     buttonText="Online- & Praxiskurs buchen"
                     additionalInfo="Praxiskurs-Standort: Berlin-Mitte"
                     onBook={(sessionId) => handleBooking("Kombikurs", sessionId)}
@@ -785,6 +792,8 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
 
                 <PremiumCard
                   dates={dynamicDates}
+                  datesExpanded={datesExpanded}
+                  onToggleDates={toggleDates}
                   onBook={(sessionId) => handleBooking("Premium", sessionId)}
                   isLoading={loadingCheckout?.startsWith("Premium-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Premium-", "")}
@@ -851,6 +860,8 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   features={praxisFeatures}
                   bookingType="dropdown"
                   dates={dynamicDates}
+                  datesExpanded={datesExpanded}
+                  onToggleDates={toggleDates}
                   buttonText="Praxiskurs buchen"
                   additionalInfo="Praxiskurs-Standort: Berlin-Mitte"
                   warning={overrides.praxisWarning}
@@ -880,6 +891,8 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
                   features={overrides.kombiFeatures || defaultKombi}
                   bookingType="dropdown"
                   dates={dynamicDates}
+                  datesExpanded={datesExpanded}
+                  onToggleDates={toggleDates}
                   buttonText="Online- & Praxiskurs buchen"
                   additionalInfo="Praxiskurs-Standort: Berlin-Mitte"
                   onBook={(sessionId) => handleBooking("Kombikurs", sessionId)}
@@ -897,6 +910,8 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
               {hasKomplettpaket && isDermalfiller && (
                 <PremiumCard
                   dates={dynamicDates}
+                  datesExpanded={datesExpanded}
+                  onToggleDates={toggleDates}
                   onBook={(sessionId) => handleBooking("Premium", sessionId)}
                   isLoading={loadingCheckout?.startsWith("Premium-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Premium-", "")}
@@ -913,6 +928,8 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
               {hasKomplettpaket && isLippen && (
                 <PremiumCard
                   dates={dynamicDates}
+                  datesExpanded={datesExpanded}
+                  onToggleDates={toggleDates}
                   onBook={(sessionId) => handleBooking("Premium", sessionId)}
                   isLoading={loadingCheckout?.startsWith("Premium-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Premium-", "")}
@@ -937,6 +954,8 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
               {hasKomplettpaket && isTherapeutischeIndikationen && (
                 <PremiumCard
                   dates={dynamicDates}
+                  datesExpanded={datesExpanded}
+                  onToggleDates={toggleDates}
                   onBook={(sessionId) => handleBooking("Premium", sessionId)}
                   isLoading={loadingCheckout?.startsWith("Premium-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Premium-", "")}
@@ -955,6 +974,8 @@ export function CourseCardsPage({ template, sessions: initialSessions }: Props) 
               {hasKomplettpaket && !isDermalfiller && !isLippen && !isTherapeutischeIndikationen && (
                 <PremiumCard
                   dates={dynamicDates}
+                  datesExpanded={datesExpanded}
+                  onToggleDates={toggleDates}
                   onBook={(sessionId) => handleBooking("Premium", sessionId)}
                   isLoading={loadingCheckout?.startsWith("Premium-") || false}
                   selectedDateForLoading={loadingCheckout?.replace("Premium-", "")}
