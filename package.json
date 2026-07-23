@@ -2,6 +2,15 @@
   "name": "ephia-booking",
   "version": "0.1.0",
   "private": true,
+  "comment:browserslist": "Modern targets so SWC stops transpiling to ES5 and Next stops shipping core-js polyfills (Lighthouse 'legacy JavaScript'). Safari/iOS 15.6 (2022) is the floor; the audience is German physicians on current devices, no IE/legacy requirement. Tighten further only if a specific old-device complaint appears.",
+  "browserslist": [
+    "chrome >= 108",
+    "edge >= 108",
+    "firefox >= 108",
+    "safari >= 15.6",
+    "ios_saf >= 15.6",
+    "not dead"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",

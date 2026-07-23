@@ -5,7 +5,10 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+// createClient is imported dynamically (see the auth effect / handleSignOut)
+// so @supabase/supabase-js (~48 KB gzip) stays out of the initial route
+// bundle. Nothing on first paint needs it; it only powers the deferred
+// Login→Mein-Konto label swap and the sign-out action.
 
 // Pathnames that map to the Werde Proband:in funnel start when served
 // from the booking domain. usePathname returns "/" and "/werde-proband-in"
@@ -238,20 +241,26 @@ export function Header() {
   // "Login" without a page reload.
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   useEffect(() => {
-    const supabase = createClient();
     let cancelled = false;
+    // Captured once the dynamic client import resolves. The cleanup below
+    // can run before that happens, so it's guarded.
+    let unsub: (() => void) | undefined;
     (async () => {
+      const { createClient } = await import("@/lib/supabase/client");
+      if (cancelled) return;
+      const supabase = createClient();
       const { data } = await supabase.auth.getSession();
       if (!cancelled) setIsLoggedIn(!!data.session);
+      const { data: subscription } = supabase.auth.onAuthStateChange(
+        (_event, session) => {
+          setIsLoggedIn(!!session);
+        },
+      );
+      unsub = () => subscription.subscription.unsubscribe();
     })();
-    const { data: subscription } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setIsLoggedIn(!!session);
-      },
-    );
     return () => {
       cancelled = true;
-      subscription.subscription.unsubscribe();
+      unsub?.();
     };
   }, []);
 
@@ -270,6 +279,7 @@ export function Header() {
   const ctaHref = !isLoggedIn ? "/start" : onMeinKonto ? null : "/mein-konto";
 
   const handleSignOut = async () => {
+    const { createClient } = await import("@/lib/supabase/client");
     const supabase = createClient();
     await supabase.auth.signOut();
     setIsLoggedIn(false);

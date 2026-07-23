@@ -7,7 +7,9 @@ import { GoogleAnalytics } from "@/components/google-analytics";
 const roboto = Roboto({
   variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
+  // 300 (light) is unused anywhere in the app; dropping it removes one
+  // render-blocking font file from the critical path.
+  weight: ["400", "500", "700"],
 });
 
 // Pinch-zoom stays enabled: maximumScale/userScalable were only ever

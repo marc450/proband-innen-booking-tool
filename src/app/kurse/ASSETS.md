@@ -23,8 +23,8 @@ All go under `public/kurse/grundkurs_botulinum/`.
 
 | File | Drop at | Notes |
 |---|---|---|
-| Hero video | `public/kurse/grundkurs_botulinum/hero-video.mp4` | Short loop (10–20s), no audio, compressed H.264 MP4, recommended ≤3MB for fast LCP. Dimensions ~1280×1600 (portrait-ish) since hero aspect is 4/5 on mobile and 4/3 on desktop. |
-| Hero poster | `public/kurse/grundkurs_botulinum/hero-poster.jpg` | JPG thumbnail shown before the video loads. Same aspect ratio as the video. ~150–300KB. |
+| Hero video | `public/kurse/grundkurs_botulinum/hero-video.mp4` | Compressed H.264 MP4 (1080p, CRF ~28, faststart), keep well under ~5MB. Loads only after the poster paints (see `hero-video.tsx`), so it is off the LCP path. Landscape source is cropped by `object-cover` to the 4/5 (mobile) / 4/3 (desktop) hero box. |
+| Hero poster | `public/kurse/grundkurs_botulinum/hero-poster.jpg` | Still frame from the video's first second, shown before playback and as the LCP element. Rendered through `next/image` (`fill priority`), so it is served resized + WebP (~10KB on mobile) regardless of the source file's size. |
 
 ### Lernplattform section (4 features)
 
