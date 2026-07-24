@@ -11,6 +11,14 @@ const BLUE = "#0066FF";
 const CREAM = "#FAEBE1";
 const CORAL = "#BF785E";
 
+type LevelFilter = "alle" | "einsteiger" | "fortgeschritten";
+
+const LEVEL_FILTERS: { value: LevelFilter; label: string }[] = [
+  { value: "alle", label: "Alle Kurse" },
+  { value: "einsteiger", label: "Für Einsteiger:innen" },
+  { value: "fortgeschritten", label: "Für Fortgeschrittene" },
+];
+
 export function UnsereKurse({
   content,
   tone = "blue",
@@ -20,10 +28,27 @@ export function UnsereKurse({
   tone?: "blue" | "cream";
 }) {
   const [groupOpen, setGroupOpen] = useState(false);
+  const [levelFilter, setLevelFilter] = useState<LevelFilter>("alle");
 
   const isCream = tone === "cream";
   const sectionBg = isCream ? CREAM : BLUE;
   const headingClass = isCream ? "text-black" : "text-white";
+
+  // Only offer the filter when at least one leveled course of each kind
+  // exists, otherwise the control would just hide half the (single-level)
+  // catalogue for no reason.
+  const hasEinsteiger = content.tiles.some((t) => resolveLevel(t) === "einsteiger");
+  const hasFortgeschritten = content.tiles.some(
+    (t) => resolveLevel(t) === "fortgeschritten"
+  );
+  const showFilter = hasEinsteiger && hasFortgeschritten;
+
+  // Group-inquiry tiles carry no level, so they stay visible under every
+  // filter (they're a CTA card, not a leveled course).
+  const visibleTiles = content.tiles.filter((tile) => {
+    if (levelFilter === "alle" || tile.type === "group-inquiry") return true;
+    return resolveLevel(tile) === levelFilter;
+  });
 
   return (
     <>
@@ -46,8 +71,39 @@ export function UnsereKurse({
             )}
           </div>
 
+          {showFilter && (
+            <div
+              className="flex flex-wrap justify-center gap-2 mb-12"
+              role="group"
+              aria-label="Kurse nach Niveau filtern"
+            >
+              {LEVEL_FILTERS.map((f) => {
+                const active = levelFilter === f.value;
+                const activeClass = isCream
+                  ? "bg-[#0066FF] text-white"
+                  : "bg-white text-[#0066FF]";
+                const inactiveClass = isCream
+                  ? "bg-black/5 text-black/70 hover:bg-black/10"
+                  : "bg-white/10 text-white hover:bg-white/20";
+                return (
+                  <button
+                    key={f.value}
+                    type="button"
+                    onClick={() => setLevelFilter(f.value)}
+                    aria-pressed={active}
+                    className={`text-sm font-semibold rounded-full px-5 py-2.5 transition-colors ${
+                      active ? activeClass : inactiveClass
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14">
-            {content.tiles.map((tile, i) => (
+            {visibleTiles.map((tile, i) => (
               <CourseTile
                 key={`${tile.title}-${tile.audience}-${i}`}
                 tile={tile}
@@ -73,6 +129,22 @@ function getLevel(kicker: string): CourseLevel {
   const k = kicker.toUpperCase();
   if (k === "GRUNDKURS") return "grundkurs";
   if (k === "AUFBAUKURS") return "aufbaukurs";
+  return null;
+}
+
+// Level resolution order:
+//   1. `dbLevel` from course_templates.level (source of truth).
+//   2. Fallback: derive from the static kicker ("GRUNDKURS" etc.).
+// Shared by the filter (parent) and the level pill (tile) so both agree.
+function resolveLevel(
+  tile: HomeCourseTile
+): "einsteiger" | "fortgeschritten" | null {
+  if (tile.dbLevel === "einsteiger" || tile.dbLevel === "fortgeschritten") {
+    return tile.dbLevel;
+  }
+  const kickerLevel = getLevel(tile.kicker);
+  if (kickerLevel === "grundkurs") return "einsteiger";
+  if (kickerLevel === "aufbaukurs") return "fortgeschritten";
   return null;
 }
 
@@ -117,16 +189,7 @@ function CourseTile({
     ? { label: "Für Zahnmediziner:innen", bg: CORAL, text: "#FFFFFF" }
     : { label: "Für Humanmediziner:innen", bg: BLUE, text: "#FFFFFF" };
 
-  // Level resolution order:
-  //   1. `dbLevel` from course_templates.level (source of truth).
-  //   2. Fallback: derive from the static kicker ("GRUNDKURS" etc.).
-  const levelValue: "einsteiger" | "fortgeschritten" | null = tile.dbLevel === "einsteiger" || tile.dbLevel === "fortgeschritten"
-    ? tile.dbLevel
-    : getLevel(tile.kicker) === "grundkurs"
-    ? "einsteiger"
-    : getLevel(tile.kicker) === "aufbaukurs"
-    ? "fortgeschritten"
-    : null;
+  const levelValue = resolveLevel(tile);
 
   const levelPill = isGroup
     ? null
