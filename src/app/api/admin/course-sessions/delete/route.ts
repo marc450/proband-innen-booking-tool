@@ -31,15 +31,24 @@ interface Impact {
   hasSatellite: boolean;
 }
 
+// Statuses that count as an ACTIVE registration. Cancelled/refunded/no-show
+// rows still live in the tables (and still get removed on delete), but they
+// aren't registrations, so the confirm dialog must not report them as
+// "aktuell gebucht". These mirror how the rest of the app counts seats
+// (e.g. the available_slots view uses booked/attended for Proband:innen).
+const ACTIVE_PROBAND_STATUSES = ["booked", "attended"];
+const ACTIVE_AERZTE_STATUSES = ["booked", "completed"];
+
 async function collectImpact(
   admin: ReturnType<typeof createAdminClient>,
   sessionId: string,
 ): Promise<Impact> {
-  // Ärzt:innen side.
+  // Ärzt:innen side — active registrations only.
   const { data: courseBookings } = await admin
     .from("course_bookings")
     .select("id")
-    .eq("session_id", sessionId);
+    .eq("session_id", sessionId)
+    .in("status", ACTIVE_AERZTE_STATUSES);
 
   // Proband:innen side: satellite course → slots → bookings.
   const { data: satellites } = await admin
@@ -61,7 +70,8 @@ async function collectImpact(
       const { data: bookings } = await admin
         .from("bookings")
         .select("id")
-        .in("slot_id", slotIds);
+        .in("slot_id", slotIds)
+        .in("status", ACTIVE_PROBAND_STATUSES);
       probandBookings = (bookings ?? []).length;
     }
   }
@@ -112,17 +122,21 @@ export async function POST(req: NextRequest) {
   // course_bookings must go first: its FK to course_sessions is NO ACTION
   // and would otherwise block the whole delete. Everything else is removed
   // by the ON DELETE CASCADE chain when the session row goes.
-  if (impact.aerzteBookings > 0) {
-    const { error: cbErr } = await admin
-      .from("course_bookings")
-      .delete()
-      .eq("session_id", sessionId);
-    if (cbErr) {
-      return NextResponse.json(
-        { error: `Ärzt:innen-Buchungen konnten nicht gelöscht werden: ${cbErr.message}` },
-        { status: 500 },
-      );
-    }
+  //
+  // Runs unconditionally over ALL statuses. `impact.aerzteBookings` now only
+  // tallies ACTIVE bookings, so it can no longer gate this step: a session
+  // whose only course_bookings are cancelled/refunded would report 0 active
+  // yet still carry FK rows that must be cleared first, or the session delete
+  // below fails. Deleting zero matching rows is a harmless no-op.
+  const { error: cbErr } = await admin
+    .from("course_bookings")
+    .delete()
+    .eq("session_id", sessionId);
+  if (cbErr) {
+    return NextResponse.json(
+      { error: `Ärzt:innen-Buchungen konnten nicht gelöscht werden: ${cbErr.message}` },
+      { status: 500 },
+    );
   }
 
   const { error: sessionErr } = await admin
