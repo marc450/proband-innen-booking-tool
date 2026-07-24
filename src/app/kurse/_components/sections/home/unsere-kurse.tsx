@@ -58,7 +58,7 @@ export function UnsereKurse({
         style={{ backgroundColor: sectionBg }}
       >
         <div className="max-w-7xl mx-auto px-5 md:px-8">
-          <div className="text-center mb-14 max-w-3xl mx-auto">
+          <div className="text-center mb-6 max-w-3xl mx-auto">
             <h2 className={`${TYPO.h2} ${headingClass}`}>{content.heading}</h2>
             {content.intro && (
               <p
