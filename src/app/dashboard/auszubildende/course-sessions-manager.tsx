@@ -475,32 +475,47 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
     }
   };
 
-  // Confirm-dialog copy that spells out exactly what will be destroyed.
+  // The session being deleted, so the confirm dialog can name the concrete
+  // Termin (Kurs + Datum) instead of an anonymous "diesen Termin".
+  const deleteSession = deleteId ? sessions.find((s) => s.id === deleteId) ?? null : null;
+
+  // Confirm-dialog copy: names the Termin (Kurs + Datum), states the current
+  // booking counts (Teilnehmer:innen + Proband:innen), then spells out
+  // exactly what the delete destroys.
   const deleteDescription = (() => {
-    if (deleteChecking) return "Wird geprüft, was mit diesem Termin gelöscht wird...";
+    const header = deleteSession
+      ? `Kurstermin: ${getTemplateName(deleteSession.template_id)} am ${dateToLabelDe(deleteSession.date_iso)}.`
+      : "";
+    if (deleteChecking) {
+      return `${header} Wird geprüft, was mit diesem Termin gelöscht wird...`.trim();
+    }
     if (!deleteImpact) {
-      return "Möchtest Du diesen Kurstermin wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.";
+      return `${header} Möchtest Du diesen Kurstermin wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`.trim();
     }
+    const teilnehmer =
+      deleteImpact.aerzteBookings === 1
+        ? "1 Teilnehmer:in"
+        : `${deleteImpact.aerzteBookings} Teilnehmer:innen`;
+    const probanden =
+      deleteImpact.probandBookings === 1
+        ? "1 Proband:in"
+        : `${deleteImpact.probandBookings} Proband:innen`;
+    const summary = `Aktuell gebucht: ${teilnehmer} und ${probanden}.`;
+
     const parts: string[] = [];
-    if (deleteImpact.aerzteBookings > 0) {
-      parts.push(
-        `${deleteImpact.aerzteBookings} Ärzt:innen-Buchung${deleteImpact.aerzteBookings === 1 ? "" : "en"}`,
-      );
-    }
-    if (deleteImpact.probandBookings > 0) {
-      parts.push(
-        `${deleteImpact.probandBookings} Proband:innen-Buchung${deleteImpact.probandBookings === 1 ? "" : "en"}`,
-      );
-    }
+    if (deleteImpact.aerzteBookings > 0) parts.push(teilnehmer);
+    if (deleteImpact.probandBookings > 0) parts.push(probanden);
     if (deleteImpact.probandSlots > 0) {
       parts.push(
         `${deleteImpact.probandSlots} Proband:innen-Slot${deleteImpact.probandSlots === 1 ? "" : "s"}`,
       );
     }
-    if (parts.length === 0) {
-      return "Dieser Termin hat keine Buchungen. Er wird überall gelöscht, inklusive Proband:innen-Kurs. Diese Aktion kann nicht rückgängig gemacht werden.";
-    }
-    return `Achtung: Dabei werden unwiderruflich mitgelöscht: ${parts.join(", ")}. Der Termin verschwindet überall, auch aus der Proband:innen-Buchung. Diese Aktion kann nicht rückgängig gemacht werden.`;
+    const warn =
+      parts.length === 0
+        ? "Der Termin wird überall gelöscht, inklusive Proband:innen-Kurs. Diese Aktion kann nicht rückgängig gemacht werden."
+        : `Achtung: Dabei werden unwiderruflich mitgelöscht: ${parts.join(", ")}. Der Termin verschwindet überall, auch aus der Proband:innen-Buchung. Diese Aktion kann nicht rückgängig gemacht werden.`;
+
+    return `${header} ${summary} ${warn}`.trim();
   })();
 
   // Create
@@ -575,7 +590,7 @@ export function CourseSessionsManager({ initialTemplates, initialSessions, dozen
         </div>
       )}
 
-      <Table>
+      <Table containerClassName="overflow-x-auto">
         <TableHeader>
           <TableRow>
             <SortableHead label="Status" sortKeyName="status" className="w-[100px]" />
