@@ -138,7 +138,7 @@ export interface HomeCourseTile {
 
 export interface HomeCoursesContent {
   heading: string;
-  intro: string;
+  intro?: string;
   tiles: HomeCourseTile[];
 }
 

@@ -40,8 +40,6 @@ export const homeContent: HomeContent = {
 
   courses: {
     heading: "UNSERE KURSE",
-    intro:
-      "Grundkurse sind Einstiegskurse für Einsteiger:innen. Für Aufbaukurse empfehlen wir ein solides medizinisches Basiswissen vor der Kursteilnahme.",
     tiles: [
       {
         kicker: "GRUNDKURS",
